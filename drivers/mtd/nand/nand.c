@@ -89,11 +89,16 @@ static void nand_init_chip(int i)
 	nand->IO_ADDR_R = nand->IO_ADDR_W = (void  __iomem *)base_addr;
 
 	if (board_nand_init(nand))
+	{
+		printf("failed to do board_nand_init\n");
 		return;
+	}
 
 	if (nand_scan(mtd, maxchips))
+	{
+		printf("failed to do nand_scan\n");
 		return;
-
+	}
 	nand_register(i);
 }
 #endif

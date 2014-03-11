@@ -53,9 +53,11 @@
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-#define CONFIG_CMD_FAT
+#define CONFIG_CMD_EXT2		/* EXT2 Support			*/
+#define CONFIG_CMD_FAT		/* FAT support			*/
 #define CONFIG_DOS_PARTITION
 
+/* Ethernet config */
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_MII
@@ -74,10 +76,26 @@
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_SPD_BUS_NUM		0
 
+#define CONFIG_SYS_USE_NAND
+
+#ifdef CONFIG_SYS_USE_NAND
+/* Nand Flash Configs */
+#define	CONFIG_CMD_NAND
+#define CONFIG_JFFS2_NAND
+#define MTD_NAND_FSL_NFC_SWECC 1
+#define CONFIG_NAND_FSL_NFC
+#define CONFIG_SYS_NAND_BASE		0x400E0000
+#define CONFIG_SYS_MAX_NAND_DEVICE	1
+#define NAND_MAX_CHIPS			CONFIG_SYS_MAX_NAND_DEVICE
+#define CONFIG_SYS_NAND_SELECT_DEVICE
+#define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
+#endif
+
 #define CONFIG_BOOTDELAY		3
 
 #define CONFIG_LOADADDR			0x82000000
-#define CONFIG_SYS_TEXT_BASE		0x3f008000
+//#define CONFIG_SYS_TEXT_BASE		0x3f008000 // OCRAM sys0
+#define CONFIG_SYS_TEXT_BASE		0x3f408000 // OCRAM sys1
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
@@ -176,6 +194,7 @@
 			(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_MAXARGS		16	/* max number of command args */
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
+#define CONFIG_CMDLINE_EDITING
 
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	0x80010000
