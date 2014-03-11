@@ -111,7 +111,7 @@ typedef u64 iomux_v3_cfg_t;
 #define PAD_CTL_DSE_40ohm	(6 << 3)
 #define PAD_CTL_DSE_34ohm	(7 << 3)
 
-#elif defined(CONFIG_VF610)
+#elif defined(CONFIG_VF610) || defined(CONFIG_RAYLEIGH)
 
 #define PAD_MUX_MODE_SHIFT	20
 
