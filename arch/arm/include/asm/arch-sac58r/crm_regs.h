@@ -479,7 +479,7 @@ struct scsc_reg {
 #define GPC_OFFPF_PCTL_OCOTP0_MASK	0x3 << 12
 #define GPC_OFFPF_PCTL_OCOTP1_MASK	0x3 << 13
 
-#define DFT_TEST_CLK_FREQ	0 // to defined
+#define DFT_TEST_CLK_FREQ	0 // MATT: to be defined
 #define FIRC_CLK_FREQ		125000
 #define FAST_CLK_FREQ		24000000
 #define SLOW_CLK_FREQ		32000

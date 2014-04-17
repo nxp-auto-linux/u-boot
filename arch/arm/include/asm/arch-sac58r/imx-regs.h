@@ -155,7 +155,7 @@
 #define MSCM_IRSPRC_CP0_EN				1
 #define MSCM_IRSPRC_NUM					112
 
-/* DDRMC */ /* MATT: using imx6 MMDC -> need to align */
+/* DDRMC */ /* MATT: use imx6 MMDC -> need to change the following and align with DDR memory */
 #define DDRMC_PHY_DQ_TIMING				0x00002613
 #define DDRMC_PHY_DQS_TIMING				0x00002615
 #define DDRMC_PHY_CTRL					0x01210080
