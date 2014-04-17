@@ -7,7 +7,7 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
-ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 vf610 rayleigh))
+ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 vf610 sac58r))
 obj-y	= iomux-v3.o
 endif
 ifeq ($(SOC),$(filter $(SOC),mx5 mx6))
