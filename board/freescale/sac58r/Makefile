@@ -17,5 +17,4 @@
 # MA 02111-1307 USA
 #
 
-obj-y	+= generic.o
-obj-y	+= timer.o
+obj-y	:= sac58r.o
