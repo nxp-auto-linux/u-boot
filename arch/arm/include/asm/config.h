@@ -15,4 +15,8 @@
 #define CONFIG_STATIC_RELA
 #endif
 
+#ifdef CONFIG_FSL_LSCH3
+#include <asm/arch-fsl-lsch3/config.h>
+#endif
+
 #endif
