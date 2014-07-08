@@ -29,6 +29,8 @@
 #include <netdev.h>
 #include <i2c.h>
 
+#include "sac58r_int_routing.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 void setup_iomux_ddr(void)
@@ -453,13 +455,12 @@ static void clock_init(void)
 
 static void mscm_init(void)
 {
-#if 0
 	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_IR_BASE_ADDR;
 	int i;
 
+	/* Interrupt Routing Configuration */
 	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-		writew(MSCM_IRSPRC_CP0_EN, &mscmir->irsprc[i]);
-#endif
+		writew(int_routing_conf[i], &mscmir->irsprc[i]);
 }
 
 int board_phy_config(struct phy_device *phydev)
