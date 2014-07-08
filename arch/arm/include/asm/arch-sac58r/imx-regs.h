@@ -33,6 +33,7 @@
 /* AIPS 0 */
 #define AXBS_BASE_ADDR		(AIPS0_BASE_ADDR + 0x00001000)
 #define MSCM_BASE_ADDR		(AIPS0_BASE_ADDR + 0x00002000)
+#define MSCM_IR_BASE_ADDR	(AIPS0_BASE_ADDR + 0x00002800)
 #define WDOG0_BASE_ADDR		(AIPS0_BASE_ADDR + 0x00003000)
 #define DMA0_BASE_ADDR		(AIPS0_BASE_ADDR + 0x00004000)
 #define DMA0_TCD_BASE_ADDR	(AIPS0_BASE_ADDR + 0x00005000)
@@ -151,8 +152,13 @@
 #define FEC_QUIRK_ENET_MAC
 #define I2C_QUIRK_REG
 
-/* MSCM interrupt rounter */ /* MATT: to check, still missing from the RM */
+/* MSCM interrupt router */
 #define MSCM_IRSPRC_CP0_EN				1
+#define MSCM_IRSPRC_CP1_EN				2
+#define MSCM_IRSPRC_ROUTE_TO_CM4		MSCM_IRSPRC_CP0_EN
+#define MSCM_IRSPRC_ROUTE_TO_CA7		MSCM_IRSPRC_CP1_EN
+#define MSCM_IRSPRC_ROUTE_TO_CA7_CM4	MSCM_IRSPRC_CP1_EN | MSCM_IRSPRC_CP0_EN
+
 #define MSCM_IRSPRC_NUM					112
 
 /* DDRMC */ /* MATT: use imx6 MMDC -> need to change the following and align with DDR memory */
@@ -482,7 +488,7 @@ struct lpuart_fsl {
 	u8 rsvd[28];
 };
 
-/* MSCM Interrupt Router */ /* MATT: to check, still missing from the RM */
+/* MSCM Interrupt Router */
 struct mscm_ir {
 	u32 ircp0ir;
 	u32 ircp1ir;
@@ -490,7 +496,6 @@ struct mscm_ir {
 	u32 ircpgir;
 	u32 rsvd2[23];
 	u16 irsprc[112];
-	u16 rsvd3[848];
 };
 
 #endif	/* __ASSEMBLER__*/
