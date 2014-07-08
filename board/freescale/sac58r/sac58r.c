@@ -28,6 +28,7 @@
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
+#include <asm/arch/dmachmux-sac58r.h>
 
 #include "sac58r_int_routing.h"
 
@@ -461,6 +462,18 @@ static void mscm_init(void)
 	/* Interrupt Routing Configuration */
 	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
 		writew(int_routing_conf[i], &mscmir->irsprc[i]);
+}
+
+static void dmamux_init(void)
+{
+	/*Example DMA CHANNEL MUXING FOR SAC58R. This function is not called */
+	static const dmamux_cfg_t dma_channels [] = {
+		DMAMUX_CHANNEL(DMAMUX_0, 0, SAC58R_DMAREQSRC_UART0_RX, 0, 1), /* DMAMUX 0, Channel 0 => UART0_RX, no trigger, channel enable */
+		DMAMUX_CHANNEL(DMAMUX_1, 8, SAC58R_DMAREQSRC_PORTA, 0, 1), /* DMAMUX 1, Channel 8 => PORT_A, no trigger, channel enable */
+		DMAMUX_CHANNEL(DMAMUX_2, 4, SAC58R_DMAREQSRC_SAI6_TX, 0, 1), /* DMAMUX 2, Channel 4  => SAI6_TX, no trigger, channel enable */
+		DMAMUX_CHANNEL(DMAMUX_3, 12, SAC58R_DMAREQSRC_QSPIO_RX, 0, 1), /* DMAMUX 3, Channel 12 => QSPI0_TX, no trigger, channel enable */
+	};
+	imx_dmamux_setup_multiple_channels(dma_channels, ARRAY_SIZE(dma_channels));
 }
 
 int board_phy_config(struct phy_device *phydev)
