@@ -16,6 +16,8 @@
 #include <netdev.h>
 #include <i2c.h>
 
+#include "vf610twr_int_routing.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL	(PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
@@ -400,8 +402,10 @@ static void mscm_init(void)
 	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_IR_BASE_ADDR;
 	int i;
 
+	/* Interrupt routing configuration */
 	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-		writew(MSCM_IRSPRC_CP0_EN, &mscmir->irsprc[i]);
+			writew(int_routing_conf[i], &mscmir->irsprc[i]);
+
 }
 
 int board_phy_config(struct phy_device *phydev)
