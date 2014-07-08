@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *
  * Copyright (C) 2014 Freescale Semiconductor, Inc.
@@ -14,11 +15,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
  */
 
 #ifndef __MACH_DMACHMUX_H__
@@ -39,10 +35,12 @@
  *
  * DMAMUX_SHIFT:  0..3 (4 bits) - This is the DMAMUX (0-3)
  * DMAMUX_CHAN_SHIFT:	4..7 (4 bits) - This is DMAMUX channel (0-15)
- * DMACHANNEL_SRC_SHIFT:	16..21 (6 bits) - This is DMA Request source number (0-63)
+ * DMACHANNEL_SRC_SHIFT:	16..21 (6 bits) - This is DMA Request source
+ *						  number (0-63)
  * DMACH_ENABLE_SHIFT:	   22  (1 bit) - This enables/disables DMAMUX channel
- * DMACH_TRIG_SHIFT: 23 (1 bit) - This enables/disables periodic trigger capability
-*/
+ * DMACH_TRIG_SHIFT: 23 (1 bit) - This enables/disables periodic
+ *				  trigger capability
+ */
 
 #define DMAMUX_SHIFT			0
 #define DMAMUX_MASK				(0x0f << DMAMUX_SHIFT)
@@ -63,11 +61,11 @@
 #define DMAMUX_CHANNEL_NUMBER	16
 
 #define DMAMUX_CHANNEL(dma_mux, channel, src, trigger, enable)	\
-	((dma_mux	<< DMAMUX_SHIFT)	|	\
+	((dma_mux		<< DMAMUX_SHIFT)	|	\
 	(channel		<< DMAMUX_CHAN_SHIFT)	|	\
-	(src  			<< DMACH_SRC_SHIFT)		|	\
+	(src			<< DMACH_SRC_SHIFT)		|	\
 	(trigger		<< DMACH_TRIG_SHIFT)		|	\
-	(enable 		<< DMACH_ENABLE_SHIFT))
+	(enable			<< DMACH_ENABLE_SHIFT))
 
 enum {
 	DMAMUX_0,
@@ -81,9 +79,6 @@ typedef u32 dmamux_cfg_t;
 
 int imx_dmamux_setup_channel(dmamux_cfg_t channel);
 int imx_dmamux_setup_multiple_channels(dmamux_cfg_t const *channel_list,
-				     unsigned count);
+				       unsigned int count);
 
 #endif
-
-
-

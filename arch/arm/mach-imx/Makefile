@@ -9,6 +9,10 @@ ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 mx7 mx8m vf610 sac58r))
 obj-y	= iomux-v3.o
 endif
 
+ifeq ($(SOC),$(filter $(SOC),vf610 sac58r))
+obj-y  += dmachmux.o
+endif
+
 ifeq ($(SOC),$(filter $(SOC),mx8m))
 obj-$(CONFIG_IMX_BOOTAUX) += imx_bootaux.o
 obj-$(CONFIG_ENV_IS_IN_MMC) += mmc_env.o

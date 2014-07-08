@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *
  * Copyright (C) 2014 Freescale Semiconductor, Inc.
@@ -14,24 +15,17 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
  */
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/imx-common/dmachmux.h>
 
-static void *dmamux_base [] = {
-		(void *) DMA_MUX0_BASE_ADDR,
-#if !defined(CONFIG_LAST_DMA_MUX_IS_0)
-		(void *) DMA_MUX1_BASE_ADDR,
-		(void *) DMA_MUX2_BASE_ADDR,
-		(void *) DMA_MUX3_BASE_ADDR,
-#endif
+static void *dmamux_base[] = {
+		(void *)DMA_MUX0_BASE_ADDR,
+		(void *)DMA_MUX1_BASE_ADDR,
+		(void *)DMA_MUX2_BASE_ADDR,
+		(void *)DMA_MUX3_BASE_ADDR,
 	};
 
 /*
@@ -41,17 +35,15 @@ int imx_dmamux_setup_channel(dmamux_cfg_t channel)
 {
 	void __iomem *base;
 
-	u8 dmamux = (u8) ((channel & DMAMUX_MASK) >> DMAMUX_SHIFT);
+	u8 dmamux = (u8)((channel & DMAMUX_MASK) >> DMAMUX_SHIFT);
 	u8 dmamux_ch = (u8)((channel & DMAMUX_CHAN_MASK) >> DMAMUX_CHAN_SHIFT);
 	u8 dmach_conf = (u8)(channel >> 16);
 
-	if (dmamux >= DMAMUX_MAX) {
+	if (dmamux >= DMAMUX_MAX)
 		return -1;
-	}
 
-	if (dmamux_ch > DMAMUX_CHANNEL_NUMBER) {
+	if (dmamux_ch > DMAMUX_CHANNEL_NUMBER)
 		return -1;
-	}
 
 	base = dmamux_base[dmamux];
 
@@ -60,12 +52,11 @@ int imx_dmamux_setup_channel(dmamux_cfg_t channel)
 	return 0;
 }
 
-
 /*
  * configures multiple channels in any of the DMA muxes
  */
 int imx_dmamux_setup_multiple_channels(dmamux_cfg_t const *channel_list,
-				     unsigned count)
+				       unsigned int count)
 {
 	dmamux_cfg_t const *p = channel_list;
 	int i;
