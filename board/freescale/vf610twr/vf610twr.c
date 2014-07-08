@@ -15,6 +15,7 @@
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
+#include <asm/arch/dmachmux-vf610.h>
 
 #include "vf610twr_int_routing.h"
 
@@ -407,6 +408,20 @@ static void mscm_init(void)
 			writew(int_routing_conf[i], &mscmir->irsprc[i]);
 
 }
+
+
+static void dmamux_init(void)
+{
+	/*Example DMA CHANNEL MUXING FOR VF610. This function is not called */
+	static const dmamux_cfg_t dma_channels [] = {
+		DMAMUX_CHANNEL(DMAMUX_0, 0, VF610_DMAREQSRC_UART0_RX, 0, 1), /* DMAMUX 0, Channel 0 => UART0_RX, no trigger, channel enable */
+		DMAMUX_CHANNEL(DMAMUX_1, 8, VF610_DMAREQSRC_UART4_RX, 0, 1), /* DMAMUX 1, Channel 8 => UART0_RX, no trigger, channel enable */
+		DMAMUX_CHANNEL(DMAMUX_2, 4, VF610_DMAREQSRC_SPI2_RX, 0, 1), /* DMAMUX 2, Channel 4  => SPI2_RX, no trigger, channel enable */
+		DMAMUX_CHANNEL(DMAMUX_3, 12, VF610_DMAREQSRC_I2C1_TX, 0, 1), /* DMAMUX 3, Channel 12 => I2C1_TX, no trigger, channel enable */
+	};
+	imx_dmamux_setup_multiple_channels(dma_channels, ARRAY_SIZE(dma_channels));
+}
+
 
 int board_phy_config(struct phy_device *phydev)
 {
