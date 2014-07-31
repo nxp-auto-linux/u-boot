@@ -198,12 +198,22 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-	static const iomux_v3_cfg_t uart0_pads[] = {
+	static const iomux_v3_cfg_t uart_pads[] = {
 		SAC58R_PAD_PH14__UART0_TX,
 		SAC58R_PAD_PH15__UART0_RX,
+		SAC58R_PAD_PF11__UART1_TX,
+		SAC58R_PAD_PF12__UART1_RX,
+		SAC58R_PAD_PL5__UART2_TX,
+		SAC58R_PAD_PL4__UART2_RX,
+		SAC58R_PAD_PE28__UART3_TX,
+		SAC58R_PAD_PE27__UART3_RX,
+		SAC58R_PAD_PH0__UART4_TX,
+		SAC58R_PAD_PH1__UART4_RX,
+		SAC58R_PAD_PH9__UART5_TX,
+		SAC58R_PAD_PH10__UART5_RX,
 	};
 
-	imx_iomux_v3_setup_multiple_pads(uart0_pads, ARRAY_SIZE(uart0_pads));
+	imx_iomux_v3_setup_multiple_pads(uart_pads, ARRAY_SIZE(uart_pads));
 }
 
 static void setup_iomux_enet(void)
@@ -228,14 +238,19 @@ static void setup_iomux_enet(void)
 
 static void setup_iomux_i2c(void)
 {
-#if 0
-	static const iomux_v3_cfg_t i2c0_pads[] = {
-		VF610_PAD_PTB14__I2C0_SCL,
-		VF610_PAD_PTB15__I2C0_SDA,
+
+	static const iomux_v3_cfg_t i2c_pads[] = {
+		SAC58R_PAD_PA0_I2C0_SDA,
+		SAC58R_PAD_PA1_I2C0_SCL,
+		SAC58R_PAD_PE19_I2C1_SCL,
+		SAC58R_PAD_PE10_I2C1_SDA,
+		SAC58R_PAD_PA8_I2C2_SDA,
+		SAC58R_PAD_PA9_I2C2_SCL,
+		SAC58R_PAD_PH2_I2C3_SCL,
+		SAC58R_PAD_PH4_I2C3_SDA,
 	};
 
-	imx_iomux_v3_setup_multiple_pads(i2c0_pads, ARRAY_SIZE(i2c0_pads));
-#endif
+	imx_iomux_v3_setup_multiple_pads(i2c_pads, ARRAY_SIZE(i2c_pads));
 }
 
 #ifdef CONFIG_SYS_USE_NAND
@@ -273,7 +288,7 @@ void setup_iomux_nfc(void)
 
 #ifdef CONFIG_FSL_ESDHC
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
-	{USDHC1_BASE_ADDR},
+	{USDHC0_BASE_ADDR},
 };
 
 int board_mmc_getcd(struct mmc *mmc)
@@ -284,17 +299,41 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
-	static const iomux_v3_cfg_t sdhc0_pads[] = {
+	static const iomux_v3_cfg_t sdhc_pads[] = {
 		SAC58R_PAD_PF0__SDHC0_CLK,
 		SAC58R_PAD_PF1__SDHC0_CMD,
 		SAC58R_PAD_PF2__SDHC0_DAT0,
 		SAC58R_PAD_PF3__SDHC0_DAT1,
 		SAC58R_PAD_PF4__SDHC0_DAT2,
 		SAC58R_PAD_PF5__SDHC0_DAT3,
+		SAC58R_PAD_PF0__SDHC0_CLK,
+		SAC58R_PAD_PF1__SDHC0_CMD,
+		SAC58R_PAD_PF2__SDHC0_DAT0,
+		SAC58R_PAD_PF3__SDHC0_DAT1,
+		SAC58R_PAD_PF4__SDHC0_DAT2,
+		SAC58R_PAD_PF5__SDHC0_DAT3,
+
+		SAC58R_PAD_PF26__SDHC1_CLK,
+		SAC58R_PAD_PF27__SDHC1_CMD,
+		SAC58R_PAD_PF22__SDHC1_DAT0,
+		SAC58R_PAD_PF23__SDHC1_DAT1,
+		SAC58R_PAD_PF19__SDHC1_DAT2,
+		SAC58R_PAD_PF20__SDHC1_DAT3,
+
+		SAC58R_PAD_PC12__SDHC2_CLK,
+		SAC58R_PAD_PC13__SDHC2_CMD,
+		SAC58R_PAD_PC9__SDHC2_DAT0,
+		SAC58R_PAD_PC6__SDHC2_DAT1,
+		SAC58R_PAD_PC5__SDHC2_DAT2,
+		SAC58R_PAD_PC2__SDHC2_DAT3,
+		SAC58R_PAD_PC10__SDHC2_DAT4,
+		SAC58R_PAD_PC11__SDHC2_DAT5,
+		SAC58R_PAD_PC7__SDHC2_DAT6,
+		SAC58R_PAD_PC8__SDHC2_DAT7,
 	};
 
 	imx_iomux_v3_setup_multiple_pads(
-		sdhc0_pads, ARRAY_SIZE(sdhc0_pads));
+		sdhc_pads, ARRAY_SIZE(sdhc_pads));
 
 	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_USDHC0_CLK);
 
@@ -307,8 +346,9 @@ static void clock_init(void)
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
 	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
 	struct scsc_reg *scsc = (struct scsc_reg *)SCSC_BASE_ADDR;
-	
-	enable_periph_clk(0,AIPS0_OFF_GPC);
+
+
+	enable_periph_clk(0, AIPS0_OFF_GPC);
 	enable_periph_clk(0,AIPS0_OFF_SRC);
 	enable_periph_clk(0,AIPS0_OFF_CCM);
 	enable_periph_clk(0,AIPS0_OFF_SCSC);
@@ -316,9 +356,8 @@ static void clock_init(void)
 	enable_periph_clk(0,AIPS0_OFF_IOMUXC);
 	enable_periph_clk(0,AIPS0_OFF_WKUP);
 	enable_periph_clk(0,AIPS0_OFF_PIT);
-	enable_periph_clk(0,AIPS0_OFF_OCOTP0);
-	enable_periph_clk(0,AIPS0_OFF_OCOTP1);
-	enable_periph_clk(1,AIPS1_OFF_UART0); // To refine with schematics
+	enable_periph_clk(2,AIPS2_OFF_SDHC0);
+	enable_periph_clk(1,AIPS1_OFF_UART0);
 	enable_periph_clk(0,AIPS0_OFF_PORTA);
 	enable_periph_clk(0,AIPS0_OFF_PORTB);
 	enable_periph_clk(0,AIPS0_OFF_PORTC);
