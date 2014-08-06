@@ -341,6 +341,11 @@ struct scsc_reg {
 #define SCSC_IRC_SIRC_EN	(1)
 #define SCSC_CTRL_FXOSC_RDY_MASK	(0x1 << 20)
 
+/* AIPS numbers */
+#define AIPS0		0
+#define AIPS1		1
+#define AIPS2		2
+
 /* AIPS Off platform Ids */
 #define AIPS0_OFF_GPC	32
 #define AIPS0_OFF_SRC	34
@@ -358,7 +363,6 @@ struct scsc_reg {
 #define AIPS0_OFF_PORTF	47
 #define AIPS0_OFF_PORTG	48
 #define AIPS0_OFF_PORTH	49
-#define AIPS0_OFF_PORTI	50
 #define AIPS0_OFF_PORTJ	51
 #define AIPS0_OFF_PORTK	52
 #define AIPS0_OFF_PORTL	53

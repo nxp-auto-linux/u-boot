@@ -387,7 +387,6 @@ static void clock_init(void)
 	enable_periph_clk(0,AIPS0_OFF_PORTF);
 	enable_periph_clk(0,AIPS0_OFF_PORTG);
 	enable_periph_clk(0,AIPS0_OFF_PORTH);
-	enable_periph_clk(0,AIPS0_OFF_PORTI);
 	enable_periph_clk(0,AIPS0_OFF_PORTJ);
 	enable_periph_clk(0,AIPS0_OFF_PORTK);
 	enable_periph_clk(0,AIPS0_OFF_PORTL);
