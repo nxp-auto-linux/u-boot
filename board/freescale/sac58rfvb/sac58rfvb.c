@@ -287,8 +287,10 @@ void setup_iomux_nfc(void)
 #endif
 
 #ifdef CONFIG_FSL_ESDHC
-struct fsl_esdhc_cfg esdhc_cfg[1] = {
+struct fsl_esdhc_cfg esdhc_cfg[CONFIG_SYS_FSL_ESDHC_NUM] = {
 	{USDHC0_BASE_ADDR},
+	{USDHC1_BASE_ADDR},
+	{USDHC2_BASE_ADDR},
 };
 
 int board_mmc_getcd(struct mmc *mmc)
@@ -299,6 +301,9 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
+	int i;
+	int ret;
+
 	static const iomux_v3_cfg_t sdhc_pads[] = {
 		SAC58R_PAD_PF0__SDHC0_CLK,
 		SAC58R_PAD_PF1__SDHC0_CMD,
@@ -312,14 +317,12 @@ int board_mmc_init(bd_t *bis)
 		SAC58R_PAD_PF3__SDHC0_DAT1,
 		SAC58R_PAD_PF4__SDHC0_DAT2,
 		SAC58R_PAD_PF5__SDHC0_DAT3,
-
 		SAC58R_PAD_PF26__SDHC1_CLK,
 		SAC58R_PAD_PF27__SDHC1_CMD,
 		SAC58R_PAD_PF22__SDHC1_DAT0,
 		SAC58R_PAD_PF23__SDHC1_DAT1,
 		SAC58R_PAD_PF19__SDHC1_DAT2,
 		SAC58R_PAD_PF20__SDHC1_DAT3,
-
 		SAC58R_PAD_PC12__SDHC2_CLK,
 		SAC58R_PAD_PC13__SDHC2_CMD,
 		SAC58R_PAD_PC9__SDHC2_DAT0,
@@ -335,9 +338,13 @@ int board_mmc_init(bd_t *bis)
 	imx_iomux_v3_setup_multiple_pads(
 		sdhc_pads, ARRAY_SIZE(sdhc_pads));
 
-	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_USDHC0_CLK);
-
-	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
+	for (i = 0; i < CONFIG_SYS_FSL_ESDHC_NUM; i++) {
+		esdhc_cfg[i].sdhc_clk = mxc_get_clock(MXC_USDHC0_CLK + i);
+		ret = fsl_esdhc_initialize(bis, &esdhc_cfg[i]);
+		if (ret < 0) {
+			printf("Warning: failed to initialize mmc dev %d\n", i);
+		}
+	}
 }
 #endif
 

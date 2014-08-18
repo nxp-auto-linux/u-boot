@@ -58,16 +58,16 @@
 #define CONFIG_MMC
 #define CONFIG_FSL_ESDHC
 #define CONFIG_FSL_USDHC
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
-#define CONFIG_SYS_FSL_ESDHC_NUM	1
+#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC0_BASE_ADDR
+#define CONFIG_SYS_FSL_ESDHC_NUM	3
 
 #define CONFIG_SYS_FSL_ERRATUM_ESDHC111
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-#define CONFIG_CMD_EXT2		/* EXT2 Support			*/
-#define CONFIG_CMD_FAT		/* FAT support			*/
-#define CONFIG_DOS_PARTITION
+//#define CONFIG_CMD_EXT2		/* EXT2 Support			*/
+//#define CONFIG_CMD_FAT		/* FAT support			*/
+//#define CONFIG_DOS_PARTITION
 
 #if 0
 /* Ethernet config */
@@ -114,7 +114,7 @@
 #define CONFIG_BOOTDELAY		3
 
 #define CONFIG_LOADADDR			0x82000000
-#define CONFIG_SYS_TEXT_BASE		0x3f408000 // OCRAM - need to check on final RM version
+#define CONFIG_SYS_TEXT_BASE	0x3f408000
 
 
 #if 0 /* MATT: no need to have env settings now, will enable later when booting Linux */
