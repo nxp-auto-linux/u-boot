@@ -301,9 +301,12 @@ struct scsc_reg {
 #define ANADIG_PLL_DENOM_MASK			0x3FFFFFFF
 
 
-#define SCSC_IRC_FIR_EN		(1 << 16)
-#define SCSC_IRC_SIRC_EN	(1)
+#define SCSC_IRC_FIR_EN				(1 << 16)
+#define SCSC_IRC_SIRC_EN			(1)
 #define SCSC_CTRL_FXOSC_RDY_MASK	(0x1 << 20)
+#define SCSC_OSC_FXOSC_EN			(1 << 16)
+#define SCSC_OSC_SXOSC_EN			(1)
+
 
 /* AIPS numbers */
 #define AIPS0		0

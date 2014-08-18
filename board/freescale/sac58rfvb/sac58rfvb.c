@@ -338,6 +338,11 @@ int board_mmc_init(bd_t *bis)
 	imx_iomux_v3_setup_multiple_pads(
 		sdhc_pads, ARRAY_SIZE(sdhc_pads));
 
+	/* Enable SDHCs modules in GPC */
+	enable_periph_clk(AIPS2,AIPS2_OFF_SDHC0);
+	enable_periph_clk(AIPS2,AIPS2_OFF_SDHC1);
+	enable_periph_clk(AIPS2,AIPS2_OFF_SDHC2);
+
 	for (i = 0; i < CONFIG_SYS_FSL_ESDHC_NUM; i++) {
 		esdhc_cfg[i].sdhc_clk = mxc_get_clock(MXC_USDHC0_CLK + i);
 		ret = fsl_esdhc_initialize(bis, &esdhc_cfg[i]);
@@ -345,6 +350,8 @@ int board_mmc_init(bd_t *bis)
 			printf("Warning: failed to initialize mmc dev %d\n", i);
 		}
 	}
+
+	return 0;
 }
 #endif
 
@@ -354,11 +361,12 @@ static void clock_init(void)
 	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
 	struct scsc_reg *scsc = (struct scsc_reg *)SCSC_BASE_ADDR;
 
-
+	/* Enable some modules in GPC */
 	enable_periph_clk(AIPS0, AIPS0_OFF_GPC);
 	enable_periph_clk(AIPS0, AIPS0_OFF_SRC);
 	enable_periph_clk(AIPS0, AIPS0_OFF_CCM);
 	enable_periph_clk(AIPS0, AIPS0_OFF_SCSC);
+	enable_periph_clk(AIPS0, AIPS0_OFF_CMU);
 	enable_periph_clk(AIPS0, AIPS0_OFF_ANADIG);
 	enable_periph_clk(AIPS0, AIPS0_OFF_IOMUXC);
 	enable_periph_clk(AIPS0, AIPS0_OFF_WKUP);
@@ -376,16 +384,45 @@ static void clock_init(void)
 	enable_periph_clk(AIPS0, AIPS0_OFF_PORTJ);
 	enable_periph_clk(AIPS0, AIPS0_OFF_PORTK);
 	enable_periph_clk(AIPS0, AIPS0_OFF_PORTL);
+	enable_periph_clk(AIPS0, AIPS0_OFF_GPIOC);
+	enable_periph_clk(AIPS2, AIPS2_OFF_ENET);
+	enable_periph_clk(AIPS2, AIPS2_OFF_MMDC);
+
+
 #if 0
-	enable_periph_clk(2,AIPS2_OFF_MMDC);
-	enable_periph_clk(0,AIPS0_OFF_SNVS_WDOG);
-	enable_periph_clk(0,AIPS0_OFF_GPIOC);
-	enable_periph_clk(1,AIPS1_OFF_I2C0); // To refine with schematics
-	enable_periph_clk(2,AIPS2_OFF_ENET);
-	enable_periph_clk(2,AIPS2_OFF_SDHC0);
-	enable_periph_clk(2,AIPS2_OFF_NFC0);
+        /* enable FXOSC and SXOSC clocks */
+        setbits_le32(&scsc->osc_ctrl, SCSC_OSC_FXOSC_EN | SCSC_OSC_SXOSC_EN);
+        /* wait for FXOSC to be enabled */
+        while(!(readl(&scsc->osc_ctrl) & SCSC_CTRL_FXOSC_RDY_MASK));
 #endif
-	
+
+	/* enable PLL1 = PLL_CORE/ARM */
+	clrsetbits_le32(&anadig->pll1_ctrl,
+					ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS,
+					ANADIG_PLL_CTRL_ENABLE);
+	/* wait for PLL1 to be locked */
+	while(!(readl(&anadig->pll1_ctrl) & ANADIG_PLL_CTRL_LOCK));
+
+#if 0
+        /* enable PLL2 = PLL_SYS528 */
+        clrsetbits_le32(&anadig->pll2_ctrl, ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS, ANADIG_PLL_CTRL_ENABLE | ANADIG_PLL2_CTRL_DIV_SELECT);
+        /* configure PLL2_PFD3 @ 413MHz = 528*(18/23) */
+        clrsetbits_le32(&anadig->pll2_pfd, ANADIG_PLL_PFD3_CLKGATE_MASK, (0x17 << ANADIG_PLL_PFD3_FRAC_MASK));
+        /* wait for PLL to be locked */
+        while(!(readl(&anadig->pll2_ctrl) & ANADIG_PLL_CTRL_LOCK));
+#endif
+
+	/* configure ARM A7 clock => From PLL1 (PLL_CORE) = 1200/2 = 600MHz */
+	writel( (0x1 << CCM_PREDIV_CTRL_OFFSET) | (0x3 << CCM_MUX_CTL_OFFSET), &ccm->a7_clk);
+
+	/* SDHC0,1,2 clocks => from PLL_SYS/5 = 480/5 = 96 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
+		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC0_perclk);
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
+		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC1_perclk);
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
+		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
+
 #if 0	
 	clrsetbits_le32(&ccm->ccr, CCM_CCR_OSCNT_MASK,
 		CCM_CCR_FIRC_EN | CCM_CCR_OSCNT(5));
