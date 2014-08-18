@@ -26,32 +26,32 @@
 struct ccm_reg {
 	u32 muxed_fast_osc_clk; 
 	u32 muxed_slow_osc_clk;
-	u32 sxosc_ipg_synced;
+	u32 resv1;
 	u32 a7_clk;
 	u32 QoS_DDR_root;
 	u32 QoS301_clk;
-	u32 DDR_400M_clk;
+	u32 resv2;
 	u32 BUS2x_clk;
 	u32 BUS_clk;
 	u32 PER_clk;
 	u32 dap_clk;
-	u32 snvs_clk;
+	u32 resv3;
 	u32 AUDIO0_pll_div_clk;
 	u32 AUDIO1_pll_div_clk;
 	u32 VIDEO_pll_div_clk;
-	u32 RUBY_clk;
+	u32 VSPA_clk;
  	u32 AXIQ_clk;
-	u32 GPC_clk;
+	u32 resv0;
 	u32 DCU_LDI_pix_clk_src;
 	u32 GCC_clk2x;
 	u32 anacatum_proc_clk;
-	u32 albacore_clk60;
-	u32 albacore_clk13;
-	u32 albacore_clk27;
+	u32 resv4;
+	u32 resv5;
+	u32 resv6;
 	u32 flextimer0_extclk;
 	u32 flextimer0_ff_clk;
 	u32 enet_time_clk;
-	u32 enet_rmii_clk;
+	u32 resv7;
 	u32 uSDHC0_perclk;
 	u32 uSDHC1_perclk;
 	u32 uSDHC2_perclk;
@@ -102,7 +102,7 @@ struct anadig_reg {
 	u32 resv0[4];
 	u32 pll3_ctrl;
 	u32 resv1[3];
-	u32 pll4_ctrl;
+	u32 pll7_ctrl;
 	u32 resv2[3];
 	u32 pll2_ctrl;
 	u32 resv3[3];
@@ -112,19 +112,19 @@ struct anadig_reg {
 	u32 resv5[3];
 	u32 pll2_denom;
 	u32 resv6[3];
-	u32 pll5_ctrl;
+	u32 pll4_ctrl;
 	u32 resv7[3];
-	u32 pll5_num;
+	u32 pll4_num;
 	u32 resv8[3];
-	u32 pll5_denom;
+	u32 pll4_denom;
 	u32 resv9[3];
-	u32 pll7_ctrl;
+	u32 pll6_ctrl;
 	u32 resv10[3];
-	u32 pll7_num;
+	u32 pll6_num;
 	u32 resv11[3];
-	u32 pll7_denom;
-	u32 resv12[3];
-	u32 pll8_ctrl;
+	u32 pll6_denom;
+	u32 resv12[7];
+	u32 pll5_ctrl;
 	u32 resv13[3];
 	u32 pll3_pfd;
 	u32 resv14[3];
@@ -139,55 +139,27 @@ struct anadig_reg {
 	u32 ana_misc0;
 	u32 resv19[3];
 	u32 ana_misc1;
-	u32 resv20[7];
-	u32 tempsens0;
-	u32 resv21[3];
-	u32 tempsens1;
-	u32 resv22[3];
-	u32 usb1_vbus_detect;
-	u32 resv23[3];
-	u32 usb1_chrg_detect;
-	u32 resv24[3];
-	u32 usb1_vbus_det_stat;
-	u32 resv25[3];
-	u32 usb1_chrg_det_stat;
-	u32 resv26[3];
-	u32 usb1_loopback;
-	u32 resv27[3];
-	u32 usb1_misc;
-	u32 resv28[3];
-	u32 usb2_vbus_detect;
-	u32 resv29[3];
-	u32 usb2_chrg_detect;
-	u32 resv30[3];
-	u32 usb2_vbus_det_stat;
-	u32 resv31[3];
-	u32 usb2_chrg_det_stat;
-	u32 resv32[3];
-	u32 usb2_loopback;
-	u32 resv33[3];
-	u32 usb2_misc;
-	u32 resv34[3];
+	u32 resv20[63];
 	u32 digprog;
-	u32 resv35[3];
+	u32 resv21[3];
 	u32 pll1_ctrl;
-	u32 resv36[3];
+	u32 resv22[3];
 	u32 pll1_num;
-	u32 resv37[3];
+	u32 resv23[3];
 	u32 pll1_denom;
-	u32 resv38[29];
+	u32 resv24[11];
 	u32 pll_lock;
-	u32 resv39[3];
-	u32 pll6_ctrl;
-	u32 resv40[3];
-	u32 pll6_num;
-	u32 resv41[3];
-	u32 pll6_denom;
+	u32 resv25[3];
+	u32 pll8_ctrl;
+	u32 resv26[3];
+	u32 pll8_num;
+	u32 resv27[3];
+	u32 pll8_denom;
 };
 
 /* Global Power Controller (GPC) */
 struct gpc_reg {
-	u32 resv0[16];
+	u32 reserved[16];
 	u32 lpmr;
 	u32 imr1;
 	u32 imr2;
@@ -197,18 +169,15 @@ struct gpc_reg {
 	u32 isr1;
 	u32 isr2;
 	u32 isr3;
+	u32 resv0[7];
 	u32 aips0_onpf_pctl0;
 	u32 aips0_onpf_pctl1;
-	u32 resv1[7];
 	u32 aips0_offpf_pctl0;
 	u32 aips0_offpf_pctl1;
 	u32 aips0_offpf_pctl2;
 	u32 aips0_offpf_pctl3;
 	u32 aips0_offpf_pctl4;
-	u32 aips0_offpf_pctl5;
-	u32 aips0_offpf_ovr0;
-	u32 aips0_offpf_ovr1;
-	u32 resv2[21];
+	u32 resv1[25];
 	u32 aips1_onpf_pctl0;
 	u32 aips1_onpf_pctl1;
 	u32 aips1_offpf_pctl0;
@@ -216,9 +185,7 @@ struct gpc_reg {
 	u32 aips1_offpf_pctl2;
 	u32 aips1_offpf_pctl3;
 	u32 aips1_offpf_pctl4;
-	u32 aips1_offpf_pctl5;
-	u32 aips1_offpf_ovr;
-	u32 resv3[23];
+	u32 resv2[25];
 	u32 aips2_onpf_pctl0;
 	u32 aips2_onpf_pctl1;
 	u32 aips2_offpf_pctl0;
@@ -227,10 +194,7 @@ struct gpc_reg {
 	u32 aips2_offpf_pctl3;
 	u32 aips2_offpf_pctl4;
 	u32 aips2_offpf_pctl5;
-	u32 aips2_offpf_ovr0;
-	u32 aips2_offpf_ovr1;
-	u32 aips2_offpf_ovr2;
-	u32 resv4[21];
+	u32 resv3[24];
 	u32 pgcr;
 	u32 pupscr;
 	u32 pdnscr;
@@ -239,14 +203,13 @@ struct gpc_reg {
 	u32 pmc_ctrl;
 	u32 hpreg_ctrl;
 	u32 hpvd_ctrl;
-	u32 resv5[1];
+	u32 resv4[1];
 	u32 lpvd_ctrl;
-	u32 resv6[1];
+	u32 resv5[1];
 	u32 ulpvd_ctrl;
-	u32 resv7[1];
+	u32 rstcnt_ctrl;
 	u32 lpm_ctrl;
 	u32 mem_mon_ctrl;
-	u32 test_ctrl;
 };
 
 /* Slow Clock Source Controller (SCSC) */
@@ -317,10 +280,11 @@ struct scsc_reg {
 #define ANADIG_PLL2_CTRL_DIV_SELECT		1
 #define ANADIG_PLL3_CTRL_DIV_SELECT		1
 #define ANADIG_PLL3_CTRL_DIV_SELECT_MASK	1
-#define ANADIG_PLL4_CTRL_DIV_SELECT_MASK	1
-#define ANADIG_PLL5_CTRL_DIV_SELECT_MASK	0x7F
+#define ANADIG_PLL4_CTRL_DIV_SELECT_MASK	0x7F
+#define ANADIG_PLL5_CTRL_DIV_SELECT_MASK	3
 #define ANADIG_PLL6_CTRL_DIV_SELECT_MASK	0x7F
-#define ANADIG_PLL7_CTRL_DIV_SELECT_MASK	0x7F
+#define ANADIG_PLL7_CTRL_DIV_SELECT_MASK	1
+#define ANADIG_PLL8_CTRL_DIV_SELECT_MASK	0x7F
 #define ANADIG_PLL_PFD4_CLKGATE_MASK	(0x1 << 31)
 #define ANADIG_PLL_PFD3_CLKGATE_MASK	(0x1 << 23)
 #define ANADIG_PLL_PFD2_CLKGATE_MASK	(0x1 << 15)
@@ -483,8 +447,7 @@ struct scsc_reg {
 #define GPC_OFFPF_PCTL_OCOTP0_MASK	0x3 << 12
 #define GPC_OFFPF_PCTL_OCOTP1_MASK	0x3 << 13
 
-#define DFT_TEST_CLK_FREQ	0 // MATT: to be defined
-#define FIRC_CLK_FREQ		125000
+#define FIRC_CLK_FREQ		24000000
 #define FAST_CLK_FREQ		24000000
 #define SLOW_CLK_FREQ		32000
 #define PLL8_MAIN_FREQ		500000000
