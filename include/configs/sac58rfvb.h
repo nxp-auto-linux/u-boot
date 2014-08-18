@@ -26,6 +26,7 @@
 #include <config_cmd_default.h>
 
 #define CONFIG_SAC58R
+#define CONFIG_RUN_FROM_IRAM_ONLY
 
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
@@ -41,7 +42,7 @@
 #endif
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(4 * 1024)
 
 #define CONFIG_BOARD_EARLY_INIT_F
 
@@ -114,8 +115,10 @@
 #define CONFIG_BOOTDELAY		3
 
 #define CONFIG_LOADADDR			0x82000000
-#define CONFIG_SYS_TEXT_BASE	0x3f408000
-
+#ifdef CONFIG_RUN_FROM_IRAM_ONLY
+#define CONFIG_SYS_MALLOC_BASE		0x3f004000 // HACK
+#endif
+#define CONFIG_SYS_TEXT_BASE		0x3E800000
 
 #if 0 /* MATT: no need to have env settings now, will enable later when booting Linux */
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -208,8 +211,10 @@
 #endif //#if 0
 
 /* Miscellaneous configurable options */
+#if 0 /* no need to have env settings now, will enable later when booting Linux */
 #define CONFIG_SYS_LONGHELP		/* undef to save memory */
 #define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
+#endif //#if 0
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_PROMPT		"=> "
 #undef CONFIG_AUTO_COMPLETE
@@ -231,7 +236,7 @@
  * Stack sizes
  * The stack sizes are set up in start.S using the settings below
  */
-#define CONFIG_STACKSIZE		(128 * 1024)	/* regular stack */
+#define CONFIG_STACKSIZE		(16 * 1024)	/* regular stack */
 
 /* Physical memory map */
 #define CONFIG_NR_DRAM_BANKS		1
@@ -251,7 +256,11 @@
 #define CONFIG_SYS_NO_FLASH
 
 #define CONFIG_ENV_SIZE			(8 * 1024)
-#define CONFIG_ENV_IS_IN_MMC
+//#ifdef CONFIG_GENERIC_MMC
+//#define CONFIG_ENV_IS_IN_MMC
+//#else
+#define CONFIG_ENV_IS_NOWHERE
+//#endif
 
 #define CONFIG_ENV_OFFSET		(12 * 64 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
