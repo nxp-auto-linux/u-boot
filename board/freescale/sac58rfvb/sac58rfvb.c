@@ -95,7 +95,7 @@ void setup_iomux_ddr(void)
 		SAC58R_PAD_DDR_D3__DDR_D3,		
 		SAC58R_PAD_DDR_D2__DDR_D2,		
 		SAC58R_PAD_DDR_D1__DDR_D1,		
-		SAC58R_PAD_DDR_D0__DDR_D0,		
+		SAC58R_PAD_DDR_D0__DDR_D0,
 		SAC58R_PAD_DDR_DM1__DDR_DM3,		
 		SAC58R_PAD_DDR_DM0__DDR_DM2,		
 		SAC58R_PAD_DDR_DM1__DDR_DM1,		
@@ -190,8 +190,11 @@ int dram_init(void)
 #if 0
 	setup_iomux_ddr();
 	ddr_ctrl_init();
-#endif
+
 	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
+#else
+	gd->ram_size = ((ulong)CONFIG_DDR_MB * 1024 * 256);
+#endif
 
 	return 0;
 }
@@ -236,22 +239,23 @@ static void setup_iomux_enet(void)
 #endif
 }
 
+#ifdef CONFIG_HARD_I2C
 static void setup_iomux_i2c(void)
 {
-
 	static const iomux_v3_cfg_t i2c_pads[] = {
 		SAC58R_PAD_PA0_I2C0_SDA,
 		SAC58R_PAD_PA1_I2C0_SCL,
 		SAC58R_PAD_PE19_I2C1_SCL,
 		SAC58R_PAD_PE10_I2C1_SDA,
 		SAC58R_PAD_PA8_I2C2_SDA,
-		SAC58R_PAD_PA9_I2C2_SCL,
+		//SAC58R_PAD_PA9_I2C2_SCL,
 		SAC58R_PAD_PH2_I2C3_SCL,
 		SAC58R_PAD_PH4_I2C3_SDA,
 	};
 
 	imx_iomux_v3_setup_multiple_pads(i2c_pads, ARRAY_SIZE(i2c_pads));
 }
+#endif
 
 #ifdef CONFIG_SYS_USE_NAND
 void setup_iomux_nfc(void)
@@ -403,15 +407,6 @@ static void clock_init(void)
 	/* wait for PLL1 to be locked */
 	while(!(readl(&anadig->pll1_ctrl) & ANADIG_PLL_CTRL_LOCK));
 
-#if 0
-        /* enable PLL2 = PLL_SYS528 */
-        clrsetbits_le32(&anadig->pll2_ctrl, ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS, ANADIG_PLL_CTRL_ENABLE | ANADIG_PLL2_CTRL_DIV_SELECT);
-        /* configure PLL2_PFD3 @ 413MHz = 528*(18/23) */
-        clrsetbits_le32(&anadig->pll2_pfd, ANADIG_PLL_PFD3_CLKGATE_MASK, (0x17 << ANADIG_PLL_PFD3_FRAC_MASK));
-        /* wait for PLL to be locked */
-        while(!(readl(&anadig->pll2_ctrl) & ANADIG_PLL_CTRL_LOCK));
-#endif
-
 	/* configure ARM A7 clock => From PLL1 (PLL_CORE) = 1200/2 = 600MHz */
 	writel( (0x1 << CCM_PREDIV_CTRL_OFFSET) | (0x3 << CCM_MUX_CTL_OFFSET), &ccm->a7_clk);
 
@@ -422,32 +417,6 @@ static void clock_init(void)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC1_perclk);
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
-
-#if 0	
-	clrsetbits_le32(&ccm->ccr, CCM_CCR_OSCNT_MASK,
-		CCM_CCR_FIRC_EN | CCM_CCR_OSCNT(5));
-	clrsetbits_le32(&ccm->ccsr, CCM_REG_CTRL_MASK,
-		CCM_CCSR_PLL1_PFD_CLK_SEL(3) | CCM_CCSR_PLL2_PFD4_EN |
-		CCM_CCSR_PLL2_PFD3_EN | CCM_CCSR_PLL2_PFD2_EN |
-		CCM_CCSR_PLL2_PFD1_EN | CCM_CCSR_PLL1_PFD4_EN |
-		CCM_CCSR_PLL1_PFD3_EN | CCM_CCSR_PLL1_PFD2_EN |
-		CCM_CCSR_PLL1_PFD1_EN | CCM_CCSR_DDRC_CLK_SEL(1) |
-		CCM_CCSR_FAST_CLK_SEL(1) | CCM_CCSR_SYS_CLK_SEL(4));
-	clrsetbits_le32(&ccm->cacrr, CCM_REG_CTRL_MASK,
-		CCM_CACRR_IPG_CLK_DIV(1) | CCM_CACRR_BUS_CLK_DIV(2) |
-		CCM_CACRR_ARM_CLK_DIV(0));
-	clrsetbits_le32(&ccm->cscmr1, CCM_REG_CTRL_MASK,
-		CCM_CSCMR1_ESDHC1_CLK_SEL(3));
-	clrsetbits_le32(&ccm->cscdr1, CCM_REG_CTRL_MASK,
-		CCM_CSCDR1_RMII_CLK_EN);
-	clrsetbits_le32(&ccm->cscdr2, CCM_REG_CTRL_MASK,
-		CCM_CSCDR2_ESDHC1_EN | CCM_CSCDR2_ESDHC1_CLK_DIV(0) |
-		CCM_CSCDR2_NFC_CLK_INV | CCM_CSCDR2_NFC_EN | CCM_CSCDR2_NFC_CLK_FRAC_DIV(4));
-	clrsetbits_le32(&ccm->cscdr3,CCM_CSCDR3_NFC_PRE_DIV_MASK,
-		CCM_CSCDR3_NFC_PRE_DIV(1));
-	clrsetbits_le32(&ccm->cscmr2, CCM_REG_CTRL_MASK,
-		CCM_CSCMR2_RMII_CLK_SEL(0));
-#endif
 }
 
 static void mscm_init(void)
@@ -472,6 +441,21 @@ static void dmamux_init(void)
 	imx_dmamux_setup_multiple_channels(dma_channels, ARRAY_SIZE(dma_channels));
 }
 
+int board_eth_init(bd_t *bis)
+{
+	int ret;
+
+	setup_iomux_enet();
+
+#if 0
+	ret = cpu_eth_init(bis);
+	if (ret)
+		printf("FEC MXC: %s:failed\n", __func__);
+#endif
+
+	return 0;
+}
+
 int board_phy_config(struct phy_device *phydev)
 {
 	if (phydev->drv->config)
@@ -486,8 +470,11 @@ int board_early_init_f(void)
 	mscm_init();
 
 	setup_iomux_uart();
-	setup_iomux_enet();
+
+#ifdef CONFIG_HARD_I2C
 	setup_iomux_i2c();
+#endif
+
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
