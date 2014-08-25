@@ -118,7 +118,7 @@
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		0x3f004000 // HACK
 #endif
-#define CONFIG_SYS_TEXT_BASE		0x3E800000
+#define CONFIG_SYS_TEXT_BASE		0x3E808000
 
 #if 0 /* MATT: no need to have env settings now, will enable later when booting Linux */
 #define CONFIG_EXTRA_ENV_SETTINGS \
