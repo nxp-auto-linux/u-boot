@@ -706,7 +706,7 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-	printf("CPU:   Freescale Rayleigh SAC58R at %d MHz\n",
+	printf("CPU:   Freescale SAC58R at %d MHz\n",
 		mxc_get_clock(MXC_ARM_CLK) / 1000000);
 	print_reset_cause();
 
