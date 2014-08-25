@@ -114,87 +114,55 @@ void setup_iomux_ddr(void)
 	imx_iomux_v3_setup_multiple_pads(ddr_pads, ARRAY_SIZE(ddr_pads));
 }
 
-void ddr_phy_init(void)
-{
-#if 0
-	struct ddrmr_regs *ddrmr = (struct ddrmr_regs *)DDR_BASE_ADDR;
-
-	writel(DDRMC_PHY_DQ_TIMING, &ddrmr->phy[0]);
-	writel(DDRMC_PHY_DQ_TIMING, &ddrmr->phy[16]);
-	writel(DDRMC_PHY_DQ_TIMING, &ddrmr->phy[32]);
-	writel(DDRMC_PHY_DQ_TIMING, &ddrmr->phy[48]);
-
-	writel(DDRMC_PHY_DQS_TIMING, &ddrmr->phy[1]);
-	writel(DDRMC_PHY_DQS_TIMING, &ddrmr->phy[17]);
-	writel(DDRMC_PHY_DQS_TIMING, &ddrmr->phy[33]);
-	writel(DDRMC_PHY_DQS_TIMING, &ddrmr->phy[49]);
-
-	writel(DDRMC_PHY_CTRL, &ddrmr->phy[2]);
-	writel(DDRMC_PHY_CTRL, &ddrmr->phy[18]);
-	writel(DDRMC_PHY_CTRL, &ddrmr->phy[34]);
-	writel(DDRMC_PHY_CTRL, &ddrmr->phy[50]);
-
-	writel(DDRMC_PHY_MASTER_CTRL, &ddrmr->phy[3]);
-	writel(DDRMC_PHY_MASTER_CTRL, &ddrmr->phy[19]);
-	writel(DDRMC_PHY_MASTER_CTRL, &ddrmr->phy[35]);
-	writel(DDRMC_PHY_MASTER_CTRL, &ddrmr->phy[51]);
-
-	writel(DDRMC_PHY_SLAVE_CTRL, &ddrmr->phy[4]);
-	writel(DDRMC_PHY_SLAVE_CTRL, &ddrmr->phy[20]);
-	writel(DDRMC_PHY_SLAVE_CTRL, &ddrmr->phy[36]);
-	writel(DDRMC_PHY_SLAVE_CTRL, &ddrmr->phy[52]);
-
-	writel(DDRMC_PHY50_DDR3_MODE | DDRMC_PHY50_EN_SW_HALF_CYCLE,
-		&ddrmr->phy[50]);
-#endif
-}
-
 void ddr_ctrl_init(void)
 {
 	writel(0x00008000, 0x4016901C); //MDSCR
-	writel(0x0000005F, 0x40169040); //MDASP (CS0_END=5F->  
-	writel(0x00010600, 0x40169018); //MDMISC (DDR_TYPE=0->DDR3, DDR_4_BANK=0->8 banks, RALAT=0-> 0 read latency, MIF3_MODE=3-> prediction enable, WALAT=0-> 0 write lantency) 
-	writel(0x03180000, 0x40169000); //MDCTL (DSIZ=16 bit data bus, BL=1->burst lenght 8, COL=3-> column add 8, ROW=3-> row add 14, SDE_0 and SDE_1= 0 CS enable)
+	writel(0x303475D3, 0x4016900C); //MDCFG0
+	writel(0xB66E8A83, 0x40169010); //MDCFG1
+	writel(0x01FF00DB, 0x40169014); //MDCFG2
+	writel(0x11335030, 0x40169008); //MDOTC (timing param)
+	writel(0x00011640, 0x40169018); //MDMISC (DDR_TYPE=0->DDR3, DDR_4_BANK=0->8 banks, RALAT=0-> 0 read latency, MIF3_MODE=3-> prediction enable, WALAT=0-> 0 write lantency) 
+	writel(0x00341023, 0x40169030); //MDOR
+	writel(0x02190000, 0x40169000); //MDCTL (DSIZ=16 bit data bus, BL=1->burst lenght 8, COL=3-> column add 8, ROW=3-> row add 14, SDE_0 and SDE_1= 0 CS enable)
+
+	/* Perform ZQ calibration */
+	writel(0xA1390003, 0x40169800); //MPZQHWCTRL
+
+	/* Enable MMDC with CS0 */
+	writel(0x02190000 + 0x80000000, 0x40169000); //MDCTL (DSIZ=16 bit data bus, BL=1->burst lenght 8, COL=3-> column add 8, ROW=3-> row add 14, SDE_0 and SDE_1= 0 CS enable)
+
+	/* Complete the initialization sequence as defined by JEDEC */
+	writel(0x00008032, 0x4016901C); //MDSCR 1
+	writel(0x00008033, 0x4016901C); //MDSCR 2
+	writel(0x00448031, 0x4016901C); //MDSCR 3
+	writel(0x05208030, 0x4016901C); //MDSCR 4
+	writel(0x04008040, 0x4016901C); //MDSCR 5
+
+	writel(0x0000004F, 0x40169040); //MDASP (CS0_END=5F->
+
+	/* Configure the power down and self-refresh entry and exit parameters */
 	writel(0x40404040, 0x40169848); //MPRDDLCTL, 
 	writel(0x40404040, 0x40169850); //MPWRDLCTL0
-	writel(0x02000200, 0x4016980C); //MPWLDECTRL0
-	writel(0x00000000, 0x4016983C); //MPDGCTRL0
-	writel(0x00000000, 0x40169840); //MPDGCTRL1
-	writel(0x40447544, 0x4016900C); //MDCFG0
-	writel(0xB6948662, 0x40169010); //MDCFG1
-	writel(0x01FF00DC, 0x40169014); //MDCFG2
+	writel(0x22334010, 0x40169008); //MDOTC (timing param)
+
+	writel(0x02000200, 0x4016983C); //MPDGCTRL0
+	writel(0x02000200, 0x40169840); //MPDGCTRL1
 	writel(0x000026D2, 0x4016902C); //MDRWD
-	writel(0x00440101, 0x40169030); //MDOR
-	writel(0x22335030, 0x40169008); //MDOTC (timing param)
+
+
 	writel(0x00020024, 0x40169004); //MDPDC
-	writel(0xC3180000, 0x40169000); //MDCTL (DSIZ=16 bit data bus, BL=1 burst lenght 8, COL=3 column add 8, ROW=3 row add 14, SDE_0 and SDE_1= 1 CS enable) 
-	writel(0x00000800, 0x401698B8); //MPMUR
-	writel(0x00008032, 0x4016901C); //MDSCR 1
-	writel(0x0000803A, 0x4016901C); //MDSCR 2
-	writel(0x00008033, 0x4016901C); //MDSCR 3
-	writel(0x0000803B, 0x4016901C); //MDSCR 4
-	writel(0x00468031, 0x4016901C); //MDSCR 5
-	writel(0x00468039, 0x4016901C); //MDSCR 6
-	writel(0x051080B0, 0x4016901C); //MDSCR 7
-	writel(0x051080B8, 0x4016901C); //MDSCR 8
-	writel(0x04008040, 0x4016901C); //MDSCR 9
-	writel(0x04008048, 0x4016901C); //MDSCR 10
-	writel(0xA5380003, 0x40169800); //MPZQHWCTRL
-	writel(0x30B09800, 0x40169020); //MDREF
-	writel(0x00033332, 0x40169818); //MPODTCTRL
-	writel(0x00000000, 0x4016901C); //MDSCR
+	writel(0x30B01800, 0x40169020); //MDREF
+	writel(0x0003333F, 0x40169818); //MPODTCTRL
+
+	writel(0x00000000, 0x4016901C); //MDSCR 1
 }
 
 int dram_init(void)
 {
-#if 0
-	setup_iomux_ddr();
+#ifdef CONFIG_RUN_FROM_IRAM_ONLY
 	ddr_ctrl_init();
-
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
-#else
-	gd->ram_size = ((ulong)CONFIG_DDR_MB * 1024 * 256);
 #endif
+	gd->ram_size = ((ulong)CONFIG_DDR_MB * 1024 * 256);
 
 	return 0;
 }
