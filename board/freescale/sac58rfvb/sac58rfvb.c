@@ -85,7 +85,7 @@ int dram_init(void)
 	/* When booting from IRAM, we need to enable the MMDC controller */
 	ddr_ctrl_init();
 #endif
-	gd->ram_size = ((ulong)CONFIG_DDR_MB * 1024 * 256);
+	gd->ram_size = ((ulong)CONFIG_DDR_MB * SZ_1M);
 
 	return 0;
 }
