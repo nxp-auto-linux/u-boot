@@ -86,10 +86,8 @@ int dram_init(void)
 	ddr_ctrl_init();
 #endif
 
-	gd->ram_size = PHYS_SDRAM_SIZE;
+	gd->ram_size = ((ulong)CONFIG_DDR_MB * SZ_1M);
 	
-	printf("dram_init %d\n", gd->ram_size);
-
 	return 0;
 }
 
