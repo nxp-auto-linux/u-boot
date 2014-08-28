@@ -500,6 +500,9 @@ static int esdhc_init(struct mmc *mmc)
 	/* Set the initial clock speed */
 	mmc_set_clock(mmc, 400000);
 
+	/* Enable all events to be notified */
+	esdhc_write32(&regs->irqstaten, 0xFFFFFFFF);
+
 	/* Disable the BRR and BWR bits in IRQSTAT */
 	esdhc_clrbits32(&regs->irqstaten, IRQSTATEN_BRR | IRQSTATEN_BWR);
 
