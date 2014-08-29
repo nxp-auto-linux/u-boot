@@ -36,41 +36,66 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+
+#ifdef CONFIG_RUN_FROM_IRAM_ONLY
+/* Run DDR configuration if we run from IRAM only */
+
+/* Micron MT41J64M16 @ 416 MHz*/
+/* 13 row addr, 10 col addr, burst length 8, data size 32 */
+#define MDCTL_CONFIG 	0x02190000
+
 void ddr_ctrl_init(void)
 {
 	writel(0x00008000, 0x4016901C); //MDSCR
+
+	/* MDCFG0: tRFC=48,tXS=52,tXP=3,tXPDLL=10,tFAW=30,tCL=6 */
 	writel(0x303475D3, 0x4016900C); //MDCFG0
+
+	/* MDCFG1:  tRCD=6,tRP=6,tRC=20,tRAS=15,tRPA=1,tWR=6,tMRD=4,tCWL=5 */
 	writel(0xB66E8A83, 0x40169010); //MDCFG1
+
+	/* MDCFG2: tDLLK=512,tRTP=4,tWTR=4,tRRD=4 */
 	writel(0x01FF00DB, 0x40169014); //MDCFG2
+
+	/*MDOTC:  tAOFPD=1,tAONPD=1,tANPD=4,tAXPD=4,tODTLon=5,tODT_idle_off=0 */
 	writel(0x11335030, 0x40169008); //MDOTC (timing param)
-	writel(0x00010640, 0x40169018); //MDMISC (DDR_TYPE=0->DDR3, DDR_4_BANK=0->8 banks, RALAT=0-> 0 read latency, MIF3_MODE=3-> prediction enable, WALAT=0-> 0 write lantency) 
+
+	/* MDMISC: WALAT=1, BI bank interleave off, MIF3=3, RALAT=1, 8 banks, DDR3 */
+	writel(0x00010640, 0x40169018); //MDMISC 
+
+	/* MDOR: WALAT=1, BI bank interleave on, MIF3=3, RALAT=1, 8 banks, DDR3 */
 	writel(0x00341023, 0x40169030); //MDOR
-	writel(0x02190000, 0x40169000); //MDCTL (DSIZ=16 bit data bus, BL=1->burst lenght 8, COL=3-> column add 8, ROW=3-> row add 14, SDE_0 and SDE_1= 0 CS enable)
+	writel(MDCTL_CONFIG, 0x40169000); //MDCTL
 
 	/* Perform ZQ calibration */
 	writel(0xA1390003, 0x40169800); //MPZQHWCTRL
 
 	/* Enable MMDC with CS0 */
-	writel(0x02190000 + 0x80000000, 0x40169000); //MDCTL (DSIZ=16 bit data bus, BL=1->burst lenght 8, COL=3-> column add 8, ROW=3-> row add 14, SDE_0 and SDE_1= 0 CS enable)
+	writel(MDCTL_CONFIG + 0x80000000, 0x40169000); //MDCTL
 
-	/* Complete the initialization sequence as defined by JEDEC */
-	writel(0x00008032, 0x4016901C); //MDSCR 1
-	writel(0x00008033, 0x4016901C); //MDSCR 2
-	writel(0x00448031, 0x4016901C); //MDSCR 3
-	writel(0x05208030, 0x4016901C); //MDSCR 4
-	writel(0x04008040, 0x4016901C); //MDSCR 5
+	/*** Complete the initialization sequence as defined by JEDEC */
+	/* Configure MR2: CWL=5, self-refresh=off, self-refresh temp=normal */
+	writel(0x00008032, 0x4016901C);
+	/* Configure MR3: normal operation */
+	writel(0x00008033, 0x4016901C);
+	/* Configure MR1: enable DLL, drive strength=40R, AL off, ODT=40R, write levelling off, TDQS=0, Qoff=on */
+	writel(0x00448031, 0x4016901C);
+	/* Configure MR0: BL=8, CL=6, DLL reset, write recovery=6, precharge PD off */
+	writel(0x05208030, 0x4016901C);
+	/* DDR ZQ calibration */
+	writel(0x04008040, 0x4016901C);
 
-	writel(0x0000004F, 0x40169040); //MDASP (CS0_END=5F->
+	writel(0x0000004F, 0x40169040); //MDASP: 256 MB memory
 
 	/* Configure the power down and self-refresh entry and exit parameters */
-	writel(0x40404040, 0x40169848); //MPRDDLCTL, 
-	writel(0x40404040, 0x40169850); //MPWRDLCTL0
-	writel(0x22334010, 0x40169008); //MDOTC (timing param)
-
-	writel(0x02000200, 0x4016983C); //MPDGCTRL0
-	writel(0x02000200, 0x40169840); //MPDGCTRL1
+	writel(0x453E4942, 0x40169848); //MPRDDLCTL, 
+	writel(0x30353033, 0x40169850); //MPWRDLCTL0
+	
+	writel(0x41720154, 0x4016983C); //MPDGCTRL0
+	writel(0x016A014F, 0x40169840); //MPDGCTRL1
 	writel(0x000026D2, 0x4016902C); //MDRWD
 
+	writel(0x22334010, 0x40169008); //MDOTC (timing param)
 
 	writel(0x00020024, 0x40169004); //MDPDC
 	writel(0x30B01800, 0x40169020); //MDREF
@@ -78,6 +103,8 @@ void ddr_ctrl_init(void)
 
 	writel(0x00000000, 0x4016901C); //MDSCR 1
 }
+#endif
+
 
 int dram_init(void)
 {
@@ -87,7 +114,7 @@ int dram_init(void)
 #endif
 
 	gd->ram_size = ((ulong)CONFIG_DDR_MB * SZ_1M);
-	
+
 	return 0;
 }
 
@@ -113,22 +140,6 @@ static void setup_iomux_uart(void)
 
 static void setup_iomux_enet(void)
 {
-#if 0
-	static const iomux_v3_cfg_t enet0_pads[] = {
-		VF610_PAD_PTA6__RMII0_CLKIN,
-		VF610_PAD_PTC1__RMII0_MDIO,
-		VF610_PAD_PTC0__RMII0_MDC,
-		VF610_PAD_PTC2__RMII0_CRS_DV,
-		VF610_PAD_PTC3__RMII0_RD1,
-		VF610_PAD_PTC4__RMII0_RD0,
-		VF610_PAD_PTC5__RMII0_RXER,
-		VF610_PAD_PTC6__RMII0_TD1,
-		VF610_PAD_PTC7__RMII0_TD0,
-		VF610_PAD_PTC8__RMII0_TXEN,
-	};
-
-	imx_iomux_v3_setup_multiple_pads(enet0_pads, ARRAY_SIZE(enet0_pads));
-#endif
 }
 
 #ifdef CONFIG_HARD_I2C
@@ -152,33 +163,6 @@ static void setup_iomux_i2c(void)
 #ifdef CONFIG_SYS_USE_NAND
 void setup_iomux_nfc(void)
 {
-#if 0
-	static const iomux_v3_cfg_t nfc_pads[] = {
-		VF610_PAD_PTD31__NFC_IO15,
-		VF610_PAD_PTD30__NFC_IO14,
-		VF610_PAD_PTD29__NFC_IO13,
-		VF610_PAD_PTD28__NFC_IO12,
-		VF610_PAD_PTD27__NFC_IO11,
-		VF610_PAD_PTD26__NFC_IO10,
-		VF610_PAD_PTD25__NFC_IO9,
-		VF610_PAD_PTD24__NFC_IO8,
-		VF610_PAD_PTD23__NFC_IO7,
-		VF610_PAD_PTD22__NFC_IO6,
-		VF610_PAD_PTD21__NFC_IO5,
-		VF610_PAD_PTD20__NFC_IO4,
-		VF610_PAD_PTD19__NFC_IO3,
-		VF610_PAD_PTD18__NFC_IO2,
-		VF610_PAD_PTD17__NFC_IO1,
-		VF610_PAD_PTD16__NFC_IO0,
-		VF610_PAD_PTB24__NFC_WEB,
-		VF610_PAD_PTB25__NFC_CE0B,
-		VF610_PAD_PTB27__NFC_REB,
-		VF610_PAD_PTC26__NFC_RBB,
-		VF610_PAD_PTC27__NFC_ALE,
-		VF610_PAD_PTC28__NFC_CLE,
-	};
-	imx_iomux_v3_setup_multiple_pads(nfc_pads, ARRAY_SIZE(nfc_pads));
-#endif
 }
 #endif
 
@@ -255,7 +239,6 @@ static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
 	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
-	struct scsc_reg *scsc = (struct scsc_reg *)SCSC_BASE_ADDR;
 
 	/* Enable some modules in GPC */
 	enable_periph_clk(AIPS0, AIPS0_OFF_GPC);
@@ -284,14 +267,6 @@ static void clock_init(void)
 	enable_periph_clk(AIPS0, AIPS0_OFF_GPIOC);
 	enable_periph_clk(AIPS2, AIPS2_OFF_ENET);
 	enable_periph_clk(AIPS2, AIPS2_OFF_MMDC);
-
-
-#if 0
-        /* enable FXOSC and SXOSC clocks */
-        setbits_le32(&scsc->osc_ctrl, SCSC_OSC_FXOSC_EN | SCSC_OSC_SXOSC_EN);
-        /* wait for FXOSC to be enabled */
-        while(!(readl(&scsc->osc_ctrl) & SCSC_CTRL_FXOSC_RDY_MASK));
-#endif
 
 	/* enable PLL1 = PLL_CORE/ARM */
 	clrsetbits_le32(&anadig->pll1_ctrl,
@@ -336,15 +311,7 @@ static void dmamux_init(void)
 
 int board_eth_init(bd_t *bis)
 {
-	int ret;
-
 	setup_iomux_enet();
-
-#if 0
-	ret = cpu_eth_init(bis);
-	if (ret)
-		printf("FEC MXC: %s:failed\n", __func__);
-#endif
 
 	return 0;
 }
