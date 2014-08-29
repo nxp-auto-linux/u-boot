@@ -532,7 +532,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 }	
 
 /* Dump some core clocks */
-int do_vf610_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
+int do_sac58r_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
 {
 	printf("\n");
@@ -564,7 +564,7 @@ int do_vf610_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 }
 
 U_BOOT_CMD(
-	clocks, CONFIG_SYS_MAXARGS, 1, do_vf610_showclocks,
+	clocks, CONFIG_SYS_MAXARGS, 1, do_sac58r_showclocks,
 	"display clocks",
 	""
 );
@@ -747,3 +747,11 @@ int get_clocks(void)
 #endif /* #ifdef CONFIG_FSL_ESDHC */
 	return 0;
 }
+
+#ifndef CONFIG_SYS_DCACHE_OFF
+void enable_caches(void)
+{
+	/* Enable D-cache. I-cache is already enabled in start.S */
+	dcache_enable();
+}
+#endif
