@@ -75,7 +75,6 @@
 #define CONFIG_CMD_FAT		/* FAT support			*/
 #define CONFIG_DOS_PARTITION
 
-#if 0
 /* Ethernet config */
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
@@ -83,12 +82,17 @@
 #define CONFIG_CMD_NET
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
-#define IMX_FEC_BASE			ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE		RMII
+#define IMX_FEC_BASE					ENET_BASE_ADDR
+#define CONFIG_FEC_XCV_TYPE             RMII
 #define CONFIG_FEC_MXC_PHYADDR          0
+#define CONFIG_ETHADDR			00:e0:0c:bc:e5:60
+#define CONFIG_ETH1ADDR			00:e0:0c:bc:e5:61
+
+
 #define CONFIG_PHYLIB
-#define CONFIG_PHY_MICREL
-#endif
+#define CONFIG_PHY_SMSC
+#define PHY_RESET_GPIO			365
+
 
 /* I2C configs */
 #define CONFIG_CMD_I2C

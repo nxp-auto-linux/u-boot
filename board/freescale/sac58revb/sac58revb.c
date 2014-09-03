@@ -264,9 +264,31 @@ static void setup_iomux_dspi(void)
 	imx_iomux_v3_setup_multiple_pads(dspi0_pads, ARRAY_SIZE(dspi0_pads));
 }
 
+#ifdef	CONFIG_FEC_MXC
 static void setup_iomux_enet(void)
 {
+	static const iomux_v3_cfg_t enet_pads[] = {
+		SAC58R_PAD_PA10_ENET_RMII_CLKOUT,
+		SAC58R_PAD_PB0_ENET_RMII_RXD1,
+		SAC58R_PAD_PB2_ENET_RMII_CRS_DV,
+		SAC58R_PAD_PB3_ENET_RMII_TXDEN,
+		SAC58R_PAD_PB4_ENET_RMII_RXD0,
+		SAC58R_PAD_PB7_ENET_RMII_MDIO,
+		SAC58R_PAD_PB8_ENET_RMII_TXD0,
+		SAC58R_PAD_PB9_ENET_RMII_TXD1,
+		SAC58R_PAD_PB10_ENET_RMII_MDC,
+		SAC58R_PAD_PB12_ENET_REF_MII_CLK,
+		SAC58R_PAD_PL13_GPIO365, /* PHY_RESET */
+	};
+
+	imx_iomux_v3_setup_multiple_pads(enet_pads, ARRAY_SIZE(enet_pads));
+
+	/* Reset LAN8720 PHY */
+	gpio_direction_output(PHY_RESET_GPIO , 0);
+	udelay(1000);
+	gpio_set_value(PHY_RESET_GPIO, 1);
 }
+#endif
 
 #ifdef CONFIG_SYS_I2C_MXC
 static void setup_board_i2c(void)
@@ -452,20 +474,30 @@ static void dmamux_init(void)
 	imx_dmamux_setup_multiple_channels(dma_channels, ARRAY_SIZE(dma_channels));
 }
 
-int board_eth_init(bd_t *bis)
-{
-	setup_iomux_enet();
-
-	return 0;
-}
-
+#ifdef	CONFIG_FEC_MXC
 int board_phy_config(struct phy_device *phydev)
 {
-	if (phydev->drv->config)
+	if (phydev->drv->config) {
 		phydev->drv->config(phydev);
+	}
 
 	return 0;
 }
+
+
+int board_eth_init(bd_t *bis)
+{
+	int ret;
+
+	setup_iomux_enet();
+
+	ret = cpu_eth_init(bis);
+	if (ret)
+		printf("FEC MXC: %s:failed\n", __func__);
+
+	return 0;
+}
+#endif
 
 int board_early_init_f(void)
 {
@@ -496,6 +528,10 @@ int board_init(void)
 
 #ifdef CONFIG_SYS_I2C_MXC
 	setup_board_i2c();
+#endif
+
+#ifdef	CONFIG_FEC_MXC
+	enable_fec_clock();
 #endif
 
 	return 0;
