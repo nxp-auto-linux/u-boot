@@ -103,6 +103,35 @@ void enable_ocotp_clk(unsigned char enable)
 }
 #endif
 
+int enable_fec_clock(void)
+{
+	u32 reg = 0;
+	s32 timeout = 100000;
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+
+	reg = readl(&anadig->pll5_ctrl);
+	if ((reg & ANADIG_PLL_CTRL_POWERDOWN) ||
+		(!(reg & ANADIG_PLL_CTRL_LOCK))) {
+		reg &= ~ANADIG_PLL_CTRL_POWERDOWN;
+		writel(reg, &anadig->pll5_ctrl);
+		while (timeout--) {
+			if (readl(&anadig->pll5_ctrl) &
+					ANADIG_PLL_CTRL_LOCK)
+				break;
+		}
+		if (timeout <= 0)
+			return -1;
+	}
+
+	/* Enable FEC clock */
+	reg |= ANADIG_PLL_CTRL_ENABLE;
+	reg &= ~ANADIG_PLL_CTRL_BYPASS;
+	writel(reg, &anadig->pll5_ctrl);
+
+	return 0;
+}
+
+
 
 /* PLL frequency decoding for pll_pfd in KHz                                                  */
 /* Only works for PLL_ARM, PLL_SYS, PLL_USB0, PLL_USB1, PLL_AUDIO0, PLL_AUDIO1, PLL_VIDEO     */
@@ -424,33 +453,7 @@ static u32 get_sdhc_clk(u8 id)
 /* return ENET_clk in Hz                         */
 u32 get_fec_clk(void)
 {
-#if 0
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_enet_rmii_clk, rmii_clk_sel, enetrmii_div;
-	u32 freq = 0;
-
-	ccm_enet_rmii_clk = readl(&ccm->enet_rmii_clk);
-	rmii_clk_sel = ccm_enet_rmii_clk & CCM_MUX2_CTL_MASK;
-
-	enetrmii_div = ((ccm_enet_rmii_clk & CCM_PREDIV2_CTRL_MASK) >> CCM_PREDIV_CTRL_OFFSET)+1;
-
-	switch (rmii_clk_sel) {
-	case 0:
-		freq = DFT_TEST_CLK_FREQ;
-		break;
-	case 1:
-		freq = PLL8_MAIN_FREQ;
-		break;
-	case 2:
-		freq = ENET_EXTERNAL_CLK;
-		break;
-	default:
-		printf("unsupported enet clock select\n");
-	}
-
-	return (freq / enetrmii_div);
-#endif
-	return 0;
+	return 50000000;
 }
 
 /* return I2C_clk frequency in Hz                         */

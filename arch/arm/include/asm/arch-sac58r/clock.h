@@ -51,6 +51,8 @@ int enable_i2c_clk(unsigned char enable, unsigned i2c_num);
 void enable_periph_clk(u32 aips_num, u32 periph_number);
 void disable_periph_clk(u32 aips_num, u32 periph_number);
 void enable_ocotp_clk(unsigned char enable);
+int enable_fec_clock(void);
+
 unsigned int mxc_get_clock(enum mxc_clock clk);
 
 #define imx_get_fecclk() mxc_get_clock(MXC_FEC_CLK)
