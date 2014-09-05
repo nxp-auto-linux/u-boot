@@ -31,6 +31,7 @@
 #include <netdev.h>
 #include <i2c.h>
 #include <asm/arch/dmachmux-sac58r.h>
+#include <asm/gpio.h>
 
 #include "sac58revb_int_routing.h"
 
@@ -235,6 +236,27 @@ int board_mmc_init(bd_t *bis)
 }
 #endif
 
+
+#ifdef CONFIG_MVF_GPIO
+static void setup_iomux_gpio(void)
+{
+	static const iomux_v3_cfg_t gpio_pads[] = {
+		SAC58R_PAD_PL8__GPIO_174, /* USR-SW3 button */
+		SAC58R_PAD_PL8__GPIO_360, /* USR-SW1 button */
+		SAC58R_PAD_PL9__GPIO_361, /* USR-SW2 button */
+	};
+
+	imx_iomux_v3_setup_multiple_pads(
+		gpio_pads, ARRAY_SIZE(gpio_pads));
+
+	gpio_direction_input(174);
+	gpio_direction_input(360);
+	gpio_direction_input(361);
+}
+#endif
+
+
+
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -338,6 +360,11 @@ int board_early_init_f(void)
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
+
+#ifdef CONFIG_MVF_GPIO
+	setup_iomux_gpio();
+#endif
+
 	return 0;
 }
 
