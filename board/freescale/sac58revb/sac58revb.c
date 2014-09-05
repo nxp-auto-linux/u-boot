@@ -84,16 +84,72 @@ struct i2c_pads_info i2c_pad_info3 = {
 #endif
 
 
-#ifdef CONFIG_RUN_FROM_IRAM_ONLY
-/* Run DDR configuration if we run from IRAM only */
-
 /* Micron MT41J64M16 @ 416 MHz*/
 /* 13 row addr, 10 col addr, burst length 8, data size 32 */
 #define MDCTL_CONFIG 	0x02190000
 
+void setup_iomux_ddr(void)
+{
+	int i;
+	int ddr_iomuxc_reg = 0x400B1000;
+
+	/* 0x001701E0 For all control signals (not DQS) and address pins.
+	This means:
+		- DDR_ODT = 0b010 (60 Ohm ODT, change)
+		- DDR_SEL = 0b11 (DDR 3 Mode, default)
+		- DDR_INPUT = 0b1 (Differential, default)
+		- DDR_TRIM = 0b (No delay, default)
+		- HYS = 0b1 (CMOS input, default)
+		- DSE = 0b111 (34 Ohm DDR, change)
+		- PUS = 0b10 (100K Pullup, default)
+		- PKE = 0b0 (Pull/Keeper disabled, default).
+		- PUE = 0b0 (Keeper select, default).
+
+		No change has been made to the DDR_ZQ pin,
+		which keeps its default value of 0x00060000 (DDR3 Mode).
+	*/
+	for (i=0;i<32;i++) {
+		writel( 0x1701E0, ddr_iomuxc_reg);
+		ddr_iomuxc_reg += 4;
+	}
+
+
+	/* 0x000701E0 For D0-D31 (Data) and DQS signals.
+		This means:
+		- DDR_SEL = 0b11 (DDR 3 Mode, default)
+		- DDR_INPUT = 0b1 (Differential, default)
+		- DDR_TRIM = 0b (No delay, default)
+		- HYS = 0b1 (CMOS input, default)
+		- DSE = 0b111 (34 Ohm DDR, change)
+		- PUS = 0b10 (100K Pullup, default)
+		- PKE = 0b0 (Pull/Keeper disabled, default).
+		- PUE = 0b0 (Keeper select, default).
+	*/
+	ddr_iomuxc_reg = 0x400B1000 + 0x80;
+	for (i=0;i<36;i++) {
+		/* DQS[0..3] and DATA[0..31] */
+		writel( 0x0701E0, ddr_iomuxc_reg);
+		ddr_iomuxc_reg += 4;
+	}
+
+	writel( 0x1701E0, 0x400B1110); /* ODT-1 */
+	writel( 0x1701E0, 0x400B1114); /* ODT-2 */
+}
+
 void ddr_ctrl_init(void)
 {
+	int con_ack = 0;
+
+	/* Soft reset */
+	writel(2, 0x40169018); //MDMISC
+
+	/* Set MDSCR[CON_REQ] (configuration request) */
 	writel(0x00008000, 0x4016901C); //MDSCR
+
+	/* Wait for configuration acknowledgement */
+	while (con_ack == 0) {
+		con_ack = readl(0x4016901C) & (1<<14);
+	}
 
 	/* MDCFG0: tRFC=48,tXS=52,tXP=3,tXPDLL=10,tFAW=30,tCL=6 */
 	writel(0x303475D3, 0x4016900C); //MDCFG0
@@ -115,7 +171,15 @@ void ddr_ctrl_init(void)
 	writel(MDCTL_CONFIG, 0x40169000); //MDCTL
 
 	/* Perform ZQ calibration */
-	writel(0xA1390003, 0x40169800); //MPZQHWCTRL
+	writel(0xA1390003, 0x40169800); //MPZQHWCTRL: Force h/w calibration
+	writel(0x33333333, 0x4016981C);
+	writel(0x33333333, 0x40169820);
+	writel(0x33333333, 0x40169824);
+	writel(0x33333333, 0x40169828);
+	writel(0x33333333, 0x4016982C);
+	writel(0x33333333, 0x40169830);
+	writel(0x33333333, 0x40169834);
+	writel(0x33333333, 0x40169838);
 
 	/* Enable MMDC with CS0 */
 	writel(MDCTL_CONFIG + 0x80000000, 0x40169000); //MDCTL
@@ -126,7 +190,7 @@ void ddr_ctrl_init(void)
 	/* Configure MR3: normal operation */
 	writel(0x00008033, 0x4016901C);
 	/* Configure MR1: enable DLL, drive strength=40R, AL off, ODT=40R, write levelling off, TDQS=0, Qoff=on */
-	writel(0x00448031, 0x4016901C);
+	writel(0x00068031, 0x4016901C);
 	/* Configure MR0: BL=8, CL=6, DLL reset, write recovery=6, precharge PD off */
 	writel(0x05208030, 0x4016901C);
 	/* DDR ZQ calibration */
@@ -135,31 +199,32 @@ void ddr_ctrl_init(void)
 	writel(0x0000004F, 0x40169040); //MDASP: 256 MB memory
 
 	/* Configure the power down and self-refresh entry and exit parameters */
-	writel(0x453E4942, 0x40169848); //MPRDDLCTL, 
-	writel(0x30353033, 0x40169850); //MPWRDLCTL0
-	
-	writel(0x41720154, 0x4016983C); //MPDGCTRL0
-	writel(0x016A014F, 0x40169840); //MPDGCTRL1
+	/* Read delay line offsets */
+	writel(0x4B494F4E, 0x40169848); //MPRDDLCTL,
+	/* Write delay line offsets */
+	writel(0x38353635, 0x40169850); //MPWRDLCTL0
+	/* Read DQS gating control 0 */
+	writel(0x41520142, 0x4016983C); //MPDGCTRL0
+	/* Read DQS gating control 1 */
+	writel(0x01560152, 0x40169840); //MPDGCTRL1
+	/* Read/write command delay - default */
 	writel(0x000026D2, 0x4016902C); //MDRWD
-
+	/* ODT timing control */
 	writel(0x22334010, 0x40169008); //MDOTC (timing param)
 
+	/* Power down control */
 	writel(0x00020024, 0x40169004); //MDPDC
+	/* Refresh control */
 	writel(0x30B01800, 0x40169020); //MDREF
-	writel(0x0003333F, 0x40169818); //MPODTCTRL
-
+	/* 60R nominal */
+	writel(0x0002222F, 0x40169818); //MPODTCTRL
+	/* Deassert the configuration request */
 	writel(0x00000000, 0x4016901C); //MDSCR 1
 }
-#endif
 
 
 int dram_init(void)
 {
-#ifdef CONFIG_RUN_FROM_IRAM_ONLY
-	/* When booting from IRAM, we need to enable the MMDC controller */
-	ddr_ctrl_init();
-#endif
-
 	gd->ram_size = ((ulong)CONFIG_DDR_MB * SZ_1M);
 
 	return 0;
@@ -306,8 +371,6 @@ static void setup_iomux_gpio(void)
 }
 #endif
 
-
-
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -321,6 +384,7 @@ static void clock_init(void)
 	enable_periph_clk(AIPS0, AIPS0_OFF_CMU);
 	enable_periph_clk(AIPS0, AIPS0_OFF_ANADIG);
 	enable_periph_clk(AIPS0, AIPS0_OFF_IOMUXC);
+	enable_periph_clk(AIPS1, AIPS1_OFF_MISC_PIN_CONTROL);
 	enable_periph_clk(AIPS0, AIPS0_OFF_WKUP);
 	enable_periph_clk(AIPS0, AIPS0_OFF_PIT);
 	enable_periph_clk(AIPS2, AIPS2_OFF_SDHC0);
@@ -401,6 +465,9 @@ int board_early_init_f(void)
 {
 	clock_init();
 	mscm_init();
+
+	setup_iomux_ddr();
+	ddr_ctrl_init();
 
 	setup_iomux_uart();
 	setup_iomux_dspi();
