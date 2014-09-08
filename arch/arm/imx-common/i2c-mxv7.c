@@ -27,6 +27,7 @@ static int force_idle_bus(void *priv)
 
 	sda = gpio_get_value(p->sda.gp);
 	scl = gpio_get_value(p->scl.gp);
+
 	if ((sda & scl) == 1)
 		goto exit;		/* Bus is idle already */
 
@@ -61,6 +62,9 @@ exit:
 }
 
 static void * const i2c_bases[] = {
+#ifdef CONFIG_SAC58R
+	(void *)I2C0_BASE_ADDR,
+#endif
 	(void *)I2C1_BASE_ADDR,
 	(void *)I2C2_BASE_ADDR,
 #ifdef I2C3_BASE_ADDR
