@@ -30,12 +30,58 @@
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
+#include <asm/imx-common/mxc_i2c.h>
 #include <asm/arch/dmachmux-sac58r.h>
 #include <asm/gpio.h>
 
 #include "sac58revb_int_routing.h"
 
 DECLARE_GLOBAL_DATA_PTR;
+
+
+#ifdef CONFIG_SYS_I2C_MXC
+/* I2C0, backlight, MIPI-CSI, CS4288 */
+struct i2c_pads_info i2c_pad_info0 = {
+	.scl = {
+		.i2c_mode = SAC58R_PAD_PA1_I2C0_SCL,
+		.gpio_mode = SAC58R_PAD_PA1_GPIO_1,
+		.gp = 1
+	},
+	.sda = {
+		.i2c_mode = SAC58R_PAD_PA0_I2C0_SDA,
+		.gpio_mode = SAC58R_PAD_PA0_GPIO_0,
+		.gp = 0
+	}
+};
+
+/* I2C1 Tuner I2S */
+struct i2c_pads_info i2c_pad_info1 = {
+	.scl = {
+		.i2c_mode = SAC58R_PAD_PE19_I2C1_SCL,
+		.gpio_mode = SAC58R_PAD_PE19_GPIO_148,
+		.gp = 148
+	},
+	.sda = {
+		.i2c_mode = SAC58R_PAD_PE10_I2C1_SDA,
+		.gpio_mode = SAC58R_PAD_PE10_GPIO_147,
+		.gp = 147
+	}
+};
+
+/* I2C3: iPod header */
+struct i2c_pads_info i2c_pad_info3 = {
+	.scl = {
+		.i2c_mode = SAC58R_PAD_PH2_I2C3_SCL,
+		.gpio_mode = SAC58R_PAD_PH2_GPIO_226,
+		.gp = 226
+	},
+	.sda = {
+		.i2c_mode = SAC58R_PAD_PH4_I2C3_SDA,
+		.gpio_mode = SAC58R_PAD_PH4_GPIO_228,
+		.gp = 228
+	}
+};
+#endif
 
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
@@ -143,21 +189,12 @@ static void setup_iomux_enet(void)
 {
 }
 
-#ifdef CONFIG_HARD_I2C
-static void setup_iomux_i2c(void)
+#ifdef CONFIG_SYS_I2C_MXC
+static void setup_board_i2c(void)
 {
-	static const iomux_v3_cfg_t i2c_pads[] = {
-		SAC58R_PAD_PA0_I2C0_SDA,
-		SAC58R_PAD_PA1_I2C0_SCL,
-		SAC58R_PAD_PE19_I2C1_SCL,
-		SAC58R_PAD_PE10_I2C1_SDA,
-		SAC58R_PAD_PA8_I2C2_SDA,
-		//SAC58R_PAD_PA9_I2C2_SCL,
-		SAC58R_PAD_PH2_I2C3_SCL,
-		SAC58R_PAD_PH4_I2C3_SDA,
-	};
-
-	imx_iomux_v3_setup_multiple_pads(i2c_pads, ARRAY_SIZE(i2c_pads));
+	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info0);
+	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info1);
+	setup_i2c(3, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
 }
 #endif
 
@@ -353,10 +390,6 @@ int board_early_init_f(void)
 
 	setup_iomux_uart();
 
-#ifdef CONFIG_HARD_I2C
-	setup_iomux_i2c();
-#endif
-
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
@@ -372,6 +405,10 @@ int board_init(void)
 {
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+
+#ifdef CONFIG_SYS_I2C_MXC
+	setup_board_i2c();
+#endif
 
 	return 0;
 }

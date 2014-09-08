@@ -47,6 +47,7 @@ enum pll_clocks {
 	PLL_ENET,		/* ENET PLL        => PLL8 */
 };
 
+int enable_i2c_clk(unsigned char enable, unsigned i2c_num);
 void enable_periph_clk(u32 aips_num, u32 periph_number);
 void disable_periph_clk(u32 aips_num, u32 periph_number);
 void enable_ocotp_clk(unsigned char enable);

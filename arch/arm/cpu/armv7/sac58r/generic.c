@@ -459,27 +459,39 @@ static u32 get_i2c_clk(void)
 	return get_ipg_clk();
 }
 
-#ifdef CONFIG_I2C_MXC
+#ifdef CONFIG_SYS_I2C_MXC
 /* i2c_num can be from 0 - 3 */
 int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
 {
-	if (!enable)
-		return;
+	u32 aips_num, periph_number;
 
-	switch(i2c_num) {
+	if (i2c_num > 3)
+		return -EINVAL;
+
+	switch (i2c_num) {
 		case 0:
-			enable_periph_clk(AIPS1, AIPS1_OFF_I2C0);
+			aips_num = AIPS1;
+			periph_number = AIPS1_OFF_I2C0;
 			break;
 		case 1:
-			enable_periph_clk(AIPS1, AIPS1_OFF_I2C1);
+			aips_num = AIPS1;
+			periph_number = AIPS1_OFF_I2C1;
 			break;
 		case 2:
-			enable_periph_clk(AIPS2, AIPS2_OFF_I2C2);
+			aips_num = AIPS2;
+			periph_number = AIPS2_OFF_I2C2;
 			break;
 		case 3:
-			enable_periph_clk(AIPS2, AIPS2_OFF_I2C3);
+			aips_num = AIPS2;
+			periph_number = AIPS2_OFF_I2C3;
 			break;
 	}
+
+	if (enable)
+		enable_periph_clk(aips_num, periph_number);
+	else
+		disable_periph_clk(aips_num, periph_number);
+
 	return 0;
 }
 #endif
