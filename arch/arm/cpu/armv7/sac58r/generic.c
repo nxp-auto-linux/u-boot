@@ -459,6 +459,32 @@ static u32 get_i2c_clk(void)
 	return get_ipg_clk();
 }
 
+#ifdef CONFIG_I2C_MXC
+/* i2c_num can be from 0 - 3 */
+int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
+{
+	if (!enable)
+		return;
+
+	switch(i2c_num) {
+		case 0:
+			enable_periph_clk(AIPS1, AIPS1_OFF_I2C0);
+			break;
+		case 1:
+			enable_periph_clk(AIPS1, AIPS1_OFF_I2C1);
+			break;
+		case 2:
+			enable_periph_clk(AIPS2, AIPS2_OFF_I2C2);
+			break;
+		case 3:
+			enable_periph_clk(AIPS2, AIPS2_OFF_I2C3);
+			break;
+	}
+	return 0;
+}
+#endif
+
+
 /* return NFC_clk frequency in Hz                         */
 static u32 get_nfc_clk(void)
 {
