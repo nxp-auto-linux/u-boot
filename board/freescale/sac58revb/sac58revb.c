@@ -185,6 +185,20 @@ static void setup_iomux_uart(void)
 	imx_iomux_v3_setup_multiple_pads(uart_pads, ARRAY_SIZE(uart_pads));
 }
 
+static void setup_iomux_dspi(void)
+{
+	static const iomux_v3_cfg_t dspi0_pads[] = {
+		SAC58R_PAD_PH8_SPIO_PCS2,
+		SAC58R_PAD_PH3_SPIO_PCS3,
+		SAC58R_PAD_PK14_SPIO_SOUT,
+		SAC58R_PAD_PK15_SPIO_PCS0,
+		SAC58R_PAD_PK16_SPIO_SCK,
+		SAC58R_PAD_PK17_SPIO_SIN,
+	};
+
+	imx_iomux_v3_setup_multiple_pads(dspi0_pads, ARRAY_SIZE(dspi0_pads));
+}
+
 static void setup_iomux_enet(void)
 {
 }
@@ -389,6 +403,7 @@ int board_early_init_f(void)
 	mscm_init();
 
 	setup_iomux_uart();
+	setup_iomux_dspi();
 
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
