@@ -358,9 +358,10 @@ static void setup_iomux_gpio(void)
 {
 	static const iomux_v3_cfg_t gpio_pads[] = {
 		SAC58R_PAD_PA4__GPIO_4,   /* CS42888 reset line */
-		SAC58R_PAD_PL8__GPIO_174, /* USR-SW3 button */
+		SAC58R_PAD_PF14__GPIO_174, /* USR-SW3 button */
 		SAC58R_PAD_PL8__GPIO_360, /* USR-SW1 button */
 		SAC58R_PAD_PL9__GPIO_361, /* USR-SW2 button */
+		SAC58R_PAD_PK12__GPIO_332, /* USB HOST VBUS ENABLE */
 	};
 
 	imx_iomux_v3_setup_multiple_pads(
