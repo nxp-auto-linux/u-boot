@@ -32,14 +32,14 @@ DECLARE_GLOBAL_DATA_PTR;
 static inline unsigned long long tick_to_time(unsigned long long tick)
 {
 	tick *= CONFIG_SYS_HZ;
-	do_div(tick, mxc_get_clock(MXC_IPG_CLK));
+	do_div(tick, mxc_get_clock(MXC_BUS_CLK));
 
 	return tick;
 }
 
 static inline unsigned long long us_to_tick(unsigned long long usec)
 {
-	usec = usec * mxc_get_clock(MXC_IPG_CLK)  + 999999;
+	usec = usec * mxc_get_clock(MXC_BUS_CLK)  + 999999;
 	do_div(usec, 1000000);
 
 	return usec;
@@ -99,5 +99,5 @@ void __udelay(unsigned long usec)
  */
 ulong get_tbclk(void)
 {
-	return mxc_get_clock(MXC_IPG_CLK);
+	return mxc_get_clock(MXC_BUS_CLK);
 }
