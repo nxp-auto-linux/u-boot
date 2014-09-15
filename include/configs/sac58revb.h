@@ -23,7 +23,7 @@
 #define __CONFIG_H
 
 #include <asm/arch/imx-regs.h>
-#include <config_cmd_default.h>
+//#include <config_cmd_default.h>
 #include <linux/sizes.h>
 
 
@@ -32,6 +32,9 @@
 
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
+
+#define CONFIG_CMD_BOOTD			/* bootd			*/
+#define CONFIG_CMD_RUN				/* run command in env variable	*/
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
@@ -71,7 +74,7 @@
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-#define CONFIG_CMD_EXT2		/* EXT2 Support			*/
+//#define CONFIG_CMD_EXT2		/* EXT2 Support			*/
 #define CONFIG_CMD_FAT		/* FAT support			*/
 #define CONFIG_DOS_PARTITION
 
