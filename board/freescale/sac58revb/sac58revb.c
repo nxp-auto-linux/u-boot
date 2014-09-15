@@ -357,6 +357,7 @@ int board_mmc_init(bd_t *bis)
 static void setup_iomux_gpio(void)
 {
 	static const iomux_v3_cfg_t gpio_pads[] = {
+		SAC58R_PAD_PA4__GPIO_4,   /* CS42888 reset line */
 		SAC58R_PAD_PL8__GPIO_174, /* USR-SW3 button */
 		SAC58R_PAD_PL8__GPIO_360, /* USR-SW1 button */
 		SAC58R_PAD_PL9__GPIO_361, /* USR-SW2 button */
@@ -368,6 +369,10 @@ static void setup_iomux_gpio(void)
 	gpio_direction_input(174);
 	gpio_direction_input(360);
 	gpio_direction_input(361);
+
+	/* On some boards, CS42888 holds I2C0 bus lines low. Resetting audio codec
+		puts things back to normal */
+	gpio_direction_output(4, 1);
 }
 #endif
 
