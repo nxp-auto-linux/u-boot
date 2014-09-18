@@ -384,6 +384,8 @@ static void setup_iomux_gpio(void)
 		SAC58R_PAD_PL8__GPIO_360, /* USR-SW1 button */
 		SAC58R_PAD_PL9__GPIO_361, /* USR-SW2 button */
 		SAC58R_PAD_PK12__GPIO_332, /* USB HOST VBUS ENABLE */
+		SAC58R_PAD_PL0_GPIO352,  /* GPIO352 TUNER_PIN7 */
+		SAC58R_PAD_PF18_GPIO178, /* GPIO178 BT_RESET */
 	};
 
 	imx_iomux_v3_setup_multiple_pads(
