@@ -230,6 +230,28 @@ int dram_init(void)
 	return 0;
 }
 
+#ifdef	CONFIG_LVDS
+static void setup_iomux_lvds(void)
+{
+	static const iomux_v3_cfg_t lvds_pads[] = {
+			SAC58R_PAD_PD12__LVDS0_CLKP,
+			SAC58R_PAD_PD13__LVDS0_CLKN,
+			SAC58R_PAD_PD11__LVDS0_TX0P,
+			SAC58R_PAD_PD14__LVDS0_TX0N,
+			SAC58R_PAD_PD15__LVDS0_TX1P,
+			SAC58R_PAD_PD16__LVDS0_TX1N,
+			SAC58R_PAD_PD17__LVDS0_TX2P,
+			SAC58R_PAD_PD18__LVDS0_TX2N,
+			SAC58R_PAD_PD19__LVDS0_TX3P,
+			SAC58R_PAD_PD20__LVDS0_TX3N,
+			SAC58R_PAD_PK7__GPIO327,
+			SAC58R_PAD_PK9__GPIO329
+	};
+	
+	imx_iomux_v3_setup_multiple_pads(lvds_pads, ARRAY_SIZE(lvds_pads));
+}
+#endif
+
 static void setup_iomux_uart(void)
 {
 	static const iomux_v3_cfg_t uart_pads[] = {
@@ -534,6 +556,10 @@ int board_init(void)
 
 #ifdef	CONFIG_FEC_MXC
 	enable_fec_clock();
+#endif
+
+#ifdef CONFIG_LVDS
+	setup_iomux_lvds();
 #endif
 
 	return 0;

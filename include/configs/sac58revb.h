@@ -96,6 +96,8 @@
 #define CONFIG_PHY_SMSC
 #define PHY_RESET_GPIO			365
 
+/* DCU configs */
+#define CONFIG_LVDS
 
 /* I2C configs */
 #define CONFIG_CMD_I2C
