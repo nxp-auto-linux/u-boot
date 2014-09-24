@@ -235,6 +235,21 @@ int board_mmc_init(bd_t *bis)
 }
 #endif
 
+static void setup_iomux_gpio(void)
+{
+	static const iomux_v3_cfg_t gpio_pads[] = {
+
+		SAC58R_PAD_PF17_GPIO_177, /* USB OTG VBUS ENABLE */
+		SAC58R_PAD_PF16_USB0_ID, /* USB OTG ID muxing*/
+		SAC58R_PAD_PH21_GPIO_245, /* USB HOST VBUS Enable*/
+	};
+
+	imx_iomux_v3_setup_multiple_pads(
+		gpio_pads, ARRAY_SIZE(gpio_pads));
+}
+
+
+
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -327,6 +342,8 @@ int board_early_init_f(void)
 {
 	clock_init();
 	mscm_init();
+
+	setup_iomux_gpio();
 
 	setup_iomux_uart();
 
