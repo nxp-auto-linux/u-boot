@@ -52,6 +52,8 @@ void enable_periph_clk(u32 aips_num, u32 periph_number);
 void disable_periph_clk(u32 aips_num, u32 periph_number);
 void enable_ocotp_clk(unsigned char enable);
 int enable_fec_clock(void);
+int enable_pll(enum pll_clocks pll);
+
 
 unsigned int mxc_get_clock(enum mxc_clock clk);
 

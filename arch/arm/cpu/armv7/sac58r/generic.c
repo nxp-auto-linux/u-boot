@@ -131,7 +131,65 @@ int enable_fec_clock(void)
 	return 0;
 }
 
+int enable_pll(enum pll_clocks pll)
+{
+	u32 reg = 0;
+	u32 value;
+	s32 timeout = 100000;
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
 
+	switch(pll)
+	{
+	case PLL_ARM: /* PLL1 */
+		reg = &anadig->pll1_ctrl;
+		break;
+	case PLL_SYS: /* PLL2 */
+		reg = &anadig->pll2_ctrl;
+		break;
+	case PLL_USBOTG0: /* PLL3 */
+		reg = &anadig->pll3_ctrl;
+		break;
+	case PLL_USBOTG1: /* PLL7 */
+		reg = &anadig->pll7_ctrl;
+		break;
+	case PLL_AUDIO0: /* PLL4 */
+		reg = &anadig->pll4_ctrl;
+		break;
+	case PLL_AUDIO1: /* PLL8 */
+		reg = &anadig->pll8_ctrl;
+		break;
+	case PLL_VIDEO: /* PLL6 */
+		reg = &anadig->pll6_ctrl;
+		break;
+	case PLL_ENET: /*PLL5 */
+		reg = &anadig->pll5_ctrl;
+		break;
+	default:
+		return -1;
+		break;
+	}
+
+	value = readl(reg);
+	if ((value & ANADIG_PLL_CTRL_POWERDOWN) ||
+		(!(value & ANADIG_PLL_CTRL_LOCK))) {
+		value &= ~ANADIG_PLL_CTRL_POWERDOWN;
+		writel(value, reg);
+		while (timeout--) {
+			if (readl(reg) &
+					ANADIG_PLL_CTRL_LOCK)
+				break;
+		}
+		if (timeout <= 0)
+			return -1;
+	}
+
+	/* Enable FEC clock */
+	value |= ANADIG_PLL_CTRL_ENABLE;
+	value &= ~ANADIG_PLL_CTRL_BYPASS;
+	writel(value, reg);
+
+	return 0;
+}
 
 /* PLL frequency decoding for pll_pfd in KHz                                                  */
 /* Only works for PLL_ARM, PLL_SYS, PLL_USB0, PLL_USB1, PLL_AUDIO0, PLL_AUDIO1, PLL_VIDEO     */
