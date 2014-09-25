@@ -423,6 +423,60 @@ static void setup_iomux_gpio(void)
 }
 #endif
 
+void setup_iomux_audio(void)
+{
+	static const iomux_v3_cfg_t audio_pads[] = {
+		SAC58R_PAD_PG5_SAI0_TX_BCLK,
+		SAC58R_PAD_PG6_SAI0_TX_SYNC,
+		SAC58R_PAD_PF10_SAI0_RX_DATA,
+		SAC58R_PAD_PF9_SAI0_TX_DATA,
+	};
+
+	imx_iomux_v3_setup_multiple_pads(
+		audio_pads, ARRAY_SIZE(audio_pads));
+}
+
+static void audiocodec_clock_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+
+	/* Audio codec subsystem will use AUDIO1_PLL_DIV input
+		as defined below:
+		PLL8_FREQ = 1179 MHz
+		CCM_AUDIO1_CLK_CTL = PLL8/2
+		TDM_SRC0 input = AUDIO1_PLL_DIV/2/24 = 24.576 MHz
+		TDM_SRC1 input = AUDIO1_PLL_DIV/2/24 = 24.576 MHz
+		CODEC MCLK = FSOXC
+	*/
+
+	/* CCM_AUDIO1_CLK_CTL = AUDIO1_PLL/2 = 1179/2 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN |(0x1 << CCM_MUX_CTL_OFFSET),
+			&ccm->AUDIO1_pll_div_clk);
+
+	/* CODEC_MCLK INPUT SEL = FSOXC */
+	writel( (0x1 << CCM_MUX_CTL_OFFSET), &ccm->codec_mclk);
+
+	/* SAI0 MCLK selection = AUDIO1_PLL_DIV */
+	writel(0x4 << CCM_MUX_CTL_OFFSET, &ccm->sai0_mclk);
+
+	/* TDM_SRC0 input clock sel = AUDIO1_PLL_DIV/2
+		TDM SRC0 clock frequency = 589/2 =  24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_dac_tdm_src0);
+
+	/* TDM_SRC1 input clock sel = AUDIO1_PLL_DIV/2
+		TDM SRC1 clock frequency = 589/2 =  24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+			| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_dac_tdm_src1);
+
+	/* Enable AUDIO1 PLL */
+	enable_pll(PLL_AUDIO1);
+
+	/* Enable Audio Codec IPG clock divider */
+	writel( CCM_MODULE_ENABLE_CTL_EN | (0x3 << CCM_PREDIV_CTRL_OFFSET),
+			&ccm->audio_codec_ipg_clk);
+}
+
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -456,6 +510,15 @@ static void clock_init(void)
 	enable_periph_clk(AIPS0, AIPS0_OFF_GPIOC);
 	enable_periph_clk(AIPS2, AIPS2_OFF_ENET);
 	enable_periph_clk(AIPS2, AIPS2_OFF_MMDC);
+
+	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC0);
+	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC1);
+	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC2);
+	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC3);
+
+	enable_periph_clk(AIPS1, AIPS2_OFF_SAI0);
+	enable_periph_clk(AIPS1, AIPS1_OFF_SAI6);
+	enable_periph_clk(AIPS1, AIPS1_OFF_SAI7);
 
 	/* enable PLL1 = PLL_CORE/ARM */
 	clrsetbits_le32(&anadig->pll1_ctrl,
@@ -542,6 +605,8 @@ int board_early_init_f(void)
 	setup_iomux_gpio();
 #endif
 
+	setup_iomux_audio();
+
 	return 0;
 }
 
@@ -561,6 +626,8 @@ int board_init(void)
 #ifdef CONFIG_LVDS
 	setup_iomux_lvds();
 #endif
+
+	audiocodec_clock_init();
 
 	return 0;
 }
