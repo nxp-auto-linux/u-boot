@@ -584,26 +584,103 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 #endif
 
 #if defined(CONFIG_DISPLAY_CPUINFO)
-static char *get_reset_cause(void)
+
+
+static const char* sac58r_reset_cause[] =
+{
+	"POR reset",
+	"watchdog0 timer",
+	"unknown",
+	"watchdog2",
+	"watchdog1",
+	"JTAG HIGH-Z",
+	"unknown",
+	"external reset",
+	"unknown",
+	"HP LVD",
+	"ULP LVD",
+	"unknown",
+	"LP_LVD",
+	"unknown",
+	"unknown",
+	"unknown",
+	"MDM SYS RST",
+	"SNVS hard reset",
+	"SW reset",
+	"SNVS WDOG",
+	"LVD memory brownout",
+	"ULPVDD HVD",
+	"LPVDD HVD",
+	"HPVDD HVD",
+	"1.1V unstable",
+	"2.5V unstable",
+	"3.0V unstable",
+	"FOSC freq < 40 MHz",
+	"BUS freq out of range",
+	"No clock on FOSC",
+	"No clock on SOSC",
+	"CM4 in lockup",
+};
+
+#define RESET_CAUSE_POR			(1<<0)
+#define RESET_CAUSE_EXTERNAL	(1<<7)
+#define RESET_CAUSE_SOFTWARE	(1<<18)
+#define RESET_CAUSE_WDOG		(1<<1)
+
+static void print_reset_cause(void)
 {
 	u32 cause;
+	int i;
+
 	struct src *src_regs = (struct src *)SRC_BASE_ADDR;
 
 	cause = readl(&src_regs->srsr);
 	writel(cause, &src_regs->srsr);
-	cause &= 0xff;
 
-	switch (cause) {
-	case 0x08:
-		return "WDOG";
-	case 0x20:
-		return "JTAG HIGH-Z";
-	case 0x80:
-		return "EXTERNAL RESET";
-	case 0xfd:
-		return "POR";
-	default:
-		return "unknown reset";
+
+	/* Reset cause register returns a lot of information that
+		are not needed in most reset cases:
+		- watchdog
+		- POR
+		- external reset
+		- software reset
+		The routine catches the most common causes of reset
+		and ignore the others.
+		If these common cases are not detected, we then
+		print all reset cases
+	*/
+
+	if (cause & RESET_CAUSE_WDOG) {
+		printf ("Reset cause (0x%08x): %s\n", cause, sac58r_reset_cause[1]);
+		return;
+	}
+
+
+	if (cause & RESET_CAUSE_POR) {
+		printf ("Reset cause (0x%08x): %s\n", cause, sac58r_reset_cause[0]);
+		return;
+	}
+
+	if (cause & RESET_CAUSE_EXTERNAL) {
+		printf ("Reset cause (0x%08x): %s\n", cause, sac58r_reset_cause[7]);
+		return;
+	}
+
+	if (cause & RESET_CAUSE_SOFTWARE) {
+		printf ("Reset cause (0x%08x): %s\n", cause, sac58r_reset_cause[18]);
+		return;
+	}
+
+	printf("Reset cause (0x%08x): \n", cause);
+	i = 0;
+	while (cause != 0) {
+		if ((cause & 0x1) == 1) {
+			if (strcmp(sac58r_reset_cause[i], "unknown")) {
+				printf("- %s\n", sac58r_reset_cause[i]);
+				}
+			}
+		cause = cause >> 1;
+		i++;
 	}
 }
 
@@ -611,7 +688,7 @@ int print_cpuinfo(void)
 {
 	printf("CPU:   Freescale Rayleigh SAC58R at %d MHz\n",
 		mxc_get_clock(MXC_ARM_CLK) / 1000000);
-	printf("Reset cause: %s\n", get_reset_cause());
+	print_reset_cause();
 
 	return 0;
 }
