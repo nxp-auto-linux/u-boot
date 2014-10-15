@@ -71,10 +71,12 @@
 #define CONFIG_PHY_MICREL
 
 /* I2C Configs */
+#ifdef CONFIG_SYS_USE_I2C
 #define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_SPD_BUS_NUM		0
+#endif
 
 #define CONFIG_SYS_USE_NAND
 
