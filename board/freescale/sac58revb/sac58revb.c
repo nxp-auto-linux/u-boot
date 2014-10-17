@@ -436,6 +436,19 @@ void setup_iomux_audio(void)
 		audio_pads, ARRAY_SIZE(audio_pads));
 }
 
+#define VPU_HD_SUPPORT	0x8
+static void vpu_init(void)
+{
+	/* Enable HD-support on VPU */
+
+	u32 gpcr03 = readl(REG_BANK_PD2_BASE_ADDR + 0x0C);
+	gpcr03 |= VPU_HD_SUPPORT;
+	writel(gpcr03, REG_BANK_PD2_BASE_ADDR + 0x0C);
+
+	printf("Enabled HD-support in VPU\n");
+}
+
+
 static void audiocodec_clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -628,6 +641,8 @@ int board_init(void)
 #endif
 
 	audiocodec_clock_init();
+
+	vpu_init();
 
 	return 0;
 }
