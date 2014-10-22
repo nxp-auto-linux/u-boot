@@ -430,6 +430,14 @@ void setup_iomux_audio(void)
 		SAC58R_PAD_PG6_SAI0_TX_SYNC,
 		SAC58R_PAD_PF10_SAI0_RX_DATA,
 		SAC58R_PAD_PF9_SAI0_TX_DATA,
+
+		SAC58R_PAD_PH11_SAI1_TX_BCLK,
+		SAC58R_PAD_PH12_SAI1_TX_SYNC,
+		SAC58R_PAD_PH16_SAI1_RX_BCLK,
+		SAC58R_PAD_PH17_SAI1_RX_SYNC,
+		SAC58R_PAD_PH18_SAI1_RX_DATA,
+		SAC58R_PAD_PH19_SAI1_TX_DATA,
+
 	};
 
 	imx_iomux_v3_setup_multiple_pads(
@@ -472,13 +480,26 @@ static void audiocodec_clock_init(void)
 	/* SAI0 MCLK selection = AUDIO1_PLL_DIV */
 	writel(0x4 << CCM_MUX_CTL_OFFSET, &ccm->sai0_mclk);
 
+	/* SAI1 MCLK selection = AUDIO1_PLL_DIV */
+	writel(0x4 << CCM_MUX_CTL_OFFSET, &ccm->sai1_mclk);
+
+	/* CODEC SAI_BCLK0 input clock sel = AUDIO1_PLL_DIV/2
+		SAI BCLK0 clock frequency = 589/(23+1) = 24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_sai_bclk0);
+
+	/* CODEC SAI_BCLK1 input clock sel = AUDIO1_PLL_DIV/2
+		SAI BCLK1 clock frequency = 589/(23+1) = 24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_sai_bclk1);
+
 	/* TDM_SRC0 input clock sel = AUDIO1_PLL_DIV/2
-		TDM SRC0 clock frequency = 589/2 =  24,576MHz */
+		TDM SRC0 clock frequency = 589/(23+1) = 24,576MHz */
 	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
 		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_dac_tdm_src0);
 
 	/* TDM_SRC1 input clock sel = AUDIO1_PLL_DIV/2
-		TDM SRC1 clock frequency = 589/2 =  24,576MHz */
+		TDM SRC1 clock frequency = 589/(23+1) = 24,576MHz */
 	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
 			| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_dac_tdm_src1);
 
@@ -530,6 +551,9 @@ static void clock_init(void)
 	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC3);
 
 	enable_periph_clk(AIPS1, AIPS2_OFF_SAI0);
+	enable_periph_clk(AIPS1, AIPS2_OFF_SAI1);
+	enable_periph_clk(AIPS1, AIPS1_OFF_SAI4);
+	enable_periph_clk(AIPS1, AIPS1_OFF_SAI5);
 	enable_periph_clk(AIPS1, AIPS1_OFF_SAI6);
 	enable_periph_clk(AIPS1, AIPS1_OFF_SAI7);
 
