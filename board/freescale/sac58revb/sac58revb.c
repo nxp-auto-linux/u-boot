@@ -324,14 +324,44 @@ static void setup_board_i2c(void)
 #ifdef CONFIG_SYS_USE_NAND
 void setup_iomux_nfc(void)
 {
+	static const iomux_v3_cfg_t nfc_pads[] = {
+		SAC58R_PAD_PF29__NFC_IO15,
+		SAC58R_PAD_PF28__NFC_IO14,
+		SAC58R_PAD_PF27__NFC_IO13,
+		SAC58R_PAD_PF26__NFC_IO12,
+		SAC58R_PAD_PF23__NFC_IO11,
+		SAC58R_PAD_PF22__NFC_IO10,
+		SAC58R_PAD_PF20__NFC_IO9,
+		SAC58R_PAD_PF19__NFC_IO8,
+		SAC58R_PAD_PC13__NFC_IO7,
+		SAC58R_PAD_PC12__NFC_IO6,
+		SAC58R_PAD_PC11__NFC_IO5,
+		SAC58R_PAD_PC10__NFC_IO4,
+		SAC58R_PAD_PC9__NFC_IO3,
+		SAC58R_PAD_PC6__NFC_IO2,
+		SAC58R_PAD_PC8__NFC_IO1,
+		SAC58R_PAD_PC7__NFC_IO0,
+		SAC58R_PAD_PC5__NFC_WEB,
+		SAC58R_PAD_PC2__NFC_CE0B,
+		SAC58R_PAD_PA16__NFC_CE1B,
+		SAC58R_PAD_PC1__NFC_REB,
+		SAC58R_PAD_PC0__NFC_RB0B,
+		SAC58R_PAD_PF25__NFC_RB1B,
+		SAC58R_PAD_PC4__NFC_ALE,
+		SAC58R_PAD_PC3__NFC_CLE,
+	};
+	imx_iomux_v3_setup_multiple_pads(nfc_pads, ARRAY_SIZE(nfc_pads));
+
 }
 #endif
 
 #ifdef CONFIG_FSL_ESDHC
 struct fsl_esdhc_cfg esdhc_cfg[CONFIG_SYS_FSL_ESDHC_NUM] = {
 	{USDHC0_BASE_ADDR},
+#ifndef CONFIG_SYS_USE_NAND
 	{USDHC1_BASE_ADDR},
 	{USDHC2_BASE_ADDR},
+#endif
 };
 
 int board_mmc_getcd(struct mmc *mmc)
@@ -358,6 +388,8 @@ int board_mmc_init(bd_t *bis)
 		SAC58R_PAD_PF3__SDHC0_DAT1,
 		SAC58R_PAD_PF4__SDHC0_DAT2,
 		SAC58R_PAD_PF5__SDHC0_DAT3,
+
+#ifndef CONFIG_SYS_USE_NAND
 		SAC58R_PAD_PF26__SDHC1_CLK,
 		SAC58R_PAD_PF27__SDHC1_CMD,
 		SAC58R_PAD_PF22__SDHC1_DAT0,
@@ -374,6 +406,8 @@ int board_mmc_init(bd_t *bis)
 		SAC58R_PAD_PC11__SDHC2_DAT5,
 		SAC58R_PAD_PC7__SDHC2_DAT6,
 		SAC58R_PAD_PC8__SDHC2_DAT7,
+#endif
+
 	};
 
 	imx_iomux_v3_setup_multiple_pads(
@@ -557,6 +591,11 @@ static void clock_init(void)
 	enable_periph_clk(AIPS1, AIPS1_OFF_SAI6);
 	enable_periph_clk(AIPS1, AIPS1_OFF_SAI7);
 
+	enable_periph_clk(AIPS2, AIPS2_OFF_NFC0);
+	enable_periph_clk(AIPS2, AIPS2_OFF_NFC1);
+	enable_periph_clk(AIPS2, AIPS2_OFF_NFC2);
+	enable_periph_clk(AIPS2, AIPS2_OFF_NFC3);
+
 	/* enable PLL1 = PLL_CORE/ARM */
 	clrsetbits_le32(&anadig->pll1_ctrl,
 					ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS,
@@ -570,10 +609,16 @@ static void clock_init(void)
 	/* SDHC0,1,2 clocks => from PLL_SYS/5 = 480/5 = 96 MHz */
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC0_perclk);
+#ifndef CONFIG_SYS_USE_NAND
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC1_perclk);
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
+#endif
+	/*NFC clock => from USBO_PLL_PFD3 = 375.6/20 (0x13 +1)= 19 MHz validation value*/
+	writel(0x1b171a1c,0x400260f0);
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x13<< CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->nfc_flash_clk_div);
 }
 
 static void mscm_init(void)

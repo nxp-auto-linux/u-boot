@@ -236,7 +236,7 @@ struct scsc_reg {
 #define CCM_PREDIV2_CTRL(v)		(((v) & 0x3) << 16)
 #define CCM_PREDIV3_CTRL_MASK		(0x7 << 16)
 #define CCM_PREDIV3_CTRL(v)		(((v) & 0x7) << 16)
-#define CCM_PREDIV4_CTRL_MASK		(0xf << 16)
+#define CCM_PREDIV4_CTRL_MASK		(0x1f << 16)
 #define CCM_PREDIV4_CTRL(v)		(((v) & 0xf) << 16)
 #define CCM_PREDIV5_CTRL_MASK		(0x1f << 16)
 #define CCM_PREDIV5_CTRL(v)		(((v) & 0x1f) << 16)
