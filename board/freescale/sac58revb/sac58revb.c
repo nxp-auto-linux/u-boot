@@ -621,6 +621,25 @@ static void clock_init(void)
 		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->nfc_flash_clk_div);
 }
 
+static void gpu_clk_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+	/* Setting PLL6_MAIN to 640MHz = 24MHz * (26 + 2/3)
+	   => DIV_SELECT = 26 = 0x1A
+	   => PLL6_NUM   =  2 = 0x02
+	   => PLL6_DENOM =  3 = 0x03
+	*/
+	writel(0x00000002, &anadig->pll6_num);
+	writel(0x00000003, &anadig->pll6_denom);
+	writel(0x0000201A, &anadig->pll6_ctrl);
+	/* wait for PLL6 to be locked */
+	while(!(readl(&anadig->pll6_ctrl) & ANADIG_PLL_CTRL_LOCK));
+
+	/* Setting GPU input clock to VIDEO_PLL (PLL6_MAIN) */
+	writel(0x00000005, &ccm->GCC_clk2x);
+}
+
 static void mscm_init(void)
 {
 	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_IR_BASE_ADDR;
@@ -712,6 +731,8 @@ int board_init(void)
 	audiocodec_clock_init();
 
 	vpu_init();
+
+	gpu_clk_init();
 
 	return 0;
 }
