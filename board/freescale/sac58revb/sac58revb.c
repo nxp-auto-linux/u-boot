@@ -478,6 +478,24 @@ void setup_iomux_audio(void)
 		audio_pads, ARRAY_SIZE(audio_pads));
 }
 
+void setup_iomux_esai(void)
+{
+	static const iomux_v3_cfg_t esai_pads[] = {
+		SAC58R_PAD_PA5_ESAI0_FSR,
+		SAC58R_PAD_PA6_ESAI0_SCKR,
+		SAC58R_PAD_PA12_ESAI0_SDO5_SDI0,
+		SAC58R_PAD_PA14_ESAI0_SDO2_SDI3,
+		SAC58R_PAD_PA15_ESAI0_SDO4_SDI3,
+		SAC58R_PAD_PA16_ESAI0_SDO3_SDI2,
+		SAC58R_PAD_PA17_ESAI0_SDO1,
+		SAC58R_PAD_PA18_ESAI0_SD00,
+		SAC58R_PAD_PA19_ESAI0_SCKT,
+		SAC58R_PAD_PA20_ESAI0_FST,
+	};
+
+	imx_iomux_v3_setup_multiple_pads(esai_pads, ARRAY_SIZE(esai_pads));
+}
+
 #define VPU_HD_SUPPORT	0x8
 static void vpu_init(void)
 {
@@ -543,6 +561,28 @@ static void audiocodec_clock_init(void)
 	/* Enable Audio Codec IPG clock divider */
 	writel( CCM_MODULE_ENABLE_CTL_EN | (0x3 << CCM_PREDIV_CTRL_OFFSET),
 			&ccm->audio_codec_ipg_clk);
+}
+
+static void esai_clock_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+
+	/* ESAI will use AUDIO0_PLL_DIV input
+		as defined below:
+		PLL8_FREQ = 1179 MHz
+		CCM_AUDIO0_CLK_CTL = PLL4/48
+	*/
+
+	/* CCM_AUDIO0_CLK_CTL = AUDIO0_PLL/48 = 1179/48 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET) |
+		   (0x1 << CCM_MUX_CTL_OFFSET),
+			&ccm->AUDIO0_pll_div_clk);
+
+	/* ESAI0 MCLK selection = AUDIO0_PLL_DIV */
+	writel(0x3 << CCM_MUX_CTL_OFFSET, &ccm->esai0_mclk);
+
+	/* Enable AUDIO0 PLL */
+	enable_pll(PLL_AUDIO0);
 }
 
 static void clock_init(void)
@@ -708,6 +748,8 @@ int board_early_init_f(void)
 
 	setup_iomux_audio();
 
+	setup_iomux_esai();
+
 	return 0;
 }
 
@@ -729,6 +771,8 @@ int board_init(void)
 #endif
 
 	audiocodec_clock_init();
+
+	esai_clock_init();
 
 	vpu_init();
 
