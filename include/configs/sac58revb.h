@@ -38,6 +38,8 @@
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
+#define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop */
+
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
