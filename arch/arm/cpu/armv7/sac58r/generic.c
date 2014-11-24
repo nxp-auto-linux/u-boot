@@ -626,6 +626,7 @@ static const char* sac58r_reset_cause[] =
 #define RESET_CAUSE_EXTERNAL	(1<<7)
 #define RESET_CAUSE_SOFTWARE	(1<<18)
 #define RESET_CAUSE_WDOG		(1<<1)
+#define SRC_SCR_SW_RST			(1<<12)
 
 static void print_reset_cause(void)
 {
@@ -683,6 +684,19 @@ static void print_reset_cause(void)
 		i++;
 	}
 }
+
+void reset_cpu(ulong addr)
+{
+	struct src *src_regs = (struct src *)SRC_BASE_ADDR;
+
+	/* Generate a SW reset from SRC SCR register */
+	writel(SRC_SCR_SW_RST, &src_regs->scr);
+
+	/* If we get there, we are not in good shape */
+	mdelay(1000);
+	printf("FATAL: Reset Failed!\n");
+	hang();
+};
 
 int print_cpuinfo(void)
 {
