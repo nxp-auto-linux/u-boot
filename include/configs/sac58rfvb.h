@@ -65,6 +65,7 @@
 #define CONFIG_SYS_FSL_ESDHC_NUM	3
 #define CONFIG_SYS_MMC_ENV_DEV		2
 
+#define CONFIG_MVF_GPIO
 
 #define CONFIG_SYS_FSL_ERRATUM_ESDHC111
 
@@ -89,15 +90,17 @@
 #define CONFIG_PHY_MICREL
 #endif
 
-#if 0
-/* I2C Configs */
+
+/* I2C configs */
 #define CONFIG_CMD_I2C
-#define CONFIG_HARD_I2C
+#define CONFIG_HARD_I2C			1
+#define CONFIG_I2C_MULTI_BUS
+#define I2C_QUIRK_REG
 #define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
+#define CONFIG_SYS_I2C_MXC		1
 #define CONFIG_SYS_I2C_BASE		I2C0_BASE_ADDR
 #define CONFIG_SYS_I2C_SPEED		100000
-#endif
+#define CONFIG_SYS_I2C_SLAVE            0x8
 
 #if 0
 #define CONFIG_SYS_USE_NAND */
