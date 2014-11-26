@@ -580,6 +580,23 @@ static void esai_clock_init(void)
 	enable_pll(PLL_AUDIO0);
 }
 
+static void spdif_clock_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+
+	/* SPDIF will use AUDIO0_PLL_DIV as defined for ESAI
+		as defined below:
+		PLL8_FREQ = 1179 MHz
+		CCM_AUDIO0_CLK_CTL = PLL4/48 (24,576MHz)
+	*/
+
+	/* SPDIF0 input clock selection = AUDIO0_PLL_DIV */
+	writel(0x3 << CCM_MUX_CTL_OFFSET, &ccm->spdif_tx_clk);
+
+	/* SPDIF1 input clock selection = AUDIO0_PLL_DIV */
+	writel(0x3 << CCM_MUX_CTL_OFFSET, &ccm->spdif1_tx_clk);
+}
+
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -789,6 +806,8 @@ int board_init(void)
 	vpu_init();
 
 	gpu_clk_init();
+
+	spdif_clock_init();
 
 	return 0;
 }
