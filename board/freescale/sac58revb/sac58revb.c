@@ -648,6 +648,8 @@ static void clock_init(void)
 	enable_periph_clk(AIPS2, AIPS2_OFF_NFC2);
 	enable_periph_clk(AIPS2, AIPS2_OFF_NFC3);
 
+	enable_periph_clk(AIPS2, AIPS2_OFF_ASRC0);
+
 	/* enable PLL1 = PLL_CORE/ARM */
 	clrsetbits_le32(&anadig->pll1_ctrl,
 					ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS,
