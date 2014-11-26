@@ -102,7 +102,6 @@ static u16 i2c_clk_div[50][2] = {
 };
 #endif
 
-
 #ifndef CONFIG_SYS_MXC_I2C1_SPEED
 #define CONFIG_SYS_MXC_I2C1_SPEED 100000
 #endif
@@ -123,6 +122,11 @@ static u16 i2c_clk_div[50][2] = {
 #define CONFIG_SYS_MXC_I2C3_SLAVE 0
 #endif
 
+#ifdef CONFIG_SAC58R
+#define MXC_NUM_OF_I2C_BUS		4
+#else
+#define MXC_NUM_OF_I2C_BUS		3
+#endif
 
 /*
  * Calculate and set proper clock divider
@@ -408,7 +412,7 @@ struct i2c_parms {
 
 struct sram_data {
 	unsigned curr_i2c_bus;
-	struct i2c_parms i2c_data[3];
+	struct i2c_parms i2c_data[MXC_NUM_OF_I2C_BUS];
 };
 
 /*
