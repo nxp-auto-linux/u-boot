@@ -301,6 +301,22 @@ static void setup_iomux_gpio(void)
 		gpio_pads, ARRAY_SIZE(gpio_pads));
 }
 
+void setup_iomux_audio(void)
+{
+	static const iomux_v3_cfg_t audio_pads[] = {
+		/*SPDIF0 */
+		SAC58R_PAD_PG4__SPDIF0_IN1,
+		SAC58R_PAD_PG5__SPDIF0_OUT1,
+
+		/*SPDIF1 */
+		SAC58R_PAD_PG1__SPDIF1_IN1,
+		SAC58R_PAD_PG2__SPDIF1_OUT1,
+	};
+
+	imx_iomux_v3_setup_multiple_pads(
+		audio_pads, ARRAY_SIZE(audio_pads));
+}
+
 
 static void audiocodec_clock_init(void)
 {
@@ -354,6 +370,34 @@ static void audiocodec_clock_init(void)
 	/* Enable Audio Codec IPG clock divider */
 	writel( CCM_MODULE_ENABLE_CTL_EN | (0x3 << CCM_PREDIV_CTRL_OFFSET),
 			&ccm->audio_codec_ipg_clk);
+}
+
+static void spdif_clock_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+
+	/* SPDIFs will use AUDIO0_PLL_DIV input
+		as defined below:
+		PLL8_FREQ = 1179 MHz
+		CCM_AUDIO0_CLK_CTL = PLL4/48
+
+		AUDIO0_PLL_DIV = 24,576 MHz
+	*/
+
+	/* CCM_AUDIO0_CLK_CTL = AUDIO0_PLL/48 = 1179/48 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET) |
+		   (0x1 << CCM_MUX_CTL_OFFSET),
+			&ccm->AUDIO0_pll_div_clk);
+
+
+	/* SPDIF0 input clock selection = AUDIO0_PLL_DIV */
+	writel(0x3 << CCM_MUX_CTL_OFFSET, &ccm->spdif_tx_clk);
+
+	/* SPDIF1 input clock selection = AUDIO0_PLL_DIV */
+	writel(0x3 << CCM_MUX_CTL_OFFSET, &ccm->spdif1_tx_clk);
+
+	/* Enable AUDIO0 PLL */
+	enable_pll(PLL_AUDIO0);
 }
 
 static void clock_init(void)
@@ -475,6 +519,9 @@ int board_early_init_f(void)
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
+
+	setup_iomux_audio();
+
 	return 0;
 }
 
@@ -488,6 +535,7 @@ int board_init(void)
 #endif
 
 	audiocodec_clock_init();
+	spdif_clock_init();
 
 	return 0;
 }
