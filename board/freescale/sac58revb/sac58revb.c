@@ -460,11 +460,13 @@ static void setup_iomux_gpio(void)
 void setup_iomux_audio(void)
 {
 	static const iomux_v3_cfg_t audio_pads[] = {
+		/* SAI0 */
 		SAC58R_PAD_PG5_SAI0_TX_BCLK,
 		SAC58R_PAD_PG6_SAI0_TX_SYNC,
 		SAC58R_PAD_PF10_SAI0_RX_DATA,
 		SAC58R_PAD_PF9_SAI0_TX_DATA,
 
+		/* SAI1 */
 		SAC58R_PAD_PH11_SAI1_TX_BCLK,
 		SAC58R_PAD_PH12_SAI1_TX_SYNC,
 		SAC58R_PAD_PH16_SAI1_RX_BCLK,
@@ -472,15 +474,7 @@ void setup_iomux_audio(void)
 		SAC58R_PAD_PH18_SAI1_RX_DATA,
 		SAC58R_PAD_PH19_SAI1_TX_DATA,
 
-	};
-
-	imx_iomux_v3_setup_multiple_pads(
-		audio_pads, ARRAY_SIZE(audio_pads));
-}
-
-void setup_iomux_esai(void)
-{
-	static const iomux_v3_cfg_t esai_pads[] = {
+		/* ESAI0 */
 		SAC58R_PAD_PA5_ESAI0_FSR,
 		SAC58R_PAD_PA6_ESAI0_SCKR,
 		SAC58R_PAD_PA12_ESAI0_SDO5_SDI0,
@@ -493,7 +487,8 @@ void setup_iomux_esai(void)
 		SAC58R_PAD_PA20_ESAI0_FST,
 	};
 
-	imx_iomux_v3_setup_multiple_pads(esai_pads, ARRAY_SIZE(esai_pads));
+	imx_iomux_v3_setup_multiple_pads(
+		audio_pads, ARRAY_SIZE(audio_pads));
 }
 
 #define VPU_HD_SUPPORT	0x8
@@ -747,8 +742,6 @@ int board_early_init_f(void)
 #endif
 
 	setup_iomux_audio();
-
-	setup_iomux_esai();
 
 	return 0;
 }
