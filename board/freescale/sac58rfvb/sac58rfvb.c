@@ -302,6 +302,59 @@ static void setup_iomux_gpio(void)
 }
 
 
+static void audiocodec_clock_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+
+	/* Audio codec subsystem will use AUDIO1_PLL_DIV input
+		as defined below:
+		PLL8_FREQ = 1179 MHz
+		CCM_AUDIO1_CLK_CTL = PLL8/2
+		TDM_SRC0 input = AUDIO1_PLL_DIV/2/24 = 24.576 MHz
+		TDM_SRC1 input = AUDIO1_PLL_DIV/2/24 = 24.576 MHz
+		CODEC MCLK = FSOXC
+	*/
+
+	/* CCM_AUDIO1_CLK_CTL = AUDIO1_PLL/2 = 1179/2 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN |(0x1 << CCM_MUX_CTL_OFFSET),
+			&ccm->AUDIO1_pll_div_clk);
+
+	/* CODEC_MCLK INPUT SEL = FSOXC */
+	writel( (0x1 << CCM_MUX_CTL_OFFSET), &ccm->codec_mclk);
+
+	/* SAI0 MCLK selection = AUDIO1_PLL_DIV */
+	writel(0x4 << CCM_MUX_CTL_OFFSET, &ccm->sai0_mclk);
+
+	/* SAI1 MCLK selection = AUDIO1_PLL_DIV */
+	writel(0x4 << CCM_MUX_CTL_OFFSET, &ccm->sai1_mclk);
+
+	/* CODEC SAI_BCLK0 input clock sel = AUDIO1_PLL_DIV/2
+		SAI BCLK0 clock frequency = 589/(23+1) = 24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_sai_bclk0);
+
+	/* CODEC SAI_BCLK1 input clock sel = AUDIO1_PLL_DIV/2
+		SAI BCLK1 clock frequency = 589/(23+1) = 24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_sai_bclk1);
+
+	/* TDM_SRC0 input clock sel = AUDIO1_PLL_DIV/2
+		TDM SRC0 clock frequency = 589/(23+1) = 24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_dac_tdm_src0);
+
+	/* TDM_SRC1 input clock sel = AUDIO1_PLL_DIV/2
+		TDM SRC1 clock frequency = 589/(23+1) = 24,576MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (23 << CCM_PREDIV_CTRL_OFFSET)
+			| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->codec_dac_tdm_src1);
+
+	/* Enable AUDIO1 PLL */
+	enable_pll(PLL_AUDIO1);
+
+	/* Enable Audio Codec IPG clock divider */
+	writel( CCM_MODULE_ENABLE_CTL_EN | (0x3 << CCM_PREDIV_CTRL_OFFSET),
+			&ccm->audio_codec_ipg_clk);
+}
 
 static void clock_init(void)
 {
@@ -433,6 +486,8 @@ int board_init(void)
 #ifdef CONFIG_I2C_MXC
 	setup_board_i2c();
 #endif
+
+	audiocodec_clock_init();
 
 	return 0;
 }
