@@ -352,6 +352,25 @@ static void clock_init(void)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC1_perclk);
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
+
+	/* Refine AUDIO0 and AUDIO1 PLLs MFN and MFD parameters:
+		By default, they are way too big, kernel is unable to compute
+		the right values of the PLLs and end up with a erroneous
+		1176MHz instead of the correct 1179MHz value.
+		(see arch/arm/mach-imx/clk-pllv3.c, clk_pllv3_av_recalc_rate()).
+		These values make it easy for the kernel to compute the right
+		value of these PLLs (1179648000 Hz)
+		This value divided by 48 allows providing a 24,576MHz
+		input clock to the different audio IPs */
+
+	/* Setting PLL4_MAIN and PLL8_MAIN to 1179MHz:
+			- (24 MHz * 49) + ((24 MHz/1000)*152)
+	*/
+	writel(152, &anadig->pll4_num);
+	writel(1000, &anadig->pll4_denom);
+
+	writel(152, &anadig->pll8_num);
+	writel(1000, &anadig->pll8_denom);
 }
 
 static void mscm_init(void)
