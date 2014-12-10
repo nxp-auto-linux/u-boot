@@ -600,7 +600,6 @@ static void spdif_clock_init(void)
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
 
 	/* Enable some modules in GPC */
 	enable_periph_clk(AIPS0, AIPS0_OFF_GPC);
@@ -650,12 +649,9 @@ static void clock_init(void)
 
 	enable_periph_clk(AIPS2, AIPS2_OFF_ASRC0);
 
-	/* enable PLL1 = PLL_CORE/ARM */
-	clrsetbits_le32(&anadig->pll1_ctrl,
-					ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS,
-					ANADIG_PLL_CTRL_ENABLE);
-	/* wait for PLL1 to be locked */
-	while(!(readl(&anadig->pll1_ctrl) & ANADIG_PLL_CTRL_LOCK));
+	/* Set PLL ARM = 1200 MHz and enable it */
+	config_pll(PLL_ARM, 50, 0, 1);
+	enable_pll(PLL_ARM);
 
 	/* configure ARM A7 clock => From PLL1 (PLL_CORE) = 1200/2 = 600MHz */
 	writel( (0x1 << CCM_PREDIV_CTRL_OFFSET) | (0x3 << CCM_MUX_CTL_OFFSET), &ccm->a7_clk);
@@ -686,28 +682,24 @@ static void clock_init(void)
 
 	/* Setting PLL4_MAIN and PLL8_MAIN to 1179MHz:
 			- (24 MHz * 49) + ((24 MHz/1000)*152)
+		=> DIV_SELECT = 49
+		=> PLLx_NUM   =  152
+		=> PLLx_DENOM = 1000
 	*/
-	writel(152, &anadig->pll4_num);
-	writel(1000, &anadig->pll4_denom);
-
-	writel(152, &anadig->pll8_num);
-	writel(1000, &anadig->pll8_denom);
+	config_pll(PLL_AUDIO0, 49, 152, 1000);
+	config_pll(PLL_AUDIO1, 49, 152, 1000);
 }
 
 static void gpu_clk_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
 	/* Setting PLL6_MAIN to 640MHz = 24MHz * (26 + 2/3)
 	   => DIV_SELECT = 26 = 0x1A
 	   => PLL6_NUM   =  2 = 0x02
 	   => PLL6_DENOM =  3 = 0x03
 	*/
-	writel(0x00000002, &anadig->pll6_num);
-	writel(0x00000003, &anadig->pll6_denom);
-	writel(0x0000201A, &anadig->pll6_ctrl);
-	/* wait for PLL6 to be locked */
-	while(!(readl(&anadig->pll6_ctrl) & ANADIG_PLL_CTRL_LOCK));
+	config_pll(PLL_VIDEO, 26, 2, 3);
+	enable_pll(PLL_VIDEO);
 
 	/* Setting GPU input clock to VIDEO_PLL (PLL6_MAIN) */
 	writel(0x00000005, &ccm->GCC_clk2x);
