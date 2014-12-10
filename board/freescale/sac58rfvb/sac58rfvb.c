@@ -432,12 +432,9 @@ static void clock_init(void)
 	enable_periph_clk(AIPS2, AIPS2_OFF_ENET);
 	enable_periph_clk(AIPS2, AIPS2_OFF_MMDC);
 
-	/* enable PLL1 = PLL_CORE/ARM */
-	clrsetbits_le32(&anadig->pll1_ctrl,
-					ANADIG_PLL_CTRL_POWERDOWN | ANADIG_PLL_CTRL_BYPASS,
-					ANADIG_PLL_CTRL_ENABLE);
-	/* wait for PLL1 to be locked */
-	while(!(readl(&anadig->pll1_ctrl) & ANADIG_PLL_CTRL_LOCK));
+	/* Set PLL ARM = 1200 MHz and enable it */
+	config_pll(PLL_ARM, 50, 0, 1);
+	enable_pll(PLL_ARM);
 
 	/* configure ARM A7 clock => From PLL1 (PLL_CORE) = 1200/2 = 600MHz */
 	writel( (0x1 << CCM_PREDIV_CTRL_OFFSET) | (0x3 << CCM_MUX_CTL_OFFSET), &ccm->a7_clk);
@@ -462,12 +459,12 @@ static void clock_init(void)
 
 	/* Setting PLL4_MAIN and PLL8_MAIN to 1179MHz:
 			- (24 MHz * 49) + ((24 MHz/1000)*152)
+		=> DIV_SELECT = 49
+		=> PLLx_NUM   =  152
+		=> PLLx_DENOM = 1000
 	*/
-	writel(152, &anadig->pll4_num);
-	writel(1000, &anadig->pll4_denom);
-
-	writel(152, &anadig->pll8_num);
-	writel(1000, &anadig->pll8_denom);
+	config_pll(PLL_AUDIO0, 49, 152, 1000);
+	config_pll(PLL_AUDIO1, 49, 152, 1000);
 }
 
 static void mscm_init(void)
