@@ -161,6 +161,18 @@
 
 #define MSCM_IRSPRC_NUM					112
 
+
+/* ANADIG */
+#define ANADIG_PLL1_LOCKED				(1 << 6)
+#define ANADIG_PLL2_LOCKED				(1 << 5)
+#define ANADIG_PLL3_LOCKED				(1 << 1)
+#define ANADIG_PLL4_LOCKED				(1 << 4)
+#define ANADIG_PLL5_LOCKED				(1 << 2)
+#define ANADIG_PLL6_LOCKED				(1 << 3)
+#define ANADIG_PLL7_LOCKED				(1 << 0)
+#define ANADIG_PLL8_LOCKED				(1 << 7)
+
+
 /* DDRMC */ /* MATT: use imx6 MMDC -> need to change the following and align with DDR memory */
 #define DDRMC_PHY_DQ_TIMING				0x00002613
 #define DDRMC_PHY_DQS_TIMING				0x00002615

@@ -131,6 +131,136 @@ int enable_fec_clock(void)
 	return 0;
 }
 
+
+/* This function makes sure the multiplier value is either
+ 20 or 22 that are the only valid values for PLL2, PLL3 and PLL7.
+ If the MULT value is correct, then is it converted to the
+ value valid in the register (0=20, 1=22)
+ */
+static int get_pll2_mult_value(int mult)
+{
+	int div_select = -1;
+
+	switch (mult)
+	{
+	case 20:
+		div_select = 0;
+		break;
+	case 22:
+		div_select = 1;
+		break;
+	default:
+		break;
+	}
+
+	return div_select;
+}
+
+/* This function verifies the validity of the MULT value for PLL1,
+   PLL4, PLL6 and PLL8 */
+static int check_pll1_mult_value(int mult)
+{
+	if ((mult>127)||(mult<1))
+		return -1;
+	else
+		return 0;
+}
+
+/* This function configures the different PLLs' DIV_SELECT, MFN and MFD parameters */
+int config_pll(enum pll_clocks pll, int mult, int mfn, int mfd)
+{
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+	u32 pll_ctrl_reg;
+	u32 pll_num_reg = -1;
+	u32 pll_denom_reg = -1;
+	u32 value;
+	u32 pll_div_select_value;
+
+	switch(pll)
+	{
+	case PLL_ARM: /* PLL1 */
+		if (check_pll1_mult_value(mult) < 0)
+			return -1;
+		pll_div_select_value = mult;
+		pll_ctrl_reg = &anadig->pll1_ctrl;
+		pll_num_reg = &anadig->pll1_num;
+		pll_denom_reg = &anadig->pll1_denom;
+		break;
+
+	case PLL_SYS: /* PLL2 */
+		pll_div_select_value = get_pll2_mult_value(mult);
+		if (pll_div_select_value < 0)
+			return -1;
+		pll_ctrl_reg = &anadig->pll2_ctrl;
+		pll_num_reg = &anadig->pll2_num;
+		pll_denom_reg = &anadig->pll2_denom;
+		break;
+
+	case PLL_USBOTG0: /* PLL3 */
+		pll_div_select_value = get_pll2_mult_value(mult);
+		if (pll_div_select_value < 0)
+			return -1;
+		pll_ctrl_reg = &anadig->pll3_ctrl;
+		break;
+
+	case PLL_USBOTG1: /* PLL7 */
+		pll_div_select_value = get_pll2_mult_value(mult);
+		if (pll_div_select_value < 0)
+			return -1;
+		pll_ctrl_reg = &anadig->pll7_ctrl;
+		break;
+
+	case PLL_AUDIO0: /* PLL4 */
+		if (check_pll1_mult_value(mult) < 0)
+			return -1;
+		pll_div_select_value = mult;
+		pll_ctrl_reg = &anadig->pll4_ctrl;
+		pll_num_reg = &anadig->pll4_num;
+		pll_denom_reg = &anadig->pll4_denom;
+		break;
+
+	case PLL_AUDIO1: /* PLL8 */
+		if (check_pll1_mult_value(mult) < 0)
+			return -1;
+		pll_div_select_value = mult;
+		pll_ctrl_reg = &anadig->pll8_ctrl;
+		pll_num_reg = &anadig->pll8_num;
+		pll_denom_reg = &anadig->pll8_denom;
+		break;
+
+	case PLL_VIDEO: /* PLL6 */
+		if (check_pll1_mult_value(mult) < 0)
+			return -1;
+		pll_div_select_value = mult;
+		pll_ctrl_reg = &anadig->pll6_ctrl;
+		pll_num_reg = &anadig->pll6_num;
+		pll_denom_reg = &anadig->pll6_denom;
+		break;
+
+	case PLL_ENET: /*PLL5 */
+		return 0;
+		break;
+
+	default:
+		return -1;
+		break;
+	}
+
+	/* Write frequency multiplier in PLL_CTRL_REG, DIV_SELECT field */
+	value = readl(pll_ctrl_reg);
+	value &= ~ANADIG_PLL1_CTRL_DIV_SELECT_MASK;
+	writel(value | pll_div_select_value, pll_ctrl_reg);
+
+	/* Set MFN and MFD */
+	if (pll_num_reg != -1)
+		writel(mfn, pll_num_reg);
+
+	if (pll_denom_reg != -1)
+		writel(mfd, pll_denom_reg);
+
+	return 0;
+}
+
 int enable_pll(enum pll_clocks pll)
 {
 	u32 reg = 0;
@@ -311,6 +441,50 @@ static u32 decode_pll(enum pll_clocks pll, u32 infreq, u8 pfd)
 		return -1;
 	} /* switch(pll) */
 }
+
+
+int is_pll_locked(enum pll_clocks pll)
+{
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+	u32 anadig_pll_lock;
+	u32 mask;
+
+	anadig_pll_lock = readl(&anadig->pll_lock);
+
+	switch(pll)
+	{
+	case PLL_ARM: /* PLL1 */
+		mask = ANADIG_PLL1_LOCKED;
+		break;
+	case PLL_SYS: /* PLL2 */
+		mask = ANADIG_PLL2_LOCKED;
+		break;
+	case PLL_USBOTG0: /* PLL3 */
+		mask = ANADIG_PLL3_LOCKED;
+		break;
+	case PLL_USBOTG1: /* PLL7 */
+		mask = ANADIG_PLL7_LOCKED;
+		break;
+	case PLL_AUDIO0: /* PLL4 */
+		mask = ANADIG_PLL4_LOCKED;
+		break;
+	case PLL_AUDIO1: /* PLL8 */
+		mask = ANADIG_PLL8_LOCKED;
+		break;
+	case PLL_VIDEO: /* PLL6 */
+		mask = ANADIG_PLL6_LOCKED;
+		break;
+	case PLL_ENET: /*PLL5 */
+		mask = ANADIG_PLL5_LOCKED;
+		break;
+	default:
+		return 0;
+		break;
+	}
+
+	return ( (anadig_pll_lock & mask) == mask);
+}
+
 
 /* return ARM A7 clock frequency in Hz                         */
 static u32 get_mcu_main_clk(void)
@@ -637,15 +811,35 @@ int do_sac58r_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	printf("\n");
 	printf("-------------------------------------------------------------------------------------------------------\n");
 	printf("DPLLs settings:\n");
-	printf("PLL_ARM  main: %5d MHz\n", decode_pll(PLL_ARM, 24000,0)/1000);
-	printf("PLL_SYS  main: %5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n", decode_pll(PLL_SYS, 24000,0)/1000,
-		decode_pll(PLL_SYS, 24000,1)/1000, decode_pll(PLL_SYS, 24000,2)/1000, decode_pll(PLL_SYS, 24000,3)/1000, decode_pll(PLL_SYS, 24000,4)/1000);
-	printf("PLL_USB0 main: %5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n", decode_pll(PLL_USBOTG0, 24000,0)/1000,
-		decode_pll(PLL_USBOTG0, 24000,1)/1000, decode_pll(PLL_USBOTG0, 24000,2)/1000, decode_pll(PLL_USBOTG0, 24000,3)/1000, decode_pll(PLL_USBOTG0, 24000,4)/1000);
-	printf("PLL_USB1 main: %5d MHz\n", decode_pll(PLL_USBOTG1, 24000,0)/1000);
-	printf("PLL_AUD0 main: %5d MHz\n", decode_pll(PLL_AUDIO0, 24000,0)/1000);
-	printf("PLL_AUD1 main: %5d MHz\n", decode_pll(PLL_AUDIO1, 24000,0)/1000);
-	printf("PLL_VID  main: %5d MHz\n", decode_pll(PLL_VIDEO, 24000,0)/1000);
+	printf("PLL_ARM  main: %5d MHz (locked: %d)\n",
+		decode_pll(PLL_ARM, 24000,0)/1000,
+		is_pll_locked(PLL_ARM) );
+	printf("PLL_SYS  main: %5d MHz (locked: %d) - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",
+		decode_pll(PLL_SYS, 24000,0)/1000,
+		is_pll_locked(PLL_SYS),
+		decode_pll(PLL_SYS, 24000,1)/1000,
+		decode_pll(PLL_SYS, 24000,2)/1000,
+		decode_pll(PLL_SYS, 24000,3)/1000,
+		decode_pll(PLL_SYS, 24000,4)/1000);
+	printf("PLL_USB0 main: %5d MHz (locked: %d) - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",
+		decode_pll(PLL_USBOTG0, 24000,0)/1000,
+		is_pll_locked(PLL_USBOTG0),
+		decode_pll(PLL_USBOTG0, 24000,1)/1000,
+		decode_pll(PLL_USBOTG0, 24000,2)/1000,
+		decode_pll(PLL_USBOTG0, 24000,3)/1000,
+		decode_pll(PLL_USBOTG0, 24000,4)/1000);
+	printf("PLL_USB1 main: %5d MHz (locked: %d)\n",
+		decode_pll(PLL_USBOTG1, 24000,0)/1000,
+		is_pll_locked(PLL_USBOTG1) );
+	printf("PLL_AUD0 main: %5d MHz (locked: %d)\n",
+		decode_pll(PLL_AUDIO0, 24000,0)/1000,
+		is_pll_locked(PLL_AUDIO0) );
+	printf("PLL_AUD1 main: %5d MHz (locked: %d)\n",
+		decode_pll(PLL_AUDIO1, 24000,0)/1000,
+		is_pll_locked(PLL_AUDIO1) );
+	printf("PLL_VID  main: %5d MHz (locked: %d)\n",
+		decode_pll(PLL_VIDEO, 24000,0)/1000,
+		is_pll_locked(PLL_VIDEO) );
 	printf("-------------------------------------------------------------------------------------------------------\n");
 	printf("Root clocks:\n");
 	printf("CPU A7 clock:  %5d MHz\n", mxc_get_clock(MXC_ARM_CLK) / 1000000);
