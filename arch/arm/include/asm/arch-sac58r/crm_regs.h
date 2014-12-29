@@ -44,7 +44,7 @@ struct ccm_reg {
 	u32 resv0;
 	u32 DCU_LDI_pix_clk_src;
 	u32 GCC_clk2x;
-	u32 anacatum_proc_clk;
+	u32 vidadc_proc_clk;
 	u32 resv4;
 	u32 resv5;
 	u32 resv6;
