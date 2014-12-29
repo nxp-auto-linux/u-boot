@@ -485,6 +485,115 @@ int is_pll_locked(enum pll_clocks pll)
 	return ( (anadig_pll_lock & mask) == mask);
 }
 
+#define MIN_PFD_FRAC_VALUE	12
+#define MAX_PFD_FRAC_VALUE	35
+int config_pll_pfd_frac(enum pll_clocks pll, enum pll_pfds pfd, u8 frac)
+{
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+	u32 pll_ctrl_reg;
+	u32 pfd_mask;
+	u32 pfd_offset;
+	u32 value;
+
+	/* Only PLL2 and PLL3 have PFDs */
+	if (pll == PLL_SYS)
+		pll_ctrl_reg = &anadig->pll2_pfd;
+	else if (pll == PLL_USBOTG0)
+		pll_ctrl_reg = &anadig->pll3_pfd;
+	else
+		return -1;
+
+	/* Verify FRAC value is valid */
+	if ((frac>MAX_PFD_FRAC_VALUE)||(frac<MIN_PFD_FRAC_VALUE))
+		return -1;
+
+	switch(pfd)
+	{
+	case PLL_PFD1:
+		pfd_mask = ANADIG_PLL_PFD1_FRAC_MASK;
+		pfd_offset = ANADIG_PLL_PFD1_OFFSET;
+		break;
+
+	case PLL_PFD2:
+		pfd_mask = ANADIG_PLL_PFD2_FRAC_MASK;
+		pfd_offset = ANADIG_PLL_PFD2_OFFSET;
+		break;
+
+	case PLL_PFD3:
+		pfd_mask = ANADIG_PLL_PFD3_FRAC_MASK;
+		pfd_offset = ANADIG_PLL_PFD3_OFFSET;
+		break;
+
+	case PLL_PFD4:
+		pfd_mask = ANADIG_PLL_PFD4_FRAC_MASK;
+		pfd_offset = ANADIG_PLL_PFD4_OFFSET;
+		break;
+
+	default:
+		return -1;
+		break;
+	}
+
+	/* Write PFD frac in PFD register */
+	value = readl(pll_ctrl_reg);
+	value &= ~pfd_mask;
+	writel(value | (frac<<pfd_offset), pll_ctrl_reg);
+
+	return 0;
+}
+
+int enable_pll_pfd(enum pll_clocks pll, enum pll_pfds pfd, u8 enable)
+{
+	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+	u32 pll_ctrl_reg;
+	u32 pfd_clkgate_mask;
+	u32 value;
+
+	/* Only PLL2 and PLL3 have PFDs */
+	if (pll == PLL_SYS)
+		pll_ctrl_reg = &anadig->pll2_pfd;
+	else if (pll == PLL_USBOTG0)
+		pll_ctrl_reg = &anadig->pll3_pfd;
+	else
+		return -1;
+
+	switch(pfd)
+	{
+	case PLL_PFD1:
+		pfd_clkgate_mask = ANADIG_PLL_PFD1_CLKGATE_MASK;
+		break;
+
+	case PLL_PFD2:
+		pfd_clkgate_mask = ANADIG_PLL_PFD2_CLKGATE_MASK;
+		break;
+
+	case PLL_PFD3:
+		pfd_clkgate_mask = ANADIG_PLL_PFD3_CLKGATE_MASK;
+		break;
+
+	case PLL_PFD4:
+		pfd_clkgate_mask = ANADIG_PLL_PFD4_CLKGATE_MASK;
+		break;
+
+	default:
+		return -1;
+		break;
+	}
+
+	/* Enable/disable PFD in PFD register */
+	value = readl(pll_ctrl_reg);
+
+	if (enable)
+		value &= ~pfd_clkgate_mask;
+	else
+		value |= pfd_clkgate_mask;
+
+	writel(value, pll_ctrl_reg);
+
+	return 0;
+}
+
+
 
 /* return ARM A7 clock frequency in Hz                         */
 static u32 get_mcu_main_clk(void)

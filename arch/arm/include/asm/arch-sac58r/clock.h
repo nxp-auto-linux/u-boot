@@ -47,6 +47,13 @@ enum pll_clocks {
 	PLL_ENET,		/* ENET PLL        => PLL8 */
 };
 
+enum pll_pfds {
+	PLL_PFD1,
+	PLL_PFD2,
+	PLL_PFD3,
+	PLL_PFD4,
+};
+
 int enable_i2c_clk(unsigned char enable, unsigned i2c_num);
 void enable_periph_clk(u32 aips_num, u32 periph_number);
 void disable_periph_clk(u32 aips_num, u32 periph_number);
@@ -55,7 +62,8 @@ int enable_fec_clock(void);
 int enable_pll(enum pll_clocks pll);
 int config_pll(enum pll_clocks pll, int mult, int mfn, int mfd);
 int is_pll_locked(enum pll_clocks pll);
-
+int config_pll_pfd_frac(enum pll_clocks pll, enum pll_pfds pfd, u8 frac);
+int enable_pll_pfd(enum pll_clocks pll, enum pll_pfds pfd, u8 enable);
 
 unsigned int mxc_get_clock(enum mxc_clock clk);
 
