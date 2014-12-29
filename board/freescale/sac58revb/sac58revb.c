@@ -619,6 +619,38 @@ static void spdif_clock_init(void)
 	writel(0x3 << CCM_MUX_CTL_OFFSET, &ccm->spdif1_tx_clk);
 }
 
+/* This function configures the VIU subsystem, i.e. :
+	- VIU core clocks
+	- CSI2 clocks
+	- VAFE and VDEC clocks
+*/
+static void viu_subsystem_clocks_init(void)
+{
+	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
+
+	/* VIU core input clock source is USB0_PLL_PFD1:
+		- Set USB0_PLL_PFD1 to 270 MHz (480*18)/32
+		- Select input clock source to VIU as USB0_PLL_PFD1 */
+	config_pll_pfd_frac(PLL_USBOTG0, PLL_PFD1, 32);
+	enable_pll_pfd(PLL_USBOTG0, PLL_PFD1, 1);
+
+	/* VIU input clock selection = USB0_PLL_PFD1 */
+	writel(0x7 << CCM_MUX_CTL_OFFSET, &ccm->viu_clk);
+
+	/* CSI2:
+		- Set MIPI interface clock divider to 3
+		- Set MIPI ref clock as FXOSC
+	*/
+	writel(0x2 << CCM_PREDIV_CTRL_OFFSET, &ccm->mipi_viu_intf_clk);
+	writel(0x1 << CCM_MUX_CTL_OFFSET, &ccm->mipi_24M_ref_clk);
+
+	/* VAFE:
+		- Select VAFE proc input clock source as BUS_CLK
+		- Set VAFE proc clk = 133 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0 << CCM_PREDIV_CTRL_OFFSET) |
+		0x4 << CCM_MUX_CTL_OFFSET, &ccm->vidadc_proc_clk);
+}
+
 static void clock_init(void)
 {
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
@@ -687,8 +719,14 @@ static void clock_init(void)
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
 #endif
-	/*NFC clock => from USBO_PLL_PFD3 = 375.6/20 (0x13 +1)= 19 MHz validation value*/
-	writel(0x1b171a1c,0x400260f0);
+
+	/* NFC clock = USB0_PLL_PFD3:
+		- Set USB0_PLL_PFD3 to 375.6 MHz (480*18)/23
+		- Set NFC div clock to 20 (19 + 1)
+	*/
+	config_pll_pfd_frac(PLL_USBOTG0, PLL_PFD3, 23);
+	enable_pll_pfd(PLL_USBOTG0, PLL_PFD3, 1);
+
 	writel(CCM_MODULE_ENABLE_CTL_EN | (0x13<< CCM_PREDIV_CTRL_OFFSET)
 		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->nfc_flash_clk_div);
 
@@ -824,6 +862,8 @@ int board_init(void)
 	gpu_clk_init();
 
 	spdif_clock_init();
+
+	viu_subsystem_clocks_init();
 
 	return 0;
 }
