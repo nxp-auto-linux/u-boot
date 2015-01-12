@@ -19,3 +19,4 @@
 
 obj-y	+= generic.o
 obj-y	+= timer.o
+obj-y	+= soc.o
