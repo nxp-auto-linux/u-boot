@@ -136,8 +136,8 @@
 #define CONFIG_SYS_DCACHE_OFF
 #define CONFIG_SYS_MALLOC_BASE		0x3f004000 // HACK
 #endif
-#define CONFIG_SYS_TEXT_BASE		0x3F008000
 
+#define CONFIG_SYS_TEXT_BASE		0x3F008000
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
@@ -281,4 +281,5 @@
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTZ
 
+#define CONFIG_SECURE_BOOT
 #endif
