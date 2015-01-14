@@ -106,6 +106,10 @@
 #define SAI11_BASE_ADDR		(AIPS1_BASE_ADDR + 0x0006B000)
 #define JESD204B_BASE_ADDR	(AIPS1_BASE_ADDR + 0x0006E000)
 
+#define GPC_AIPS1_OFFPF_PCTL_3	0x114
+
+#define IMX_IIM_BASE		OCOTP_BASE_ADDR
+
 /* AIPS 2 */
 #define SEMA4_BASE_ADDR		(AIPS2_BASE_ADDR + 0x00001000)
 #define UART3_BASE_ADDR		(AIPS2_BASE_ADDR + 0x00020000)
@@ -508,6 +512,37 @@ struct mscm_ir {
 	u32 ircpgir;
 	u32 rsvd2[23];
 	u16 irsprc[112];
+};
+
+struct iim_regs {
+	u32	ctrl;
+	u32	ctrl_set;
+	u32     ctrl_clr;
+	u32	ctrl_tog;
+	u32	timing;
+	u32     rsvd0[3];
+	u32     data;
+	u32     rsvd1[3];
+	u32     read_ctrl;
+	u32     rsvd2[3];
+	u32     fuse_data;
+	u32     rsvd3[3];
+	u32     sticky;
+	u32     rsvd4[3];
+	u32     scs;
+	u32     scs_set;
+	u32     scs_clr;
+	u32     scs_tog;
+	u32     crc_addr;
+	u32     rsvd5[3];
+	u32     crc_value;
+	u32     rsvd6[3];
+	u32     version;
+	u32     rsvd7[0xdb];
+
+	struct fuse_bank_sac58r {
+		u32	fuse_regs[0x20];
+	} bank[15];
 };
 
 #endif	/* __ASSEMBLER__*/
