@@ -35,6 +35,11 @@
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
+#define CONFIG_ARCH_MISC_INIT
+
+/* uncomment for SECURE mode support */
+/* #define CONFIG_SECURE_BOOT */
+
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
