@@ -40,6 +40,11 @@
 
 #define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop */
 
+#define CONFIG_ARCH_MISC_INIT
+
+/* uncomment for SECURE mode support */
+/* #define CONFIG_SECURE_BOOT */
+
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
@@ -281,5 +286,4 @@
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTZ
 
-#define CONFIG_SECURE_BOOT
 #endif
