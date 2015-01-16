@@ -346,7 +346,6 @@ void setup_iomux_nfc(void)
 		SAC58R_PAD_PA16__NFC_CE1B,
 		SAC58R_PAD_PC1__NFC_REB,
 		SAC58R_PAD_PC0__NFC_RB0B,
-		SAC58R_PAD_PF25__NFC_RB1B,
 		SAC58R_PAD_PC4__NFC_ALE,
 		SAC58R_PAD_PC3__NFC_CLE,
 	};
@@ -435,6 +434,8 @@ int board_mmc_init(bd_t *bis)
 static void setup_iomux_gpio(void)
 {
 	static const iomux_v3_cfg_t gpio_pads[] = {
+		SAC58R_PAD_PF16_USB0_ID,  /* USB OTG pin id */
+		SAC58R_PAD_PF25_GPIO_185, /* USB OTG VBUS ENABLE */
 		SAC58R_PAD_PA4__GPIO_4,   /* CS42888 reset line */
 		SAC58R_PAD_PF14__GPIO_174, /* USR-SW3 button */
 		SAC58R_PAD_PL8__GPIO_360, /* USR-SW1 button */
