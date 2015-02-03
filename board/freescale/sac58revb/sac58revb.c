@@ -84,9 +84,28 @@ struct i2c_pads_info i2c_pad_info3 = {
 #endif
 
 
+#ifdef CONFIG_REVB
+/* Micron 1GB */
+#define MDCTL_CONFIG 		0x04190000
+#define MDCFG0_CONFIG		0x6C7175D3
+#define MDOR_CONFIG		0x00711023
+#define MDASP_CONFIG		0x0000007F
+#define MPRDDLCTL_CONFIG 	0x48484A46
+#define MPWRDLCTL_CONFIG	0x33353533
+#define MPDGCTRL0_CONFIG	0x414F0149
+#define MPDGCTRL1_CONFIG	0x0156015D
+#else
 /* Micron MT41J64M16 @ 416 MHz*/
 /* 13 row addr, 10 col addr, burst length 8, data size 32 */
-#define MDCTL_CONFIG 	0x02190000
+#define MDCTL_CONFIG 		0x02190000
+#define MDCFG0_CONFIG		0x303475D3
+#define MDOR_CONFIG		0x00341023
+#define MDASP_CONFIG		0x0000004F
+#define MPRDDLCTL_CONFIG 	0x4B494F4E
+#define MPWRDLCTL_CONFIG	0x38353635
+#define MPDGCTRL0_CONFIG	0x41520142
+#define MPDGCTRL1_CONFIG	0x01560152
+#endif
 
 void setup_iomux_ddr(void)
 {
@@ -152,7 +171,7 @@ void ddr_ctrl_init(void)
 	}
 
 	/* MDCFG0: tRFC=48,tXS=52,tXP=3,tXPDLL=10,tFAW=30,tCL=6 */
-	writel(0x303475D3, 0x4016900C); //MDCFG0
+	writel(MDCFG0_CONFIG, 0x4016900C); //MDCFG0
 
 	/* MDCFG1:  tRCD=6,tRP=6,tRC=20,tRAS=15,tRPA=1,tWR=6,tMRD=4,tCWL=5 */
 	writel(0xB66E8A83, 0x40169010); //MDCFG1
@@ -167,7 +186,7 @@ void ddr_ctrl_init(void)
 	writel(0x00010640, 0x40169018); //MDMISC 
 
 	/* MDOR: WALAT=1, BI bank interleave on, MIF3=3, RALAT=1, 8 banks, DDR3 */
-	writel(0x00341023, 0x40169030); //MDOR
+	writel(MDOR_CONFIG, 0x40169030); //MDOR
 	writel(MDCTL_CONFIG, 0x40169000); //MDCTL
 
 	/* Perform ZQ calibration */
@@ -196,17 +215,17 @@ void ddr_ctrl_init(void)
 	/* DDR ZQ calibration */
 	writel(0x04008040, 0x4016901C);
 
-	writel(0x0000004F, 0x40169040); //MDASP: 256 MB memory
+	writel(MDASP_CONFIG, 0x40169040);
 
 	/* Configure the power down and self-refresh entry and exit parameters */
 	/* Read delay line offsets */
-	writel(0x4B494F4E, 0x40169848); //MPRDDLCTL,
+	writel(MPRDDLCTL_CONFIG, 0x40169848); //MPRDDLCTL,
 	/* Write delay line offsets */
-	writel(0x38353635, 0x40169850); //MPWRDLCTL0
+	writel(MPWRDLCTL_CONFIG, 0x40169850); //MPWRDLCTL0
 	/* Read DQS gating control 0 */
-	writel(0x41520142, 0x4016983C); //MPDGCTRL0
+	writel(MPDGCTRL0_CONFIG, 0x4016983C); //MPDGCTRL0
 	/* Read DQS gating control 1 */
-	writel(0x01560152, 0x40169840); //MPDGCTRL1
+	writel(MPDGCTRL1_CONFIG, 0x40169840); //MPDGCTRL1
 	/* Read/write command delay - default */
 	writel(0x000026D2, 0x4016902C); //MDRWD
 	/* ODT timing control */
@@ -221,6 +240,8 @@ void ddr_ctrl_init(void)
 	/* Deassert the configuration request */
 	writel(0x00000000, 0x4016901C); //MDSCR 1
 }
+
+
 
 
 int dram_init(void)
@@ -809,7 +830,11 @@ int board_init(void)
 
 int checkboard(void)
 {
+#ifdef CONFIG_REVB
+	puts("Board: SAC58R EVB RevB\n");
+#else
 	puts("Board: SAC58R EVB\n");
+#endif
 
 	return 0;
 }
