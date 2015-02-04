@@ -212,6 +212,26 @@ static void setup_board_i2c(void)
 }
 #endif
 
+void setup_iomux_qspi(void)
+{
+	static const iomux_v3_cfg_t qspi_pads[] = {
+		SAC58R_PAD_PC24__QSPI_A_DATA0,
+		SAC58R_PAD_PC21__QSPI_A_DATA1,
+		SAC58R_PAD_PC25__QSPI_A_DATA2,
+		SAC58R_PAD_PC16__QSPI_A_DATA3,
+		SAC58R_PAD_PC19__QSPI_B_DATA0,
+		SAC58R_PAD_PC15__QSPI_B_DATA1,
+		SAC58R_PAD_PC23__QSPI_B_DATA2,
+		SAC58R_PAD_PC14__QSPI_B_DATA3,
+		SAC58R_PAD_PC17__QSPI_A_CS0,
+		SAC58R_PAD_PC18__QSPI_B_CS0,
+		SAC58R_PAD_PD2__QSPI_A_CS1,
+		SAC58R_PAD_PD9__QSPI_B_CS1,
+		SAC58R_PAD_PC20__QSPI_A_SCK,
+		SAC58R_PAD_PC22__QSPI_B_SCK,
+	};
+	imx_iomux_v3_setup_multiple_pads(qspi_pads, ARRAY_SIZE(qspi_pads));
+}
 
 #ifdef CONFIG_SYS_USE_NAND
 void setup_iomux_nfc(void)
@@ -431,6 +451,8 @@ static void clock_init(void)
 	enable_periph_clk(AIPS0, AIPS0_OFF_GPIOC);
 	enable_periph_clk(AIPS2, AIPS2_OFF_ENET);
 	enable_periph_clk(AIPS2, AIPS2_OFF_MMDC);
+	enable_periph_clk(AIPS2, AIPS2_OFF_QSPI);
+
 
 	/* Set PLL ARM = 1200 MHz and enable it */
 	config_pll(PLL_ARM, 50, 0, 1);
@@ -463,8 +485,14 @@ static void clock_init(void)
 		=> PLLx_NUM   =  152
 		=> PLLx_DENOM = 1000
 	*/
+
 	config_pll(PLL_AUDIO0, 49, 152, 1000);
 	config_pll(PLL_AUDIO1, 49, 152, 1000);
+
+
+	/* QSPI_4x clock => from SYS_PLL_PFD1/2 = 500/2 = 250 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x1<< CCM_PREDIV_CTRL_OFFSET)
+		| (0x0 << CCM_MUX_CTL_OFFSET), &ccm->qspi_4x_clk);
 }
 
 static void mscm_init(void)
@@ -512,6 +540,8 @@ int board_early_init_f(void)
 	setup_iomux_gpio();
 
 	setup_iomux_uart();
+
+	setup_iomux_qspi();
 
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
