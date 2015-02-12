@@ -454,6 +454,10 @@ int board_mmc_init(bd_t *bis)
 #ifdef CONFIG_MVF_GPIO
 static void setup_iomux_gpio(void)
 {
+	iomux_v3_cfg_t sdcard0_cd;
+	iomux_v3_cfg_t sdcard1_cd;
+	u32 sdcard_cd_padconf;
+
 	static const iomux_v3_cfg_t gpio_pads[] = {
 		SAC58R_PAD_PF16_USB0_ID,  /* USB OTG pin id */
 		SAC58R_PAD_PF25_GPIO_185, /* USB OTG VBUS ENABLE */
@@ -476,6 +480,22 @@ static void setup_iomux_gpio(void)
 	/* On some boards, CS42888 holds I2C0 bus lines low. Resetting audio codec
 		puts things back to normal */
 	gpio_direction_output(4, 1);
+
+	/*
+	 * SD cards Card Detect GPIOs for slot 0 (GPIO_153) and slot 1 (GPIO154):
+	 * set specific IOMUX configuration:
+	 * - keep IO in input only so that IRQ gets triggered
+	 */
+	sdcard_cd_padconf = PAD_CTL_PUS_100K_UP |
+			PAD_CTL_SPEED_MED |
+			PAD_CTL_DSE_25ohm |
+			PAD_CTL_IBE_ENABLE;
+
+	sdcard0_cd = IOMUX_PAD(0x264, 0x264, 0,  __NA_, 0, sdcard_cd_padconf);
+	sdcard1_cd = IOMUX_PAD(0x268, 0x268, 0,  __NA_, 0, sdcard_cd_padconf);
+
+	imx_iomux_v3_setup_pad(sdcard0_cd);
+	imx_iomux_v3_setup_pad(sdcard1_cd);
 }
 #endif
 
