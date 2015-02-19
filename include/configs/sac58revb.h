@@ -60,6 +60,8 @@
 
 #define CONFIG_FSL_LPUART
 #define LPUART_BASE			UART4_BASE_ADDR
+/* Only UART0 and UART1 have hardware flow control */
+#define LPUART_WO_HW_FLOW_CTRL
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
