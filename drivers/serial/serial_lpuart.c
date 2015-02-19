@@ -85,7 +85,10 @@ static int lpuart_serial_init(void)
 	ctrl &= ~UC2_TE;
 	__raw_writeb(ctrl, &base->uc2);
 
+#ifndef LPUART_WO_HW_FLOW_CTRL
 	__raw_writeb(0, &base->umodem);
+#endif
+
 	__raw_writeb(0, &base->uc1);
 
 	/* provide data bits, parity, stop bit, etc */
