@@ -689,6 +689,10 @@ static void clock_init(void)
 	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC2);
 	enable_periph_clk(AIPS1, AIPS1_OFF_AUD_ADC_DAC3);
 
+#ifdef CONFIG_I2C_MXC
+	enable_periph_clk(AIPS1, AIPS1_OFF_I2C0);
+#endif
+
 	enable_periph_clk(AIPS1, AIPS2_OFF_SAI0);
 	enable_periph_clk(AIPS1, AIPS2_OFF_SAI1);
 	enable_periph_clk(AIPS1, AIPS1_OFF_SAI4);

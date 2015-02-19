@@ -453,6 +453,9 @@ static void clock_init(void)
 	enable_periph_clk(AIPS2, AIPS2_OFF_MMDC);
 	enable_periph_clk(AIPS2, AIPS2_OFF_QSPI);
 
+#ifdef CONFIG_I2C_MXC
+	enable_periph_clk(AIPS1, AIPS1_OFF_I2C0);
+#endif
 
 	/* Set PLL ARM = 1200 MHz and enable it */
 	config_pll(PLL_ARM, 50, 0, 1);
