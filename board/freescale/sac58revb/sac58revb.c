@@ -734,14 +734,14 @@ static void clock_init(void)
 	/* configure ARM A7 clock => From PLL1 (PLL_CORE) = 1200/2 = 600MHz */
 	writel( (0x1 << CCM_PREDIV_CTRL_OFFSET) | (0x3 << CCM_MUX_CTL_OFFSET), &ccm->a7_clk);
 
-	/* SDHC0,1,2 clocks => from PLL_SYS/5 = 480/5 = 96 MHz */
-	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
-		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC0_perclk);
+	/* SDHC0,1,2 clocks => from PLL_SS_PFD2/2 = 396/2 = 198 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x1 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x2 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC0_perclk);
 #ifndef CONFIG_SYS_USE_NAND
-	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
-		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC1_perclk);
-	writel(CCM_MODULE_ENABLE_CTL_EN | (0x4<< CCM_PREDIV_CTRL_OFFSET)
-		| (0x3 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x1 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x2 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC1_perclk);
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x1 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x2 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
 #endif
 
 	/* NFC clock = USB0_PLL_PFD3:
