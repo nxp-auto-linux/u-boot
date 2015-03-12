@@ -744,15 +744,9 @@ static void clock_init(void)
 		| (0x2 << CCM_MUX_CTL_OFFSET), &ccm->uSDHC2_perclk);
 #endif
 
-	/* NFC clock = USB0_PLL_PFD3:
-		- Set USB0_PLL_PFD3 to 375.6 MHz (480*18)/23
-		- Set NFC div clock to 20 (19 + 1)
-	*/
-	config_pll_pfd_frac(PLL_USBOTG0, PLL_PFD3, 23);
-	enable_pll_pfd(PLL_USBOTG0, PLL_PFD3, 1);
-
-	writel(CCM_MODULE_ENABLE_CTL_EN | (0x13<< CCM_PREDIV_CTRL_OFFSET)
-		| (0x5 << CCM_MUX_CTL_OFFSET), &ccm->nfc_flash_clk_div);
+	/*  NFC clock => from SYS_PLL_PFD2 = 396/8 (0x7 +1)= 49.5 MHz */
+	writel(CCM_MODULE_ENABLE_CTL_EN | (0x7 << CCM_PREDIV_CTRL_OFFSET)
+		| (0x1 << CCM_MUX_CTL_OFFSET), &ccm->nfc_flash_clk_div);
 
 	/* Refine AUDIO0 and AUDIO1 PLLs MFN and MFD parameters:
 		By default, they are way too big, kernel is unable to compute
