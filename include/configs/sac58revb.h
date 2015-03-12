@@ -42,6 +42,8 @@
 
 #define CONFIG_ARCH_MISC_INIT
 
+/*#define CONFIG_SYS_USE_NAND*/
+
 /* uncomment for SECURE mode support */
 /* #define CONFIG_SECURE_BOOT */
 
@@ -75,7 +77,14 @@
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC0_BASE_ADDR
 #define CONFIG_SYS_FSL_ESDHC_NUM	3
+#ifdef CONFIG_SYS_USE_NAND
+/* Boot from SDHC0 if NAND support is selected */
+#define CONFIG_SYS_MMC_ENV_DEV		0
+#else
+/* Otherwise boot from SDHC1 */
 #define CONFIG_SYS_MMC_ENV_DEV		1
+#endif
+
 
 #define CONFIG_MVF_GPIO
 
@@ -119,8 +128,6 @@
 #define CONFIG_SYS_I2C_SPEED            100000
 #define CONFIG_SYS_I2C_SLAVE            0x8
 
-
-/* #define CONFIG_SYS_USE_NAND */
 #if 0
 #ifdef CONFIG_SYS_USE_NAND
 /* Nand Flash Configs */
