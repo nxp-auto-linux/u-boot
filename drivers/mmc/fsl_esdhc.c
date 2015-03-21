@@ -96,7 +96,8 @@ static uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
 	else if (cmd->resp_type & MMC_RSP_PRESENT)
 		xfertyp |= XFERTYP_RSPTYP_48;
 
-#if defined(CONFIG_MX53) || defined(CONFIG_T4240QDS)
+#if defined(CONFIG_MX53) || defined(CONFIG_PPC_T4240) || \
+	defined(CONFIG_LS102XA) || defined(CONFIG_LS2085A)
 	if (cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION)
 		xfertyp |= XFERTYP_CMDTYP_ABORT;
 #endif
@@ -174,7 +175,9 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 	int timeout;
 	struct fsl_esdhc_cfg *cfg = mmc->priv;
 	struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
-#ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
+#ifdef CONFIG_LS2085A
+	dma_addr_t addr;
+#endif
 	uint wml_value;
 
 	wml_value = data->blocksize/4;
@@ -184,7 +187,17 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 			wml_value = WML_RD_WML_MAX_VAL;
 
 		esdhc_clrsetbits32(&regs->wml, WML_RD_WML_MASK, wml_value);
-		esdhc_write32(&regs->dsaddr, (uintptr_t)data->dest);
+#ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
+#ifdef CONFIG_LS2085A
+		addr = virt_to_phys((void *)(data->dest));
+		if (upper_32_bits(addr))
+			printf("Error found for upper 32 bits\n");
+		else
+			esdhc_write32(&regs->dsaddr, lower_32_bits(addr));
+#else
+		esdhc_write32(&regs->dsaddr, (u32)data->dest);
+#endif
+#endif
 	} else {
 		flush_dcache_range((ulong)data->src,
 				   (ulong)data->src+data->blocks
@@ -199,7 +212,17 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 
 		esdhc_clrsetbits32(&regs->wml, WML_WR_WML_MASK,
 					wml_value << 16);
-		esdhc_write32(&regs->dsaddr, (uintptr_t)data->src);
+#ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
+#ifdef CONFIG_LS2085A
+		addr = virt_to_phys((void *)(data->src));
+		if (upper_32_bits(addr))
+			printf("Error found for upper 32 bits\n");
+		else
+			esdhc_write32(&regs->dsaddr, lower_32_bits(addr));
+#else
+		esdhc_write32(&regs->dsaddr, (u32)data->src);
+#endif
+#endif
 	}
 #else	/* CONFIG_SYS_FSL_ESDHC_USE_PIO */
 	if (!(data->flags & MMC_DATA_READ)) {
@@ -255,10 +278,23 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 static void check_and_invalidate_dcache_range
 	(struct mmc_cmd *cmd,
 	 struct mmc_data *data) {
-	unsigned long start = (unsigned long)data->dest ;
+#ifdef CONFIG_LS2085A
+	unsigned start = 0;
+#else
+	unsigned start = (unsigned)data->dest ;
+#endif
 	unsigned size = roundup(ARCH_DMA_MINALIGN,
 				data->blocks*data->blocksize);
-	unsigned long end = start+size ;
+	unsigned end = start+size ;
+#ifdef CONFIG_LS2085A
+	dma_addr_t addr;
+
+	addr = virt_to_phys((void *)(data->dest));
+	if (upper_32_bits(addr))
+		printf("Error found for upper 32 bits\n");
+	else
+		start = lower_32_bits(addr);
+#endif
 	invalidate_dcache_range(start, end);
 }
 /*

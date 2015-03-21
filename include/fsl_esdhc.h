@@ -155,8 +155,12 @@
 #define ESDHC_HOSTCAPBLT_HSS	0x00200000
 
 struct fsl_esdhc_cfg {
-	uintptr_t esdhc_base;
-	uintptr_t sdhc_clk;
+#ifdef CONFIG_LS2085A
+	u64	esdhc_base;
+#else
+	u32	esdhc_base;
+#endif
+	u32	sdhc_clk;
 	u8	max_bus_width;
 	struct mmc_config cfg;
 };
