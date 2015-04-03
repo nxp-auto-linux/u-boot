@@ -752,6 +752,7 @@ int board_nand_init(struct nand_chip *chip)
 		chip->ecc.steps = 1;
 		chip->ecc.bytes = 45;
 		chip->ecc.size = 0x800;
+		chip->ecc.strength = 4;
 
 		nfc_set_field(mtd, NFC_FLASH_CONFIG,
 				CONFIG_ECC_MODE_MASK,
