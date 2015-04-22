@@ -23,10 +23,12 @@
 
 static void *dmamux_base[] = {
 		(void *)DMA_MUX0_BASE_ADDR,
+#if !defined(CONFIG_MAC57D5XH)
 		(void *)DMA_MUX1_BASE_ADDR,
 		(void *)DMA_MUX2_BASE_ADDR,
 		(void *)DMA_MUX3_BASE_ADDR,
-	};
+#endif
+};
 
 /*
  * configures a single channel in one of the DMA channel muxes

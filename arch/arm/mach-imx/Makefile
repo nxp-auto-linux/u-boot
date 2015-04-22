@@ -5,11 +5,11 @@
 #
 # (C) Copyright 2011 Freescale Semiconductor, Inc.
 
-ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 mx7 mx8m vf610 sac58r))
+ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 mx7 mx8m vf610 sac58r mac57d5xh))
 obj-y	= iomux-v3.o
 endif
 
-ifeq ($(SOC),$(filter $(SOC),vf610 sac58r))
+ifeq ($(SOC),$(filter $(SOC),vf610 sac58r mac57d5xh))
 obj-y  += dmachmux.o
 endif
 

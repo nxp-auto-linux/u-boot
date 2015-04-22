@@ -967,7 +967,7 @@ endif
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
 %.s32: %.bin
-	$(MAKE) $(build)=arch/arm/mach-imx $@
+	$(Q)$(MAKE) $(build)=arch/arm/mach-imx $@
 
 quiet_cmd_copy = COPY    $@
       cmd_copy = cp $< $@
