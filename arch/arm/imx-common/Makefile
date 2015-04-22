@@ -7,10 +7,10 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
-ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 vf610 sac58r))
+ifeq ($(SOC),$(filter $(SOC),mx25 mx35 mx5 mx6 vf610 sac58r mac57d5xh))
 obj-y	= iomux-v3.o
 endif
-ifeq ($(SOC),$(filter $(SOC),vf610 sac58r))
+ifeq ($(SOC),$(filter $(SOC),vf610 sac58r mac57d5xh))
 obj-y	+= dmachmux.o
 obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
 endif
