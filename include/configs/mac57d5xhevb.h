@@ -48,7 +48,7 @@
 
 
 #define CONFIG_FSL_LINFLEXUART
-#define LINFLEXUART_BASE		UART2_BASE
+#define LINFLEXUART_BASE		UART2_BASE_ADDR
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
