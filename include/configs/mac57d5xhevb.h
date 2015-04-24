@@ -38,11 +38,6 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
-#define CONFIG_CMD_FUSE
-#ifdef CONFIG_CMD_FUSE
-#define CONFIG_MXC_OCOTP
-#endif
-
 /* Size of malloc() pool */
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 1 * 1024 * 1024)
@@ -53,7 +48,7 @@
 
 
 #define CONFIG_FSL_LINFLEXUART
-#define LINFLEXUART_BASE			UART2_BASE
+#define LINFLEXUART_BASE		UART2_BASE
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE

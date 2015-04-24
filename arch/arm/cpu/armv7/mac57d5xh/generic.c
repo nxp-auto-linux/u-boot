@@ -32,22 +32,6 @@
 DECLARE_GLOBAL_DATA_PTR;
 #endif
 
-#ifdef CONFIG_MXC_OCOTP
-void enable_ocotp_clk(unsigned char enable)
-{
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 reg;
-
-	reg = readl(&ccm->ccgr6);
-	if (enable)
-		reg |= CCM_CCGR6_OCOTP_CTRL_MASK;
-	else
-		reg &= ~CCM_CCGR6_OCOTP_CTRL_MASK;
-	writel(reg, &ccm->ccgr6);
-}
-#endif
-
-
 /* pll frequency decoding for pll_pfd in KHz             */
 /* Only works for PLL1, PLL2, PLL3, PLL4, PLL6, PLL7     */
 /* PLL5 not implemented                                  */
@@ -200,11 +184,12 @@ return -1;
 
 static u32 get_mcu_main_clk(void)
 {
+#if 0 /* b46902 */
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
 	u32 ccm_ccsr, ccm_cacrr, armclk_div;
 	u32 sysclk_sel, pll_pfd_sel = 0;
 	u32 freq = 0;
-#if 0 /* b00450 */
+
 	ccm_ccsr = readl(&ccm->ccsr);
 	sysclk_sel = ccm_ccsr & CCM_CCSR_SYS_CLK_SEL_MASK;
 	sysclk_sel >>= CCM_CCSR_SYS_CLK_SEL_OFFSET;
@@ -360,6 +345,7 @@ u32 get_fec_clk(void)
 
 u32 get_nfc_clk(void)
 {
+#if 0 /*b46902*/
 	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
 	u32 ccm_cscmr1, ccm_cscdr3, ccm_cscdr2, nfc_clksel;
 	u32 freq = 0, div, pre_div;
@@ -390,6 +376,8 @@ u32 get_nfc_clk(void)
 	}
 
 	return freq / pre_div / div;
+#endif  /*b46902*/
+	return 1;
 }
 static u32 get_i2c_clk(void)
 {
@@ -462,6 +450,7 @@ U_BOOT_CMD(
 #ifdef CONFIG_FEC_MXC
 void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
+#if 0 /* b46902 */
 	struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
 	struct fuse_bank *bank = &ocotp->bank[4];
 	struct fuse_bank4_regs *fuse =
@@ -476,6 +465,7 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 	mac[3] = value >> 16;
 	mac[4] = value >> 8;
 	mac[5] = value;
+#endif
 }
 #endif
 
@@ -483,9 +473,9 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 static char *get_reset_cause(void)
 {
 	u32 cause;
+#if 0 /* b46902 */
 	struct src *src_regs = (struct src *)SRC_BASE_ADDR;
-
-#if 0 /* b00450 */
+ 
 	cause = readl(&src_regs->srsr);
 	writel(cause, &src_regs->srsr);
 	cause &= 0xff;
@@ -509,7 +499,8 @@ static char *get_reset_cause(void)
 
 void reset_cpu(ulong addr)
 {
-        struct src *src_regs = (struct src *)SRC_BASE_ADDR;
+#if 0 /* b46902 */
+	struct src *src_regs = (struct src *)SRC_BASE_ADDR;
 
         /* Generate a SW reset from SRC SCR register */
         writel(SRC_SCR_SW_RST, &src_regs->scr);
@@ -518,6 +509,7 @@ void reset_cpu(ulong addr)
         mdelay(1000);
         printf("FATAL: Reset Failed!\n");
         hang();
+#endif
 };
 
 int print_cpuinfo(void)

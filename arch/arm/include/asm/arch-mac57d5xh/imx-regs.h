@@ -331,64 +331,6 @@ struct ddrmr_regs {
 	u32 phy[53];
 };
 
-/* On-Chip One Time Programmable Controller (OCOTP) */
-struct ocotp_regs {
-	u32 ctrl;
-	u32 ctrl_set;
-	u32 ctrl_clr;
-	u32 ctrl_tog;
-	u32 timing;
-	u32 rsvd0[3];
-	u32 data;
-	u32 rsvd1[3];
-	u32 read_ctrl;
-	u32 rsvd2[3];
-	u32 read_fuse_data;
-	u32 rsvd3[7];
-	u32 scs;
-	u32 scs_set;
-	u32 scs_clr;
-	u32 scs_tog;
-	u32 crc_addr;
-	u32 rsvd4[3];
-	u32 crc_value;
-	u32 rsvd5[3];
-	u32 version;
-	u32 rsvd6[0xdb];
-
-	struct fuse_bank {
-		u32 fuse_regs[0x20];
-	} bank[16];
-};
-
-struct fuse_bank0_regs {
-	u32 lock;
-	u32 rsvd0[3];
-	u32 uid_low;
-	u32 rsvd1[3];
-	u32 uid_high;
-	u32 rsvd2[0x17];
-};
-
-struct fuse_bank4_regs {
-	u32 sjc_resp0;
-	u32 rsvd0[3];
-	u32 sjc_resp1;
-	u32 rsvd1[3];
-	u32 mac_addr0;
-	u32 rsvd2[3];
-	u32 mac_addr1;
-	u32 rsvd3[3];
-	u32 mac_addr2;
-	u32 rsvd4[3];
-	u32 mac_addr3;
-	u32 rsvd5[3];
-	u32 gp1;
-	u32 rsvd6[3];
-	u32 gp2;
-	u32 rsvd7[3];
-};
-
 /* UART */
 struct linflex_fsl {
 	u32 lincr1;
