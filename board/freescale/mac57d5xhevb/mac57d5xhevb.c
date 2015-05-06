@@ -21,7 +21,8 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux-mac57d5xh.h>
-#include <asm/arch/crm_regs.h>
+#include <asm/arch/mc_cgm_regs.h>
+#include <asm/arch/mc_me_regs.h>
 #include <asm/arch/clock.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
@@ -86,6 +87,9 @@ void setup_iomux_ddr(void)
 
 	imx_iomux_v3_setup_multiple_pads(ddr_pads, ARRAY_SIZE(ddr_pads));
 #endif /* b00450 */
+
+
+
 }
 
 void ddr_phy_init(void)
@@ -254,12 +258,13 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-	static const iomux_v3_cfg_t uart1_pads[] = {
-		MAC57D5XH_PAD_PTB4__UART1_TX,
-		MAC57D5XH_PAD_PTB5__UART1_RX,
-	};
+	/* Muxing for linflex */
+        writel( 0x3, 0x400DCD68 );
 
-	imx_iomux_v3_setup_multiple_pads(uart1_pads, ARRAY_SIZE(uart1_pads));
+        writel( 0x00080000, 0x400DC4F4 );
+
+        writel( 0x02030003, 0x400DC4F8 );
+
 }
 
 static void setup_iomux_enet(void)
@@ -365,61 +370,117 @@ int board_mmc_init(bd_t *bis)
 
 static void clock_init(void)
 {
-#if 0 /* b00450 */
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+    volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
+    volatile struct mc_me_reg * mc_me = (struct mc_me_reg *)MC_ME0_BASE_ADDR;
 
-	clrsetbits_le32(&ccm->ccgr0, CCM_REG_CTRL_MASK,
-		CCM_CCGR0_UART1_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr1, CCM_REG_CTRL_MASK,
-		CCM_CCGR1_PIT_CTRL_MASK | CCM_CCGR1_WDOGA5_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr2, CCM_REG_CTRL_MASK,
-		CCM_CCGR2_IOMUXC_CTRL_MASK | CCM_CCGR2_PORTA_CTRL_MASK |
-		CCM_CCGR2_PORTB_CTRL_MASK | CCM_CCGR2_PORTC_CTRL_MASK |
-		CCM_CCGR2_PORTD_CTRL_MASK | CCM_CCGR2_PORTE_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr3, CCM_REG_CTRL_MASK,
-		CCM_CCGR3_ANADIG_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr4, CCM_REG_CTRL_MASK,
-		CCM_CCGR4_WKUP_CTRL_MASK | CCM_CCGR4_CCM_CTRL_MASK |
-		CCM_CCGR4_GPC_CTRL_MASK | CCM_CCGR4_I2C0_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr6, CCM_REG_CTRL_MASK,
-		CCM_CCGR6_OCOTP_CTRL_MASK | CCM_CCGR6_DDRMC_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr7, CCM_REG_CTRL_MASK,
-		CCM_CCGR7_SDHC1_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr9, CCM_REG_CTRL_MASK,
-		CCM_CCGR9_FEC0_CTRL_MASK | CCM_CCGR9_FEC1_CTRL_MASK);
-	clrsetbits_le32(&ccm->ccgr10, CCM_REG_CTRL_MASK,
-		CCM_CCGR10_NFC_CTRL_MASK);
-	
-	clrsetbits_le32(&anadig->pll1_ctrl, ANADIG_PLL1_CTRL_POWERDOWN,
-		ANADIG_PLL1_CTRL_ENABLE | ANADIG_PLL1_CTRL_DIV_SELECT_MASK);
-	clrsetbits_le32(&anadig->pll2_ctrl, ANADIG_PLL2_CTRL_POWERDOWN,
-		ANADIG_PLL2_CTRL_ENABLE | ANADIG_PLL2_CTRL_DIV_SELECT_MASK);
+    /* enable all modes, enable all peripherals */
+    writel( MC_ME_ME_RUN3 | MC_ME_ME_RUN2 | MC_ME_ME_RUN1 | MC_ME_ME_RUN0, &mc_me->mc_me_me );
 
-	clrsetbits_le32(&ccm->ccr, CCM_CCR_OSCNT_MASK,
-		CCM_CCR_FIRC_EN | CCM_CCR_OSCNT(5));
-	clrsetbits_le32(&ccm->ccsr, CCM_REG_CTRL_MASK,
-		CCM_CCSR_PLL1_PFD_CLK_SEL(3) | CCM_CCSR_PLL2_PFD4_EN |
-		CCM_CCSR_PLL2_PFD3_EN | CCM_CCSR_PLL2_PFD2_EN |
-		CCM_CCSR_PLL2_PFD1_EN | CCM_CCSR_PLL1_PFD4_EN |
-		CCM_CCSR_PLL1_PFD3_EN | CCM_CCSR_PLL1_PFD2_EN |
-		CCM_CCSR_PLL1_PFD1_EN | CCM_CCSR_DDRC_CLK_SEL(1) |
-		CCM_CCSR_FAST_CLK_SEL(1) | CCM_CCSR_SYS_CLK_SEL(4));
-	clrsetbits_le32(&ccm->cacrr, CCM_REG_CTRL_MASK,
-		CCM_CACRR_IPG_CLK_DIV(1) | CCM_CACRR_BUS_CLK_DIV(2) |
-		CCM_CACRR_ARM_CLK_DIV(0));
-	clrsetbits_le32(&ccm->cscmr1, CCM_REG_CTRL_MASK,
-		CCM_CSCMR1_ESDHC1_CLK_SEL(3));
-	clrsetbits_le32(&ccm->cscdr1, CCM_REG_CTRL_MASK,
-		CCM_CSCDR1_RMII_CLK_EN);
-	clrsetbits_le32(&ccm->cscdr2, CCM_REG_CTRL_MASK,
-		CCM_CSCDR2_ESDHC1_EN | CCM_CSCDR2_ESDHC1_CLK_DIV(0) |
-		CCM_CSCDR2_NFC_CLK_INV | CCM_CSCDR2_NFC_EN | CCM_CSCDR2_NFC_CLK_FRAC_DIV(4));
-	clrsetbits_le32(&ccm->cscdr3,CCM_CSCDR3_NFC_PRE_DIV_MASK,
-		CCM_CSCDR3_NFC_PRE_DIV(1));
-	clrsetbits_le32(&ccm->cscmr2, CCM_REG_CTRL_MASK,
-		CCM_CSCMR2_RMII_CLK_SEL(0));
-#endif /* b00450 */
+    writel( MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
+            MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3, &mc_me->mc_me_run_pc0 );
+
+
+    /* turn on FXOSC, SRIC, SXOSC */
+    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_FLAON(0x3) |
+            MC_ME_RUNMODE_MC_FXOSCON | MC_ME_RUNMODE_MC_SIRCON |
+            MC_ME_RUNMODE_MC_SXOSCON, &mc_me->mc_me_run_mc0 );
+
+    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY , &mc_me->mc_me_mctl);
+    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY , &mc_me->mc_me_mctl);
+
+    while( (readl(&mc_me->mc_me_gs) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+
+    /* Set PLL source to FXOSC for AUX CLK Selector 0 */
+    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_FXOSC) , &mc_cgm->mc_cgm_ac0_sc);
+
+    while( (readl(&mc_cgm->mc_cgm_ac0_ss) & MC_CGM_ACn_SEL_MASK) != 0x01000000 );
+
+    /* activate the divisor 0 for DDR */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc0 );
+
+    /* activate the divisor 1 for System Clock (CA5 core) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc1 );
+
+    /* activate the divisor 1 for System Clock (CM4) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x3), &mc_cgm->mc_cgm_sc_dc2 );
+
+    /* activate the divisor 3 for System Clock (Peripherals: PIT) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), &mc_cgm->mc_cgm_sc_dc3 );
+
+    /* activate the divisor 4 for System Clock (IOP) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), &mc_cgm->mc_cgm_sc_dc4 );
+
+    /* activate the divisor 4 for System Clock (2 x Platform Clock) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc5 );
+
+    /* Configure PLL0 Dividers - 640MHz from 40Mhx XOSC
+     PLL input = FXOSC = 40MHz
+     VCO range = 600-1280MHz
+     PREDIV = 1 =? /1
+     RFDPHI1= 2 => /8
+     RFDPHI = 0 => /2
+     MFD    = 32 => /32
+     VCO frequency = PLL input / PREDIV x MFD = 40/1 * 32 = 1280 MHz
+     PLL out = VCO / (2^RFDPHI*2) = 1280 / 2 = 640 MHz
+    */
+
+    writel( PLLDIG_PLLDV_RFDPHI_SET(0x0) | PLLDIG_PLLDV_PREDIV_SET(0x1) |
+            PLLDIG_PLLDV_MFD(0x20),  &mc_cgm->pll0_plldv );
+
+    writel( readl(&mc_cgm->pll0_pllfd) | PLLDIG_PLLFD_MFN_SET(0x0),  &mc_cgm->pll0_pllfd );
+
+    writel( readl(&mc_cgm->pll0_pllcal3) | PLLDIG_PLLCAL3_MFDEN_SET(0x1), &mc_cgm->pll0_pllcal3 );
+
+    /* turn on FXOSC, SRIC, SXOSC */
+    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_FLAON(0x3) |
+            MC_ME_RUNMODE_MC_PLL0ON | MC_ME_RUNMODE_MC_FXOSCON | MC_ME_RUNMODE_MC_SIRCON |
+            MC_ME_RUNMODE_MC_SXOSCON | MC_ME_RUNMODE_MC_SYSCLK(0x4), &mc_me->mc_me_run_mc0 );
+
+    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY , &mc_me->mc_me_mctl);
+    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY , &mc_me->mc_me_mctl);
+
+    while( (readl(&mc_me->mc_me_gs) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+
+    /* select PLL0 as source clock for AUXCLK Selector 2 (Linflex; SPI)*/
+    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_PLL0), &mc_cgm->mc_cgm_ac2_sc );
+
+    /* activate the divisor 1 for AUXCLOCK Selector 2 (Linflex) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x3), &mc_cgm->mc_cgm_ac2_dc1 );
+
+    /* select PLL0 as source clock for AUXCLK Selector 10 (ENET)*/
+    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_PLL0), &mc_cgm->mc_cgm_ac10_sc );
+
+    /* activate the divisor 0 for AUXCLOCK Selector 10 (ENET) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0xF), &mc_cgm->mc_cgm_ac10_dc0 );
+
+    /* select PLL0 as source clock for AUXCLK Selector 11 (ENET_TIMER)*/
+    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_PLL0), &mc_cgm->mc_cgm_ac10_sc );
+
+    /* activate the divisor 0 for AUXCLOCK Selector 10 (ENET_TIMER) */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0xF), &mc_cgm->mc_cgm_ac10_dc0 );
+
+    /* turn on FXOSC, SRIC, SXOSC */
+    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_FLAON(0x3) |
+            MC_ME_RUNMODE_MC_PLL0ON | MC_ME_RUNMODE_MC_FXOSCON | MC_ME_RUNMODE_MC_SIRCON |
+            MC_ME_RUNMODE_MC_SXOSCON | MC_ME_RUNMODE_MC_SYSCLK(0x4), &mc_me->mc_me_run_mc0 );
+
+    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY , &mc_me->mc_me_mctl);
+    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY , &mc_me->mc_me_mctl);
+
+
+    while( (readl(&mc_me->mc_me_gs) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+
+    /* enable clock for Linflex(0,1,2) peripheral */
+    writeb( 0x0, &mc_me->mc_me_pctl26 );
+    writeb( 0x0, &mc_me->mc_me_pctl25 );
+    writeb( 0x0, &mc_me->mc_me_pctl24 );
+    /* PIT */
+    writeb( 0x0, &mc_me->mc_me_pctl36 );
+    /* SIUL */
+    writeb( 0x0, &mc_me->mc_me_pctl60 );
+    /* ENET */
+    writeb( 0x0, &mc_me->mc_me_pctl196 );
+
 }
 
 static void mscm_init(void)

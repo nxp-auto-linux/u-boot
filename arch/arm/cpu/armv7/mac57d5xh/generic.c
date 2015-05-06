@@ -21,367 +21,207 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/crm_regs.h>
+#include <asm/arch/mc_cgm_regs.h>
+#include <asm/arch/mc_me_regs.h>
 #include <netdev.h>
 #include <div64.h>
-#ifdef CONFIG_FSL_ESDHC
-#include <fsl_esdhc.h>
-#endif
-
-#ifdef CONFIG_FSL_ESDHC
-DECLARE_GLOBAL_DATA_PTR;
-#endif
-
-/* pll frequency decoding for pll_pfd in KHz             */
-/* Only works for PLL1, PLL2, PLL3, PLL4, PLL6, PLL7     */
-/* PLL5 not implemented                                  */
-static u32 decode_pll(enum pll_clocks pll, u32 infreq, u8 pfd)
+#include <errno.h>
+static u32 get_plldv_rfdphi_div( u32 plldv )
 {
-#if 0 /* b00450 */
-	u32 freq_main=0;
-	u32 mfi=0, pfd_frac=0;
-	u32 pll_ctrl, pll_num , pll_denom, pll_pfd;
+	u32 plldv_rfdphi = (plldv & PLLDIG_PLLDV_RFDPHI_MASK) >> PLLDIG_PLLDV_RFDPHI_OFFSET;
+	
+	if( plldv_rfdphi & ~PLLDIG_PLLDV_RFDPHI_MAXVALUE )
+	{
+		printf("Error: plldv_rfdphi with value %d is incorrect set \n", plldv_rfdphi);
+		return -1;
+	}
 
-	struct anadig_reg *anadig = (struct anadig_reg *)ANADIG_BASE_ADDR;
+	if( (plldv_rfdphi & PLLDIG_PLLDV_RFDPHIBY_32)  )
+	{
+		plldv_rfdphi = PLLDIG_PLLDV_RFDPHIBY_32 + 1;
+	}
+	return 1 << (plldv_rfdphi+1);
+}
+
+static u32 get_pllfreq( u32 pll, u32 infreq, u32 pllcal3, u32 plldv, u32 pllfd )
+{
+	u32 vco = 0, plldv_prediv = 0, plldv_mfd = 0, pllcal3_mfen = 0, pllfd_mfn = 0, plldv_rfdphi_div = 0;
+	plldv_prediv = (plldv & PLLDIG_PLLDV_PREDIV_MASK) >> PLLDIG_PLLDV_PREDIV_OFFSET;
+	plldv_mfd = (plldv & PLLDIG_PLLDV_MFD_MASK);
+
+	pllcal3_mfen = (pllcal3 & PLLDIG_PLLCAL3_MFDEN_MASK) >> PLLDIG_PLLCAL3_MFDEN_OFFSET;
+
+	pllfd_mfn = (pllfd & PLLDIG_PLLFD_MFN_MASK);
+
+	switch(plldv_prediv){
+		case 0:
+			plldv_prediv = 1;
+			break;
+		case 7:
+			printf("plldv_prediv value is not supported:%d for PLL%d\n", plldv_prediv, pll);
+			return -1;
+	}
+
+	vco  = infreq / plldv_prediv * (plldv_mfd + pllfd_mfn/(pllcal3_mfen + 1));
+
+	plldv_rfdphi_div =  get_plldv_rfdphi_div(plldv);
+	if( plldv_rfdphi_div == -1)
+	{
+		return -1;
+	}
+
+	return vco / plldv_rfdphi_div;
+
+}
+/* Only works for PLL0, PLL1, PLL2, PLL3 */
+/* PLL5 not implemented                                  */
+static u32 decode_pll(enum clocks pll, u32 infreq)
+{
+	u32 pllcal3, plldv , pllfd;
+
+	volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
 
 	switch (pll) {
+	case PLL0:
+		pllcal3 = readl(&mc_cgm->pll0_pllcal3);
+		plldv = readl(&mc_cgm->pll0_plldv);
+		pllfd = readl(&mc_cgm->pll0_pllfd);
+		break;
 	case PLL1:
-		pll_ctrl = readl(&anadig->pll1_ctrl);
-		pll_num = readl(&anadig->pll1_num);
-		pll_denom = readl(&anadig->pll1_denom);
-		pll_pfd = readl(&anadig->pll1_pfd);
-
-		mfi = (pll_ctrl & ANADIG_PLL1_CTRL_DIV_SELECT_MASK);
-
-		if (mfi == 0)
-			freq_main = infreq * 20; /* 480 MHz */
-		else
-			freq_main = infreq * 22; /* 528 MHz */
-		
-		switch(pfd){
-		case 0:
-			return freq_main;
-		case 1:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD1_FRAC_MASK) >> ANADIG_PLL_PFD1_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 2:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD2_FRAC_MASK) >> ANADIG_PLL_PFD2_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 3:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD3_FRAC_MASK) >> ANADIG_PLL_PFD3_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 4:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD4_FRAC_MASK) >> ANADIG_PLL_PFD4_OFFSET;
-			return freq_main*18/pfd_frac;
-		default:
-			printf("pfd not supported:%d\n",pfd);
-			return -1;
-		}
 	case PLL2:
-		pll_ctrl = readl(&anadig->pll2_ctrl);
-		pll_num = readl(&anadig->pll2_num);
-		pll_denom = readl(&anadig->pll2_denom);
-		pll_pfd = readl(&anadig->pll2_pfd);
+        case PLL3:
 
-		mfi = (pll_ctrl & ANADIG_PLL2_CTRL_DIV_SELECT_MASK);
-		if (mfi == 0)
-			freq_main = infreq * 20; /* 480 Mhz */
-		else
-			freq_main = infreq * 22; /* 528 Mhz */
-
-		switch(pfd){
-		case 0:
-			return freq_main;
-		case 1:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD1_FRAC_MASK) >> ANADIG_PLL_PFD1_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 2:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD2_FRAC_MASK) >> ANADIG_PLL_PFD2_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 3:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD3_FRAC_MASK) >> ANADIG_PLL_PFD3_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 4:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD4_FRAC_MASK) >> ANADIG_PLL_PFD4_OFFSET;
-			return freq_main*18/pfd_frac;
-		default:
-			printf("pfd not supported:%d\n",pfd);
-			return -1;
-		}
-	case PLL3:
-		pll_ctrl = readl(&anadig->pll3_ctrl);
-		pll_pfd = readl(&anadig->pll3_pfd);
-
-		mfi = (pll_ctrl & ANADIG_PLL3_CTRL_DIV_SELECT_MASK); /*bit 0*/
-		if (mfi == 0)
-			freq_main = infreq * 20; /* 480 Mhz */
-		else
-			freq_main = infreq * 22; /* 528 Mhz */
-
-		switch(pfd){
-		case 0:
-			return freq_main;
-		case 1:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD1_FRAC_MASK) >> ANADIG_PLL_PFD1_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 2:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD2_FRAC_MASK) >> ANADIG_PLL_PFD2_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 3:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD3_FRAC_MASK) >> ANADIG_PLL_PFD3_OFFSET;
-			return freq_main*18/pfd_frac;
-		case 4:
-			pfd_frac = (pll_pfd & ANADIG_PLL_PFD4_FRAC_MASK) >> ANADIG_PLL_PFD4_OFFSET;
-			return freq_main*18/pfd_frac;
-		default:
-			printf("pfd not supported:%d\n",pfd);
-			return -1;
-		}
-	case PLL4:
-		pll_ctrl = readl(&anadig->pll4_ctrl);
-		pll_num = (readl(&anadig->pll4_num) & ANADIG_PLL_NUM_MASK);
-		pll_denom = (readl(&anadig->pll4_denom) & ANADIG_PLL_DENOM_MASK);
-		mfi = pll_ctrl & ANADIG_PLL4_CTRL_DIV_SELECT_MASK;
-
-		return lldiv( (u64)infreq * ((u64)mfi*(u64)pll_denom + (u64)pll_num), pll_denom);
-	case PLL5:
-		printf("DPLL decode not supported for DPLL5\n");
-		return -1;
-	case PLL6:
-		pll_ctrl = readl(&anadig->pll6_ctrl);
-		pll_num = (readl(&anadig->pll6_num) & ANADIG_PLL_NUM_MASK);
-		pll_denom = (readl(&anadig->pll6_denom) & ANADIG_PLL_DENOM_MASK);
-		mfi = pll_ctrl & ANADIG_PLL6_CTRL_DIV_SELECT_MASK;
-
-		return lldiv( (u64)infreq * ((u64)mfi*(u64)pll_denom + (u64)pll_num), pll_denom);
-	case PLL7:
-		pll_ctrl = readl(&anadig->pll7_ctrl);
-
-		mfi = (pll_ctrl & ANADIG_PLL7_CTRL_DIV_SELECT) >> ANADIG_PLL7_CTRL_DIV_SELECT;
-		if (mfi == 0)
-			freq_main = infreq * 20; /* 480 Mhz */
-		else
-			freq_main = infreq * 22; /* 528 Mhz */
-
-		switch(pfd){
-		case 0:
-			return freq_main;
-		default:
-			printf("pfd not supported:%d\n",pfd);
-			return -1;
-		}
 	default:
 		printf("not able to decode the PLL frequency - PLL ID doesn't exist\n");
 		return -1;
 	} /* switch(pll) */
-#endif /* b00450 */
-#if 1 /* b00450 */
-return -1;
-#endif /* b00450 */
+
+	return get_pllfreq( pll, infreq, pllcal3, plldv, pllfd );
 }
 
 
 
 static u32 get_mcu_main_clk(void)
 {
-#if 0 /* b46902 */
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_ccsr, ccm_cacrr, armclk_div;
-	u32 sysclk_sel, pll_pfd_sel = 0;
+
+        volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
+	u32 armclk_div;
+	u32 sysclk_sel;
 	u32 freq = 0;
 
-	ccm_ccsr = readl(&ccm->ccsr);
-	sysclk_sel = ccm_ccsr & CCM_CCSR_SYS_CLK_SEL_MASK;
-	sysclk_sel >>= CCM_CCSR_SYS_CLK_SEL_OFFSET;
+	sysclk_sel = readl(&mc_cgm->mc_cgm_sc_ss) & MC_CGM_SC_SEL_MASK;
+	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
 
-	ccm_cacrr = readl(&ccm->cacrr);
-	armclk_div = ccm_cacrr & CCM_CACRR_ARM_CLK_DIV_MASK;
-	armclk_div >>= CCM_CACRR_ARM_CLK_DIV_OFFSET;
+	armclk_div = readl(&mc_cgm->mc_cgm_sc_dc1) & MC_CGM_SC_DCn_PREDIV_MASK;
+	armclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
 	armclk_div += 1;
 
 	switch (sysclk_sel) {
-	case 0:
-		freq = FASE_CLK_FREQ;
+	case FIRC:
+		freq = FIRC_CLK_FREQ*1000;
 		break;
-	case 1:
-		freq = SLOW_CLK_FREQ;
+	case FXOSC:
+		freq = FXOSC_CLK_FREQ*1000;
 		break;
-	case 2:
-		pll_pfd_sel = ccm_ccsr & CCM_CCSR_PLL2_PFD_CLK_SEL_MASK;
-		pll_pfd_sel >>= CCM_CCSR_PLL2_PFD_CLK_SEL_OFFSET;
-
-		freq = decode_pll(PLL2,24000,pll_pfd_sel)*1000;
-		break;
-
-	case 3:
-		freq = decode_pll(PLL2,24000,0)*1000;
-		break;
-	case 4:
-		pll_pfd_sel = ccm_ccsr & CCM_CCSR_PLL1_PFD_CLK_SEL_MASK;
-		pll_pfd_sel >>= CCM_CCSR_PLL1_PFD_CLK_SEL_OFFSET;
-
-		freq = decode_pll(PLL1,24000,pll_pfd_sel)*1000;
-		break;
-	case 5:
-		freq = decode_pll(PLL3,24000,0)*1000;
+	case PLL0:
+	case PLL1:
+        case PLL2:
+        case PLL3:
+		/* PLLx has as source FXOSC */
+		freq = decode_pll(sysclk_sel, FXOSC_CLK_FREQ)*1000;
 		break;
 	default:
 		printf("unsupported system clock select\n");
 	}
 
 	return freq / armclk_div;
-#endif /* b00450 */
-	return 1; /* b00450 */
+
 }
 
-static u32 get_bus_clk(void)
+static u32 get_peripherals_clk(void)
 {
-#if 0 /* b00450 */	
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_cacrr, busclk_div;
 
-	ccm_cacrr = readl(&ccm->cacrr);
+      	volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
+        u32 perclk_div;
 
-	busclk_div = ccm_cacrr & CCM_CACRR_BUS_CLK_DIV_MASK;
-	busclk_div >>= CCM_CACRR_BUS_CLK_DIV_OFFSET;
-	busclk_div += 1;
+	perclk_div =  readl(&mc_cgm->mc_cgm_sc_dc3) & MC_CGM_SC_DCn_PREDIV_MASK;
+	perclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
+	perclk_div += 1;
 
-	return get_mcu_main_clk() / busclk_div;
-#endif /* b00450 */
-	return 1; /* b00450 */
-}
-
-static u32 get_ipg_clk(void)
-{
-#if 0 /* b00450 */
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_cacrr, ipgclk_div;
-
-	ccm_cacrr = readl(&ccm->cacrr);
-
-	ipgclk_div = ccm_cacrr & CCM_CACRR_IPG_CLK_DIV_MASK;
-	ipgclk_div >>= CCM_CACRR_IPG_CLK_DIV_OFFSET;
-	ipgclk_div += 1;
-
-	return get_bus_clk() / ipgclk_div;
-#endif /* b00450 */
-	return 1; /* b00450 */
+	return get_mcu_main_clk() / perclk_div;
 }
 
 static u32 get_uart_clk(void)
 {
-#if 0 /* b00450 */
-	return get_ipg_clk();
-#endif /* b00450 */
-	return 1; /* b00450 */
-}
+        volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
+        u32 linflexclk_div;
+        u32 auxclk_sel2;
+        u32 freq = 0;
 
-static u32 get_sdhc_clk(void)
-{
-#if 0 /* b00450 */
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_cscmr1, ccm_cscdr2, sdhc_clk_sel, sdhc_clk_div;
-	u32 freq = 0;
+        auxclk_sel2 = readl(&mc_cgm->mc_cgm_ac2_ss) & MC_CGM_ACn_SEL_MASK;
+        auxclk_sel2 >>= MC_CGM_ACn_SEL_OFFSET;
 
-	ccm_cscmr1 = readl(&ccm->cscmr1);
-	sdhc_clk_sel = ccm_cscmr1 & CCM_CSCMR1_ESDHC1_CLK_SEL_MASK;
-	sdhc_clk_sel >>= CCM_CSCMR1_ESDHC1_CLK_SEL_OFFSET;
+        linflexclk_div = readl(&mc_cgm->mc_cgm_ac2_dc1) & MC_CGM_SC_DCn_PREDIV_MASK;
+        linflexclk_div >>= MC_CGM_ACn_DCn_PREDIV_OFFSET;
+        linflexclk_div += 1;
 
-	ccm_cscdr2 = readl(&ccm->cscdr2);
-	sdhc_clk_div = ccm_cscdr2 & CCM_CSCDR2_ESDHC1_CLK_DIV_MASK;
-	sdhc_clk_div >>= CCM_CSCDR2_ESDHC1_CLK_DIV_OFFSET;
-	sdhc_clk_div += 1;
+        switch (auxclk_sel2) {
+        case FIRC:
+                freq = FIRC_CLK_FREQ*1000;
+                break;
+        case FXOSC:
+                freq = FXOSC_CLK_FREQ*1000;
+                break;
+        case PLL0:
+        case PLL1:
+        case PLL2:
+        case PLL3:
+                freq = decode_pll(PLL0, FXOSC_CLK_FREQ)*1000;
+                break;
+       default:
+                printf("unsupported system clock select\n");
+        }
 
-	switch (sdhc_clk_sel) {
-	case 0:
-		freq = decode_pll(PLL3,24000,0)*1000;
-		break;
-	case 1:
-		freq = decode_pll(PLL3,24000,3)*1000;
-		break;
-	case 2:
-		freq = decode_pll(PLL1,24000,3)*1000;
-		break;
-	case 3:
-		freq = get_bus_clk();
-		break;
-	}
-
-	return freq / sdhc_clk_div;
-#endif /* b00450 */
-	return 1; /* b00450 */
+	return freq/linflexclk_div;
 }
 
 u32 get_fec_clk(void)
 {
-#if 0 /* b00450 */
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_cscmr2, rmii_clk_sel;
-	u32 freq = 0;
+        volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
+        u32 enetclk_div;
+        u32 auxclk_sel10;
+        u32 freq = 0;
 
-	ccm_cscmr2 = readl(&ccm->cscmr2);
-	rmii_clk_sel = ccm_cscmr2 & CCM_CSCMR2_RMII_CLK_SEL_MASK;
-	rmii_clk_sel >>= CCM_CSCMR2_RMII_CLK_SEL_OFFSET;
+        auxclk_sel10 = readl(&mc_cgm->mc_cgm_ac10_ss) & MC_CGM_ACn_SEL_MASK;
+        auxclk_sel10 >>= MC_CGM_ACn_SEL_OFFSET;
 
-	switch (rmii_clk_sel) {
-	case 0:
-		freq = ENET_EXTERNAL_CLK;
-		break;
-	case 1:
-		freq = AUDIO_EXTERNAL_CLK;
-		break;
-	case 2:
-		freq = PLL5_MAIN_FREQ;
-		break;
-	case 3:
-		freq = PLL5_MAIN_FREQ / 2;
-		break;
-	}
+        enetclk_div = readl(&mc_cgm->mc_cgm_ac10_dc0) & MC_CGM_SC_DCn_PREDIV_MASK;
+        enetclk_div >>= MC_CGM_ACn_DCn_PREDIV_OFFSET;
+        enetclk_div += 1;
 
-	return freq;
-#endif /* b00450 */
-	return 1; /* b00450 */
+        switch (auxclk_sel10) {
+        case FIRC:
+                freq = FIRC_CLK_FREQ*1000;
+                break;
+        case FXOSC:
+                freq = FXOSC_CLK_FREQ*1000;
+                break;
+        case PLL0:
+        case PLL1:
+        case PLL2:
+        case PLL3:
+                freq = decode_pll(auxclk_sel10, FXOSC_CLK_FREQ)*1000;
+                break;
+        default:
+                printf("unsupported system clock select\n");
+        }
+
+        return freq/enetclk_div;
 }
 
-u32 get_nfc_clk(void)
-{
-#if 0 /*b46902*/
-	struct ccm_reg *ccm = (struct ccm_reg *)CCM_BASE_ADDR;
-	u32 ccm_cscmr1, ccm_cscdr3, ccm_cscdr2, nfc_clksel;
-	u32 freq = 0, div, pre_div;
-
-	ccm_cscmr1 = readl(&ccm->cscmr1);
-	nfc_clksel = (ccm_cscmr1 & CCM_CSCMR1_NFC_CLK_SEL_MASK) >> CCM_CSCMR1_NFC_CLK_SEL_OFFSET;
-
-	ccm_cscdr2 = readl(&ccm->cscdr2);
-	ccm_cscdr3 = readl(&ccm->cscdr3);
-
-	pre_div = (ccm_cscdr3 & CCM_CSCDR3_NFC_PRE_DIV_MASK) >> CCM_CSCDR3_NFC_PRE_DIV_OFFSET;
-	div = (ccm_cscdr2 & CCM_CSCDR2_NFC_CLK_FRAC_DIV_MASK) >> CCM_CSCDR2_NFC_CLK_FRAC_DIV_OFFSET;
-	
-	switch(nfc_clksel)
-	{
-	case 0:
-		freq = get_bus_clk();
-		break;
-	case 1:
-		freq = decode_pll(PLL1,24000,1)*1000;
-		break;
-	case 2:
-		freq = decode_pll(PLL3,24000,1)*1000;
-		break;
-	case 3:
-		freq = decode_pll(PLL3,24000,3)*1000;
-		break;
-	}
-
-	return freq / pre_div / div;
-#endif  /*b46902*/
-	return 1;
-}
 static u32 get_i2c_clk(void)
 {
-	return get_ipg_clk();
+	return get_peripherals_clk();
 }
 
 /* return clocks in Hz */
@@ -390,23 +230,14 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	switch (clk) {
 	case MXC_ARM_CLK:
 		return get_mcu_main_clk();
-	case MXC_BUS_CLK:
-		return get_bus_clk();
-	case MXC_IPG_CLK:
-		return get_ipg_clk();
+	case MXC_PERIPHERALS_CLK:
+		return get_peripherals_clk();
 	case MXC_UART_CLK:
-#if 0 /* b00450 */
 		return get_uart_clk();
-#endif /* b00450 */
-		return 40000000;
-	case MXC_ESDHC_CLK:
-		return get_sdhc_clk();
 	case MXC_FEC_CLK:
 		return get_fec_clk();
 	case MXC_I2C_CLK:
 		return get_i2c_clk();
-	case MXC_NFC_CLK:
-		return get_nfc_clk();
 	default:
 		break;
 	}
@@ -420,8 +251,9 @@ int do_mac57d5xh_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	printf("\n");
 	printf("-------------------------------------------------------------------------------------------------------\n");
 	printf("DPLLs settings:\n");
-	printf("PLL1 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL1,24000,0)/1000,
-		decode_pll(PLL1,24000,1)/1000, decode_pll(PLL1,24000,2)/1000, decode_pll(PLL1,24000,3)/1000, decode_pll(PLL1,24000,4)/1000);
+	printf("PLL1 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL1,24000)/1000,
+		decode_pll(PLL0,24000)/1000, decode_pll(PLL1,24000)/1000, decode_pll(PLL1,24000)/1000, decode_pll(PLL1,24000)/1000);
+#if 0
 	printf("PLL2 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL2,24000,0)/1000,
 		decode_pll(PLL2,24000,1)/1000, decode_pll(PLL2,24000,2)/1000, decode_pll(PLL2,24000,3)/1000, decode_pll(PLL2,24000,4)/1000);
 	printf("PLL3 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL3,24000,0)/1000,
@@ -437,6 +269,7 @@ int do_mac57d5xh_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	printf("FEC clock:     %5d MHz\n", mxc_get_clock(MXC_FEC_CLK) / 1000000);
 	printf("UART clock:    %5d MHz\n", mxc_get_clock(MXC_UART_CLK) / 1000000);
 	printf("NFC clock:     %5d MHz\n", mxc_get_clock(MXC_NFC_CLK) / 1000000);
+#endif
 
 	return 0;
 }
@@ -533,17 +366,7 @@ int cpu_eth_init(bd_t *bis)
 	return rc;
 }
 
-#ifdef CONFIG_FSL_ESDHC
-int cpu_mmc_init(bd_t *bis)
-{
-	return fsl_esdhc_mmc_init(bis);
-}
-#endif
-
 int get_clocks(void)
 {
-#ifdef CONFIG_FSL_ESDHC
-	gd->arch.sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
-#endif
 	return 0;
 }

@@ -25,33 +25,28 @@
 enum mxc_clock {
 	MXC_ARM_CLK = 0,
 	MXC_BUS_CLK,
-	MXC_IPG_CLK,
+	MXC_PERIPHERALS_CLK,
 	MXC_UART_CLK,
-	MXC_ESDHC_CLK,
 	MXC_FEC_CLK,
 	MXC_I2C_CLK,
-	MXC_NFC_CLK,
 };
 
-/* PLL1 => PLL_SYS    */
-/* PLL2 => PLL_SYS528 */
-/* PLL3 => PLL_USB0   */
-/* PLL4 => PLL_AUDIO  */
-/* PLL5 => PLL_ENET   */
-/* PLL6 => PLL_VIDEO  */
-/* PLL7 => PLL_USB1   */
+/* PLL0 => PLL_SYS; PLL_LINFLEX; PLL_DDR; PLL_ENET */
+/* PLL1 => NOT USED YET */
+/* PLL2 => NOT USED YET */
+/* PLL3 => NOT USED YET */
 
-enum pll_clocks {
-	PLL1 = 0,
+enum clocks {
+	FIRC = 0,
+	FXOSC,
+	RESERVED1,
+	RESERVED2,
+	PLL0,
+	PLL1,
 	PLL2,
 	PLL3,
-	PLL4,
-	PLL5,
-	PLL6,
-	PLL7,
 };
 
-void enable_ocotp_clk(unsigned char enable);
 unsigned int mxc_get_clock(enum mxc_clock clk);
 
 #define imx_get_fecclk() mxc_get_clock(MXC_FEC_CLK)
