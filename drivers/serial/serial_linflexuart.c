@@ -39,20 +39,18 @@ struct linflex_fsl *base = (struct linflex_fsl *)LINFLEXUART_BASE;
 
 static void linflex_serial_setbrg(void)
 {
-#if 1 /* b00450 */
 	u32 clk = mxc_get_clock(MXC_UART_CLK);
-	u32 sbr;	
+	u32 ibr, fbr;
 	
 	if (!gd->baudrate)
 		gd->baudrate = CONFIG_BAUDRATE;
 
-	sbr = (u32)(clk / (16 * gd->baudrate));
-	//frac= modf(sbr, &mant);
-	/* place adjustment later - n/16 linfbrr */
+	ibr = (u32)(clk / (16 * gd->baudrate));
+	fbr = (u32)(clk % (16* gd->baudrate))*16;
 
-	__raw_writel(sbr, &base->linibrr);
-	__raw_writel(0, &base->linfbrr);
-#endif /* b00450 */
+        __raw_writel(ibr, &base->linibrr);
+        __raw_writel(fbr, &base->linfbrr);
+
 }
 
 static int linflex_serial_getc(void)
@@ -95,7 +93,6 @@ static int linflex_serial_tstc(void)
  */
 static int linflex_serial_init(void)
 {
-#if 1 /* b00450 */
 	volatile u32 ctrl;
 
 	ctrl = 0x90;
@@ -116,7 +113,7 @@ static int linflex_serial_init(void)
 	ctrl = __raw_readl(&base->lincr1);
 	ctrl &= ~LINCR1_INIT;
 	__raw_writel(ctrl, &base->lincr1); /* end init mode */
-#endif /* b00450 */
+
 	return 0;
 }
 
