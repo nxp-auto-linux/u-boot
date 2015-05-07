@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Freescale Semiconductor, Inc.
+ * Copyright 2013-2015 Freescale Semiconductor, Inc.
  *
  * Configuration settings for the Freescale Vybrid mac57d5xhevb board.
  *
@@ -66,12 +66,11 @@
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-#define CONFIG_CMD_EXT2		/* EXT2 Support			*/
-#define CONFIG_CMD_FAT		/* FAT support			*/
+#define CONFIG_CMD_EXT2		/* EXT2 Support */
+#define CONFIG_CMD_FAT		/* FAT support */
 #define CONFIG_DOS_PARTITION
 
 /* Ethernet config */
-#if 1 /* b00450 */
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_MII
@@ -80,10 +79,9 @@
 #define CONFIG_MII
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE		RMII
-#define CONFIG_FEC_MXC_PHYADDR          0
+#define CONFIG_FEC_MXC_PHYADDR	0
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
-#endif /* b00450 */
 
 #if 0
 /* I2C Configs */

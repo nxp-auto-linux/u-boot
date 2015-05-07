@@ -132,12 +132,12 @@ struct mc_cgm_reg {
 /* MC_CGM registers definitions */
 
 /* MC_CGM_SC_DCm */
-#define MC_CGM_SC_DCn_PREDIV(val)	(MC_CGM_SC_DCn_PREDIV_MASK & ((val) << 16))
-#define MC_CGM_SC_DCn_PREDIV_MASK	(0x001F0000)
-#define MC_CGM_SC_DCn_PREDIV_OFFSET	(16)
-#define MC_CGM_SC_DCn_DE		(1 << 31)
-#define MC_CGM_SC_SEL_MASK		(0x07000000)
-#define MC_CGM_SC_SEL_OFFSET		(24)
+#define MC_CGM_SC_DCn_PREDIV(val)   (MC_CGM_SC_DCn_PREDIV_MASK & ((val) << 16))
+#define MC_CGM_SC_DCn_PREDIV_MASK   (0x001F0000)
+#define MC_CGM_SC_DCn_PREDIV_OFFSET (16)
+#define MC_CGM_SC_DCn_DE            (1 << 31)
+#define MC_CGM_SC_SEL_MASK          (0x07000000)
+#define MC_CGM_SC_SEL_OFFSET        (24)
 
 
 /* MC_CGM_ACn_DCn */
@@ -153,7 +153,7 @@ struct mc_cgm_reg {
  * This should be changed if any problems occur.
  */
 #define MC_CGM_ACn_DCn_PREDIV_MASK      (0x001F0000)
-#define MC_CGM_ACn_DCn_PREDIV_OFFSET	(16)
+#define MC_CGM_ACn_DCn_PREDIV_OFFSET    (16)
 #define MC_CGM_ACn_DCn_DE               (1 << 31)
 
 /*
@@ -161,7 +161,7 @@ struct mc_cgm_reg {
 */
 #define MC_CGM_ACn_SEL_MASK             (0x07000000)
 #define MC_CGM_ACn_SEL_SET(source)      (MC_CGM_ACn_SEL_MASK & (((source) & 0x7) << MC_CGM_ACn_SEL_OFFSET))
-#define MC_CGM_ACn_SEL_OFFSET		(24)
+#define MC_CGM_ACn_SEL_OFFSET           (24)
 #define MC_CGM_ACn_SEL_FIRC             (0x0)
 #define MC_CGM_ACn_SEL_FXOSC            (0x1)
 #define MC_CGM_ACn_SEL_SIRC             (0x2)
@@ -179,26 +179,26 @@ struct mc_cgm_reg {
 */
 #define PLLDIG_PLLDV_RFDPHIBY_32        (0x4)
 #define PLLDIG_PLLDV_RFDPHI_SET(val)    (PLLDIG_PLLDV_RFDPHI_MASK & (((val) & PLLDIG_PLLDV_RFDPHI_MAXVALUE) << PLLDIG_PLLDV_RFDPHI_OFFSET))
-#define PLLDIG_PLLDV_RFDPHI_MASK	(0x003F0000)
-#define PLLDIG_PLLDV_RFDPHI_MAXVALUE	(0x7)
-#define PLLDIG_PLLDV_RFDPHI_OFFSET	(16)
+#define PLLDIG_PLLDV_RFDPHI_MASK        (0x003F0000)
+#define PLLDIG_PLLDV_RFDPHI_MAXVALUE    (0x7)
+#define PLLDIG_PLLDV_RFDPHI_OFFSET      (16)
 
 
-#define PLLDIG_PLLDV_MFD_MASK		(0x000000FF)
+#define PLLDIG_PLLDV_MFD_MASK           (0x000000FF)
 
-#define PLLDIG_PLLDV_PREDIV_SET(val)	(PLLDIG_PLLDV_PREDIV_MASK & (((val) & PLLDIG_PLLDV_PREDIV_MAXVALUE) << PLLDIG_PLLDV_PREDIV_OFFSET))
+#define PLLDIG_PLLDV_PREDIV_SET(val)    (PLLDIG_PLLDV_PREDIV_MASK & (((val) & PLLDIG_PLLDV_PREDIV_MAXVALUE) << PLLDIG_PLLDV_PREDIV_OFFSET))
 #define PLLDIG_PLLDV_PREDIV_MASK        (0x00007000)
-#define PLLDIG_PLLDV_PREDIV_MAXVALUE	(0x7)
-#define PLLDIG_PLLDV_PREDIV_OFFSET	(12)
+#define PLLDIG_PLLDV_PREDIV_MAXVALUE    (0x7)
+#define PLLDIG_PLLDV_PREDIV_OFFSET      (12)
 
 
 /* PLLDIG PLL Fractional  Divide Register (PLLDIG_PLLFD) */
-#define PLLDIG_PLLFD_MFN_SET(val)	(PLLDIG_PLLFD_MFN_MASK & (val))
-#define PLLDIG_PLLFD_MFN_MASK		(0x00007FFF)
+#define PLLDIG_PLLFD_MFN_SET(val)       (PLLDIG_PLLFD_MFN_MASK & (val))
+#define PLLDIG_PLLFD_MFN_MASK           (0x00007FFF)
 
 
 /* PLL Calibration Register 3 (PLLDIG_PLLCAL3) */
-#define PLLDIG_PLLCAL3_MFDEN_SET(val)	(PLLDIG_PLLCAL3_MFDEN_MASK & ((val) << PLLDIG_PLLCAL3_MFDEN_OFFSET))
+#define PLLDIG_PLLCAL3_MFDEN_SET(val)   (PLLDIG_PLLCAL3_MFDEN_MASK & ((val) << PLLDIG_PLLCAL3_MFDEN_OFFSET))
 #define PLLDIG_PLLCAL3_MFDEN_OFFSET     (14)
 #define PLLDIG_PLLCAL3_MFDEN_MASK       (0x3FFFFC000)
 
