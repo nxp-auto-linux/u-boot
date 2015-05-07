@@ -70,6 +70,8 @@
 #define CONFIG_CMD_FAT		/* FAT support */
 #define CONFIG_DOS_PARTITION
 
+/* Halo has only DMA_MUX0 */
+#define CONFIG_LAST_DMA_MUX_IS_0
 /* Ethernet config */
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP

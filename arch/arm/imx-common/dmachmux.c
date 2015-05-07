@@ -27,7 +27,7 @@
 
 static void *dmamux_base [] = {
 		(void *) DMA_MUX0_BASE_ADDR,
-#if !defined(CONFIG_MAC57D5XH)
+#if !defined(CONFIG_LAST_DMA_MUX_IS_0)
 		(void *) DMA_MUX1_BASE_ADDR,
 		(void *) DMA_MUX2_BASE_ADDR,
 		(void *) DMA_MUX3_BASE_ADDR,
