@@ -31,28 +31,28 @@ struct mc_me_reg {
     u32 mc_me_im;           /* Interrupt Mask Register                      */
     u32 mc_me_imts;         /* Invalid Mode Transition Status Register      */
     u32 mc_me_dmts;         /* Debug Mode Transition Status Register        */
-    u32 reserved_1c;
+    u32 reserved_0x1c[1];
     u32 mc_me_reset_mc;     /* RESET Mode Configuration Register            */
-    u32 reserved_24;
+    u32 reserved_0x24[1];
     u32 mc_me_safe_mc;      /* SAFE Mode Configuration Register             */
     u32 mc_me_drun_mc;      /* DRUN Mode Configuration Register             */
     u32 mc_me_run_mc0;      /* RUN Mode Configuration Register              */
     u32 mc_me_run_mc1;      /* RUN Mode Configuration Register              */
     u32 mc_me_run_mc2;      /* RUN Mode Configuration Register              */
     u32 mc_me_run_mc3;      /* RUN Mode Configuration Register              */
-    u32 reserved_40[2];
+    u32 reserved_0x40[2];
     u32 mc_me_stop0_mc;     /* STOP0 Mode Configuration Register            */
-    u32 reserved_4c[2];
+    u32 reserved_0x4c[2];
     u32 mc_me_standby0_mc;  /* STANDBY0 Mode Configuration                  */
-    u32 reserved_58[2];
+    u32 reserved_0x58[2];
     u32 mc_me_ps0;          /* Peripheral Status Register 0                 */
     u32 mc_me_ps1;          /* Peripheral Status Register 1                 */
     u32 mc_me_ps2;          /* Peripheral Status Register 2                 */
-    u32 reserved_6c;
+    u32 reserved_0x6c[1];
     u32 mc_me_ps4;          /* Peripheral Status Register 4                 */
     u32 mc_me_ps5;          /* Peripheral Status Register 5                 */
     u32 mc_me_ps6;          /* Peripheral Status Register 6                 */
-    u32 reserved_7c;
+    u32 reserved_0x7c[1];
     u32 mc_me_run_pc0;      /* Run Peripheral Configuration Register        */
     u32 mc_me_run_pc1;      /* Run Peripheral Configuration Register        */
     u32 mc_me_run_pc2;      /* Run Peripheral Configuration Register        */
@@ -72,7 +72,7 @@ struct mc_me_reg {
     u8  mc_me_pctl3;        /* I2C_1 Peripheral Control Register            */
     u8  mc_me_pctl2;        /* I2C_0 Peripheral Control Register            */
     u8  mc_me_pctl1;        /* DMA_CH_MUX_0 Peripheral Control Register     */
-    u8  reserved_c3;
+    u8  reserved_0xc3[1];
     u8  mc_me_pctl7;        /* FLEXTIMER_3 Peripheral Control Register      */
     u8  mc_me_pctl6;        /* FLEXTIMER_2 Peripheral Control Register      */
     u8  mc_me_pctl5;        /* FLEXTIMER_1 Peripheral Control               */
@@ -80,7 +80,7 @@ struct mc_me_reg {
     u8  mc_me_pctl11;       /* SMC Peripheral Control Register              */
     u8  mc_me_pctl10;       /* CMP_1 Peripheral Control                     */
     u8  mc_me_pctl9;        /* CMP_0 Peripheral Control                     */
-    u8  reserved_cb;
+    u8  reserved_0xcb[1];
     u8  mc_me_pctl15;       /* SSD_3 Peripheral Control Register            */
     u8  mc_me_pctl14;       /* SSD_2 Peripheral Control Register            */
     u8  mc_me_pctl13;       /* SSD_1 Peripheral Control                     */
@@ -97,56 +97,56 @@ struct mc_me_reg {
     u8  mc_me_pctl26;       /* LINFLEX_2 Peripheral Control                 */
     u8  mc_me_pctl25;       /* LINFLEX_1 Peripheral Control Register        */
     u8  mc_me_pctl24;       /* LINFLEX_0 Peripheral Control Register        */
-    u8  reserved_dc;
+    u8  reserved_0xdc[1];
     u8  mc_me_pctl30;       /* ADC Peripheral Control Register              */
     u8  mc_me_pctl29;       /* FlexCAN_2 Peripheral Control Register        */
     u8  mc_me_pctl28;       /* FlexCAN_1 Peripheral Control Register        */
-    u8  reserved_e0;
+    u8  reserved_0xe0[1];
     u8  mc_me_pctl34;       /* CRC Peripheral Control Register              */
-    u8  reserved_e2[5];
+    u8  reserved_0xe2[5];
     u8  mc_me_pctl36;       /* PIT Peripheral Control Register              */
-    u8  reserved_e8[23];
+    u8  reserved_0xe8[23];
     u8  mc_me_pctl60;       /* SIUL Peripheral Control Register             */
-    u8  reserved_100[23];
+    u8  reserved_0x100[23];
     u8  mc_me_pctl84;       /* RTC_API Peripheral Control Register          */
-    u8  reserved_118[3];
+    u8  reserved_0x118[3];
     u8  mc_me_pctl88;       /* FLEXCAN_0 Peripheral Control                 */
-    u8  reserved_11c[38];
+    u8  reserved_0x11c[38];
     u8  mc_me_pctl129;      /* QuadSPI_1 Peripheral Control Register        */
     u8  mc_me_pctl128;      /* QuadSPI_0 Peripheral Control Register        */
-    u8  reserved_144[3];
+    u8  reserved_0x144[3];
     u8  mc_me_pctl132;      /* DRAM_CTRLR Peripheral Control                */
-    u8  reserved_148[3];
+    u8  reserved_0x148[3];
     u8  mc_me_pctl136;      /* 2D-ACE 0 (DCU_0) Peripheral Control Register */
-    u8  reserved_14c[15];
+    u8  reserved_0x14c[15];
     u8  mc_me_pctl152;      /* 2D-ACE 1 (DCU_1) Peripheral Control          */
-    u8  reserved_15c[15];
+    u8  reserved_0x15c[15];
     u8  mc_me_pctl168;      /* VIU Peripheral Control                       */
-    u8  reserved_16c[3];
+    u8  reserved_0x16c[3];
     u8  mc_me_pctl172;      /* GC355 Peripheral Control Register            */
-    u8  reserved_170[3];
+    u8  reserved_0x170[3];
     u8  mc_me_pctl176;      /* TCON Peripheral Control Register             */
-    u8  reserved_174[3];
+    u8  reserved_0x174[3];
     u8  mc_me_pctl180;      /* TCON_LITE Peripheral Control                 */
-    u8  reserved_178[3];
+    u8  reserved_0x178[3];
     u8  mc_me_pctl184;      /* RLE Peripheral Control                       */
-    u8  reserved_17c[3];
+    u8  reserved_0x17c[3];
     u8  mc_me_pctl188;      /* SGM Peripheral Control Register              */
-    u8  reserved_180[2];
+    u8  reserved_0x180[2];
     u8  mc_me_pctl193;      /* DMA_1 Peripheral Control Register            */
-    u8  reserved_183[4];
+    u8  reserved_0x183[4];
     u8  mc_me_pctl196;      /* ENET Peripheral Control Register             */
-    u8  reserved_188[3];
+    u8  reserved_0x188[3];
     u8  mc_me_pctl200;      /* LDB Peripheral Control Register              */
-    u8  reserved_184[3];
+    u8  reserved_0x184[3];
     u8  mc_me_pctl204;      /* MLB Peripheral Control Register              */
-    u8  reserved_190[48];
+    u8  reserved_0x190[48];
     u32 mc_me_cs;           /* Core Status Register                         */
     u16 mc_me_cctl1;        /* CORE1 Control Register                       */
     u16 mc_me_cctl0;        /* CORE0 Control Register                       */
-    u16 reserved_1c7;
+    u16 reserved_0x1c7[1];
     u16 mc_me_cctl2;        /* CORE2 Control Register                       */
-    u32 reserved_1cc[5];
+    u32 reserved_0x1cc[5];
     u32 mc_me_caddr0;       /* CORE0 Address Register                       */
     u32 mc_me_caddr1;       /* CORE1 Address Register                       */
     u32 mc_me_caddr2;       /* CORE2 Address Register                       */

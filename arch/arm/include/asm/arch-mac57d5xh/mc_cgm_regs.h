@@ -24,35 +24,35 @@
 
 /* Clock Generation Module (CGM) */
 struct mc_cgm_reg {
-    u32 reserved_0[6];
-    u32 pll0_pllcal3;     /* PLL Calibration Register 3                       */
-    u32 reserved_1c;
-    u32 pll0_pllcr;       /* PLLDIG PLL Control Register                      */
-    u32 pll0_pllsr;       /* PLLDIG PLL Status Register                       */
-    u32 pll0_plldv;       /* PLLDIG PLL Divider Register                      */
-    u32 pll0_pllfm;       /* PLLDIG PLL Frequency Modulation Register         */
-    u32 pll0_pllfd;       /* PLLDIG PLL Fractional Divide Register            */
-    u32 reserved_34[243];
+    u32 reserved_0x0[6];
+    u32 pll0_pllcal3;       /* PLL Calibration Register 3                       */
+    u32 reserved_0x1c[1];
+    u32 pll0_pllcr;         /* PLLDIG PLL Control Register                      */
+    u32 pll0_pllsr;         /* PLLDIG PLL Status Register                       */
+    u32 pll0_plldv;         /* PLLDIG PLL Divider Register                      */
+    u32 pll0_pllfm;         /* PLLDIG PLL Frequency Modulation Register         */
+    u32 pll0_pllfd;         /* PLLDIG PLL Fractional Divide Register            */
+    u32 reserved_0x34[243];
     u32 mc_cgm_sc_dc6;      /* System Clock Divider 6 Configuration Register    */
-    u32 reserved_404[191];
-    u8  reserved2_700[3];
-    u8  mc_cgm_pcs_sdur;     /* PCS Switch Duration Register                        */
-    u32 mc_cgm_pcs_divc1;    /* PCS Divider Change Register 1                       */
-    u32 mc_cgm_pcs_dive1;    /* PCS Divider End Register 1                          */
-    u32 mc_cgm_pcs_divs1;    /* PCS Divider Start Register 1                        */
-    u32 reserved_710[6];
-    u32 mc_cgm_pcs_divc4;    /* PCS Divider Change Register 4                       */
-    u32 mc_cgm_pcs_dive4;    /* PCS Divider End Register 4                          */
-    u32 mc_cgm_pcs_divs4;    /* PCS Divider Start Register 4                        */
-    u32 mc_cgm_pcs_divc5;    /* PCS Divider Change Register 5                       */
-    u32 mc_cgm_pcs_dive5;    /* PCS Divider End Register 5                          */
-    u32 mc_cgm_pcs_divs5;    /* PCS Divider Start Register 5                        */
-    u32 reserved_740[36];
+    u32 reserved_0x404[191];
+    u8  reserved_0x700[3];
+    u8  mc_cgm_pcs_sdur;    /* PCS Switch Duration Register                        */
+    u32 mc_cgm_pcs_divc1;   /* PCS Divider Change Register 1                       */
+    u32 mc_cgm_pcs_dive1;   /* PCS Divider End Register 1                          */
+    u32 mc_cgm_pcs_divs1;   /* PCS Divider Start Register 1                        */
+    u32 reserved_0x710[6];
+    u32 mc_cgm_pcs_divc4;   /* PCS Divider Change Register 4                       */
+    u32 mc_cgm_pcs_dive4;   /* PCS Divider End Register 4                          */
+    u32 mc_cgm_pcs_divs4;   /* PCS Divider Start Register 4                        */
+    u32 mc_cgm_pcs_divc5;   /* PCS Divider Change Register 5                       */
+    u32 mc_cgm_pcs_dive5;   /* PCS Divider End Register 5                          */
+    u32 mc_cgm_pcs_divs5;   /* PCS Divider Start Register 5                        */
+    u32 reserved_0x740[36];
     u32 mc_cgm_sc_div_rc;    /* System Clock Divider Ratio Change Register          */
     u32 mc_cgm_div_upd_type; /* Divider Update Type                                 */
     u32 mc_cgm_div_upd_trig; /* Divider Update Trigger                              */
     u32 mc_cgm_div_upd_stat; /* Divider Update Status                               */
-    u32 reserved_7e0;
+    u32 reserved_0x7e0[1];
     u32 mc_cgm_sc_ss;        /* System Clock Select Status Register                 */
     u32 mc_cgm_sc_dc0;       /* System Clock Divider 0 Configuration Register       */
     u32 mc_cgm_sc_dc1;       /* System Clock Divider 1 Configuration Register       */
@@ -62,67 +62,67 @@ struct mc_cgm_reg {
     u32 mc_cgm_sc_dc5;       /* System Clock Divider 5 Configuration Register       */
     u32 mc_cgm_ac0_sc;       /* Auxiliary Clock 0 Select Control Register           */
     u32 mc_cgm_ac0_ss;       /* Auxiliary Clock 0 Select Status Register            */
-    u32 reserved_808[6];
+    u32 reserved_0x808[6];
     u32 mc_cgm_ac1_sc;       /* Auxiliary Clock 1 Select Control Register           */
     u32 mc_cgm_ac1_ss;       /* Auxiliary Clock 1 Select Status Register            */
     u32 mc_cgm_ac1_dc0;      /* Auxiliary Clock 1 Divider 0 Configuration Register  */
-    u32 reserved_82c[5];
+    u32 reserved_0x82c[5];
     u32 mc_cgm_ac2_sc;       /* Auxiliary Clock 2 Select Control Register           */
     u32 mc_cgm_ac2_ss;       /* Auxiliary Clock 2 Select Status Register            */
     u32 mc_cgm_ac2_dc0;      /* Auxiliary Clock 2 Divider 0 Configuration Register  */
     u32 mc_cgm_ac2_dc1;      /* Auxiliary Clock 2 Divider 1 Configuration Register  */
-    u32 reserved_850[4];
+    u32 reserved_0x850[4];
     u32 mc_cgm_ac3_sc;       /* Auxiliary Clock 3 Select Control Register           */
     u32 mc_cgm_ac3_ss;       /* Auxiliary Clock 3 Select Status Register            */
     u32 mc_cgm_ac3_dc0;      /* Auxiliary Clock 3 Divider 0 Configuration Register  */
-    u32 reserved_86c[5];
+    u32 reserved_0x86c[5];
     u32 mc_cgm_ac4_sc;       /* Auxiliary Clock 4 Select Control Register           */
     u32 mc_cgm_ac4_ss;       /* Auxiliary Clock 4 Select Status Register            */
     u32 mc_cgm_ac4_dc0;      /* Auxiliary Clock 4 Divider 0 Configuration Register  */
-    u32 reserved_88C[5];
+    u32 reserved_0x88C[5];
     u32 mc_cgm_ac5_sc;       /* Auxiliary Clock 5 Select Control Register           */
     u32 mc_cgm_ac5_ss;       /* Auxiliary Clock 5 Select Status Register            */
     u32 mc_cgm_ac5_dc0;      /* Auxiliary Clock 5 Divider 0 Configuration Register  */
     u32 mc_cgm_ac5_dc1;      /* Auxiliary Clock 5 Divider 1 Configuration Register  */
-    u32 reserved_8b0[4];
+    u32 reserved_0x8b0[4];
     u32 mc_cgm_ac6_sc;       /* Auxiliary Clock 6 Select Control Register           */
     u32 mc_cgm_ac6_ss;       /* Auxiliary Clock 6 Select Status Register            */
     u32 mc_cgm_ac6_dc0;      /* Auxiliary Clock 6 Divider 0 Configuration Register  */
     u32 mc_cgm_ac6_dc1;      /* Auxiliary Clock 6 Divider 1 Configuration Register  */
-    u32 reserved_8d0[4];
+    u32 reserved_0x8d0[4];
     u32 mc_cgm_ac7_sc;       /* Auxiliary Clock 7 Select Control Register           */
     u32 mc_cgm_ac7_ss;       /* Auxiliary Clock 7 Select Status Register            */
     u32 mc_cgm_ac7_dc0;      /* Auxiliary Clock 7 Divider 0 Configuration Register  */
     u32 mc_cgm_ac7_dc1;      /* Auxiliary Clock 7 Divider 1 Configuration Register  */
-    u32 reserved_8f0[4];
+    u32 reserved_0x8f0[4];
     u32 mc_cgm_ac8_sc;       /* Auxiliary Clock 8 Select Control Register           */
     u32 mc_cgm_ac8_ss;       /* Auxiliary Clock 8 Select Status Register            */
     u32 mc_cgm_ac8_dc0;      /* Auxiliary Clock 8 Divider 0 Configuration Register  */
-    u32 reserved_90c[5];
+    u32 reserved_0x90c[5];
     u32 mc_cgm_ac9_sc;       /* Auxiliary Clock 9 Select Control Register           */
     u32 mc_cgm_ac9_ss;       /* Auxiliary Clock 9 Select Status Register            */
     u32 mc_cgm_ac9_dc0;      /* Auxiliary Clock 9 Divider 0 Configuration Register  */
-    u32 reserved_92c[5];
+    u32 reserved_0x92c[5];
     u32 mc_cgm_ac10_sc;      /* Auxiliary Clock 10 Select Control Register          */
     u32 mc_cgm_ac10_ss;      /* Auxiliary Clock 10 Select Status Register           */
     u32 mc_cgm_ac10_dc0;     /* Auxiliary Clock 10 Divider 0 Configuration Register */
-    u32 reserved_94c[5];
+    u32 reserved_0x94c[5];
     u32 mc_cgm_ac11_sc;      /* Auxiliary Clock 11 Select Control Register          */
     u32 mc_cgm_ac11_ss;      /* Auxiliary Clock 11 Select Status Register           */
     u32 mc_cgm_ac11_dc0;     /* Auxiliary Clock 11 Divider 0 Configuration Register */
-    u32 reserved_96c[5];
+    u32 reserved_0x96c[5];
     u32 mc_cgm_ac12_sc;      /* Auxiliary Clock 12 Select Control Register          */
     u32 mc_cgm_ac12_ss;      /* Auxiliary Clock 12 Select Status Register           */
     u32 mc_cgm_ac12_dc0;     /* Auxiliary Clock 12 Divider 0 Configuration Register */
-    u32 reserved_98c[5];
+    u32 reserved_0x98c[5];
     u32 mc_cgm_ac13_sc;      /* Auxiliary Clock 13 Select Control Register          */
     u32 mc_cgm_ac13_ss;      /* Auxiliary Clock 13 Select Status Register           */
     u32 mc_cgm_ac13_dc0;     /* Auxiliary Clock 13 Divider 0 Configuration Register */
-    u32 reserved_9ac[5];
+    u32 reserved_0x9ac[5];
     u32 mc_cgm_ac14_sc;      /* Auxiliary Clock 14 Select Control Register          */
     u32 mc_cgm_ac14_ss;      /* Auxiliary Clock 14 Select Status Register           */
     u32 mc_cgm_ac14_dc0;     /* Auxiliary Clock 14 Divider 0 Configuration Register */
-    u32 reserved_9cc[5];
+    u32 reserved_0x9cc[5];
     u32 mc_cgm_ac15_sc;      /* Auxiliary Clock 15 Select Control Register          */
     u32 mc_cgm_ac15_ss;      /* Auxiliary Clock 14 Select Status Register           */
     u32 mc_cgm_ac15_dc0;     /* Auxiliary Clock 15 Divider 0 Configuration Register */
