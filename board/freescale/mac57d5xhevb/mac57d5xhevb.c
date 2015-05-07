@@ -34,7 +34,8 @@ DECLARE_GLOBAL_DATA_PTR;
 
 void setup_iomux_ddr(void)
 {
-#if 0 /* b00450 */
+#if 0 /* The below iomux settings are from Vybrid. They should
+	be implemented for Halo using SIUL*/
     static const iomux_v3_cfg_t ddr_pads[] = {
         MAC57D5XH_PAD_DDR_A15__DDR_A_15,
         MAC57D5XH_PAD_DDR_A15__DDR_A_15,
@@ -86,7 +87,7 @@ void setup_iomux_ddr(void)
     };
 
     imx_iomux_v3_setup_multiple_pads(ddr_pads, ARRAY_SIZE(ddr_pads));
-#endif /* b00450 */
+#endif
 
 
 
@@ -94,7 +95,7 @@ void setup_iomux_ddr(void)
 
 void ddr_phy_init(void)
 {
-#if 0 /* b00450 */
+#if 0 /* The below DDR settings are for Vybrid */
     struct ddrmr_regs *ddrmr = (struct ddrmr_regs *)DDR_BASE_ADDR;
 
     writel(DDRMC_PHY_DQ_TIMING, &ddrmr->phy[0]);
@@ -124,12 +125,12 @@ void ddr_phy_init(void)
 
     writel(DDRMC_PHY50_DDR3_MODE | DDRMC_PHY50_EN_SW_HALF_CYCLE,
         &ddrmr->phy[50]);
-#endif /* b00450 */
+#endif
 }
 
 void ddr_ctrl_init(void)
 {
-#if 0 /* b00450 */
+#if 0 /* The below DDR settings are for Vybrid */
     struct ddrmr_regs *ddrmr = (struct ddrmr_regs *)DDR_BASE_ADDR;
 
     writel(DDRMC_CR00_DRAM_CLASS_DDR3, &ddrmr->cr[0]);
@@ -241,16 +242,15 @@ void ddr_ctrl_init(void)
     writel(DDRMC_CR00_DRAM_CLASS_DDR3 | DDRMC_CR00_START, &ddrmr->cr[0]);
 
     udelay(200);
-#endif /* b00450 */
+#endif
 }
 
 int dram_init(void)
 {
-#if 0 /* b00450 */
     setup_iomux_ddr();
 
     ddr_ctrl_init();
-#endif /* b00450 */
+
     gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
 
     return 0;
@@ -258,18 +258,19 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-    /* Muxing for linflex */
-        writel( 0x3, 0x400DCD68 );
+	/* Muxing for linflex */
+	writel( 0x3, 0x400DCD68 );
 
-        writel( 0x00080000, 0x400DC4F4 );
+	writel( 0x00080000, 0x400DC4F4 );
 
-        writel( 0x02030003, 0x400DC4F8 );
+	writel( 0x02030003, 0x400DC4F8 );
 
 }
 
 static void setup_iomux_enet(void)
 {
-#if 0 /* b00450 */
+#if 0 /* The below enet setting are for Vybrid and are 
+		not usable on Halo. */
     static const iomux_v3_cfg_t enet0_pads[] = {
         MAC57D5XH_PAD_PTA6__RMII0_CLKIN,
         MAC57D5XH_PAD_PTC1__RMII0_MDIO,
@@ -284,25 +285,27 @@ static void setup_iomux_enet(void)
     };
 
     imx_iomux_v3_setup_multiple_pads(enet0_pads, ARRAY_SIZE(enet0_pads));
-#endif /* b00450 */
+#endif
 }
 
 static void setup_iomux_i2c(void)
 {
-#if 0 /* b00450 */
+#if 0 /*  The below i2c setting are for Vybrid and are
+        not usable on Halo. */
     static const iomux_v3_cfg_t i2c0_pads[] = {
         MAC57D5XH_PAD_PTB14__I2C0_SCL,
         MAC57D5XH_PAD_PTB15__I2C0_SDA,
     };
 
     imx_iomux_v3_setup_multiple_pads(i2c0_pads, ARRAY_SIZE(i2c0_pads));
-#endif /* b00450 */
+#endif
 }
 
 #ifdef CONFIG_SYS_USE_NAND
 void setup_iomux_nfc(void)
 {
-#if 0 /* b00450 */
+#if 0 /* The below enet setting are for Vybrid and are
+        not usable on Halo. */
     static const iomux_v3_cfg_t nfc_pads[] = {
         MAC57D5XH_PAD_PTD31__NFC_IO15,
         MAC57D5XH_PAD_PTD30__NFC_IO14,
@@ -333,11 +336,11 @@ void setup_iomux_nfc(void)
 #endif
 
 #ifdef CONFIG_FSL_ESDHC
-#if 0 /* b00450 */
+#if 0 /* There are mmcs on HALO. */
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
     {ESDHC1_BASE_ADDR},
 };
-#endif /* b00450 */
+#endif
 
 int board_mmc_getcd(struct mmc *mmc)
 {
@@ -347,7 +350,8 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
-#if 0 /* b00450 */
+#if 0 /* There are mmcs on HALO. These function should be kept
+	until the configuration will be updated. */
     static const iomux_v3_cfg_t esdhc1_pads[] = {
         MAC57D5XH_PAD_PTA24__ESDHC1_CLK,
         MAC57D5XH_PAD_PTA25__ESDHC1_CMD,
@@ -363,8 +367,8 @@ int board_mmc_init(bd_t *bis)
         esdhc1_pads, ARRAY_SIZE(esdhc1_pads));
 
     return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
-#endif /* b00450 */
-    return 0; /* b00450 */
+#endif
+    return 0;
 }
 #endif
 
@@ -485,13 +489,13 @@ static void clock_init(void)
 
 static void mscm_init(void)
 {
-#if 0 /* b00450 */
+#if 0 /* The MSCM ip was not validated on Halo */
     struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_IR_BASE_ADDR;
     int i;
 
     for (i = 0; i < MSCM_IRSPRC_NUM; i++)
         writew(MSCM_IRSPRC_CP0_EN, &mscmir->irsprc[i]);
-#endif /* b00450 */
+#endif
 }
 
 int board_phy_config(struct phy_device *phydev)

@@ -283,7 +283,8 @@ U_BOOT_CMD(
 #ifdef CONFIG_FEC_MXC
 void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
-#if 0 /* b46902 */
+#if 0 /* This feature will be enabled when the enet muxing and clock will 
+	be implemented */
     struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
     struct fuse_bank *bank = &ocotp->bank[4];
     struct fuse_bank4_regs *fuse =
@@ -306,13 +307,15 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 static char *get_reset_cause(void)
 {
     u32 cause;
-#if 0 /* b46902 */
+#if 0 /* SRC IP is not available on Halo. This platform has
+	RGM ip.
+	 */
     struct src *src_regs = (struct src *)SRC_BASE_ADDR;
 
     cause = readl(&src_regs->srsr);
     writel(cause, &src_regs->srsr);
     cause &= 0xff;
-#endif /* b00450 */
+#endif
 
     switch (cause) {
     case 0x08:
@@ -328,11 +331,14 @@ static char *get_reset_cause(void)
     }
 }
 
-#define SRC_SCR_SW_RST                  (1<<12)
+
 
 void reset_cpu(ulong addr)
 {
-#if 0 /* b46902 */
+#if 0 /* This feature will be enabled when the enet muxing and clock will
+        be implemented */
+
+	#define SRC_SCR_SW_RST                  (1<<12)
     struct src *src_regs = (struct src *)SRC_BASE_ADDR;
 
     /* Generate a SW reset from SRC SCR register */

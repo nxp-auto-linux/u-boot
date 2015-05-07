@@ -85,7 +85,8 @@
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
 
-#if 0
+#if 0 /* The support for I2C was not activated 
+	and tested on Halo */
 /* I2C Configs */
 #define CONFIG_CMD_I2C
 #define CONFIG_HARD_I2C
@@ -94,9 +95,9 @@
 #define CONFIG_SYS_I2C_SPEED		100000
 #endif
 
-#if 0 /* b00450 */
+#if 0 /* The support for NAND was not implemented on Halo */
 #define CONFIG_SYS_USE_NAND
-#endif /* b00450 */
+#endif
 
 #ifdef CONFIG_SYS_USE_NAND
 /* Nand Flash Configs */

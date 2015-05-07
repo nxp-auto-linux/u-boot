@@ -78,13 +78,13 @@ static void linflex_serial_putc(const char c)
  */
 static int linflex_serial_tstc(void)
 {
-#if 0 /* b00450 */
+#if 0 /* This feature should implemented when linflex driver will use fifos*/
     if (__raw_readb(&base->urcfifo) == 0)
         return 0;
 
     return 1;
-#endif /* b00450 */
-    return 0; /* b00450 */
+#endif
+    return 0;
 }
 
 /*
