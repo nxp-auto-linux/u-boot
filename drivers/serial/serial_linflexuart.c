@@ -25,13 +25,25 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 
-#define US1_TDRE        (1 << 7)
-#define US1_RDRF        (1 << 5)
-#define UC2_TE          (1 << 3)
-#define LINCR1_INIT     (1 << 0)
-#define DTF             (1 << 1)
-#define DRF             (1 << 2)
-#define RMB             (1 << 9)
+#define US1_TDRE        	(1 << 7)
+#define US1_RDRF        	(1 << 5)
+#define UC2_TE         	 	(1 << 3)
+#define LINCR1_INIT     	(1 << 0)
+#define LINCR1_MME			(1 << 4)
+#define LINCR1_BF			(1 << 4)
+#define LINSR_LINS_INITMODE (0x00001000)
+#define LINSR_LINS_MASK		(0x0000F000)
+#define UARTCR_UART			(1 << 0)
+#define UARTCR_WL0			(1 << 1)
+#define UARTCR_PCE			(1 << 2)
+#define UARTCR_PC0			(1 << 3)
+#define UARTCR_TXEN			(1 << 4)
+#define UARTCR_RXEN			(1 << 5)
+#define UARTCR_PC1			(1 << 6)
+#define UARTSR_DTF     		(1 << 1)
+#define UARTSR_DRF        	(1 << 2)
+#define UARTSR_RMB         	(1 << 9)
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -56,10 +68,15 @@ static void linflex_serial_setbrg(void)
 static int linflex_serial_getc(void)
 {
     char c;
-    while((__raw_readb(&base->uartsr) & DRF)!=DRF){} /* waiting for data reception complete - TODO: add a timeout */
-    while((__raw_readw(&base->uartsr) & RMB)!=RMB){} /* waiting for data buffer to be ready - TODO: add a timeout */
+
+	/* waiting for data reception complete - TODO: add a timeout */
+    while((__raw_readb(&base->uartsr) & UARTSR_DRF) != UARTSR_DRF){} 
+
+	/* waiting for data buffer to be ready - TODO: add a timeout */
+    while((__raw_readl(&base->uartsr) & UARTSR_RMB) != UARTSR_RMB){}
+
     c = __raw_readl(&base->bdrm);
-    __raw_writeb((__raw_readb(&base->uartsr)|(DRF|RMB)), &base->uartsr);
+    __raw_writeb((__raw_readb(&base->uartsr)|(UARTSR_DRF|UARTSR_RMB)), &base->uartsr);
     return c;
 }
 
@@ -69,8 +86,11 @@ static void linflex_serial_putc(const char c)
         serial_putc('\r');
 
     __raw_writeb(c, &base->bdrl);
-    while((__raw_readb(&base->uartsr) & DTF)!=DTF){} /* waiting for data transmission completed - TODO: add a timeout */
-    __raw_writeb((__raw_readb(&base->uartsr)|DTF), &base->uartsr);
+
+	/* waiting for data transmission completed - TODO: add a timeout */
+    while((__raw_readb(&base->uartsr) & UARTSR_DTF) != UARTSR_DTF){} 
+
+    __raw_writeb((__raw_readb(&base->uartsr)|UARTSR_DTF), &base->uartsr);
 }
 
 /*
@@ -95,19 +115,27 @@ static int linflex_serial_init(void)
 {
     volatile u32 ctrl;
 
-    ctrl = 0x90;
-    __raw_writel(ctrl, &base->lincr1); /* init mode */
+	/* set the Linflex in master mode amd activate by-pass filter */
+    ctrl = LINCR1_BF | LINCR1_MME;
+    __raw_writel(ctrl, &base->lincr1);
+
+	/* init mode */
     ctrl |= LINCR1_INIT;
-    __raw_writel(ctrl, &base->lincr1); /* init mode */
+    __raw_writel(ctrl, &base->lincr1);
 
-    while((__raw_readl(&base->linsr) & 0xF000)!=0x1000){} /* waiting for init mode entry - TODO: add a timeout */
+	/* waiting for init mode entry - TODO: add a timeout */
+    while((__raw_readl(&base->linsr) & LINSR_LINS_MASK) != LINSR_LINS_INITMODE){} 
 
-    __raw_writel(1, &base->uartcr); /* set UART bit to allow writing other bits */
-    
+
+	/* set UART bit to allow writing other bits */
+    __raw_writel(UARTCR_UART, &base->uartcr);
+
     /* provide data bits, parity, stop bit, etc */
     serial_setbrg();
 
-    __raw_writel(0x7B, &base->uartcr); /* 8 bit data, no parity, Tx and Rx enabled, UART mode */
+	/* 8 bit data, no parity, Tx and Rx enabled, UART mode */
+    __raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
+				 | UARTCR_WL0, &base->uartcr);
     
     ctrl = __raw_readl(&base->lincr1);
     ctrl &= ~LINCR1_INIT;
