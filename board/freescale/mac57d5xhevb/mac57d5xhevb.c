@@ -20,10 +20,10 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
-#include <asm/arch/iomux-mac57d5xh.h>
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/clock.h>
+#include <asm/arch/siul.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <miiphy.h>
@@ -259,17 +259,20 @@ int dram_init(void)
 static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex */
+	SIUL2_MSCR_UART_Tx;
+	SIUL2_MSCR_UART_Rx;
+
+	/*
 	writel( 0x3, 0x400DCD68 );
-
 	writel( 0x00080000, 0x400DC4F4 );
-
 	writel( 0x02030003, 0x400DC4F8 );
-
+	*/
 }
+
 
 static void setup_iomux_enet(void)
 {
-#if 0 /* The below enet setting are for Vybrid and are 
+#if 0 /* The below enet setting are for Vybrid and are
 		not usable on Halo. */
     static const iomux_v3_cfg_t enet0_pads[] = {
         MAC57D5XH_PAD_PTA6__RMII0_CLKIN,
