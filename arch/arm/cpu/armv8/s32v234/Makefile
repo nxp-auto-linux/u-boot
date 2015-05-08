@@ -18,5 +18,4 @@
 #
 
 obj-y   += generic.o
-obj-y   += timer.o
 
