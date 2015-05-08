@@ -54,7 +54,7 @@
 #define SIUL2_GPDIn(i)				(SIUL2_GPDI_BASE + 4 * (i))
 
 #define SIUL2_PGPDO_BASE			(SIUL2_BASE_ADDR + 0x00001700)
-#define SIUL2_PGDPOn(i)				(SIUL2_PGPDO_BASE +  2 * (i))
+#define SIUL2_PGPDOn(i)				(SIUL2_PGPDO_BASE +  2 * (i))
 
 #define SIUL2_PGPDI_BASE			(SIUL2_BASE_ADDR + 0x00001740)
 #define SIUL2_PGPDIn(i)				(SIUL2_PGPDI_BASE + 2 * (i))
