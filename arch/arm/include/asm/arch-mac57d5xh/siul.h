@@ -35,7 +35,7 @@
 
 #define SIUL2_IFCPR					(SIUL2_BASE_ADDR + 0x000000C0)
 
-/* SIUL2_MSCR:
+/* SIUL2_MSCR specifications as stated in Reference Manual:
  * 0 - 359 Output Multiplexed Signal Configuration Registers
  * 512- 1023 Input Multiplexed Signal Configuration Registers */
 #define SIUL2_MSCR_BASE				(SIUL2_BASE_ADDR + 0x00000240)
@@ -92,6 +92,8 @@
 #define SIUL2_MSCR_SSS_UART			(0x3)
 
 /*
+ * See IO_Signal_Description_and_Multiplexing_Tables.xlsx document for
+ * UART2 configuration details:
  * 714 - LinFlex2_Receive_Input PAD
  * 173 - General Purpose I/O PAD
  */
