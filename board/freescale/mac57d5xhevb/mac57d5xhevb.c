@@ -259,14 +259,8 @@ int dram_init(void)
 static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex */
-	SIUL2_MSCR_UART_Tx;
-	SIUL2_MSCR_UART_Rx;
-
-	/*
-	writel( 0x3, 0x400DCD68 );
-	writel( 0x00080000, 0x400DC4F4 );
-	writel( 0x02030003, 0x400DC4F8 );
-	*/
+	SIUL2_MSCR_UART_Tx(2);
+	SIUL2_MSCR_UART_Rx(2);
 }
 
 
