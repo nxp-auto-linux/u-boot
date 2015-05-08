@@ -38,6 +38,13 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
+/* SMP Spin Table Definitions */
+/*(CONFIG_SYS_SDRAM_BASE + 0x7fff0)*/
+#define CPU_RELEASE_ADDR                (0x3e97fff0)
+
+/* Generic Timer Definitions */
+#define COUNTER_FREQUENCY               (800000000)     /* 800MHz */
+
 /* Size of malloc() pool */
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 1 * 1024 * 1024)
