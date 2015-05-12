@@ -408,11 +408,15 @@ static void clock_init(void)
     /* activate the divisor 3 for System Clock (Peripherals: PIT) */
     writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), &mc_cgm->mc_cgm_sc_dc3 );
 
-    /* activate the divisor 4 for System Clock (IOP) */
+    /* activate the divisor 5 for System Clock (IOP) */
     writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), &mc_cgm->mc_cgm_sc_dc4 );
 
-    /* activate the divisor 4 for System Clock (2 x Platform Clock) */
+
+    /* activate the divisor 5 for System Clock (2 x Platform Clock) */
     writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc5 );
+
+    /* activate the divisor 6 for System Clock (1 x DDR/SDR */
+    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc6 );
 
     /* Configure PLL0 Dividers - 640MHz from 40Mhx XOSC
      PLL input = FXOSC = 40MHz
