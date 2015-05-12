@@ -29,11 +29,23 @@
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
 
+#if 0
+/* Config GIC */
+#define CONFIG_GICV2
+#endif
+
+#define CONFIG_REMAKE_ELF
 #define CONFIG_RUN_FROM_IRAM_ONLY
 
 #define CONFIG_MACH_TYPE		4146
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
+
+/* Config CACHE */
+#define CONFIG_SYS_DCACHE_OFF
+#define CONFIG_SYS_ICACHE_OFF
+#define CONFIG_CMD_CACHE
+
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
@@ -55,12 +67,12 @@
 
 
 #define CONFIG_FSL_LINFLEXUART
-#define LINFLEXUART_BASE		UART2_BASE_ADDR
+#define LINFLEXUART_BASE			LINFLEXD1_BASE_ADDR
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_SYS_UART_PORT		(1)
-#define CONFIG_BAUDRATE			115200
+#define CONFIG_BAUDRATE				115200
 
 #undef CONFIG_CMD_IMLS
 
@@ -122,6 +134,7 @@
 
 #define CONFIG_LOADADDR			0x82000000
 
+#define CONFIG_CMD_ENV
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
@@ -242,6 +255,12 @@
  */
 #define CONFIG_STACKSIZE		(128 * 1024)	/* regular stack */
 
+#if 0
+/* Configure PXE */
+#define CONFIG_CMD_PXE
+#define CONFIG_BOOTP_PXE
+#define CONFIG_BOOTP_PXE_CLIENTARCH	0x100
+#endif
 
 
 /* Physical memory map */
@@ -269,5 +288,10 @@
 
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTZ
+
+#define CONFIG_BOOTP_BOOTFILESIZE
+#define CONFIG_BOOTP_BOOTPATH
+#define CONFIG_BOOTP_GATEWAY
+#define CONFIG_BOOTP_HOSTNAME
 
 #endif
