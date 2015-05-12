@@ -65,6 +65,7 @@ struct nbuf {
 	uint8_t head[16];	/**< MAC header(6 + 6 + 2) + 2(aligned) */
 };
 
+
 #ifdef CONFIG_FEC_MXC_SWAP_PACKET
 static void swap_packet(uint32_t *packet, int length)
 {
@@ -290,7 +291,7 @@ static void fec_rbd_init(struct fec_priv *fec, int count, int dsize)
 	for (i = 0; i < count; i++) {
 		data = (uint8_t *)fec->rbd_base[i].data_pointer;
 		memset(data, 0, dsize);
-		flush_dcache_range((uint32_t)data, (uint32_t)data + size);
+		flush_dcache_range((uintptr_t)data, (uintptr_t)data + size);
 
 		fec->rbd_base[i].status = FEC_RBD_EMPTY;
 		fec->rbd_base[i].data_length = 0;
@@ -300,8 +301,8 @@ static void fec_rbd_init(struct fec_priv *fec, int count, int dsize)
 	fec->rbd_base[i - 1].status = FEC_RBD_WRAP | FEC_RBD_EMPTY;
 	fec->rbd_index = 0;
 
-	flush_dcache_range((unsigned)fec->rbd_base,
-			   (unsigned)fec->rbd_base + size);
+	flush_dcache_range((unsigned long)fec->rbd_base,
+			   (unsigned long)fec->rbd_base + size);
 }
 
 /**
@@ -318,7 +319,7 @@ static void fec_rbd_init(struct fec_priv *fec, int count, int dsize)
  */
 static void fec_tbd_init(struct fec_priv *fec)
 {
-	unsigned addr = (unsigned)fec->tbd_base;
+	unsigned long addr = (unsigned long)fec->tbd_base;
 	unsigned size = roundup(2 * sizeof(struct fec_bd),
 				ARCH_DMA_MINALIGN);
 
@@ -412,7 +413,8 @@ static int fec_open(struct eth_device *edev)
 {
 	struct fec_priv *fec = (struct fec_priv *)edev->priv;
 	int speed;
-	uint32_t addr, size;
+	uintptr_t addr;
+	uint32_t size;
 	int i;
 
 	debug("fec_open: fec_open(dev)\n");
@@ -428,7 +430,7 @@ static int fec_open(struct eth_device *edev)
 	/* Flush the descriptors into RAM */
 	size = roundup(FEC_RBD_NUM * sizeof(struct fec_bd),
 			ARCH_DMA_MINALIGN);
-	addr = (uint32_t)fec->rbd_base;
+	addr = (uintptr_t)fec->rbd_base;
 	flush_dcache_range(addr, addr + size);
 
 #ifdef FEC_QUIRK_ENET_MAC
@@ -517,8 +519,8 @@ static int fec_open(struct eth_device *edev)
 static int fec_init(struct eth_device *dev, bd_t* bd)
 {
 	struct fec_priv *fec = (struct fec_priv *)dev->priv;
-	uint32_t mib_ptr = (uint32_t)&fec->eth->rmon_t_drop;
-	int i;
+	uintptr_t mib_ptr = (uintptr_t)&fec->eth->rmon_t_drop;
+	uintptr_t i;
 
 	/* Initialize MAC address */
 	fec_set_hwaddr(dev);
@@ -557,8 +559,8 @@ static int fec_init(struct eth_device *dev, bd_t* bd)
 
 	/* size and address of each buffer */
 	writel(FEC_MAX_PKT_SIZE, &fec->eth->emrbr);
-	writel((uint32_t)fec->tbd_base, &fec->eth->etdsr);
-	writel((uint32_t)fec->rbd_base, &fec->eth->erdsr);
+	writel((uintptr_t)fec->tbd_base, &fec->eth->etdsr);
+	writel((uintptr_t)fec->rbd_base, &fec->eth->erdsr);
 
 #ifndef CONFIG_PHYLIB
 	if (fec->xcv_type != SEVENWIRE)
@@ -618,9 +620,10 @@ static int fec_send(struct eth_device *dev, void *packet, int length)
 {
 	unsigned int status;
 	uint32_t size, end;
-	uint32_t addr;
+	uintptr_t_a addr;
 	int timeout = FEC_XFER_TIMEOUT;
 	int ret = 0;
+	uintptr_t_a *data_pointer_addr;
 
 	/*
 	 * This routine transmits one frame.  This routine only accepts
@@ -645,13 +648,14 @@ static int fec_send(struct eth_device *dev, void *packet, int length)
 	swap_packet((uint32_t *)packet, length);
 #endif
 
-	addr = (uint32_t)packet;
+	addr = (uintptr_t)packet;
 	end = roundup(addr + length, ARCH_DMA_MINALIGN);
 	addr &= ~(ARCH_DMA_MINALIGN - 1);
 	flush_dcache_range(addr, end);
 
 	writew(length, &fec->tbd_base[fec->tbd_index].data_length);
-	writel(addr, &fec->tbd_base[fec->tbd_index].data_pointer);
+	data_pointer_addr = (uintptr_t_a *)&fec->tbd_base[fec->tbd_index].data_pointer;
+	writel(addr, data_pointer_addr);
 
 	/*
 	 * update BD's status now
@@ -671,7 +675,7 @@ static int fec_send(struct eth_device *dev, void *packet, int length)
 	 * can start DMA.
 	 */
 	size = roundup(2 * sizeof(struct fec_bd), ARCH_DMA_MINALIGN);
-	addr = (uint32_t)fec->tbd_base;
+	addr = (uintptr_t)fec->tbd_base;
 	flush_dcache_range(addr, addr + size);
 
 	/*
@@ -741,9 +745,11 @@ static int fec_recv(struct eth_device *dev)
 	struct fec_bd *rbd = &fec->rbd_base[fec->rbd_index];
 	unsigned long ievent;
 	int frame_length, len = 0;
-	struct nbuf *frame;
+	/* struct nbuf *frame; */
+	uintptr_t addr, frame;
+	uintptr_t_a *data_pointer_addr;
 	uint16_t bd_status;
-	uint32_t addr, size, end;
+	uint32_t size, end;
 	int i;
 	ALLOC_CACHE_ALIGN_BUFFER(uchar, buff, FEC_MAX_PKT_SIZE);
 
@@ -787,7 +793,7 @@ static int fec_recv(struct eth_device *dev)
 	 * the descriptor. The solution is to mark the whole cache line when all
 	 * descriptors in the cache line are processed.
 	 */
-	addr = (uint32_t)rbd;
+	addr = (uintptr_t)rbd;
 	addr &= ~(ARCH_DMA_MINALIGN - 1);
 	size = roundup(sizeof(struct fec_bd), ARCH_DMA_MINALIGN);
 	invalidate_dcache_range(addr, addr + size);
@@ -801,12 +807,13 @@ static int fec_recv(struct eth_device *dev)
 			/*
 			 * Get buffer address and size
 			 */
-			frame = (struct nbuf *)readl(&rbd->data_pointer);
+			data_pointer_addr = (uintptr_t_a *)&rbd->data_pointer;
+			frame = readl(data_pointer_addr);
 			frame_length = readw(&rbd->data_length) - 4;
 			/*
 			 * Invalidate data cache over the buffer
 			 */
-			addr = (uint32_t)frame;
+			addr = (uintptr_t)frame;
 			end = roundup(addr + frame_length, ARCH_DMA_MINALIGN);
 			addr &= ~(ARCH_DMA_MINALIGN - 1);
 			invalidate_dcache_range(addr, end);
@@ -815,9 +822,9 @@ static int fec_recv(struct eth_device *dev)
 			 *  Fill the buffer and pass it to upper layers
 			 */
 #ifdef CONFIG_FEC_MXC_SWAP_PACKET
-			swap_packet((uint32_t *)frame->data, frame_length);
+			swap_packet((uintptr_t *)frame->data, frame_length);
 #endif
-			memcpy(buff, frame->data, frame_length);
+			memcpy(buff, ((struct nbuf *)frame)->data, frame_length);
 			NetReceive(buff, frame_length);
 			len = frame_length;
 		} else {
@@ -836,7 +843,7 @@ static int fec_recv(struct eth_device *dev)
 		size = RXDESC_PER_CACHELINE - 1;
 		if ((fec->rbd_index & size) == size) {
 			i = fec->rbd_index - size;
-			addr = (uint32_t)&fec->rbd_base[i];
+			addr = (uintptr_t)&fec->rbd_base[i];
 			for (; i <= fec->rbd_index ; i++) {
 				fec_rbd_clean(i == (FEC_RBD_NUM - 1),
 					      &fec->rbd_base[i]);
@@ -891,11 +898,11 @@ static int fec_alloc_descs(struct fec_priv *fec)
 
 		memset(data, 0, size);
 
-		fec->rbd_base[i].data_pointer = (uint32_t)data;
+		fec->rbd_base[i].data_pointer = (uintptr_t)data;
 		fec->rbd_base[i].status = FEC_RBD_EMPTY;
 		fec->rbd_base[i].data_length = 0;
 		/* Flush the buffer to memory. */
-		flush_dcache_range((uint32_t)data, (uint32_t)data + size);
+		flush_dcache_range((uintptr_t)data, (uintptr_t)data + size);
 	}
 
 	/* Mark the last RBD to close the ring. */
@@ -927,10 +934,10 @@ static void fec_free_descs(struct fec_priv *fec)
 }
 
 #ifdef CONFIG_PHYLIB
-int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
+int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
 		struct mii_dev *bus, struct phy_device *phydev)
 #else
-static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
+static int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
 		struct mii_dev *bus, int phy_id)
 #endif
 {
@@ -1017,7 +1024,7 @@ err1:
 	return ret;
 }
 
-struct mii_dev *fec_get_miibus(uint32_t base_addr, int dev_id)
+struct mii_dev *fec_get_miibus(uintptr_t base_addr, int dev_id)
 {
 	struct ethernet_regs *eth = (struct ethernet_regs *)base_addr;
 	struct mii_dev *bus;

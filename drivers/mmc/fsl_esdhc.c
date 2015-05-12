@@ -184,7 +184,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 			wml_value = WML_RD_WML_MAX_VAL;
 
 		esdhc_clrsetbits32(&regs->wml, WML_RD_WML_MASK, wml_value);
-		esdhc_write32(&regs->dsaddr, (u32)data->dest);
+		esdhc_write32(&regs->dsaddr, (uintptr_t)data->dest);
 	} else {
 		flush_dcache_range((ulong)data->src,
 				   (ulong)data->src+data->blocks
@@ -199,7 +199,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 
 		esdhc_clrsetbits32(&regs->wml, WML_WR_WML_MASK,
 					wml_value << 16);
-		esdhc_write32(&regs->dsaddr, (u32)data->src);
+		esdhc_write32(&regs->dsaddr, (uintptr_t)data->src);
 	}
 #else	/* CONFIG_SYS_FSL_ESDHC_USE_PIO */
 	if (!(data->flags & MMC_DATA_READ)) {
@@ -208,9 +208,9 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 				"Can not write to a locked card.\n\n");
 			return TIMEOUT;
 		}
-		esdhc_write32(&regs->dsaddr, (u32)data->src);
+		esdhc_write32(&regs->dsaddr, (uintptr_t)data->src);
 	} else
-		esdhc_write32(&regs->dsaddr, (u32)data->dest);
+		esdhc_write32(&regs->dsaddr, (uintptr_t)data->dest);
 #endif	/* CONFIG_SYS_FSL_ESDHC_USE_PIO */
 
 	esdhc_write32(&regs->blkattr, data->blocks << 16 | data->blocksize);
@@ -255,10 +255,10 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 static void check_and_invalidate_dcache_range
 	(struct mmc_cmd *cmd,
 	 struct mmc_data *data) {
-	unsigned start = (unsigned)data->dest ;
+	unsigned long start = (unsigned long)data->dest ;
 	unsigned size = roundup(ARCH_DMA_MINALIGN,
 				data->blocks*data->blocksize);
-	unsigned end = start+size ;
+	unsigned long end = start+size ;
 	invalidate_dcache_range(start, end);
 }
 /*
