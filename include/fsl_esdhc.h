@@ -155,7 +155,7 @@
 #define ESDHC_HOSTCAPBLT_HSS	0x00200000
 
 struct fsl_esdhc_cfg {
-#ifdef CONFIG_LS2085A
+#if defined(CONFIG_LS2085A) || defined(CONFIG_S32V234)
 	u64	esdhc_base;
 #else
 	u32	esdhc_base;

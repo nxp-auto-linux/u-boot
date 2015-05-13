@@ -17,6 +17,7 @@ typedef volatile unsigned char	vu_char;
 
 #include <config.h>
 #include <asm-offsets.h>
+#include <linux/kernel.h>
 #include <linux/bitops.h>
 #include <linux/types.h>
 #include <linux/string.h>
