@@ -315,14 +315,13 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 static char *get_reset_cause(void)
 {
     u32 cause = 0;
-#if 0 /* b46902 */
-    struct src *src_regs = (struct src *)SRC_BASE_ADDR;
+/* b47303
+ * The cause of reset is determined on s32v234 using MC_RGM module.
+ * MC_RGM_FES register should be used to extract the desired
+ * information.
+ * */
 
-    cause = readl(&src_regs->srsr);
-    writel(cause, &src_regs->srsr);
-    cause &= 0xff;
-#endif /* b00450 */
-
+#if 0
     switch (cause) {
     case 0x08:
         return "WDOG";
@@ -335,6 +334,7 @@ static char *get_reset_cause(void)
     default:
         return "unknown reset";
     }
+#endif /* to be used as implementation model */
 }
 
 #define SRC_SCR_SW_RST                  (1<<12)
