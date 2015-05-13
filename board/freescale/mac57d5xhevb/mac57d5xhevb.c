@@ -29,12 +29,23 @@
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
+#include "mmu.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
+/*
+ * Current DDR setup is realised for cut 1 Halo chip ,
+ * which has the DDR unstable. On this chip DDR works only
+ * using a workaround realised in MMU that sets up the DDR
+ * as a noncacheable memory area.
+ * Taking into consideration the fact the cut2 Halo chip has
+ * been produced, the code remains written using magic numbers
+ * until the u-boot will be tested in the new cut.
+ */
+
 void setup_iomux_ddr(void)
 {
-	/* SIUL2 */
+	/* SIUL2 for DDR */
 	writel( 0x22500000, 0x400DC680 );
 	writel( 0x22500000, 0x400DC684 );
 	writel( 0x22500000, 0x400DC688 );
@@ -444,6 +455,9 @@ int board_phy_config(struct phy_device *phydev)
 
 int board_early_init_f(void)
 {
+#ifdef CONFIG_DDR_WORKAROUND
+	enable_DDRWorkaround();
+#endif
 	clock_init();
 	mscm_init();
 

@@ -99,6 +99,13 @@
 #define CONFIG_SYS_USE_NAND
 #endif
 
+/* 
+ * DDR workaround in order to allow multiple stores in memory from
+ * registers in a single instruction.
+ * Temporary disabled because the workaround does not work correctly.
+ */
+/* #define CONFIG_DDR_WORKAROUND */
+
 #ifdef CONFIG_SYS_USE_NAND
 /* Nand Flash Configs */
 #define	CONFIG_CMD_NAND
