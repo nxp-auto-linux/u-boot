@@ -30,21 +30,12 @@ enum mxc_clock {
 	MXC_FEC_CLK,
 	MXC_I2C_CLK,
 };
-
-/* PLL0 => PLL_SYS; PLL_LINFLEX; PLL_DDR; PLL_ENET */
-/* PLL1 => NOT USED YET */
-/* PLL2 => NOT USED YET */
-/* PLL3 => NOT USED YET */
-
-enum clocks {
-	FIRC = 0,
-	FXOSC,
-	RESERVED1,
-	RESERVED2,
-	PLL0,
-	PLL1,
-	PLL2,
-	PLL3,
+enum pll_type {
+	ARM_PLL = 0,
+	PERIPH_PLL,
+	ENET_PLL,
+	DDR_PLL,
+	VIDEO_PLL,
 };
 
 unsigned int mxc_get_clock(enum mxc_clock clk);

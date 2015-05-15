@@ -61,11 +61,17 @@ int dram_init(void)
 static void setup_iomux_uart(void)
 {
     /* Muxing for linflex */
-    writel( 0x3, 0x400DCD68 );
+#if 0
+	/*
+	 * To be update with Linflex for S32V234.
+	 * The below settings are for Halo 
+	 */
+	writel( 0x3, 0x400DCD68 );
 
-    writel( 0x00080000, 0x400DC4F4 );
+	writel( 0x00080000, 0x400DC4F4 );
 
-    writel( 0x02030003, 0x400DC4F8 );
+	writel( 0x02030003, 0x400DC4F8 );
+#endif
 
 }
 
@@ -92,7 +98,6 @@ struct fsl_esdhc_cfg esdhc_cfg[1] = {
 	{ESDHC1_BASE_ADDR},
 };
 #endif
-
 int board_mmc_getcd(struct mmc *mmc)
 {
 	/* eSDHC1 is always present */
@@ -106,120 +111,307 @@ int board_mmc_init(bd_t *bis)
 }
 #endif
 
+/*
+ * Computes the MFI and MFN for DFS_DVPORTn
+ * The mathematical formula is the following:
+ * fdfs_clckout = fdfs_clkin / ( DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/256) )
+ * Let be MFN = 0.
+ */
+u16 get_dfs_dvport_val(u32 dfs_out_freq, u32 dfs_in_freq) {
+	u16 dfs_val;
+	dfs_val = (dfs_in_freq/dfs_out_freq) << DFS_DVPORTn_MFN_OFFSET;
+	return dfs_val;
+}
+
+/*
+ * Program the pll according to the input parameters.
+ * pll - ARM_PLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_PLL.
+ * refclk_freq - input referece clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
+ * freq - expected output frequency for PHY0
+ * freq1 - expected output frequency for PHY1
+ * dfs_nr - number of DFS modules for current PLL
+ * dfs_freq - array with the expected frequency for DFSn
+ * plldv_prediv - devider of clkfreq_ref
+ * plldv_mfd - loop multiplication factor divider
+ * pllfd_mfn - numerator loop multiplication factor divider
+ * Please consult the PLLDIG chapter of platform manual
+ * before to use this function.
+ *)
+ */
+static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1,
+						u32 dfs_nr, u32 * dfs_freq, u32 plldv_prediv, u32 plldv_mfd, u32 pllfd_mfn )
+{
+	u32 i, rfdphi1, rfdphi, dfs_portreset = 0, fvco;
+
+	/*
+	 * This formula is from platform reference manual (Rev. 1 Draft, D), PLLDIG chapter.
+	 * The formula from Rev. 1, Draft E is wrong.
+	*/
+	fvco = (refclk_freq / plldv_prediv) * (plldv_mfd + pllfd_mfn/20481);
+
+	/*
+	 * VCO should have value in [ PLL_MIN_FREQ, PLL_MAX_FREQ ]. Please consult
+	 * the platform DataSheet in order to determine the allowed values.
+	 */
+
+	if( fvco < PLL_MIN_FREQ || fvco > PLL_MAX_FREQ )
+	{
+		return -1;
+	}
+
+	rfdphi = fvco/freq0;
+
+	rfdphi1 = (freq1 == 0) ? 0 : fvco/freq1;
+
+	writel( PLLDIG_PLLDV_RFDPHI1_SET(rfdphi1) | PLLDIG_PLLDV_RFDPHI1_SET(rfdphi) |
+			PLLDIG_PLLDV_RFDPHI_SET(plldv_prediv) | PLLDIG_PLLDV_MFD(plldv_mfd), PLLDIG_PLLDV(pll) );
+
+	writel( readl(PLLDIG_PLLFD(pll)) | PLLDIG_PLLFD_MFN_SET(pllfd_mfn), PLLDIG_PLLFD(pll) );
+
+	/* Only ARM_PLL, ENET_PLL and DDR_PLL */
+	if( (pll == ARM_PLL) || (pll == ENET_PLL) || (pll == DDR_PLL) )
+	{
+
+		/* DFS clk enable programming */
+		writel( DFS_CTRL_DLL_RESET, DFS_CTRL(pll) );
+
+		for( i = 0; i < dfs_nr; i++ )
+		{
+			writew( get_dfs_dvport_val(dfs_freq[i],freq1) , DFS_DVPORTn(pll, i) );
+			dfs_portreset |= ((dfs_freq[i] ? 1: 0)  << i);
+		}
+
+		writel( DFS_PORTRESET_PORTRESET_SET(dfs_portreset), DFS_PORTRESET(pll) );
+	}
+	return 0;
+
+}
+static void entry_to_target_mode( u32 mode )
+{
+	writel( mode | MC_ME_MCTL_KEY, MC_ME_MCTL );
+	writel( mode | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
+	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+}
+
+static void aux_source_clk_config(uintptr_t cgm_addr, u8 ac, u32 source)
+{
+	#if 1
+	/* select the clock source */
+	writel( MC_CGM_ACn_SEL_SET(source), CGM_ACn_SC(cgm_addr, ac) );
+	#endif
+}
+static void aux_div_clk_config(uintptr_t cgm_addr, u8 ac, u8 dc, u32 divider)
+{
+	#if 1
+	/* set the divider */
+	writel( MC_CGM_ACn_DCm_DE | MC_CGM_ACn_DCm_PREDIV(divider),
+			CGM_ACn_DCm(cgm_addr, ac, dc));
+	#endif
+}
+
+static void setup_sys_clocks( void )
+{
+	/* setup the sys clock divider for CORE_CLK (1000MHz)*/
+	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0), CGM_SC_DCn(MC_CGM1_BASE_ADDR, 0) );
+	/* setup the sys clock divider for CORE2_CLK (500MHz)*/
+	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), CGM_SC_DCn(MC_CGM1_BASE_ADDR, 1) );
+
+	/* setup the sys clock divider for SYS3_CLK (250 MHz)*/
+	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x3), CGM_SC_DCn(MC_CGM0_BASE_ADDR, 0) );
+
+	/* setup the sys clock divider for SYS6_CLK (125 Mhz)*/
+	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), CGM_SC_DCn(MC_CGM0_BASE_ADDR, 1) );
+
+#if 0 /* Disable until the modules will be implemented and activated */
+	/* setup the sys clock divider for GPU_CLK (500 MHz)*/
+	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), CGM_SC_DCn(MC_CGM2_BASE_ADDR, 0) );
+
+	/* setup the sys clock divider for GPU_SHD_CLK (500 MHz)*/
+	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), CGM_SC_DCn(MC_CGM3_BASE_ADDR, 0) );
+#endif
+}
+static void setup_aux_clocks( void )
+{
+	/*
+	 * setup the aux clock divider for PERI_CLK
+	 * (source: PERIPH_PLL_PHI_0/5, PERI_CLK - 40 MHz)
+	 */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 5, MC_CGM_ACn_SEL_PERPLLDIVX );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 5, 0, 5 );
+
+	/* setup the aux clock divider for LIN_CLK (40MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 3, MC_CGM_ACn_SEL_PERPLLDIVX );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 3, 0, 0 );
+
+	/* setup the aux clock divider for ENET_TIME_CLK (50MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 7, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 7, 1, 9 );
+
+	/* setup the aux clock divider for ENET_CLK (50MHz) */
+	aux_source_clk_config( MC_CGM2_BASE_ADDR, 2, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM2_BASE_ADDR, 2, 0, 9 );
+
+	/*
+	 * Disable until the modules will be implemented and activated.
+	 * Please update the divider when activate the module
+	 */
+#if 0
+	/* setup the aux clock divider for H264_DEC_CLK  (250MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 12, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 12, 0, 3 );
+
+	/* setup the aux clock divider for H264_ENC_CLK (250MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 13, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 13, 0, 3 );
+
+	/* setup the aux clock divider for QSPI_CLK  (333 MHz)*/
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 14, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 14, 0, 2 );
+#endif
+
+	/* setup the aux clock divider for SDHC_CLK. */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 15, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 15, 0, 7 );
+
+	/* setup the aux clock divider for DDR_CLK (533MHz) and APEX_SYS_CLK (266MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 8, MC_CGM_ACn_SEL_DDRPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 8, 0, 1 );
+
+	/*
+	 * Disable until the modules will be implemented and activated.
+	 * Please update the divider when activate the module
+	 */
+#if 0
+
+	/* setup the aux clock divider for SEQ_CLK (177MHz) and ISP_CLK (355MHz)) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 0, MC_CGM_ACn_SEL_DDRPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 0, 0, 2 );
+
+	/* setup the aux clock divider for APEX_APU_CLK (355MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 1, MC_CGM_ACn_SEL_DDRPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 1, 0, 2 );
+
+	/* setup the aux clock divider for MJPEG_CLK (266MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 2, MC_CGM_ACn_SEL_DDRPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 2, 0, 3 );
+
+	/* setup the aux clock divider for DCU_AXI_CLK (300MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 3 );
+
+	/* setup the aux clock divider for DCU_PIX_CLK (150MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 7 );
+#endif
+}
+static void enable_modules_clock( void )
+{
+	/* PIT0 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL58 );
+	/* PIT1 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL170 );
+	/* LINFLEX0 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL83 );
+	/* LINFLEX1 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL188 );
+	/* ENET */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL50 );
+	/* SDHC */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL93 );
+
+	entry_to_target_mode( MC_ME_MCTL_RUN0 );
+}
 static void clock_init(void)
 {
-#if 0 /* Disable until full suport for clock tree is added */
-    volatile struct mc_cgm_reg * mc_cgm = (struct mc_cgm_reg *)MC_CGM0_BASE_ADDR;
-    volatile struct mc_me_reg * mc_me = (struct mc_me_reg *)MC_ME0_BASE_ADDR;
+	unsigned int arm_dfs_freq[ARM_PLL_PHI1_DFS_Nr] = {
+									ARM_PLL_PHI1_DFS1_FREQ,
+									ARM_PLL_PHI1_DFS2_FREQ,
+									ARM_PLL_PHI1_DFS3_FREQ,
+									ARM_PLL_PHI1_DFS4_FREQ
+									};
 
-    /* enable all modes, enable all peripherals */
-    writel( MC_ME_ME_RUN3 | MC_ME_ME_RUN2 | MC_ME_ME_RUN1 | MC_ME_ME_RUN0, &mc_me->mc_me_me );
+	unsigned int enet_dfs_freq[ENET_PLL_PHI1_DFS_Nr] = {
+									ENET_PLL_PHI1_DFS1_FREQ,
+									ENET_PLL_PHI1_DFS2_FREQ,
+									ENET_PLL_PHI1_DFS3_FREQ,
+									ENET_PLL_PHI1_DFS4_FREQ
+									};
+
+	unsigned int ddr_dfs_freq[DDR_PLL_PHI1_DFS_Nr] = {
+									DDR_PLL_PHI1_DFS1_FREQ,
+									DDR_PLL_PHI1_DFS2_FREQ,
+									DDR_PLL_PHI1_DFS3_FREQ,
+									DDR_PLL_PHI1_DFS4_FREQ
+									};
 
     writel( MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
-            MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3, &mc_me->mc_me_run_pc0 );
+			MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3,
+			MC_ME_ME_RUN_PCn(0) );
 
+    /* turn on FXOSC */
+    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_XOSCON |
+			MC_ME_RUNMODE_MC_FIRCON, MC_ME_RUNn_MC(0) );
 
-    /* turn on FXOSC, SRIC, SXOSC */
-    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_FLAON(0x3) |
-            MC_ME_RUNMODE_MC_FXOSCON | MC_ME_RUNMODE_MC_SIRCON |
-            MC_ME_RUNMODE_MC_SXOSCON, &mc_me->mc_me_run_mc0 );
+	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
-    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY , &mc_me->mc_me_mctl);
-    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY , &mc_me->mc_me_mctl);
+	program_pll(
+				ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI0_FREQ, ARM_PLL_PHI1_FREQ,
+				ARM_PLL_PHI1_DFS_Nr, arm_dfs_freq, ARM_PLL_PLLDV_PREDIV,
+				ARM_PLL_PLLDV_MFD, ARM_PLL_PLLDV_MFN
+				);
 
-    while( (readl(&mc_me->mc_me_gs) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+	writel( readl(MC_ME_RUNn_MC(0)) | MC_ME_RUNMODE_MC_ARMPLL,
+			MC_ME_RUNn_MC(0) );
 
-    /* Set PLL source to FXOSC for AUX CLK Selector 0 */
-    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_FXOSC) , &mc_cgm->mc_cgm_ac0_sc);
+	program_pll(
+				PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI0_FREQ,
+				PERIPH_PLL_PHI1_FREQ, PERIPH_PLL_PHI1_DFS_Nr, NULL,
+				PERIPH_PLL_PLLDV_PREDIV, PERIPH_PLL_PLLDV_MFD,
+				PERIPH_PLL_PLLDV_MFN
+				);
 
-    while( (readl(&mc_cgm->mc_cgm_ac0_ss) & MC_CGM_ACn_SEL_MASK) != 0x01000000 );
+	writel( readl(MC_ME_RUNn_MC(0)) | MC_ME_RUNMODE_MC_PERIPHPLL,
+			MC_ME_RUNn_MC(0) );
 
-    /* activate the divisor 0 for DDR */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc0 );
+	program_pll(
+				ENET_PLL, XOSC_CLK_FREQ, ENET_PLL_PHI0_FREQ, ENET_PLL_PHI1_FREQ,
+				ENET_PLL_PHI1_DFS_Nr, enet_dfs_freq, ENET_PLL_PLLDV_PREDIV,
+				ENET_PLL_PLLDV_MFD, ENET_PLL_PLLDV_MFN
+				);
 
-    /* activate the divisor 1 for System Clock (CA5 core) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc1 );
+	writel( readl(MC_ME_RUNn_MC(0)) | MC_ME_RUNMODE_MC_ENETPLL,
+			MC_ME_RUNn_MC(0) );
 
-    /* activate the divisor 1 for System Clock (CM4) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x3), &mc_cgm->mc_cgm_sc_dc2 );
+	program_pll(
+				DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ, DDR_PLL_PHI1_FREQ,
+				DDR_PLL_PHI1_DFS_Nr, ddr_dfs_freq, DDR_PLL_PLLDV_PREDIV,
+				DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN
+				);
 
-    /* activate the divisor 3 for System Clock (Peripherals: PIT) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), &mc_cgm->mc_cgm_sc_dc3 );
+	writel( readl(MC_ME_RUNn_MC(0)) | MC_ME_RUNMODE_MC_DDRPLL,
+			MC_ME_RUNn_MC(0) );
 
-    /* activate the divisor 4 for System Clock (IOP) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x7), &mc_cgm->mc_cgm_sc_dc4 );
+	program_pll(
+				VIDEO_PLL, XOSC_CLK_FREQ, VIDEO_PLL_PHI0_FREQ,
+				VIDEO_PLL_PHI1_FREQ, VIDEO_PLL_PHI1_DFS_Nr, NULL,
+				VIDEO_PLL_PLLDV_PREDIV, VIDEO_PLL_PLLDV_MFD,
+				VIDEO_PLL_PLLDV_MFN
+				);
 
-    /* activate the divisor 4 for System Clock (2 x Platform Clock) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), &mc_cgm->mc_cgm_sc_dc5 );
+	writel( readl(MC_ME_RUNn_MC(0)) | MC_ME_RUNMODE_MC_VIDEOPLL,
+			MC_ME_RUNn_MC(0) );
 
-    /* Configure PLL0 Dividers - 640MHz from 40Mhx XOSC
-     PLL input = FXOSC = 40MHz
-     VCO range = 600-1280MHz
-     PREDIV = 1 =? /1
-     RFDPHI1= 2 => /8
-     RFDPHI = 0 => /2
-     MFD    = 32 => /32
-     VCO frequency = PLL input / PREDIV x MFD = 40/1 * 32 = 1280 MHz
-     PLL out = VCO / (2^RFDPHI*2) = 1280 / 2 = 640 MHz
-    */
+	setup_sys_clocks();
 
-    writel( PLLDIG_PLLDV_RFDPHI_SET(0x0) | PLLDIG_PLLDV_PREDIV_SET(0x1) |
-            PLLDIG_PLLDV_MFD(0x20),  &mc_cgm->pll0_plldv );
+	setup_aux_clocks();
 
-    writel( readl(&mc_cgm->pll0_pllfd) | PLLDIG_PLLFD_MFN_SET(0x0),  &mc_cgm->pll0_pllfd );
+	/* set ARM PLL DFS 1 as SYSCLK */
+	writel( readl(MC_ME_RUNn_MC(0)) | MC_ME_RUNMODE_MC_SYSCLK(0x2),
+			MC_ME_RUNn_MC(0) );
 
-    writel( readl(&mc_cgm->pll0_pllcal3) | PLLDIG_PLLCAL3_MFDEN_SET(0x1), &mc_cgm->pll0_pllcal3 );
+	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
-    /* turn on FXOSC, SRIC, SXOSC */
-    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_FLAON(0x3) |
-            MC_ME_RUNMODE_MC_PLL0ON | MC_ME_RUNMODE_MC_FXOSCON | MC_ME_RUNMODE_MC_SIRCON |
-            MC_ME_RUNMODE_MC_SXOSCON | MC_ME_RUNMODE_MC_SYSCLK(0x4), &mc_me->mc_me_run_mc0 );
-
-    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY , &mc_me->mc_me_mctl);
-    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY , &mc_me->mc_me_mctl);
-
-    while( (readl(&mc_me->mc_me_gs) & MC_ME_GS_S_MTRANS) != 0x00000000 );
-
-    /* select PLL0 as source clock for AUXCLK Selector 2 (Linflex; SPI)*/
-    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_PLL0), &mc_cgm->mc_cgm_ac2_sc );
-
-    /* activate the divisor 1 for AUXCLOCK Selector 2 (Linflex) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x3), &mc_cgm->mc_cgm_ac2_dc1 );
-
-    /* select PLL0 as source clock for AUXCLK Selector 10 (ENET)*/
-    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_PLL0), &mc_cgm->mc_cgm_ac10_sc );
-
-    /* activate the divisor 0 for AUXCLOCK Selector 10 (ENET) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0xF), &mc_cgm->mc_cgm_ac10_dc0 );
-
-    /* select PLL0 as source clock for AUXCLK Selector 11 (ENET_TIMER)*/
-    writel( MC_CGM_ACn_SEL_SET(MC_CGM_ACn_SEL_PLL0), &mc_cgm->mc_cgm_ac10_sc );
-
-    /* activate the divisor 0 for AUXCLOCK Selector 10 (ENET_TIMER) */
-    writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0xF), &mc_cgm->mc_cgm_ac10_dc0 );
-
-    /* turn on FXOSC, SRIC, SXOSC */
-    writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_FLAON(0x3) |
-            MC_ME_RUNMODE_MC_PLL0ON | MC_ME_RUNMODE_MC_FXOSCON | MC_ME_RUNMODE_MC_SIRCON |
-            MC_ME_RUNMODE_MC_SXOSCON | MC_ME_RUNMODE_MC_SYSCLK(0x4), &mc_me->mc_me_run_mc0 );
-
-    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY , &mc_me->mc_me_mctl);
-    writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY , &mc_me->mc_me_mctl);
-
-
-    while( (readl(&mc_me->mc_me_gs) & MC_ME_GS_S_MTRANS) != 0x00000000 );
-
-    /* enable clock for Linflex(0,1,2) peripheral */
-    writeb( 0x0, &mc_me->mc_me_pctl26 );
-    writeb( 0x0, &mc_me->mc_me_pctl25 );
-    writeb( 0x0, &mc_me->mc_me_pctl24 );
-    /* PIT */
-    writeb( 0x0, &mc_me->mc_me_pctl36 );
-    /* SIUL */
-    writeb( 0x0, &mc_me->mc_me_pctl60 );
-    /* ENET */
-    writeb( 0x0, &mc_me->mc_me_pctl196 );
-#endif
+    enable_modules_clock();
 
 }
 

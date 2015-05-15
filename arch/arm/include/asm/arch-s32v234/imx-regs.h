@@ -25,8 +25,8 @@
 #define IRAM_BASE_ADDR      0x3F000000  /* internal ram */
 #define IRAM_SIZE           0x00080000  /* 512 KB */
 
-#define AIPS0_BASE_ADDR     0x40000000
-#define AIPS1_BASE_ADDR     0x40080000
+#define AIPS0_BASE_ADDR     (0x40000000UL)
+#define AIPS1_BASE_ADDR     (0x40080000UL)
 
 /* AIPS 0 */
 #define AXBS_BASE_ADDR					(AIPS0_BASE_ADDR + 0x00000000)
