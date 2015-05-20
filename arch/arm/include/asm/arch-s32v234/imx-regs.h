@@ -22,7 +22,7 @@
 
 #define ARCH_MXC
 
-#define IRAM_BASE_ADDR      0x3F000000  /* internal ram */
+#define IRAM_BASE_ADDR      0x3E800000  /* internal ram */
 #define IRAM_SIZE           0x00080000  /* 512 KB */
 
 #define AIPS0_BASE_ADDR     (0x40000000UL)
