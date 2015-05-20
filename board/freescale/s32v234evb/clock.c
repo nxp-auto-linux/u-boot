@@ -29,12 +29,39 @@
  * fdfs_clckout = fdfs_clkin / ( DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/256) )
  * Let be MFN = 0.
  */
-u16 get_dfs_dvport_val(u32 dfs_out_freq, u32 dfs_in_freq) {
+static u16 get_dfs_dvport_val(u32 dfs_out_freq, u32 dfs_in_freq) {
 	u16 dfs_val;
 	dfs_val = (dfs_in_freq/dfs_out_freq) << DFS_DVPORTn_MFN_OFFSET;
 	return dfs_val;
 }
+/*
+ * Select the clock reference for required pll.
+ * pll - ARM_PLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_PLL.
+ * refclk_freq - input referece clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
+ */
+static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
+{
+	u32 clk_src;
+	volatile struct src * src = (struct src *                  )SRC_SOC_BASE_ADDR;
 
+	/* select the pll clock source */
+	switch( refclk_freq )
+	{
+			case FIRC_CLK_FREQ:
+				clk_src = SRC_GPR1_FIRC_CLK_SOURCE;
+				break;
+			case XOSC_CLK_FREQ:
+				clk_src = SRC_GPR1_XOSC_CLK_SOURCE;
+				break;
+		default:
+				/* The clock frequency for the source clock is unknown */
+				return -1;
+	}
+
+	writel( readl(&src->gpr1) | SRC_GPR1_PLL_SOURCE(pll,clk_src), &src->gpr1);
+
+	return 0;
+}
 /*
  * Program the pll according to the input parameters.
  * pll - ARM_PLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_PLL.
@@ -67,6 +94,11 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 	 */
 
 	if( fvco < PLL_MIN_FREQ || fvco > PLL_MAX_FREQ )
+	{
+		return -1;
+	}
+
+	if( select_pll_source_clk( pll, refclk_freq ) < 0 )
 	{
 		return -1;
 	}
