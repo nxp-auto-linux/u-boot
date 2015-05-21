@@ -75,7 +75,7 @@
 #define MC_ME_ME_RUN3					(1 << 7)
 
 /* MC_ME_RUN_PCn */
-#define MC_ME_ME_RUN_PCn(n)				(MC_ME_BASE_ADDR + 0x00000080 + 0x4 * (n))
+#define MC_ME_RUN_PCn(n)				(MC_ME_BASE_ADDR + 0x00000080 + 0x4 * (n))
 
 #define MC_ME_RUN_PCn_RESET				(1 << 0)
 #define MC_ME_RUN_PCn_TEST				(1 << 1)
