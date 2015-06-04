@@ -91,11 +91,10 @@ void setup_iomux_nfc(void)
 #endif
 
 #ifdef CONFIG_FSL_ESDHC
-#if 0 /* Disable until the sdhc support will be activated */
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
-	{ESDHC1_BASE_ADDR},
+	{USDHC_BASE_ADDR},
 };
-#endif
+
 int board_mmc_getcd(struct mmc *mmc)
 {
 	/* eSDHC1 is always present */
@@ -104,8 +103,8 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
-	/*TODO: Implement this when shdc support is enabled.*/
-	return 0;
+	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_USDHC_CLK);
+	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
 }
 #endif
 
