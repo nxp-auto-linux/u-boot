@@ -129,7 +129,7 @@
 #define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
 #endif
 
-#define CONFIG_BOOTDELAY		3
+#define CONFIG_BOOTDELAY		(-1)
 
 #define CONFIG_LOADADDR			0x82000000
 
