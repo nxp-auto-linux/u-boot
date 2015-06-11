@@ -53,7 +53,7 @@ static void linflex_serial_setbrg(void)
 {
     u32 clk = mxc_get_clock(MXC_UART_CLK);
     u32 ibr, fbr;
-    
+
     if (!gd->baudrate)
         gd->baudrate = CONFIG_BAUDRATE;
 
@@ -70,7 +70,7 @@ static int linflex_serial_getc(void)
     char c;
 
     /* waiting for data reception complete - TODO: add a timeout */
-    while((__raw_readb(&base->uartsr) & UARTSR_DRF) != UARTSR_DRF){} 
+    while((__raw_readb(&base->uartsr) & UARTSR_DRF) != UARTSR_DRF){}
 
     /* waiting for data buffer to be ready - TODO: add a timeout */
 
@@ -89,7 +89,7 @@ static void linflex_serial_putc(const char c)
     __raw_writeb(c, &base->bdrl);
 
     /* waiting for data transmission completed - TODO: add a timeout */
-    while((__raw_readb(&base->uartsr) & UARTSR_DTF) != UARTSR_DTF){} 
+    while((__raw_readb(&base->uartsr) & UARTSR_DTF) != UARTSR_DTF){}
 
     __raw_writeb((__raw_readb(&base->uartsr)|UARTSR_DTF), &base->uartsr);
 }
@@ -125,19 +125,19 @@ static int linflex_serial_init(void)
     __raw_writel(ctrl, &base->lincr1);
 
     /* waiting for init mode entry - TODO: add a timeout */
-    while((__raw_readl(&base->linsr) & LINSR_LINS_MASK) != LINSR_LINS_INITMODE){} 
+    while((__raw_readl(&base->linsr) & LINSR_LINS_MASK) != LINSR_LINS_INITMODE){}
 
 
     /* set UART bit to allow writing other bits */
     __raw_writel(UARTCR_UART, &base->uartcr);
-
+#if 0 /* Disable the baudrate until the clocks are enabled */
     /* provide data bits, parity, stop bit, etc */
     serial_setbrg();
-
+#endif
     /* 8 bit data, no parity, Tx and Rx enabled, UART mode */
     __raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
                  | UARTCR_WL0 | UARTCR_UART, &base->uartcr);
-    
+
     ctrl = __raw_readl(&base->lincr1);
     ctrl &= ~LINCR1_INIT;
     __raw_writel(ctrl, &base->lincr1); /* end init mode */
