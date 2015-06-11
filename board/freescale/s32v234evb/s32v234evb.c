@@ -58,19 +58,17 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-    /* Muxing for linflex */
-#if 0
-	/*
-	 * To be update with Linflex for S32V234.
-	 * The below settings are for Halo 
-	 */
-	writel( 0x3, 0x400DCD68 );
+	/* Muxing for linflex */
+	 /* Replace the magic values after bringup */
 
-	writel( 0x00080000, 0x400DC4F4 );
+	/* set TXD - MSCR[12] PA12 */
+	writel( 0x205401, SIUL2_MSCRn(12));
 
-	writel( 0x02030003, 0x400DC4F8 );
-#endif
+	/* set RXD - MSCR[11] - PA11*/
+	writel( 0x882000, SIUL2_MSCRn(11));
 
+	/* set RXD - IMCR[200] - 200 */
+	writel( 0x2, SIUL2_IMCRn(200));
 }
 
 static void setup_iomux_enet(void)
