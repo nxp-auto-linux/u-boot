@@ -150,8 +150,8 @@
 	"console=ttyLF0\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_file=mac57d5xh-evb.dtb\0" \
-	"fdt_addr=0x81000000\0" \
+	"fdt_file=s32v234-evb.dtb\0" \
+	"fdt_addr=0xC1000000\0" \
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
