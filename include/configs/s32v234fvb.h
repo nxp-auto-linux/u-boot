@@ -142,7 +142,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
-	"console=ttyLP1\0" \
+	"console=ttyLF0\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file=mac57d5xh-evb.dtb\0" \
