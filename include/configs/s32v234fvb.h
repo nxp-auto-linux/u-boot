@@ -137,6 +137,7 @@
 #define CONFIG_BOOTDELAY		(-1)
 
 #define CONFIG_LOADADDR			(DDR_BASE_ADDR + 0x2000000)
+#define CONFIG_BOOTARGS			"console=ttyLF0"
 
 #define CONFIG_CMD_ENV
 #define CONFIG_EXTRA_ENV_SETTINGS \
