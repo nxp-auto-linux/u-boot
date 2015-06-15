@@ -111,13 +111,11 @@ int board_mmc_init(bd_t *bis)
 
 static void mscm_init(void)
 {
-#if 0 /* Desactivate until the memory map will be updated. */
-	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_IR_BASE_ADDR;
+	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_BASE_ADDR;
 	int i;
 
 	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-		writew(MSCM_IRSPRC_CP0_EN, &mscmir->irsprc[i]);
-#endif /* b00450 */
+		writew(MSCM_IRSPRC_CPn_EN, &mscmir->irsprc[i]);
 }
 
 int board_phy_config(struct phy_device *phydev)
@@ -132,8 +130,8 @@ int board_early_init_f(void)
 {
 #if 0 /* Temporarily disable due to imposibility of the core to do transition */
 	clock_init();
-	mscm_init();
 #endif
+	mscm_init();
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
