@@ -142,7 +142,7 @@
 #define CONFIG_BOOTDELAY		3
 
 #define CONFIG_LOADADDR			(DDR_BASE_ADDR + 0x2000000)
-#define CONFIG_BOOTARGS			"console=ttyLF0"
+#define CONFIG_BOOTARGS			"console=ttyLF0 root=/dev/ram rw"
 
 #define CONFIG_CMD_ENV
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -152,7 +152,9 @@
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file=s32v234-evb.dtb\0" \
-	"fdt_addr=0xC1000000\0" \
+	"fdt_addr=0xC2000000\0" \
+	"kernel_addr=0xC307FFC0\0" \
+	"ramdisk_addr=0xC4000000\0" \
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
@@ -180,6 +182,8 @@
 		"source\0" \
 	"loaduimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${uimage}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+	"jtagboot=echo Booting using jtag...; " \
+		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
