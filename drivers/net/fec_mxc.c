@@ -519,7 +519,10 @@ static int fec_open(struct eth_device *edev)
 static int fec_init(struct eth_device *dev, bd_t* bd)
 {
 	struct fec_priv *fec = (struct fec_priv *)dev->priv;
-	uintptr_t mib_ptr = (uintptr_t)&fec->eth->rmon_t_drop;
+	uintptr_t mib_ptr_start1 = (uintptr_t)&fec->eth->rmon_t_drop;
+	uintptr_t mib_ptr_end1 = (uintptr_t)&fec->eth->res13;
+	uintptr_t mib_ptr_start2 = (uintptr_t)&fec->eth->rmon_r_packets;
+	uintptr_t mib_ptr_end2 = (uintptr_t)&fec->eth->res14;
 	uintptr_t i;
 
 	/* Initialize MAC address */
@@ -550,13 +553,16 @@ static int fec_init(struct eth_device *dev, bd_t* bd)
 	writel(0x00000000, &fec->eth->gaddr2);
 
 
-	/* clear MIB RAM */
-	for (i = mib_ptr; i <= mib_ptr + 0xfc; i += 4)
+	/* clear MIB RAM: avoid the reserved space from FEC memory map. */
+	for (i = mib_ptr_start1; i < mib_ptr_end1; i += 4)
+		writel(0, i);
+	for (i = mib_ptr_start2; i < mib_ptr_end2; i += 4)
 		writel(0, i);
 
+#if !defined(CONFIG_S32V234)
 	/* FIFO receive start register */
 	writel(0x520, &fec->eth->r_fstart);
-
+#endif
 	/* size and address of each buffer */
 	writel(FEC_MAX_PKT_SIZE, &fec->eth->emrbr);
 	writel((uintptr_t)fec->tbd_base, &fec->eth->etdsr);
