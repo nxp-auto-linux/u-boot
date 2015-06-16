@@ -13,11 +13,14 @@ ifeq ($(SOC),$(filter $(SOC),vf610 sac58r mac57d5xh))
 obj-y  += dmachmux.o
 endif
 
+ifeq ($(SOC),$(filter $(SOC),mx8m mx5 mx6 vf610 sac58r mac57d5xh s32v234))
+obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
+endif
+
 ifeq ($(SOC),$(filter $(SOC),mx8m))
 obj-$(CONFIG_IMX_BOOTAUX) += imx_bootaux.o
 obj-$(CONFIG_ENV_IS_IN_MMC) += mmc_env.o
 obj-$(CONFIG_FEC_MXC) += mac.o
-obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
 obj-y += cpu.o
 endif
 
