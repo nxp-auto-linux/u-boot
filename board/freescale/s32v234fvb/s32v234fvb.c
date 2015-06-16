@@ -74,7 +74,31 @@ static void setup_iomux_uart(void)
 
 static void setup_iomux_enet(void)
 {
-	/* TODO: Implement enet iomux when it is activated. */
+	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
+	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
+	writel(       0x2, SIUL2_MSCRn(981));
+
+	writel(0x0008c700, SIUL2_MSCRn(47));	//RMII_CLK_REF_IP //PC15
+	writel(       0x2, SIUL2_MSCRn(978));
+
+	writel(0x0008c700, SIUL2_MSCRn(49));	//RX_D0  //PD1
+	writel(       0x2, SIUL2_MSCRn(974));
+	writel(0x0008c700, SIUL2_MSCRn(50));	//RX_D1  //PD2
+	writel(       0x2, SIUL2_MSCRn(975));
+	writel(0x0008c700, SIUL2_MSCRn(53));	//RX_DV  //PD5
+	writel(       0x2, SIUL2_MSCRn(973));
+	writel(0x0008c700, SIUL2_MSCRn(54));	//RX_ER  //PD6
+	writel(       0x2, SIUL2_MSCRn(970));
+
+	writel(0x0020c701, SIUL2_MSCRn(55));	//TX_D0  //PD7
+	writel(0x0020c701, SIUL2_MSCRn(56));	//TX_D1  //PD8
+	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
+
+#if 0
+	/* reset the Ethernet controller */
+	writel(0x1, 0x40032024);
+	while (readl(0x40032024) & 0x1);
+#endif
 }
 
 static void setup_iomux_i2c(void)
