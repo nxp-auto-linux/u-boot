@@ -125,7 +125,9 @@ int board_phy_config(struct phy_device *phydev)
 
 int board_early_init_f(void)
 {
+#if 0 /* Disable until the clocks will be adjusted to the hardware */
 	clock_init();
+#endif
 	mscm_init();
 
 	setup_iomux_uart();
