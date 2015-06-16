@@ -107,15 +107,15 @@
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
 
-
-#if 0 /* Disable until the I2C driver will be updated */
 /* I2C Configs */
 #define CONFIG_CMD_I2C
 #define CONFIG_HARD_I2C
 #define CONFIG_I2C_MXC
+#define CONFIG_SYS_I2C
+#define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_BASE		I2C0_BASE_ADDR
-#define CONFIG_SYS_I2C_SPEED		100000
-#endif
+#define CONFIG_SYS_I2C_SPEED	100000
+#define CONFIG_SYS_I2C_SLAVE	0x8
 
 #if 0 /* Disable until the FLASH will be implemented */
 #define CONFIG_SYS_USE_NAND

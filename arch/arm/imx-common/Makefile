@@ -12,11 +12,14 @@ obj-y	= iomux-v3.o
 endif
 ifeq ($(SOC),$(filter $(SOC),vf610 sac58r mac57d5xh))
 obj-y	+= dmachmux.o
+endif
+
+ifeq ($(SOC),$(filter $(SOC),mx5 mx6 vf610 sac58r mac57d5xh s32v234))
 obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
 endif
+
 ifeq ($(SOC),$(filter $(SOC),mx5 mx6))
 obj-y	+= timer.o cpu.o speed.o
-obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
 endif
 ifeq ($(SOC),$(filter $(SOC),mx6 mxs))
 obj-y	+= misc.o

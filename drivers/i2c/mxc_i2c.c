@@ -435,8 +435,12 @@ static void * const i2c_bases[] = {
 	(void *)I2C1_BASE_ADDR,
 	(void *)I2C2_BASE_ADDR,
 	(void *)I2C3_BASE_ADDR
-#elif defined(CONFIG_VF610) || defined(CONFIG_SAC58R) || defined(CONFIG_MAC57D5XH)
-	(void *)I2C0_BASE_ADDR
+#elif defined(CONFIG_VF610) || defined(CONFIG_SAC58R) || defined(CONFIG_MAC57D5XH) || defined(CONFIG_S32V234)
+	(void *)I2C0_BASE_ADDR,
+#if defined(CONFIG_S32V234)
+	(void *)I2C1_BASE_ADDR,
+	(void *)I2C2_BASE_ADDR
+#endif
 #else
 #error "architecture not supported"
 #endif
