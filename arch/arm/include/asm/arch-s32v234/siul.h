@@ -86,16 +86,34 @@
 #define SIUL2_MSCR_PKE_EN			(1 << 16)
 
 #define SIUL2_MSCR_SRE(v)			((v) & 0x0000C000)
+#define SIUL2_MSCR_SRE_SPEED_LOW_50		(0 << 14)
+#define SIUL2_MSCR_SRE_SPEED_LOW_100	(1 << 14)
+#define SIUL2_MSCR_SRE_SPEED_HIGH_100	(2 << 14)
+#define SIUL2_MSCR_SRE_SPEED_HIGH_200	(3 << 14)
+
 
 #define SIUL2_MSCR_PUE(v)			((v) & 0x00002000)
 #define SIUL2_MSCR_PUE_EN			(1 << 13)
 
 #define SIUL2_MSCR_PUS(v)			((v) & 0x00001800)
+#define SIUL2_MSCR_PUS_100K_DOWN	(0 << 11)
+#define SIUL2_MSCR_PUS_50K_DOWN		(1 << 11)
+#define SIUL2_MSCR_PUS_100K_UP		(2 << 11)
+#define SIUL2_MSCR_PUS_33K_UP		(3 << 11)
 
 #define SIUL2_MSCR_DSE(v)			((v) & 0x00000700)
+#define SIUL2_MSCR_DSE_240ohm		(1 << 8)
+#define SIUL2_MSCR_DSE_120ohm		(2 << 8)
+#define SIUL2_MSCR_DSE_80ohm		(3 << 8)
+#define SIUL2_MSCR_DSE_60ohm		(4 << 8)
+#define SIUL2_MSCR_DSE_48ohm		(5 << 8)
+#define SIUL2_MSCR_DSE_40ohm		(6 << 8)
+#define SIUL2_MSCR_DSE_34ohm		(7 << 8)
+
 #define SIUL2_MSCR_CRPOINT_TRIM(v)	((v) & 0x000000C0)
 #define SIUL2_MSCR_SMC(v)			((v) & 0x00000020)
 #define SIUL2_MSCR_MUX_MODE(v)		((v) & 0x0000000f)
+#define SIUL2_MSCR_MUX_MODE_ALT1	(1 << 0)
 
 
 /* Configure SIUL2 for UART */
@@ -123,5 +141,8 @@
 #define SIUL2_MSCR_UART1_Tx(N)	\
 	writel(SIUL2_MSCR_OBE_EN | SIUL2_MSCR_PUE_EN | SIUL2_MSCR_PUS_50KOHM_UP | SIUL2_MSCR_MUX_MODE_UART_Tx, SIUL2_MSCRn(SIUL2_MSCR_UART_Tx_OUT_##N))
 
+#define SIUL2_USDHC_PAD_CTRL	(SIUL2_MSCR_SRE_SPEED_HIGH_200 | SIUL2_MSCR_OBE_EN |	\
+						SIUL2_MSCR_DSE_34ohm | SIUL2_MSCR_PKE_EN | SIUL2_MSCR_IBE_EN |	\
+						SIUL2_MSCR_PUS_100K_UP | SIUL2_MSCR_PUE_EN | SIUL2_MSCR_MUX_MODE_ALT1)
 
 #endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */

@@ -126,6 +126,49 @@ int board_mmc_getcd(struct mmc *mmc)
 int board_mmc_init(bd_t *bis)
 {
 	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_USDHC_CLK);
+
+	/* Set iomux PADS for USDHC */
+
+	/* PF1 pad: uSDHC clk */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(81));
+	writel(0x2, SIUL2_MSCRn(902));
+
+	/* PF2 pad: uSDHC CMD */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(82));
+	writel(0x2, SIUL2_MSCRn(901));
+
+	/* PF3 pad: uSDHC DAT0 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(83));
+	writel(0x2, SIUL2_MSCRn(903));
+
+	/* PF4 pad: uSDHC DAT1 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(84));
+	writel(0x2, SIUL2_MSCRn(904));
+
+	/* PF5 pad: uSDHC DAT2 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(85));
+	writel(0x2, SIUL2_MSCRn(905));
+
+	/* PF6 pad: uSDHC DAT3 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(86));
+	writel(0x2, SIUL2_MSCRn(906));
+
+	/* PF7 pad: uSDHC DAT4 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(87));
+	writel(0x2, SIUL2_MSCRn(907));
+
+	/* PF8 pad: uSDHC DAT5 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(88));
+	writel(0x2, SIUL2_MSCRn(908));
+
+	/* PF9 pad: uSDHC DAT6 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(89));
+	writel(0x2, SIUL2_MSCRn(909));
+
+	/* PF10 pad: uSDHC DAT7 */
+	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(90));
+	writel(0x2, SIUL2_MSCRn(910));
+
 	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
 }
 #endif
