@@ -59,7 +59,8 @@
 #define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
 
 /* Generic Timer Definitions */
-#define COUNTER_FREQUENCY               (800000000)     /* 800MHz */
+#define COUNTER_FREQUENCY               (1000000000)     /* 1000MHz */
+#define CONFIG_SYS_FSL_ERRATUM_A008585
 
 /* Size of malloc() pool */
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
