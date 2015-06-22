@@ -60,7 +60,7 @@
  *	MC_CGM_ACn_SC/MC_CGM_ACn_SS
 */
 #define CGM_ACn_SC(cgm_addr,ac)			((cgm_addr + 0x00000800) + ((ac) * 0x20))
-#define CGM_ACn_SS(cgm_addr,ac)			((cgm_addr + 0x00000800) + ((ac) * 0x24))
+#define CGM_ACn_SS(cgm_addr,ac)			((cgm_addr + 0x00000804) + ((ac) * 0x20))
 #define MC_CGM_ACn_SEL_MASK				(0x07000000)
 #define MC_CGM_ACn_SEL_SET(source)		(MC_CGM_ACn_SEL_MASK & (((source) & 0x7) << MC_CGM_ACn_SEL_OFFSET))
 #define MC_CGM_ACn_SEL_OFFSET			(24)
@@ -86,7 +86,7 @@
 #define PLLDIG_PLLDV_MFD(div)			(PLLDIG_PLLDV_MFD_MASK & (div))
 #define PLLDIG_PLLDV_MFD_MASK			(0x000000FF)
 
-/*	PLLDIG_PLLDV_RFDPHIB has a different format for /32 according to 
+/*	PLLDIG_PLLDV_RFDPHIB has a different format for /32 according to
 	the reference manual. This other value respect the formula 2^[RFDPHIBY+1]
 */
 #define PLLDIG_PLLDV_RFDPHI_SET(val)	(PLLDIG_PLLDV_RFDPHI_MASK & (((val) & PLLDIG_PLLDV_RFDPHI_MAXVALUE) << PLLDIG_PLLDV_RFDPHI_OFFSET))
@@ -109,6 +109,7 @@
 #define PLLDIG_PLLFD(pll)				((MC_CGM0_BASE_ADDR + 0x00000030) + ((pll) * 0x80))
 #define PLLDIG_PLLFD_MFN_SET(val)		(PLLDIG_PLLFD_MFN_MASK & (val))
 #define PLLDIG_PLLFD_MFN_MASK			(0x00007FFF)
+#define PLLDIG_PLLFD_SMDEN				(1 << 30)
 
 /* PLL Calibration Register 1 (PLLDIG_PLLCAL1) */
 #define PLLDIG_PLLCAL1(pll)				((MC_CGM0_BASE_ADDR + 0x00000038) + ((pll) * 0x80))
@@ -126,15 +127,16 @@
 #define DFS_CTRL_DLL_LOLIE				(1 << 0)
 #define DFS_CTRL_DLL_RESET				(1 << 1)
 
+/* DFS Port Status Register (DFS_PORTSR) */
+#define DFS_PORTSR(pll)					(DFS0_BASE_ADDR + 0x0000000C +((pll) * 0x80))
 /* DFS Port Reset Register (DFS_PORTRESET) */
 #define DFS_PORTRESET(pll)					(DFS0_BASE_ADDR + 0x00000014 + ((pll) * 0x80))
 #define DFS_PORTRESET_PORTRESET_SET(val)	(DFS_PORTRESET_PORTRESET_MASK | (((val) & DFS_PORTRESET_PORTRESET_MAXVAL) << DFS_PORTRESET_PORTRESET_OFFSET))
 #define DFS_PORTRESET_PORTRESET_MAXVAL		(0xF)
-#define DFS_PORTRESET_PORTRESET_MASK		(0x0FFFFFFF)
-#define DFS_PORTRESET_PORTRESET_OFFSET		(28)
+#define DFS_PORTRESET_PORTRESET_MASK		(0x0000000F)
+#define DFS_PORTRESET_PORTRESET_OFFSET		(0)
 
 /* DFS Divide Register Portn (DFS_DVPORTn) */
-
 #define DFS_DVPORTn(pll,n)				(DFS0_BASE_ADDR + ((pll) * 0x80) + (0x0000001C + ((n) * 0x4)))
 #define DFS_DVPORTn_MFI_SET(val)		(DFS_DVPORTn_MFI_MASK & (((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET) )
 #define DFS_DVPORTn_MFN_SET(val)		(DFS_DVPORTn_MFN_MASK & (((val) & DFS_DVPORTn_MFN_MAXVAL) << DFS_DVPORTn_MFN_OFFSET) )
@@ -176,7 +178,7 @@
 #define ENET_PLL_PHI1_DFS1_FREQ			(350000000)
 #define ENET_PLL_PHI1_DFS2_FREQ			(350000000)
 #define ENET_PLL_PHI1_DFS3_FREQ			(400000000)
-#define ENET_PLL_PHI1_DFS4_FREQ			(104000000)
+#define ENET_PLL_PHI1_DFS4_FREQ			(50000000)
 #define ENET_PLL_PHI1_DFS_Nr			(4)
 #define ENET_PLL_PLLDV_PREDIV			(2)
 #define ENET_PLL_PLLDV_MFD				(50)

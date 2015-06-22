@@ -128,10 +128,9 @@ int board_phy_config(struct phy_device *phydev)
 
 int board_early_init_f(void)
 {
-#if 0 /* Temporarily disable due to imposibility of the core to do transition */
 	clock_init();
-#endif
 	mscm_init();
+
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
