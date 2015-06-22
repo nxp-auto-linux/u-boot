@@ -130,10 +130,8 @@ static int linflex_serial_init(void)
 
     /* set UART bit to allow writing other bits */
     __raw_writel(UARTCR_UART, &base->uartcr);
-#if 0 /* Disable the baudrate until the clocks are enabled */
     /* provide data bits, parity, stop bit, etc */
     serial_setbrg();
-#endif
     /* 8 bit data, no parity, Tx and Rx enabled, UART mode */
     __raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
                  | UARTCR_WL0 | UARTCR_UART, &base->uartcr);
