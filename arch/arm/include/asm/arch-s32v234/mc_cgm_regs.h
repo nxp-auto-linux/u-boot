@@ -24,11 +24,11 @@
 
 /* MC_CGM registers definitions */
 /* MC_CGM_SC_SS */
-#define CGM_SC_SS(cgm_addr)		( ((cgm_addr) + 0x000007E4) )
-#define MC_CGM_SC_SEL_FIRC				(0x0)
-#define MC_CGM_SC_SEL_XOSC				(0x1)
-#define MC_CGM_SC_SEL_ARMPLL			(0x2)
-#define MC_CGM_SC_SEL_CLKDISABLE		(0xF)
+#define CGM_SC_SS(cgm_addr)			( ((cgm_addr) + 0x000007E4) )
+#define MC_CGM_SC_SEL_FIRC			(0x0)
+#define MC_CGM_SC_SEL_XOSC			(0x1)
+#define MC_CGM_SC_SEL_ARMPLL		(0x2)
+#define MC_CGM_SC_SEL_CLKDISABLE	(0xF)
 
 /* MC_CGM_SC_DCn */
 #define CGM_SC_DCn(cgm_addr,dc)		( ((cgm_addr) + 0x000007E8) + ((dc) * 0x4) )
@@ -86,10 +86,10 @@
 #define PLLDIG_PLLDV_MFD(div)			(PLLDIG_PLLDV_MFD_MASK & (div))
 #define PLLDIG_PLLDV_MFD_MASK			(0x000000FF)
 
-/* 
+/*
  * PLLDIG_PLLDV_RFDPHIB has a different format for /32 according to
  * the reference manual. This other value respect the formula 2^[RFDPHIBY+1]
-*/
+ */
 #define PLLDIG_PLLDV_RFDPHI_SET(val)	(PLLDIG_PLLDV_RFDPHI_MASK & (((val) & PLLDIG_PLLDV_RFDPHI_MAXVALUE) << PLLDIG_PLLDV_RFDPHI_OFFSET))
 #define PLLDIG_PLLDV_RFDPHI_MASK		(0x003F0000)
 #define PLLDIG_PLLDV_RFDPHI_MAXVALUE	(0x3F)
@@ -166,67 +166,100 @@
 
 /* DFS Divide Register Portn (DFS_DVPORTn) */
 #define DFS_DVPORTn(pll,n)			(DFS0_BASE_ADDR + ((pll) * 0x80) + (0x0000001C + ((n) * 0x4)))
-#define DFS_DVPORTn_MFI_SET(val)		(DFS_DVPORTn_MFI_MASK & (((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET) )
-#define DFS_DVPORTn_MFN_SET(val)		(DFS_DVPORTn_MFN_MASK & (((val) & DFS_DVPORTn_MFN_MAXVAL) << DFS_DVPORTn_MFN_OFFSET) )
-#define DFS_DVPORTn_MFI_MASK			(0x0000FF00)
-#define DFS_DVPORTn_MFN_MASK			(0x000000FF)
-#define DFS_DVPORTn_MFI_MAXVAL			(0xFF)
-#define DFS_DVPORTn_MFN_MAXVAL			(0xFF)
-#define DFS_DVPORTn_MFI_OFFSET			(8)
-#define DFS_DVPORTn_MFN_OFFSET			(0)
+#define DFS_DVPORTn_MFI_SET(val)	(DFS_DVPORTn_MFI_MASK & (((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET) )
+#define DFS_DVPORTn_MFN_SET(val)	(DFS_DVPORTn_MFN_MASK & (((val) & DFS_DVPORTn_MFN_MAXVAL) << DFS_DVPORTn_MFN_OFFSET) )
+#define DFS_DVPORTn_MFI_MASK		(0x0000FF00)
+#define DFS_DVPORTn_MFN_MASK		(0x000000FF)
+#define DFS_DVPORTn_MFI_MAXVAL		(0xFF)
+#define DFS_DVPORTn_MFN_MAXVAL		(0xFF)
+#define DFS_DVPORTn_MFI_OFFSET		(8)
+#define DFS_DVPORTn_MFN_OFFSET		(0)
 #define DFS_MAXNUMBER				(4)
 
-#endif
+#define DFS_PARAMS_Nr				(3)
+
 /* Frequencies are in Hz */
-#define FIRC_CLK_FREQ					(48000000)
-#define XOSC_CLK_FREQ					(40000000)
+#define FIRC_CLK_FREQ				(48000000)
+#define XOSC_CLK_FREQ				(40000000)
 
-#define PLL_MIN_FREQ					(650000000)
-#define PLL_MAX_FREQ					(1300000000)
+#define PLL_MIN_FREQ				(650000000)
+#define PLL_MAX_FREQ				(1300000000)
 
-#define ARM_PLL_PHI0_FREQ				(1000000000)
-#define ARM_PLL_PHI1_FREQ				(1000000000)
-#define ARM_PLL_PHI1_DFS1_FREQ			(266000000)
-#define ARM_PLL_PHI1_DFS2_FREQ			(600000000)
-#define ARM_PLL_PHI1_DFS3_FREQ			(600000000)
-#define ARM_PLL_PHI1_DFS_Nr				(3)
-#define ARM_PLL_PLLDV_PREDIV			(2)
-#define ARM_PLL_PLLDV_MFD				(50)
-#define ARM_PLL_PLLDV_MFN				(0)
+#define ARM_PLL_PHI0_FREQ			(1000000000)
+#define ARM_PLL_PHI1_FREQ			(1000000000)
+/* ARM_PLL_PHI1_DFS1_FREQ - 266 Mhz */
+#define ARM_PLL_PHI1_DFS1_EN		(1)
+#define ARM_PLL_PHI1_DFS1_MFI		(3)
+#define ARM_PLL_PHI1_DFS1_MFN		(194)
+/* ARM_PLL_PHI1_DFS2_REQ - 600 Mhz */
+#define ARM_PLL_PHI1_DFS2_EN		(1)
+#define ARM_PLL_PHI1_DFS2_MFI		(1)
+#define ARM_PLL_PHI1_DFS2_MFN		(170)
+/* ARM_PLL_PHI1_DFS3_FREQ - 600 Mhz */
+#define ARM_PLL_PHI1_DFS3_EN		(1)
+#define ARM_PLL_PHI1_DFS3_MFI		(1)
+#define ARM_PLL_PHI1_DFS3_MFN		(170)
+#define ARM_PLL_PHI1_DFS_Nr			(3)
+#define ARM_PLL_PLLDV_PREDIV		(2)
+#define ARM_PLL_PLLDV_MFD			(50)
+#define ARM_PLL_PLLDV_MFN			(0)
 
-#define PERIPH_PLL_PHI0_FREQ			(400000000)
-#define PERIPH_PLL_PHI1_FREQ			(100000000)
-#define PERIPH_PLL_PHI1_DFS_Nr			(0)
-#define PERIPH_PLL_PLLDV_PREDIV			(1)
-#define PERIPH_PLL_PLLDV_MFD			(30)
-#define PERIPH_PLL_PLLDV_MFN			(0)
+#define PERIPH_PLL_PHI0_FREQ		(400000000)
+#define PERIPH_PLL_PHI1_FREQ		(100000000)
+#define PERIPH_PLL_PHI1_DFS_Nr		(0)
+#define PERIPH_PLL_PLLDV_PREDIV		(1)
+#define PERIPH_PLL_PLLDV_MFD		(30)
+#define PERIPH_PLL_PLLDV_MFN		(0)
 
-#define ENET_PLL_PHI0_FREQ				(500000000)
-#define ENET_PLL_PHI1_FREQ				(1000000000)
-#define ENET_PLL_PHI1_DFS1_FREQ			(350000000)
-#define ENET_PLL_PHI1_DFS2_FREQ			(350000000)
-#define ENET_PLL_PHI1_DFS3_FREQ			(400000000)
-#define ENET_PLL_PHI1_DFS4_FREQ			(50000000)
-#define ENET_PLL_PHI1_DFS_Nr			(4)
-#define ENET_PLL_PLLDV_PREDIV			(2)
-#define ENET_PLL_PLLDV_MFD				(50)
-#define ENET_PLL_PLLDV_MFN				(0)
+#define ENET_PLL_PHI0_FREQ			(500000000)
+#define ENET_PLL_PHI1_FREQ			(1000000000)
+/* ENET_PLL_PHI1_DFS1_FREQ - 350 Mhz*/
+#define ENET_PLL_PHI1_DFS1_EN		(1)
+#define ENET_PLL_PHI1_DFS1_MFI		(2)
+#define ENET_PLL_PHI1_DFS1_MFN		(219)
+/* ENET_PLL_PHI1_DFS2_FREQ - 350 Mhz*/
+#define ENET_PLL_PHI1_DFS2_EN		(1)
+#define ENET_PLL_PHI1_DFS2_MFI		(2)
+#define ENET_PLL_PHI1_DFS2_MFN		(219)
+/* ENET_PLL_PHI1_DFS3_FREQ - 320 Mhz*/
+#define ENET_PLL_PHI1_DFS3_EN		(1)
+#define ENET_PLL_PHI1_DFS3_MFI		(3)
+#define ENET_PLL_PHI1_DFS3_MFN		(32)
+/* ENET_PLL_PHI1_DFS1_FREQ - 50 Mhz*/
+#define ENET_PLL_PHI1_DFS4_EN		(1)
+#define ENET_PLL_PHI1_DFS4_MFI		(2)
+#define ENET_PLL_PHI1_DFS4_MFN		(0)
+#define ENET_PLL_PHI1_DFS_Nr		(4)
+#define ENET_PLL_PLLDV_PREDIV		(2)
+#define ENET_PLL_PLLDV_MFD			(50)
+#define ENET_PLL_PLLDV_MFN			(0)
 
-#define DDR_PLL_PHI0_FREQ				(533000000)
-#define DDR_PLL_PHI1_FREQ				(1066000000)
-#define DDR_PLL_PHI1_DFS1_FREQ			(500000000)
-#define DDR_PLL_PHI1_DFS2_FREQ			(500000000)
-#define DDR_PLL_PHI1_DFS3_FREQ			(350000000)
-#define DDR_PLL_PHI1_DFS_Nr				(3)
-#define DDR_PLL_PLLDV_PREDIV			(2)
-#define DDR_PLL_PLLDV_MFD				(53)
-#define DDR_PLL_PLLDV_MFN				(0)
+#define DDR_PLL_PHI0_FREQ			(533000000)
+#define DDR_PLL_PHI1_FREQ			(1066000000)
+/* DDR_PLL_PHI1_DFS1_FREQ - 500 Mhz */
+#define DDR_PLL_PHI1_DFS1_EN		(1)
+#define DDR_PLL_PHI1_DFS1_MFI		(2)
+#define DDR_PLL_PHI1_DFS1_MFN		(33)
+/* DDR_PLL_PHI1_DFS2_REQ - 500 Mhz */
+#define DDR_PLL_PHI1_DFS2_EN		(1)
+#define DDR_PLL_PHI1_DFS2_MFI		(2)
+#define DDR_PLL_PHI1_DFS2_MFN		(33)
+/* DDR_PLL_PHI1_DFS3_FREQ - 350 Mhz */
+#define DDR_PLL_PHI1_DFS3_EN		(1)
+#define DDR_PLL_PHI1_DFS3_MFI		(3)
+#define DDR_PLL_PHI1_DFS3_MFN		(11)
+#define DDR_PLL_PHI1_DFS_Nr			(3)
+#define DDR_PLL_PLLDV_PREDIV		(2)
+#define DDR_PLL_PLLDV_MFD			(53)
+#define DDR_PLL_PLLDV_MFN			(0)
 
-#define VIDEO_PLL_PHI0_FREQ				(600000000)
-#define VIDEO_PLL_PHI1_FREQ				(0)
-#define VIDEO_PLL_PHI1_DFS_Nr			(0)
-#define VIDEO_PLL_PLLDV_PREDIV			(1)
-#define VIDEO_PLL_PLLDV_MFD				(30)
-#define VIDEO_PLL_PLLDV_MFN				(0)
+#define VIDEO_PLL_PHI0_FREQ			(600000000)
+#define VIDEO_PLL_PHI1_FREQ			(0)
+#define VIDEO_PLL_PHI1_DFS_Nr		(0)
+#define VIDEO_PLL_PLLDV_PREDIV		(1)
+#define VIDEO_PLL_PLLDV_MFD			(30)
+#define VIDEO_PLL_PLLDV_MFN			(0)
+
+#endif
 
 #endif /*__ARCH_ARM_MACH_S32V234_MCCGM_REGS_H__ */

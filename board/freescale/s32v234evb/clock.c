@@ -24,17 +24,6 @@
 #include <asm/arch/clock.h>
 
 /*
- * Computes the MFI and MFN for DFS_DVPORTn
- * The mathematical formula is the following:
- * fdfs_clckout = fdfs_clkin / ( DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/256) )
- * Let be MFN = 0.
- */
-static u32 get_dfs_dvport_val(u32 dfs_out_freq, u32 dfs_in_freq) {
-	u32 dfs_val;
-	dfs_val = (dfs_in_freq/dfs_out_freq) << DFS_DVPORTn_MFI_OFFSET;
-	return dfs_val;
-}
-/*
  * Select the clock reference for required pll.
  * pll - ARM_PLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_PLL.
  * refclk_freq - input referece clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
@@ -48,17 +37,18 @@ static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
 	/* select the pll clock source */
 	switch( refclk_freq )
 	{
-			case FIRC_CLK_FREQ:
-				clk_src = SRC_GPR1_FIRC_CLK_SOURCE;
-				break;
-			case XOSC_CLK_FREQ:
-				clk_src = SRC_GPR1_XOSC_CLK_SOURCE;
-				break;
+		case FIRC_CLK_FREQ:
+			clk_src = SRC_GPR1_FIRC_CLK_SOURCE;
+			break;
+		case XOSC_CLK_FREQ:
+			clk_src = SRC_GPR1_XOSC_CLK_SOURCE;
+			break;
 		default:
-				/* The clock frequency for the source clock is unknown */
-				return -1;
+			/* The clock frequency for the source clock is unknown */
+			return -1;
 	}
-	/* The hardware definition is not uniform, it has to calculate again
+	/* 
+	 * The hardware definition is not uniform, it has to calculate again
 	 * the recurrence formula.
 	 */
 	switch( pll )
@@ -95,7 +85,7 @@ static void entry_to_target_mode( u32 mode )
  * freq - expected output frequency for PHY0
  * freq1 - expected output frequency for PHY1
  * dfs_nr - number of DFS modules for current PLL
- * dfs_freq - array with the expected frequency for DFSn
+ * dfs - array with the activation dfs field, mfn and mfi
  * plldv_prediv - divider of clkfreq_ref
  * plldv_mfd - loop multiplication factor divider
  * pllfd_mfn - numerator loop multiplication factor divider
@@ -104,7 +94,8 @@ static void entry_to_target_mode( u32 mode )
  *)
  */
 static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1,
-			u32 dfs_nr, u32 * dfs_freq, u32 plldv_prediv, u32 plldv_mfd, u32 pllfd_mfn )
+						u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr], u32 plldv_prediv, u32 plldv_mfd,
+						u32 pllfd_mfn )
 {
 	u32 i, rfdphi1, rfdphi, dfs_on = 0, fvco;
 
@@ -154,10 +145,14 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 			DFS_DLLPRG1_CALBYPEN_SET(0x0) | DFS_DLLPRG1_DACIN_SET(0x1) |
 			DFS_DLLPRG1_LCKWT_SET(0x0) | DFS_DLLPRG1_V2IGC_SET(0x5),
 			DFS_DLLPRG1(pll) );
+
 		for( i = 0; i < dfs_nr; i++ )
 		{
-			writel( get_dfs_dvport_val(dfs_freq[i],freq1) , DFS_DVPORTn(pll, i) );
-			dfs_on |= ((dfs_freq[i] ? 1: 0)  << i);
+			if(dfs[i][0])
+			{
+				writel( DFS_DVPORTn_MFI_SET(dfs[i][2]) | DFS_DVPORTn_MFN_SET(dfs[i][1]), DFS_DVPORTn(pll, i) );
+				dfs_on |= (dfs[i][0] << i);
+			}
 		}
 
 		writel( readl(DFS_CTRL(pll)) & ~DFS_CTRL_DLL_RESET, DFS_CTRL(pll) );
@@ -260,14 +255,16 @@ static void setup_aux_clocks( void )
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 14, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 14, 0, 0 );
 #endif
-#if 0
+
 	/* setup the aux clock divider for SDHC_CLK (25 MHz). */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 15, MC_CGM_ACn_SEL_ENETPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 15, 0, 2 );
-#endif
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 15, 0, 1 );
+
 	/* setup the aux clock divider for DDR_CLK (533MHz) and APEX_SYS_CLK (266MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 8, MC_CGM_ACn_SEL_DDRPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 8, 0, 0 );
+	/* setup the aux clock divider for DDR4_CLK (133,25MHz) */
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 8, 1, 3 );
 
 	/*
 	 * Disable until the modules will be implemented and activated.
@@ -289,11 +286,11 @@ static void setup_aux_clocks( void )
 
 	/* setup the aux clock divider for DCU_AXI_CLK (300MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 1 );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 0 );
 
 	/* setup the aux clock divider for DCU_PIX_CLK (150MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 3 );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 1 );
 #endif
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
@@ -324,24 +321,24 @@ static void enable_modules_clock( void )
 }
 void clock_init(void)
 {
-	unsigned int arm_dfs_freq[ARM_PLL_PHI1_DFS_Nr] = {
-									ARM_PLL_PHI1_DFS1_FREQ,
-									ARM_PLL_PHI1_DFS2_FREQ,
-									ARM_PLL_PHI1_DFS3_FREQ,
-									};
+	unsigned int arm_dfs[ARM_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
+			{ ARM_PLL_PHI1_DFS1_EN, ARM_PLL_PHI1_DFS1_MFN, ARM_PLL_PHI1_DFS1_MFI },
+			{ ARM_PLL_PHI1_DFS2_EN, ARM_PLL_PHI1_DFS2_MFN, ARM_PLL_PHI1_DFS2_MFI },
+			{ ARM_PLL_PHI1_DFS3_EN, ARM_PLL_PHI1_DFS3_MFN, ARM_PLL_PHI1_DFS3_MFI }
+		};
 
-	unsigned int enet_dfs_freq[ENET_PLL_PHI1_DFS_Nr] = {
-									ENET_PLL_PHI1_DFS1_FREQ,
-									ENET_PLL_PHI1_DFS2_FREQ,
-									ENET_PLL_PHI1_DFS3_FREQ,
-									ENET_PLL_PHI1_DFS4_FREQ
-									};
+	unsigned int enet_dfs[ENET_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
+			{ ENET_PLL_PHI1_DFS1_EN, ENET_PLL_PHI1_DFS1_MFN, ENET_PLL_PHI1_DFS1_MFI },
+			{ ENET_PLL_PHI1_DFS2_EN, ENET_PLL_PHI1_DFS2_MFN, ENET_PLL_PHI1_DFS2_MFI },
+			{ ENET_PLL_PHI1_DFS3_EN, ENET_PLL_PHI1_DFS3_MFN, ENET_PLL_PHI1_DFS3_MFI },
+			{ ENET_PLL_PHI1_DFS4_EN, ENET_PLL_PHI1_DFS4_MFN, ENET_PLL_PHI1_DFS4_MFI }
+		};
 
-	unsigned int ddr_dfs_freq[DDR_PLL_PHI1_DFS_Nr] = {
-									DDR_PLL_PHI1_DFS1_FREQ,
-									DDR_PLL_PHI1_DFS2_FREQ,
-									DDR_PLL_PHI1_DFS3_FREQ,
-									};
+	unsigned int ddr_dfs[DDR_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
+			{ DDR_PLL_PHI1_DFS1_EN, DDR_PLL_PHI1_DFS1_MFN, DDR_PLL_PHI1_DFS1_MFI },
+			{ DDR_PLL_PHI1_DFS2_EN, DDR_PLL_PHI1_DFS2_MFN, DDR_PLL_PHI1_DFS2_MFI },
+			{ DDR_PLL_PHI1_DFS3_EN, DDR_PLL_PHI1_DFS3_MFN, DDR_PLL_PHI1_DFS3_MFI }
+		};
 
 	writel( MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
 			MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3,
@@ -356,7 +353,7 @@ void clock_init(void)
 
 	program_pll(
 				ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI0_FREQ, ARM_PLL_PHI1_FREQ,
-				ARM_PLL_PHI1_DFS_Nr, arm_dfs_freq, ARM_PLL_PLLDV_PREDIV,
+				ARM_PLL_PHI1_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_PREDIV,
 				ARM_PLL_PLLDV_MFD, ARM_PLL_PLLDV_MFN
 				);
 
@@ -371,13 +368,13 @@ void clock_init(void)
 
 	program_pll(
 				ENET_PLL, XOSC_CLK_FREQ, ENET_PLL_PHI0_FREQ, ENET_PLL_PHI1_FREQ,
-				ENET_PLL_PHI1_DFS_Nr, enet_dfs_freq, ENET_PLL_PLLDV_PREDIV,
+				ENET_PLL_PHI1_DFS_Nr, enet_dfs, ENET_PLL_PLLDV_PREDIV,
 				ENET_PLL_PLLDV_MFD, ENET_PLL_PLLDV_MFN
 				);
 
 	program_pll(
 				DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ, DDR_PLL_PHI1_FREQ,
-				DDR_PLL_PHI1_DFS_Nr, ddr_dfs_freq, DDR_PLL_PLLDV_PREDIV,
+				DDR_PLL_PHI1_DFS_Nr, ddr_dfs, DDR_PLL_PLLDV_PREDIV,
 				DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN
 				);
 
