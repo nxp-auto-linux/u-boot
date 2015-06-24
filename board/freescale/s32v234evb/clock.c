@@ -91,15 +91,14 @@ static void entry_to_target_mode( u32 mode )
 /*
  * Program the pll according to the input parameters.
  * pll - ARM_PLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_PLL.
- * refclk_freq - input referece clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
+ * refclk_freq - input reference clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
  * freq - expected output frequency for PHY0
  * freq1 - expected output frequency for PHY1
  * dfs_nr - number of DFS modules for current PLL
  * dfs_freq - array with the expected frequency for DFSn
- * plldv_prediv - devider of clkfreq_ref
+ * plldv_prediv - divider of clkfreq_ref
  * plldv_mfd - loop multiplication factor divider
  * pllfd_mfn - numerator loop multiplication factor divider
- * runmode_reg - runmode register
  * Please consult the PLLDIG chapter of platform manual
  * before to use this function.
  *)
@@ -134,11 +133,6 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 
 	rfdphi1 = (freq1 == 0) ? 0 : fvco/freq1;
 
-	if( pll == ARM_PLL )
-	{
-		writel( 0x44000000, 0x4003c038);
-		writel( 0x2b, 0x4003c03C);
-	}
 	writel( PLLDIG_PLLDV_RFDPHI1_SET(rfdphi1) | PLLDIG_PLLDV_RFDPHI_SET(rfdphi) |
 			PLLDIG_PLLDV_PREDIV_SET(plldv_prediv) | PLLDIG_PLLDV_MFD(plldv_mfd), PLLDIG_PLLDV(pll) );
 
@@ -156,11 +150,10 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 		/* DFS clk enable programming */
 		writel( DFS_CTRL_DLL_RESET, DFS_CTRL(pll) );
 
-		if( pll == ARM_PLL )
-		{
-			writel( 0x00005445, 0x4003C040);
-			writel( 0x0, 0x4003C044);
-		}
+		writel( DFS_DLLPRG1_CPICTRL_SET(0x5) | DFS_DLLPRG1_VSETTLCTRL_SET(0x1) |
+			DFS_DLLPRG1_CALBYPEN_SET(0x0) | DFS_DLLPRG1_DACIN_SET(0x1) |
+			DFS_DLLPRG1_LCKWT_SET(0x0) | DFS_DLLPRG1_V2IGC_SET(0x5),
+			DFS_DLLPRG1(pll) );
 		for( i = 0; i < dfs_nr; i++ )
 		{
 			writel( get_dfs_dvport_val(dfs_freq[i],freq1) , DFS_DVPORTn(pll, i) );

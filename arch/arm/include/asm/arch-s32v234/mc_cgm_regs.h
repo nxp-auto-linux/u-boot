@@ -57,8 +57,8 @@
 #define MC_CGM_ACn_DCm_DE				(1 << 31)
 
 /*
- *	MC_CGM_ACn_SC/MC_CGM_ACn_SS
-*/
+ * MC_CGM_ACn_SC/MC_CGM_ACn_SS
+ */
 #define CGM_ACn_SC(cgm_addr,ac)			((cgm_addr + 0x00000800) + ((ac) * 0x20))
 #define CGM_ACn_SS(cgm_addr,ac)			((cgm_addr + 0x00000804) + ((ac) * 0x20))
 #define MC_CGM_ACn_SEL_MASK				(0x07000000)
@@ -86,8 +86,9 @@
 #define PLLDIG_PLLDV_MFD(div)			(PLLDIG_PLLDV_MFD_MASK & (div))
 #define PLLDIG_PLLDV_MFD_MASK			(0x000000FF)
 
-/*	PLLDIG_PLLDV_RFDPHIB has a different format for /32 according to
-	the reference manual. This other value respect the formula 2^[RFDPHIBY+1]
+/* 
+ * PLLDIG_PLLDV_RFDPHIB has a different format for /32 according to
+ * the reference manual. This other value respect the formula 2^[RFDPHIBY+1]
 */
 #define PLLDIG_PLLDV_RFDPHI_SET(val)	(PLLDIG_PLLDV_RFDPHI_MASK & (((val) & PLLDIG_PLLDV_RFDPHI_MAXVALUE) << PLLDIG_PLLDV_RFDPHI_OFFSET))
 #define PLLDIG_PLLDV_RFDPHI_MASK		(0x003F0000)
@@ -119,8 +120,35 @@
 
 
 /* Digital Frequency Synthesizer (DFS) */
-/* According to the manual there are 3 DFS module only for ARM_PLL, DDR_PLL, ENET_PLL */
-#define DFS0_BASE_ADDR					(MC_CGM0_BASE_ADDR + 0x00000040)
+/* According to the manual there are 3 DFS modules only for ARM_PLL, DDR_PLL, ENET_PLL */
+#define DFS0_BASE_ADDR				(MC_CGM0_BASE_ADDR + 0x00000040)
+
+/* DFS DLL Program Register 1 */
+#define DFS_DLLPRG1(pll)			(DFS0_BASE_ADDR + 0x00000000 + ((pll) * 0x80))
+
+#define DFS_DLLPRG1_V2IGC_SET(val)	(DFS_DLLPRG1_V2IGC_MASK & ((val) << DFS_DLLPRG1_V2IGC_OFFSET))
+#define DFS_DLLPRG1_V2IGC_OFFSET	(0)
+#define DFS_DLLPRG1_V2IGC_MASK		(0x00000007)
+
+#define DFS_DLLPRG1_LCKWT_SET(val)		(DFS_DLLPRG1_LCKWT_MASK & ((val) << DFS_DLLPRG1_LCKWT_OFFSET))
+#define DFS_DLLPRG1_LCKWT_OFFSET		(4)
+#define DFS_DLLPRG1_LCKWT_MASK			(0x00000030)
+
+#define DFS_DLLPRG1_DACIN_SET(val)		(DFS_DLLPRG1_DACIN_MASK & ((val) << DFS_DLLPRG1_DACIN_OFFSET))
+#define DFS_DLLPRG1_DACIN_OFFSET		(6)
+#define DFS_DLLPRG1_DACIN_MASK			(0x000001C0)
+
+#define DFS_DLLPRG1_CALBYPEN_SET(val)	(DFS_DLLPRG1_CALBYPEN_MASK & ((val) << DFS_DLLPRG1_CALBYPEN_OFFSET))
+#define DFS_DLLPRG1_CALBYPEN_OFFSET		(9)
+#define DFS_DLLPRG1_CALBYPEN_MASK		(0x00000200)
+
+#define DFS_DLLPRG1_VSETTLCTRL_SET(val)	(DFS_DLLPRG1_VSETTLCTRL_MASK & ((val) << DFS_DLLPRG1_VSETTLCTRL_OFFSET))
+#define DFS_DLLPRG1_VSETTLCTRL_OFFSET	(10)
+#define DFS_DLLPRG1_VSETTLCTRL_MASK		(0x00000C00)
+
+#define DFS_DLLPRG1_CPICTRL_SET(val)	(DFS_DLLPRG1_CPICTRL_MASK & ((val) << DFS_DLLPRG1_CPICTRL_OFFSET))
+#define DFS_DLLPRG1_CPICTRL_OFFSET		(12)
+#define DFS_DLLPRG1_CPICTRL_MASK		(0x00007000)
 
 /* DFS Control Register (DFS_CTRL) */
 #define DFS_CTRL(pll)					(DFS0_BASE_ADDR + 0x00000018 + ((pll) * 0x80))
@@ -128,7 +156,7 @@
 #define DFS_CTRL_DLL_RESET				(1 << 1)
 
 /* DFS Port Status Register (DFS_PORTSR) */
-#define DFS_PORTSR(pll)					(DFS0_BASE_ADDR + 0x0000000C +((pll) * 0x80))
+#define DFS_PORTSR(pll)						(DFS0_BASE_ADDR + 0x0000000C +((pll) * 0x80))
 /* DFS Port Reset Register (DFS_PORTRESET) */
 #define DFS_PORTRESET(pll)					(DFS0_BASE_ADDR + 0x00000014 + ((pll) * 0x80))
 #define DFS_PORTRESET_PORTRESET_SET(val)	(DFS_PORTRESET_PORTRESET_MASK | (((val) & DFS_PORTRESET_PORTRESET_MAXVAL) << DFS_PORTRESET_PORTRESET_OFFSET))
@@ -137,7 +165,7 @@
 #define DFS_PORTRESET_PORTRESET_OFFSET		(0)
 
 /* DFS Divide Register Portn (DFS_DVPORTn) */
-#define DFS_DVPORTn(pll,n)				(DFS0_BASE_ADDR + ((pll) * 0x80) + (0x0000001C + ((n) * 0x4)))
+#define DFS_DVPORTn(pll,n)			(DFS0_BASE_ADDR + ((pll) * 0x80) + (0x0000001C + ((n) * 0x4)))
 #define DFS_DVPORTn_MFI_SET(val)		(DFS_DVPORTn_MFI_MASK & (((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET) )
 #define DFS_DVPORTn_MFN_SET(val)		(DFS_DVPORTn_MFN_MASK & (((val) & DFS_DVPORTn_MFN_MAXVAL) << DFS_DVPORTn_MFN_OFFSET) )
 #define DFS_DVPORTn_MFI_MASK			(0x0000FF00)
@@ -146,7 +174,7 @@
 #define DFS_DVPORTn_MFN_MAXVAL			(0xFF)
 #define DFS_DVPORTn_MFI_OFFSET			(8)
 #define DFS_DVPORTn_MFN_OFFSET			(0)
-#define DFS_MAXNUMBER					(4)
+#define DFS_MAXNUMBER				(4)
 
 #endif
 /* Frequencies are in Hz */
