@@ -47,7 +47,7 @@ static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
 			/* The clock frequency for the source clock is unknown */
 			return -1;
 	}
-	/* 
+	/*
 	 * The hardware definition is not uniform, it has to calculate again
 	 * the recurrence formula.
 	 */
@@ -100,10 +100,9 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 	u32 i, rfdphi1, rfdphi, dfs_on = 0, fvco;
 
 	/*
-	 * This formula is from platform reference manual (Rev. 1 Draft, D), PLLDIG chapter.
-	 * The formula from Rev. 1, Draft E is wrong.
-	*/
-	fvco = (refclk_freq / plldv_prediv) * (plldv_mfd + pllfd_mfn/20481);
+	 * This formula is from platform reference manual (Rev. 1, 6/2015), PLLDIG chapter.
+	 */
+	fvco = (refclk_freq / plldv_prediv) * (plldv_mfd + pllfd_mfn/(float)20480);
 
 	/*
 	 * VCO should have value in [ PLL_MIN_FREQ, PLL_MAX_FREQ ]. Please consult
