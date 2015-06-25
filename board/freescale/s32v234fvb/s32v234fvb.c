@@ -58,7 +58,7 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-    /* Muxing for linflex */
+	/* Muxing for linflex */
 	 /* Replace the magic values after bringup */
 
 	/* set TXD - MSCR[12] PA12 */

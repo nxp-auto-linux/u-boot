@@ -315,6 +315,10 @@ static void enable_modules_clock( void )
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL184 );
 	/* IIC2 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL186 );
+	/* MMDC0 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL54 );
+	/* MMDC1 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL162 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }

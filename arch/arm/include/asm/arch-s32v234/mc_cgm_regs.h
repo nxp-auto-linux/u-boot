@@ -166,6 +166,11 @@
 
 /* DFS Divide Register Portn (DFS_DVPORTn) */
 #define DFS_DVPORTn(pll,n)			(DFS0_BASE_ADDR + ((pll) * 0x80) + (0x0000001C + ((n) * 0x4)))
+
+/*
+ * The mathematical formula for fdfs_clockout is the following:
+ * fdfs_clckout = fdfs_clkin / ( DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/256) )
+ */
 #define DFS_DVPORTn_MFI_SET(val)	(DFS_DVPORTn_MFI_MASK & (((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET) )
 #define DFS_DVPORTn_MFN_SET(val)	(DFS_DVPORTn_MFN_MASK & (((val) & DFS_DVPORTn_MFN_MAXVAL) << DFS_DVPORTn_MFN_OFFSET) )
 #define DFS_DVPORTn_MFI_MASK		(0x0000FF00)
@@ -251,7 +256,7 @@
 #define DDR_PLL_PHI1_DFS_Nr			(3)
 #define DDR_PLL_PLLDV_PREDIV		(2)
 #define DDR_PLL_PLLDV_MFD			(53)
-#define DDR_PLL_PLLDV_MFN			(0)
+#define DDR_PLL_PLLDV_MFN			(6144)
 
 #define VIDEO_PLL_PHI0_FREQ			(600000000)
 #define VIDEO_PLL_PHI1_FREQ			(0)
