@@ -63,16 +63,16 @@ int dram_init(void)
 static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex */
-	 /* Replace the magic values after bringup */
+	/* Replace the magic values after bringup */
 
 	/* set TXD - MSCR[12] PA12 */
-	writel( 0x205401, SIUL2_MSCRn(12));
+	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART0_TXD_PAD));
 
 	/* set RXD - MSCR[11] - PA11*/
-	writel( 0x882000, SIUL2_MSCRn(11));
+	writel(SIUL2_UART_MSCR_RXD, SIUL2_MSCRn(SIUL2_UART0_MSCR_RXD_PAD));
 
 	/* set RXD - IMCR[200] - 200 */
-	writel( 0x2, SIUL2_IMCRn(200));
+	writel(SIUL2_UART_IMCR_RXD, SIUL2_IMCRn(SIUL2_UART0_IMCR_RXD_PAD));
 }
 
 static void setup_iomux_enet(void)
