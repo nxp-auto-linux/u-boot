@@ -21,6 +21,7 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
+#include <asm/arch/lpddr2.h>
 #include <asm/arch/clock.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
@@ -32,7 +33,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 void setup_iomux_ddr(void)
 {
-	/* TODO: Add iomux code for ddr */
+	lpddr2_config_iomux(DDR0);
+	lpddr2_config_iomux(DDR1);
+
 }
 
 void ddr_phy_init(void)
@@ -42,7 +45,8 @@ void ddr_phy_init(void)
 
 void ddr_ctrl_init(void)
 {
-	/* TODO: Add setup code for ddr controller. */
+	config_mmdc(0);
+	config_mmdc(1);
 }
 
 int dram_init(void)
