@@ -64,8 +64,8 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-    /* Muxing for linflex */
-	/* Replace the magic values after bringup */
+	/* Muxing for linflex */
+	 /* Replace the magic values after bringup */
 
 	/* set TXD - MSCR[12] PA12 */
 	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART0_TXD_PAD));
