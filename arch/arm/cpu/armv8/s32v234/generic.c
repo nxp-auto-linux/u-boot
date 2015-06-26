@@ -226,6 +226,23 @@ static u32 get_fec_clk(void)
 	return freq / aux2clk_div;
 }
 
+
+static u32 get_usdhc_clk(void)
+{
+	u32 aux15clk_div;
+	u32 freq = 0;
+
+	aux15clk_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 15, 0)) & MC_CGM_ACn_DCm_PREDIV_MASK;
+	aux15clk_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
+	aux15clk_div += 1;
+
+	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 4);
+
+	return freq / aux15clk_div;
+}
+
+
+
 static u32 get_i2c_clk(void)
 {
 	return get_peripherals_clk();
@@ -245,9 +262,13 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return get_fec_clk();
 	case MXC_I2C_CLK:
 		return get_i2c_clk();
+	case MXC_USDHC_CLK:
+		return get_usdhc_clk();
 	default:
 		break;
 	}
+	printf("Error: Unsupported function to read the frequency! \
+			Please define it correctly!");
 	return -1;
 }
 
