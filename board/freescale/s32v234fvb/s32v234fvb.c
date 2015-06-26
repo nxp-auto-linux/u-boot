@@ -21,6 +21,7 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
+#include <asm/arch/ddr3.h>
 #include <asm/arch/clock.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
@@ -32,7 +33,8 @@ DECLARE_GLOBAL_DATA_PTR;
 
 void setup_iomux_ddr(void)
 {
-	/* TODO: Add iomux code for ddr */
+	ddr3_config_iomux(DDR0);
+	ddr3_config_iomux(DDR1);
 }
 
 void ddr_phy_init(void)
@@ -42,7 +44,11 @@ void ddr_phy_init(void)
 
 void ddr_ctrl_init(void)
 {
-	/* TODO: Add setup code for ddr controller. */
+	config_mmdc(0);
+	udelay(CONFIG_DDR_INIT_DELAY);
+
+	config_mmdc(1);
+	udelay(CONFIG_DDR_INIT_DELAY);
 }
 
 int dram_init(void)
@@ -62,14 +68,13 @@ static void setup_iomux_uart(void)
 	 /* Replace the magic values after bringup */
 
 	/* set TXD - MSCR[12] PA12 */
-	writel( 0x205401, SIUL2_MSCRn(12));
+	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART0_TXD_PAD));
 
 	/* set RXD - MSCR[11] - PA11*/
-	writel( 0x882000, SIUL2_MSCRn(11));
+	writel(SIUL2_UART_MSCR_RXD, SIUL2_MSCRn(SIUL2_UART0_MSCR_RXD_PAD));
 
 	/* set RXD - IMCR[200] - 200 */
-	writel( 0x2, SIUL2_IMCRn(200));
-
+	writel(SIUL2_UART_IMCR_RXD, SIUL2_IMCRn(SIUL2_UART0_IMCR_RXD_PAD));
 }
 
 static void setup_iomux_enet(void)

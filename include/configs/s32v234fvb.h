@@ -47,12 +47,13 @@
 #define CONFIG_CMD_CACHE
 
 #ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR		0x80000000
+#define DDR_BASE_ADDR	0x80000000
 #define DDR_SIZE		(1024 * 1024 * 1024)
 #else
-#define DDR_BASE_ADDR		0xC0000000
+#define DDR_BASE_ADDR	0xC0000000
 #define DDR_SIZE		(512 * 1024 * 1024)
 #endif
+#define CONFIG_DDR_INIT_DELAY		1000
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
@@ -80,6 +81,7 @@
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_SYS_UART_PORT		(1)
 #define CONFIG_BAUDRATE				115200
+
 
 #undef CONFIG_CMD_IMLS
 
