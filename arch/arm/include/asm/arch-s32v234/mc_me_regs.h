@@ -95,19 +95,26 @@
 #define MC_ME_DRUN_MC						(MC_ME_BASE_ADDR + 0x0000002C)
 #define MC_ME_RUNn_MC(n)					(MC_ME_BASE_ADDR + 0x00000030 + 0x4 * (n))
 
-#define MC_ME_RUNMODE_MC_SYSCLK(val)	(0x0000000F & (val))
+#define MC_ME_RUNMODE_MC_SYSCLK(val)	(MC_ME_RUNMODE_MC_SYSCLK_MASK & (val))
+#define MC_ME_RUNMODE_MC_SYSCLK_MASK	(0x0000000F)
 #define MC_ME_RUNMODE_MC_FIRCON			(1 << 4)
 #define MC_ME_RUNMODE_MC_XOSCON			(1 << 5)
-#define MC_ME_RUNMODE_MC_ARMPLL			(1 << 6)
-#define MC_ME_RUNMODE_MC_PERIPHPLL		(1 << 7)
-#define MC_ME_RUNMODE_MC_ENETPLL		(1 << 8)
-#define MC_ME_RUNMODE_MC_DDRPLL			(1 << 9)
-#define MC_ME_RUNMODE_MC_VIDEOPLL		(1 << 10)
+#define MC_ME_RUNMODE_MC_PLL(pll)		(1 << (6 + (pll)))
 #define MC_ME_RUNMODE_MC_MVRON			(1 << 20)
 #define MC_ME_RUNMODE_MC_PDO			(1 << 23)
 #define MC_ME_RUNMODE_MC_PWRLVL0		(1 << 28)
 #define MC_ME_RUNMODE_MC_PWRLVL1		(1 << 29)
 #define MC_ME_RUNMODE_MC_PWRLVL2		(1 << 30)
+
+/* MC_ME_DRUN_SEC_CC_I */
+#define MC_ME_DRUN_SEC_CC_I					(MC_ME_BASE_ADDR + 0x260)
+/* MC_ME_RUNn_SEC_CC_I */
+#define MC_ME_RUNn_SEC_CC_I(n)				(MC_ME_BASE_ADDR + 0x270 + (n) * 0x10)
+#define MC_ME_RUNMODE_SEC_CC_I_SYSCLK(val,offset)	((MC_ME_RUNMODE_SEC_CC_I_SYSCLK_MASK & (val)) << offset)
+#define MC_ME_RUNMODE_SEC_CC_I_SYSCLK1_OFFSET	(4)
+#define MC_ME_RUNMODE_SEC_CC_I_SYSCLK2_OFFSET	(8)
+#define MC_ME_RUNMODE_SEC_CC_I_SYSCLK3_OFFSET	(12)
+#define MC_ME_RUNMODE_SEC_CC_I_SYSCLK_MASK		(0x3)
 
 /*
  * ME_PCTLn
