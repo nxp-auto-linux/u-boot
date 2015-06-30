@@ -133,45 +133,45 @@ int board_mmc_init(bd_t *bis)
 
 	/* Set iomux PADS for USDHC */
 
-	/* PF1 pad: uSDHC clk */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(81));
-	writel(0x2, SIUL2_MSCRn(902));
+	/* PK6 pad: uSDHC clk */
+	writel(SIUL2_USDHC_PAD_CTRL_CLK, SIUL2_MSCRn(150));
+	writel(0x3, SIUL2_MSCRn(902));
 
-	/* PF2 pad: uSDHC CMD */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(82));
-	writel(0x2, SIUL2_MSCRn(901));
+	/* PK7 pad: uSDHC CMD */
+	writel(SIUL2_USDHC_PAD_CTRL_CMD, SIUL2_MSCRn(151));
+	writel(0x3, SIUL2_MSCRn(901));
 
-	/* PF3 pad: uSDHC DAT0 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(83));
-	writel(0x2, SIUL2_MSCRn(903));
+	/* PK8 pad: uSDHC DAT0 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(152));
+	writel(0x3, SIUL2_MSCRn(903));
 
-	/* PF4 pad: uSDHC DAT1 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(84));
-	writel(0x2, SIUL2_MSCRn(904));
+	/* PK9 pad: uSDHC DAT1 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(153));
+	writel(0x3, SIUL2_MSCRn(904));
 
-	/* PF5 pad: uSDHC DAT2 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(85));
-	writel(0x2, SIUL2_MSCRn(905));
+	/* PK10 pad: uSDHC DAT2 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(154));
+	writel(0x3, SIUL2_MSCRn(905));
 
-	/* PF6 pad: uSDHC DAT3 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(86));
-	writel(0x2, SIUL2_MSCRn(906));
+	/* PK11 pad: uSDHC DAT3 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(155));
+	writel(0x3, SIUL2_MSCRn(906));
 
-	/* PF7 pad: uSDHC DAT4 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(87));
-	writel(0x2, SIUL2_MSCRn(907));
+	/* PK15 pad: uSDHC DAT4 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(159));
+	writel(0x3, SIUL2_MSCRn(907));
 
-	/* PF8 pad: uSDHC DAT5 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(88));
-	writel(0x2, SIUL2_MSCRn(908));
+	/* PL0 pad: uSDHC DAT5 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(160));
+	writel(0x3, SIUL2_MSCRn(908));
 
-	/* PF9 pad: uSDHC DAT6 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(89));
-	writel(0x2, SIUL2_MSCRn(909));
+	/* PL1 pad: uSDHC DAT6 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(161));
+	writel(0x3, SIUL2_MSCRn(909));
 
-	/* PF10 pad: uSDHC DAT7 */
-	writel(SIUL2_USDHC_PAD_CTRL, SIUL2_MSCRn(90));
-	writel(0x2, SIUL2_MSCRn(910));
+	/* PL2 pad: uSDHC DAT7 */
+	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(162));
+	writel(0x3, SIUL2_MSCRn(910));
 
 	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
 }
