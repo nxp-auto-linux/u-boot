@@ -310,7 +310,8 @@
 #define CONFIG_BOOTP_GATEWAY
 #define CONFIG_BOOTP_HOSTNAME
 
-/* #ifdef CONFIG_CMD_PCI */
+/* #define CONFIG_CMD_PCI */
+#ifdef CONFIG_CMD_PCI
 #define CONFIG_PCIE_S32V234
 #define CONFIG_PCI
 #define CONFIG_PCI_PNP
