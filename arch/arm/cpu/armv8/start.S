@@ -20,6 +20,8 @@
 
 .globl	_start
 _start:
+
+#if defined(CONFIG_S32V234)
 	/* disable SWT4 watchdog */
 	ldr x0, =0x40086010
 	ldr w1, =0xC520
@@ -33,6 +35,7 @@ _start:
 	ldr x1, [x0]
 	orr x1, x1, 0x40
 	str x1, [x0]
+#endif
 
 	b	reset
 
