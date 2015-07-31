@@ -20,6 +20,20 @@
 
 .globl	_start
 _start:
+	/* disable SWT4 watchdog */
+	ldr x0, =0x40086010
+	ldr w1, =0xC520
+	str w1, [x0]
+	ldr w1, =0xD928
+	str w1, [x0]
+	ldr x0, =0x40086000
+	ldr x1, [x0]
+	and x1, x1, 0xFFFFFFFE
+	str x1, [x0]
+	ldr x1, [x0]
+	orr x1, x1, 0x40
+	str x1, [x0]
+
 	b	reset
 
 	.align 3
