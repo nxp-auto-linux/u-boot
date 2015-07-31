@@ -46,7 +46,13 @@ cmd_mkimage = $(objtree)/tools/mkimage $(MKIMAGEFLAGS_$(@F)) -d $< $@ \
 MKIMAGEFLAGS_u-boot.imx = -n $(filter-out $< $(PHONY),$^) -T imximage \
 	-e $(CONFIG_SYS_TEXT_BASE)
 
+MKIMAGEFLAGS_u-boot.s32 = -n $(filter-out $< $(PHONY),$^) -T imximage \
+	-e $(CONFIG_SYS_TEXT_BASE)
+
 u-boot.imx: u-boot.bin $(IMX_CONFIG) FORCE
+	$(call if_changed,mkimage)
+
+u-boot.s32: u-boot.bin $(IMX_CONFIG) FORCE
 	$(call if_changed,mkimage)
 
 ifeq ($(CONFIG_OF_SEPARATE),y)
