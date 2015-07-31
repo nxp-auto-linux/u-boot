@@ -8,6 +8,7 @@
 #ifndef _IMXIMAGE_H_
 #define _IMXIMAGE_H_
 
+#define MAX_HW_CFG_SIZE_V3 121 /* Max number of registers imx can set for v3 */
 #define MAX_HW_CFG_SIZE_V2 121 /* Max number of registers imx can set for v2 */
 #define MAX_HW_CFG_SIZE_V1 60  /* Max number of registers imx can set for v1 */
 #define APP_CODE_BARKER	0xB1
@@ -23,6 +24,7 @@
 /* Initial Vector Table Offset */
 #define FLASH_OFFSET_UNDEFINED	0xFFFFFFFF
 #define FLASH_OFFSET_STANDARD	0x400
+#define FLASH_OFFSET_STANDARD_V3	0x1000
 #define FLASH_OFFSET_NAND	FLASH_OFFSET_STANDARD
 #define FLASH_OFFSET_SD		FLASH_OFFSET_STANDARD
 #define FLASH_OFFSET_SPI	FLASH_OFFSET_STANDARD
@@ -33,6 +35,7 @@
 /* Initial Load Region Size */
 #define FLASH_LOADSIZE_UNDEFINED	0xFFFFFFFF
 #define FLASH_LOADSIZE_STANDARD		0x1000
+#define FLASH_LOADSIZE_STANDARD_V3	0x2000
 #define FLASH_LOADSIZE_NAND		FLASH_LOADSIZE_STANDARD
 #define FLASH_LOADSIZE_SD		FLASH_LOADSIZE_STANDARD
 #define FLASH_LOADSIZE_SPI		FLASH_LOADSIZE_STANDARD
@@ -42,9 +45,11 @@
 
 #define IVT_HEADER_TAG 0xD1
 #define IVT_VERSION 0x40
+#define IVT_VERSION_V3	0x50
 #define DCD_HEADER_TAG 0xD2
 #define DCD_COMMAND_TAG 0xCC
 #define DCD_VERSION 0x40
+#define DCD_VERSION_V3 0x50
 #define DCD_COMMAND_PARAM 0x4
 
 enum imximage_cmd {
@@ -67,7 +72,8 @@ enum imximage_fld_types {
 enum imximage_version {
 	IMXIMAGE_VER_INVALID = -1,
 	IMXIMAGE_V1 = 1,
-	IMXIMAGE_V2
+	IMXIMAGE_V2,
+	IMXIMAGE_V3,
 };
 
 typedef struct {
@@ -132,7 +138,10 @@ typedef struct {
 typedef struct {
 	uint32_t start;
 	uint32_t size;
-	uint32_t plugin;
+	union {
+		uint32_t plugin;
+		uint32_t rsvd;
+	};
 } boot_data_t;
 
 typedef struct {
@@ -152,11 +161,32 @@ typedef struct {
 	dcd_v2_t dcd_table;
 } imx_header_v2_t;
 
+typedef struct {
+	ivt_header_t header;
+	uint32_t entry;
+	uint32_t reserved1;
+	uint32_t dcd_ptr;
+	uint32_t boot_data_ptr;
+	uint32_t self;
+	uint32_t secure_callback;
+	uint32_t self_test;
+	uint32_t auth_length;
+	uint32_t reserved2;
+} flash_header_v3_t;
+
+typedef struct {
+	flash_header_v3_t fhdr;
+	boot_data_t boot_data;
+	dcd_v2_t dcd_table;
+} imx_header_v3_t;
+
+
 /* The header must be aligned to 4k on MX53 for NAND boot */
 struct imx_header {
 	union {
 		imx_header_v1_t hdr_v1;
 		imx_header_v2_t hdr_v2;
+		imx_header_v3_t hdr_v3;
 	} header;
 };
 

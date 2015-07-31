@@ -164,7 +164,7 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"update_sd_firmware_filename=u-boot.imx\0" \
+	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \
@@ -264,7 +264,8 @@
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_HZ				1000
 
-#define CONFIG_SYS_TEXT_BASE		0x3E800000 /* SDRAM */
+#define CONFIG_SYS_TEXT_BASE		0x3E820000 /* SDRAM */
+#define CONFIG_SYS_TEXT_OFFSET		0x00020000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
@@ -294,7 +295,7 @@
 #define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
+	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 

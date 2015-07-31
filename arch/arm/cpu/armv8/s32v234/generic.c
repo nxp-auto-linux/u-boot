@@ -337,29 +337,36 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 #if defined(CONFIG_DISPLAY_CPUINFO)
 static char *get_reset_cause(void)
 {
-/* b47303
- * The cause of reset is determined on s32v234 using MC_RGM module.
- * MC_RGM_FES register should be used to extract the desired
- * information.
- * */
+/*
+ * The cause of reset is determined on using MC_RGM module.
+ * MC_RGM_FES register is used to extract the desired information.
+ * TODO: instead of magic values use defines
+ */
+	u32 cause = readl(MC_RGM_BASE_ADDR + 0x300);
 
-#if 0
-	u32 cause = 0;
-
-	switch (cause) {
-	case 0x08:
+	if (cause & 0x8000)
 		return "WDOG";
-	case 0x20:
-		return "JTAG HIGH-Z";
-	case 0x80:
-		return "EXTERNAL RESET";
-	case 0xfd:
-		return "POR";
-	default:
-		return "unknown reset";
-	}
-#endif /* to be used as implementation model */
-	return 0;
+
+	if (cause & 0x400)
+		return "JTAG";
+
+	if (cause & 0x40)
+		return "FCCU soft reaction";
+
+	if (cause & 0x20)
+		return "FCCU hard reaction";
+
+	if (cause & 0x8)
+		return "Software Functional reset";
+
+	if (cause & 0x4)
+		return "Self Test done reset";
+
+	if (cause & 0x1)
+		return "External reset";
+
+	return "unknown reset";
+
 }
 
 #define SRC_SCR_SW_RST					(1<<12)
