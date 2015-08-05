@@ -438,7 +438,7 @@ static void print_hdr_v3(struct imx_header *imx_hdr)
 
 	version = detect_imximage_version(imx_hdr);
 
-	printf("Image Type:   Freescale IMX Boot Image\n");
+	printf("Image Type:   Freescale S32 Boot Image\n");
 	printf("Image Ver:    %x", version);
 	printf("%s\n", get_table_entry_name(imximage_versions, NULL, version));
 	printf("Data Size:    ");
