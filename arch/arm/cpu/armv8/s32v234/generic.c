@@ -23,6 +23,7 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
+#include <asm/arch/mc_rgm_regs.h>
 #include <netdev.h>
 #include <div64.h>
 #include <errno.h>
@@ -337,35 +338,26 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 #if defined(CONFIG_DISPLAY_CPUINFO)
 static char *get_reset_cause(void)
 {
-/*
- * The cause of reset is determined on using MC_RGM module.
- * MC_RGM_FES register is used to extract the desired information.
- * TODO: instead of magic values use defines
- */
-	u32 cause = readl(MC_RGM_BASE_ADDR + 0x300);
+	u32 cause = readl(MC_RGM_FES);
 
-	if (cause & 0x8000)
-		return "WDOG";
-
-	if (cause & 0x400)
-		return "JTAG";
-
-	if (cause & 0x40)
-		return "FCCU soft reaction";
-
-	if (cause & 0x20)
-		return "FCCU hard reaction";
-
-	if (cause & 0x8)
-		return "Software Functional reset";
-
-	if (cause & 0x4)
-		return "Self Test done reset";
-
-	if (cause & 0x1)
-		return "External reset";
-
-	return "unknown reset";
+	switch (cause) {
+		case F_SWT4:
+			return "WDOG";
+		case F_JTAG:
+			return "JTAG";
+		case F_FCCU_SOFT:
+			return "FCCU soft reaction";
+		case F_FCCU_HARD:
+			return "FCCU hard reaction";
+		case F_SOFT_FUNC:
+			return "Software Functional reset";
+		case F_ST_DONE:
+			return "Self Test done reset";
+		case F_EXT_RST:
+			return "External reset";
+		default:
+			return "unknown reset";
+	}
 
 }
 
