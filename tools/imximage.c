@@ -695,11 +695,6 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 	 * The remaining fraction of a block bytes would not be loaded!
 	 */
 	*header_size_ptr = ROUND(sbuf->st_size, 4096);
-	/* TODO: find a more elegant way to compute the offset
-	 * This is needed to increase the size of the memory initialized by
-	 * the bootrom. */
-	if (imximage_version == IMXIMAGE_V3)
-		*header_size_ptr += 0x20000;
 
 	if (csf_ptr && imximage_csf_size) {
 		*csf_ptr = params->ep - imximage_init_loadsize +

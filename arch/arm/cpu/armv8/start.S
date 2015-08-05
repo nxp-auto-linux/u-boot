@@ -22,7 +22,8 @@
 _start:
 
 #if defined(CONFIG_S32V234)
-	/* disable SWT4 watchdog */
+
+	/* disable SWT4 watchdog*/
 	ldr x0, =0x40086010
 	ldr w1, =0xC520
 	str w1, [x0]
@@ -35,6 +36,57 @@ _start:
 	ldr x1, [x0]
 	orr x1, x1, 0x40
 	str x1, [x0]
+
+	/* SRAM init */
+	/* DMA_TCDn_SOFF */
+	ldr x0, =0x40003020
+	ldr w1, =0x6230
+	str w1, [x0]
+
+	/* DMA_TCDn_SOFF */
+	ldr x0, =0x40003024
+	ldr x1, =0x03030000
+	str w1, [x0]
+
+	/* DMA_TCDn_NBYTES_MLNO */
+	ldr x0, =0x40003028
+	ldr x1, =0x00200000
+	str x1, [x0]
+
+	/* DMA_TCDn_DADDR */
+	ldr x0, =0x40003030
+	ldr x1, =CONFIG_SYS_TEXT_BASE
+	add x1, x1, CONFIG_UBOOT_SIZE
+	str x1, [x0]
+
+	/* DMA_TCDn_DOFF */
+	ldr x0, =0x40003034
+	ldr w1, =0x8
+	str w1, [x0]
+
+	/* DMA_TCDn_CITER_ELINKNO */
+	ldr x0, =0x40003036
+	ldr w1, =0x1
+	strb w1, [x0]
+
+	/* DMA_TCDn_CSR */
+	ldr x0, =0x4000303C
+	ldr w1, =0x1
+	strb w1, [x0]
+
+	/* DMA_TCDn_BITER_ELINKNO */
+	ldr x0, =0x4000303E
+	ldr w1, =0x1
+	strb w1, [x0]
+
+	/* loop until write is done */
+ctrl_status:
+	ldr x0, =0x4000303C
+	ldr w1, [x0]
+	and w1, w1, #0x0080
+	sub w1, w1, #0x0080
+	cbnz w1, ctrl_status
+
 #endif
 
 	b	reset
