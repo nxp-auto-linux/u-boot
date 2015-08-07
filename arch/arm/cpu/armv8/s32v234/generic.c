@@ -51,8 +51,8 @@ static uintptr_t get_pllfreq(	u32 pll, u32 refclk_freq, u32 plldv,
 
 	plldv_prediv = plldv_prediv == 0 ? 1 : plldv_prediv;
 
-	/* The formula for VCO is from TR manual, rev. D */
-	vco = refclk_freq / plldv_prediv * (plldv_mfd + pllfd_mfn/20481);
+	/* The formula for VCO is from TR manual, rev. 1 */
+	vco = (refclk_freq / plldv_prediv) * (plldv_mfd + pllfd_mfn/(float)20480);
 
 	if( selected_output != 0 )
 	{
@@ -63,8 +63,13 @@ static uintptr_t get_pllfreq(	u32 pll, u32 refclk_freq, u32 plldv,
 		{
 			dfs_portn = readl(DFS_DVPORTn(pll, selected_output - 1));
 			dfs_mfi = (dfs_portn & DFS_DVPORTn_MFI_MASK) >> DFS_DVPORTn_MFI_OFFSET;
-			dfs_mfn = (dfs_portn & DFS_DVPORTn_MFI_MASK) >> DFS_DVPORTn_MFI_OFFSET;
-			fout = vco / ( dfs_mfi + (dfs_mfn/256));
+			dfs_mfn = (dfs_portn & DFS_DVPORTn_MFN_MASK) >> DFS_DVPORTn_MFN_OFFSET;
+
+			dfs_mfi <<= 8;
+			vco /= plldv_rfdphi_div;
+			fout = vco / ( dfs_mfi + dfs_mfn );
+			fout <<=8;
+
 		}
 		else
 		{
@@ -136,8 +141,10 @@ static u32 get_sys_clk(u32 number)
 	switch (number) {
 		case 3:
 			sysclk_div_number = 0;
+			break;
 		case 6:
 			sysclk_div_number = 1;
+			break;
 		default:
 			printf("unsupported system clock \n");
 			return -1;
@@ -146,7 +153,7 @@ static u32 get_sys_clk(u32 number)
 	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
 
 
-	sysclk_div = readl(CGM_SC_DCn(MC_CGM1_BASE_ADDR, sysclk_div_number)) & MC_CGM_SC_DCn_PREDIV_MASK;
+	sysclk_div = readl(CGM_SC_DCn(MC_CGM0_BASE_ADDR, sysclk_div_number)) & MC_CGM_SC_DCn_PREDIV_MASK;
 	sysclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
 	sysclk_div += 1;
 
@@ -166,8 +173,8 @@ static u32 get_sys_clk(u32 number)
 		break;
 	default:
 		printf("unsupported system clock select\n");
+		return -1;
 	}
-
 	return freq / sysclk_div;
 }
 
@@ -219,18 +226,8 @@ static u32 get_uart_clk(void)
 
 static u32 get_fec_clk(void)
 {
-	u32 aux2clk_div;
-	u32 freq = 0;
-
-	aux2clk_div = readl(CGM_ACn_DCm(MC_CGM2_BASE_ADDR, 2, 0)) & MC_CGM_ACn_DCm_PREDIV_MASK;
-	aux2clk_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	aux2clk_div += 1;
-
-	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 0);
-
-	return freq / aux2clk_div;
+	return get_sys_clk(6);
 }
-
 
 static u32 get_usdhc_clk(void)
 {
