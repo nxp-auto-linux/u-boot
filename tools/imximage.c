@@ -729,7 +729,7 @@ static int imximage_generate(struct image_tool_params *params,
 	struct image_type_params *tparams)
 {
 	struct imx_header *imxhdr;
-	size_t alloc_len;
+	size_t alloc_len = 0;
 	struct stat sbuf;
 	char *datafile = params->datafile;
 	uint32_t pad_len;
