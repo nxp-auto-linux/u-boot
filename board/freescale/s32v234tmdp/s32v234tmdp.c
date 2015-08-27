@@ -81,21 +81,33 @@ static void setup_iomux_enet(void)
 	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
 	writel(       0x2, SIUL2_MSCRn(981));
 
-	writel(0x0008c700, SIUL2_MSCRn(47));	//RMII_CLK_REF_IP //PC15
-	writel(       0x2, SIUL2_MSCRn(978));
+	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
+	writel(0x0008c700, SIUL2_MSCRn(48));	//RX_CLK //PD0
+	writel(       0x2, SIUL2_MSCRn(979));
 
 	writel(0x0008c700, SIUL2_MSCRn(49));	//RX_D0  //PD1
 	writel(       0x2, SIUL2_MSCRn(974));
+
 	writel(0x0008c700, SIUL2_MSCRn(50));	//RX_D1  //PD2
 	writel(       0x2, SIUL2_MSCRn(975));
+
+
+	writel(0x0008c700, SIUL2_MSCRn(51));	//RX_D2  //PD3
+	writel(       0x2, SIUL2_MSCRn(976));
+
+	writel(0x0008c700, SIUL2_MSCRn(52));	//RX_D3  //PD4
+	writel(       0x2, SIUL2_MSCRn(977));
+
 	writel(0x0008c700, SIUL2_MSCRn(53));	//RX_DV  //PD5
 	writel(       0x2, SIUL2_MSCRn(973));
-	writel(0x0008c700, SIUL2_MSCRn(54));	//RX_ER  //PD6
-	writel(       0x2, SIUL2_MSCRn(970));
 
 	writel(0x0020c701, SIUL2_MSCRn(55));	//TX_D0  //PD7
 	writel(0x0020c701, SIUL2_MSCRn(56));	//TX_D1  //PD8
-	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD1
+	writel(0x0020c701, SIUL2_MSCRn(57));	//TX_D2  //PD9
+	writel(0x0020c701, SIUL2_MSCRn(58));	//TX_D3  //PD10
+	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
+
+
 }
 
 static void setup_iomux_i2c(void)
