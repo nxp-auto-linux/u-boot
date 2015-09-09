@@ -390,6 +390,13 @@ int cpu_eth_init(bd_t *bis)
 	int rc = -ENODEV;
 
 #if defined(CONFIG_FEC_MXC)
+
+/* enable RGMII mode */
+#if (CONFIG_FEC_XCV_TYPE == RGMII)
+	volatile struct src * src = (struct src *)SRC_SOC_BASE_ADDR;
+	writel( SRC_GPR3_ENET_MODE, &src->gpr3);
+#endif
+
 	rc = fecmxc_initialize(bis);
 #endif
 

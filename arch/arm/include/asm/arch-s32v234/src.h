@@ -11,16 +11,15 @@
 
 #define SRC_GPR3_PCIE_RFCC_CLK						(1<<5)
 #define SRC_GPR3_PCCAS								(1<<4)
-	
-/*	
- * SRC_GPR5 bit fields	
- */	
+
+/*
+ * SRC_GPR5 bit fields
+ */
 #define SRC_GPR5_PCIE_APPS_PM_XMT_PME				0
-	
 #define SRC_GPR5_PCIE_DEVICE_TYPE_EP				(0x0 << 1)
 #define SRC_GPR5_PCIE_DEVICE_TYPE_RC				(0x4 << 1)
 #define SRC_GPR5_PCIE_DEVICE_TYPE_MASK				(0xf << 1)
-	
+
 #define SRC_GPR5_PCIE_DIAG_CTRL_BUS_MASK			(0x7 << 5)
 #define SRC_GPR5_GPR_PCIE_SYS_INT					(1<<8)
 #define SRC_GPR5_PCIE_APP_LTSSM_ENABLE				(1<<9)
