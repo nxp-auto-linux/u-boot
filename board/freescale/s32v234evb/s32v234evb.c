@@ -82,7 +82,10 @@ static void setup_iomux_enet(void)
 	writel(       0x2, SIUL2_MSCRn(981));
 
 
+
 	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
+	writel(       0x2, SIUL2_MSCRn(978));
+
 	writel(0x0008c700, SIUL2_MSCRn(48));	//RX_CLK //PD0
 	writel(       0x2, SIUL2_MSCRn(979));
 
