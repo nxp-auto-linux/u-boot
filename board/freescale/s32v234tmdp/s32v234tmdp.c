@@ -114,7 +114,31 @@ static void setup_iomux_enet(void)
 
 static void setup_iomux_i2c(void)
 {
-	/* TODO: Implement i2c iomux when it is activated. */
+
+	/* I2C0 - Serial Data Input */
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA, SIUL2_MSCRn(99));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA, SIUL2_IMCRn(269));
+
+	/* I2C0 - Serial Clock Input */
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK, SIUL2_MSCRn(100));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK, SIUL2_IMCRn(268));
+
+	/* I2C1 - Serial Data Input */
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA, SIUL2_MSCRn(101));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA, SIUL2_IMCRn(271));
+
+	/* I2C1 - Serial Clock Input */
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK, SIUL2_MSCRn(102));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK, SIUL2_IMCRn(270));
+
+	/* I2C2 - Serial Data Input */
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA, SIUL2_MSCRn(19));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SDA, SIUL2_IMCRn(273));
+
+	/* I2C2 - Serial Clock Input */
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK, SIUL2_MSCRn(20));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK, SIUL2_IMCRn(272));
+
 }
 
 #ifdef CONFIG_SYS_USE_NAND
