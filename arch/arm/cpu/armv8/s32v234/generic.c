@@ -91,11 +91,13 @@ static uintptr_t get_pllfreq(	u32 pll, u32 refclk_freq, u32 plldv,
 static uintptr_t decode_pll( enum pll_type pll, u32 refclk_freq, u32 selected_output )
 {
 	u32 plldv, pllfd;
+	int freq;
 
 	plldv = readl( PLLDIG_PLLDV(pll) );
 	pllfd = readl( PLLDIG_PLLFD(pll) );
 
-	return get_pllfreq( pll, refclk_freq, plldv, pllfd, selected_output );
+	freq = get_pllfreq( pll, refclk_freq, plldv, pllfd, selected_output );
+	return freq  < 0 ? 0 : freq;
 }
 
 static u32 get_mcu_main_clk(void)
@@ -127,6 +129,7 @@ static u32 get_mcu_main_clk(void)
 		break;
 	default:
 		printf("unsupported system clock select\n");
+		freq = 0;
 	}
 
 	return freq / coreclk_div;
@@ -147,7 +150,7 @@ static u32 get_sys_clk(u32 number)
 			break;
 		default:
 			printf("unsupported system clock \n");
-			return -1;
+			sysclk_div_number = 0;
 	}
 	sysclk_sel = readl(CGM_SC_SS(MC_CGM0_BASE_ADDR)) & MC_CGM_SC_SEL_MASK;
 	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
@@ -170,10 +173,11 @@ static u32 get_sys_clk(u32 number)
 		break;
 	case MC_CGM_SC_SEL_CLKDISABLE:
 		printf("Sysclk is disabled\n");
+		freq = 0;
 		break;
 	default:
 		printf("unsupported system clock select\n");
-		return -1;
+		freq = 0;
 	}
 	return freq / sysclk_div;
 }
@@ -219,6 +223,7 @@ static u32 get_uart_clk(void)
 			break;
 	default:
 			printf("unsupported system clock select\n");
+			freq = 0;
 	}
 
 	return freq/auxclk3_div;
@@ -271,7 +276,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	}
 	printf("Error: Unsupported function to read the frequency! \
 			Please define it correctly!");
-	return -1;
+	return 0;
 }
 
 /* Dump some core clocks */
