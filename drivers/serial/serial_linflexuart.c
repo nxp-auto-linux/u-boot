@@ -40,9 +40,15 @@
 #define UARTCR_TXEN         (1 << 4)
 #define UARTCR_RXEN         (1 << 5)
 #define UARTCR_PC1          (1 << 6)
+#define UARTCR_TFBM         (1 << 8)
+#define UARTCR_RFBM         (1 << 9)
 #define UARTSR_DTF          (1 << 1)
 #define UARTSR_DRF          (1 << 2)
+#define UARTSR_RFE          (1 << 2)
+#define UARTSR_RFNE         (1 << 4)
 #define UARTSR_RMB          (1 << 9)
+
+
 
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -67,18 +73,9 @@ static void linflex_serial_setbrg(void)
 
 static int linflex_serial_getc(void)
 {
-    char c;
+    while ((__raw_readl(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE) {}
 
-    /* waiting for data reception complete - TODO: add a timeout */
-    while((__raw_readb(&base->uartsr) & UARTSR_DRF) != UARTSR_DRF){}
-
-    /* waiting for data buffer to be ready - TODO: add a timeout */
-
-    while((__raw_readl(&base->uartsr) & UARTSR_RMB) != UARTSR_RMB){}
-
-    c = __raw_readl(&base->bdrm);
-    __raw_writeb((__raw_readb(&base->uartsr)|(UARTSR_DRF|UARTSR_RMB)), &base->uartsr);
-    return c;
+    return __raw_readb(&base->bdrm);
 }
 
 static void linflex_serial_putc(const char c)
@@ -86,12 +83,10 @@ static void linflex_serial_putc(const char c)
     if (c == '\n')
         serial_putc('\r');
 
+    /* wait for Tx FIFO not full */
+    while ((__raw_readb(&base->uartsr) & UARTSR_DTF)) {}
+
     __raw_writeb(c, &base->bdrl);
-
-    /* waiting for data transmission completed - TODO: add a timeout */
-    while((__raw_readb(&base->uartsr) & UARTSR_DTF) != UARTSR_DTF){}
-
-    __raw_writeb((__raw_readb(&base->uartsr)|UARTSR_DTF), &base->uartsr);
 }
 
 /*
@@ -99,13 +94,10 @@ static void linflex_serial_putc(const char c)
  */
 static int linflex_serial_tstc(void)
 {
-#if 0 /* This feature should be implemented when linflex driver will use fifos*/
-    if (__raw_readb(&base->urcfifo) == 0)
+    if ((__raw_readb(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
         return 0;
 
     return 1;
-#endif
-    return 0;
 }
 
 /*
@@ -134,7 +126,7 @@ static int linflex_serial_init(void)
     serial_setbrg();
     /* 8 bit data, no parity, Tx and Rx enabled, UART mode */
     __raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
-                 | UARTCR_WL0 | UARTCR_UART, &base->uartcr);
+                 | UARTCR_WL0 | UARTCR_UART | UARTCR_RFBM | UARTCR_TFBM, &base->uartcr);
 
     ctrl = __raw_readl(&base->lincr1);
     ctrl &= ~LINCR1_INIT;
