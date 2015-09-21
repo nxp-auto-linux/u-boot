@@ -280,7 +280,7 @@ static int fec_tx_task_disable(struct fec_priv *fec)
 static void fec_rbd_init(struct fec_priv *fec, int count, int dsize)
 {
 	uint32_t size;
-	uint8_t *data;
+	uintptr_t data;
 	int i;
 
 	/*
@@ -289,8 +289,8 @@ static void fec_rbd_init(struct fec_priv *fec, int count, int dsize)
 	 */
 	size = roundup(dsize, ARCH_DMA_MINALIGN);
 	for (i = 0; i < count; i++) {
-		data = (uint8_t *)fec->rbd_base[i].data_pointer;
-		memset(data, 0, dsize);
+		data = (uintptr_t)(fec->rbd_base[i].data_pointer);
+		memset((void *)data, 0, dsize);
 		flush_dcache_range((uintptr_t)data, (uintptr_t)data + size);
 
 		fec->rbd_base[i].status = FEC_RBD_EMPTY;
@@ -876,6 +876,7 @@ static int fec_alloc_descs(struct fec_priv *fec)
 	unsigned int size;
 	int i;
 	uint8_t *data;
+	uintptr_t aux;
 
 	/* Allocate TX descriptors. */
 	size = roundup(2 * sizeof(struct fec_bd), ARCH_DMA_MINALIGN);
@@ -921,7 +922,10 @@ static int fec_alloc_descs(struct fec_priv *fec)
 
 err_ring:
 	for (; i >= 0; i--)
-		free((void *)fec->rbd_base[i].data_pointer);
+	{
+		aux = (uintptr_t)fec->rbd_base[i].data_pointer;
+		free((void *)aux);
+	}
 	free(fec->rbd_base);
 err_rx:
 	free(fec->tbd_base);
@@ -932,9 +936,13 @@ err_tx:
 static void fec_free_descs(struct fec_priv *fec)
 {
 	int i;
+	uintptr_t aux;
 
 	for (i = 0; i < FEC_RBD_NUM; i++)
-		free((void *)fec->rbd_base[i].data_pointer);
+	{
+		aux = (uintptr_t)fec->rbd_base[i].data_pointer;
+		free((void *)aux);
+	}
 	free(fec->rbd_base);
 	free(fec->tbd_base);
 }
