@@ -35,7 +35,19 @@
 #define GICC_BASE 0x7D002000
 
 #define CONFIG_REMAKE_ELF
-#define CONFIG_RUN_FROM_IRAM_ONLY
+#undef CONFIG_RUN_FROM_IRAM_ONLY
+
+#define CONFIG_RUN_FROM_DDR1
+#undef CONFIG_RUN_FROM_DDR0
+
+/* Run by default from DDR1  */
+#ifdef CONFIG_RUN_FROM_DDR0
+#define DDR_BASE_ADDR		0x80000000
+#define DDR_SIZE		(1024 * 1024 * 1024)
+#else
+#define DDR_BASE_ADDR		0xC0000000
+#define DDR_SIZE		(512 * 1024 * 1024)
+#endif
 
 #define CONFIG_MACH_TYPE		4146
 
@@ -46,14 +58,6 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
-#ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR	0x80000000
-#define DDR_SIZE		(1024 * 1024 * 1024)
-#else
-#define DDR_BASE_ADDR	0xC0000000
-#define DDR_SIZE		(512 * 1024 * 1024)
-#endif
-#define CONFIG_DDR_INIT_DELAY		1000
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
@@ -83,19 +87,19 @@
 #define CONFIG_SYS_UART_PORT		(1)
 #define CONFIG_BAUDRATE				115200
 
-
 #undef CONFIG_CMD_IMLS
 
 #define CONFIG_MMC
 #define CONFIG_FSL_ESDHC
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
+#define CONFIG_FSL_USDHC
+#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 #define CONFIG_SYS_FSL_ESDHC_NUM	1
 
 #define CONFIG_SYS_FSL_ERRATUM_ESDHC111
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-#define CONFIG_CMD_EXT2 /* EXT2 Support */
+/* #define CONFIG_CMD_EXT2 EXT2 Support */
 #define CONFIG_CMD_FAT  /* FAT support */
 #define CONFIG_DOS_PARTITION
 
@@ -108,7 +112,7 @@
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
 #define IMX_FEC_BASE            ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE     RMII
+#define CONFIG_FEC_XCV_TYPE     RGMII
 #define CONFIG_FEC_MXC_PHYADDR  1
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
@@ -140,19 +144,19 @@
 #define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
 #endif
 
-#define CONFIG_BOOTDELAY		-1
-
-#define CONFIG_LOADADDR			(DDR_BASE_ADDR + 0x2000000)
+#define CONFIG_BOOTDELAY		3
+#define CONFIG_LOADADDR			0xC307FFC0
 #define CONFIG_BOOTARGS			"console=ttyLF0 root=/dev/ram rw"
 
 #define CONFIG_CMD_ENV
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
+	"ramdisk=rootfs.uimg\0"\
 	"console=ttyLF0\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_file=s32v234-evb.dtb\0" \
+	"fdt_file=s32v234-tmdp.dtb\0" \
 	"fdt_addr=0xC2000000\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
@@ -161,7 +165,7 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"update_sd_firmware_filename=u-boot.imx\0" \
+	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \
@@ -182,8 +186,12 @@
 	"bootscript=echo Running bootscript from mmc ...; " \
 		"source\0" \
 	"loaduimage=fatload mmc ${mmcdev}:${mmcpart} ${kernel_addr} ${uimage}\0" \
+	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"jtagboot=echo Booting using jtag...; " \
+		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
+	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
+		"run loaduimage; run loadramdisk; run loadfdt;"\
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
@@ -255,9 +263,13 @@
 #define CONFIG_SYS_MEMTEST_END		(DDR_BASE_ADDR + (DDR_SIZE - 1))
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
-#define CONFIG_SYS_HZ				1000
+#define CONFIG_SYS_HZ				100000
 
-#define CONFIG_SYS_TEXT_BASE		0x3E800000 /* SDRAM */
+#define CONFIG_SYS_TEXT_BASE		0x3E820000 /* SDRAM */
+#define CONFIG_SYS_TEXT_OFFSET		0x00020000
+
+/* size needed to initialize the SRAM starting from that offset */
+#define CONFIG_UBOOT_SIZE			0x37000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
@@ -287,7 +299,7 @@
 #define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
+	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 

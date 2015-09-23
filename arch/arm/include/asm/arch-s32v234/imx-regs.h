@@ -192,6 +192,9 @@ struct src {
 #define SRC_GPR1_FIRC_CLK_SOURCE	(0x0)
 #define SRC_GPR1_XOSC_CLK_SOURCE	(0x1)
 
+/* SRC_GPR3 */
+#define SRC_GPR3_ENET_MODE			(1<<1)
+
 /* Periodic Interrupt Timer (PIT) */
 struct pit_reg {
 	u32 mcr;

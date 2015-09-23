@@ -17,5 +17,8 @@
 # MA 02111-1307 USA
 #
 
-obj-y   += generic.o
-obj-$(CONFIG_SYS_PIT_TIMER)	+= timer.o
+obj-y   := clock.o
+obj-y   += lpddr2.o
+obj-y   += s32v234tmdp.o
+
+#########################################################################

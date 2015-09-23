@@ -440,6 +440,10 @@ config TARGET_S32V234FVB
 	bool "Support s32v234fvb"
 	select ARM64
 
+config TARGET_S32V234TMDP
+	bool "Support s32v234tmdp"
+	select ARM64
+
 config TARGET_SAC58R
 	bool "Support sac58r"
 

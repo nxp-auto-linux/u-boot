@@ -8,7 +8,7 @@
 extra-y	:= start.o
 
 obj-y	+= cpu.o
-obj-y	+= generic_timer.o
+obj-$(CONFIG_SYS_GENERIC_TIMER)	+= generic_timer.o
 obj-y	+= cache_v8.o
 obj-y	+= exceptions.o
 obj-y	+= cache.o

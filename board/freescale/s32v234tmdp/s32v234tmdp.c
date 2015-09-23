@@ -81,8 +81,6 @@ static void setup_iomux_enet(void)
 	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
 	writel(       0x2, SIUL2_MSCRn(981));
 
-
-
 	writel(0x00203701, SIUL2_MSCRn(47));	//TX_CLK //PC15
 	writel(       0x2, SIUL2_MSCRn(978));
 
@@ -111,15 +109,12 @@ static void setup_iomux_enet(void)
 	writel(0x0020c701, SIUL2_MSCRn(58));	//TX_D3  //PD10
 	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
 
-#if 0
-	/* reset the Ethernet controller */
-	writel(0x1, 0x40032024);
-	while (readl(0x40032024) & 0x1);
-#endif
+
 }
 
 static void setup_iomux_i2c(void)
 {
+
 	/* I2C0 - Serial Data Input */
 	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA, SIUL2_MSCRn(99));
 	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA, SIUL2_IMCRn(269));
@@ -143,6 +138,7 @@ static void setup_iomux_i2c(void)
 	/* I2C2 - Serial Clock Input */
 	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK, SIUL2_MSCRn(20));
 	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK, SIUL2_IMCRn(272));
+
 }
 
 #ifdef CONFIG_SYS_USE_NAND
@@ -254,7 +250,7 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: s32v234evb\n");
+	puts("Board: s32v234tmdp\n");
 
 	return 0;
 }

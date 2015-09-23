@@ -23,7 +23,7 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 
-static struct pit_reg *cur_pit = (struct pit_reg *)PIT_BASE_ADDR;
+static struct pit_reg *cur_pit = (struct pit_reg *)PIT0_BASE_ADDR;
 
 DECLARE_GLOBAL_DATA_PTR;
 

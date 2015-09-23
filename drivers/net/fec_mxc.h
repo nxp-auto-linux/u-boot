@@ -236,8 +236,7 @@ typedef uintptr_t __attribute__((__may_alias__)) uintptr_t_a;
 struct __attribute__((__may_alias__)) fec_bd {
 	uint16_t data_length;		/* payload's length in bytes */
 	uint16_t status;		/* BD's staus (see datasheet) */
-	/* uint32_t data_pointer;		payload's buffer address */
-	uintptr_t_a data_pointer;		/* payload's buffer address */
+	uint32_t data_pointer;		/* payload's buffer address */
 };
 
 /**

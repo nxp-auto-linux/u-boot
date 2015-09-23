@@ -66,6 +66,7 @@
 #define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
 
 /* Generic Timer Definitions */
+#define CONFIG_SYS_GENERIC_TIMER
 #define COUNTER_FREQUENCY               (1000000000)     /* 1000MHz */
 #define CONFIG_SYS_FSL_ERRATUM_A008585
 
@@ -111,10 +112,11 @@
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
 #define IMX_FEC_BASE            ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE     RMII
-#define CONFIG_FEC_MXC_PHYADDR  1
+#define CONFIG_FEC_XCV_TYPE     RGMII
+#define CONFIG_FEC_MXC_PHYADDR  7
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
+#define CONFIG_PHY_MICREL_KSZ9031
 
 /* I2C Configs */
 #define CONFIG_CMD_I2C
