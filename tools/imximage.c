@@ -694,7 +694,18 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 	 *
 	 * The remaining fraction of a block bytes would not be loaded!
 	 */
-	*header_size_ptr = ROUND(sbuf->st_size, 4096);
+
+	switch (imximage_version) {
+		case IMXIMAGE_V3:
+			*header_size_ptr = ROUND(sbuf->st_size, 4096) + imximage_init_loadsize;
+			break;
+		default:
+			*header_size_ptr = ROUND(sbuf->st_size, 4096);
+			break;
+	}
+
+
+
 
 	if (csf_ptr && imximage_csf_size) {
 		*csf_ptr = params->ep - imximage_init_loadsize +
@@ -771,6 +782,7 @@ static int imximage_generate(struct image_tool_params *params,
 			break;
 
 	}
+
 
 	if (alloc_len < sizeof(struct imx_header)) {
 		fprintf(stderr, "%s: header error\n",
