@@ -1,0 +1,6 @@
+S32V234 Functional Validation BOARD
+M:	-
+S:	Orphaned
+F:	board/freescale/s32v234fvb/
+F:	include/configs/s32v234fvb.h
+F:	configs/s32v234fvb_defconfig

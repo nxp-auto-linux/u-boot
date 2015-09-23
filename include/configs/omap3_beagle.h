@@ -66,6 +66,16 @@
 #define CONFIG_TWL4030_USB		1
 #define CONFIG_USB_ETHER
 #define CONFIG_USB_ETHER_RNDIS
+#define CONFIG_USB_GADGET
+#define CONFIG_USB_GADGET_VBUS_DRAW	0
+#define CONFIG_USBDOWNLOAD_GADGET
+#define CONFIG_G_DNL_VENDOR_NUM		0x0451
+#define CONFIG_G_DNL_PRODUCT_NUM	0xd022
+#define CONFIG_G_DNL_MANUFACTURER	"TI"
+#define CONFIG_CMD_FASTBOOT
+#define CONFIG_ANDROID_BOOT_IMAGE
+#define CONFIG_USB_FASTBOOT_BUF_ADDR	CONFIG_SYS_LOAD_ADDR
+#define CONFIG_USB_FASTBOOT_BUF_SIZE	0x07000000
 
 /* USB EHCI */
 #define CONFIG_CMD_USB
@@ -101,6 +111,7 @@
 #define CONFIG_CMD_LED		/* LED support			*/
 #define CONFIG_CMD_SETEXPR	/* Evaluate expressions		*/
 #define CONFIG_CMD_GPIO     /* Enable gpio command */
+#define CONFIG_CMD_DHCP
 
 #define CONFIG_VIDEO_OMAP3	/* DSS Support			*/
 
@@ -170,15 +181,21 @@
 		"if test $beaglerev = C4; then " \
 			"setenv fdtfile omap3-beagle.dtb; fi; " \
 		"if test $beaglerev = xMAB; then " \
-			"setenv fdtfile omap3-beagle-xm.dtb; fi; " \
+			"setenv fdtfile omap3-beagle-xm-ab.dtb; fi; " \
 		"if test $beaglerev = xMC; then " \
 			"setenv fdtfile omap3-beagle-xm.dtb; fi; " \
 		"if test $fdtfile = undefined; then " \
 			"echo WARNING: Could not determine device tree to use; fi; \0" \
+	"validatefdt=" \
+		"if test $beaglerev = xMAB; then " \
+			"if test ! -e mmc ${bootpart} ${bootdir}/${fdtfile}; then " \
+				"setenv fdtfile omap3-beagle-xm.dtb; " \
+			"fi; " \
+		"fi; \0" \
 	"bootenv=uEnv.txt\0" \
 	"loadbootenv=fatload mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
 	"importbootenv=echo Importing environment from mmc ...; " \
-		"env import -t $loadaddr $filesize\0" \
+		"env import -t -r $loadaddr $filesize\0" \
 	"ramargs=setenv bootargs console=${console} " \
 		"${optargs} " \
 		"mpurate=${mpurate} " \
@@ -190,7 +207,10 @@
 		"rootfstype=${ramrootfstype}\0" \
 	"loadramdisk=load mmc ${bootpart} ${rdaddr} ${bootdir}/${ramdisk}\0" \
 	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
-	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
+	"loadbootscript=load mmc ${mmcdev} ${loadaddr} boot.scr\0" \
+	"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
+		"source ${loadaddr}\0" \
+	"loadfdt=run validatefdt; load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"bootm ${loadaddr}\0" \
@@ -226,9 +246,13 @@
 			"echo Running uenvcmd ...;" \
 			"run uenvcmd;" \
 		"fi;" \
-		"if run loadimage; then " \
-			"run mmcboot;" \
-		"fi;" \
+		"if run loadbootscript; then " \
+			"run bootscript; " \
+		"else " \
+			"if run loadimage; then " \
+				"run mmcboot;" \
+			"fi;" \
+		"fi; " \
 	"fi;" \
 	"run nandboot;" \
 	"setenv bootfile zImage;" \
@@ -249,13 +273,8 @@
  */
 
 /* **** PISMO SUPPORT *** */
-
-/* Configure the PISMO */
-#define PISMO1_NAND_SIZE		GPMC_SIZE_128M
-#define PISMO1_ONEN_SIZE		GPMC_SIZE_128M
-
 #if defined(CONFIG_CMD_NAND)
-#define CONFIG_SYS_FLASH_BASE		PISMO1_NAND_BASE
+#define CONFIG_SYS_FLASH_BASE		NAND_BASE
 #endif
 
 /* Monitor at start of flash */
@@ -279,6 +298,7 @@
 #define CONFIG_SPL_OMAP3_ID_NAND
 
 /* NAND boot config */
+#define CONFIG_SYS_NAND_BUSWIDTH_16BIT	16
 #define CONFIG_SYS_NAND_5_ADDR_CYCLE
 #define CONFIG_SYS_NAND_PAGE_COUNT	64
 #define CONFIG_SYS_NAND_PAGE_SIZE	2048
@@ -291,5 +311,11 @@
 #define CONFIG_SYS_NAND_ECCBYTES	3
 #define CONFIG_NAND_OMAP_ECCSCHEME	OMAP_ECC_HAM1_CODE_HW
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x80000
+/* NAND: SPL falcon mode configs */
+#ifdef CONFIG_SPL_OS_BOOT
+#define CONFIG_CMD_SPL_NAND_OFS		0x240000
+#define CONFIG_SYS_NAND_SPL_KERNEL_OFFS	0x280000
+#define CONFIG_CMD_SPL_WRITE_SIZE	0x2000
+#endif
 
 #endif /* __CONFIG_H */

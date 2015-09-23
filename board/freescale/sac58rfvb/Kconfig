@@ -1,0 +1,23 @@
+if TARGET_SAC58RFVB
+
+config SYS_CPU
+	string
+	default "armv7"
+
+config SYS_BOARD
+	string
+	default "sac58rfvb"
+
+config SYS_VENDOR
+	string
+	default "freescale"
+
+config SYS_SOC
+	string
+	default "sac58r"
+
+config SYS_CONFIG_NAME
+	string
+	default "sac58rfvb"
+
+endif

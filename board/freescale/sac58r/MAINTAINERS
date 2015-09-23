@@ -1,0 +1,6 @@
+SAC58R BOARD
+M:	-
+S:	Maintained
+F:	board/freescale/sac58r/
+F:	include/configs/sac58r.h
+F:	configs/sac58revb_defconfig

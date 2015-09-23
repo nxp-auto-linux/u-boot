@@ -8,14 +8,16 @@
  */
 
 #include <common.h>
+#include <ns16550.h>
 #include <asm/io.h>
+#include <asm/arch/msmc.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/hardware.h>
 
 void chip_configuration_unlock(void)
 {
-	__raw_writel(KEYSTONE_KICK0_MAGIC, KEYSTONE_KICK0);
-	__raw_writel(KEYSTONE_KICK1_MAGIC, KEYSTONE_KICK1);
+	__raw_writel(KS2_KICK0_MAGIC, KS2_KICK0);
+	__raw_writel(KS2_KICK1_MAGIC, KS2_KICK1);
 }
 
 int arch_cpu_init(void)
@@ -23,12 +25,21 @@ int arch_cpu_init(void)
 	chip_configuration_unlock();
 	icache_enable();
 
-#ifdef CONFIG_SOC_K2HK
-	share_all_segments(8);
-	share_all_segments(9);
-	share_all_segments(10); /* QM PDSP */
-	share_all_segments(11); /* PCIE */
+	msmc_share_all_segments(8);  /* TETRIS */
+	msmc_share_all_segments(9);  /* NETCP */
+	msmc_share_all_segments(10); /* QM PDSP */
+	msmc_share_all_segments(11); /* PCIE 0 */
+#ifdef CONFIG_SOC_K2E
+	msmc_share_all_segments(13); /* PCIE 1 */
 #endif
+
+	/*
+	 * just initialise the COM2 port so that TI specific
+	 * UART register PWREMU_MGMT is initialized. Linux UART
+	 * driver doesn't handle this.
+	 */
+	NS16550_init((NS16550_t)(CONFIG_SYS_NS16550_COM2),
+		     CONFIG_SYS_NS16550_CLK / 16 / CONFIG_BAUDRATE);
 
 	return 0;
 }

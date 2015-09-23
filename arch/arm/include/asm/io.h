@@ -136,6 +136,7 @@ static inline void __raw_readsl(unsigned long addr, void *data, int longlen)
  * TODO: The kernel offers some more advanced versions of barriers, it might
  * have some advantages to use them instead of the simple one here.
  */
+#define mb()		asm volatile("dsb sy" : : : "memory")
 #define dmb()		__asm__ __volatile__ ("" : : : "memory")
 #define __iormb()	dmb()
 #define __iowmb()	dmb()
@@ -375,7 +376,12 @@ out:
 	return retval;
 }
 
-#elif !defined(readb)
+#else
+#define memset_io(a, b, c)		memset((void *)(a), (b), (c))
+#define memcpy_fromio(a, b, c)		memcpy((a), (void *)(b), (c))
+#define memcpy_toio(a, b, c)		memcpy((void *)(a), (b), (c))
+
+#if !defined(readb)
 
 #define readb(addr)			(__readwrite_bug("readb"),0)
 #define readw(addr)			(__readwrite_bug("readw"),0)
@@ -388,6 +394,7 @@ out:
 
 #define check_signature(io,sig,len)	(0)
 
+#endif
 #endif	/* __mem_pci */
 
 /*
@@ -445,4 +452,7 @@ out:
 
 #endif	/* __mem_isa */
 #endif	/* __KERNEL__ */
+
+#include <iotrace.h>
+
 #endif	/* __ASM_ARM_IO_H */

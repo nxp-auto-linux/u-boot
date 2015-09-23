@@ -22,6 +22,8 @@
 #include <i2c.h>
 #include <watchdog.h>
 
+DECLARE_GLOBAL_DATA_PTR;
+
 #ifdef I2C_QUIRK_REG
 struct mxc_i2c_regs {
 	uint8_t		iadr;
@@ -415,12 +417,6 @@ struct sram_data {
 	struct i2c_parms i2c_data[MXC_NUM_OF_I2C_BUS];
 };
 
-/*
- * For SPL boot some boards need i2c before SDRAM is initialized so force
- * variables to live in SRAM
- */
-static struct sram_data __attribute__((section(".data"))) srdata;
-
 static void * const i2c_bases[] = {
 #if defined(CONFIG_MX25)
 	(void *)IMX_I2C_BASE,
@@ -431,7 +427,7 @@ static void * const i2c_bases[] = {
 	(void *)IMX_I2C2_BASE
 #elif defined(CONFIG_MX31) || defined(CONFIG_MX35) || \
 	defined(CONFIG_MX51) || defined(CONFIG_MX53) ||	\
-	defined(CONFIG_MX6)
+	defined(CONFIG_MX6) || defined(CONFIG_LS102XA)
 	(void *)I2C1_BASE_ADDR,
 	(void *)I2C2_BASE_ADDR,
 	(void *)I2C3_BASE_ADDR
@@ -441,6 +437,11 @@ static void * const i2c_bases[] = {
 	(void *)I2C1_BASE_ADDR,
 	(void *)I2C2_BASE_ADDR
 #endif
+#elif defined(CONFIG_FSL_LSCH3)
+	(void *)I2C1_BASE_ADDR,
+	(void *)I2C2_BASE_ADDR,
+	(void *)I2C3_BASE_ADDR,
+	(void *)I2C4_BASE_ADDR
 #else
 #error "architecture not supported"
 #endif
@@ -453,9 +454,10 @@ void *i2c_get_base(struct i2c_adapter *adap)
 
 static struct i2c_parms *i2c_get_parms(void *base)
 {
+	struct sram_data *srdata = (void *)gd->srdata;
 	int i = 0;
-	struct i2c_parms *p = srdata.i2c_data;
-	while (i < ARRAY_SIZE(srdata.i2c_data)) {
+	struct i2c_parms *p = srdata->i2c_data;
+	while (i < ARRAY_SIZE(srdata->i2c_data)) {
 		if (p->base == base)
 			return p;
 		p++;
@@ -498,8 +500,9 @@ static int mxc_i2c_probe(struct i2c_adapter *adap, uint8_t chip)
 void bus_i2c_init(void *base, int speed, int unused,
 		int (*idle_bus_fn)(void *p), void *idle_bus_data)
 {
+	struct sram_data *srdata = (void *)gd->srdata;
 	int i = 0;
-	struct i2c_parms *p = srdata.i2c_data;
+	struct i2c_parms *p = srdata->i2c_data;
 	if (!base)
 		return;
 	for (;;) {
@@ -513,7 +516,7 @@ void bus_i2c_init(void *base, int speed, int unused,
 		}
 		p++;
 		i++;
-		if (i >= ARRAY_SIZE(srdata.i2c_data))
+		if (i >= ARRAY_SIZE(srdata->i2c_data))
 			return;
 	}
 	bus_i2c_set_bus_speed(base, speed);
@@ -550,7 +553,7 @@ U_BOOT_I2C_ADAP_COMPLETE(mxc1, mxc_i2c_init, mxc_i2c_probe,
 			 CONFIG_SYS_MXC_I2C2_SLAVE, 1)
 #if defined(CONFIG_MX31) || defined(CONFIG_MX35) ||\
 	defined(CONFIG_MX51) || defined(CONFIG_MX53) ||\
-	defined(CONFIG_MX6)
+	defined(CONFIG_MX6) || defined(CONFIG_LS102XA)
 U_BOOT_I2C_ADAP_COMPLETE(mxc2, mxc_i2c_init, mxc_i2c_probe,
 			 mxc_i2c_read, mxc_i2c_write,
 			 mxc_i2c_set_bus_speed,

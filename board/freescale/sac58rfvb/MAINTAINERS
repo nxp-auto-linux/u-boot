@@ -1,0 +1,6 @@
+SAC58R Functional Validation BOARD
+M:	-
+S:	Orphaned
+F:	board/freescale/sac58rfvb/
+F:	include/configs/sac58rfvb.h
+F:	configs/sac58rfvb_defconfig

@@ -62,16 +62,36 @@ int env_init(void)
 	return 0;
 }
 
-static int init_mmc_for_env(struct mmc *mmc)
-{
 #ifdef CONFIG_SYS_MMC_ENV_PART
+__weak uint mmc_get_env_part(struct mmc *mmc)
+{
+	return CONFIG_SYS_MMC_ENV_PART;
+}
+
+static int mmc_set_env_part(struct mmc *mmc)
+{
+	uint part = mmc_get_env_part(mmc);
 	int dev = CONFIG_SYS_MMC_ENV_DEV;
+	int ret = 0;
 
 #ifdef CONFIG_SPL_BUILD
 	dev = 0;
 #endif
+
+	if (part != mmc->part_num) {
+		ret = mmc_switch_part(dev, part);
+		if (ret)
+			puts("MMC partition switch failed\n");
+	}
+
+	return ret;
+}
+#else
+static inline int mmc_set_env_part(struct mmc *mmc) {return 0; };
 #endif
 
+static int init_mmc_for_env(struct mmc *mmc)
+{
 	if (!mmc) {
 		puts("No MMC card found\n");
 		return -1;
@@ -82,16 +102,7 @@ static int init_mmc_for_env(struct mmc *mmc)
 		return -1;
 	}
 
-#ifdef CONFIG_SYS_MMC_ENV_PART
-	if (CONFIG_SYS_MMC_ENV_PART != mmc->part_num) {
-		if (mmc_switch_part(dev, CONFIG_SYS_MMC_ENV_PART)) {
-			puts("MMC partition switch failed\n");
-			return -1;
-		}
-	}
-#endif
-
-	return 0;
+	return mmc_set_env_part(mmc);
 }
 
 static void fini_mmc_for_env(struct mmc *mmc)
@@ -102,7 +113,7 @@ static void fini_mmc_for_env(struct mmc *mmc)
 #ifdef CONFIG_SPL_BUILD
 	dev = 0;
 #endif
-	if (CONFIG_SYS_MMC_ENV_PART != mmc->part_num)
+	if (mmc_get_env_part(mmc) != mmc->part_num)
 		mmc_switch_part(dev, mmc->part_num);
 #endif
 }
@@ -129,8 +140,6 @@ static unsigned char env_flags;
 int saveenv(void)
 {
 	ALLOC_CACHE_ALIGN_BUFFER(env_t, env_new, 1);
-	ssize_t	len;
-	char	*res;
 	struct mmc *mmc = find_mmc_device(CONFIG_SYS_MMC_ENV_DEV);
 	u32	offset;
 	int	ret, copy = 0;
@@ -138,15 +147,9 @@ int saveenv(void)
 	if (init_mmc_for_env(mmc))
 		return 1;
 
-	res = (char *)&env_new->data;
-	len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, 0, NULL);
-	if (len < 0) {
-		error("Cannot export environment: errno = %d\n", errno);
-		ret = 1;
+	ret = env_export(env_new);
+	if (ret)
 		goto fini;
-	}
-
-	env_new->crc = crc32(0, &env_new->data[0], ENV_SIZE);
 
 #ifdef CONFIG_ENV_OFFSET_REDUND
 	env_new->flags	= ++env_flags; /* increase the serial */

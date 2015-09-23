@@ -15,7 +15,6 @@
 /*
  * High Level Configuration Options
  */
-#define CONFIG_OMAP44XX		1	/* which is a 44XX */
 #define CONFIG_OMAP4430		1	/* which is in a 4430 */
 #define CONFIG_MISC_INIT_R
 #define CONFIG_ARCH_CPU_INIT
@@ -102,16 +101,20 @@
 		"vram=${vram} " \
 		"root=${mmcroot} " \
 		"rootfstype=${mmcrootfstype}\0" \
-	"loadbootscript=fatload mmc ${mmcdev} ${loadaddr} boot.scr\0" \
+	"loadbootscript=load mmc ${mmcdev} ${loadaddr} boot.scr\0" \
 	"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
 		"source ${loadaddr}\0" \
-	"loadbootenv=fatload mmc ${mmcdev} ${loadaddr} uEnv.txt\0" \
+	"loadbootenv=load mmc ${mmcdev} ${loadaddr} uEnv.txt\0" \
 	"importbootenv=echo Importing environment from mmc${mmcdev} ...; " \
 		"env import -t ${loadaddr} ${filesize}\0" \
 	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
+	"loaduimage=load mmc ${mmcdev} ${loadaddr} uImage\0" \
 	"mmcboot=echo Booting from mmc${mmcdev} ...; " \
 		"run mmcargs; " \
 		"bootz ${loadaddr} - ${fdtaddr}\0" \
+	"uimageboot=echo Booting from mmc${mmcdev} ...; " \
+		"run mmcargs; " \
+		"bootm ${loadaddr}\0" \
 	"findfdt="\
 		"if test $board_name = sdp4430; then " \
 			"setenv fdtfile omap4-sdp.dtb; fi; " \
@@ -121,6 +124,8 @@
 			"setenv fdtfile omap4-panda-a4.dtb; fi;" \
 		"if test $board_name = panda-es; then " \
 			"setenv fdtfile omap4-panda-es.dtb; fi;" \
+		"if test $board_name = duovero; then " \
+			"setenv fdtfile omap4-duovero-parlor.dtb; fi;" \
 		"if test $fdtfile = undefined; then " \
 			"echo WARNING: Could not determine device tree to use; fi; \0" \
 	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
@@ -143,6 +148,9 @@
 		"if run loadimage; then " \
 			"run loadfdt;" \
 			"run mmcboot; " \
+		"fi; " \
+		"if run loaduimage; then " \
+			"run uimageboot;" \
 		"fi; " \
 	"fi"
 

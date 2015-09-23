@@ -17,7 +17,6 @@
 #ifndef __CONFIG_TI_OMAP5_COMMON_H
 #define __CONFIG_TI_OMAP5_COMMON_H
 
-#define CONFIG_OMAP54XX
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
 #define CONFIG_MISC_INIT_R
@@ -67,6 +66,7 @@
 #define PARTS_DEFAULT
 #endif
 
+#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	DEFAULT_LINUX_BOOT_ENV \
 	"console=" CONSOLEDEV ",115200n8\0" \
@@ -116,6 +116,8 @@
 			"setenv fdtfile omap5-uevm.dtb; fi; " \
 		"if test $board_name = dra7xx; then " \
 			"setenv fdtfile dra7-evm.dtb; fi;" \
+		"if test $board_name = dra72x; then " \
+			"setenv fdtfile dra72-evm.dtb; fi;" \
 		"if test $fdtfile = undefined; then " \
 			"echo WARNING: Could not determine device tree to use; fi; \0" \
 	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile};\0" \

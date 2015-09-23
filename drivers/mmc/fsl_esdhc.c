@@ -199,10 +199,11 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 #endif
 #endif
 	} else {
+#ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
 		flush_dcache_range((ulong)data->src,
 				   (ulong)data->src+data->blocks
 					 *data->blocksize);
-
+#endif
 		if (wml_value > WML_WR_WML_MAX)
 			wml_value = WML_WR_WML_MAX_VAL;
 		if ((esdhc_read32(&regs->prsstat) & PRSSTAT_WPSPL) == 0) {
@@ -222,18 +223,8 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 #else
 		esdhc_write32(&regs->dsaddr, (u32)data->src);
 #endif
+#endif
 	}
-#else	/* CONFIG_SYS_FSL_ESDHC_USE_PIO */
-	if (!(data->flags & MMC_DATA_READ)) {
-		if ((esdhc_read32(&regs->prsstat) & PRSSTAT_WPSPL) == 0) {
-			printf("\nThe SD card is locked. "
-				"Can not write to a locked card.\n\n");
-			return TIMEOUT;
-		}
-		esdhc_write32(&regs->dsaddr, (uintptr_t)data->src);
-	} else
-		esdhc_write32(&regs->dsaddr, (uintptr_t)data->dest);
-#endif	/* CONFIG_SYS_FSL_ESDHC_USE_PIO */
 
 	esdhc_write32(&regs->blkattr, data->blocks << 16 | data->blocksize);
 
@@ -274,6 +265,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 	return 0;
 }
 
+#ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
 static void check_and_invalidate_dcache_range
 	(struct mmc_cmd *cmd,
 	 struct mmc_data *data) {
@@ -296,6 +288,8 @@ static void check_and_invalidate_dcache_range
 #endif
 	invalidate_dcache_range(start, end);
 }
+#endif
+
 /*
  * Sends a command out on the bus.  Takes the mmc pointer,
  * a command pointer, and an optional data pointer.
@@ -429,9 +423,10 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 				goto out;
 			}
 		} while ((irqstat & DATA_COMPLETE) != DATA_COMPLETE);
-#endif
+
 		if (data->flags & MMC_DATA_READ)
 			check_and_invalidate_dcache_range(cmd, data);
+#endif
 	}
 
 out:
@@ -607,7 +602,7 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
 	memset(&cfg->cfg, 0, sizeof(cfg->cfg));
 
 	voltage_caps = 0;
-	caps = regs->hostcapblt;
+	caps = esdhc_read32(&regs->hostcapblt);
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_ESDHC135
 	caps = caps & ~(ESDHC_HOSTCAPBLT_SRS |
@@ -656,7 +651,7 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
 #endif
 
 	cfg->cfg.f_min = 400000;
-	cfg->cfg.f_max = MIN(gd->arch.sdhc_clk, 52000000);
+	cfg->cfg.f_max = min(gd->arch.sdhc_clk, 52000000);
 
 	cfg->cfg.b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
 
