@@ -1,0 +1,5 @@
+u-boot.s32
+u-boot.s32.qspi
+zero.*
+qspi_params.bin
+qspi_params.o
