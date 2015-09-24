@@ -1,6 +1,24 @@
 # generate an u-boot image which can be flashed and booted via QSPI
 # Note: a pre-existing u-boot.s32 image is necessary
 
+# The QSPI image expected by the bootrom looks like this:
+#
+#    0x0000  +----------------------------------+
+#            |      QuadSPI OTFAD Key Area      |
+#            |             512 bytes            |
+#    0x0200  +----------------------------------+
+#            | QuadSPI Configuration Parameters |
+#            |             318 bytes            |
+#   (0x033e) +----------------------------------+
+#            |            (Free Area)           |
+#            |             3266 bytes           |
+#    0x1000  +----------------------------------+
+#            |    Application Program Image     |
+#            +----------------------------------+
+#
+# See figure 30-3. QuadSPI Memory Image Format from reference manual
+# version 1.2_RC2 review (S32V234RM_rev1.2_RC2_review.pdf)
+#
 # we use $+ instead of $^ so the order of files is kept
 u-boot.s32.qspi: zero.512 qspi_params.bin zero.3266 ../../u-boot.s32
 	cat $+ > $@
