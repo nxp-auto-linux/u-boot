@@ -59,6 +59,7 @@ enum imximage_cmd {
 	CMD_BOOT_OFFSET,
 	CMD_DATA,
 	CMD_CSF,
+	CMD_SECURE_CALLBACK,
 };
 
 enum imximage_fld_types {
