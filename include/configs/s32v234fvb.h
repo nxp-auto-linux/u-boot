@@ -1,7 +1,7 @@
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
  *
- * Configuration settings for the Freescale Vybrid mac57d5xhevb board.
+ * Configuration settings for the Freescale S32V234 FVB board.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -63,7 +63,7 @@
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
-#define COUNTER_FREQUENCY               (1000000000)     /* 1000MHz */
+#define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
 #define CONFIG_SYS_FSL_ERRATUM_A008585
 
 /* Size of malloc() pool */
