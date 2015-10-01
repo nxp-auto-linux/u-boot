@@ -40,6 +40,9 @@
 #define CONFIG_RUN_FROM_DDR1
 #undef CONFIG_RUN_FROM_DDR0
 
+/* S32V234 EVB has LPDDR2 */
+#define CONFIG_S32V234_LPDDR2
+
 /* Run by default from DDR1  */
 #ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR		0x80000000
