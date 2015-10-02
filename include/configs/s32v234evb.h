@@ -30,7 +30,7 @@
 #define CONFIG_DISPLAY_BOARDINFO
 
 /* Init CSE3 from u-boot */
-#define CONFIG_CSE3		1
+/* #define CONFIG_CSE3		1 */
 #ifdef CONFIG_CSE3
 #define KIA_BASE		0xC0005000UL
 #define FIRMWARE_BASE	0xC0001000UL

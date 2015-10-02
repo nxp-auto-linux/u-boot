@@ -16,7 +16,7 @@
 #include <asm/arch/cse.h>
 #include <common.h>
 
-#define CSE_TIMEOUT		200
+#define CSE_TIMEOUT		1000000
 
 static inline void cse_cancel_cmd(void)
 {
