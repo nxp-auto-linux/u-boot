@@ -39,3 +39,8 @@ zero.3266:
 # this will break if we'll ever use *int16_t or *int32_t
 qspi_params.o: qspi_params.c
 	gcc -c $^ -o $@
+
+clean:
+	rm -f u-boot.s32.qspi zero.512 zero.3266 qspi_params.bin qspi_params.o
+
+.PHONY: clean
