@@ -40,7 +40,14 @@ zero.3266:
 qspi_params.o: qspi_params.c
 	gcc -c $^ -o $@
 
-clean:
-	rm -f u-boot.s32.qspi zero.512 zero.3266 qspi_params.bin qspi_params.o
+u-boot.s32.qspi.swab: u-boot.s32.qspi
+	stat -c '%s' $^ | grep -o '[13579]$$' && dd if=/dev/zero of=zero.pad bs=1 count=1 || : > zero.pad
+	cat $^ zero.pad > $^.even
+	dd if=$^.even of=$@ conv=swab
 
-.PHONY: clean
+clean:
+	rm -f u-boot.s32.qspi zero.512 zero.3266 zero.pad u-boot.s32.qspi.swab qspi_params.bin qspi_params.o u-boot.s32.qspi.even
+
+swab: u-boot.s32.qspi.swab
+
+.PHONY: clean swab

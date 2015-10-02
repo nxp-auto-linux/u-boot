@@ -18,3 +18,14 @@ Using the generated image
 Flash into hyperflash using the treerunner-hyper.cmm script from Lauterbach.
 
 Reset the board. Enjoy your QSPI loaded u-boot.
+
+Flashing on S32V234 with hyper256_halo.bin
+------------------------------------------
+If the treerunner-hyper.cmm script is using the hyper256_halo.bin flash driver,
+then the resulting image must be byte swapped before being flashed to be usable
+and readable by the S32V234 BootROM code.
+
+In order to generate such an image you can run:
+make swab
+
+The resulting image will be called `u-boot.s32.qspi.swab`.
