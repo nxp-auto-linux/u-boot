@@ -82,6 +82,13 @@ static int do_imls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 static void fixup_silent_linux(void);
 #endif
 
+/* TODO: Implement a generic secure boot API */
+#if defined CONFIG_SECURE_BOOT
+extern int cse_auth(void);
+#elif defined CONFIG_CSE3
+extern int cse_init(void);
+#endif
+
 static int do_bootm_standalone(int flag, int argc, char * const argv[],
 			       bootm_headers_t *images);
 
@@ -777,16 +784,14 @@ static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 
-/* TODO: Implement a more generic secure boot API */
+/* TODO: Implement a generic secure boot API */
 #if defined CONFIG_SECURE_BOOT
 /* TODO: implement Secure Boot */
-	extern int cse_auth(void);
 	if (cse_auth()) {
 		printf("Secure Boot authentication failed\n");
 		return 1;
 	}
 #elif defined CONFIG_CSE3
-	extern int cse_init(void);
 	if (cse_init()) {
 		printf("CSE init failed\n");
 		return 1;
