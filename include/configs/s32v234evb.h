@@ -29,6 +29,13 @@
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
 
+/* Init CSE3 from u-boot */
+#define CONFIG_CSE3		1
+#ifdef CONFIG_CSE3
+#define KIA_BASE		0xC0005000UL
+#define FIRMWARE_BASE	0xC0001000UL
+#endif
+
 /* Config GIC */
 #define CONFIG_GICV2
 #define GICD_BASE 0x7D001000
@@ -166,6 +173,10 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
+	"cse_addr=0xC0001000\0" \
+	"cse_file=cse.bin\0" \
+	"initcse=fatload mmc ${mmcdev}:${mmcpart} ${cse_addr} ${cse_file}\0" \
+	"set_cse="__stringify(CONFIG_CSE3) "\0" \
 	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
@@ -196,6 +207,9 @@
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
+		"if test ${set_cse} = 1; then " \
+			"run initcse; " \
+		"fi; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
 				"bootm ${loadaddr} - ${fdt_addr}; " \

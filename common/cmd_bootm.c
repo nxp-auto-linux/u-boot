@@ -776,6 +776,23 @@ static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 
 int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+
+/* TODO: Implement a more generic secure boot API */
+#if defined CONFIG_SECURE_BOOT
+/* TODO: implement Secure Boot */
+	extern int cse_auth(void);
+	if (cse_auth()) {
+		printf("Secure Boot authentication failed\n");
+		return 1;
+	}
+#elif defined CONFIG_CSE3
+	extern int cse_init(void);
+	if (cse_init()) {
+		printf("CSE init failed\n");
+		return 1;
+	}
+#endif
+
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated = 0;
 

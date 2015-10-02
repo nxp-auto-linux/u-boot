@@ -18,4 +18,5 @@
 #
 
 obj-y   += generic.o
+obj-y   += cse.o
 obj-$(CONFIG_SYS_PIT_TIMER)	+= timer.o
