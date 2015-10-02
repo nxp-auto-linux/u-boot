@@ -164,8 +164,10 @@
 	"fdt_addr=0xC2000000\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
+	"ipaddr=10.0.0.100\0" \
+	"serverip=10.0.0.1\0" \
+	"netmask=255.255.255.0\0" \
 	"boot_fdt=try\0" \
-	"ip_dyn=yes\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
@@ -212,6 +214,16 @@
 		"else " \
 			"bootm; " \
 		"fi;\0" \
+	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs rw " \
+		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
+	"loadtftpimage=tftp ${loadaddr} ${uimage};\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+	"nfsboot=echo Booting from net using tftp and nfs...; " \
+		"run nfsbootargs;"\
+		"run loadtftpimage; run loadtftpfdt;"\
+		"bootm ${loadaddr} - ${fdt_addr};\0"\
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
