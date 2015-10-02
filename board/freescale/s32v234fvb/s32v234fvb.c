@@ -21,7 +21,13 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
+#if defined(CONFIG_S32V234_LPDDR2)
+#include <asm/arch/lpddr2.h>
+#elif defined(CONFIG_S32V234_DDR3)
 #include <asm/arch/ddr3.h>
+#else
+#error "Please define the DDR type for S32V234 board!"
+#endif
 #include <asm/arch/clock.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
@@ -33,8 +39,8 @@ DECLARE_GLOBAL_DATA_PTR;
 
 void setup_iomux_ddr(void)
 {
-	ddr3_config_iomux(DDR0);
-	ddr3_config_iomux(DDR1);
+	ddr_config_iomux(DDR0);
+	ddr_config_iomux(DDR1);
 }
 
 void ddr_phy_init(void)
