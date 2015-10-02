@@ -8,12 +8,13 @@ The generated image will have the name `u-boot.s32.qspi`.
 
 How to generate the QSPI image
 ------------------------------
-cp /path/to/u-boot.s32 .
+# build u-boot as usual and from this directory run
 make
 ls u-boot.s32.qspi
 
 Using the generated image
 -------------------------
 
-Flash into hyperflash using the ../treerunner-hyper.cmm script.
+Flash into hyperflash using the treerunner-hyper.cmm script from Lauterbach.
+
 Reset the board. Enjoy your QSPI loaded u-boot.
