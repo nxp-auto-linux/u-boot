@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier:	GPL-2.0+
  *
- * Copyright 2010-2011 Freescale Semiconductor, Inc.
- * author Andy Fleming
+ * Copyright 2010-2015 Freescale Semiconductor, Inc.
+ * authors: Andy Fleming, Stoica Cosmin Stefan
  */
 #include <config.h>
 #include <common.h>
@@ -29,6 +29,17 @@
 #define MIIM_BCM54XX_EXP_SEL		0x17	/* Expansion register select */
 #define MIIM_BCM54XX_EXP_SEL_SSD	0x0e00	/* Secondary SerDes select */
 #define MIIM_BCM54XX_EXP_SEL_ER		0x0f00	/* Expansion register select */
+
+/* Broadcom BCM89xxx */
+#define MIIM_BCM89xxx_AUXCNTL			0x18
+#define MIIM_BCM89xxx_AUXCNTL_ENCODE2(val) (((val & 0x7) << 12) | (0x7))
+#define MIIM_BCM89xxx_AUXCNTL_ENCODE(val) (((val & 0x7) << 12)|(val & 0x7))
+#define MIIM_BCM89xxx_AUXCNTL_WRITE_SEL(val) (val & 0x7)
+#define MIIM_BCM89xxx_AUXSTATUS			0x19
+#define MIIM_BCM89xxx_AUXSTATUS_LINKMODE_MASK	0x0700
+#define MIIM_BCM89xxx_AUXSTATUS_LINKMODE_SHIFT	8
+
+#define MIIM_BCM89xxx_EXP_SEL		0x17	/* Expansion register select */
 
 /* Broadcom BCM5461S */
 static int bcm5461_config(struct phy_device *phydev)
@@ -234,6 +245,108 @@ static int bcm5482_startup(struct phy_device *phydev)
 	return 0;
 }
 
+static u32 bcm89610_parse_link(struct phy_device *phydev)
+{
+	unsigned int mii_reg;
+
+	genphy_parse_link(phydev);
+
+	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXSTATUS);
+
+	switch ((mii_reg & MIIM_BCM89xxx_AUXSTATUS_LINKMODE_MASK) >>
+			MIIM_BCM89xxx_AUXSTATUS_LINKMODE_SHIFT) {
+	case 1:
+		phydev->duplex = DUPLEX_HALF;
+		phydev->speed = SPEED_10;
+		break;
+	case 2:
+		phydev->duplex = DUPLEX_FULL;
+		phydev->speed = SPEED_10;
+		break;
+	case 3:
+		phydev->duplex = DUPLEX_HALF;
+		phydev->speed = SPEED_100;
+		break;
+	case 5:
+		phydev->duplex = DUPLEX_FULL;
+		phydev->speed = SPEED_100;
+		break;
+	case 6:
+		phydev->duplex = DUPLEX_HALF;
+		phydev->speed = SPEED_1000;
+		break;
+	case 7:
+		phydev->duplex = DUPLEX_FULL;
+		phydev->speed = SPEED_1000;
+		break;
+	default:
+		printf("Auto-neg error, defaulting to 10BT/HD\n");
+		phydev->duplex = DUPLEX_HALF;
+		phydev->speed = SPEED_10;
+		break;
+	}
+
+	return 0;
+}
+
+static int bcm89610_config(struct phy_device *phydev)
+{
+	unsigned int reg;
+
+	/* reset the PHY */
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMCR);
+	reg |= BMCR_RESET;
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, reg);
+
+	genphy_config(phydev);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x0));
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
+	printf("MIIM_BCM89xxx_AUXCNTL- 0x0 %x \n", reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_WRITE_SEL(0x0)|0x0400);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x0));
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
+	printf("after MIIM_BCM89xxx_AUXCNTL- 0x0 %x \n", reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x1));
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
+	printf("MIIM_BCM89xxx_AUXCNTL- 1 %x \n", reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x2));
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
+	printf("MIIM_BCM89xxx_AUXCNTL- 10 %x \n", reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x4));
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
+	printf("MIIM_BCM89xxx_AUXCNTL- 100 %x \n", reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
+			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x7));
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
+	printf("MIIM_BCM89xxx_AUXCNTL- 111 %x \n", reg);
+	genphy_config_aneg(phydev);
+
+	return 0;
+}
+
+static int bcm89610_startup(struct phy_device *phydev)
+{
+
+	genphy_update_link(phydev);
+	bcm89610_parse_link(phydev);
+
+	return 0;
+}
+
 static struct phy_driver BCM5461S_driver = {
 	.name = "Broadcom BCM5461S",
 	.uid = 0x2060c0,
@@ -264,11 +377,22 @@ static struct phy_driver BCM5482S_driver = {
 	.shutdown = &genphy_shutdown,
 };
 
+static struct phy_driver BCM89610_driver = {
+	.name = "Broadcom BCM89610",
+	.uid = 0x3625cde,
+	.mask = 0xffffff0,
+	.features = PHY_GBIT_FEATURES,
+	.config = &genphy_config,
+	.startup = &bcm89610_startup,
+	.shutdown = &genphy_shutdown,
+};
+
 int phy_broadcom_init(void)
 {
 	phy_register(&BCM5482S_driver);
 	phy_register(&BCM5464S_driver);
 	phy_register(&BCM5461S_driver);
+	phy_register(&BCM89610_driver);
 
 	return 0;
 }
