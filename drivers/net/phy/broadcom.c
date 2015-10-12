@@ -301,38 +301,6 @@ static int bcm89610_config(struct phy_device *phydev)
 
 	genphy_config(phydev);
 
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x0));
-	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
-	printf("MIIM_BCM89xxx_AUXCNTL- 0x0 %x \n", reg);
-
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_WRITE_SEL(0x0)|0x0400);
-
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x0));
-	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
-	printf("after MIIM_BCM89xxx_AUXCNTL- 0x0 %x \n", reg);
-
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x1));
-	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
-	printf("MIIM_BCM89xxx_AUXCNTL- 1 %x \n", reg);
-
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x2));
-	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
-	printf("MIIM_BCM89xxx_AUXCNTL- 10 %x \n", reg);
-
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x4));
-	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
-	printf("MIIM_BCM89xxx_AUXCNTL- 100 %x \n", reg);
-
-	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL,
-			MIIM_BCM89xxx_AUXCNTL_ENCODE2(0x7));
-	reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM89xxx_AUXCNTL);
-	printf("MIIM_BCM89xxx_AUXCNTL- 111 %x \n", reg);
 	genphy_config_aneg(phydev);
 
 	return 0;
@@ -382,7 +350,7 @@ static struct phy_driver BCM89610_driver = {
 	.uid = 0x3625cde,
 	.mask = 0xffffff0,
 	.features = PHY_GBIT_FEATURES,
-	.config = &genphy_config,
+	.config = &bcm89610_config,
 	.startup = &bcm89610_startup,
 	.shutdown = &genphy_shutdown,
 };
