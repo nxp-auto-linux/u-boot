@@ -123,11 +123,9 @@
 #define CONFIG_MII
 #define IMX_FEC_BASE            ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE     RGMII
-#define CONFIG_FEC_MXC_PHYADDR  7
+#define CONFIG_FEC_MXC_PHYADDR (0x484a53)
 #define CONFIG_PHYLIB
-#define CONFIG_PHY_MICREL
-#define CONFIG_PHY_MICREL_KSZ9031
-
+#define CONFIG_PHY_RGMII_DIRECT_CONNECTED
 /* I2C Configs */
 #define CONFIG_CMD_I2C
 #define CONFIG_HARD_I2C
@@ -156,6 +154,7 @@
 #endif
 
 #define CONFIG_BOOTDELAY		9
+
 #define CONFIG_LOADADDR			0xC307FFC0
 #define CONFIG_BOOTARGS			"console=ttyLF0 root=/dev/ram rw"
 

@@ -318,7 +318,7 @@ U_BOOT_CMD(
 #ifdef CONFIG_FEC_MXC
 void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
-#if 0 /* b46902 */
+#if 0 /* This feature will be implemented in ALB-123 */
 	struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
 	struct fuse_bank *bank = &ocotp->bank[4];
 	struct fuse_bank4_regs *fuse =
@@ -333,6 +333,13 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 	mac[3] = value >> 16;
 	mac[4] = value >> 8;
 	mac[5] = value;
+#else
+	mac[0] = 0x00;
+	mac[1] = 0x1B;
+	mac[2] = 0xC3;
+	mac[3] = 0x12;
+	mac[4] = 0x34;
+	mac[5] = 0x22;
 #endif
 }
 #endif

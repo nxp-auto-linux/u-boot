@@ -513,6 +513,7 @@ static int fec_open(struct eth_device *edev)
 	fec_rx_task_enable(fec);
 
 	udelay(100000);
+
 	return 0;
 }
 

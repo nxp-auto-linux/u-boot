@@ -233,10 +233,11 @@ typedef uintptr_t __attribute__((__may_alias__)) uintptr_t_a;
  *
  * Note: The first BD must be aligned (see DB_ALIGNMENT)
  */
-struct __attribute__((__may_alias__)) fec_bd {
-	uint16_t data_length;		/* payload's length in bytes */
-	uint16_t status;		/* BD's staus (see datasheet) */
-	uint32_t data_pointer;		/* payload's buffer address */
+struct __attribute__((__may_alias__)) fec_bd
+{
+	volatile uint16_t data_length;		/* payload's length in bytes */
+	volatile uint16_t status;			/* BD's staus (see datasheet) */
+	volatile uint32_t data_pointer;		/* payload's buffer address */
 };
 
 /**
