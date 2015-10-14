@@ -225,6 +225,7 @@ int phy_atheros_init(void);
 int phy_broadcom_init(void);
 int phy_davicom_init(void);
 int phy_et1011c_init(void);
+int phy_fixed_init(void);
 int phy_lxt_init(void);
 int phy_marvell_init(void);
 int phy_micrel_init(void);
@@ -233,6 +234,7 @@ int phy_realtek_init(void);
 int phy_smsc_init(void);
 int phy_teranetics_init(void);
 int phy_vitesse_init(void);
+
 
 int board_phy_config(struct phy_device *phydev);
 
