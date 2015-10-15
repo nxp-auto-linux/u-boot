@@ -14,8 +14,17 @@ int get_phy_id(struct mii_dev *bus, int addr, int devad, u32 *phy_id)
 static int fixed_phy_startup(struct phy_device *phydev)
 {
 	phydev->link	= 1;
+#ifdef CONFIG_BCM_SPEED
+	phydev->speed	= CONFIG_BCM_SPEED;
+#else
 	phydev->speed	= SPEED_1000;
+#endif
+
+#ifdef CONFIG_BCM_DUPLEX_MODE
+	phydev->duplex	= CONFIG_BCM_DUPLEX_MODE;
+#else
 	phydev->duplex	= DUPLEX_FULL;
+#endif
 	return 0;
 }
 
