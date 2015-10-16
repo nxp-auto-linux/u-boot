@@ -16,7 +16,9 @@
 #define __ASM_ARCH_CSE_H
 
 #define CSE_KEYID_AVK			(0x100UL)
+#define CSE_CMD_GENERATE_MAC		(0x5UL)
 #define CSE_CMD_VERIFY_MAC		(0x6UL)
+#define CSE_CMD_LOAD_PLAIN_KEY		(0x8UL)
 #define CSE_CMD_CANCEL			(0x11UL)
 #define CSE_CMD_SECURE_BOOT		(0xDUL)
 #define CSE_CMD_INIT_CSE		(0x15UL)
@@ -37,10 +39,19 @@
 #define CSE_KIA0		(CSE_BASE_ADDR + 0x50UL)
 #define CSE_KIA1		(CSE_BASE_ADDR + 0x54UL)
 
+#define MAC_LEN				16
+#define CSE_SEQ_ERR			(0x02)
+
+#define OCOTP_BASE_ADDR			(0x4005F000UL)
+#define OCOTP_CFG5			(OCOTP_BASE_ADDR + 0x460UL)
+#define OCOTP_CFG5_SEC_BOOT_MODE	(0xC0UL)
+
+#if defined CONFIG_CSE3
+int cse_init(void);
+#endif
+
 #if defined CONFIG_SECURE_BOOT
 int cse_auth(void);
-#elif defined CONFIG_CSE3
-int cse_init(void);
 #endif
 
 #endif /* __ASM_ARCH_CSE_H */

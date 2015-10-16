@@ -30,9 +30,14 @@
 #define CONFIG_DISPLAY_BOARDINFO
 
 /* Init CSE3 from u-boot */
-/* #define CONFIG_CSE3		1 */
+#define CONFIG_CSE3		1
 #ifdef CONFIG_CSE3
 #define KIA_BASE		0xC0005000UL
+/* Secure Boot */
+#define CONFIG_SECURE_BOOT
+#ifdef CONFIG_SECURE_BOOT
+#define SECURE_BOOT_KEY_ID	0x2UL
+#endif
 #define FIRMWARE_BASE	0xC0001000UL
 #endif
 
@@ -84,6 +89,7 @@
 #define CONFIG_OF_LIBFDT
 
 /* Flat device tree definitions */
+#define FDT_ADDR		0xC2000000
 #define CONFIG_OF_FDT
 #define CONFIG_OF_BOARD_SETUP
 
@@ -199,7 +205,7 @@
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \
-	"fdt_addr=0xC2000000\0" \
+	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
 	"ipaddr=10.0.0.100\0" \
@@ -209,9 +215,9 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"cse_addr=0xC0001000\0" \
+	"cse_addr=" __stringify(FIRMWARE_BASE) "\0" \
 	"cse_file=cse.bin\0" \
-	"initcse=fatload mmc ${mmcdev}:${mmcpart} ${cse_addr} ${cse_file}\0" \
+	"sec_boot_key_id=" __stringify(SECURE_BOOT_KEY_ID) "\0" \
 	"set_cse="__stringify(CONFIG_CSE3) "\0" \
 	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
@@ -243,9 +249,6 @@
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
-		"if test ${set_cse} = 1; then " \
-			"run initcse; " \
-		"fi; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
 				"bootm ${loadaddr} - ${fdt_addr}; " \
