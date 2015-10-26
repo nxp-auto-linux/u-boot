@@ -89,6 +89,54 @@ ctrl_status:
 
 #endif
 
+/* turn on a53 slave cores from a53 master */
+/* deassert cores on reset */
+
+	ldr w1, =0xFA
+
+	ldr x0, =0x4004A1CA
+	strb w1, [x0]
+
+	ldr x0, =0x4004A1C8
+	strb w1, [x0]
+
+	ldr x0, =0x4004A1CE
+	strb w1, [x0]
+
+	/* set start addresses */
+	ldr x0, =start_slave
+	orr x0,x0,0x1
+	ldr x1, =0x4004A1E8
+	str w0, [x1]
+
+	ldr x0, =start_slave
+	orr x0,x0,0x1
+	ldr x1, =0x4004A1EC
+	str w0, [x1]
+
+	ldr x0, =start_slave
+	orr x0,x0,0x1
+	ldr x1, =0x4004A1F0
+	str w0, [x1]
+
+	/* enable core transitioning */
+	ldr x0, =0x30005AF0
+	ldr x1, =0x4004A004
+	str w0, [x1]
+
+	ldr x0, =0x3000A50F
+	ldr x1, =0x4004A004
+	str w0, [x1]
+	
+	/* transition secondary cores to DRUN */
+transition_cores:
+	ldr x0, =0x4004A000
+	ldr x1, [x0]
+	and x1, x1, #0x8000000
+	cbnz x1, transition_cores
+
+start_slave:
+
 	b	reset
 
 	.align 3

@@ -77,7 +77,8 @@
 #define CONFIG_CMDLINE_TAG
 
 /* SMP Spin Table Definitions */
-#define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
+#define CPU_RELEASE_ADDR		CONFIG_SYS_SDRAM_BASE /*+ 0x7fff0) */
+#define CONFIG_ARCH_EARLY_INIT_R
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
