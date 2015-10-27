@@ -8,7 +8,6 @@
 #include <asm/io.h>
 #include <asm/system.h>
 #include <asm/io.h>
-#include <asm/arch-fsl-lsch2/immap_lsch2.h>
 #include "mp.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -31,57 +30,27 @@ phys_addr_t determine_mp_bootpg(void)
 	return (phys_addr_t)SECONDARY_CPU_BOOT_PAGE;
 }
 
-int fsl_lsch2_wake_seconday_cores(void)
+int fsl_s32v234_wake_seconday_cores(void)
 {
-	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
-	struct ccsr_scfg __iomem *scfg = (void *)(CONFIG_SYS_FSL_SCFG_ADDR);
-	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
-	size_t *boot_page_size = &(__secondary_boot_page_size);
-	u32 cores;
-	u32 corebcr;
-	int timeout = 10;
 	u64 *table = get_spin_tbl_addr();
 
-	cores = cpu_mask();
-	memcpy(boot_loc, &secondary_boot_page, *boot_page_size);
 	/* Clear spin table so that secondary processors
 	 * observe the correct value after waking up from wfe.
 	 */
 	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
-	flush_dcache_range((unsigned long)boot_loc,
-			   (unsigned long)boot_loc + *boot_page_size);
 
-	printf("Waking secondary cores to start from %lx\n", gd->relocaddr);
-	out_be32(&scfg->scratchrw[0], (u32)(gd->relocaddr >> 32));
-	out_be32(&scfg->scratchrw[1], (u32)gd->relocaddr);
+	smp_kick_all_cpus();
 
-	asm volatile("dsb st" : : : "memory");
-	out_be32(&gur->brrl, cores);
-	asm volatile("dsb st" : : : "memory");
-
-	/* Bootup online cores */
-	out_be32(&scfg->corebcr, cores);
-
-	do {
-		asm volatile("sev");
-		udelay(10);
-		corebcr = in_be32(&scfg->corebcr);
-		if (hweight32(~corebcr) == hweight32(cores))
-			break;
-	} while (timeout--);
-	if (timeout <= 0) {
-		printf("Not all cores (0x%x) are up (0x%x)\n",
-		       cores, corebcr);
-		return 1;
-	}
-
-	printf("All (%d) cores are up.\n", hweight32(cores));
+	printf("All (%d) cores are up.\n", cpu_numcores());
 
 	return 0;
 }
 
 int is_core_valid(unsigned int core)
 {
+	if (core == 0)
+		return 0;
+
 	return !!((1 << core) & cpu_mask());
 }
 
@@ -125,16 +94,16 @@ int core_to_pos(int nr)
 int cpu_status(int nr)
 {
 	u64 *table;
-	int pos;
+	int valid;
 
 	if (nr == 0) {
 		table = (u64 *)get_spin_tbl_addr();
 		printf("table base @ 0x%p\n", table);
 	} else {
-		pos = core_to_pos(nr);
-		if (pos < 0)
+		valid = is_core_valid(nr);
+		if (!valid)
 			return -1;
-		table = (u64 *)get_spin_tbl_addr() + pos * NUM_BOOT_ENTRY;
+		table = (u64 *)get_spin_tbl_addr() + nr * NUM_BOOT_ENTRY;
 		printf("table @ 0x%p\n", table);
 		printf("   addr - 0x%016llx\n", table[BOOT_ENTRY_ADDR]);
 		printf("   r3   - 0x%016llx\n", table[BOOT_ENTRY_R3]);
@@ -149,13 +118,13 @@ int cpu_release(int nr, int argc, char * const argv[])
 	u64 boot_addr;
 	u64 *table = (u64 *)get_spin_tbl_addr();
 #ifndef CONFIG_FSL_SMP_RELEASE_ALL
-	int pos;
+	int valid;
 
-	pos = core_to_pos(nr);
-	if (pos <= 0)
-		return -1;
+	valid = is_core_valid(nr);
+	if (!valid)
+		return 0;
 
-	table += pos * NUM_BOOT_ENTRY;
+	table += nr * NUM_BOOT_ENTRY;
 #endif
 	boot_addr = simple_strtoull(argv[0], NULL, 16);
 	table[BOOT_ENTRY_ADDR] = boot_addr;
