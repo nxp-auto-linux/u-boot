@@ -68,7 +68,6 @@ int dram_init(void)
 static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex */
-	/* Replace the magic values after bringup */
 
 	/* set TXD - MSCR[12] PA12 */
 	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART0_TXD_PAD));
@@ -82,11 +81,18 @@ static void setup_iomux_uart(void)
 
 static void setup_iomux_enet(void)
 {
+
+#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
 	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
 	writel(       0x2, SIUL2_MSCRn(981));
+#endif
 
+#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
+#else
 	writel(0x00203701, SIUL2_MSCRn(47));	//TX_CLK //PC15
+#endif
 	writel(       0x2, SIUL2_MSCRn(978));
 
 	writel(0x0008c700, SIUL2_MSCRn(48));	//RX_CLK //PD0
@@ -119,7 +125,6 @@ static void setup_iomux_enet(void)
 
 static void setup_iomux_i2c(void)
 {
-
 	/* I2C0 - Serial Data Input */
 	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA, SIUL2_MSCRn(99));
 	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA, SIUL2_IMCRn(269));
@@ -143,7 +148,6 @@ static void setup_iomux_i2c(void)
 	/* I2C2 - Serial Clock Input */
 	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK, SIUL2_MSCRn(20));
 	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK, SIUL2_IMCRn(272));
-
 }
 
 #ifdef CONFIG_SYS_USE_NAND
