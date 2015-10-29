@@ -65,7 +65,14 @@
 #define CONFIG_CMDLINE_TAG
 
 /* SMP Spin Table Definitions */
-#define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
+#define CONFIG_MAX_CPUS				(4)
+#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
+#define CPU_RELEASE_ADDR			SECONDARY_CPU_BOOT_PAGE
+#define CONFIG_FSL_SMP_RELEASE_ALL
+
+/* SMP Spin Table Definitions */
+#define CONFIG_MP
+#define CONFIG_OF_LIBFDT
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER

@@ -76,9 +76,20 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
+/* SMP definitions */
+#define CONFIG_MAX_CPUS				(4)
+#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
+#define CPU_RELEASE_ADDR			SECONDARY_CPU_BOOT_PAGE
+#define CONFIG_FSL_SMP_RELEASE_ALL
+#define CONFIG_ARMV8_SWITCH_TO_EL1
+
 /* SMP Spin Table Definitions */
-#define CPU_RELEASE_ADDR		CONFIG_SYS_SDRAM_BASE /*+ 0x7fff0) */
-#define CONFIG_ARCH_EARLY_INIT_R
+#define CONFIG_MP
+#define CONFIG_OF_LIBFDT
+
+/* Flat device tree definitions */
+#define CONFIG_OF_FDT
+#define CONFIG_OF_BOARD_SETUP
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
@@ -92,6 +103,7 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
 #define CONFIG_BOARD_EARLY_INIT_F
+#define CONFIG_ARCH_EARLY_INIT_R
 
 
 #define CONFIG_FSL_LINFLEXUART
@@ -355,6 +367,7 @@
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
+
 
 /* FLASH and environment organization */
 #define CONFIG_SYS_NO_FLASH
