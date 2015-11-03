@@ -89,6 +89,31 @@ static void setup_iomux_uart(void)
 	/* set RXD - IMCR[202] - 202 */
 	writel(SIUL2_UART_IMCR_RXD, SIUL2_IMCRn(SIUL2_UART1_IMCR_RXD_PAD));
 }
+
+static void setup_iomux_can(void)
+{
+	/* Muxing for can0 and can1 */
+
+	/* set TXD - MSCR[2] PA2 */
+	writel(SIUL2_CAN_TXD, SIUL2_MSCRn(SIUL2_CAN_FD0_TXD_PAD));
+
+	/* set RXD - MSCR[3] - PA3*/
+	writel(SIUL2_CAN_MSCR_RXD, SIUL2_MSCRn(SIUL2_CAN_FD0_MSCR_RXD_PAD));
+
+	/* set RXD - IMCR[188] - 188 */
+	writel(SIUL2_CAN_FD0_IMCR_RXD, SIUL2_IMCRn(SIUL2_CAN_FD0_IMCR_RXD_PAD));
+
+	/* set TXD - MSCR[42] PC10 */
+	writel(SIUL2_CAN_TXD, SIUL2_MSCRn(SIUL2_CAN_FD1_TXD_PAD));
+
+	/* set RXD - MSCR[43] - PC11 */
+	writel(SIUL2_CAN_MSCR_RXD, SIUL2_MSCRn(SIUL2_CAN_FD1_MSCR_RXD_PAD));
+
+	/* set RXD - IMCR[189] - 189 */
+	writel(SIUL2_CAN_FD1_IMCR_RXD, SIUL2_IMCRn(SIUL2_CAN_FD1_IMCR_RXD_PAD));
+
+}
+
 static void setup_iomux_enet(void)
 {
 #ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
@@ -289,6 +314,7 @@ int board_early_init_f(void)
 	mscm_init();
 
 	setup_iomux_uart();
+	setup_iomux_can();
 	setup_iomux_enet();
 	setup_iomux_i2c();
 #ifdef CONFIG_SYS_USE_NAND
