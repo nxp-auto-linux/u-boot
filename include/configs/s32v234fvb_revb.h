@@ -47,6 +47,9 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
+/* Enable DCU QoS fix */
+#define CONFIG_DCU_QOS_FIX
+
 /* S32V234 FVB Rev. B has DDR3 */
 #define CONFIG_S32V234_DDR2
 

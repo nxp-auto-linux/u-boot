@@ -68,10 +68,8 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
-#if 0
 /* Enable DCU QoS fix */
 #define CONFIG_DCU_QOS_FIX
-#endif
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
