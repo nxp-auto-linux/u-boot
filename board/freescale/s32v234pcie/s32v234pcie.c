@@ -80,10 +80,11 @@ static void setup_iomux_uart(void)
 }
 static void setup_iomux_enet(void)
 {
+#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
 	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
 	writel(       0x2, SIUL2_MSCRn(981));
-
+#endif
 
 
 	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
