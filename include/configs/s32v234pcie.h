@@ -292,7 +292,7 @@
 #define CONFIG_SYS_TEXT_OFFSET		0x00020000
 
 /* size needed to initialize the SRAM starting from that offset */
-#define CONFIG_UBOOT_SIZE			0x39000
+#define CONFIG_UBOOT_SIZE			0x3E000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
@@ -343,8 +343,10 @@
 #define CONFIG_BOOTP_GATEWAY
 #define CONFIG_BOOTP_HOSTNAME
 
-/* #define CONFIG_CMD_PCI */
+
+#define CONFIG_CMD_PCI
 #ifdef CONFIG_CMD_PCI
+#define CONFIG_PCIE_EP_MODE
 #define CONFIG_PCIE_S32V234
 #define CONFIG_PCI
 #define CONFIG_PCI_PNP
