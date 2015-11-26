@@ -39,16 +39,19 @@ int fsl_s32v234_wake_seconday_cores(void)
 	 * observe the correct value after waking up from wfe.
 	 */
 	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
-	writew(0xFA, 0x4004A1CA);
-	writew(0xFA, 0x4004A1C8);
-	writew(0xFA, 0x4004A1CE);
-	
-	writel(0x3E820000 | 0x1, 0x4004A1E8);
-	writel(0x3E820000 | 0x1, 0x4004A1EC);
-	writel(0x3E820000 | 0x1, 0x4004A1F0);
 
-	writel(0x40005AF0, 0x4004A004);
-	writel(0x4000A50F, 0x4004A004);
+	/* program the cores possible running modes */
+	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL2);
+	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL3);
+	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL4);
+
+	/* write the cores' start address */
+	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR2);
+	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR3);
+	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR4);
+
+	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL );
+	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
 
 	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
 
