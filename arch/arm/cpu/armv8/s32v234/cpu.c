@@ -40,19 +40,19 @@ u32 cpu_mask(void)
 #define CONFIG_SYS_IRAM_USED_SIZE	0x800000L
 #define NUM_OF_ENTRY            512
 #define TCR_EL2_PS_40BIT	(2 << 16)
-#define LSCH2_VA_BITS		(40)
-#define LSCH2_TCR	(TCR_TG0_4K		| \
+#define S32V_VA_BITS		(40)
+#define S32V_TCR	(TCR_TG0_4K		| \
 			TCR_EL2_PS_40BIT	| \
 			TCR_SHARED_NON		| \
 			TCR_ORGN_NC		| \
 			TCR_IRGN_NC		| \
-			TCR_T0SZ(LSCH2_VA_BITS))
-#define LSCH2_TCR_FINAL (TCR_TG0_4K		| \
+			TCR_T0SZ(S32V_VA_BITS))
+#define S32V_TCR_FINAL (TCR_TG0_4K		| \
 			TCR_EL2_PS_40BIT	| \
 			TCR_SHARED_OUTER	| \
 			TCR_ORGN_WBWA		| \
 			TCR_IRGN_WBWA		| \
-			TCR_T0SZ(LSCH2_VA_BITS))
+			TCR_T0SZ(S32V_VA_BITS))
 
 #define CONFIG_SYS_FSL_IRAM_BASE        0x3e800000
 #define CONFIG_SYS_FSL_IRAM_SIZE        0x800000
@@ -257,7 +257,7 @@ static inline void early_mmu_setup(void)
 	out_le32(&cci->slave[4].snoop_ctrl,
 			 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
 	el = current_el();
-	set_ttbr_tcr_mair(el, (u64)level0_table, LSCH2_TCR, MEMORY_ATTRIBUTES);
+	set_ttbr_tcr_mair(el, (u64)level0_table, S32V_TCR, MEMORY_ATTRIBUTES);
 	set_sctlr(get_sctlr() | CR_M);
 	set_sctlr(get_sctlr() | CR_C);
 
@@ -327,7 +327,7 @@ static inline void final_mmu_setup(void)
 
 	/* point TTBR to the new table */
 	el = current_el();
-	set_ttbr_tcr_mair(el, (u64)level0_table, LSCH2_TCR_FINAL, MEMORY_ATTRIBUTES);
+	set_ttbr_tcr_mair(el, (u64)level0_table, S32V_TCR_FINAL, MEMORY_ATTRIBUTES);
 	/*
 	 * MMU is already enabled, just need to invalidate TLB to load the
 	 * new table. The new table is compatible with the current table, if
