@@ -8,10 +8,11 @@
 
 #include <config.h>
 #include <linux/linkage.h>
-#include <asm/gic.h>
-#include <asm/macro.h>
-#include "mp.h"
 #include <asm/armv8/mmu.h>
+#include <asm/macro.h>
+#include <asm/gic.h>
+#include "mp.h"
+
 
 ENTRY(lowlevel_init)
 

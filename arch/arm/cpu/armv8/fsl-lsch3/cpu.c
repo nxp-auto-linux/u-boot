@@ -5,16 +5,16 @@
  */
 
 #include <common.h>
+#include <asm/arch-fsl-lsch3/immap_lsch3.h>
+#include <asm/armv8/mmu.h>
 #include <asm/io.h>
 #include <asm/errno.h>
 #include <asm/system.h>
-#include <asm/armv8/mmu.h>
-#include <asm/io.h>
-#include <asm/arch-fsl-lsch3/immap_lsch3.h>
+#include <fsl_mc.h>
 #include "cpu.h"
 #include "mp.h"
 #include "speed.h"
-#include <fsl_mc.h>
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
