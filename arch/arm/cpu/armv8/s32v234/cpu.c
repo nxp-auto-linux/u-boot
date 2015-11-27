@@ -213,7 +213,13 @@ static inline void early_mmu_setup(void)
 	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
 	/* Invalidate all table entries */
-	memset(level0_table, 0, 0x5000);
+	memset(level0_table, 0, PGTABLE_SIZE);
+	memset(level1_table0, 0, PGTABLE_SIZE);
+	memset(level1_table1, 0, PGTABLE_SIZE);
+	memset(level2_table0, 0, PGTABLE_SIZE);
+	memset(level2_table1, 0, PGTABLE_SIZE);
+	memset(level2_table2, 0, PGTABLE_SIZE);
+
 
 	/* Fill in the table entries */
 	set_pgtable_table(level0_table, 0, level1_table0);
@@ -269,17 +275,22 @@ static inline void early_mmu_setup(void)
  */
 static inline void final_mmu_setup(void)
 {
-        unsigned int el, i;
-        u64 *level0_table = (u64 *) (CPU_RELEASE_ADDR + 0x1000);
-        u64 *level1_table0 = (u64 *)(CPU_RELEASE_ADDR + 0x2000);
-        u64 *level1_table1 = (u64 *)(CPU_RELEASE_ADDR + 0x3000);
-        u64 *level2_table0 = (u64 *)(CPU_RELEASE_ADDR + 0x4000);
-        u64 *level2_table1 = (u64 *)(CPU_RELEASE_ADDR + 0x5000);
+	unsigned int el, i;
+	u64 *level0_table = (u64 *) (CPU_RELEASE_ADDR + 0x1000);
+	u64 *level1_table0 = (u64 *)(CPU_RELEASE_ADDR + 0x2000);
+	u64 *level1_table1 = (u64 *)(CPU_RELEASE_ADDR + 0x3000);
+	u64 *level2_table0 = (u64 *)(CPU_RELEASE_ADDR + 0x4000);
+	u64 *level2_table1 = (u64 *)(CPU_RELEASE_ADDR + 0x5000);
 	u64 *level2_table2 = (u64 *)(CPU_RELEASE_ADDR + 0x6000);
-        struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
+	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
-        /* Invalidate all table entries */
-        memset(level0_table, 0, PGTABLE_SIZE);
+	/* Invalidate all table entries */
+	memset(level0_table, 0, PGTABLE_SIZE);
+	memset(level1_table0, 0, PGTABLE_SIZE);
+	memset(level1_table1, 0, PGTABLE_SIZE);
+	memset(level2_table0, 0, PGTABLE_SIZE);
+	memset(level2_table1, 0, PGTABLE_SIZE);
+	memset(level2_table2, 0, PGTABLE_SIZE);
 
 	/* Fill in the table entries */
 	set_pgtable_table(level0_table, 0, level1_table0);
