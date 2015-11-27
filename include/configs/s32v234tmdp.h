@@ -56,8 +56,6 @@
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* Config CACHE */
-#define CONFIG_SYS_DCACHE_OFF
-#define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
 /* Enable DCU QoS fix */
@@ -66,11 +64,12 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
-/* SMP Spin Table Definitions */
+/* SMP definitions */
 #define CONFIG_MAX_CPUS				(4)
 #define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
 #define CPU_RELEASE_ADDR			SECONDARY_CPU_BOOT_PAGE
 #define CONFIG_FSL_SMP_RELEASE_ALL
+#define CONFIG_ARMV8_SWITCH_TO_EL1
 
 /* SMP Spin Table Definitions */
 #define CONFIG_MP
@@ -88,6 +87,7 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
 #define CONFIG_BOARD_EARLY_INIT_F
+#define CONFIG_ARCH_EARLY_INIT_R
 
 
 #define CONFIG_FSL_LINFLEXUART
