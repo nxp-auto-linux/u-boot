@@ -118,6 +118,7 @@ start_slave_cores:
 	 * value of spin table and jumping to wrong place.
 	 */
 
+	wfe
 	tlbi	alle3
 	dsb	sy
 	isb
