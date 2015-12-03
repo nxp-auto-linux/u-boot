@@ -370,21 +370,19 @@ static char *get_reset_cause(void)
 
 }
 
-#define SRC_SCR_SW_RST					(1<<12)
-
 void reset_cpu(ulong addr)
 {
-#if 0 /* b46902 */
-	struct src *src_regs = (struct src *)SRC_BASE_ADDR;
 
-		/* Generate a SW reset from SRC SCR register */
-		writel(SRC_SCR_SW_RST, &src_regs->scr);
+	/* Generate a SW reset from SRC SCR register */
+	writel( MC_ME_MCTL_RESET | MC_ME_MCTL_KEY, MC_ME_MCTL );
+	writel( MC_ME_MCTL_RESET | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
+	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+	entry_to_target_mode(MC_ME_MCTL_RESET);
 
-		/* If we get there, we are not in good shape */
-		mdelay(1000);
-		printf("FATAL: Reset Failed!\n");
-		hang();
-#endif
+	/* If we get there, we are not in good shape */
+	mdelay(1000);
+	printf("FATAL: Reset Failed!\n");
+	hang();
 };
 
 int print_cpuinfo(void)
