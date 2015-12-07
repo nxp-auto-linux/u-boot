@@ -373,10 +373,6 @@ static char *get_reset_cause(void)
 void reset_cpu(ulong addr)
 {
 
-	/* Generate a SW reset from SRC SCR register */
-	writel( MC_ME_MCTL_RESET | MC_ME_MCTL_KEY, MC_ME_MCTL );
-	writel( MC_ME_MCTL_RESET | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
-	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
 	entry_to_target_mode(MC_ME_MCTL_RESET);
 
 	/* If we get there, we are not in good shape */
