@@ -59,7 +59,7 @@ int load_cse_firmware(void) {
 	if (fs_set_blk_dev(ifname, mmc_dev_part_str, FS_TYPE_FAT))
 		return 1;
 
-	len_read = fs_read(filename, FIRMWARE_BASE, pos, bytes);
+	len_read = fs_read(filename, CSE_BLOB_BASE, pos, bytes);
 
 	if (len_read <= 0)
 		return 1;
@@ -101,7 +101,7 @@ int cse_init(void)
 	}
 
 cse_firmware_loading:
-	dma_mem_clr((void *)0x3e801000, 4096*4);
+	dma_mem_clr((void *)CSE_BLOB_BASE, CSE_BLOB_SIZE);
 
 	if(load_cse_firmware()) {
 		printf("CSE firmware loading failed\n");

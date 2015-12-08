@@ -32,13 +32,15 @@
 /* Init CSE3 from u-boot */
 #define CONFIG_CSE3		1
 #ifdef CONFIG_CSE3
-#define KIA_BASE		0xC0005000UL
+#define KIA_BASE		0x3e805000UL
 /* Secure Boot */
 #define CONFIG_SECURE_BOOT
 #ifdef CONFIG_SECURE_BOOT
-#define SECURE_BOOT_KEY_ID	0x2UL
+#define SECURE_BOOT_KEY_ID	0x4UL
 #endif
-#define FIRMWARE_BASE	0xC0001000UL
+/* start address and size of firware+keyimage binary blob */
+#define CSE_BLOB_BASE		0x3e801000UL
+#define CSE_BLOB_SIZE		0x00004500UL
 #endif
 
 /* Config GIC */
@@ -215,7 +217,7 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"cse_addr=" __stringify(FIRMWARE_BASE) "\0" \
+	"cse_addr=" __stringify(CSE_BLOB_BASE) "\0" \
 	"cse_file=cse.bin\0" \
 	"sec_boot_key_id=" __stringify(SECURE_BOOT_KEY_ID) "\0" \
 	"set_cse="__stringify(CONFIG_CSE3) "\0" \
