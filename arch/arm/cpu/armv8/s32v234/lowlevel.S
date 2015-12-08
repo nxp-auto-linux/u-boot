@@ -46,15 +46,18 @@ sram_init:
 	ldr x1, =0x03030000
 	str w1, [x0]
 
+	ldr x0,  =__bss_start
+	ldr x1, =IRAM_BASE_ADDR
+	add x1, x1, IRAM_SIZE
+	sub x1, x1, x0
+
 	/* DMA_TCDn_NBYTES_MLNO */
 	ldr x0, =0x40003028
-	ldr x1, =0x00200000
 	str x1, [x0]
 
 	/* DMA_TCDn_DADDR */
 	ldr x0, =0x40003030
-	ldr x1, =CONFIG_SYS_TEXT_BASE
-	add x1, x1, CONFIG_UBOOT_SIZE
+	ldr x1, =__bss_start
 	str x1, [x0]
 
 	/* DMA_TCDn_DOFF */
