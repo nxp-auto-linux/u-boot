@@ -69,6 +69,7 @@ int load_cse_firmware(void) {
 	return 0;
 }
 
+extern void dma_mem_clr(void *, uint32_t);
 int cse_init(void)
 {
 	uint32_t firmware;
@@ -100,6 +101,8 @@ int cse_init(void)
 	}
 
 cse_firmware_loading:
+	dma_mem_clr((void *)0x3e801000, 4096*4);
+
 	if(load_cse_firmware()) {
 		printf("CSE firmware loading failed\n");
 		return 1;

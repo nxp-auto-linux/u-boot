@@ -14,6 +14,73 @@
 #include "mp.h"
 
 
+/*************************************************************************
+ *
+ * void dma_mem_clr(start, size);
+ *
+ * Clear a memory region of size 'size' starting with address 'start'
+ * (using DMA)
+ *
+ *************************************************************************/
+ENTRY(dma_mem_clr)
+	/*
+	 * x0: start address of memory to clear
+	 * x1: size of memory area to clear
+	 */
+dma_mem_clr:
+	/* DMA_TCDn_SOFF */
+	ldr x9, =0x40003020
+	ldr w10, =0x6230
+	str w10, [x9]
+
+	/* DMA_TCDn_SOFF */
+	ldr x9, =0x40003024
+	ldr x10, =0x03030000
+	str w10, [x9]
+
+	/* DMA_TCDn_NBYTES_MLNO */
+	ldr x9, =0x40003028
+	/* load the size */
+	mov x10, x1
+	str x10, [x9]
+
+	/* DMA_TCDn_DADDR */
+	ldr x9, =0x40003030
+	/* load the start address */
+	mov x10, x0
+	str x10, [x9]
+
+	/* DMA_TCDn_DOFF */
+	ldr x9, =0x40003034
+	ldr w10, =0x8
+	str w10, [x9]
+
+	/* DMA_TCDn_CITER_ELINKNO */
+	ldr x9, =0x40003036
+	ldr w10, =0x1
+	strb w10, [x9]
+
+	/* DMA_TCDn_CSR */
+	ldr x9, =0x4000303C
+	ldr w10, =0x1
+	strb w10, [x9]
+
+	/* DMA_TCDn_BITER_ELINKNO */
+	ldr x9, =0x4000303E
+	ldr w10, =0x1
+	strb w10, [x9]
+
+	/* loop until write is done */
+ctrl_status:
+	ldr x9, =0x4000303C
+	ldr w10, [x9]
+	and w10, w10, #0x0080
+	sub w10, w10, #0x0080
+	cbnz w10, ctrl_status
+	ret
+ENDPROC(dma_mem_clr)
+
+
 ENTRY(lowlevel_init)
 
 	mov	x29, lr			/* Save LR */
@@ -36,57 +103,16 @@ watchdog_m4_disable:
 	str x1, [x0]
 
 sram_init:
-	/* DMA_TCDn_SOFF */
-	ldr x0, =0x40003020
-	ldr w1, =0x6230
-	str w1, [x0]
-
-	/* DMA_TCDn_SOFF */
-	ldr x0, =0x40003024
-	ldr x1, =0x03030000
-	str w1, [x0]
-
+	/* Size of the SRAM memory to init */
 	ldr x0,  =__bss_start
 	ldr x1, =IRAM_BASE_ADDR
 	add x1, x1, IRAM_SIZE
 	sub x1, x1, x0
+	
+	/* Start address of the SRAM memory to init */
+	ldr x0, =__bss_start
 
-	/* DMA_TCDn_NBYTES_MLNO */
-	ldr x0, =0x40003028
-	str x1, [x0]
-
-	/* DMA_TCDn_DADDR */
-	ldr x0, =0x40003030
-	ldr x1, =__bss_start
-	str x1, [x0]
-
-	/* DMA_TCDn_DOFF */
-	ldr x0, =0x40003034
-	ldr w1, =0x8
-	str w1, [x0]
-
-	/* DMA_TCDn_CITER_ELINKNO */
-	ldr x0, =0x40003036
-	ldr w1, =0x1
-	strb w1, [x0]
-
-	/* DMA_TCDn_CSR */
-	ldr x0, =0x4000303C
-	ldr w1, =0x1
-	strb w1, [x0]
-
-	/* DMA_TCDn_BITER_ELINKNO */
-	ldr x0, =0x4000303E
-	ldr w1, =0x1
-	strb w1, [x0]
-
-	/* loop until write is done */
-ctrl_status:
-	ldr x0, =0x4000303C
-	ldr w1, [x0]
-	and w1, w1, #0x0080
-	sub w1, w1, #0x0080
-	cbnz w1, ctrl_status
+	bl dma_mem_clr
 
 	/* turn on a53 slave cores from a53 master */
 	/* deassert cores on reset */
