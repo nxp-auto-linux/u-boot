@@ -286,9 +286,6 @@
 #define CONFIG_SYS_TEXT_BASE		0x3E820000 /* SDRAM */
 #define CONFIG_SYS_TEXT_OFFSET		0x00020000
 
-/* size needed to initialize the SRAM starting from that offset */
-#define CONFIG_UBOOT_SIZE			0x3C000
-
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
 #endif
