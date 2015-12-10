@@ -30,7 +30,7 @@
 #define CONFIG_DISPLAY_BOARDINFO
 
 /* Init CSE3 from u-boot */
-#define CONFIG_CSE3		1
+/* #define CONFIG_CSE3		1 */
 #ifdef CONFIG_CSE3
 #define KIA_BASE		0x3e805000UL
 /* Secure Boot */
@@ -38,7 +38,7 @@
 #ifdef CONFIG_SECURE_BOOT
 #define SECURE_BOOT_KEY_ID	0x4UL
 #endif
-/* start address and size of firware+keyimage binary blob */
+/* start address and size of firmware+keyimage binary blob */
 #define CSE_BLOB_BASE		0x3e801000UL
 #define CSE_BLOB_SIZE		0x00004500UL
 #endif
@@ -215,12 +215,11 @@
 	"netmask=255.255.255.0\0" \
 	"boot_fdt=try\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=1\0" \
+	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
 	"cse_addr=" __stringify(CSE_BLOB_BASE) "\0" \
 	"cse_file=cse.bin\0" \
 	"sec_boot_key_id=" __stringify(SECURE_BOOT_KEY_ID) "\0" \
-	"set_cse="__stringify(CONFIG_CSE3) "\0" \
 	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
@@ -375,6 +374,7 @@
 
 #define CONFIG_ENV_OFFSET		(12 * 64 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
+#define CONFIG_MMC_PART			1
 
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTZ

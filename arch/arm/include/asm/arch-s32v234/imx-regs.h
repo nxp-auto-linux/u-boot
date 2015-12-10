@@ -22,11 +22,14 @@
 
 #define ARCH_MXC
 
-#define IRAM_BASE_ADDR      0x3E800000  /* internal ram */
-#define IRAM_SIZE           0x00400000  /* 4MB */
+#define IRAM_BASE_ADDR		0x3E800000  /* internal ram */
+#define IRAM_SIZE		0x00400000  /* 4MB */
+#define IS_ADDR_IN_IRAM(addr) \
+	((addr) >= (IRAM_BASE_ADDR) && \
+	(addr) <= (IRAM_BASE_ADDR) + (IRAM_SIZE))
 
-#define AIPS0_BASE_ADDR     (0x40000000UL)
-#define AIPS1_BASE_ADDR     (0x40080000UL)
+#define AIPS0_BASE_ADDR		(0x40000000UL)
+#define AIPS1_BASE_ADDR		(0x40080000UL)
 
 /* AIPS 0 */
 #define AXBS_BASE_ADDR					(AIPS0_BASE_ADDR + 0x00000000)

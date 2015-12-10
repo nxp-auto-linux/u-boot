@@ -42,21 +42,21 @@ static inline int cse_wait(int timeout)
 
 #ifdef CONFIG_CSE3
 
-int load_cse_firmware(void) {
-
-	char * ifname = "mmc";
-	char mmc_dev_part_str[4];
+/*
+ * Load cse blob file from sdhc at CSE_BLOB_BASE address
+ */
+static int mmc_load_cse_blob(void)
+{
+	const char mmc_dev_part[] = __stringify(CONFIG_SYS_MMC_ENV_DEV) ":"
+			__stringify(CONFIG_MMC_PART);
 	const char *filename;
 	unsigned long bytes = 0;
 	unsigned long pos = 0;
 	int len_read;
 
-	sprintf(mmc_dev_part_str, "%d:%s", CONFIG_SYS_MMC_ENV_DEV,
-		getenv("mmcpart"));
-
 	filename = getenv("cse_file");
 
-	if (fs_set_blk_dev(ifname, mmc_dev_part_str, FS_TYPE_FAT))
+	if (fs_set_blk_dev("mmc", mmc_dev_part, FS_TYPE_FAT))
 		return 1;
 
 	len_read = fs_read(filename, CSE_BLOB_BASE, pos, bytes);
@@ -77,13 +77,13 @@ int cse_init(void)
 
 	/* check if secure boot is enabled on chip and if secure boot was
 	completed successfully in bootrom */
-	if((readl(OCOTP_CFG5) & OCOTP_CFG5_SEC_BOOT_MODE) &&
-		(readl(CSE_SR) & CSE_SR_BOK)) {
+	if ((readl(OCOTP_CFG5) & OCOTP_CFG5_SEC_BOOT_MODE) &&
+	    (readl(CSE_SR) & CSE_SR_BOK)) {
 		return 0;
 	}
 
 	/* check if the firmware was not loaded before */
-	if(!readl(CSE_KIA0)) {
+	if (!readl(CSE_KIA0)) {
 		goto cse_firmware_loading;
 	} else {
 		/* check if init_cse was already done */
@@ -94,24 +94,28 @@ int cse_init(void)
 
 		err = readl(CSE_ECR);
 
-		if(err == CSE_SEQ_ERR) {
+		if (err == CSE_SEQ_ERR)
 			goto init_cse;
-		}
+
 		return 0;
 	}
 
 cse_firmware_loading:
-	dma_mem_clr((void *)CSE_BLOB_BASE, CSE_BLOB_SIZE);
 
-	if(load_cse_firmware()) {
+	/* check if CSE_BLOB_BASE is in SRAM and if it is, clear the area
+	 * between CSE_BLOB_BASE and CSE_BLOB_BASE + CSE_BLOB_SIZE */
+	if (IS_ADDR_IN_IRAM(CSE_BLOB_BASE))
+		dma_mem_clr((void *)CSE_BLOB_BASE, CSE_BLOB_SIZE);
+
+	if (mmc_load_cse_blob()) {
 		printf("CSE firmware loading failed\n");
 		return 1;
 	}
 
-init_cse:
 	writel(KIA_BASE, CSE_KIA0);
 	writel(KIA_BASE, CSE_KIA1);
 
+init_cse:
 	if (readl(CSE_SR) & CSE_SR_BSY) {
 		cse_cancel_cmd();
 		if (cse_wait(CSE_TIMEOUT))
@@ -119,7 +123,7 @@ init_cse:
 	}
 
 	/* Init CSE3 */
-	writel(&firmware, CSE_P1);
+	writel(virt_to_phys(&firmware), CSE_P1);
 	writel(CSE_CMD_INIT_CSE, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
@@ -144,13 +148,14 @@ init_cse:
 }
 
 #ifdef CONFIG_SECURE_BOOT
-int cse_auth(ulong start_addr, unsigned long len, int key_id, uint8_t *exp_mac)
+static int cse_auth(ulong start_addr, unsigned long len, int key_id,
+			uint8_t *exp_mac)
 {
 	/* Verify MAC */
 	writel(key_id, CSE_P1);
-	writel(&len, CSE_P2);
+	writel(virt_to_phys(&len), CSE_P2);
 	writel(start_addr, CSE_P3);
-	writel(exp_mac, CSE_P4);
+	writel(virt_to_phys(exp_mac), CSE_P4);
 	writel(MAC_LEN * 8, CSE_P5);
 	writel(CSE_CMD_VERIFY_MAC, CSE_CMD);
 
@@ -158,9 +163,8 @@ int cse_auth(ulong start_addr, unsigned long len, int key_id, uint8_t *exp_mac)
 		return -1;
 	if (readl(CSE_ECR))
 		return -1;
-	if (readl(CSE_P5)) {
+	if (readl(CSE_P5))
 		return -1;
-	}
 
 	return 0;
 }
@@ -177,13 +181,12 @@ int secure_boot(void)
 	memcpy(uimage_exp_mac, (uint8_t *)load_addr + uimage_size/8, MAC_LEN);
 
 	if (cse_auth(load_addr, uimage_size, SECURE_BOOT_KEY_ID,
-		    uimage_exp_mac)) {
-		printf("uImage was NOT successfully authenticated!\n");
+		     uimage_exp_mac)) {
+		printf("uImage was NOT successfully authenticated\n");
 		return 1;
 	}
 
-	printf("uImage was successfully authenticated!\n",
-		SECURE_BOOT_KEY_ID);
+	printf("uImage was successfully authenticated\n");
 
 	fdt_size =  8 *
 	    (unsigned long)fdt_totalsize((struct fdt_header *)FDT_ADDR);
@@ -191,12 +194,12 @@ int secure_boot(void)
 	memcpy(fdt_exp_mac, (uint8_t *)FDT_ADDR + fdt_size/8, MAC_LEN);
 
 	if (cse_auth(FDT_ADDR, fdt_size, SECURE_BOOT_KEY_ID,
-		    fdt_exp_mac)) {
-		printf("fdt was NOT successfully authenticated!\n");
+		     fdt_exp_mac)) {
+		printf("fdt was NOT successfully authenticated\n");
 		return 1;
 	}
 
-	printf("fdt was successfully authenticated!\n");
+	printf("fdt was successfully authenticated\n");
 
 	return 0;
 }
@@ -220,9 +223,9 @@ int do_genmac(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	/* Generate MAC */
 	writel(key_id, CSE_P1);
-	writel(&len, CSE_P2);
+	writel(virt_to_phys(&len), CSE_P2);
 	writel(start_addr, CSE_P3);
-	writel(mac, CSE_P4);
+	writel(virt_to_phys(mac), CSE_P4);
 	writel(CSE_CMD_GENERATE_MAC, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))

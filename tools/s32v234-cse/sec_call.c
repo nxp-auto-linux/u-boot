@@ -20,6 +20,6 @@ int Locate_KeyImageFile(uint32_t *file1, uint32_t *file2)
 
 	*file1 = KIA_ADDR;
 	*file2 = KIA_ADDR;
-	
+
 	return SCI_OK;
 }

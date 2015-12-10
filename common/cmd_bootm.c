@@ -46,6 +46,7 @@
 #include <lzma/LzmaDec.h>
 #include <lzma/LzmaTools.h>
 #endif /* CONFIG_LZMA */
+
 #ifdef CONFIG_LZO
 #include <linux/lzo.h>
 #endif /* CONFIG_LZO */
@@ -83,13 +84,14 @@ static void fixup_silent_linux(void);
 
 /* TODO: Implement a generic secure boot API */
 #ifdef CONFIG_CSE3
+
+extern int cse_init(void);
+
 #ifdef CONFIG_SECURE_BOOT
 
 extern int secure_boot(void);
 
 #endif /* CONFIG_SECURE_BOOT */
-
-extern int cse_init(void);
 
 #endif /* CONFIG_CSE3 */
 
@@ -797,7 +799,7 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #ifdef CONFIG_SECURE_BOOT
 
 	if(secure_boot())
-		printf(" Secure Boot authentication failed\n");
+		printf("Secure Boot authentication failed\n");
 
 #endif /* CONFIG_SECURE_BOOT */
 
