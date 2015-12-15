@@ -25,11 +25,9 @@ int zynq_sdhci_init(phys_addr_t regbase)
 
 	host->name = "zynq_sdhci";
 	host->ioaddr = (void *)regbase;
-	host->quirks = SDHCI_QUIRK_NO_CD | SDHCI_QUIRK_WAIT_SEND_CMD |
+	host->quirks = SDHCI_QUIRK_WAIT_SEND_CMD |
 		       SDHCI_QUIRK_BROKEN_R1B;
 	host->version = sdhci_readw(host, SDHCI_HOST_VERSION);
-
-	host->host_caps = MMC_MODE_HC;
 
 	add_sdhci(host, 52000000, 52000000 >> 9);
 	return 0;

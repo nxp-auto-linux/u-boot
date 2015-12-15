@@ -25,6 +25,11 @@
 # define CONFIG_SYS_PL310_BASE		0xf8f02000
 #endif
 
+#define ZYNQ_SCUTIMER_BASEADDR		0xF8F00600
+#define CONFIG_SYS_TIMERBASE		ZYNQ_SCUTIMER_BASEADDR
+#define CONFIG_SYS_TIMER_COUNTS_DOWN
+#define CONFIG_SYS_TIMER_COUNTER	(CONFIG_SYS_TIMERBASE + 0x4)
+
 /* Serial drivers */
 #define CONFIG_BAUDRATE		115200
 /* The following table includes the supported baudrates */
@@ -34,14 +39,15 @@
 /* DCC driver */
 #if defined(CONFIG_ZYNQ_DCC)
 # define CONFIG_ARM_DCC
-# define CONFIG_CPU_V6 /* Required by CONFIG_ARM_DCC */
 #else
 # define CONFIG_ZYNQ_SERIAL
 #endif
 
+#define CONFIG_ZYNQ_GPIO
+#define CONFIG_CMD_GPIO
+
 /* Ethernet driver */
 #if defined(CONFIG_ZYNQ_GEM0) || defined(CONFIG_ZYNQ_GEM1)
-# define CONFIG_NET_MULTI
 # define CONFIG_ZYNQ_GEM
 # define CONFIG_MII
 # define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
@@ -62,7 +68,6 @@
 
 /* SPI */
 #ifdef CONFIG_ZYNQ_SPI
-# define CONFIG_SPI_FLASH
 # define CONFIG_SPI_FLASH_SST
 # define CONFIG_CMD_SF
 #endif
@@ -198,7 +203,6 @@
 
 # define CONFIG_ENV_SECT_SIZE		CONFIG_ENV_SIZE
 # define CONFIG_ENV_OFFSET		0xE0000
-# define CONFIG_CMD_SAVEENV
 #endif
 
 /* Default environment */
@@ -266,7 +270,6 @@
 #define CONFIG_FPGA
 #define CONFIG_FPGA_XILINX
 #define CONFIG_FPGA_ZYNQPL
-#define CONFIG_CMD_FPGA
 #define CONFIG_CMD_FPGA_LOADMK
 #define CONFIG_CMD_FPGA_LOADP
 #define CONFIG_CMD_FPGA_LOADBP
@@ -291,11 +294,9 @@
 # define CONFIG_SYS_MMC_MAX_DEVICE	1
 #endif
 
-#define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv7/zynq/u-boot.lds"
+#define CONFIG_SYS_LDSCRIPT  "arch/arm/mach-zynq/u-boot.lds"
 
 /* Commands */
-#include <config_cmd_default.h>
-
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_MII
@@ -309,7 +310,7 @@
 #define CONFIG_SPL_SERIAL_SUPPORT
 #define CONFIG_SPL_BOARD_INIT
 
-#define CONFIG_SPL_LDSCRIPT	"arch/arm/cpu/armv7/zynq/u-boot-spl.lds"
+#define CONFIG_SPL_LDSCRIPT	"arch/arm/mach-zynq/u-boot-spl.lds"
 
 /* MMC support */
 #ifdef CONFIG_ZYNQ_SDHCI0

@@ -38,11 +38,12 @@
 
 /* SPI RX operation modes */
 #define SPI_OPM_RX_AS		(1 << 0)
-#define SPI_OPM_RX_DOUT	(1 << 1)
-#define SPI_OPM_RX_DIO		(1 << 2)
-#define SPI_OPM_RX_QOF		(1 << 3)
-#define SPI_OPM_RX_QIOF	(1 << 4)
-#define SPI_OPM_RX_EXTN	(SPI_OPM_RX_AS | SPI_OPM_RX_DOUT | \
+#define SPI_OPM_RX_AF		(1 << 1)
+#define SPI_OPM_RX_DOUT		(1 << 2)
+#define SPI_OPM_RX_DIO		(1 << 3)
+#define SPI_OPM_RX_QOF		(1 << 4)
+#define SPI_OPM_RX_QIOF		(1 << 5)
+#define SPI_OPM_RX_EXTN	(SPI_OPM_RX_AS | SPI_OPM_RX_AF | SPI_OPM_RX_DOUT | \
 				SPI_OPM_RX_DIO | SPI_OPM_RX_QOF | \
 				SPI_OPM_RX_QIOF)
 
@@ -53,7 +54,7 @@
 /* Header byte that marks the start of the message */
 #define SPI_PREAMBLE_END_BYTE	0xec
 
-#define SPI_DEFAULT_WORDLEN 8
+#define SPI_DEFAULT_WORDLEN	8
 
 #ifdef CONFIG_DM_SPI
 /* TODO(sjg@chromium.org): Remove this and use max_hz from struct spi_slave */
@@ -99,6 +100,8 @@ struct dm_spi_slave_platdata {
  * @dev:		SPI slave device
  * @max_hz:		Maximum speed for this slave
  * @mode:		SPI mode to use for this slave (see SPI mode flags)
+ * @speed:		Current bus speed. This is 0 until the bus is first
+ *			claimed.
  * @bus:		ID of the bus that the slave is attached to. For
  *			driver model this is the sequence number of the SPI
  *			bus (bus->seq) so does not need to be stored
@@ -116,6 +119,7 @@ struct spi_slave {
 #ifdef CONFIG_DM_SPI
 	struct udevice *dev;	/* struct spi_slave is dev->parentdata */
 	uint max_hz;
+	uint speed;
 	uint mode;
 #else
 	unsigned int bus;
@@ -385,12 +389,12 @@ struct dm_spi_ops {
 	 * allowed to claim the same bus for several slaves without releasing
 	 * the bus in between.
 	 *
-	 * @bus:	The SPI slave
+	 * @dev:	The SPI slave
 	 *
 	 * Returns: 0 if the bus was claimed successfully, or a negative value
 	 * if it wasn't.
 	 */
-	int (*claim_bus)(struct udevice *bus);
+	int (*claim_bus)(struct udevice *dev);
 
 	/**
 	 * Release the SPI bus
@@ -399,9 +403,9 @@ struct dm_spi_ops {
 	 * all transfers have finished. It may disable any SPI hardware as
 	 * appropriate.
 	 *
-	 * @bus:	The SPI slave
+	 * @dev:	The SPI slave
 	 */
-	int (*release_bus)(struct udevice *bus);
+	int (*release_bus)(struct udevice *dev);
 
 	/**
 	 * Set the word length for SPI transactions
@@ -413,7 +417,7 @@ struct dm_spi_ops {
 	 *
 	 * Returns: 0 on success, -ve on failure.
 	 */
-	int (*set_wordlen)(struct udevice *bus, unsigned int wordlen);
+	int (*set_wordlen)(struct udevice *dev, unsigned int wordlen);
 
 	/**
 	 * SPI transfer
@@ -612,7 +616,7 @@ int sandbox_spi_get_emul(struct sandbox_state *state,
 			 struct udevice *bus, struct udevice *slave,
 			 struct udevice **emulp);
 
-/* Access the serial operations for a device */
+/* Access the operations for a SPI device */
 #define spi_get_ops(dev)	((struct dm_spi_ops *)(dev)->driver->ops)
 #define spi_emul_get_ops(dev)	((struct dm_spi_emul_ops *)(dev)->driver->ops)
 #endif /* CONFIG_DM_SPI */
