@@ -9,7 +9,6 @@
 
 #include <asm-offsets.h>
 #include <config.h>
-#include <version.h>
 #include <asm/macro.h>
 #include <linux/linkage.h>
 
@@ -94,7 +93,7 @@ skip:
 	b.gt	loop_level
 
 	mov	x0, #0
-	msr	csselr_el1, x0		/* resotre csselr_el1 */
+	msr	csselr_el1, x0		/* restore csselr_el1 */
 	dsb	sy
 	isb
 	mov	lr, x15
@@ -155,3 +154,9 @@ ENTRY(__asm_invalidate_icache_all)
 	isb	sy
 	ret
 ENDPROC(__asm_invalidate_icache_all)
+
+ENTRY(__asm_flush_l3_cache)
+	mov	x0, #0			/* return status as success */
+	ret
+ENDPROC(__asm_flush_l3_cache)
+	.weak	__asm_flush_l3_cache
