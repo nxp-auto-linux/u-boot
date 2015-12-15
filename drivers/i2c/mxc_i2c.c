@@ -406,17 +406,6 @@ int bus_i2c_write(void *base, uchar chip, uint addr, int alen,
 	return ret;
 }
 
-struct i2c_parms {
-	void *base;
-	void *idle_bus_data;
-	int (*idle_bus_fn)(void *p);
-};
-
-struct sram_data {
-	unsigned curr_i2c_bus;
-	struct i2c_parms i2c_data[MXC_NUM_OF_I2C_BUS];
-};
-
 static void * const i2c_bases[] = {
 #if defined(CONFIG_MX25)
 	(void *)IMX_I2C_BASE,
@@ -445,6 +434,17 @@ static void * const i2c_bases[] = {
 #else
 #error "architecture not supported"
 #endif
+};
+
+struct i2c_parms {
+	void *base;
+	void *idle_bus_data;
+	int (*idle_bus_fn)(void *p);
+};
+
+struct sram_data {
+	unsigned curr_i2c_bus;
+	struct i2c_parms i2c_data[ARRAY_SIZE(i2c_bases)];
 };
 
 void *i2c_get_base(struct i2c_adapter *adap)
