@@ -7,6 +7,7 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
+#include <dm.h>
 #include <spl.h>
 #include <linux/compiler.h>
 #include <asm/u-boot.h>
@@ -26,11 +27,14 @@ static int mmc_load_image_raw_sector(struct mmc *mmc, unsigned long sector)
 
 	/* read image header to find the image size & load address */
 	count = mmc->block_dev.block_read(0, sector, 1, header);
+	debug("read sector %lx, count=%lu\n", sector, count);
 	if (count == 0)
 		goto end;
 
-	if (image_get_magic(header) != IH_MAGIC)
+	if (image_get_magic(header) != IH_MAGIC) {
+		puts("bad magic\n");
 		return -1;
+	}
 
 	spl_parse_image_header(header);
 
@@ -40,7 +44,9 @@ static int mmc_load_image_raw_sector(struct mmc *mmc, unsigned long sector)
 
 	/* Read the header too to avoid extra memcpy */
 	count = mmc->block_dev.block_read(0, sector, image_size_sectors,
-					  (void *) spl_image.load_addr);
+					  (void *)(ulong)spl_image.load_addr);
+	debug("read %x sectors to %x\n", image_size_sectors,
+	      spl_image.load_addr);
 
 end:
 	if (count == 0) {
@@ -67,7 +73,12 @@ static int mmc_load_image_raw_partition(struct mmc *mmc, int partition)
 		return -1;
 	}
 
+#ifdef CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR
+	return mmc_load_image_raw_sector(mmc, info.start +
+					 CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+#else
 	return mmc_load_image_raw_sector(mmc, info.start);
+#endif
 }
 #endif
 
@@ -96,9 +107,18 @@ void spl_mmc_load_image(void)
 {
 	struct mmc *mmc;
 	u32 boot_mode;
-	int err;
+	int err = 0;
 	__maybe_unused int part;
 
+#ifdef CONFIG_DM_MMC
+	struct udevice *dev;
+
+	mmc_initialize(NULL);
+	err = uclass_get_device(UCLASS_MMC, 0, &dev);
+	mmc = NULL;
+	if (!err)
+		mmc = mmc_get_mmc_dev(dev);
+#else
 	mmc_initialize(gd->bd);
 
 	/* We register only one device. So, the dev id is always 0 */
@@ -109,8 +129,11 @@ void spl_mmc_load_image(void)
 #endif
 		hang();
 	}
+#endif
 
-	err = mmc_init(mmc);
+	if (!err)
+		err = mmc_init(mmc);
+
 	if (err) {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 		printf("spl: mmc init failed with error: %d\n", err);

@@ -40,7 +40,6 @@
 
 #define CONFIG_IDENT_STRING		" Xilinx ZynqMP"
 
-#define CONFIG_SYS_TEXT_BASE		0x8000000
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x7fff0)
 
 /* Flat Device Tree Definitions */
@@ -50,18 +49,22 @@
 #define COUNTER_FREQUENCY		4000000
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 0x400000)
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 0x2000000)
 
 /* Serial setup */
-#define CONFIG_ZYNQ_SERIAL_UART0
-#define CONFIG_ZYNQ_SERIAL
+#if defined(CONFIG_ZYNQMP_DCC)
+# define CONFIG_ARM_DCC
+# define CONFIG_CPU_ARMV8
+#else
+# if defined(CONFIG_ZYNQ_SERIAL_UART0) || defined(CONFIG_ZYNQ_SERIAL_UART1)
+#  define CONFIG_ZYNQ_SERIAL
+# endif
+#endif
 
 #define CONFIG_CONS_INDEX		0
 #define CONFIG_BAUDRATE			115200
 #define CONFIG_SYS_BAUDRATE_TABLE \
 	{ 4800, 9600, 19200, 38400, 57600, 115200 }
-
-#define CONFIG_ZYNQ_SDHCI0
 
 /* Command line configuration */
 #define CONFIG_CMD_ENV
@@ -72,6 +75,16 @@
 #define CONFIG_DOS_PARTITION
 #define CONFIG_CMD_ELF
 #define CONFIG_MP
+
+#define CONFIG_CMD_MII
+
+/* BOOTP options */
+#define CONFIG_BOOTP_BOOTFILESIZE
+#define CONFIG_BOOTP_BOOTPATH
+#define CONFIG_BOOTP_GATEWAY
+#define CONFIG_BOOTP_HOSTNAME
+#define CONFIG_BOOTP_MAY_FAIL
+#define CONFIG_BOOTP_SERVERIP
 
 /* SPI */
 #ifdef CONFIG_ZYNQ_SPI
@@ -95,13 +108,51 @@
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LOAD_ADDR		0x8000000
 
+#if defined(CONFIG_ZYNQMP_USB)
+#define CONFIG_USB_DWC3
+#define CONFIG_USB_DWC3_GADGET
+
+#define CONFIG_USB_GADGET
+#define CONFIG_USB_GADGET_DOWNLOAD
+#define CONFIG_USB_GADGET_DUALSPEED
+#define CONFIG_USB_GADGET_VBUS_DRAW	2
+#define CONFIG_USBDOWNLOAD_GADGET
+#define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x1800000
+#define DFU_DEFAULT_POLL_TIMEOUT	300
+#define CONFIG_USB_FUNCTION_DFU
+#define CONFIG_DFU_RAM
+#define CONFIG_G_DNL_VENDOR_NUM		0x03FD
+#define CONFIG_G_DNL_PRODUCT_NUM	0x0300
+#define CONFIG_G_DNL_MANUFACTURER	"Xilinx"
+#define CONFIG_USB_CABLE_CHECK
+#define CONFIG_CMD_DFU
+#define CONFIG_CMD_THOR_DOWNLOAD
+#define CONFIG_USB_FUNCTION_THOR
+#define CONFIG_THOR_RESET_OFF
+#define DFU_ALT_INFO_RAM \
+	"dfu_ram_info=" \
+	"set dfu_alt_info " \
+	"Image ram 0x200000 0x1800000\\\\;" \
+	"system.dtb ram 0x7000000 0x40000\0" \
+	"dfu_ram=run dfu_ram_info && dfu 0 ram 0\0" \
+	"thor_ram=run dfu_ram_info && thordown 0 ram 0\0"
+
+#define DFU_ALT_INFO  \
+		DFU_ALT_INFO_RAM
+#endif
+
+#if !defined(DFU_ALT_INFO)
+# define DFU_ALT_INFO
+#endif
+
 /* Initial environment variables */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"kernel_addr=0x80000\0" \
 	"fdt_addr=0x7000000\0" \
 	"fdt_high=0x10000000\0" \
 	"sdboot=mmcinfo && load mmc 0:0 $fdt_addr system.dtb && " \
-		"load mmc 0:0 $kernel_addr Image && booti $kernel_addr - $fdt_addr\0"
+		"load mmc 0:0 $kernel_addr Image && booti $kernel_addr - $fdt_addr\0" \
+	DFU_ALT_INFO
 
 #define CONFIG_BOOTARGS		"setenv bootargs console=ttyPS0,${baudrate} " \
 				"earlycon=cdns,mmio,0xff000000,${baudrate}n8"
@@ -118,7 +169,6 @@
 /* Monitor Command Prompt */
 /* Console I/O Buffer Size */
 #define CONFIG_SYS_CBSIZE		2048
-#define CONFIG_SYS_PROMPT		"ZynqMP> "
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
 					sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_HUSH_PARSER
@@ -127,8 +177,16 @@
 #define CONFIG_CMDLINE_EDITING
 #define CONFIG_SYS_MAXARGS		64
 
-#define CONFIG_ZYNQ_I2C0
-#define CONFIG_SYS_I2C_ZYNQ
+/* Ethernet driver */
+#if defined(CONFIG_ZYNQ_GEM0) || defined(CONFIG_ZYNQ_GEM1) || \
+	defined(CONFIG_ZYNQ_GEM2) || defined(CONFIG_ZYNQ_GEM3)
+# define CONFIG_NET_MULTI
+# define CONFIG_ZYNQ_GEM
+# define CONFIG_MII
+# define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
+# define CONFIG_PHYLIB
+# define CONFIG_PHY_MARVELL
+#endif
 
 /* I2C */
 #if defined(CONFIG_SYS_I2C_ZYNQ)
@@ -138,8 +196,6 @@
 # define CONFIG_SYS_I2C_ZYNQ_SLAVE		0
 #endif
 
-#define CONFIG_ZYNQMP_EEPROM
-
 /* EEPROM */
 #ifdef CONFIG_ZYNQMP_EEPROM
 # define CONFIG_CMD_EEPROM
@@ -148,6 +204,17 @@
 # define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	4
 # define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
 # define CONFIG_SYS_EEPROM_SIZE			(64 * 1024)
+#endif
+
+#ifdef CONFIG_AHCI
+#define CONFIG_LIBATA
+#define CONFIG_SCSI_AHCI
+#define CONFIG_SCSI_AHCI_PLAT
+#define CONFIG_SYS_SCSI_MAX_SCSI_ID	1
+#define CONFIG_SYS_SCSI_MAX_LUN		1
+#define CONFIG_SYS_SCSI_MAX_DEVICE	(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
+					 CONFIG_SYS_SCSI_MAX_LUN)
+#define CONFIG_CMD_SCSI
 #endif
 
 #define CONFIG_FIT

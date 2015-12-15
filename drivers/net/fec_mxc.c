@@ -10,6 +10,7 @@
 
 #include <common.h>
 #include <malloc.h>
+#include <memalign.h>
 #include <net.h>
 #include <netdev.h>
 #include <miiphy.h>
@@ -17,6 +18,7 @@
 
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
+#include <asm/imx-common/sys_proto.h>
 #include <asm/io.h>
 #include <asm/errno.h>
 #include <linux/compiler.h>
@@ -66,14 +68,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #endif
 
 #undef DEBUG
-
-struct nbuf {
-	uint8_t data[1500];	/**< actual data */
-	int length;		/**< actual length */
-	int used;		/**< buffer in use or not */
-	uint8_t head[16];	/**< MAC header(6 + 6 + 2) + 2(aligned) */
-};
-
 
 #ifdef CONFIG_FEC_MXC_SWAP_PACKET
 static void swap_packet(uint32_t *packet, int length)
@@ -562,17 +556,17 @@ static int fec_init(struct eth_device *dev, bd_t* bd)
 	writel(0x00000000, &fec->eth->gaddr1);
 	writel(0x00000000, &fec->eth->gaddr2);
 
-
-	/* clear MIB RAM: avoid the reserved space from FEC memory map. */
-	for (i = mib_ptr_start1; i < mib_ptr_end1; i += 4)
-		writel(0, i);
-	for (i = mib_ptr_start2; i < mib_ptr_end2; i += 4)
-		writel(0, i);
-
+	if (!is_cpu_type(MXC_CPU_MX6UL)) {
+		/* clear MIB RAM: avoid the reserved space from FEC memory map. */
+		for (i = mib_ptr_start1; i < mib_ptr_end1; i += 4)
+			writel(0, i);
+		for (i = mib_ptr_start2; i < mib_ptr_end2; i += 4)
+			writel(0, i);
 #if !defined(CONFIG_S32V234)
-	/* FIFO receive start register */
-	writel(0x520, &fec->eth->r_fstart);
+		/* FIFO receive start register */
+		writel(0x520, &fec->eth->r_fstart);
 #endif
+	}
 	/* size and address of each buffer */
 	writel(FEC_MAX_PKT_SIZE, &fec->eth->emrbr);
 	writel((uintptr_t)fec->tbd_base, &fec->eth->etdsr);
@@ -785,9 +779,6 @@ static int fec_recv(struct eth_device *dev)
 	struct fec_bd *rbd = &fec->rbd_base[fec->rbd_index];
 	unsigned long ievent;
 	int frame_length, len = 0;
-	/* struct nbuf *frame; */
-	uintptr_t addr, frame;
-	uintptr_t_a *data_pointer_addr;
 	uint16_t bd_status;
 	uint32_t size, end;
 	int i;
@@ -847,13 +838,11 @@ static int fec_recv(struct eth_device *dev)
 			/*
 			 * Get buffer address and size
 			 */
-			data_pointer_addr = (uintptr_t_a *)&rbd->data_pointer;
-			frame = readl(data_pointer_addr);
+			addr = readl(&rbd->data_pointer);
 			frame_length = readw(&rbd->data_length) - 4;
 			/*
 			 * Invalidate data cache over the buffer
 			 */
-			addr = (uintptr_t)frame;
 			end = roundup(addr + frame_length, ARCH_DMA_MINALIGN);
 			addr &= ~(ARCH_DMA_MINALIGN - 1);
 			invalidate_dcache_range(addr, end);
@@ -862,16 +851,15 @@ static int fec_recv(struct eth_device *dev)
 			 *  Fill the buffer and pass it to upper layers
 			 */
 #ifdef CONFIG_FEC_MXC_SWAP_PACKET
-			swap_packet((uintptr_t *)frame->data, frame_length);
+			swap_packet((uint32_t *)addr, frame_length);
 #endif
-			memcpy(buff, ((struct nbuf *)frame)->data, frame_length);
+			memcpy(buff, (char *)addr, frame_length);
 			net_process_received_packet(buff, frame_length);
 			len = frame_length;
 		} else {
 			if (bd_status & FEC_RBD_ERR)
-				printf("error frame: 0x%08lx 0x%08x\n",
-						(ulong)rbd->data_pointer,
-						bd_status);
+				printf("error frame: 0x%08x 0x%08x\n",
+				       addr, bd_status);
 		}
 
 		/*

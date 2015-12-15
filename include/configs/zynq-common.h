@@ -110,10 +110,10 @@
 # define CONFIG_CI_UDC           /* ChipIdea CI13xxx UDC */
 # define CONFIG_USB_GADGET
 # define CONFIG_USB_GADGET_DUALSPEED
-# define CONFIG_USBDOWNLOAD_GADGET
+# define CONFIG_USB_GADGET_DOWNLOAD
 # define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x600000
 # define DFU_DEFAULT_POLL_TIMEOUT	300
-# define CONFIG_DFU_FUNCTION
+# define CONFIG_USB_FUNCTION_DFU
 # define CONFIG_DFU_RAM
 # define CONFIG_USB_GADGET_VBUS_DRAW	2
 # define CONFIG_G_DNL_VENDOR_NUM	0x03FD
@@ -123,7 +123,7 @@
 # define CONFIG_USB_CABLE_CHECK
 # define CONFIG_CMD_DFU
 # define CONFIG_CMD_THOR_DOWNLOAD
-# define CONFIG_THOR_FUNCTION
+# define CONFIG_USB_FUNCTION_THOR
 # define DFU_ALT_INFO_RAM \
 	"dfu_ram_info=" \
 	"set dfu_alt_info " \
@@ -235,7 +235,6 @@
 #define CONFIG_SYS_LOAD_ADDR		0 /* default? */
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_PROMPT		"zynq-uboot> "
 #define CONFIG_SYS_HUSH_PARSER
 
 #define CONFIG_CMDLINE_EDITING
@@ -320,7 +319,7 @@
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION     1
 #define CONFIG_SPL_LIBDISK_SUPPORT
 #define CONFIG_SPL_FAT_SUPPORT
-#define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot-dtb.img"
+#define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
 #endif
 
 /* Disable dcache for SPL just for sure */
