@@ -190,7 +190,7 @@ static void set_dcd_param_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
 	}
 
 	if (!d)
-		d = &dcd_v2->dcd_cmd;
+		d = &dcd->dcd_cmd;
 	d2 = d;
 	len = be16_to_cpu(d->write_dcd_command.length);
 	if (len > 4)
@@ -296,7 +296,7 @@ static void set_dcd_rst_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
 	}
 
 	if (!d)
-		d = &dcd_v2->dcd_cmd;
+		d = &dcd->dcd_cmd;
 	len = be16_to_cpu(d->write_dcd_command.length);
 	if (len > 4)
 		d = (struct dcd_v2_cmd *)(((char *)d) + len);
