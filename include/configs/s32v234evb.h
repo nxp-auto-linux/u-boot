@@ -1,7 +1,7 @@
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
  *
- * Configuration settings for the Freescale Vybrid mac57d5xhevb board.
+ * Configuration settings for the Freescale S32V234 EVB board.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,6 +29,13 @@
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
 
+/* Init CSE3 from u-boot */
+/* #define CONFIG_CSE3		1 */
+#ifdef CONFIG_CSE3
+#define KIA_BASE		0xC0005000UL
+#define FIRMWARE_BASE	0xC0001000UL
+#endif
+
 /* Config GIC */
 #define CONFIG_GICV2
 #define GICD_BASE 0x7D001000
@@ -39,6 +46,9 @@
 
 #define CONFIG_RUN_FROM_DDR1
 #undef CONFIG_RUN_FROM_DDR0
+
+/* S32V234 EVB has LPDDR2 */
+#define CONFIG_S32V234_LPDDR2
 
 /* Run by default from DDR1  */
 #ifdef CONFIG_RUN_FROM_DDR0
@@ -67,7 +77,7 @@
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
-#define COUNTER_FREQUENCY               (1000000000)     /* 1000MHz */
+#define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
 #define CONFIG_SYS_FSL_ERRATUM_A008585
 
 /* Size of malloc() pool */
@@ -161,11 +171,17 @@
 	"fdt_addr=0xC2000000\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
+	"ipaddr=10.0.0.100\0" \
+	"serverip=10.0.0.1\0" \
+	"netmask=255.255.255.0\0" \
 	"boot_fdt=try\0" \
-	"ip_dyn=yes\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
+	"cse_addr=0xC0001000\0" \
+	"cse_file=cse.bin\0" \
+	"initcse=fatload mmc ${mmcdev}:${mmcpart} ${cse_addr} ${cse_file}\0" \
+	"set_cse="__stringify(CONFIG_CSE3) "\0" \
 	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
@@ -196,6 +212,9 @@
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
+		"if test ${set_cse} = 1; then " \
+			"run initcse; " \
+		"fi; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
 				"bootm ${loadaddr} - ${fdt_addr}; " \
@@ -209,6 +228,16 @@
 		"else " \
 			"bootm; " \
 		"fi;\0" \
+	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs rw " \
+		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
+	"loadtftpimage=tftp ${loadaddr} ${uimage};\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+	"nfsboot=echo Booting from net using tftp and nfs...; " \
+		"run nfsbootargs;"\
+		"run loadtftpimage; run loadtftpfdt;"\
+		"bootm ${loadaddr} - ${fdt_addr};\0"\
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
@@ -264,13 +293,13 @@
 #define CONFIG_SYS_MEMTEST_END		(DDR_BASE_ADDR + (DDR_SIZE - 1))
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
-#define CONFIG_SYS_HZ				100000
+#define CONFIG_SYS_HZ				1000
 
 #define CONFIG_SYS_TEXT_BASE		0x3E820000 /* SDRAM */
 #define CONFIG_SYS_TEXT_OFFSET		0x00020000
 
 /* size needed to initialize the SRAM starting from that offset */
-#define CONFIG_UBOOT_SIZE			0x37000
+#define CONFIG_UBOOT_SIZE			0x39000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)

@@ -1,7 +1,7 @@
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
  *
- * Configuration settings for the Freescale S32V234 TMDP board.
+ * Configuration settings for the Freescale S32V234PCIE board.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -37,7 +37,7 @@
 #define CONFIG_REMAKE_ELF
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
-/* S32V234 TMDP has LPDDR2 */
+/* S32V234PCIE has LPDDR2 */
 #define CONFIG_S32V234_LPDDR2
 #define CONFIG_RUN_FROM_DDR1
 #undef CONFIG_RUN_FROM_DDR0
@@ -69,6 +69,7 @@
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
+/* by default the GENERIC_TIMER FREQUENCY is IRC/4 */
 #define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
 #define CONFIG_SYS_FSL_ERRATUM_A008585
 
@@ -82,7 +83,7 @@
 
 
 #define CONFIG_FSL_LINFLEXUART
-#define LINFLEXUART_BASE			LINFLEXD0_BASE_ADDR
+#define LINFLEXUART_BASE			LINFLEXD1_BASE_ADDR
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -118,6 +119,7 @@
 #define CONFIG_FEC_MXC_PHYADDR  1
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
+#define CONFIG_PHY_MICREL_KSZ9031
 
 /* I2C Configs */
 #define CONFIG_CMD_I2C
@@ -155,10 +157,10 @@
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
 	"ramdisk=rootfs.uimg\0"\
-	"console=ttyLF0\0" \
+	"console=ttyLF1\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_file=s32v234-tmdp.dtb\0" \
+	"fdt_file=s32v234-pcie.dtb\0" \
 	"fdt_addr=0xC2000000\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \

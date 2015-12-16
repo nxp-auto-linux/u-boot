@@ -82,7 +82,7 @@
 #define MMDC_MDSCR_DEASSERT_VALUE				0x00000000  /* Deassert the configuration request */
 
 /* set I/O pads for DDR */
-void lpddr2_config_iomux(uint8_t module);
+void ddr_config_iomux(uint8_t module);
 void config_mmdc(uint8_t module);
 
 #endif

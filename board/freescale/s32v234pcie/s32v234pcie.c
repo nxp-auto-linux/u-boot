@@ -67,16 +67,7 @@ int dram_init(void)
 
 static void setup_iomux_uart(void)
 {
-	/* Muxing for linflex0 and linflex1 */
-
-	/* set TXD - MSCR[12] PA12 */
-	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART0_TXD_PAD));
-
-	/* set RXD - MSCR[11] - PA11*/
-	writel(SIUL2_UART_MSCR_RXD, SIUL2_MSCRn(SIUL2_UART0_MSCR_RXD_PAD));
-
-	/* set RXD - IMCR[200] - 200 */
-	writel(SIUL2_UART_IMCR_RXD, SIUL2_IMCRn(SIUL2_UART0_IMCR_RXD_PAD));
+	/* Muxing for linflex1 */
 
 	/* set TXD - MSCR[14] PA14 */
 	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART1_TXD_PAD));
@@ -122,12 +113,6 @@ static void setup_iomux_enet(void)
 	writel(0x0020c701, SIUL2_MSCRn(57));	//TX_D2  //PD9
 	writel(0x0020c701, SIUL2_MSCRn(58));	//TX_D3  //PD10
 	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
-
-#if 0
-	/* reset the Ethernet controller */
-	writel(0x1, 0x40032024);
-	while (readl(0x40032024) & 0x1);
-#endif
 }
 
 static void setup_iomux_i2c(void)
@@ -266,7 +251,7 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: s32v234evb\n");
+	puts("Board: s32v234pcie\n");
 
 	return 0;
 }

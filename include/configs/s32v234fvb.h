@@ -1,7 +1,7 @@
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
  *
- * Configuration settings for the Freescale Vybrid mac57d5xhevb board.
+ * Configuration settings for the Freescale S32V234 FVB board.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -46,6 +46,9 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
+/* S32V234 FVB Rev. A has DDR3 */
+#define CONFIG_S32V234_DDR3
+
 #ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR	0x80000000
 #define DDR_SIZE		(1024 * 1024 * 1024)
@@ -63,7 +66,7 @@
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
-#define COUNTER_FREQUENCY               (1000000000)     /* 1000MHz */
+#define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
 #define CONFIG_SYS_FSL_ERRATUM_A008585
 
 /* Size of malloc() pool */
@@ -257,7 +260,12 @@
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_HZ				1000
 
-#define CONFIG_SYS_TEXT_BASE		0x3E800000 /* SDRAM */
+#define CONFIG_SYS_TEXT_BASE        0x3E820000 /* SDRAM */
+#define CONFIG_SYS_TEXT_OFFSET      0x00020000
+
+/* size needed to initialize the SRAM starting from that offset */
+#define CONFIG_UBOOT_SIZE           0x39000
+
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)

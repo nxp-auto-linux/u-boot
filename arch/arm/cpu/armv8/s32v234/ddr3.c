@@ -23,7 +23,7 @@
 #include <asm/arch/ddr3.h>
 #include <asm/arch/mmdc.h>
 
-void ddr3_config_iomux(uint8_t module)
+void ddr_config_iomux(uint8_t module)
 {
 	int i;
 
