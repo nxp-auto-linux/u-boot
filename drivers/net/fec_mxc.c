@@ -780,7 +780,7 @@ static int fec_recv(struct eth_device *dev)
 	unsigned long ievent;
 	int frame_length, len = 0;
 	uint16_t bd_status;
-	uint32_t size, end;
+	uint32_t addr, size, end;
 	int i;
 	ALLOC_CACHE_ALIGN_BUFFER(uchar, buff, FEC_MAX_PKT_SIZE);
 
@@ -970,10 +970,10 @@ static void fec_free_descs(struct fec_priv *fec)
 }
 
 #ifdef CONFIG_PHYLIB
-int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
+int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 		struct mii_dev *bus, struct phy_device *phydev)
 #else
-static int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
+static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 		struct mii_dev *bus, int phy_id)
 #endif
 {
@@ -1060,7 +1060,7 @@ err1:
 	return ret;
 }
 
-struct mii_dev *fec_get_miibus(uintptr_t base_addr, int dev_id)
+struct mii_dev *fec_get_miibus(uint32_t base_addr, int dev_id)
 {
 	struct ethernet_regs *eth = (struct ethernet_regs *)base_addr;
 	struct mii_dev *bus;
