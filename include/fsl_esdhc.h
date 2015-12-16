@@ -166,6 +166,8 @@
 #define ESDHC_VENDORSPEC_VSELECT 0x00000002 /* Use 1.8V */
 
 struct fsl_esdhc_cfg {
+#if defined(CONFIG_LS2085A) || defined(CONFIG_S32V234)
+	u64	esdhc_base;
 #else
 	u32	esdhc_base;
 #endif
