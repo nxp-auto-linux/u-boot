@@ -505,11 +505,11 @@ config TARGET_S32V234FVB
 	bool "Support s32v234fvb"
 	select ARM64
 
-cconfig TARGET_S32V234PCIE
+config TARGET_S32V234PCIE
 	bool "Support s32v234pcie"
 	select ARM64
 
-onfig TARGET_S32V234TMDP
+config TARGET_S32V234TMDP
 	bool "Support s32v234tmdp"
 	select ARM64
 
