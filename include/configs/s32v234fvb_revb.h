@@ -23,7 +23,6 @@
 #define __CONFIG_H
 
 #include <asm/arch/imx-regs.h>
-#include <config_cmd_default.h>
 
 #define CONFIG_S32V234
 #define CONFIG_S32VFVB_REVB
