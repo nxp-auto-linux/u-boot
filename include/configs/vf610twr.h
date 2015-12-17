@@ -109,29 +109,15 @@
 #endif
 
 /* I2C Configs */
-#ifdef CONFIG_SYS_USE_I2C
 #define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
 #define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
 #define CONFIG_SYS_SPD_BUS_NUM		0
-#endif
 
-#define CONFIG_SYS_USE_NAND
 
-#ifdef CONFIG_SYS_USE_NAND
 /* Nand Flash Configs */
-#define	CONFIG_CMD_NAND
-#define CONFIG_JFFS2_NAND
-#define MTD_NAND_FSL_NFC_SWECC 1
-#define CONFIG_NAND_FSL_NFC
-#define CONFIG_SYS_NAND_BASE		0x400E0000
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define NAND_MAX_CHIPS			CONFIG_SYS_MAX_NAND_DEVICE
-#define CONFIG_SYS_NAND_SELECT_DEVICE
-#define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
-#endif
 
 #define CONFIG_BOOTDELAY		3
 
