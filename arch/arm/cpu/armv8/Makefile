@@ -16,5 +16,6 @@ obj-y	+= tlb.o
 obj-y	+= transition.o
 
 obj-$(CONFIG_FSL_LSCH3) += fsl-lsch3/
+obj-$(CONFIG_S32V234) += s32v234/
 obj-$(CONFIG_ARCH_ZYNQMP) += zynqmp/
 obj-$(CONFIG_TARGET_HIKEY) += hisilicon/
