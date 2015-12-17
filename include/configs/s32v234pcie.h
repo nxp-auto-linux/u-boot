@@ -101,7 +101,7 @@
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-/* #define CONFIG_CMD_EXT2 EXT2 Support */
+#define CONFIG_CMD_EXT2	/* EXT2 Support */
 #define CONFIG_CMD_FAT  /* FAT support */
 #define CONFIG_DOS_PARTITION
 
@@ -121,13 +121,12 @@
 
 /* I2C Configs */
 #define CONFIG_CMD_I2C
-#define CONFIG_HARD_I2C
-#define CONFIG_I2C_MXC
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_BASE		I2C0_BASE_ADDR
-#define CONFIG_SYS_I2C_SPEED	100000
-#define CONFIG_SYS_I2C_SLAVE	0x8
+#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
+#define CONFIG_SYS_MXC_I2C1_SPEED 100000
+#define CONFIG_SYS_MXC_I2C1_SLAVE 0x8
+#define CONFIG_SYS_SPD_BUS_NUM		0
 
 #if 0 /* Disable until the FLASH will be implemented */
 #define CONFIG_SYS_USE_NAND

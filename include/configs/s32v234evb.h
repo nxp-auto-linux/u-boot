@@ -33,7 +33,7 @@
 /* Init CSE3 from u-boot */
 /* #define CONFIG_CSE3		1 */
 #ifdef CONFIG_CSE3
-#define KIA_BASE		0xC0005000UL
+#define KIA_BASE	0xC0005000UL
 #define FIRMWARE_BASE	0xC0001000UL
 #endif
 
@@ -110,8 +110,8 @@
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-/* #define CONFIG_CMD_EXT2 EXT2 Support */
-#define CONFIG_CMD_FAT  /* FAT support */
+#define CONFIG_CMD_EXT2	/* EXT2 Support */
+#define CONFIG_CMD_FAT	/* FAT support */
 #define CONFIG_DOS_PARTITION
 
 /* Ethernet config */
@@ -121,22 +121,21 @@
 #define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
-#define IMX_FEC_BASE            ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE     RGMII
-#define CONFIG_FEC_MXC_PHYADDR  7
+#define IMX_FEC_BASE			ENET_BASE_ADDR
+#define CONFIG_FEC_XCV_TYPE		RGMII
+#define CONFIG_FEC_MXC_PHYADDR	7
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
 #define CONFIG_PHY_MICREL_KSZ9031
 
 /* I2C Configs */
 #define CONFIG_CMD_I2C
-#define CONFIG_HARD_I2C
-#define CONFIG_I2C_MXC
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_BASE		I2C0_BASE_ADDR
-#define CONFIG_SYS_I2C_SPEED	100000
-#define CONFIG_SYS_I2C_SLAVE	0x8
+#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
+#define CONFIG_SYS_MXC_I2C1_SPEED 100000
+#define CONFIG_SYS_MXC_I2C1_SLAVE 0x8
+#define CONFIG_SYS_SPD_BUS_NUM		0
 
 #if 0 /* Disable until the FLASH will be implemented */
 #define CONFIG_SYS_USE_NAND
@@ -155,7 +154,7 @@
 #define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
 #endif
 
-#define CONFIG_BOOTDELAY		3
+#define CONFIG_BOOTDELAY		-1
 #define CONFIG_LOADADDR			0xC307FFC0
 #define CONFIG_BOOTARGS			"console=ttyLF0 root=/dev/ram rw"
 
