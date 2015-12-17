@@ -393,7 +393,11 @@ static void set_imx_hdr_v3(struct imx_header *imxhdr, uint32_t dcd_len,
 	hdr_base = entry_point - imximage_init_loadsize + flash_offset;
 	fhdr_v3->self = hdr_base;
 
-	fhdr_v3->dcd_ptr = 0;
+	if (dcd_len > 0)
+		fhdr_v3->dcd_ptr = hdr_base
+			+ offsetof(imx_header_v3_t, dcd_table);
+	else
+		fhdr_v3->dcd_ptr = 0;
 	fhdr_v3->boot_data_ptr = hdr_base
 			+ offsetof(imx_header_v3_t, boot_data);
 	hdr_v3->boot_data.start = entry_point - imximage_init_loadsize;
@@ -509,8 +513,8 @@ static void print_hdr_v3(struct imx_header *imx_hdr)
 	dcd_v2_t *dcd_v3 = &hdr_v3->dcd_table;
 	uint32_t size, version;
 
-	size = be16_to_cpu(dcd_v3->header.length) - 8;
-	if (size > (MAX_HW_CFG_SIZE_V3 * sizeof(dcd_addr_data_t))) {
+	size = be16_to_cpu(dcd_v3->header.length);
+	if (size > (MAX_HW_CFG_SIZE_V3 * sizeof(dcd_addr_data_t)) + 8) {
 		fprintf(stderr,
 			"Error: Image corrupt DCD size %d exceed maximum %d\n",
 			(uint32_t)(size / sizeof(dcd_addr_data_t)),
@@ -786,6 +790,13 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 					sizeof(imx_header_v2_t);
 	}
 
+	if (imximage_version == IMXIMAGE_V3) {
+		if (imximage_init_loadsize < imximage_ivt_offset +
+			sizeof(imx_header_v3_t))
+				imximage_init_loadsize = imximage_ivt_offset +
+					sizeof(imx_header_v3_t);
+	}
+
 	/* Set the imx header */
 	(*set_imx_hdr)(imxhdr, dcd_len, params->ep, imximage_ivt_offset);
 
@@ -798,21 +809,7 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 	 *
 	 * The remaining fraction of a block bytes would not be loaded!
 	 */
-
-	switch (imximage_version) {
-		case IMXIMAGE_V3:
-			/*
-			 * TODO: CHECK if the used workaround for imx is
-			 * applicable for S32V
-			 */
-			*header_size_ptr = ROUND(sbuf->st_size, 4096) +
-					   imximage_init_loadsize;
-			break;
-		default:
-			*header_size_ptr = ROUND((sbuf->st_size +
-					   imximage_ivt_offset), 4096);
-			break;
-	}
+	*header_size_ptr = ROUND((sbuf->st_size + imximage_ivt_offset), 4096);
 
 	if (csf_ptr && imximage_csf_size) {
 		*csf_ptr = params->ep - imximage_init_loadsize +
