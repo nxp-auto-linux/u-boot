@@ -96,8 +96,16 @@
 #define CONFIG_OF_BOARD_SETUP
 
 /* Generic Timer Definitions */
-#define CONFIG_SYS_GENERIC_TIMER
+/* #define CONFIG_SYS_GENERIC_TIMER */
+#define CONFIG_SYS_PIT_TIMER
+
+#if defined(CONFIG_SYS_GENERIC_TIMER)
 #define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
+#elif defined(CONFIG_SYS_PIT_TIMER)
+#define COUNTER_FREQUENCY               (133056128)     /* 133MHz */
+#else
+#error "Unknown System Timer"
+#endif
 #define CONFIG_SYS_FSL_ERRATUM_A008585
 
 /* Size of malloc() pool */

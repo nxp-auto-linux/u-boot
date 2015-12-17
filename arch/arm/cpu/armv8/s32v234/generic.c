@@ -271,6 +271,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return get_i2c_clk();
 	case MXC_USDHC_CLK:
 		return get_usdhc_clk();
+	case MXC_SYS6_CLK:
+		return get_sys_clk(6);
 	default:
 		break;
 	}
