@@ -25,6 +25,7 @@
 #include <asm/arch/imx-regs.h>
 
 #define CONFIG_S32V234
+#define CONFIG_SYS_GENERIC_BOARD
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
 
