@@ -133,8 +133,14 @@
 #define I2C_QUIRK_REG
 
 /* MSCM interrupt router */
-#define MSCM_IRSPRC_CPn_EN						3
-#define MSCM_IRSPRC_NUM							176
+#define MSCM_IRSPRC_CPn_EN		3
+#define MSCM_IRSPRC_NUM			176
+#define MSCM_CPXTYPE_RYPZ_MASK		0xFF
+#define MSCM_CPXTYPE_RYPZ_OFFSET	0
+#define MSCM_CPXTYPE_PERS_MASK		0xFFFFFF00
+#define MSCM_CPXTYPE_PERS_OFFSET	8
+#define MSCM_CPXTYPE_PERS_A53		0x413533
+#define MSCM_CPXTYPE_PERS_CM4		0x434d34
 
 #if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
 #include <asm/types.h>
