@@ -70,11 +70,11 @@
 #define CONFIG_MACH_TYPE		4146
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
-
 /* Config CACHE */
-#define CONFIG_SYS_DCACHE_OFF
-#define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
+
+/* Enable DCU QoS fix */
+#define CONFIG_DCU_QOS_FIX
 
 
 /* Enable passing of ATAGs */
@@ -108,6 +108,7 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
 #define CONFIG_BOARD_EARLY_INIT_F
+#define CONFIG_ARCH_EARLY_INIT_R
 
 
 #define CONFIG_FSL_LINFLEXUART
@@ -245,18 +246,6 @@
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
 		"run loaduimage; run loadramdisk; run loadfdt;"\
-<<<<<<< HEAD
-		"run nfsbootargs;"\
-		"run loadtftpimage; run loadtftpfdt;"\
-		"bootm ${loadaddr} - ${fdt_addr};\0"\
-	"netargs=setenv bootargs console=${console},${baudrate} " \
-		"root=/dev/nfs " \
-	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-		"netboot=echo Booting from net ...; " \
-		"run netargs; " \
-		"if test ${ip_dyn} = yes; then " \
-			"setenv get_cmd dhcp; " \
-=======
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
@@ -270,10 +259,16 @@
 					"echo WARN: Cannot load the DT; " \
 				"fi; " \
 			"fi; " \
->>>>>>> c3dd371b61915c81ed361cef198b213f0c667c0a
 		"else " \
-			"setenv get_cmd tftp; " \
-		"fi; " \
+			"bootm; " \
+		"fi;\0" \
+	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs rw " \
+		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
+	"loadtftpimage=tftp ${loadaddr} ${uimage};\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; run loadtftpfdt;"\
 		"bootm ${loadaddr} - ${fdt_addr};\0"\
@@ -336,9 +331,6 @@
 
 #define CONFIG_SYS_TEXT_BASE		0x3E820000 /* SDRAM */
 #define CONFIG_SYS_TEXT_OFFSET		0x00020000
-
-/* size needed to initialize the SRAM starting from that offset */
-#define CONFIG_UBOOT_SIZE			0x39000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
