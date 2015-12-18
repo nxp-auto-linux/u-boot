@@ -89,13 +89,17 @@ static void setup_iomux_uart(void)
 }
 static void setup_iomux_enet(void)
 {
+#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
 	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
 	writel(       0x2, SIUL2_MSCRn(981));
+#endif
 
-
-
+#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
+#else
 	writel(0x00203701, SIUL2_MSCRn(47));	//TX_CLK //PC15
+#endif
 	writel(       0x2, SIUL2_MSCRn(978));
 
 	writel(0x0008c700, SIUL2_MSCRn(48));	//RX_CLK //PD0
@@ -242,6 +246,40 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
+#ifdef CONFIG_DCU_QOS_FIX
+int board_dcu_qos()
+{
+	writel(0x0, 0x40012380);
+	writel(0x0, 0x40012384);
+	writel(0x0, 0x40012480);
+	writel(0x0, 0x40012484);
+	writel(0x0, 0x40012580);
+	writel(0x0, 0x40012584);
+	writel(0x0, 0x40012680);
+	writel(0x0, 0x40012684);
+	writel(0x0, 0x40012780);
+	writel(0x0, 0x40012784);
+	writel(0x0, 0x40012880);
+	writel(0x0, 0x40012884);
+	writel(0x0, 0x40012980);
+	writel(0x0, 0x40012984);
+	writel(0x0, 0x40012A80);
+	writel(0x0, 0x40012A84);
+	writel(0x0, 0x40012B80);
+	writel(0x0, 0x40012B84);
+	writel(0x0, 0x40012C80);
+	writel(0x0, 0x40012C84);
+	writel(0x0, 0x40012D80);
+	writel(0x0, 0x40012D84);
+	writel(0x0, 0x40012E80);
+	writel(0x0, 0x40012E84);
+	writel(0x0, 0x40012F80);
+	writel(0x0, 0x40012F84);
+	
+	return 0;
+}
+#endif
+
 int board_early_init_f(void)
 {
 	clock_init();
@@ -253,6 +291,11 @@ int board_early_init_f(void)
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
+
+#ifdef CONFIG_DCU_QOS_FIX
+	board_dcu_qos();
+#endif
+
 	return 0;
 }
 

@@ -69,6 +69,10 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
+#if 0
+/* Enable DCU QoS fix */
+#define CONFIG_DCU_QOS_FIX
+#endif
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
@@ -121,12 +125,23 @@
 #define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
-#define IMX_FEC_BASE			ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE		RGMII
-#define CONFIG_FEC_MXC_PHYADDR	7
+#define IMX_FEC_BASE            ENET_BASE_ADDR
+#define CONFIG_FEC_XCV_TYPE     RGMII
 #define CONFIG_PHYLIB
+
+/* CONFIG_PHY_RGMII_DIECT_CONNECTED should be enabled when
+ * BCM switch is configured.
+ */
+/* #define CONFIG_PHY_RGMII_DIRECT_CONNECTED */
+#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+#define CONFIG_FEC_MXC_PHYADDR (0x484a53)
+#define CONFIG_BCM_SPEED	SPEED_1000
+#define CONFIG_BCM_DUPLEX_MODE	DUPLEX_FULL
+#else
+#define CONFIG_FEC_MXC_PHYADDR  7
 #define CONFIG_PHY_MICREL
 #define CONFIG_PHY_MICREL_KSZ9031
+#endif
 
 /* I2C Configs */
 #define CONFIG_CMD_I2C
@@ -154,7 +169,14 @@
 #define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
 #endif
 
-#define CONFIG_BOOTDELAY		-1
+#define CONFIG_BOOTDELAY		9
+
+#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+	#define FDT_FILE s32v234-evbbcm.dtb
+#else
+	#define	FDT_FILE s32v234-evb.dtb
+#endif
+
 #define CONFIG_LOADADDR			0xC307FFC0
 #define CONFIG_BOOTARGS			"console=ttyLF0 root=/dev/ram rw"
 
@@ -166,7 +188,7 @@
 	"console=ttyLF0\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_file=s32v234-evb.dtb\0" \
+	"fdt_file="  __stringify(FDT_FILE) "\0" \
 	"fdt_addr=0xC2000000\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
