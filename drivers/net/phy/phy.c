@@ -20,9 +20,6 @@
 #include <errno.h>
 #include <linux/err.h>
 #include <linux/compiler.h>
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-#include <fixed_phy.h>
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
