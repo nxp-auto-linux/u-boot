@@ -41,11 +41,17 @@ static int do_imls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 #endif
 
 /* TODO: Implement a generic secure boot API */
-#if defined CONFIG_SECURE_BOOT
-extern int cse_auth(void);
-#elif defined CONFIG_CSE3
+#ifdef CONFIG_CSE3
+
 extern int cse_init(void);
-#endif
+
+#ifdef CONFIG_SECURE_BOOT
+
+extern int secure_boot(void);
+
+#endif /* CONFIG_SECURE_BOOT */
+
+#endif /* CONFIG_CSE3 */
 
 bootm_headers_t images;		/* pointers to os/initrd/fdt images */
 
@@ -103,20 +109,21 @@ static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 
 int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+#ifdef CONFIG_CSE3
 
-/* TODO: Implement a generic secure boot API */
-#if defined CONFIG_SECURE_BOOT
-/* TODO: implement Secure Boot */
-	if (cse_auth()) {
-		printf("Secure Boot authentication failed\n");
-		return 1;
-	}
-#elif defined CONFIG_CSE3
 	if (cse_init()) {
 		printf("CSE init failed\n");
 		return 1;
 	}
-#endif
+
+#ifdef CONFIG_SECURE_BOOT
+
+	if(secure_boot())
+		printf("Secure Boot authentication failed\n");
+
+#endif /* CONFIG_SECURE_BOOT */
+
+#endif /* CONFIG_CSE3 */
 
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated = 0;

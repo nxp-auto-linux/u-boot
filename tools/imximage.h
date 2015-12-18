@@ -69,6 +69,7 @@ enum imximage_cmd {
 	CMD_CHECK_BITS_SET,
 	CMD_CHECK_BITS_CLR,
 	CMD_CSF,
+	CMD_SECURE_CALLBACK
 };
 
 enum imximage_fld_types {

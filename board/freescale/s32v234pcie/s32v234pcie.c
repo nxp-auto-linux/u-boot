@@ -29,6 +29,7 @@
 #error "Please define the DDR type for S32V234 board!"
 #endif
 #include <asm/arch/clock.h>
+#include <asm/arch/xrdc.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <miiphy.h>
@@ -228,6 +229,25 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
+void setup_xrdc(void)
+{
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_16);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_16);
+	writel(XRDC_VALID, XRDC_MRGD_W3_16);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_17);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_17);
+	writel(XRDC_VALID, XRDC_MRGD_W3_17);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_18);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_18);
+	writel(XRDC_VALID, XRDC_MRGD_W3_18);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_19);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_19);
+	writel(XRDC_VALID, XRDC_MRGD_W3_19);
+}
+
 #ifdef CONFIG_DCU_QOS_FIX
 int board_dcu_qos()
 {
@@ -278,6 +298,7 @@ int board_early_init_f(void)
 	board_dcu_qos();
 #endif
 
+	setup_xrdc();
 	return 0;
 }
 

@@ -33,8 +33,15 @@
 /* Init CSE3 from u-boot */
 /* #define CONFIG_CSE3		1 */
 #ifdef CONFIG_CSE3
-#define KIA_BASE	0xC0005000UL
-#define FIRMWARE_BASE	0xC0001000UL
+#define KIA_BASE		0x3e805000UL
+/* Secure Boot */
+#define CONFIG_SECURE_BOOT
+#ifdef CONFIG_SECURE_BOOT
+#define SECURE_BOOT_KEY_ID	0x4UL
+#endif
+/* start address and size of firmware+keyimage binary blob */
+#define CSE_BLOB_BASE		0x3e801000UL
+#define CSE_BLOB_SIZE		0x00004500UL
 #endif
 
 /* Config GIC */
@@ -73,8 +80,21 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
+/* SMP definitions */
+#define CONFIG_MAX_CPUS				(4)
+#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
+#define CPU_RELEASE_ADDR			SECONDARY_CPU_BOOT_PAGE
+#define CONFIG_FSL_SMP_RELEASE_ALL
+#define CONFIG_ARMV8_SWITCH_TO_EL1
+
 /* SMP Spin Table Definitions */
-#define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
+#define CONFIG_MP
+#define CONFIG_OF_LIBFDT
+
+/* Flat device tree definitions */
+#define FDT_ADDR		0xC2000000
+#define CONFIG_OF_FDT
+#define CONFIG_OF_BOARD_SETUP
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
@@ -121,8 +141,8 @@
 #define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
-#define IMX_FEC_BASE            ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE     RGMII
+#define IMX_FEC_BASE			ENET_BASE_ADDR
+#define CONFIG_FEC_XCV_TYPE		RGMII
 #define CONFIG_PHYLIB
 
 /* CONFIG_PHY_RGMII_DIECT_CONNECTED should be enabled when
@@ -143,7 +163,7 @@
 #define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
+#define CONFIG_SYS_I2C_MXC_I2C1		/* enable fdef CONFIG_PHY_RGMII_DIRECT_CONNECTEDI2C bus 1 */
 #define CONFIG_SYS_MXC_I2C1_SPEED 100000
 #define CONFIG_SYS_MXC_I2C1_SLAVE 0x8
 #define CONFIG_SYS_SPD_BUS_NUM		0
@@ -185,7 +205,7 @@
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \
-	"fdt_addr=0xC2000000\0" \
+	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
 	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
 	"ipaddr=10.0.0.100\0" \
@@ -193,12 +213,11 @@
 	"netmask=255.255.255.0\0" \
 	"boot_fdt=try\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=1\0" \
+	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"cse_addr=0xC0001000\0" \
+	"cse_addr=" __stringify(CSE_BLOB_BASE) "\0" \
 	"cse_file=cse.bin\0" \
-	"initcse=fatload mmc ${mmcdev}:${mmcpart} ${cse_addr} ${cse_file}\0" \
-	"set_cse="__stringify(CONFIG_CSE3) "\0" \
+	"sec_boot_key_id=" __stringify(SECURE_BOOT_KEY_ID) "\0" \
 	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
@@ -226,6 +245,35 @@
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
 		"run loaduimage; run loadramdisk; run loadfdt;"\
+<<<<<<< HEAD
+		"run nfsbootargs;"\
+		"run loadtftpimage; run loadtftpfdt;"\
+		"bootm ${loadaddr} - ${fdt_addr};\0"\
+	"netargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs " \
+	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+		"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+=======
+		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
+	"mmcboot=echo Booting from mmc ...; " \
+		"run mmcargs; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if run loadfdt; then " \
+				"bootm ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootm; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+>>>>>>> c3dd371b61915c81ed361cef198b213f0c667c0a
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; run loadtftpfdt;"\
 		"bootm ${loadaddr} - ${fdt_addr};\0"\
@@ -332,6 +380,7 @@
 
 #define CONFIG_ENV_OFFSET		(12 * 64 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
+#define CONFIG_MMC_PART			1
 
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTZ
