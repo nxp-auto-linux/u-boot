@@ -8,9 +8,11 @@
 
 #include <config.h>
 #include <linux/linkage.h>
-#include <asm/gic.h>
+#include <asm/armv8/mmu.h>
 #include <asm/macro.h>
+#include <asm/gic.h>
 #include "mp.h"
+
 
 ENTRY(lowlevel_init)
 
@@ -87,48 +89,6 @@ ctrl_status:
 	/* deassert cores on reset */
 
 start_slave_cores:
-	ldr w1, =0xFA
-
-	ldr x0, =0x4004A1CA
-	strb w1, [x0]
-
-	ldr x0, =0x4004A1C8
-	strb w1, [x0]
-
-	ldr x0, =0x4004A1CE
-	strb w1, [x0]
-
-	/* set start addresses */
-	ldr x0, =_start
-	orr x0,x0,0x1
-	ldr x1, =0x4004A1E8
-	str w0, [x1]
-
-	ldr x0, =_start
-	orr x0,x0,0x1
-	ldr x1, =0x4004A1EC
-	str w0, [x1]
-
-	ldr x0, =_start
-	orr x0,x0,0x1
-	ldr x1, =0x4004A1F0
-	str w0, [x1]
-
-	/* enable core transitioning */
-	ldr x0, =0x30005AF0
-	ldr x1, =0x4004A004
-	str w0, [x1]
-
-	ldr x0, =0x3000A50F
-	ldr x1, =0x4004A004
-	str w0, [x1]
-
-	/* transition secondary cores to DRUN */
-transition_cores:
-	ldr x0, =0x4004A000
-	ldr x1, [x0]
-	and x1, x1, #0x8000000
-	cbnz x1, transition_cores
 
 #if defined(CONFIG_GICV2) || defined(CONFIG_GICV3)
 	branch_if_slave x0, 1f
@@ -146,20 +106,88 @@ transition_cores:
 #endif
 #endif
 
+	mrs	x0, S3_1_c15_c2_1
+	orr	x0, x0, #(1 << 6)
+	msr	S3_1_c15_c2_1, x0
+	isb
 	branch_if_master x0, x1, 2f
 
 	/*
-	 * Slave should wait for master clearing spin table.
+	 * Slave should wait for master clearing spin table and
+	 * the mmu page tables.
 	 * This sync prevent salves observing incorrect
 	 * value of spin table and jumping to wrong place.
 	 */
-#if defined(CONFIG_GICV2) || defined(CONFIG_GICV3)
-#ifdef CONFIG_GICV2
-	ldr	x0, =GICC_BASE
-#endif
-	bl	gic_wait_for_interrupt
-#endif
 
+	wfe
+	tlbi	alle3
+	dsb	sy
+	isb
+	isb
+
+	ldr	x0, =CPU_RELEASE_ADDR
+	ldr	x1, =0x1000
+	add	x0, x0, x1
+	msr	ttbr0_el3, x0
+	msr	ttbr0_el2, x0
+
+	/* PS = 40 bits, 1 Tbyte; SH0 = 2 (Outer shareable);
+	 * ORGN0 = 1 - Normal memory, outer write-back write-allocate cacheable
+	 * IRGN0 = 1 - Normal memory, inner write-back write-allocate cacheable
+	 * T0SZ=24
+	 */
+	ldr	x0, =(2<<16) | (2<<12) | (1<<10) | (1<<8) | (24 << 0)
+	msr	tcr_el3, x0
+	msr	tcr_el2, x0
+
+	ldr	x0,=MEMORY_ATTRIBUTES
+	msr	mair_el3, x0
+	msr	mair_el2, x0
+
+	/* icache & dcache */
+	mrs	x0, sctlr_el3
+	ldr	x1, =(1<<12) | (1<<5) | (1 << 3) | (1<<2) |(1 << 0) /* bits SA(3)  M(0) */
+	orr	x0, x0, x1     /* set bits */
+	msr	sctlr_el3, x0
+	isb
+
+	/*
+	 * MPIDR_EL1 Fields:
+	 * MPIDR[1:0] = AFF0_CPUID <- Core ID (0,1)
+	 * MPIDR[7:2] = AFF0_RES
+	 * MPIDR[15:8] = AFF1_CLUSTERID <- Cluster ID (0,1,2,3)
+	 * MPIDR[23:16] = AFF2_CLUSTERID
+	 * MPIDR[24] = MT
+	 * MPIDR[29:25] = RES0
+	 * MPIDR[30] = U
+	 * MPIDR[31] = ME
+	 * MPIDR[39:32] = AFF3
+	 *
+	 * Linear Processor ID (LPID) calculation from MPIDR_EL1:
+	 * (We only use AFF0_CPUID and AFF1_CLUSTERID for now
+	 * until AFF2_CLUSTERID and AFF3 have non-zero values)
+	 *
+	 * LPID = MPIDR[15:8] | MPIDR[1:0]
+	 */
+	mrs	x0, mpidr_el1
+	ubfm	x1, x0, #8, #15
+	ubfm	x2, x0, #0, #1
+	orr	x10, x2, x1, lsl #2	/* x10 has LPID */
+	ubfm	x9, x0, #0, #15         /* x9 contains MPIDR[15:0] */
+	/*
+	 * offset of the spin table element for this core from start of spin
+	 * table (each elem is padded to 64 bytes)
+	 */
+	lsl	x1, x10, #6
+	ldr	x0, =CPU_RELEASE_ADDR
+	/* physical address of this cpus spin table element */
+	add	x11, x1, x0
+	ldr	x0, =COUNTER_FREQUENCY
+	msr	cntfrq_el0, x0	/* set with real frequency */
+	str	x9, [x11, #16]	/* LPID */
+	mov	x4, #1
+	str	x4, [x11, #8]	/* STATUS */
+	dsb	sy
 	/*
 	 * All slaves will enter EL2 and optionally EL1.
 	 */

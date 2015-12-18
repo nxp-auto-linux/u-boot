@@ -69,26 +69,12 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
-/* Enable DCU QoS fix */
-#define CONFIG_DCU_QOS_FIX
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
-/* SMP definitions */
-#define CONFIG_MAX_CPUS				(4)
-#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
-#define CPU_RELEASE_ADDR			SECONDARY_CPU_BOOT_PAGE
-#define CONFIG_FSL_SMP_RELEASE_ALL
-#define CONFIG_ARMV8_SWITCH_TO_EL1
-
 /* SMP Spin Table Definitions */
-#define CONFIG_MP
-#define CONFIG_OF_LIBFDT
-
-/* Flat device tree definitions */
-#define CONFIG_OF_FDT
-#define CONFIG_OF_BOARD_SETUP
+#define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
@@ -102,7 +88,6 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
 #define CONFIG_BOARD_EARLY_INIT_F
-#define CONFIG_ARCH_EARLY_INIT_R
 
 
 #define CONFIG_FSL_LINFLEXUART
@@ -241,32 +226,6 @@
 		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
 		"run loaduimage; run loadramdisk; run loadfdt;"\
-		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
-	"mmcboot=echo Booting from mmc ...; " \
-		"run mmcargs; " \
-		"if test ${set_cse} = 1; then " \
-			"run initcse; " \
-		"fi; " \
-		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-			"if run loadfdt; then " \
-				"bootm ${loadaddr} - ${fdt_addr}; " \
-			"else " \
-				"if test ${boot_fdt} = try; then " \
-					"bootm; " \
-				"else " \
-					"echo WARN: Cannot load the DT; " \
-				"fi; " \
-			"fi; " \
-		"else " \
-			"bootm; " \
-		"fi;\0" \
-	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
-		"root=/dev/nfs rw " \
-		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
-		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
-	"loadtftpimage=tftp ${loadaddr} ${uimage};\0" \
-	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
-	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; run loadtftpfdt;"\
 		"bootm ${loadaddr} - ${fdt_addr};\0"\
@@ -331,7 +290,7 @@
 #define CONFIG_SYS_TEXT_OFFSET		0x00020000
 
 /* size needed to initialize the SRAM starting from that offset */
-#define CONFIG_UBOOT_SIZE			0x42000
+#define CONFIG_UBOOT_SIZE			0x39000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
@@ -364,7 +323,6 @@
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
 
 /* FLASH and environment organization */
 #define CONFIG_SYS_NO_FLASH

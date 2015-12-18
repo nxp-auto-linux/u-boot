@@ -232,6 +232,7 @@
 /* Cortex-A53 Core 3 - Core Address Register */
 #define MC_ME_CADDR4   (MC_ME_BASE_ADDR + 0x000001F0)
 
+#define MC_ME_CADDRn_ADDR_EN	(1 << 0)
 
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Freescale Semiconductor, Inc.
+ * Copyright 2014-2015 Freescale Semiconductor, Inc.
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -8,6 +8,7 @@
 #include <asm/io.h>
 #include <asm/system.h>
 #include <asm/io.h>
+#include <asm/arch/mc_me_regs.h>
 #include "mp.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -32,12 +33,31 @@ phys_addr_t determine_mp_bootpg(void)
 
 int fsl_s32v234_wake_seconday_cores(void)
 {
+	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
+	size_t *boot_page_size = &(__secondary_boot_page_size);
 	u64 *table = get_spin_tbl_addr();
 
 	/* Clear spin table so that secondary processors
 	 * observe the correct value after waking up from wfe.
 	 */
 	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
+	flush_dcache_range((unsigned long)boot_loc,
+			   (unsigned long)boot_loc + *boot_page_size);
+
+	/* program the cores possible running modes */
+	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL2);
+	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL3);
+	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL4);
+
+	/* write the cores' start address */
+	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR2);
+	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR3);
+	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR4);
+
+	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL );
+	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
+
+	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
 
 	smp_kick_all_cpus();
 
