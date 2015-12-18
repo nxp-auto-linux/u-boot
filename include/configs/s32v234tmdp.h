@@ -60,12 +60,21 @@
 #define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
+/* Enable DCU QoS fix */
+#define CONFIG_DCU_QOS_FIX
 
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
 /* SMP Spin Table Definitions */
-#define CPU_RELEASE_ADDR                (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
+#define CONFIG_MAX_CPUS				(4)
+#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
+#define CPU_RELEASE_ADDR			SECONDARY_CPU_BOOT_PAGE
+#define CONFIG_FSL_SMP_RELEASE_ALL
+
+/* SMP Spin Table Definitions */
+#define CONFIG_MP
+#define CONFIG_OF_LIBFDT
 
 /* Generic Timer Definitions */
 #define CONFIG_SYS_GENERIC_TIMER
@@ -114,9 +123,16 @@
 #define CONFIG_MII
 #define IMX_FEC_BASE            ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE     RGMII
-#define CONFIG_FEC_MXC_PHYADDR  1
 #define CONFIG_PHYLIB
-#define CONFIG_PHY_MICREL
+
+/* CONFIG_PHY_RGMII_DIECT_CONNECTED should be enabled when
+ * BCM switch is configured.
+ */
+#define CONFIG_PHY_RGMII_DIRECT_CONNECTED
+#define CONFIG_FEC_MXC_PHYADDR (0x484a53)
+#define CONFIG_BCM_SPEED	SPEED_100
+#define CONFIG_BCM_DUPLEX_MODE	DUPLEX_FULL
+
 
 /* I2C Configs */
 #define CONFIG_CMD_I2C

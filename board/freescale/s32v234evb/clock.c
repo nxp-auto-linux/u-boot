@@ -225,6 +225,10 @@ static void setup_aux_clocks( void )
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 5, MC_CGM_ACn_SEL_PERPLLDIVX );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 5, 0, 4 );
 
+	/* setup the aux clock divider for CAN_CLK (40 MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 6, MC_CGM_ACn_SEL_XOSC ); 
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 6, 0, 0 );
+
 	/* setup the aux clock divider for LIN_CLK (40MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 3, MC_CGM_ACn_SEL_PERPLLDIVX );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 3, 0, 1 );
@@ -315,6 +319,8 @@ static void enable_modules_clock( void )
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL40 );
 	/* IIC0 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL81 );
+	/* CAN0 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL85 );
 	/* IIC1 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL184 );
 	/* IIC2 */
@@ -323,6 +329,8 @@ static void enable_modules_clock( void )
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL54 );
 	/* MMDC1 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL162 );
+	/* CAN1 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL190 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
