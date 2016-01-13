@@ -48,9 +48,9 @@
 #define CONFIG_OF_FDT
 #define CONFIG_OF_BOARD_SETUP
 
-/* Generic Timer Definitions */
-/* #define CONFIG_SYS_GENERIC_TIMER */
-#define CONFIG_SYS_PIT_TIMER
+/* System Timer */
+#define CONFIG_SYS_GENERIC_TIMER
+/* #define CONFIG_SYS_PIT_TIMER */
 
 #define CONFIG_ARCH_EARLY_INIT_R
 

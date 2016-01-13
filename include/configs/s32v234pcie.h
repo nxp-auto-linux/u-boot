@@ -39,9 +39,9 @@
 
 #define CONFIG_ARCH_EARLY_INIT_R
 
-/* Generic Timer Definitions */
-/* #define CONFIG_SYS_GENERIC_TIMER */
-#define CONFIG_SYS_PIT_TIMER
+/* System Timer */
+#define CONFIG_SYS_GENERIC_TIMER
+/* #define CONFIG_SYS_PIT_TIMER */
 
 #define LINFLEXUART_BASE		LINFLEXD1_BASE_ADDR
 

@@ -49,9 +49,9 @@
 /* SMP Spin Table Definitions */
 /* #define CPU_RELEASE_ADDR             (CONFIG_SYS_SDRAM_BASE + 0x7fff0) */
 
-/* Generic Timer Definitions */
-/* #define CONFIG_SYS_GENERIC_TIMER */
-#define CONFIG_SYS_PIT_TIMER
+/* System Timer */
+#define CONFIG_SYS_GENERIC_TIMER
+/* #define CONFIG_SYS_PIT_TIMER */
 
 #define LINFLEXUART_BASE		LINFLEXD0_BASE_ADDR
 
