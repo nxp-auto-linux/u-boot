@@ -41,8 +41,8 @@
 /* Enable DCU QoS fix */
 #define CONFIG_DCU_QOS_FIX
 
-/* S32V234 FVB Rev. B has DDR3 */
-#define CONFIG_S32V234_DDR2
+/* S32V234 FVB Rev. B has DDR2, but we pretend it has LPDDR2 */
+#define CONFIG_S32V234_LPDDR2
 
 #define CONFIG_DDR_INIT_DELAY		1000
 
