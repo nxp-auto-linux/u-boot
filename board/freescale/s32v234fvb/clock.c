@@ -265,12 +265,6 @@ static void setup_aux_clocks( void )
 	/* setup the aux clock divider for DDR4_CLK (133,25MHz) */
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 8, 1, 3 );
 
-	/*
-	 * Disable until the modules will be implemented and activated.
-	 * Please update the divider when activate the module
-	 */
-#if 0
-
 	/* setup the aux clock divider for SEQ_CLK (250MHz) and ISP_CLK (500MHz)) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 0, MC_CGM_ACn_SEL_DDRPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 0, 0, 0 );
@@ -284,13 +278,12 @@ static void setup_aux_clocks( void )
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 2, 0, 0 );
 
 	/* setup the aux clock divider for DCU_AXI_CLK (300MHz) */
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLL );
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 0 );
 
 	/* setup the aux clock divider for DCU_PIX_CLK (150MHz) */
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 1 );
-#endif
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 9 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
