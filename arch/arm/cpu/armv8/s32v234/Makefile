@@ -17,13 +17,14 @@
 # MA 02111-1307 USA
 #
 
-obj-y   += generic.o
+obj-y	+= generic.o
 obj-y	+= lowlevel.o
 obj-y	+= mp.o
-obj-y   += cpu.o
-obj-y   += cse.o
-obj-$(CONFIG_SYS_PIT_TIMER)	+= timer.o
-obj-$(CONFIG_S32V234_LPDDR2)	+= lpddr2.o
-obj-$(CONFIG_S32V234_DDR3)	+= ddr3.o
-obj-$(CONFIG_MP) += mp.o
-obj-$(CONFIG_OF_LIBFDT) += fdt.o
+obj-y	+= cpu.o
+obj-y	+= cse.o
+obj-$(CONFIG_SYS_PIT_TIMER)		+= timer.o
+obj-$(CONFIG_S32V234_LPDDR2)		+= lpddr2.o
+obj-$(CONFIG_S32V234_DDR3)		+= ddr3.o
+obj-$(CONFIG_S32V234_QSPI_WRITE)	+= qspi_driver.o
+obj-$(CONFIG_MP)			+= mp.o
+obj-$(CONFIG_OF_LIBFDT)			+= fdt.o
