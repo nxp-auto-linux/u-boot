@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * Configuration settings for all the Freescale S32V234 boards.
  *
@@ -51,10 +51,8 @@
 /* Run by default from DDR1  */
 #ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR		0x80000000
-#define DDR_SIZE		(1024 * 1024 * 1024)
 #else
 #define DDR_BASE_ADDR		0xC0000000
-#define DDR_SIZE		(512 * 1024 * 1024)
 #endif
 
 #define CONFIG_SKIP_LOWLEVEL_INIT

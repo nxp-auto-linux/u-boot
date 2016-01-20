@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * Configuration settings for the Freescale S32V234 FVB board.
  *
@@ -36,6 +36,9 @@
 
 /* S32V234 FVB Rev. A has DDR3 */
 #define CONFIG_S32V234_DDR3
+
+/* FVB board has 2x512 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
+#define DDR_SIZE		(512 * 1024 * 1024)
 
 #define CONFIG_DDR_INIT_DELAY		1000
 

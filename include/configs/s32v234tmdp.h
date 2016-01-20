@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * Configuration settings for the Freescale S32V234 TMDP board.
  *
@@ -26,10 +26,12 @@
 
 /* S32V234 TMDP has LPDDR2 */
 #define CONFIG_S32V234_LPDDR2
+
 #define CONFIG_RUN_FROM_DDR1
 #undef CONFIG_RUN_FROM_DDR0
 
-/* Run by default from DDR1  */
+/* TMDP board has 2x256 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
+#define DDR_SIZE		(256 * 1024 * 1024)
 
 #define CONFIG_MACH_TYPE		4146
 
