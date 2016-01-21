@@ -137,20 +137,18 @@
 #define CONFIG_SYS_SPD_BUS_NUM	0
 
 #if 0 /* Disable until the FLASH will be implemented */
-#define CONFIG_SYS_USE_NAND
+#define CONFIG_S32V234_FLASH
 #endif
 
-#ifdef CONFIG_SYS_USE_NAND
-/* Nand Flash Configs */
-#define	CONFIG_CMD_NAND
-#define CONFIG_JFFS2_NAND
-#define MTD_NAND_FSL_NFC_SWECC 1
-#define CONFIG_NAND_FSL_NFC
-#define CONFIG_SYS_NAND_BASE		0x400E0000
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define NAND_MAX_CHIPS			CONFIG_SYS_MAX_NAND_DEVICE
-#define CONFIG_SYS_NAND_SELECT_DEVICE
-#define CONFIG_SYS_64BIT_VSPRINTF  /* needed for nand_util.c */
+/* QSPI/hyperflash configs */
+#ifdef CONFIG_S32V234_FLASH
+/* disabled until implemented */
+#if 0
+#define CONFIG_CMD_FLASH
+#endif
+#define QSPI_BASE_ADDR		0x400A6000
+#define FLASH_BASE_ADR		0x20000000
+#define FLASH_BASE_ADR2		0x24000000
 #endif
 
 #define CONFIG_BOOTDELAY		3

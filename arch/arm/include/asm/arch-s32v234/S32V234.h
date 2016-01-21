@@ -447,7 +447,7 @@ struct QuadSPI_tag {
   QuadSPI_LUT_tag LUT[64];             /* Look-up Table register */
 };
 
-#define QuadSPI (*(volatile struct QuadSPI_tag *) 0x400A6000UL)
+#define QuadSPI (*(volatile struct QuadSPI_tag *) QSPI_BASE_ADDR)
 
 /* QuadSPI */
 #define QuadSPI_MCR          QuadSPI.MCR.R                 /* Module Configuration Register */

@@ -18,8 +18,6 @@
 
 #define QuadSPI_X QuadSPI_0
 #define ARDB (*(volatile unsigned int *) 0x71000000)
-#define FLASH_BASE_ADR	0x20000000
-#define FLASH_BASE_ADR2	0x24000000
 
 #define HYPERFLASH
 
