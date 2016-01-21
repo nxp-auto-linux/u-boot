@@ -466,7 +466,13 @@ const char *symbol_lookup(unsigned long addr, unsigned long *caddr);
 void	api_init (void);
 
 /* common/memsize.c */
-long	get_ram_size  (long *, long);
+#if RAM_CELL_SIZE == 32
+typedef  uint32_t	ramcell;
+#else
+typedef  long		ramcell;
+#endif
+
+long	get_ram_size  (ramcell *, long);
 phys_size_t get_effective_memsize(void);
 
 /* $(BOARD)/$(BOARD).c */

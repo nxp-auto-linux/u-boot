@@ -24,21 +24,21 @@ DECLARE_GLOBAL_DATA_PTR;
  * the actually available RAM size between addresses `base' and
  * `base + maxsize'.
  */
-long get_ram_size(long *base, long maxsize)
+long get_ram_size(ramcell *base, long maxsize)
 {
-	volatile long *addr;
-	long           save[32];
-	long           cnt;
-	long           val;
-	long           size;
-	int            i = 0;
+	volatile ramcell *addr;
+	ramcell           save[32];
+	long              cnt;
+	ramcell           val;
+	long              size;
+	int               i = 0;
 
-	for (cnt = (maxsize / sizeof(long)) >> 1; cnt > 0; cnt >>= 1) {
+	for (cnt = (maxsize / sizeof(ramcell)) >> 1; cnt > 0; cnt >>= 1) {
 		addr = base + cnt;	/* pointer arith! */
 		sync();
 		save[i++] = *addr;
 		sync();
-		*addr = ~cnt;
+		*addr = (ramcell) ~cnt;
 	}
 
 	addr = base;
@@ -52,7 +52,7 @@ long get_ram_size(long *base, long maxsize)
 		/* Restore the original data before leaving the function. */
 		sync();
 		*addr = save[i];
-		for (cnt = 1; cnt < maxsize / sizeof(long); cnt <<= 1) {
+		for (cnt = 1; cnt < maxsize / sizeof(ramcell); cnt <<= 1) {
 			addr  = base + cnt;
 			sync();
 			*addr = save[--i];
@@ -60,18 +60,17 @@ long get_ram_size(long *base, long maxsize)
 		return (0);
 	}
 
-	for (cnt = 1; cnt < maxsize / sizeof(long); cnt <<= 1) {
+	for (cnt = 1; cnt < maxsize / sizeof(ramcell); cnt <<= 1) {
 		addr = base + cnt;	/* pointer arith! */
 		val = *addr;
 		*addr = save[--i];
-		if (val != ~cnt) {
-			size = cnt * sizeof(long);
-			/*
-			 * Restore the original data
+		if (val != (ramcell) ~cnt) {
+			size = cnt * sizeof(ramcell);
+			/* Restore the original data
 			 * before leaving the function.
 			 */
 			for (cnt <<= 1;
-			     cnt < maxsize / sizeof(long);
+			     cnt < maxsize / sizeof(ramcell);
 			     cnt <<= 1) {
 				addr  = base + cnt;
 				*addr = save[--i];
