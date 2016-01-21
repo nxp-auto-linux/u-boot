@@ -8,11 +8,16 @@
 #ifndef QSPI_DRIVER_H_
 #define QSPI_DRIVER_H_
 
-//#include "S32V234.h"
+
+#include "S32V234.h"
+/* TODO: use our own clean definitions */
+#warning "QuadSPI should be defined inside u-boot code in u-boot style"
 
 /* TODO: we use hacks to adapt easier to u-boot's code */
 #warning "uint32_t should be changed into u32"
 #define uint32_t u32
+
+
 
 #define QuadSPI_X QuadSPI_0
 #define ARDB (*(volatile unsigned int *) 0x71000000)

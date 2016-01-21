@@ -7,32 +7,45 @@
 
 #include <common.h>
 #include <asm/arch/qspi_driver.h>
+#include <asm/arch/siul.h>
 
 
 #define QSPI_FREQ
 
 void quadspi_switch(unsigned int mode)
 {
+#if 1
+	#warning "quadspi_switch() is missing SIUL2 settings"
+#else
+	/*
 	SIUL2.MSCR[5].B.MUX_MODE = 0;	// GPIO mux mode selected
-    SIUL2.MSCR[5].B.OBE = 1;		// output buffer enabled
-    SIUL2.MSCR[5].B.DSE = 7;		// Drive Strenght
-	
+	SIUL2.MSCR[5].B.OBE = 1;		// output buffer enabled
+	SIUL2.MSCR[5].B.DSE = 7;		// Drive Strenght
+	*/
+
 	if (mode == SWITCH_QSPI)
 		SIUL2.GPDO[1].B.PDO_4n1 = 0; 
 	else if (SWITCH_SD)
 		SIUL2.GPDO[1].B.PDO_4n1 = 1; 
+#endif
 }
 
 void QSPI_setup_hyp()
 {
 	uint32_t i;
 
+#ifndef CONFIG_DEBUG_S32V234_QSPI
+	#warning "Clocks should be handled in clock.c"
+#else
 //	MC_CGM_0.AC14_SC.B.SELCTL = 4; /* set ENET_PLL_DFS_3 as source  */
 //	MC_CGM_0.AC14_DC0.R = 0x80070000; /* Division by 8 (i.e. 40MHz) */
 	MC_CGM_0.AC14_SC.B.SELCTL = 1; /* set XOSRC as source  */
 	MC_CGM_0.AC14_DC0.R = 0x80000000; /* Division by 0 (Strangely got 10Mhz instead of 40Mhz, to be verified with design) */
+#endif
 
-
+#ifndef CONFIG_DEBUG_S32V234_QSPI
+	#warning "QSPI_setup_hyp() is missing SIUL2 settings"
+#else
 	SIUL2.MSCR[150].R = 0x0020D701;//0x0020C301; //QSPI0_A_SCK - V25 - PK6
 	SIUL2.MSCR[149].R = 0x0020D701;//0x0020FF01;//0x0029F301; //QSPI0_A_CS0 w Pull up enabled - U25 - PK5
 
@@ -59,8 +72,11 @@ void QSPI_setup_hyp()
 	SIUL2.MSCR[159].R = 0x0028D702; //0x0028C302; //QSPI0_B_D0 - W23 - PK15
 	SIUL2.IMCR[824 - 512].R =  0x00000002;
 	SIUL2.MSCR[157].R = 0x0020D702; //0x0028C302; //QSPI0_CK# - B_SCK- V24 - PK13
+#endif
 
-
+#ifndef CONFIG_DEBUG_S32V234_QSPI
+	#warning "QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions"
+#endif
 	QuadSPI.MCR.B.MDIS = 0; //clear MDIS bit
 	QuadSPI.BUF0IND.R = 0x0; //set AHB buffer size (64bits)
 	QuadSPI.SFA1AD.R = FLASH_BASE_ADR + 0x4000000; //set top address of FA1 (size 512Mbit)
@@ -79,7 +95,6 @@ void QSPI_setup_hyp()
 	QuadSPI.SFACR.R = 0x00010003;
 	QuadSPI.MCR.B.DQS_LAT_EN = 1;
 	QuadSPI.FLSHCR.B.TDH=1;
-
 
 
 	/* Set-up Read command for hyperflash */
@@ -153,6 +168,9 @@ void quadspi_program_hyp(unsigned int address, unsigned int *data, unsigned int 
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554,0x55);
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA,0xA0);
 
+#ifndef CONFIG_DEBUG_S32V234_QSPI
+	#warning "quadspi_program_hyp() uses baremetal QuadSPI settings and definitions"
+#endif
 		//prepare write/program instruction
 		QuadSPI.SFAR.R = address;
 		quadspi_set_lut(60,QSPI_LUT(ADDR_DDR,3,0x18,CMD_DDR,3,0x00));
@@ -255,7 +273,7 @@ void quadspi_send_instruction_hyp(unsigned int address, unsigned int cmd)
 
 void quadspi_set_lut(uint32_t index, uint32_t value)
 {
- 	//Unlock the LUT
+	//Unlock the LUT
 	do{
 	QuadSPI.LUTKEY.R = 0x5AF05AF0;
 	QuadSPI.LCKCR.R = 0x2;	//UNLOCK the LUT
