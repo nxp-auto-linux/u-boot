@@ -136,7 +136,7 @@
 #define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
 
-#if 0 /* Disable until the FLASH will be implemented */
+#if 1 /* Disable until the FLASH will be implemented */
 #define CONFIG_S32V234_FLASH
 #endif
 
@@ -148,13 +148,19 @@
 
 /* QSPI/hyperflash configs */
 #ifdef CONFIG_S32V234_FLASH
-/* disabled until implemented */
+
+/* debug stuff for qspi/hyperflash */
+#define CONFIG_DEBUG_S32V234_QSPI_MC_CGM
+//#define CONFIG_DEBUG_S32V234_QSPI_QSPI
+/* flash comand disabled until implemented */
 #if 0
 #define CONFIG_CMD_FLASH
 #endif
+
 #define QSPI_BASE_ADDR		0x400A6000
 #define FLASH_BASE_ADR		CONFIG_SYS_FSL_FLASH0_BASE
 #define FLASH_BASE_ADR2		0x24000000
+
 #endif
 
 #define CONFIG_BOOTDELAY		3

@@ -3,6 +3,11 @@
 typedef u32 uint32_t;
 typedef volatile u32 vuint32_t;
 
+typedef volatile u16 vuint16_t;
+
+typedef volatile u8 vuint8_t;
+
+#ifndef CONFIG_DEBUG_S32V234_QSPI_QSPI
 /* ============================================================================
    =============================== Module: QuadSPI ============================
    ============================================================================ */
@@ -578,3 +583,4 @@ struct QuadSPI_tag {
 #define QuadSPI_LUT61        QuadSPI.LUT[61].R             /* Look-up Table register */
 #define QuadSPI_LUT62        QuadSPI.LUT[62].R             /* Look-up Table register */
 #define QuadSPI_LUT63        QuadSPI.LUT[63].R             /* Look-up Table register */
+#endif /* ifndef CONFIG_DEBUG_S32V234_QSPI_QSPI */
