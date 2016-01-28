@@ -276,3 +276,40 @@ void quadspi_set_lut(uint32_t index, uint32_t value)
 	QuadSPI.LCKCR.R = 0x1;	//LOCK the LUT
 	while (QuadSPI.LCKCR.B.LOCK == 0) ;
 }
+
+static int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
+			    char * const argv[])
+{
+	QSPI_setup_hyp();
+	return 0;
+}
+
+static int do_qspinor_empty(cmd_tbl_t *cmdtp, int flag, int argc,
+			    char * const argv[])
+{
+	printf("Not yet implemented\n");
+}
+
+U_BOOT_CMD(
+	qspinor_setup, 1, 1, do_qspinor_setup,
+	"setup qspi pinmuxing and qspi registers for access to hyperflash",
+	""
+);
+
+/* quadspi_erase_hyp */
+U_BOOT_CMD(
+	qspinor_program, 4, 1, do_qspinor_empty,
+	"write a data buffer into hyperflash",
+	"qspinor_program ADDR BUFF LEN\n"
+	"    - write into flash starting with address ADDR\n"
+	"      the first LEN bytes contained in the memory\n"
+	"      buffer at address BUFF.\n"
+);
+
+/* quadspi_erase_hyp */
+U_BOOT_CMD(
+	qspinor_erase, 2, 1, do_qspinor_empty,
+	"erase the given hyperflash sector (maybe start address?)",
+	"qspinor_erase N\n"
+	"    - erase flash sector N\n"
+);
