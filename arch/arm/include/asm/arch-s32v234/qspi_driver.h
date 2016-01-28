@@ -19,8 +19,6 @@
 #define QuadSPI_X QuadSPI_0
 #define ARDB (*(volatile unsigned int *) 0x71000000)
 
-#define HYPERFLASH
-
 void QSPI_setup_hyp(void);
 unsigned int quadspi_status_hyp(void);
 void quadspi_read_ip_hyp(unsigned long address, unsigned long *dest,
@@ -37,9 +35,6 @@ void quadspi_cfi_entry_hyp(void);
 void quadspi_send_instruction_hyp(unsigned int address, unsigned int cmd);
 void quadspi_program(unsigned long src, unsigned long base, unsigned long size);
 
-#define SWITCH_SD   0
-#define SWITCH_QSPI 0
-void quadspi_switch(unsigned int mode);
 
 ////////////////// HELPER Functions ////////////////////////////////
 void quadspi_set_lut(uint32_t index, uint32_t value);

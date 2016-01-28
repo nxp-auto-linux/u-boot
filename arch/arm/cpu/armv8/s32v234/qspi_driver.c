@@ -9,30 +9,8 @@
 #include <asm/arch/qspi_driver.h>
 #include <asm/arch/siul.h>
 
-#define QSPI_FREQ
-
-void quadspi_switch(unsigned int mode)
-{
-#if 1
-#warning "quadspi_switch() is missing SIUL2 settings"
-#else
-	/*
-	   SIUL2.MSCR[5].B.MUX_MODE = 0;        // GPIO mux mode selected
-	   SIUL2.MSCR[5].B.OBE = 1;             // output buffer enabled
-	   SIUL2.MSCR[5].B.DSE = 7;             // Drive Strenght
-	 */
-
-	if (mode == SWITCH_QSPI)
-		SIUL2.GPDO[1].B.PDO_4n1 = 0;
-	else if (SWITCH_SD)
-		SIUL2.GPDO[1].B.PDO_4n1 = 1;
-#endif
-}
-
 void QSPI_setup_hyp()
 {
-	uint32_t i;
-
 #ifndef CONFIG_DEBUG_S32V234_QSPI
 #warning "Clocks should be handled in clock.c"
 #else
@@ -103,7 +81,6 @@ void QSPI_setup_hyp()
 //sector = -1 means chip erase
 void quadspi_erase_hyp(int sector)
 {
-	unsigned int cmd;
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
@@ -143,7 +120,6 @@ void quadspi_program_hyp(unsigned int address, unsigned int *data,
 			 unsigned int bytes)
 {
 	int i, j, k, m;		// i: number total of bytes to flash    // k: number of bytes to flash at the next command      // m :number of word (16 bits) to flash at the next command
-	unsigned int reg;
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
@@ -160,9 +136,6 @@ void quadspi_program_hyp(unsigned int address, unsigned int *data,
 	if (k & 3)
 		m++;
 
-	//reduce frequency
-	//reg = MC_CGM.AC8_DC0.R;
-	//MC_CGM.AC8_DC0.R = 0x80020000; /* divide by 4 */
 	do {
 
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xAA);
@@ -200,8 +173,6 @@ void quadspi_program_hyp(unsigned int address, unsigned int *data,
 		m = 32;
 	} while (i > 0);
 
-	//restore
-	//MC_CGM.AC8_DC0.R = reg;
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
@@ -252,7 +223,7 @@ void quadspi_read_ip_hyp(unsigned long address, unsigned long *dest,
 
 unsigned int quadspi_status_hyp(void)
 {
-	unsigned int i, data;
+	unsigned int data;
 
 	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0x70);
 
