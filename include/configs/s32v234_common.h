@@ -153,9 +153,7 @@
 #define CONFIG_DEBUG_S32V234_QSPI_MC_CGM
 //#define CONFIG_DEBUG_S32V234_QSPI_QSPI
 /* flash comand disabled until implemented */
-#if 0
-#define CONFIG_CMD_FLASH
-#endif
+#undef CONFIG_CMD_FLASH
 
 #define QSPI_BASE_ADDR		0x400A6000
 #define FLASH_BASE_ADR		CONFIG_SYS_FSL_FLASH0_BASE
