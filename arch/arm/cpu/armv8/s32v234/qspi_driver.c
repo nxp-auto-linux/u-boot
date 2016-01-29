@@ -288,8 +288,8 @@ static int do_qspinor_empty(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
 	printf("Not yet implemented\n");
+	return 0;
 }
-
 U_BOOT_CMD(
 	qspinor_setup, 1, 1, do_qspinor_setup,
 	"setup qspi pinmuxing and qspi registers for access to hyperflash",
