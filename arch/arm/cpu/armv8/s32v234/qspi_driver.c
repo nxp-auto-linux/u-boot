@@ -12,15 +12,6 @@
 
 void QSPI_setup_hyp()
 {
-#ifdef CONFIG_DEBUG_S32V234_QSPI_MC_CGM
-#warning "Clocks should be handled in clock.c"
-#else
-//      MC_CGM_0.AC14_SC.B.SELCTL = 4; /* set ENET_PLL_DFS_3 as source  */
-//      MC_CGM_0.AC14_DC0.R = 0x80070000; /* Division by 8 (i.e. 40MHz) */
-	MC_CGM_0.AC14_SC.B.SELCTL = 1;	/* set XOSRC as source  */
-	MC_CGM_0.AC14_DC0.R = 0x80000000;	/* Division by 0 (Strangely got 10Mhz instead of 40Mhz, to be verified with design) */
-#endif
-
 #warning "QSPI_setup_hyp() SIUL2 settings are not tested"
 	/* 0x0020d700 CTRL_CLK_BASE */
 	writel(SIUL2_PK6_MSCR_MUX_MODE_QSPI_A_SCK | SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK6_MSCR)); /* 0x0020C301; QSPI0_A_SCK - V25 - PK6 */

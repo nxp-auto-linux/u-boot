@@ -324,6 +324,8 @@ static void enable_modules_clock( void )
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL162 );
 	/* CAN1 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL190 );
+	/* QuadSPI */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL166 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
