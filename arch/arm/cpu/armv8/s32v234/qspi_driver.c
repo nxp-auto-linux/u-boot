@@ -59,9 +59,10 @@ void QSPI_setup_hyp()
 
 	writel(SIUL2_PK13_MSCR_MUX_MODE_QSPI_CK2 | SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK13_MSCR));	//QSPI0_CK2 - B_SCK? V24 - PK13
 
-#ifndef CONFIG_DEBUG_S32V234_QSPI_QSPI
-#warning "QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions"
-#endif
+#ifdef CONFIG_DEBUG_S32V234_QSPI_QSPI
+	#warning "QSPI_setup_hyp() HAS NO QuadSPI settings and definitions"
+#else
+	#warning "QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions"
 	QuadSPI.MCR.B.MDIS = 0;	//clear MDIS bit
 	QuadSPI.BUF0IND.R = 0x0;	//set AHB buffer size (64bits)
 	QuadSPI.SFA1AD.R = FLASH_BASE_ADR + 0x4000000;	//set top address of FA1 (size 512Mbit)
@@ -83,6 +84,7 @@ void QSPI_setup_hyp()
 
 	/* Set-up Read command for hyperflash */
 	quadspi_read_hyp();	// The command will be used by default for any AHB access to the flash memory
+#endif
 }				/* QSPI_setup */
 
 //sector = -1 means chip erase

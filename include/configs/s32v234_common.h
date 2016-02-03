@@ -151,7 +151,7 @@
 
 /* debug stuff for qspi/hyperflash */
 #define CONFIG_DEBUG_S32V234_QSPI_MC_CGM
-//#define CONFIG_DEBUG_S32V234_QSPI_QSPI
+#undef CONFIG_DEBUG_S32V234_QSPI_QSPI
 /* flash comand disabled until implemented */
 #undef CONFIG_CMD_FLASH
 
