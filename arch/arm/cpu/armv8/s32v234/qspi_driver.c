@@ -6,6 +6,7 @@
  */
 
 #include <common.h>
+#include <vsprintf.h>
 #include <asm/arch/qspi_driver.h>
 #include <asm/arch/siul.h>
 #include <asm/io.h>
@@ -278,12 +279,29 @@ static int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 
-static int do_qspinor_empty(cmd_tbl_t *cmdtp, int flag, int argc,
+static int do_qspinor_prog(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
 	printf("Not yet implemented\n");
 	return 0;
 }
+
+volatile static bool flash_lock=1;
+static int do_qspinor_erase(cmd_tbl_t *cmdtp, int flag, int argc,
+			    char * const argv[])
+{
+	long addr_start;
+
+	printf("Not yet implemented\n");
+
+	addr_start = simple_strtol(argv[1], NULL, 16);
+
+	if (!flash_lock)
+		quadspi_erase_hyp(addr_start);
+	return 0;
+}
+
+/* qspinor setup */
 U_BOOT_CMD(
 	qspinor_setup, 1, 1, do_qspinor_setup,
 	"setup qspi pinmuxing and qspi registers for access to hyperflash",
@@ -292,7 +310,7 @@ U_BOOT_CMD(
 
 /* quadspi_erase_hyp */
 U_BOOT_CMD(
-	qspinor_program, 4, 1, do_qspinor_empty,
+	qspinor_program, 4, 1, do_qspinor_prog,
 	"write a data buffer into hyperflash",
 	"qspinor_program ADDR BUFF LEN\n"
 	"    - write into flash starting with address ADDR\n"
@@ -302,8 +320,9 @@ U_BOOT_CMD(
 
 /* quadspi_erase_hyp */
 U_BOOT_CMD(
-	qspinor_erase, 2, 1, do_qspinor_empty,
+	qspinor_erase, 3, 1, do_qspinor_erase,
 	"erase the given hyperflash sector (maybe start address?)",
-	"qspinor_erase N\n"
-	"    - erase flash sector N\n"
+	"qspinor_erase START / -1\n"
+	"    - erase flash starting from START address\n"
+	"    - if START=-1, erase the entire chip\n"
 );
