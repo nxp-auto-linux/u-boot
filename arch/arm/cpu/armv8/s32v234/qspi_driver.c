@@ -186,6 +186,7 @@ void quadspi_read_hyp(void)
 	QuadSPI.BFGENCR.R = 0x00000;
 }
 
+/* TODO: is quadspi_read_ip_hyp not useful? */
 void quadspi_read_ip_hyp(unsigned long address, unsigned long *dest,
 			 unsigned long bytes)
 {
