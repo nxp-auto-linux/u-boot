@@ -23,7 +23,6 @@
 #define __S32V234_COMMON_H
 
 #include <asm/arch/imx-regs.h>
-#include <config_cmd_default.h>
 
 #define CONFIG_S32V234
 #define CONFIG_DISPLAY_CPUINFO
@@ -121,7 +120,6 @@
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_MII
-#define CONFIG_CMD_NET
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
 #define IMX_FEC_BASE            ENET_BASE_ADDR
@@ -135,7 +133,7 @@
 #define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_BASE	I2C0_BASE_ADDR
+#define CONFIG_SYS_I2C_MXC_I2C1	/* enable I2C bus 1 */
 #define CONFIG_SYS_I2C_SPEED	100000
 #define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
