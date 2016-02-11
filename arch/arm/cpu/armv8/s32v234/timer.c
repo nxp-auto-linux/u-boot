@@ -32,7 +32,7 @@ DECLARE_GLOBAL_DATA_PTR;
 static inline unsigned long long tick_to_time(unsigned long long tick)
 {
 	tick *= CONFIG_SYS_HZ;
-	do_div(tick, mxc_get_clock(MXC_PERIPHERALS_CLK));
+	do_div(tick, mxc_get_clock(MXC_SYS6_CLK));
 
 	return tick;
 }

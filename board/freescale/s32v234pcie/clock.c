@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -265,12 +265,6 @@ static void setup_aux_clocks( void )
 	/* setup the aux clock divider for DDR4_CLK (133,25MHz) */
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 8, 1, 3 );
 
-	/*
-	 * Disable until the modules will be implemented and activated.
-	 * Please update the divider when activate the module
-	 */
-#if 0
-
 	/* setup the aux clock divider for SEQ_CLK (250MHz) and ISP_CLK (500MHz)) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 0, MC_CGM_ACn_SEL_DDRPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 0, 0, 0 );
@@ -286,7 +280,6 @@ static void setup_aux_clocks( void )
 	/* setup the aux clock divider for DCU_AXI_CLK (300MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 0 );
-#endif
 
 	/* setup the aux clock divider for DCU_PIX_CLK (150MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
