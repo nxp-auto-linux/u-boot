@@ -46,7 +46,7 @@ int eth_3com_initialize (bd_t * bis);
 int ethoc_initialize(u8 dev_num, int base_addr);
 int fec_initialize (bd_t *bis);
 int fecmxc_initialize(bd_t *bis);
-int fecmxc_initialize_multi(bd_t *bis, int dev_id, int phy_id, uint32_t addr);
+int fecmxc_initialize_multi(bd_t *bis, int dev_id, int phy_id, uintptr_t addr);
 int ftgmac100_initialize(bd_t *bits);
 int ftmac100_initialize(bd_t *bits);
 int ftmac110_initialize(bd_t *bits);
@@ -197,10 +197,10 @@ struct mv88e61xx_config {
 int mv88e61xx_switch_initialize(struct mv88e61xx_config *swconfig);
 #endif /* CONFIG_MV88E61XX_SWITCH */
 
-struct mii_dev *fec_get_miibus(uint32_t base_addr, int dev_id);
+struct mii_dev *fec_get_miibus(uintptr_t base_addr, int dev_id);
 #ifdef CONFIG_PHYLIB
 struct phy_device;
-int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
+int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
 		struct mii_dev *bus, struct phy_device *phydev);
 #else
 /*

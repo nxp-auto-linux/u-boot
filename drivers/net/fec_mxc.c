@@ -793,7 +793,8 @@ static int fec_recv(struct eth_device *dev)
 	unsigned long ievent;
 	int frame_length, len = 0;
 	uint16_t bd_status;
-	uint32_t addr, size, end;
+	uintptr_t addr;
+	uint32_t size, end;
 	int i;
 	ALLOC_CACHE_ALIGN_BUFFER(uchar, buff, FEC_MAX_PKT_SIZE);
 
@@ -871,7 +872,7 @@ static int fec_recv(struct eth_device *dev)
 			len = frame_length;
 		} else {
 			if (bd_status & FEC_RBD_ERR)
-				printf("error frame: 0x%08x 0x%08x\n",
+				printf("error frame: 0x%08lx 0x%08x\n",
 				       addr, bd_status);
 		}
 
@@ -983,10 +984,10 @@ static void fec_free_descs(struct fec_priv *fec)
 }
 
 #ifdef CONFIG_PHYLIB
-int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
+int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
 		struct mii_dev *bus, struct phy_device *phydev)
 #else
-static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
+static int fec_probe(bd_t *bd, int dev_id, uintptr_t base_addr,
 		struct mii_dev *bus, int phy_id)
 #endif
 {
@@ -1073,7 +1074,7 @@ err1:
 	return ret;
 }
 
-struct mii_dev *fec_get_miibus(uint32_t base_addr, int dev_id)
+struct mii_dev *fec_get_miibus(uintptr_t base_addr, int dev_id)
 {
 	struct ethernet_regs *eth = (struct ethernet_regs *)base_addr;
 	struct mii_dev *bus;
@@ -1099,7 +1100,7 @@ struct mii_dev *fec_get_miibus(uint32_t base_addr, int dev_id)
 	return bus;
 }
 
-int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uint32_t addr)
+int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uintptr_t addr)
 {
 	uint32_t base_mii;
 	struct mii_dev *bus = NULL;
@@ -1117,7 +1118,7 @@ int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uint32_t addr)
 #else
 	base_mii = addr;
 #endif
-	debug("eth_init: fec_probe(bd, %i, %i) @ %08x\n", dev_id, phy_id, addr);
+	debug("eth_init: fec_probe(bd, %i, %i) @ %08lx\n", dev_id, phy_id, addr);
 	bus = fec_get_miibus(base_mii, dev_id);
 	if (!bus)
 		return -ENOMEM;
