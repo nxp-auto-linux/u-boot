@@ -249,7 +249,7 @@ void setup_xrdc(void)
 }
 
 #ifdef CONFIG_DCU_QOS_FIX
-int board_dcu_qos()
+int board_dcu_qos(void)
 {
 	writel(0x0, 0x40012380);
 	writel(0x0, 0x40012384);
@@ -277,7 +277,7 @@ int board_dcu_qos()
 	writel(0x0, 0x40012E84);
 	writel(0x0, 0x40012F80);
 	writel(0x0, 0x40012F84);
-	
+
 	return 0;
 }
 #endif
