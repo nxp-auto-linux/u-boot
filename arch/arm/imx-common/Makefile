@@ -21,7 +21,7 @@ endif
 ifeq ($(SOC),$(filter $(SOC),mx5 mx6))
 obj-y	+= timer.o cpu.o speed.o
 endif
-ifeq ($(SOC),$(filter $(SOC),mx6 mxs))
+ifeq ($(SOC),$(filter $(SOC),mx7 mx6 mxs))
 obj-y	+= misc.o
 obj-$(CONFIG_SPL_BUILD)	+= spl.o
 endif
@@ -34,6 +34,7 @@ ifeq ($(SOC),$(filter $(SOC),mx6 mx7))
 obj-y 	+= cache.o init.o
 obj-$(CONFIG_CMD_SATA) += sata.o
 obj-$(CONFIG_IMX_VIDEO_SKIP) += video.o
+obj-$(CONFIG_SECURE_BOOT)    += hab.o
 endif
 ifeq ($(SOC),$(filter $(SOC),vf610))
 obj-y += ddrmc-vf610.o

@@ -17,7 +17,6 @@
 
 #define CONFIG_SYS_NO_FLASH
 
-#define CONFIG_SYS_GENERIC_BOARD
 
 /* Generic Interrupt Controller Definitions */
 #define CONFIG_GICV2
@@ -56,9 +55,7 @@
 # define CONFIG_ARM_DCC
 # define CONFIG_CPU_ARMV8
 #else
-# if defined(CONFIG_ZYNQ_SERIAL_UART0) || defined(CONFIG_ZYNQ_SERIAL_UART1)
-#  define CONFIG_ZYNQ_SERIAL
-# endif
+# define CONFIG_ZYNQ_SERIAL
 #endif
 
 #define CONFIG_CONS_INDEX		0
@@ -73,7 +70,6 @@
 #define CONFIG_CMD_FAT
 #define CONFIG_CMD_FS_GENERIC
 #define CONFIG_DOS_PARTITION
-#define CONFIG_CMD_ELF
 #define CONFIG_MP
 
 #define CONFIG_CMD_MII
@@ -88,7 +84,6 @@
 
 /* SPI */
 #ifdef CONFIG_ZYNQ_SPI
-# define CONFIG_SPI_FLASH_SST
 # define CONFIG_CMD_SF
 #endif
 
@@ -98,6 +93,9 @@
 # define CONFIG_SDHCI
 # define CONFIG_ZYNQ_SDHCI
 # define CONFIG_CMD_MMC
+# ifndef CONFIG_ZYNQ_SDHCI_MAX_FREQ
+#  define CONFIG_ZYNQ_SDHCI_MAX_FREQ	200000000
+# endif
 #endif
 
 #if defined(CONFIG_ZYNQ_SDHCI)
@@ -109,6 +107,14 @@
 #define CONFIG_SYS_LOAD_ADDR		0x8000000
 
 #if defined(CONFIG_ZYNQMP_USB)
+#define CONFIG_USB_XHCI_DWC3
+#define CONFIG_USB_XHCI
+#define CONFIG_USB_MAX_CONTROLLER_COUNT         1
+#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS      2
+#define CONFIG_CMD_USB
+#define CONFIG_USB_STORAGE
+#define CONFIG_USB_XHCI_ZYNQMP
+
 #define CONFIG_USB_DWC3
 #define CONFIG_USB_DWC3_GADGET
 
@@ -178,14 +184,12 @@
 #define CONFIG_SYS_MAXARGS		64
 
 /* Ethernet driver */
-#if defined(CONFIG_ZYNQ_GEM0) || defined(CONFIG_ZYNQ_GEM1) || \
-	defined(CONFIG_ZYNQ_GEM2) || defined(CONFIG_ZYNQ_GEM3)
+#if defined(CONFIG_ZYNQ_GEM)
 # define CONFIG_NET_MULTI
-# define CONFIG_ZYNQ_GEM
 # define CONFIG_MII
 # define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
-# define CONFIG_PHYLIB
 # define CONFIG_PHY_MARVELL
+# define CONFIG_PHY_TI
 #endif
 
 /* I2C */
@@ -216,9 +220,6 @@
 					 CONFIG_SYS_SCSI_MAX_LUN)
 #define CONFIG_CMD_SCSI
 #endif
-
-#define CONFIG_FIT
-#define CONFIG_FIT_VERBOSE       /* enable fit_format_{error,warning}() */
 
 #define CONFIG_SYS_BOOTM_LEN	(60 * 1024 * 1024)
 

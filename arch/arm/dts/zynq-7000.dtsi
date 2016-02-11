@@ -54,6 +54,7 @@
 	};
 
 	amba: amba {
+		u-boot,dm-pre-reloc;
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -187,6 +188,18 @@
 			clocks = <&clkc 26>, <&clkc 35>;
 			clock-names = "ref_clk", "pclk";
 			spi-max-frequency = <166666700>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		qspi: spi@e000d000 {
+			clock-names = "ref_clk", "pclk";
+			clocks = <&clkc 10>, <&clkc 43>;
+			compatible = "xlnx,zynq-qspi-1.0";
+			status = "disabled";
+			interrupt-parent = <&intc>;
+			interrupts = <0 19 4>;
+			reg = <0xe000d000 0x1000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};

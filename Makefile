@@ -1,5 +1,9 @@
-VERSION = 2015
-PATCHLEVEL = 10
+#
+# SPDX-License-Identifier:	GPL-2.0+
+#
+
+VERSION = 2016
+PATCHLEVEL = 01
 SUBLEVEL =
 EXTRAVERSION =
 NAME =
@@ -605,6 +609,8 @@ KBUILD_CFLAGS += $(KCFLAGS)
 UBOOTINCLUDE    := \
 		-Iinclude \
 		$(if $(KBUILD_SRC), -I$(srctree)/include) \
+		$(if $(CONFIG_SYS_THUMB_BUILD), $(if $(CONFIG_HAS_THUMB2),, \
+			-I$(srctree)/arch/$(ARCH)/thumb1/include),) \
 		-I$(srctree)/arch/$(ARCH)/include \
 		-include $(srctree)/include/linux/kconfig.h
 
@@ -915,7 +921,7 @@ MKIMAGEFLAGS_u-boot.kwb = -n $(srctree)/$(CONFIG_SYS_KWD_CONFIG:"%"=%) \
 	-T kwbimage -a $(CONFIG_SYS_TEXT_BASE) -e $(CONFIG_SYS_TEXT_BASE)
 
 MKIMAGEFLAGS_u-boot-spl.kwb = -n $(srctree)/$(CONFIG_SYS_KWD_CONFIG:"%"=%) \
-	-T kwbimage -a $(CONFIG_SPL_TEXT_BASE) -e $(CONFIG_SPL_TEXT_BASE)
+	-T kwbimage -a $(CONFIG_SYS_TEXT_BASE) -e $(CONFIG_SYS_TEXT_BASE)
 
 MKIMAGEFLAGS_u-boot.pbl = -n $(srctree)/$(CONFIG_SYS_FSL_PBL_RCW:"%"=%) \
 		-R $(srctree)/$(CONFIG_SYS_FSL_PBL_PBI:"%"=%) -T pblimage
@@ -923,8 +929,18 @@ MKIMAGEFLAGS_u-boot.pbl = -n $(srctree)/$(CONFIG_SYS_FSL_PBL_RCW:"%"=%) \
 u-boot.img u-boot.kwb u-boot.pbl: u-boot.bin FORCE
 	$(call if_changed,mkimage)
 
-u-boot-spl.kwb: u-boot.img spl/u-boot-spl.bin FORCE
+# If the kwboot xmodem protocol is used, to boot U-Boot on the MVEBU
+# SoC's, the SPL U-Boot returns to the BootROM after it completes
+# the SDRAM setup. The BootROM expects no U-Boot header in the main
+# U-Boot image. So we need to combine SPL and u-boot.bin instead of
+# u-boot.img in this case.
+ifdef CONFIG_MVEBU_BOOTROM_UARTBOOT
+u-boot-spl.kwb: u-boot-dtb.bin spl/u-boot-spl.bin FORCE
 	$(call if_changed,mkimage)
+else
+u-boot-spl.kwb: u-boot-dtb.img spl/u-boot-spl.bin FORCE
+	$(call if_changed,mkimage)
+endif
 
 MKIMAGEFLAGS_u-boot-dtb.img = $(MKIMAGEFLAGS_u-boot.img)
 
@@ -1134,7 +1150,11 @@ spl/u-boot-spl.pbl: spl/u-boot-spl.bin FORCE
 	$(call if_changed,mkimage)
 
 ifeq ($(ARCH),arm)
+ifdef CONFIG_OF_CONTROL
+UBOOT_BINLOAD := u-boot-dtb.img
+else
 UBOOT_BINLOAD := u-boot.img
+endif
 else
 UBOOT_BINLOAD := u-boot.bin
 endif
@@ -1292,6 +1312,7 @@ define filechk_timestamp.h
 			LC_ALL=C $${DATE} -u -d "$${SOURCE_DATE}" +'#define U_BOOT_DATE "%b %d %C%y"'; \
 			LC_ALL=C $${DATE} -u -d "$${SOURCE_DATE}" +'#define U_BOOT_TIME "%T"'; \
 			LC_ALL=C $${DATE} -u -d "$${SOURCE_DATE}" +'#define U_BOOT_TZ "%z"'; \
+			LC_ALL=C $${DATE} -u -d "$${SOURCE_DATE}" +'#define U_BOOT_DMI_DATE "%m/%d/%Y"'; \
 		else \
 			return 42; \
 		fi; \
@@ -1299,6 +1320,7 @@ define filechk_timestamp.h
 		LC_ALL=C date +'#define U_BOOT_DATE "%b %d %C%y"'; \
 		LC_ALL=C date +'#define U_BOOT_TIME "%T"'; \
 		LC_ALL=C date +'#define U_BOOT_TZ "%z"'; \
+		LC_ALL=C date +'#define U_BOOT_DMI_DATE "%m/%d/%Y"'; \
 	fi)
 endef
 
@@ -1325,6 +1347,9 @@ spl/sunxi-spl.bin: spl/u-boot-spl
 	@:
 
 spl/u-boot-spl-dtb.sfp: spl/u-boot-spl
+	@:
+
+spl/boot.bin: spl/u-boot-spl
 	@:
 
 tpl/u-boot-tpl.bin: tools prepare

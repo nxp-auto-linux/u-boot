@@ -44,31 +44,29 @@
 #endif
 
 #define CONFIG_ZYNQ_GPIO
-#define CONFIG_CMD_GPIO
 
 /* Ethernet driver */
-#if defined(CONFIG_ZYNQ_GEM0) || defined(CONFIG_ZYNQ_GEM1)
-# define CONFIG_ZYNQ_GEM
+#if defined(CONFIG_ZYNQ_GEM)
 # define CONFIG_MII
 # define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
-# define CONFIG_PHYLIB
 # define CONFIG_PHY_MARVELL
 # define CONFIG_BOOTP_SERVERIP
 # define CONFIG_BOOTP_BOOTPATH
 # define CONFIG_BOOTP_GATEWAY
 # define CONFIG_BOOTP_HOSTNAME
 # define CONFIG_BOOTP_MAY_FAIL
-# if !defined(CONFIG_ZYNQ_GEM_EMIO0)
-#  define CONFIG_ZYNQ_GEM_EMIO0	0
-# endif
-# if !defined(CONFIG_ZYNQ_GEM_EMIO1)
-#  define CONFIG_ZYNQ_GEM_EMIO1	0
-# endif
 #endif
 
 /* SPI */
 #ifdef CONFIG_ZYNQ_SPI
-# define CONFIG_SPI_FLASH_SST
+# define CONFIG_CMD_SF
+#endif
+
+/* QSPI */
+#ifdef CONFIG_ZYNQ_QSPI
+# define CONFIG_SF_DEFAULT_SPEED	30000000
+# define CONFIG_SPI_FLASH_ISSI
+# define CONFIG_SPI_FLASH_BAR
 # define CONFIG_CMD_SF
 #endif
 
@@ -95,6 +93,7 @@
 # define CONFIG_SDHCI
 # define CONFIG_ZYNQ_SDHCI
 # define CONFIG_CMD_MMC
+# define CONFIG_ZYNQ_SDHCI_MAX_FREQ	52000000
 #endif
 
 #ifdef CONFIG_ZYNQ_USB
@@ -168,7 +167,10 @@
 # define CONFIG_CMD_FS_GENERIC
 #endif
 
+#if defined(CONFIG_ZYNQ_I2C0) || defined(CONFIG_ZYNQ_I2C1)
 #define CONFIG_SYS_I2C_ZYNQ
+#endif
+
 /* I2C */
 #if defined(CONFIG_SYS_I2C_ZYNQ)
 # define CONFIG_CMD_I2C
@@ -288,8 +290,6 @@
 
 /* Boot FreeBSD/vxWorks from an ELF image */
 #if defined(CONFIG_ZYNQ_BOOT_FREEBSD)
-# define CONFIG_API
-# define CONFIG_CMD_ELF
 # define CONFIG_SYS_MMC_MAX_DEVICE	1
 #endif
 
@@ -319,7 +319,11 @@
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION     1
 #define CONFIG_SPL_LIBDISK_SUPPORT
 #define CONFIG_SPL_FAT_SUPPORT
-#define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
+#ifdef CONFIG_OF_SEPARATE
+# define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot-dtb.img"
+#else
+# define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
+#endif
 #endif
 
 /* Disable dcache for SPL just for sure */
@@ -345,6 +349,10 @@
 #define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SPL_SPI_FLASH_SUPPORT
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x100000
+#define CONFIG_SYS_SPI_ARGS_OFFS	0x200000
+#define CONFIG_SYS_SPI_ARGS_SIZE	0x80000
+#define CONFIG_SYS_SPI_KERNEL_OFFS	(CONFIG_SYS_SPI_ARGS_OFFS + \
+					CONFIG_SYS_SPI_ARGS_SIZE)
 #endif
 
 /* for booting directly linux */
@@ -359,16 +367,16 @@
 /* The highest 64k OCM address */
 #define OCM_HIGH_ADDR	0xffff0000
 
-/* Just define any reasonable size */
-#define CONFIG_SPL_STACK_SIZE	0x1000
-
-/* SPL stack position - and stack goes down */
-#define CONFIG_SPL_STACK	(OCM_HIGH_ADDR + CONFIG_SPL_STACK_SIZE)
-
 /* On the top of OCM space */
-#define CONFIG_SYS_SPL_MALLOC_START	(CONFIG_SPL_STACK + \
-					 GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_SPL_MALLOC_SIZE	0x1000
+#define CONFIG_SYS_SPL_MALLOC_START	OCM_HIGH_ADDR
+#define CONFIG_SYS_SPL_MALLOC_SIZE	0x2000
+
+/*
+ * SPL stack position - and stack goes down
+ * 0xfffffe00 is used for putting wfi loop.
+ * Set it up as limit for now.
+ */
+#define CONFIG_SPL_STACK	0xfffffe00
 
 /* BSS setup */
 #define CONFIG_SPL_BSS_START_ADDR	0x100000
@@ -376,6 +384,5 @@
 
 #define CONFIG_SYS_UBOOT_START	CONFIG_SYS_TEXT_BASE
 
-#define CONFIG_SYS_GENERIC_BOARD
 
 #endif /* __CONFIG_ZYNQ_COMMON_H */
