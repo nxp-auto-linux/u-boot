@@ -154,10 +154,32 @@ void quadspi_program_word_hyp(unsigned int address, unsigned int word)
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 }
 
+typedef enum {
+	qspi_real_address = 1,
+	qspi_real_and_all
+} qspi_addr_t;
+
+void is_flash_addr(unsigned int address, enum qspi_addr_t addr_type)
+{
+	bool isflash = 0;
+
+	isflash |= (address >= FLASH_BASE_ADR);
+	isflash |= (address == qspi_real_and_all) && (address == -1);
+	if (!isflash) {
+		printf("Incorrect address '0x%0.8lx'.\n"
+		       "Must an address above or equal to '0x%0.8lx' (or '-1',"
+		       " if the command accepts it)\n", addr_start,
+		       FLASH_BASE_ADR);
+		return 0;
+	}
+	return 1;
+}
+
 void quadspi_program_hyp(unsigned int address, unsigned int *data,
 			 unsigned int bytes)
 {
 	int i, j, k, m;		// i: number total of bytes to flash    // k: number of bytes to flash at the next command      // m :number of word (16 bits) to flash at the next command
+
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
@@ -316,25 +338,52 @@ static int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 
+volatile static bool flash_lock=1;
 static int do_qspinor_prog(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
+	unsigned int fladdr, bufaddr, size;
+
 	printf("Not yet implemented\n");
+
+	if (argc != 4) {
+		printf("This command needs exactly three parameters (flashaddr "
+		       "buffaddr and size).\n");
+		return 1;
+	}
+
+	fladdr = simple_strtol(argv[1], NULL, 16);
+	if (!is_flash_addr(fladdr, qspi_real_address))
+		return 1;
+
+	bufaddr = simple_strtol(argv[2], NULL, 16);
+	size = simple_strtol(argv[3], NULL, 16);
+
+	if (!flash_lock)
+		;
+	else
+		printf("Flash write and erase operations are locked!\n");
 	return 0;
 }
 
-volatile static bool flash_lock=1;
 static int do_qspinor_erase(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
 	long addr_start;
 
-	printf("Not yet implemented\n");
+	if (argc != 2) {
+		printf("This command needs exactly one parameter\n");
+		return 1;
+	}
 
 	addr_start = simple_strtol(argv[1], NULL, 16);
+	if (!is_flash_addr(addr_start, qspi_real_and_all))
+		return 1;
 
 	if (!flash_lock)
 		quadspi_erase_hyp(addr_start);
+	else
+		printf("Flash write and erase operations are locked!\n");
 	return 0;
 }
 
