@@ -16,6 +16,9 @@
 #warning "uint32_t should be changed into u32"
 #define uint32_t u32
 
+/* minimum size to write into hyperflash */
+#define FLASH_MIN_PROG_SIZE (64 >> 3)
+
 #define QuadSPI_X QuadSPI_0
 #define ARDB (*(volatile unsigned int *) 0x71000000)
 
@@ -24,7 +27,7 @@ unsigned int quadspi_status_hyp(void);
 void quadspi_read_ip_hyp(unsigned long address, unsigned long *dest,
 			 unsigned long bytes);
 void quadspi_program_word_hyp(unsigned int address, unsigned int word);
-void quadspi_program_hyp(unsigned int address, unsigned int *data,
+void quadspi_program_hyp(unsigned int address, uintptr_t data,
 			 unsigned int bytes);
 void quadspi_program_dma_hyp(unsigned int address, unsigned int *data,
 			     unsigned int bytes);
