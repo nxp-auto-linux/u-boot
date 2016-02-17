@@ -451,9 +451,11 @@ U_BOOT_CMD(
 
 /* qspinor setup */
 U_BOOT_CMD(
-	qspinor_setup, 1, 1, do_qspinor_setup,
+	flsetup, 1, 1, do_qspinor_setup,
 	"setup qspi pinmuxing and qspi registers for access to hyperflash",
-	""
+	"\n"
+	"Set up the pinmuxing and qspi registers to access the hyperflash\n"
+	"    and disconnect from the SD/eMMC.\n"
 );
 
 /* quadspi_erase_hyp */
