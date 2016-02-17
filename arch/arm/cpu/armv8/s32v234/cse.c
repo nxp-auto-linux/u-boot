@@ -79,7 +79,7 @@ int cse_init(void)
 	completed successfully in bootrom */
 	if ((readl(OCOTP_CFG5) & OCOTP_CFG5_SEC_BOOT_MODE) &&
 	    (readl(CSE_SR) & CSE_SR_BOK)) {
-		return 0;
+		goto init_rng;
 	}
 
 	/* check if the firmware was not loaded before */
@@ -96,8 +96,8 @@ int cse_init(void)
 
 		if (err == CSE_SEQ_ERR)
 			goto init_cse;
-
-		return 0;
+		else
+			goto init_rng;
 	}
 
 cse_firmware_loading:
@@ -131,11 +131,10 @@ init_cse:
 
 	err = readl(CSE_ECR);
 
-	if (err == CSE_SEQ_ERR)
-		return 0;
-	if (err)
+	if (err && err != CSE_SEQ_ERR)
 		return -1;
 
+init_rng:
 	/* Init RNG */
 	writel(CSE_CMD_INIT_RNG, CSE_CMD);
 
