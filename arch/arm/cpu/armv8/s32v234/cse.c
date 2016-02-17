@@ -50,18 +50,14 @@ static int mmc_load_cse_blob(void)
 	const char mmc_dev_part[] = __stringify(CONFIG_SYS_MMC_ENV_DEV) ":"
 			__stringify(CONFIG_MMC_PART);
 	const char *filename;
-	unsigned long bytes = 0;
-	unsigned long pos = 0;
-	int len_read;
+	loff_t bytes = 0, pos = 0, len_read;
 
 	filename = getenv("cse_file");
 
 	if (fs_set_blk_dev("mmc", mmc_dev_part, FS_TYPE_FAT))
 		return 1;
 
-	len_read = fs_read(filename, CSE_BLOB_BASE, pos, bytes);
-
-	if (len_read <= 0)
+	if (fs_read(filename, CSE_BLOB_BASE, pos, bytes, &len_read))
 		return 1;
 
 	printf("%d bytes read\n", len_read);

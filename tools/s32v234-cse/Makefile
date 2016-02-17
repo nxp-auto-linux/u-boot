@@ -8,7 +8,7 @@ COMP=TODO_PATH_TO_ARM_COMPILER
 # SECURE_CALLBACK config is enabled. The address is the last value of the
 # "HAB Blocks:" compiling output line:
 # e.g. "HAB Blocks:   3e81f000 00000000 0003b000 3e85a000"
-BASE_ADDR=1048944640 # 0x3e85A000
+BASE_ADDR=1048977408 # 0x3e862000
 # Secure callback function address
 SCADDR=$(($BASE+0x10))
 SCADDR=$((SCADDR | 1)) # thumb mode address
