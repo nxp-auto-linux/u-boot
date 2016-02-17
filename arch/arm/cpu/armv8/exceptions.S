@@ -48,6 +48,28 @@
 	mov	x0, sp
 .endm
 
+/* Return from the exception in a benign fashion */
+.macro	exception_exit
+	ldp	x2, x0, [sp], #16
+
+	ldp	x1, x2, [sp], #16
+	ldp	x3, x4, [sp], #16
+	ldp	x5, x6, [sp], #16
+	ldp	x7, x8, [sp], #16
+	ldp	x9, x10, [sp], #16
+	ldp	x11, x12, [sp], #16
+	ldp	x13, x14, [sp], #16
+	ldp	x15, x16, [sp], #16
+	ldp	x17, x18, [sp], #16
+	ldp	x19, x20, [sp], #16
+	ldp	x21, x22, [sp], #16
+	ldp	x23, x24, [sp], #16
+	ldp	x25, x26, [sp], #16
+	ldp	x27, x28, [sp], #16
+	ldp	x29, x30, [sp], #16
+        eret
+.endm
+
 /*
  * Exception vectors.
  */
@@ -102,10 +124,12 @@ _do_sync:
 _do_irq:
 	exception_entry
 	bl	do_irq
+	exception_exit
 
 _do_fiq:
 	exception_entry
 	bl	do_fiq
+	exception_exit
 
 _do_error:
 	exception_entry

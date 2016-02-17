@@ -163,6 +163,9 @@
 #define CONFIG_CMD_PCI
 #ifdef CONFIG_CMD_PCI
 #define CONFIG_PCIE_EP_MODE
+#define CONFIG_GICSUPPORT
+#define CONFIG_USE_IRQ
+#define CONFIG_CMD_IRQ
 #endif
 
 /* we include this file here because it depends on the above definitions */
