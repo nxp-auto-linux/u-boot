@@ -395,6 +395,60 @@ static int do_qspinor_erase(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 
+/* we only need our own SW protect until we implement proper protection via HW
+ * mechanisms; until then we need not conflict with those commands
+ */
+#ifndef CONFIG_CMD_FLASH
+/* we clean (set to 0) the LUTs used for write and erase to make sure no
+ * accidental writes or erases can happen
+ */
+void quadspi_rm_write_erase_luts(void)
+{
+	quadspi_set_lut(60, 0);
+	quadspi_set_lut(61, 0);
+	quadspi_set_lut(62, 0);
+}
+
+static int do_swprotect(cmd_tbl_t *cmdtp, int flag, int argc,
+			char * const argv[])
+{
+
+	if (argc != 2) {
+		printf("This command needs exactly one parameter (on/off).\n");
+		return 1;
+	}
+
+	if (!strcmp(argv[1],"on")) {
+		quadspi_rm_write_erase_luts();
+		flash_lock = 1;
+		return 0;
+	}
+
+	if (!strcmp(argv[1],"off")) {
+		flash_lock = 0;
+		return 0;
+	}
+
+	printf("Unexpected parameter. This command accepts only 'on' and 'off'"
+	       "as parameter.\n");
+	return 1;
+}
+
+/* simple SW protection */
+U_BOOT_CMD(
+	protect, 2, 1, do_swprotect,
+	"protect on/off the flash memory against write and erase operations",
+	         "on\n"
+	"    - enable protection and forbid erase and write operations\n"
+	"protect off\n"
+	"    - disable protection allowing write and erase operations\n"
+	""
+);
+#else
+	#warning "Using U-Boot's protect command, not our SW based protect"
+#endif
+
+
 /* qspinor setup */
 U_BOOT_CMD(
 	qspinor_setup, 1, 1, do_qspinor_setup,
