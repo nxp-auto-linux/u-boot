@@ -471,9 +471,9 @@ U_BOOT_CMD(
 
 /* quadspi_erase_hyp */
 U_BOOT_CMD(
-	qspinor_erase, 3, 1, do_qspinor_erase,
-	"erase the given hyperflash sector (maybe start address?)",
-	"qspinor_erase START / -1\n"
+	erase, 3, 1, do_qspinor_erase,
+	"erase FLASH from address 'START'",
+	"erase START / -1\n"
 	"    - erase flash starting from START address\n"
 	"    - if START=-1, erase the entire chip\n"
 );
