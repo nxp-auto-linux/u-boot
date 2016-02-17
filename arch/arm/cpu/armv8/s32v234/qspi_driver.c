@@ -460,12 +460,13 @@ U_BOOT_CMD(
 
 /* quadspi_erase_hyp */
 U_BOOT_CMD(
-	qspinor_program, 4, 1, do_qspinor_prog,
+	flwrite, 4, 1, do_qspinor_prog,
 	"write a data buffer into hyperflash",
-	"qspinor_program ADDR BUFF LEN\n"
+	"ADDR BUFF HEXLEN\n"
 	"    - write into flash starting with address ADDR\n"
-	"      the first LEN bytes contained in the memory\n"
+	"      the first HEXLEN bytes contained in the memory\n"
 	"      buffer at address BUFF.\n"
+	"      Note: all numbers are in hexadecimal format\n"
 );
 
 /* quadspi_erase_hyp */
