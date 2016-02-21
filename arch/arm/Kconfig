@@ -500,18 +500,22 @@ config RMOBILE
 config TARGET_S32V234EVB
 	bool "Support s32v234evb"
 	select ARM64
+	select CUSTOM_CMD_FLASH
 
 config TARGET_S32V234FVB
 	bool "Support s32v234fvb"
 	select ARM64
+	select CUSTOM_CMD_FLASH
 
 config TARGET_S32V234PCIE
 	bool "Support s32v234pcie"
 	select ARM64
+	select CUSTOM_CMD_FLASH
 
 config TARGET_S32V234TMDP
 	bool "Support s32v234tmdp"
 	select ARM64
+	select CUSTOM_CMD_FLASH
 
 config TARGET_SAC58R
 	bool "Support sac58r"
