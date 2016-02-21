@@ -304,7 +304,12 @@ config CMD_LOADS
 	help
 	  Load an S-Record file over serial line
 
+config CUSTOM_CMD_FLASH
+	bool
+	default n
+
 config CMD_FLASH
+	depends on !CUSTOM_CMD_FLASH
 	bool "flinfo, erase, protect"
 	default y
 	help
