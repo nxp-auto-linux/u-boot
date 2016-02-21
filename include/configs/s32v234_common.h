@@ -140,6 +140,12 @@
 #define CONFIG_S32V234_FLASH
 #endif
 
+/* memory mapped external flash */
+#define CONFIG_SYS_FSL_FLASH0_BASE      0x20000000
+#define CONFIG_SYS_FSL_FLASH0_SIZE      0x10000000
+#define CONFIG_SYS_FSL_FLASH1_BASE      0x60000000
+#define CONFIG_SYS_FSL_FLASH1_SIZE      0x10000000
+
 /* QSPI/hyperflash configs */
 #ifdef CONFIG_S32V234_FLASH
 /* disabled until implemented */
@@ -147,7 +153,7 @@
 #define CONFIG_CMD_FLASH
 #endif
 #define QSPI_BASE_ADDR		0x400A6000
-#define FLASH_BASE_ADR		0x20000000
+#define FLASH_BASE_ADR		CONFIG_SYS_FSL_FLASH0_BASE
 #define FLASH_BASE_ADR2		0x24000000
 #endif
 
