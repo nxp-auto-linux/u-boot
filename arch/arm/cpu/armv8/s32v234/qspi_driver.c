@@ -398,7 +398,7 @@ static int do_qspinor_erase(cmd_tbl_t *cmdtp, int flag, int argc,
 /* we only need our own SW protect until we implement proper protection via HW
  * mechanisms; until then we need not conflict with those commands
  */
-#ifndef CONFIG_CMD_FLASH
+#ifdef CONFIG_CUSTOM_CMD_FLASH
 /* we clean (set to 0) the LUTs used for write and erase to make sure no
  * accidental writes or erases can happen
  */
@@ -444,8 +444,17 @@ U_BOOT_CMD(
 	"    - disable protection allowing write and erase operations\n"
 	""
 );
+
+/* quadspi_erase_hyp */
+U_BOOT_CMD(
+	erase, 3, 1, do_qspinor_erase,
+	"erase FLASH from address 'START'",
+	"erase START / -1\n"
+	"    - erase flash starting from START address\n"
+	"    - if START=-1, erase the entire chip\n"
+);
 #else
-	#warning "Using U-Boot's protect command, not our SW based protect"
+	#warning "Using U-Boot's protect and erase commands, not our custom ones"
 #endif
 
 
@@ -467,13 +476,4 @@ U_BOOT_CMD(
 	"      the first HEXLEN bytes contained in the memory\n"
 	"      buffer at address BUFF.\n"
 	"      Note: all numbers are in hexadecimal format\n"
-);
-
-/* quadspi_erase_hyp */
-U_BOOT_CMD(
-	erase, 3, 1, do_qspinor_erase,
-	"erase FLASH from address 'START'",
-	"erase START / -1\n"
-	"    - erase flash starting from START address\n"
-	"    - if START=-1, erase the entire chip\n"
 );
