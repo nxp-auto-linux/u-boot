@@ -194,7 +194,12 @@
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
-
+/* #define CONFIG_CMD_PCI */
+#ifdef CONFIG_CMD_PCI
+#define CONFIG_GICSUPPORT
+#define CONFIG_USE_IRQ
+#define CONFIG_CMD_IRQ
+#endif
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32v234_common.h>
 
