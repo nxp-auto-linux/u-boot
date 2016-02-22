@@ -20,6 +20,7 @@
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/io.h>
+#include <asm/gicsupport.h>
 #include <linux/sizes.h>
 #include <errno.h>
 
@@ -126,7 +127,9 @@
  * to keep our EP configuration in proper shape.
  */
 #define PCIE_INTERRUPT_link_req_rst_not         135
-#define PCIE_INTERRUPT_link_up_down_etc         134
+
+/* Global variables */
+static int ignoreERR009852;
 
 /*
  * PHY access functions
@@ -310,7 +313,7 @@ static int s32v234_pcie_link_up(void)
 static void s32v234_pcie_set_bar(int baroffset, int enable, unsigned int size, unsigned int init)
 {
 	char __iomem *dbi_base = (char __iomem *)S32V234_DBI_ADDR;
-        uint32_t mask = (enable) ? ((size - 1) & ~1) : 0;
+	uint32_t mask = (enable) ? ((size - 1) & ~1) : 0;
 
 	/* According to the RM, you have to enable the BAR before you
 	 * can modify the mask value. While it appears that this may
@@ -322,7 +325,6 @@ static void s32v234_pcie_set_bar(int baroffset, int enable, unsigned int size, u
 	writel(init, dbi_base + baroffset);
 }
 
-static int ignoreERR009852;
 static void set_non_sticky_config_regs(void)
 {
 	const int socmask_info = readl(SIUL2_MIDR1) & 0x000000ff;
@@ -334,15 +336,24 @@ static void set_non_sticky_config_regs(void)
 	 * THIS FUNCTION MUST BE INTERRUPT SAFE, so we don't use
 	 * external complex functions.
 	 */
-
-	/* FIXME: Unclear which registers are all affected! We may
-	 * need more!
-	 */
-
 	if (!ep_mode) {
-		/* Set the CLASS_REV of RC CFG header to PCI_CLASS_BRIDGE_HOST */
+		/* Set the CLASS_REV of RC CFG header to PCI_CLASS_BRIDGE_PCI */
 		setbits_le32(S32V234_DBI_ADDR + PCI_CLASS_REVISION,
-			     PCI_CLASS_BRIDGE_HOST << 16);
+			     PCI_CLASS_BRIDGE_PCI << 16);
+
+		/* CMD reg:I/O space, MEM space, and Bus Master Enable */
+		setbits_le32(S32V234_DBI_ADDR | PCI_COMMAND,
+			PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
+
+		/* Region #0 is used for Outbound CFG space access. */
+		writel(0, S32V234_DBI_ADDR + PCIE_ATU_VIEWPORT);
+		writel(S32V234_ROOT_ADDR, S32V234_DBI_ADDR + PCIE_ATU_LOWER_BASE);
+		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_BASE);
+		writel(S32V234_ROOT_ADDR + S32V234_ROOT_SIZE, S32V234_DBI_ADDR + PCIE_ATU_LIMIT);
+		writel(0, S32V234_DBI_ADDR + PCIE_ATU_LOWER_TARGET);
+		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_TARGET);
+		writel(PCIE_ATU_TYPE_CFG0, S32V234_DBI_ADDR + PCIE_ATU_CR1);
+		writel(PCIE_ATU_ENABLE, S32V234_DBI_ADDR + PCIE_ATU_CR2);
 	}
 	else {
 		/* Set the CLASS_REV of RC CFG header to something that
@@ -380,6 +391,17 @@ static void set_non_sticky_config_regs(void)
 			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_4, PCIE_BAR4_EN_DIS, PCIE_BAR4_SIZE, PCIE_BAR4_INIT);
 			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_5, PCIE_BAR5_EN_DIS, PCIE_BAR5_SIZE, PCIE_BAR5_INIT);
 			s32v234_pcie_set_bar(PCI_ROM_ADDRESS, PCIE_ROM_EN_DIS, PCIE_ROM_SIZE, PCIE_ROM_INIT);
+			
+			/* Region #0 is used for Inbound Mem space access on BAR2. */
+			writel(0x80000000, S32V234_DBI_ADDR + PCIE_ATU_VIEWPORT);
+			writel(0xcff00000, S32V234_DBI_ADDR + PCIE_ATU_LOWER_TARGET);
+			writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_TARGET);
+			writel(PCIE_ATU_TYPE_MEM, S32V234_DBI_ADDR + PCIE_ATU_CR1);
+			writel(0xC0000200, S32V234_DBI_ADDR + PCIE_ATU_CR2);
+
+			/* CMD reg:I/O space, MEM space, and Bus Master Enable */
+			setbits_le32(S32V234_DBI_ADDR | PCI_COMMAND,
+				PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
 		}
 	}
 }
@@ -388,52 +410,18 @@ static void inthandler_pcie_link_req_rst_not(struct pt_regs *pt_regs, unsigned i
 {
 	const struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
-	debug("PCIE interrupt link_req_rst_not, pending %d, link_up %08x\n",
-	      gic_irq_status(PCIE_INTERRUPT_link_req_rst_not),
-	      readl(&src_regs->pcie_config1));
-
-        /* First we need to acknowledge the interrupt. If the reset
-         * reason has already disappeared, this will stop the reset
-         * signal to our non-sticky register bits and allow us to set
-         * them properly. As it turns out, the interrupt happens not
-         * when the link is going down, but when the link is starting
-         * up again. This lucky setup simplifies our life because we
-         * can directly acknowledge it and likely won't get triggered
-         * again. In normal use, it is effectively an edge-like int.
-         */
+	/* Clear link_req_rst_not interrupt signal */
 	clrsetbits_le32(&src_regs->pcie_config0, 0x00000001, 0x00000001);
-
-	debug("                                 pending %d, link_up %08x\n",
-	      gic_irq_status(PCIE_INTERRUPT_link_req_rst_not),
-	      readl(&src_regs->pcie_config1));
 
 	/* Once we get this interrupt, the link came down and all the
 	 * non sticky registers in our configuration space got reset.
-	 * We can't have that in EP mode, so we use this interrupt
-	 * to detect when we lose the config. We reestablish the
-	 * register values now and finally permit configuration
-         * transactions
+	 * We reestablish the register values now and finally
+	 * permit configuration transactions
 	 */
-	set_non_sticky_config_regs();
+	 set_non_sticky_config_regs();
 	
-	debug("                                 pending %d, link_up %08x\n",
-	      gic_irq_status(PCIE_INTERRUPT_link_req_rst_not),
-	      readl(&src_regs->pcie_config1));
-
 	/* Accept inbound configuration requests now */
 	clrsetbits_le32(&src_regs->gpr11, 0x00400000, 0x00400000);
-
-	debug("                                 pending %d, link_up %08x\n",
-	      gic_irq_status(PCIE_INTERRUPT_link_req_rst_not),
-	      readl(&src_regs->pcie_config1));
-}
-
-static void inthandler_pcie_link_up_down_etc(struct pt_regs *pt_regs, unsigned int esr)
-{
-        /* FIX: I can't figure out how this interrupt would ever get
-         * triggered, so I can't use it at this time.
-         */
-	debug("PCIE interrupt link_up_down_etc\n");
 }
 
 /*
@@ -455,10 +443,7 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 	 */
 
 	if(socmask_info == 0x00) {
-		/* The S32V234 unfortunately comes up with an incorrect
-		 * device id and vendor id. We fix this before starting up
-		 * the interface. This is an unpublished erratum on
-		 * the first mask.
+		/* 
 		 * Vendor ID is Freescale (now NXP): 0x1957
 		 * Device ID is split as follows
 		 * Family 15:12, Device 11:6, Personality 5:0
@@ -470,51 +455,21 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 		writel((0x4001 << 16) | 0x1957, S32V234_DBI_ADDR + PCI_VENDOR_ID);
 	}
 
-	/* We really should initialize the subystem information properly,
-	 * but that really is board specific and should come from the
-	 * board config.
-	 */
 	#if defined(CONFIG_PCIE_SUBSYSTEM_VENDOR_ID) && defined(CONFIG_PCIE_SUBSYSTEM_ID)
 	writel((CONFIG_PCIE_SUBSYSTEM_ID << 16) | CONFIG_PCIE_SUBSYSTEM_VENDOR_ID,
 	       S32V234_DBI_ADDR + PCI_SUBSYSTEM_VENDOR_ID);
 	#endif
 
-	ignoreERR009852 = getenv("ignoreERR009852");
+	ignoreERR009852 = getenv("ignoreERR009852") != NULL;
+
 	set_non_sticky_config_regs();
+
 	if (ep_mode) {
-		if (ignoreERR009852) {
-			/* We did this in set_non_sticky_config_regs() */
-			printf("ERR009852: Disabling PCIe memory spaces\n");
-		}
-	}
 
-	if (!ep_mode) {
-		/* Region #0 is used for Outbound CFG space access. */
-		writel(0, S32V234_DBI_ADDR + PCIE_ATU_VIEWPORT);
-		writel(S32V234_ROOT_ADDR, S32V234_DBI_ADDR + PCIE_ATU_LOWER_BASE);
-		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_BASE);
-		writel(S32V234_ROOT_ADDR + S32V234_ROOT_SIZE, S32V234_DBI_ADDR + PCIE_ATU_LIMIT);
-		writel(0, S32V234_DBI_ADDR + PCIE_ATU_LOWER_TARGET);
-		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_TARGET);
-		writel(PCIE_ATU_TYPE_CFG0, S32V234_DBI_ADDR + PCIE_ATU_CR1);
-		writel(PCIE_ATU_ENABLE, S32V234_DBI_ADDR + PCIE_ATU_CR2);
-	}
-	else {
-		/* Region #0 is used for Inbound Mem space access on BAR2. */
-		writel(0x80000000, S32V234_DBI_ADDR + PCIE_ATU_VIEWPORT);
-		writel(0xcff00000, S32V234_DBI_ADDR + PCIE_ATU_LOWER_TARGET);
-		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_TARGET);
-		writel(PCIE_ATU_TYPE_MEM, S32V234_DBI_ADDR + PCIE_ATU_CR1);
-		writel(0xC0000200, S32V234_DBI_ADDR + PCIE_ATU_CR2);
-	}
-
-	if (!ep_mode) {
-		/* CMD reg:I/O space, MEM space, and Bus Master Enable */
-		setbits_le32(S32V234_DBI_ADDR | PCI_COMMAND,
-			     PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
-	}
-	else {
 		struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+
+		if(ignoreERR009852)
+			printf("\n Ignoring errata ERR009852 \n");
 
 		/* Ensure that if the link comes down we do not react
 		 * to config accesses anymore until we have reconfigured
@@ -522,15 +477,12 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 		 * clears non-sticky registers.
 		 * Note that we permit automatic link training. This
 		 * puts the responsibility on us to reconfigure and
-		 * set PCIE_CFG_READY again if the link comes down, or
-		 * we mess with the RC!
+		 * set PCIE_CFG_READY again if the link comes down.
 		 */
 		clrsetbits_le32(&src_regs->gpr10, 0x40000000, 0x40000000);
 
 		/* Assume the link is up and reset the link down event,
 		 * so that we can properly try to set PCIE_CFG_READY.
-		 * It is unclear at this stage where we can check if
-		 * the link came down or not.
 		 */
 		clrsetbits_le32(&src_regs->pcie_config0, 0x00000001, 0x00000001);
 
@@ -540,9 +492,6 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 		gic_register_handler(PCIE_INTERRUPT_link_req_rst_not,
 				     inthandler_pcie_link_req_rst_not,
 				     0, "PCIE_INTERRUPT_link_req_rst_not");
-		gic_register_handler(PCIE_INTERRUPT_link_up_down_etc,
-				     inthandler_pcie_link_up_down_etc,
-				     0, "PCIE_INTERRUPT_link_up_down_etc");
 
 		/* Accept inbound configuration requests now */
 		clrsetbits_le32(&src_regs->gpr11, 0x00400000, 0x00400000);
@@ -706,9 +655,7 @@ void s32v234_pcie_init(const int ep_mode)
 	int ret;
 	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
-	/* This is the very first thing we have to do before touching
-	 * PCIe. We need to decide if we want to be RC or EP
-	 */
+	/* Set device type */
 	clrsetbits_le32(&src_regs->gpr5,
 			SRC_GPR5_PCIE_DEVICE_TYPE_MASK,
 			(ep_mode) ? SRC_GPR5_PCIE_DEVICE_TYPE_EP :
@@ -728,8 +675,6 @@ void s32v234_pcie_init(const int ep_mode)
 			       S32V234_MEM_SIZE, PCI_REGION_MEM);
 
 		/* System memory space */
-		/* For now, allocating only 1024MB from address 0x80000000 */
-
 		pci_set_region(&hose->regions[2],
 			       MMDC0_ARB_BASE_ADDR, MMDC0_ARB_BASE_ADDR,
 			       0x3FFFFFFF, PCI_REGION_MEM | PCI_REGION_SYS_MEMORY);

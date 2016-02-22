@@ -15,6 +15,7 @@
 #include <common.h>
 #include <linux/compiler.h>
 #include <asm/io.h>
+#include <asm/gicsupport.h>
 #include <asm/gic.h>
 #include <asm/proc-armv/system.h>
 
