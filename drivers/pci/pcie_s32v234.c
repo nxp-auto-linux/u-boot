@@ -1,5 +1,5 @@
 /*
- * Freescale S32V234 PCI Express Root-Complex driver
+ * Freescale S32V234 PCI Express driver
  *
  * Copyright (C) 2016 Heinz Wrobel <heinz.wrobel@nxp.com>
  * Copyright (C) 2015 Aurelian Voicu <aurelian.voicu@nxp.com>
@@ -28,9 +28,9 @@
 #define PCI_ACCESS_WRITE 1
 
 #define MMDC0_ARB_BASE_ADDR	0x80000000
-#define S32V234_DBI_ADDR	0x72FFC000 
-#define S32V234_IO_ADDR		0x72000000 
-#define S32V234_MEM_ADDR	0x72100000 
+#define S32V234_DBI_ADDR	0x72FFC000
+#define S32V234_IO_ADDR		0x72000000
+#define S32V234_MEM_ADDR	0x72100000
 #define S32V234_ROOT_ADDR	0x72f00000
 #define S32V234_DBI_SIZE	0x4000
 #define S32V234_IO_SIZE		0x100000
@@ -91,12 +91,12 @@
 #define PCI_BASE_DBI			0x72FFC000
 #define MSI_REGION_NR			3
 #define NR_REGIONS			4
-#define PCI_REGION_MEM			0x00000000	/* PCI mem space */
-#define PCI_REGION_IO			0x00000001	/* PCI IO space */
-#define PCI_WIDTH_32b			0x00000000	/* 32-bit BAR */
-#define PCI_WIDTH_64b			0x00000004	/* 64-bit BAR */
-#define PCI_REGION_PREFETCH		0x00000008	/* prefetch PCI mem */
-#define PCI_REGION_NON_PREFETCH		0x00000000	/* non-prefetch PCI mem */
+#define PCI_REGION_MEM			0x00000000 /* PCI mem space */
+#define PCI_REGION_IO			0x00000001 /* PCI IO space */
+#define PCI_WIDTH_32b			0x00000000 /* 32-bit BAR */
+#define PCI_WIDTH_64b			0x00000004 /* 64-bit BAR */
+#define PCI_REGION_PREFETCH		0x00000008 /* prefetch PCI mem */
+#define PCI_REGION_NON_PREFETCH		0x00000000 /* non-prefetch PCI mem */
 #define PCIE_BAR0_SIZE			SZ_1M		/* 1MB */
 #define PCIE_BAR1_SIZE			0
 #define PCIE_BAR2_SIZE			SZ_1M		/* 1MB */
@@ -185,7 +185,7 @@ static int pcie_phy_wait_ack(void __iomem *dbi_base, int addr)
 }
 
 /* Read from the 16-bit PCIe PHY control registers (not memory-mapped) */
-static int pcie_phy_read(void __iomem *dbi_base, int addr , int *data)
+static int pcie_phy_read(void __iomem *dbi_base, int addr, int *data)
 {
 	u32 val, phy_ctl;
 	int ret;
@@ -276,7 +276,8 @@ static int s32v234_pcie_link_up(void)
 
 	/* link is debug bit 36, debug register 1 starts at bit 32 */
 	rc = readl(S32V234_DBI_ADDR + PCIE_PHY_DEBUG_R1);
-	if ((rc & PCIE_PHY_DEBUG_R1_LINK_UP) &&  !(rc & PCIE_PHY_DEBUG_R1_LINK_IN_TRAINING))
+	if ((rc & PCIE_PHY_DEBUG_R1_LINK_UP) &&
+	    !(rc & PCIE_PHY_DEBUG_R1_LINK_IN_TRAINING))
 		return -EAGAIN;
 
 	/*
@@ -286,7 +287,8 @@ static int s32v234_pcie_link_up(void)
 	 * && (PHY/rx_valid==0) then pulse PHY/rx_reset. Transition
 	 * to gen2 is stuck
 	 */
-	pcie_phy_read((void *)S32V234_DBI_ADDR, PCIE_PHY_RX_ASIC_OUT, &rx_valid);
+	pcie_phy_read((void *)S32V234_DBI_ADDR, PCIE_PHY_RX_ASIC_OUT,
+		      &rx_valid);
 	ltssm = readl(S32V234_DBI_ADDR + PCIE_PHY_DEBUG_R0) & 0x3F;
 
 	if (rx_valid & 0x01)
@@ -301,7 +303,7 @@ static int s32v234_pcie_link_up(void)
 	temp |= (PHY_RX_OVRD_IN_LO_RX_DATA_EN | PHY_RX_OVRD_IN_LO_RX_PLL_EN);
 	pcie_phy_write((void *)S32V234_DBI_ADDR, PHY_RX_OVRD_IN_LO, temp);
 
-	udelay(3000);
+	mdelay(3);
 
 	pcie_phy_read((void *)S32V234_DBI_ADDR, PHY_RX_OVRD_IN_LO, &temp);
 	temp &= ~(PHY_RX_OVRD_IN_LO_RX_DATA_EN | PHY_RX_OVRD_IN_LO_RX_PLL_EN);
@@ -310,7 +312,9 @@ static int s32v234_pcie_link_up(void)
 	return 0;
 }
 
-static void s32v234_pcie_set_bar(int baroffset, int enable, unsigned int size, unsigned int init)
+static void s32v234_pcie_set_bar(int baroffset, int enable,
+				 unsigned int size,
+				 unsigned int init)
 {
 	char __iomem *dbi_base = (char __iomem *)S32V234_DBI_ADDR;
 	uint32_t mask = (enable) ? ((size - 1) & ~1) : 0;
@@ -343,19 +347,21 @@ static void set_non_sticky_config_regs(void)
 
 		/* CMD reg:I/O space, MEM space, and Bus Master Enable */
 		setbits_le32(S32V234_DBI_ADDR | PCI_COMMAND,
-			PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
+			     PCI_COMMAND_IO | PCI_COMMAND_MEMORY |
+			     PCI_COMMAND_MASTER);
 
 		/* Region #0 is used for Outbound CFG space access. */
 		writel(0, S32V234_DBI_ADDR + PCIE_ATU_VIEWPORT);
-		writel(S32V234_ROOT_ADDR, S32V234_DBI_ADDR + PCIE_ATU_LOWER_BASE);
+		writel(S32V234_ROOT_ADDR,
+		       S32V234_DBI_ADDR + PCIE_ATU_LOWER_BASE);
 		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_BASE);
-		writel(S32V234_ROOT_ADDR + S32V234_ROOT_SIZE, S32V234_DBI_ADDR + PCIE_ATU_LIMIT);
+		writel(S32V234_ROOT_ADDR + S32V234_ROOT_SIZE,
+		       S32V234_DBI_ADDR + PCIE_ATU_LIMIT);
 		writel(0, S32V234_DBI_ADDR + PCIE_ATU_LOWER_TARGET);
 		writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_TARGET);
 		writel(PCIE_ATU_TYPE_CFG0, S32V234_DBI_ADDR + PCIE_ATU_CR1);
 		writel(PCIE_ATU_ENABLE, S32V234_DBI_ADDR + PCIE_ATU_CR2);
-	}
-	else {
+	} else {
 		/* Set the CLASS_REV of RC CFG header to something that
 		 * makes sense for this SoC by itself. For a product,
 		 * the class setting should be board/product specific,
@@ -375,38 +381,75 @@ static void set_non_sticky_config_regs(void)
 			 * any memory access from the RC! We solve this
 			 * by disabling all BARs and ROM access
 			 */
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_0, 0, 0, 0);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_1, 0, 0, 0);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_2, 0, 0, 0);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_3, 0, 0, 0);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_4, 0, 0, 0);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_5, 0, 0, 0);
-			s32v234_pcie_set_bar(PCI_ROM_ADDRESS, 0, 0, 0);
-		}
-		else {
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_0, PCIE_BAR0_EN_DIS, PCIE_BAR0_SIZE, PCIE_BAR0_INIT);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_1, PCIE_BAR1_EN_DIS, PCIE_BAR1_SIZE, PCIE_BAR1_INIT);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_2, PCIE_BAR2_EN_DIS, PCIE_BAR2_SIZE, PCIE_BAR2_INIT);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_3, PCIE_BAR3_EN_DIS, PCIE_BAR3_SIZE, PCIE_BAR3_INIT);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_4, PCIE_BAR4_EN_DIS, PCIE_BAR4_SIZE, PCIE_BAR4_INIT);
-			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_5, PCIE_BAR5_EN_DIS, PCIE_BAR5_SIZE, PCIE_BAR5_INIT);
-			s32v234_pcie_set_bar(PCI_ROM_ADDRESS, PCIE_ROM_EN_DIS, PCIE_ROM_SIZE, PCIE_ROM_INIT);
-			
-			/* Region #0 is used for Inbound Mem space access on BAR2. */
-			writel(0x80000000, S32V234_DBI_ADDR + PCIE_ATU_VIEWPORT);
-			writel(0xcff00000, S32V234_DBI_ADDR + PCIE_ATU_LOWER_TARGET);
-			writel(0, S32V234_DBI_ADDR + PCIE_ATU_UPPER_TARGET);
-			writel(PCIE_ATU_TYPE_MEM, S32V234_DBI_ADDR + PCIE_ATU_CR1);
-			writel(0xC0000200, S32V234_DBI_ADDR + PCIE_ATU_CR2);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_0,
+					     0, 0, 0);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_1,
+					     0, 0, 0);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_2,
+					     0, 0, 0);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_3,
+					     0, 0, 0);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_4,
+					     0, 0, 0);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_5,
+					     0, 0, 0);
+			s32v234_pcie_set_bar(PCI_ROM_ADDRESS,
+					     0, 0, 0);
+		} else {
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_0,
+					     PCIE_BAR0_EN_DIS,
+					     PCIE_BAR0_SIZE,
+					     PCIE_BAR0_INIT);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_1,
+					     PCIE_BAR1_EN_DIS,
+					     PCIE_BAR1_SIZE,
+					     PCIE_BAR1_INIT);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_2,
+					     PCIE_BAR2_EN_DIS,
+					     PCIE_BAR2_SIZE,
+					     PCIE_BAR2_INIT);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_3,
+					     PCIE_BAR3_EN_DIS,
+					     PCIE_BAR3_SIZE,
+					     PCIE_BAR3_INIT);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_4,
+					     PCIE_BAR4_EN_DIS,
+					     PCIE_BAR4_SIZE,
+					     PCIE_BAR4_INIT);
+			s32v234_pcie_set_bar(PCI_BASE_ADDRESS_5,
+					     PCIE_BAR5_EN_DIS,
+					     PCIE_BAR5_SIZE,
+					     PCIE_BAR5_INIT);
+			s32v234_pcie_set_bar(PCI_ROM_ADDRESS,
+					     PCIE_ROM_EN_DIS,
+					     PCIE_ROM_SIZE,
+					     PCIE_ROM_INIT);
 
-			/* CMD reg:I/O space, MEM space, and Bus Master Enable */
+			/* Region #0 is used for Inbound Mem space
+			access on BAR2. */
+			writel(0x80000000, S32V234_DBI_ADDR +
+			       PCIE_ATU_VIEWPORT);
+			writel(0xcff00000, S32V234_DBI_ADDR +
+			       PCIE_ATU_LOWER_TARGET);
+			writel(0, S32V234_DBI_ADDR +
+			       PCIE_ATU_UPPER_TARGET);
+			writel(PCIE_ATU_TYPE_MEM, S32V234_DBI_ADDR +
+			       PCIE_ATU_CR1);
+			writel(0xC0000200, S32V234_DBI_ADDR +
+			       PCIE_ATU_CR2);
+
+			/* CMD reg:I/O space, MEM space,
+			and Bus Master Enable */
 			setbits_le32(S32V234_DBI_ADDR | PCI_COMMAND,
-				PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
+				    PCI_COMMAND_IO |
+				    PCI_COMMAND_MEMORY |
+				    PCI_COMMAND_MASTER);
 		}
 	}
 }
 
-static void inthandler_pcie_link_req_rst_not(struct pt_regs *pt_regs, unsigned int esr)
+static void inthandler_pcie_link_req_rst_not(struct pt_regs *pt_regs,
+					     unsigned int esr)
 {
 	const struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
@@ -419,7 +462,7 @@ static void inthandler_pcie_link_req_rst_not(struct pt_regs *pt_regs, unsigned i
 	 * permit configuration transactions
 	 */
 	 set_non_sticky_config_regs();
-	
+
 	/* Accept inbound configuration requests now */
 	clrsetbits_le32(&src_regs->gpr11, 0x00400000, 0x00400000);
 }
@@ -442,8 +485,8 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 	 * 0x01F0_0000 --- 0x01FF_FFFF 1MB Cfg + Registers
 	 */
 
-	if(socmask_info == 0x00) {
-		/* 
+	if (socmask_info == 0x00) {
+		/*
 		 * Vendor ID is Freescale (now NXP): 0x1957
 		 * Device ID is split as follows
 		 * Family 15:12, Device 11:6, Personality 5:0
@@ -452,12 +495,15 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 		 * S32V does not have export controlled cryptography: 00001
 		 */
 		printf("Setting PCIE Vendor and Device ID\n");
-		writel((0x4001 << 16) | 0x1957, S32V234_DBI_ADDR + PCI_VENDOR_ID);
+		writel((0x4001 << 16) | 0x1957,
+		      S32V234_DBI_ADDR + PCI_VENDOR_ID);
 	}
 
-	#if defined(CONFIG_PCIE_SUBSYSTEM_VENDOR_ID) && defined(CONFIG_PCIE_SUBSYSTEM_ID)
-	writel((CONFIG_PCIE_SUBSYSTEM_ID << 16) | CONFIG_PCIE_SUBSYSTEM_VENDOR_ID,
-	       S32V234_DBI_ADDR + PCI_SUBSYSTEM_VENDOR_ID);
+	#if defined(CONFIG_PCIE_SUBSYSTEM_VENDOR_ID) \
+		&& defined(CONFIG_PCIE_SUBSYSTEM_ID)
+	writel((CONFIG_PCIE_SUBSYSTEM_ID << 16) |
+			CONFIG_PCIE_SUBSYSTEM_VENDOR_ID,
+			S32V234_DBI_ADDR + PCI_SUBSYSTEM_VENDOR_ID);
 	#endif
 
 	ignoreERR009852 = getenv("ignoreERR009852") != NULL;
@@ -468,8 +514,8 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 
 		struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
-		if(ignoreERR009852)
-			printf("\n Ignoring errata ERR009852 \n");
+		if (ignoreERR009852)
+			printf("\n Ignoring errata ERR009852\n");
 
 		/* Ensure that if the link comes down we do not react
 		 * to config accesses anymore until we have reconfigured
@@ -479,12 +525,14 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 		 * puts the responsibility on us to reconfigure and
 		 * set PCIE_CFG_READY again if the link comes down.
 		 */
-		clrsetbits_le32(&src_regs->gpr10, 0x40000000, 0x40000000);
+		clrsetbits_le32(&src_regs->gpr10,
+				0x40000000, 0x40000000);
 
 		/* Assume the link is up and reset the link down event,
 		 * so that we can properly try to set PCIE_CFG_READY.
 		 */
-		clrsetbits_le32(&src_regs->pcie_config0, 0x00000001, 0x00000001);
+		clrsetbits_le32(&src_regs->pcie_config0,
+				0x00000001, 0x00000001);
 
 		/* Ensure that we can fix up our configuration again
 		 * if the link came down!
@@ -494,7 +542,8 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 				     0, "PCIE_INTERRUPT_link_req_rst_not");
 
 		/* Accept inbound configuration requests now */
-		clrsetbits_le32(&src_regs->gpr11, 0x00400000, 0x00400000);
+		clrsetbits_le32(&src_regs->gpr11,
+				0x00400000, 0x00400000);
 	}
 
 	return 0;
@@ -585,11 +634,11 @@ static int s32v234_pcie_init_phy(const int ep_mode)
 			SRC_GPR5_PCIE_PHY_RX0_EQ_2);
 
 	writel((0x0 << SRC_GPR6_PCIE_PCS_TX_DEEMPH_GEN1_OFFSET) |
-		(0x0 << SRC_GPR6_PCIE_PCS_TX_DEEMPH_GEN2_3P5DB_OFFSET) |
-		(20 << SRC_GPR6_PCIE_PCS_TX_DEEMPH_GEN2_6DB_OFFSET) |
-		(127 << SRC_GPR6_PCIE_PCS_TX_SWING_FULL_OFFSET) |
-		(127 << SRC_GPR6_PCIE_PCS_TX_SWING_LOW_OFFSET),
-		&src_regs->gpr6);
+	       (0x0 << SRC_GPR6_PCIE_PCS_TX_DEEMPH_GEN2_3P5DB_OFFSET) |
+	       (20 << SRC_GPR6_PCIE_PCS_TX_DEEMPH_GEN2_6DB_OFFSET) |
+	       (127 << SRC_GPR6_PCIE_PCS_TX_SWING_FULL_OFFSET) |
+	       (127 << SRC_GPR6_PCIE_PCS_TX_SWING_LOW_OFFSET),
+	       &src_regs->gpr6);
 
 	return 0;
 }
@@ -599,7 +648,6 @@ static int s32v234_pcie_deassert_core_reset(void)
 	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
 	/* Enable PCIe */
-
 	clrbits_le32(&src_regs->gpr5, SRC_GPR5_GPR_PCIE_BUTTON_RST_N);
 	mdelay(50);
 	return 0;
@@ -608,10 +656,9 @@ static int s32v234_pcie_deassert_core_reset(void)
 static int s32v_pcie_link_up(const int ep_mode)
 {
 	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
-
 	uint32_t tmp;
 	int count = 0;
-	
+
 	s32v234_pcie_init_phy(ep_mode);
 	s32v234_pcie_deassert_core_reset();
 	s32v234_pcie_regions_setup(ep_mode);
@@ -677,7 +724,8 @@ void s32v234_pcie_init(const int ep_mode)
 		/* System memory space */
 		pci_set_region(&hose->regions[2],
 			       MMDC0_ARB_BASE_ADDR, MMDC0_ARB_BASE_ADDR,
-			       0x3FFFFFFF, PCI_REGION_MEM | PCI_REGION_SYS_MEMORY);
+			       0x3FFFFFFF, PCI_REGION_MEM |
+				   PCI_REGION_SYS_MEMORY);
 
 		hose->region_count = 3;
 

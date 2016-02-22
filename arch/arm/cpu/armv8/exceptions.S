@@ -49,6 +49,7 @@
 .endm
 
 /* Return from the exception in a benign fashion */
+#ifdef CONFIG_S32V234
 .macro	exception_exit
 	ldp	x2, x0, [sp], #16
 
@@ -69,7 +70,7 @@
 	ldp	x29, x30, [sp], #16
         eret
 .endm
-
+#endif
 /*
  * Exception vectors.
  */
@@ -124,12 +125,15 @@ _do_sync:
 _do_irq:
 	exception_entry
 	bl	do_irq
+#ifdef CONFIG_S32V234
 	exception_exit
-
+#endif
 _do_fiq:
 	exception_entry
 	bl	do_fiq
+#ifdef CONFIG_S32V234
 	exception_exit
+#endif
 
 _do_error:
 	exception_entry
