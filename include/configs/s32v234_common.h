@@ -55,6 +55,9 @@
 #define DDR_BASE_ADDR		0xC0000000
 #endif
 
+/* DDR chips on S32V234 boards have 32 bits cells */
+#define RAM_CELL_SIZE		32
+
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* Enable passing of ATAGs */
