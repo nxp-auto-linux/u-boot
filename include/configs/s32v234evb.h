@@ -40,9 +40,6 @@
 /* EVB board has 2x256 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
 #define DDR_SIZE		(256 * 1024 * 1024)
 
-/* EVB board DDR chip has 32 bits cells */
-#define RAM_CELL_SIZE		32
-
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */
