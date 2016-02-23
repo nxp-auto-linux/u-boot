@@ -28,6 +28,15 @@
 #include <asm/arch/src.h>
 #include <fsl_esdhc.h>
 #include <mmc.h>
+#include <asm/arch/mmdc.h>
+#include <asm/arch/ddr.h>
+#if defined(CONFIG_S32V234_LPDDR2)
+#include <asm/arch/lpddr2.h>
+#elif defined(CONFIG_S32V234_DDR3)
+#include <asm/arch/ddr3.h>
+#else
+#error "Please define the DDR type for S32V234 board!"
+#endif
 #include <netdev.h>
 #include <div64.h>
 #include <errno.h>
@@ -592,3 +601,75 @@ U_BOOT_CMD(
 	"Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
 	"and disconnect from the Hyperflash.\n"
 );
+
+void setup_iomux_ddr(void)
+{
+	ddr_config_iomux(DDR0);
+	ddr_config_iomux(DDR1);
+}
+
+void ddr_ctrl_init(void)
+{
+	config_mmdc(0);
+	config_mmdc(1);
+}
+
+#ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
+void ddr_check_post_func_reset(uint8_t module) {
+
+	uint32_t ddr_self_ref_clr, mmdc_mapsr;
+	unsigned long mmdc_addr;
+	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
+
+	mmdc_addr = (module) ? MMDC1_BASE_ADDR : MMDC0_BASE_ADDR;
+	ddr_self_ref_clr = (module) ? SRC_DDR_EN_SELF_REF_CTRL_DDR1_SLF_REF_CLR
+				    : SRC_DDR_EN_SELF_REF_CTRL_DDR0_SLF_REF_CLR;
+
+	/* Check if DDR is still in refresh mode */
+	if(src->ddr_self_ref_ctrl & ddr_self_ref_clr) {
+
+		mmdc_mapsr = readl(mmdc_addr + MMDC_MAPSR);
+		writel(mmdc_mapsr | MMDC_MAPSR_EN_SLF_REF, mmdc_addr + MMDC_MAPSR);
+
+		src->ddr_self_ref_ctrl = src->ddr_self_ref_ctrl | ddr_self_ref_clr;
+
+		mmdc_mapsr = readl(mmdc_addr + MMDC_MAPSR);
+		writel(mmdc_mapsr & ~MMDC_MAPSR_EN_SLF_REF, mmdc_addr + MMDC_MAPSR);
+	}
+}
+#endif
+
+__weak int dram_init(void)
+{
+#ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
+	uint32_t func_event;
+
+	/* Enable DDR handshake for all functional events */
+	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
+
+	writel(MC_RGM_DDR_HE_VALUE, MC_RGM_DDR_HE);
+	writel(MC_RGM_FRHE_ALL_VALUE, MC_RGM_FRHE);
+
+	src->ddr_self_ref_ctrl = src->ddr_self_ref_ctrl |
+				 SRC_DDR_EN_SLF_REF_VALUE;
+
+	/* If reset event was received, check DDR state */
+	func_event = readl(MC_RGM_FES);
+	if(func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
+
+		/* Check if DDR handshake was done */
+		while(!(readl(MC_RGM_DDR_HS) & MC_RGM_DDR_HS_HNDSHK_DONE));
+
+		ddr_check_post_func_reset(DDR0);
+		ddr_check_post_func_reset(DDR1);
+
+	}
+#endif
+	setup_iomux_ddr();
+
+	ddr_ctrl_init();
+
+	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
+
+	return 0;
+}

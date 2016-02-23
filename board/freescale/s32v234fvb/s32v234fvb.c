@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 Freescale Semiconductor, Inc.
+ * Copyright 2013-2016 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,13 +21,6 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
-#if defined(CONFIG_S32V234_LPDDR2)
-#include <asm/arch/lpddr2.h>
-#elif defined(CONFIG_S32V234_DDR3)
-#include <asm/arch/ddr3.h>
-#else
-#error "Please define the DDR type for S32V234 board!"
-#endif
 #include <asm/arch/clock.h>
 #include <asm/arch/xrdc.h>
 #include <mmc.h>
@@ -37,37 +30,6 @@
 #include <i2c.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
-void setup_iomux_ddr(void)
-{
-	ddr_config_iomux(DDR0);
-	ddr_config_iomux(DDR1);
-}
-
-void ddr_phy_init(void)
-{
-	/* TODO: Add initialisation code for ddr phy. */
-}
-
-void ddr_ctrl_init(void)
-{
-	config_mmdc(0);
-	udelay(CONFIG_DDR_INIT_DELAY);
-
-	config_mmdc(1);
-	udelay(CONFIG_DDR_INIT_DELAY);
-}
-
-int dram_init(void)
-{
-	setup_iomux_ddr();
-
-	ddr_ctrl_init();
-
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
-
-	return 0;
-}
 
 static void setup_iomux_uart(void)
 {
