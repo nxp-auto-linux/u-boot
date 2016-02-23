@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 Freescale Semiconductor, Inc.
+ * Copyright 2013-2016 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -162,8 +162,7 @@ struct src {
 	u32 gpr5;
 	u32 gpr6;
 	u32 gpr7;
-	u32 reserved_0x11C[1];
-	u32 gpr9;
+	u32 reserved_0x11C[2];
 	u32 gpr10;
 	u32 gpr11;
 	u32 gpr12;
@@ -172,7 +171,6 @@ struct src {
 	u32 gpr15;
 	u32 gpr16;
 	u32 reserved_0x140[1];
-	u32 gpr17;
 	u32 gpr18;
 	u32 gpr19;
 	u32 gpr20;
@@ -187,7 +185,7 @@ struct src {
 	u32 pcie_config1;
 	u32 ddr_self_ref_ctrl;
 	u32 pcie_config0;
-	u32 reserved_0x18C[4];
+	u32 reserved_0x18C[3];
 	u32 soc_misc_config2;
 };
 
