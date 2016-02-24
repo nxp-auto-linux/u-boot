@@ -249,11 +249,11 @@ static void setup_aux_clocks( void )
 	/* setup the aux clock divider for H264_ENC_CLK (350MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 13, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 13, 0, 0 );
-
-	/* setup the aux clock divider for QSPI_CLK  (416 MHz)*/
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 14, MC_CGM_ACn_SEL_ENETPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 14, 0, 0 );
 #endif
+
+	/* setup the aux clock divider for QSPI_CLK  (target 40 MHz)*/
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 14, MC_CGM_ACn_SEL_XOSC );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 14, 0, 0 );
 
 	/* setup the aux clock divider for SDHC_CLK (50 MHz). */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 15, MC_CGM_ACn_SEL_ENETPLL );
@@ -316,6 +316,8 @@ static void enable_modules_clock( void )
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL54 );
 	/* MMDC1 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL162 );
+	/* QuadSPI */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL166 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }

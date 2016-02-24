@@ -250,8 +250,8 @@ static void setup_aux_clocks( void )
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 13, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 13, 0, 0 );
 
-	/* setup the aux clock divider for QSPI_CLK  (416 MHz)*/
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 14, MC_CGM_ACn_SEL_ENETPLL );
+	/* setup the aux clock divider for QSPI_CLK  (target 40 MHz)*/
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 14, MC_CGM_ACn_SEL_XOSC );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 14, 0, 0 );
 #endif
 
