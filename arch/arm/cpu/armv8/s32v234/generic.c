@@ -568,8 +568,15 @@ static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 {
 	int ret;
 	printf("Hyperflash is disabled. SD/eMMC is active and can be used\n");
-	ret = sdhc_setup(gd->bd);
-	if( ret < 0 )
+
+	struct mmc * mmc = find_mmc_device(0);
+
+	/* set the sdhc pinmuxing */
+	setup_iomux_sdhc();
+
+	/* reforce the mmc's initialization */
+	ret = mmc_init(mmc);
+	if( ret )
 	{
 		printf("Impossible to configure the SDHC controller.\
 			Please check the SDHC jumpers\n");
