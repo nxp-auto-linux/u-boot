@@ -468,7 +468,8 @@ static int detect_boot_interface(void)
 	value = value >> SRC_BMR1_CFG1_BOOT_SHIFT;
 
 	if( !(value & SRC_BMR1_CFG1_QuadSPI) &&
-	    !(value & SRC_BMR1_CFG1_SD) && !(value & SRC_BMR1_CFG1_eMMC) )
+	    !(value & SRC_BMR1_CFG1_SD) &&
+	    !(value & SRC_BMR1_CFG1_eMMC) )
 	{
 		printf("Unknown booting environment \n");
 		value = -1;

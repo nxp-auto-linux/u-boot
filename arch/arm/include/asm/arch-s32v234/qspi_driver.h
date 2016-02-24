@@ -77,8 +77,8 @@ void quadspi_set_lut(uint32_t index, uint32_t value);
 #define QSPI_SR_RXWE_SHIFT                   (16)
 #define QSPI_SR_RXWE_MASK                    ((1) << (QSPI_SR_RXWE_SHIFT))
 #define QuadSPI_MCR_CLR_TXF_MASK             0x800u
-#define QuadSPI_MCR_CLR_TXF_SHIFT            11
+#define QuadSPI_MCR_CLR_TXF_SHIFT            (11)
 #define QuadSPI_SR_TXFULL_MASK               0x8000000u
-#define QuadSPI_SR_TXFULL_SHIFT              27
+#define QuadSPI_SR_TXFULL_SHIFT              (27)
 
 #endif /* QSPI_DRIVER_H_ */
