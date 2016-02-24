@@ -6,11 +6,20 @@
 #define __ASM_ARCH_SRC_H__
 
 /*
+ * SRC_BMR1 bit fields
+ */
+#define SRC_BMR1_CFG1_MASK					(0xC0 << 0x0)
+#define SRC_BMR1_CFG1_BOOT_SHIFT				(6)
+#define SRC_BMR1_CFG1_QuadSPI					(0x0)
+#define SRC_BMR1_CFG1_SD					(0x2)
+#define SRC_BMR1_CFG1_eMMC					(0x3)
+
+/*
  * SRC_GPR3 bit fields
  */
 
-#define SRC_GPR3_PCIE_RFCC_CLK						(1<<5)
-#define SRC_GPR3_PCCAS								(1<<4)
+#define SRC_GPR3_PCIE_RFCC_CLK					(1<<5)
+#define SRC_GPR3_PCCAS						(1<<4)
 
 /*
  * SRC_GPR5 bit fields

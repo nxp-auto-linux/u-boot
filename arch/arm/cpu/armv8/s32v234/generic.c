@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 Freescale Semiconductor, Inc.
+ * Copyright 2013-2016 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,6 +24,7 @@
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>
+#include <asm/arch/src.h>
 #include <netdev.h>
 #include <div64.h>
 #include <errno.h>
@@ -451,6 +452,27 @@ int cpu_eth_init(bd_t *bis)
 #endif
 
 	return rc;
+}
+
+static int detect_boot_interface(void)
+{
+	volatile struct src * src = (struct src *)SRC_SOC_BASE_ADDR;
+
+	u32 reg_val;
+	int value;
+	reg_val = readl(&src->bmr1);
+	value = reg_val & SRC_BMR1_CFG1_MASK;
+	value = value >> SRC_BMR1_CFG1_BOOT_SHIFT;
+
+	if( !(value & SRC_BMR1_CFG1_QuadSPI) &&
+	    !(value & SRC_BMR1_CFG1_SD) && !(value & SRC_BMR1_CFG1_eMMC) )
+	{
+		printf("Unknown booting environment \n");
+		value = -1;
+	}
+
+	return value;
+
 }
 
 int get_clocks(void)
