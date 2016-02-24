@@ -337,6 +337,7 @@ void quadspi_set_lut(uint32_t index, uint32_t value)
 static int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
+	printf("SD/eMMC is disabled. Hyperflash is active and can be used!\n");
 	QSPI_setup_hyp();
 	return 0;
 }
