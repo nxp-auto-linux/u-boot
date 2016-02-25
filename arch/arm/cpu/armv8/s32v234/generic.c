@@ -476,9 +476,9 @@ static int detect_boot_interface(void)
 	value = reg_val & SRC_BMR1_CFG1_MASK;
 	value = value >> SRC_BMR1_CFG1_BOOT_SHIFT;
 
-	if( !(value & SRC_BMR1_CFG1_QuadSPI) &&
-	    !(value & SRC_BMR1_CFG1_SD) &&
-	    !(value & SRC_BMR1_CFG1_eMMC) )
+	if( (value != SRC_BMR1_CFG1_QuadSPI) &&
+	    (value != SRC_BMR1_CFG1_SD) &&
+	    (value != SRC_BMR1_CFG1_eMMC) )
 	{
 		printf("Unknown booting environment \n");
 		value = -1;
@@ -561,7 +561,11 @@ __weak int sdhc_setup(bd_t *bis)
 }
 int board_mmc_init(bd_t *bis)
 {
-	if( detect_boot_interface() != SRC_BMR1_CFG1_QuadSPI )
+	int ret = detect_boot_interface();
+	if( ret < 0 )
+		return -1;
+
+	if( ret != SRC_BMR1_CFG1_QuadSPI )
 	{
 		return sdhc_setup(bis);
 	}
