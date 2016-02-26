@@ -584,6 +584,11 @@ static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 
 	struct mmc * mmc = find_mmc_device(0);
 
+	if( mmc == NULL )
+	{
+		return sdhc_setup(gd->bd);
+	}
+
 	/* set the sdhc pinmuxing */
 	setup_iomux_sdhc();
 
