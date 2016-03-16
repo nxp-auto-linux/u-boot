@@ -61,7 +61,7 @@
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
 
-#define CONFIG_LOADADDR		(DDR_BASE_ADDR + 0x2000000)
+#define CONFIG_LOADADDR		LOADADDR
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \

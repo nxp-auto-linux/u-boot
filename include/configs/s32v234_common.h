@@ -48,7 +48,7 @@
 
 #define CONFIG_REMAKE_ELF
 
-/* Run by default from DDR1  */
+/* Run by default from DDR1 */
 #ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR		0x80000000
 #else
@@ -75,12 +75,29 @@
 #define CONFIG_MP
 #define CONFIG_OF_LIBFDT
 
+/* Ramdisk name */
+#define RAMDISK_NAME		rootfs.uimg
+
+#ifdef CONFIG_RUN_FROM_DDR0
+/* Flat device tree definitions */
+#define FDT_ADDR		0x82000000
+
+/*Kernel image load address */
+#define LOADADDR		0x8307FFC0
+
+/* Ramdisk load address */
+#define RAMDISK_ADDR		0x84000000
+#else
 /* Flat device tree definitions */
 #define FDT_ADDR		0xC2000000
 
-/* Ramdisk definitions */
-#define RAMDISK_NAME		rootfs.uimg
+/*Kernel image load address */
+#define LOADADDR		0xC307FFC0
+
+/* Ramdisk load address */
 #define RAMDISK_ADDR		0xC4000000
+#endif
+
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_GENERIC_TIMER)

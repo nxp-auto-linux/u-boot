@@ -27,8 +27,8 @@
 /* S32V234PCIE has LPDDR2 */
 #define CONFIG_S32V234_LPDDR2
 
-#define CONFIG_RUN_FROM_DDR1
-#undef CONFIG_RUN_FROM_DDR0
+#define CONFIG_RUN_FROM_DDR0
+#undef CONFIG_RUN_FROM_DDR1
 
 /* PCIE board has 2x256 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
 #define DDR_SIZE		(256 * 1024 * 1024)
@@ -71,7 +71,7 @@
 #define CONFIG_PHY_BROADCOM
 #endif
 
-#define CONFIG_LOADADDR		0xC307FFC0
+#define CONFIG_LOADADDR		LOADADDR
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \

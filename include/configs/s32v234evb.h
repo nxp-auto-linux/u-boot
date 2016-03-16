@@ -30,9 +30,9 @@
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
-/* u-boot uses just DDR1 */
-#define CONFIG_RUN_FROM_DDR1
-#undef CONFIG_RUN_FROM_DDR0
+/* u-boot uses just DDR0 */
+#define CONFIG_RUN_FROM_DDR0
+#undef CONFIG_RUN_FROM_DDR1
 
 /* S32V234 EVB has LPDDR2 */
 #define CONFIG_S32V234_LPDDR2
@@ -91,7 +91,7 @@
 	#define	FDT_FILE s32v234-evb.dtb
 #endif
 
-#define CONFIG_LOADADDR		0xC307FFC0
+#define CONFIG_LOADADDR		LOADADDR
 
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
