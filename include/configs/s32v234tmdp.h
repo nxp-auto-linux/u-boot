@@ -72,13 +72,13 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
-	"ramdisk=rootfs.uimg\0"\
+	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
 	"console=ttyLF0\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file=s32v234-tmdp.dtb\0" \
 	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
-	"ramdisk_addr=0xC4000000\0" \
+	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \

@@ -93,16 +93,17 @@
 
 #define CONFIG_LOADADDR		0xC307FFC0
 
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
-	"ramdisk=rootfs.uimg\0"\
+	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
 	"console=ttyLF0\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \
 	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
-	"ramdisk_addr=0xC4000000\0" \
+	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
 	"ipaddr=10.0.0.100\0" \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \

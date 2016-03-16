@@ -78,6 +78,10 @@
 /* Flat device tree definitions */
 #define FDT_ADDR		0xC2000000
 
+/* Ramdisk definitions */
+#define RAMDISK_NAME		rootfs.uimg
+#define RAMDISK_ADDR		0xC4000000
+
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_GENERIC_TIMER)
 #define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
