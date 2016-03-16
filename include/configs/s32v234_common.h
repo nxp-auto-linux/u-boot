@@ -119,6 +119,11 @@
 #define CONFIG_BOARD_EARLY_INIT_F
 
 #define CONFIG_FSL_LINFLEXUART
+#if LINFLEXUART == 0
+#define LINFLEXUART_BASE	LINFLEXD0_BASE_ADDR
+#else
+#define LINFLEXUART_BASE	LINFLEXD1_BASE_ADDR
+#endif
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -185,7 +190,7 @@
 
 #define CONFIG_BOOTDELAY		3
 
-#define CONFIG_BOOTARGS			"console=ttyLF0 root=/dev/ram rw"
+#define CONFIG_BOOTARGS			"console=${console} root=/dev/ram rw"
 
 #define CONFIG_CMD_ENV
 

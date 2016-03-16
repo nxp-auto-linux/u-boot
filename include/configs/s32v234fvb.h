@@ -49,8 +49,7 @@
 #define CONFIG_SYS_GENERIC_TIMER
 /* #define CONFIG_SYS_PIT_TIMER */
 
-#define CONFIG_FSL_LINFLEXUART
-#define LINFLEXUART_BASE		LINFLEXD0_BASE_ADDR
+#define LINFLEXUART			0
 
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 
@@ -66,7 +65,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
-	"console=ttyLF0\0" \
+	"console=ttyLF" __stringify(LINFLEXUART) "\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file=s32v234-evb.dtb\0" \

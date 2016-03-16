@@ -61,7 +61,7 @@
 
 #define CONFIG_ARCH_EARLY_INIT_R
 
-#define LINFLEXUART_BASE		LINFLEXD0_BASE_ADDR
+#define LINFLEXUART			0
 
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
@@ -98,7 +98,7 @@
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
-	"console=ttyLF0\0" \
+	"console=ttyLF" __stringify(LINFLEXUART) "\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \

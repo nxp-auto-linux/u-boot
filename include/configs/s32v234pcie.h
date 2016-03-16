@@ -50,7 +50,7 @@
 #define CONFIG_SYS_GENERIC_TIMER
 /* #define CONFIG_SYS_PIT_TIMER */
 
-#define LINFLEXUART_BASE		LINFLEXD1_BASE_ADDR
+#define LINFLEXUART			1
 
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
@@ -77,7 +77,7 @@
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
-	"console=ttyLF1\0" \
+	"console=ttyLF" __stringify(LINFLEXUART) "\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file=s32v234-pcie.dtb\0" \
