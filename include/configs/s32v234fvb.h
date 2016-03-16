@@ -71,7 +71,6 @@
 	"initrd_high=0xffffffff\0" \
 	"fdt_file=s32v234-evb.dtb\0" \
 	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
-	"kernel_addr=0xC307FFC0\0" \
 	"ramdisk_addr=0xC4000000\0" \
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
@@ -98,10 +97,10 @@
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
 		"source\0" \
-	"loaduimage=fatload mmc ${mmcdev}:${mmcpart} ${kernel_addr} ${uimage}\0" \
+	"loaduimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${uimage}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"jtagboot=echo Booting using jtag...; " \
-		"bootm ${kernel_addr} ${ramdisk_addr} ${fdt_addr}\0" \
+		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
