@@ -43,8 +43,8 @@
 
 /* Config GIC */
 #define CONFIG_GICV2
-#define GICD_BASE 0x7D001000
-#define GICC_BASE 0x7D002000
+#define GICD_BASE		0x7D001000
+#define GICC_BASE		0x7D002000
 
 #define CONFIG_REMAKE_ELF
 
@@ -188,11 +188,102 @@
 
 #endif
 
-#define CONFIG_BOOTDELAY		3
+#define CONFIG_BOOTDELAY	3
 
-#define CONFIG_BOOTARGS			"console=${console} root=/dev/ram rw"
+#define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(LINFLEXUART) \
+				" root=/dev/ram rw"
 
 #define CONFIG_CMD_ENV
+
+#ifndef CONFIG_BOARD_EXTRA_ENV_SETTINGS
+#define CONFIG_BOARD_EXTRA_ENV_SETTINGS	""
+#endif
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
+	"script=boot.scr\0" \
+	"uimage=uImage\0" \
+	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
+	"console=ttyLF" __stringify(LINFLEXUART) "\0" \
+	"fdt_high=0xffffffff\0" \
+	"initrd_high=0xffffffff\0" \
+	"fdt_file="  __stringify(FDT_FILE) "\0" \
+	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
+	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
+	"boot_fdt=try\0" \
+	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
+	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
+	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
+	"cse_addr=" __stringify(CSE_BLOB_BASE) "\0" \
+	"cse_file=cse.bin\0" \
+	"sec_boot_key_id=" __stringify(SECURE_BOOT_KEY_ID) "\0" \
+	"update_sd_firmware_filename=u-boot.s32\0" \
+	"update_sd_firmware=" \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"if mmc dev ${mmcdev}; then "	\
+			"if ${get_cmd} ${update_sd_firmware_filename}; then " \
+				"setexpr fw_sz ${filesize} / 0x200; " \
+				"setexpr fw_sz ${fw_sz} + 1; "	\
+				"mmc write ${loadaddr} 0x2 ${fw_sz}; " \
+			"fi; "	\
+		"fi\0" \
+	"mmcargs=setenv bootargs console=${console},${baudrate} " \
+		"root=${mmcroot}\0" \
+	"loadbootscript=" \
+		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+	"bootscript=echo Running bootscript from mmc ...; " \
+		"source\0" \
+	"loaduimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${uimage}\0" \
+	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+	"jtagboot=echo Booting using jtag...; " \
+		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
+	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
+		"run loaduimage; run loadramdisk; run loadfdt;"\
+		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
+	"mmcboot=echo Booting from mmc ...; " \
+		"run mmcargs; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if run loadfdt; then " \
+				"bootm ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootm; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootm; " \
+		"fi;\0" \
+	"netargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs " \
+	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+		"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"${get_cmd} ${uimage}; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
+				"bootm ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootm; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootm; " \
+		"fi;\0"
 
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
