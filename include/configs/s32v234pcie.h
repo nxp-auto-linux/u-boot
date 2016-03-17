@@ -71,6 +71,8 @@
 #define CONFIG_PHY_BROADCOM
 #endif
 
+#define FDT_FILE s32v234-pcie.dtb
+
 #define CONFIG_LOADADDR		LOADADDR
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -80,7 +82,7 @@
 	"console=ttyLF" __stringify(LINFLEXUART) "\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_file=s32v234-pcie.dtb\0" \
+	"fdt_file=" __stringify(FDT_FILE) "\0" \
 	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
 	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
 	"boot_fdt=try\0" \
