@@ -118,8 +118,7 @@
 #endif
 #define CONFIG_BOARD_EARLY_INIT_F
 
-#define CONFIG_FSL_LINFLEXUART
-#if LINFLEXUART == 0
+#if CONFIG_FSL_LINFLEX_MODULE == 0
 #define LINFLEXUART_BASE	LINFLEXD0_BASE_ADDR
 #else
 #define LINFLEXUART_BASE	LINFLEXD1_BASE_ADDR
@@ -190,7 +189,7 @@
 
 #define CONFIG_BOOTDELAY	3
 
-#define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(LINFLEXUART) \
+#define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
 				" root=/dev/ram rw"
 
 #define CONFIG_CMD_ENV
@@ -204,7 +203,7 @@
 	"script=boot.scr\0" \
 	"uimage=uImage\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
-	"console=ttyLF" __stringify(LINFLEXUART) "\0" \
+	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \

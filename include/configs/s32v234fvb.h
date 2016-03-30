@@ -49,8 +49,6 @@
 #define CONFIG_SYS_GENERIC_TIMER
 /* #define CONFIG_SYS_PIT_TIMER */
 
-#define LINFLEXUART			0
-
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 
 #define CONFIG_CMD_EXT2 /* EXT2 Support */
