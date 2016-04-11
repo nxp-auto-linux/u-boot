@@ -367,29 +367,19 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
 {
-#if 0 /* Disable until the clock code will updated for S32V234 */
-	printf("\n");
-	printf("-------------------------------------------------------------------------------------------------------\n");
-	printf("DPLLs settings:\n");
-	printf("PLL1 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL1,24000)/1000,
-		decode_pll(PLL0,24000)/1000, decode_pll(PLL1,24000)/1000, decode_pll(PLL1,24000)/1000, decode_pll(PLL1,24000)/1000);
-	printf("PLL2 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL2,24000,0)/1000,
-		decode_pll(PLL2,24000,1)/1000, decode_pll(PLL2,24000,2)/1000, decode_pll(PLL2,24000,3)/1000, decode_pll(PLL2,24000,4)/1000);
-	printf("PLL3 main:%5d MHz - PFD1:%5d MHz - PFD2:%5d MHz - PFD3:%5d MHz - PFD4:%5d MHz\n",decode_pll(PLL3,24000,0)/1000,
-		decode_pll(PLL3,24000,1)/1000, decode_pll(PLL3,24000,2)/1000, decode_pll(PLL3,24000,3)/1000, decode_pll(PLL3,24000,4)/1000);
-	printf("PLL4 main:%5d MHz\n",decode_pll(PLL4,24000,0)/1000);
-	printf("PLL6 main:%5d MHz\n",decode_pll(PLL6,24000,0)/1000);
-	printf("--------------------------------------------------------------------------------------------------------\n");
 	printf("Root clocks:\n");
-	printf("CPU CA5 clock: %5d MHz\n", mxc_get_clock(MXC_ARM_CLK) / 1000000);
-	printf("BUS clock:	   %5d MHz\n", mxc_get_clock(MXC_BUS_CLK) / 1000000);
-	printf("IPG clock:	   %5d MHz\n", mxc_get_clock(MXC_IPG_CLK) / 1000000);
-	printf("eSDHC1 clock:  %5d MHz\n", mxc_get_clock(MXC_ESDHC_CLK) / 1000000);
-	printf("FEC clock:	   %5d MHz\n", mxc_get_clock(MXC_FEC_CLK) / 1000000);
-	printf("UART clock:	   %5d MHz\n", mxc_get_clock(MXC_UART_CLK) / 1000000);
-	printf("NFC clock:	   %5d MHz\n", mxc_get_clock(MXC_NFC_CLK) / 1000000);
-#endif
-	printf("QSPI clock:	   %5d MHz\n", mxc_get_clock(MXC_QSPI_CLK) / 1000000);
+	printf("CPU clock:%5d MHz\n",
+		mxc_get_clock(MXC_ARM_CLK) / 1000000);
+	printf("PERIPHERALS clock: %5d MHz\n",
+		mxc_get_clock(MXC_PERIPHERALS_CLK) / 1000000);
+	printf("uSDHC clock:	   %5d MHz\n",
+		mxc_get_clock(MXC_USDHC_CLK) / 1000000);
+	printf("FEC clock:	%5d MHz\n",
+	    mxc_get_clock(MXC_FEC_CLK) / 1000000);
+	printf("UART clock: 	%5d MHz\n",
+		mxc_get_clock(MXC_UART_CLK) / 1000000);
+	printf("QSPI clock:	%5d MHz\n",
+		mxc_get_clock(MXC_QSPI_CLK) / 1000000);
 
 	return 0;
 }
