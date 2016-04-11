@@ -223,13 +223,13 @@ static void setup_aux_clocks( void )
 	 * (source: PERIPH_PLL_PHI_0/5, PERI_CLK - 80 MHz)
 	 */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 5, MC_CGM_ACn_SEL_PERPLLDIVX );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 5, 0, 4 );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 5, 0, 0 );
 
 	/* setup the aux clock divider for CAN_CLK (40 MHz) */
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 6, MC_CGM_ACn_SEL_XOSC ); 
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 6, MC_CGM_ACn_SEL_XOSC );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 6, 0, 0 );
 
-	/* setup the aux clock divider for LIN_CLK (40MHz) */
+	/* setup the aux clock divider for LIN_CLK (66 MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 3, MC_CGM_ACn_SEL_PERPLLDIVX );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 3, 0, 1 );
 
