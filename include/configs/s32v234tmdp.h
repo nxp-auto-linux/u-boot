@@ -77,7 +77,7 @@
 		"root=/dev/nfs rw " \
 		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
 		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
-	"loadtftpimage=tftp ${loadaddr} ${uimage};\0" \
+	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\

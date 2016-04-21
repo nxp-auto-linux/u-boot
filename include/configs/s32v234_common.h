@@ -201,7 +201,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	"script=boot.scr\0" \
-	"uimage=uImage\0" \
+	"image=uImage\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "\0" \
 	"fdt_high=0xffffffff\0" \
@@ -236,13 +236,13 @@
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
 		"source\0" \
-	"loaduimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${uimage}\0" \
+	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"jtagboot=echo Booting using jtag...; " \
 		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
-		"run loaduimage; run loadramdisk; run loadfdt;"\
+		"run loadimage; run loadramdisk; run loadfdt;"\
 		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
@@ -269,7 +269,7 @@
 		"else " \
 			"setenv get_cmd tftp; " \
 		"fi; " \
-		"${get_cmd} ${uimage}; " \
+		"${get_cmd} ${image}; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
 				"bootm ${loadaddr} - ${fdt_addr}; " \
@@ -289,7 +289,7 @@
 		   "if run loadbootscript; then " \
 			   "run bootscript; " \
 		   "else " \
-			   "if run loaduimage; then " \
+			   "if run loadimage; then " \
 				   "run mmcboot; " \
 			   "else run netboot; " \
 			   "fi; " \
