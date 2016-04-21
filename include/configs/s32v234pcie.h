@@ -86,7 +86,7 @@
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; run loadtftpfdt;"\
-		"bootm ${loadaddr} - ${fdt_addr};\0"\
+		"${bootcmd} ${loadaddr} - ${fdt_addr};\0"\
 
 
 #define CONFIG_SYS_INIT_SP_OFFSET \

@@ -194,6 +194,23 @@
 
 #define CONFIG_CMD_ENV
 
+#define CONFIG_OF_LIBFDT
+#define CONFIG_CMD_BOOTI
+#define CONFIG_CMD_BOOTZ
+
+#ifdef CONFIG_CMD_BOOTI
+
+#define CONFIG_USE_BOOTI
+#ifdef CONFIG_USE_BOOTI
+#define IMAGE_NAME Image
+#define BOOT_CMD booti
+#else
+#define IMAGE_NAME uImage
+#define BOOT_CMD bootm
+#endif
+
+#endif
+
 #ifndef CONFIG_BOARD_EXTRA_ENV_SETTINGS
 #define CONFIG_BOARD_EXTRA_ENV_SETTINGS	""
 #endif
@@ -201,7 +218,8 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	"script=boot.scr\0" \
-	"image=uImage\0" \
+	"bootcmd=" __stringify(BOOT_CMD) "\0" \
+	"image=" __stringify(IMAGE_NAME) "\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "\0" \
 	"fdt_high=0xffffffff\0" \
@@ -240,24 +258,24 @@
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"jtagboot=echo Booting using jtag...; " \
-		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
+		"${bootcmd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
 		"run loadimage; run loadramdisk; run loadfdt;"\
-		"bootm ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
+		"${bootcmd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
-				"bootm ${loadaddr} - ${fdt_addr}; " \
+				"${bootcmd} ${loadaddr} - ${fdt_addr}; " \
 			"else " \
 				"if test ${boot_fdt} = try; then " \
-					"bootm; " \
+					"${bootcmd}; " \
 				"else " \
 					"echo WARN: Cannot load the DT; " \
 				"fi; " \
 			"fi; " \
 		"else " \
-			"bootm; " \
+			"${bootcmd}; " \
 		"fi;\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
@@ -272,16 +290,16 @@
 		"${get_cmd} ${image}; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
-				"bootm ${loadaddr} - ${fdt_addr}; " \
+				"${bootcmd} ${loadaddr} - ${fdt_addr}; " \
 			"else " \
 				"if test ${boot_fdt} = try; then " \
-					"bootm; " \
+					"${bootcmd}; " \
 				"else " \
 					"echo WARN: Cannot load the DT; " \
 				"fi; " \
 			"fi; " \
 		"else " \
-			"bootm; " \
+			"${bootcmd}; " \
 		"fi;\0"
 
 #define CONFIG_BOOTCOMMAND \
@@ -357,10 +375,6 @@
 #define CONFIG_ENV_OFFSET		(12 * 64 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_MMC_PART			1
-
-#define CONFIG_OF_LIBFDT
-#define CONFIG_CMD_BOOTI
-#define CONFIG_CMD_BOOTZ
 
 #define CONFIG_BOOTP_BOOTFILESIZE
 #define CONFIG_BOOTP_BOOTPATH
