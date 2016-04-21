@@ -200,7 +200,13 @@
 
 #ifdef CONFIG_CMD_BOOTI
 
+/*
+ * Enable CONFIG_USE_BOOTI if the u-boot enviroment variables
+ * specific boot command have to be defined for booti by default.
+ */
+/*
 #define CONFIG_USE_BOOTI
+*/
 #ifdef CONFIG_USE_BOOTI
 #define IMAGE_NAME Image
 #define BOOT_CMD booti
