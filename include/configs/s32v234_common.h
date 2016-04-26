@@ -202,17 +202,17 @@
 
 /*
  * Enable CONFIG_USE_BOOTI if the u-boot enviroment variables
- * specific boot command have to be defined for booti by default.
+ * specific for boot method have to be defined for booti by default.
  */
 /*
 #define CONFIG_USE_BOOTI
 */
 #ifdef CONFIG_USE_BOOTI
 #define IMAGE_NAME Image
-#define BOOT_CMD booti
+#define BOOT_MTD booti
 #else
 #define IMAGE_NAME uImage
-#define BOOT_CMD bootm
+#define BOOT_MTD bootm
 #endif
 
 #endif
@@ -224,7 +224,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	"script=boot.scr\0" \
-	"bootcmd=" __stringify(BOOT_CMD) "\0" \
+	"boot_mtd=" __stringify(BOOT_MTD) "\0" \
 	"image=" __stringify(IMAGE_NAME) "\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "\0" \
@@ -264,24 +264,24 @@
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"jtagboot=echo Booting using jtag...; " \
-		"${bootcmd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
+		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
 		"run loadimage; run loadramdisk; run loadfdt;"\
-		"${bootcmd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
+		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
-				"${bootcmd} ${loadaddr} - ${fdt_addr}; " \
+				"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 			"else " \
 				"if test ${boot_fdt} = try; then " \
-					"${bootcmd}; " \
+					"${boot_mtd}; " \
 				"else " \
 					"echo WARN: Cannot load the DT; " \
 				"fi; " \
 			"fi; " \
 		"else " \
-			"${bootcmd}; " \
+			"${boot_mtd}; " \
 		"fi;\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
@@ -296,16 +296,16 @@
 		"${get_cmd} ${image}; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
-				"${bootcmd} ${loadaddr} - ${fdt_addr}; " \
+				"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 			"else " \
 				"if test ${boot_fdt} = try; then " \
-					"${bootcmd}; " \
+					"${boot_mtd}; " \
 				"else " \
 					"echo WARN: Cannot load the DT; " \
 				"fi; " \
 			"fi; " \
 		"else " \
-			"${bootcmd}; " \
+			"${boot_mtd}; " \
 		"fi;\0"
 
 #define CONFIG_BOOTCOMMAND \

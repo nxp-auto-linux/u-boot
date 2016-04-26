@@ -82,7 +82,7 @@
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; run loadtftpfdt;"\
-		"${bootcmd} ${loadaddr} - ${fdt_addr};\0"\
+		"${boot_mtd} ${loadaddr} - ${fdt_addr};\0"\
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
