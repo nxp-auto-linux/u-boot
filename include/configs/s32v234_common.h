@@ -144,8 +144,6 @@
 #define CONFIG_DOS_PARTITION
 
 /* Ethernet config */
-#define CONFIG_CMD_PING
-#define CONFIG_CMD_DHCP
 #define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
