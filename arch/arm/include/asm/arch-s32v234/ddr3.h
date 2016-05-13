@@ -105,11 +105,13 @@
 #define MMDC_MPDGCTRL0_MODULE1_VALUE	0x417A0169  /* Read DQS gating control 0 */
 #define MMDC_MPDGCTRL1_MODULE1_VALUE	0x0137013F  /* Read DQS gating control 1 */
 
-#define MMDC_MDRWD_VALUE				0x000026D2  /* Read/write command delay - default */
-#define MMDC_MDPDC_VALUE				0x00020024  /* Power down control */
-#define MMDC_MDREF_VALUE				0x30B01800  /* Refresh control */
-#define MMDC_MPODTCTRL_VALUE			0x0002222F  /* 60R nominal */
-#define MMDC_MDSCR_RESET_VALUE			0x00000000  /* Deassert the configuration request */
+#define MMDC_MDRWD_VALUE		0x000026D2  /* Read/write command delay - default */
+#define MMDC_MDPDC_VALUE		0x00020024  /* Power down control */
+#define MMDC_MDREF_VALUE		0x30B01800  /* Refresh control */
+#define MMDC_MPODTCTRL_VALUE		0x0002222F  /* 60R nominal */
+#define MMDC_MDSCR_RESET_VALUE		0x00000000  /* Deassert the configuration request */
+
+#define MMDC_MAPSR_EN_SLF_REF		0x00300000 /* DVFS and LPMD request */
 
 /* set I/O pads for DDR */
 void ddr_config_iomux(uint8_t module);

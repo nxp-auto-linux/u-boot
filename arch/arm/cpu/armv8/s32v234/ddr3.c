@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -107,29 +107,30 @@ void config_mmdc(uint8_t module)
 	writel(MMDC_MDSCR_CFG_VALUE, mmdc_addr + MMDC_MDSCR);
 
 	writel(MMDC_MDCFG0_VALUE, mmdc_addr + MMDC_MDCFG0);
-    writel(MMDC_MDCFG1_VALUE, mmdc_addr + MMDC_MDCFG1);
-    writel(MMDC_MDCFG2_VALUE, mmdc_addr + MMDC_MDCFG2);
-    writel(MMDC_MDOTC_VALUE, mmdc_addr + MMDC_MDOTC);
-    writel(MMDC_MDMISC_VALUE, mmdc_addr + MMDC_MDMISC);
-    writel(MMDC_MDOR_VALUE, mmdc_addr + MMDC_MDOR);
-    writel(_MDCTL, mmdc_addr + MMDC_MDCTL);
+	writel(MMDC_MDCFG1_VALUE, mmdc_addr + MMDC_MDCFG1);
+	writel(MMDC_MDCFG2_VALUE, mmdc_addr + MMDC_MDCFG2);
+	writel(MMDC_MDOTC_VALUE, mmdc_addr + MMDC_MDOTC);
+	writel(MMDC_MDMISC_VALUE, mmdc_addr + MMDC_MDMISC);
+	writel(MMDC_MDOR_VALUE, mmdc_addr + MMDC_MDOR);
+	writel(_MDCTL, mmdc_addr + MMDC_MDCTL);
 
-    /* Perform ZQ calibration */
-    writel(MMDC_MPZQHWCTRL_VALUE, mmdc_addr + MMDC_MPZQHWCTRL);
+	/* Perform ZQ calibration */
+	writel(MMDC_MPZQHWCTRL_VALUE, mmdc_addr + MMDC_MPZQHWCTRL);
+	while (readl(mmdc_addr + MMDC_MPZQHWCTRL) & MMDC_MPZQHWCTRL_ZQ_HW_FOR) {}
 
-    /* Enable MMDC with CS0 */
-    writel(_MDCTL + 0x80000000, mmdc_addr + MMDC_MDCTL);
+	/* Enable MMDC with CS0 */
+	writel(_MDCTL + 0x80000000, mmdc_addr + MMDC_MDCTL);
 
-    /* Complete the initialization sequence as defined by JEDEC */
-    writel(MMDC_MDSCR_MR2_VALUE, mmdc_addr + MMDC_MDSCR);
-    writel(MMDC_MDSCR_MR3_VALUE, mmdc_addr + MMDC_MDSCR);
-    writel(MMDC_MDSCR_MR1_VALUE, mmdc_addr + MMDC_MDSCR);
-    writel(MMDC_MDSCR_MR0_VALUE, mmdc_addr + MMDC_MDSCR);
-    writel(MMDC_MDSCR_ZQ_VALUE, mmdc_addr + MMDC_MDSCR);
+	/* Complete the initialization sequence as defined by JEDEC */
+	writel(MMDC_MDSCR_MR2_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(MMDC_MDSCR_MR3_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(MMDC_MDSCR_MR1_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(MMDC_MDSCR_MR0_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(MMDC_MDSCR_ZQ_VALUE, mmdc_addr + MMDC_MDSCR);
 
-    /* Set the amount of DRAM */
-    /* Set DQS settings based on board type */
-    switch(module) {
+	/* Set the amount of DRAM */
+	/* Set DQS settings based on board type */
+	switch(module) {
 	case MMDC0:
 		writel(MMDC_MDASP_MODULE0_VALUE, mmdc_addr + MMDC_MDASP);
 		writel(MMDC_MPRDDLCTL_MODULE0_VALUE, mmdc_addr + MMDC_MPRDDLCTL);
@@ -146,10 +147,10 @@ void config_mmdc(uint8_t module)
 		break;
 	}
 
-    writel(MMDC_MDRWD_VALUE, mmdc_addr + MMDC_MDRWD);
-    writel(MMDC_MDPDC_VALUE, mmdc_addr + MMDC_MDPDC);
-    writel(MMDC_MDREF_VALUE, mmdc_addr + MMDC_MDREF);
-    writel(MMDC_MPODTCTRL_VALUE, mmdc_addr + MMDC_MPODTCTRL);
-    writel(MMDC_MDSCR_RESET_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(MMDC_MDRWD_VALUE, mmdc_addr + MMDC_MDRWD);
+	writel(MMDC_MDPDC_VALUE, mmdc_addr + MMDC_MDPDC);
+	writel(MMDC_MDREF_VALUE, mmdc_addr + MMDC_MDREF);
+	writel(MMDC_MPODTCTRL_VALUE, mmdc_addr + MMDC_MPODTCTRL);
+	writel(MMDC_MDSCR_RESET_VALUE, mmdc_addr + MMDC_MDSCR);
 
 }
