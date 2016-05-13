@@ -44,8 +44,6 @@
 /* Enable DCU QoS fix */
 #define CONFIG_DCU_QOS_FIX
 
-#define CONFIG_ARCH_EARLY_INIT_R
-
 /* System Timer */
 #define CONFIG_SYS_GENERIC_TIMER
 /* #define CONFIG_SYS_PIT_TIMER */
