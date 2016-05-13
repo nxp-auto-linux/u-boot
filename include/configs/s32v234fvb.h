@@ -22,7 +22,7 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#define CONFIG_RUN_FROM_IRAM_ONLY
+#undef CONFIG_RUN_FROM_IRAM_ONLY
 
 #define CONFIG_MACH_TYPE		4146
 
