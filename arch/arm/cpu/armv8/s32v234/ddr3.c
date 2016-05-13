@@ -22,6 +22,7 @@
 #include <asm/arch/siul.h>
 #include <asm/arch/ddr3.h>
 #include <asm/arch/mmdc.h>
+#include <common.h>
 
 void ddr_config_iomux(uint8_t module)
 {
@@ -152,5 +153,10 @@ void config_mmdc(uint8_t module)
 	writel(MMDC_MDREF_VALUE, mmdc_addr + MMDC_MDREF);
 	writel(MMDC_MPODTCTRL_VALUE, mmdc_addr + MMDC_MPODTCTRL);
 	writel(MMDC_MDSCR_RESET_VALUE, mmdc_addr + MMDC_MDSCR);
+
+#if defined(CONFIG_DDR_INIT_DELAY)
+	if (module == MMDC1)
+	    udelay(CONFIG_DDR_INIT_DELAY);
+#endif
 
 }
