@@ -32,6 +32,10 @@
 /* Enable DCU QoS fix */
 #define CONFIG_DCU_QOS_FIX
 
+/* u-boot uses just DDR0 */
+#define CONFIG_RUN_FROM_DDR0
+#undef CONFIG_RUN_FROM_DDR1
+
 /* S32V234 FVB Rev. A has DDR3 */
 #define CONFIG_S32V234_DDR3
 
