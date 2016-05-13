@@ -34,8 +34,6 @@
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* Config CACHE */
-#define CONFIG_SYS_DCACHE_OFF
-#define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_CMD_CACHE
 
 /* Enable DCU QoS fix */
@@ -52,9 +50,6 @@
 #define CONFIG_DDR_HANDSHAKE_AT_RESET
 
 #define CONFIG_DDR_INIT_DELAY		1000
-
-/* SMP Spin Table Definitions */
-/* #define CPU_RELEASE_ADDR             (CONFIG_SYS_SDRAM_BASE + 0x7fff0) */
 
 /* System Timer */
 #define CONFIG_SYS_GENERIC_TIMER
