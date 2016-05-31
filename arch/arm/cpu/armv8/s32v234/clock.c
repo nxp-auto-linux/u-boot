@@ -233,6 +233,15 @@ static void setup_aux_clocks( void )
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 3, MC_CGM_ACn_SEL_PERPLLDIVX );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 3, 0, 1 );
 
+#if defined(CONFIG_TARGET_S32V234FVB)
+	/* setup the aux clock divider for ENET_TIME_CLK (50MHz) */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 7, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 7, 1, 9 );
+
+	/* setup the aux clock divider for ENET_CLK (50MHz) */
+	aux_source_clk_config( MC_CGM2_BASE_ADDR, 2, MC_CGM_ACn_SEL_ENETPLL );
+	aux_div_clk_config( MC_CGM2_BASE_ADDR, 2, 0, 9 );
+#else
 	/* setup the aux clock divider for ENET_TIME_CLK (125MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 7, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 7, 1, 3 );
@@ -240,6 +249,7 @@ static void setup_aux_clocks( void )
 	/* setup the aux clock divider for ENET_CLK (125MHz) */
 	aux_source_clk_config( MC_CGM2_BASE_ADDR, 2, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM2_BASE_ADDR, 2, 0, 3 );
+#endif
 
 	/*
 	 * Disable until the modules will be implemented and activated.
@@ -322,10 +332,10 @@ static void enable_modules_clock( void )
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL54 );
 	/* MMDC1 */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL162 );
-	/* CAN1 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL190 );
 	/* QuadSPI */
 	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL166 );
+	/* CAN1 */
+	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL190 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
