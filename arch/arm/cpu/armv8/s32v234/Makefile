@@ -1,5 +1,5 @@
 #
-# Copyright 2013-2015 Freescale Semiconductor, Inc.
+# Copyright 2013-2016 Freescale Semiconductor, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -22,6 +22,7 @@ obj-y	+= lowlevel.o
 obj-y	+= mp.o
 obj-y	+= cpu.o
 obj-y	+= cse.o
+obj-y	+= clock.o
 obj-$(CONFIG_SYS_PIT_TIMER)	+= timer.o
 obj-$(CONFIG_S32V234_LPDDR2)	+= lpddr2.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
