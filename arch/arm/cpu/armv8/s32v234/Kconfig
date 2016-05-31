@@ -1,0 +1,40 @@
+if ARCH_S32V234
+
+config SYS_CPU
+	string
+	default "armv8"
+
+config SYS_VENDOR
+	string
+	default "freescale"
+
+config SYS_SOC
+	string
+	default "s32v234"
+
+choice
+	prompt "Select S32V234 Target Board Support"
+	default TARGET_S32V234EVB
+	help
+	  S32V234 Target Board Selection
+
+config TARGET_S32V234EVB
+	bool "Support s32v234evb"
+
+config TARGET_S32V234FVB
+	bool "Support s32v234fvb"
+
+config TARGET_S32V234PCIE
+	bool "Support s32v234pcie"
+
+config TARGET_S32V234TMDP
+	bool "Support s32v234tmdp"
+
+endchoice
+
+source "board/freescale/s32v234evb/Kconfig"
+source "board/freescale/s32v234fvb/Kconfig"
+source "board/freescale/s32v234pcie/Kconfig"
+source "board/freescale/s32v234tmdp/Kconfig"
+
+endif
