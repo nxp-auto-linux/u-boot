@@ -19,7 +19,6 @@
 
 obj-y	+= generic.o
 obj-y	+= lowlevel.o
-obj-y	+= mp.o
 obj-y	+= cpu.o
 obj-y	+= cse.o
 obj-y	+= clock.o
