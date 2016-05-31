@@ -23,9 +23,6 @@
 #define CONFIG_RUN_FROM_DDR0
 #undef CONFIG_RUN_FROM_DDR1
 
-/* S32V234 EVB has LPDDR2 */
-#define CONFIG_S32V234_LPDDR2
-
 /* EVB board has 2x256 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
 #define DDR_SIZE		(256 * 1024 * 1024)
 

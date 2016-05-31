@@ -25,9 +25,6 @@
 #define CONFIG_RUN_FROM_DDR0
 #undef CONFIG_RUN_FROM_DDR1
 
-/* S32V234 FVB Rev. A has DDR3 */
-#define CONFIG_S32V234_DDR3
-
 /* FVB board has 2x512 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
 #define DDR_SIZE		(512 * 1024 * 1024)
 
