@@ -8,4 +8,11 @@ config SYS_CONFIG_NAME
 	string
 	default "s32v234tmdp"
 
+config PHY_RGMII_DIRECT_CONNECTED
+	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
+	default n
+	help
+	  Adds the platform "fixed" MDIO Bus to cover the boards that use
+	  PHYs that are not connected to the real MDIO bus.
+
 endif

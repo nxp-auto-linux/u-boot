@@ -45,8 +45,6 @@
 /* CONFIG_PHY_RGMII_DIRECT_CONNECTED should be enabled when
  * BCM switch is configured.
  */
-#define CONFIG_PHY_RGMII_DIRECT_CONNECTED
-
 #define CONFIG_BCM_SPEED	SPEED_100
 
 #define FDT_FILE		s32v234-tmdp.dtb
