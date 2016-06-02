@@ -25,8 +25,8 @@
 #define CONFIG_RUN_FROM_DDR0
 #undef CONFIG_RUN_FROM_DDR1
 
-/* FVB board has 2x512 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
-#define DDR_SIZE		(512 * 1024 * 1024)
+/* FVB board has 4x512 MB DDR chips, DDR0(1GB) and DDR1(1GB), u-boot is using just one */
+#define DDR_SIZE		(1024 * 1024 * 1024)
 
 /* Enable DDR handshake at functional reset event */
 #define CONFIG_DDR_HANDSHAKE_AT_RESET
