@@ -61,12 +61,12 @@
 #define _MDCTL 0x04190000
 
 #define MMDC_MDSCR_CFG_VALUE	0x00008000  /* Set MDSCR[CON_REQ] (configuration request) */
-#define MMDC_MDCFG0_VALUE		0x8F9598F4  /* tRFC=144 (270ns),tXS=150 (tRFC+10ns),tXP=4 (6ns),tXPDLL=13 (24ns),tFAW=16(30ns),tCL=7 */
-#define MMDC_MDCFG1_VALUE		0xFF328E64  /* tRCD=8 (13.75ns),tRP=6 (13,75ns),tRC=26 (48.75ns),tRAS=19 (35ns),tRPA=1,tWR=8 (15ns),tMRD=4,tCWL=6 */
-#define MMDC_MDCFG2_VALUE		0x01FF00DB  /* tDLLK=512,tRTP=4,tWTR=4,tRRD=4 */
-#define MMDC_MDOTC_VALUE		0x09444030  /* tAOFPD=2,tAONPD=2,tANPD=5 (tCWL-1),tAXPD=5 (tCWL-1),tODTLon=5 (WL-2),tODT_idle_off=0 */
-#define MMDC_MDMISC_VALUE		0x00011640  /* WALAT=1, BI bank interleave on, MIF3=3, RALAT=1, 8 banks, DDR3 */
-#define MMDC_MDOR_VALUE			0x009A1023  /* tXPR=155 (tRFC+10ns), SDE_to_RST=14, RST_to_CKE=33 */
+#define MMDC_MDCFG0_VALUE	0x8F9598F4  /* tRFC=144 (270ns),tXS=150 (tRFC+10ns),tXP=4 (6ns),tXPDLL=13 (24ns),tFAW=16(30ns),tCL=7 */
+#define MMDC_MDCFG1_VALUE	0xFF328E64  /* tRCD=8 (13.75ns),tRP=6 (13,75ns),tRC=26 (48.75ns),tRAS=19 (35ns),tRPA=1,tWR=8 (15ns),tMRD=4,tCWL=6 */
+#define MMDC_MDCFG2_VALUE	0x01FF00DB  /* tDLLK=512,tRTP=4,tWTR=4,tRRD=4 */
+#define MMDC_MDOTC_VALUE	0x09444030  /* tAOFPD=2,tAONPD=2,tANPD=5 (tCWL-1),tAXPD=5 (tCWL-1),tODTLon=5 (WL-2),tODT_idle_off=0 */
+#define MMDC_MDMISC_VALUE	0x00011640  /* WALAT=1, BI bank interleave on, MIF3=3, RALAT=1, 8 banks, DDR3 */
+#define MMDC_MDOR_VALUE		0x009A1023  /* tXPR=155 (tRFC+10ns), SDE_to_RST=14, RST_to_CKE=33 */
 
 /* P_form ZQ calibration */
 #define MMDC_MPZQHWCTRL_VALUE	0xA1390003;	/* Force h/w calibration */
@@ -80,13 +80,13 @@
 
 /* Set the amount of DRAM */
 /* Set DQS settings based on board type */
-#define MMDC_MDASP_MODULE0_VALUE		0x0000007F  /* 1 GB memory */
+#define MMDC_MDASP_MODULE0_VALUE	0x0000007F  /* 1 GB memory */
 #define MMDC_MPRDDLCTL_MODULE0_VALUE	0x46464644  /* Read delay line offsets */
 #define MMDC_MPWRDLCTL_MODULE0_VALUE	0x3B333837  /* Write delay line offsets */
 #define MMDC_MPDGCTRL0_MODULE0_VALUE	0x4177016C  /* Read DQS gating control 0 */
 #define MMDC_MPDGCTRL1_MODULE0_VALUE	0x013A0141  /* Read DQS gating control 1 */
 
-#define MMDC_MDASP_MODULE1_VALUE		0x0000007F  /* 1 GB memory */
+#define MMDC_MDASP_MODULE1_VALUE	0x0000007F  /* 1 GB memory */
 #define MMDC_MPRDDLCTL_MODULE1_VALUE	0x45474645  /* Read delay line offsets */
 #define MMDC_MPWRDLCTL_MODULE1_VALUE	0x3E333836  /* Write delay line offsets */
 #define MMDC_MPDGCTRL0_MODULE1_VALUE	0x417A0169  /* Read DQS gating control 0 */
