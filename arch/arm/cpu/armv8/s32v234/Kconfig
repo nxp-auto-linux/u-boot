@@ -54,6 +54,12 @@ config S32V234_DDR3
 
 endchoice
 
+config DDR_HANDSHAKE_AT_RESET
+	bool "Enable DDR handshake"
+	default y
+	help
+	  Enable DDR handshake after functional reset
+
 source "board/freescale/s32v234evb/Kconfig"
 source "board/freescale/s32v234fvb/Kconfig"
 source "board/freescale/s32v234pcie/Kconfig"

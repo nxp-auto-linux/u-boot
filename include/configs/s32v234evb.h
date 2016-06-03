@@ -23,12 +23,6 @@
 #define CONFIG_RUN_FROM_DDR0
 #undef CONFIG_RUN_FROM_DDR1
 
-/* EVB board has 2x256 MB DDR chips, DDR0 and DDR1, u-boot is using just one */
-#define DDR_SIZE		(256 * 1024 * 1024)
-
-/* Enable DDR handshake at functional reset event */
-#define CONFIG_DDR_HANDSHAKE_AT_RESET
-
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */
