@@ -54,10 +54,10 @@ static void setup_iomux_can(void)
 	/* set RXD - IMCR[188] - 188 */
 	writel(SIUL2_CAN_FD0_IMCR_RXD, SIUL2_IMCRn(SIUL2_CAN_FD0_IMCR_RXD_PAD));
 
-	/* set TXD - MSCR[42] PC10 */
+	/* set TXD - MSCR[4] PA4 */
 	writel(SIUL2_CAN_TXD, SIUL2_MSCRn(SIUL2_CAN_FD1_TXD_PAD));
 
-	/* set RXD - MSCR[43] - PC11 */
+	/* set RXD - MSCR[5] - PA5 */
 	writel(SIUL2_CAN_MSCR_RXD, SIUL2_MSCRn(SIUL2_CAN_FD1_MSCR_RXD_PAD));
 
 	/* set RXD - IMCR[189] - 189 */
