@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2013-2015, Freescale Semiconductor, Inc.
+ * (C) Copyright 2013-2016, Freescale Semiconductor, Inc.
  *
  * SPDX-License-Idenfifier:     GPL-2.0+
  */
@@ -20,14 +20,13 @@ static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex1 */
 
-	/* set TXD - MSCR[14] PA14 */
-	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART1_TXD_PAD));
+	/* set PA14 - MSCR[14] - for UART1 TXD*/
+	writel(SIUL2_MSCR_PORT_CTRL_UART_TXD, SIUL2_MSCRn(SIUL2_MSCR_PA14));
 
-	/* set RXD - MSCR[13] - PA13*/
-	writel(SIUL2_UART_MSCR_RXD, SIUL2_MSCRn(SIUL2_UART1_MSCR_RXD_PAD));
-
-	/* set RXD - IMCR[202] - 202 */
-	writel(SIUL2_UART_IMCR_RXD, SIUL2_IMCRn(SIUL2_UART1_IMCR_RXD_PAD));
+	/* set PA13 - MSCR[13] - for UART1 RXD */
+	writel(SIUL2_MSCR_PORT_CTRL_UART_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA13));
+	/* set UART1 RXD - IMCR[202] - to link to PA13 */
+	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART1_RXD));
 }
 static void setup_iomux_enet(void)
 {
