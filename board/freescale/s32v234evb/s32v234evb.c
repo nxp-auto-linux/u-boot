@@ -45,23 +45,23 @@ static void setup_iomux_can(void)
 {
 	/* Muxing for can0 and can1 */
 
-	/* set TXD - MSCR[2] PA2 */
-	writel(SIUL2_CAN_TXD, SIUL2_MSCRn(SIUL2_CAN_FD0_TXD_PAD));
+	/* set PA2 - MSCR[2] - for CAN_FD0 TXD */
+	writel(SIUL2_MSCR_PORT_CTRL_CAN_TXD, SIUL2_MSCRn(SIUL2_MSCR_PA2));
 
-	/* set RXD - MSCR[3] - PA3*/
-	writel(SIUL2_CAN_MSCR_RXD, SIUL2_MSCRn(SIUL2_CAN_FD0_MSCR_RXD_PAD));
+	/* set PA3 - MSCR[3] - for CAN_FD0 RXD */
+	writel(SIUL2_MSCR_PORT_CTRL_CAN_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA3));
+	/* set CAN_FD0 RXD - IMCR[188] - to link to PA3 */
+	writel(SIUL2_IMCR_CAN_FDn_RXD_to_PA3,
+	       SIUL2_IMCRn(SIUL2_IMCR_CAN_FD0_RXD));
 
-	/* set RXD - IMCR[188] - 188 */
-	writel(SIUL2_CAN_FD0_IMCR_RXD, SIUL2_IMCRn(SIUL2_CAN_FD0_IMCR_RXD_PAD));
+	/* set PA4 - MSCR[4] - for CAN_FD1 TXD  */
+	writel(SIUL2_MSCR_PORT_CTRL_CAN_TXD, SIUL2_MSCRn(SIUL2_MSCR_PA4));
 
-	/* set TXD - MSCR[4] PA4 */
-	writel(SIUL2_CAN_TXD, SIUL2_MSCRn(SIUL2_CAN_FD1_TXD_PAD));
-
-	/* set RXD - MSCR[5] - PA5 */
-	writel(SIUL2_CAN_MSCR_RXD, SIUL2_MSCRn(SIUL2_CAN_FD1_MSCR_RXD_PAD));
-
-	/* set RXD - IMCR[189] - 189 */
-	writel(SIUL2_CAN_FD1_IMCR_RXD, SIUL2_IMCRn(SIUL2_CAN_FD1_IMCR_RXD_PAD));
+	/* set PA5 - MSCR[5] - for CAN_FD1 RXD  */
+	writel(SIUL2_MSCR_PORT_CTRL_CAN_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA5));
+	/* set CAN_FD1 RXD - IMCR[189] - to link to PA5 */
+	writel(SIUL2_IMCR_CAN_FDn_RXD_to_PA5,
+	       SIUL2_IMCRn(SIUL2_IMCR_CAN_FD1_RXD));
 
 }
 
