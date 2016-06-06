@@ -1,7 +1,7 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
- * SPDX-License-Idenfifier:     GPL-2.0+
+ * SPDX-License-Idenfifier:	GPL-2.0+
  */
 
 #include <asm/io.h>

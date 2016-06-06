@@ -1,7 +1,7 @@
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
  *
- * SPDX-License-Identifier: GPL-2.0+
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_MAC57D5XH_MCME_REGS_H__

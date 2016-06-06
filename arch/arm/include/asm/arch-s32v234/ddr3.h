@@ -1,7 +1,7 @@
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
  *
- * SPDX-License-Idenfifier:     GPL-2.0+
+ * SPDX-License-Idenfifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_S32V234_DDR3_H__

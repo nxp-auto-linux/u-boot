@@ -1,7 +1,7 @@
 /*
  * (C) Copyright 2013 Freescale Semiconductor, Inc.
  *
- * SPDX-License-Identifier: GPL-2.0+
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_IMX_REGS_H__

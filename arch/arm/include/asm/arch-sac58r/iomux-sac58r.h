@@ -1,7 +1,7 @@
 /*
  * (C) Copyright 2013 Freescale Semiconductor, Inc.
  *
- * SPDX-License-Identifier: GPL-2.0+
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __IOMUX_SAC58R_H__
