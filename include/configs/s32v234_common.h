@@ -191,9 +191,7 @@
  * Enable CONFIG_USE_BOOTI if the u-boot enviroment variables
  * specific for boot method have to be defined for booti by default.
  */
-/*
 #define CONFIG_USE_BOOTI
-*/
 #ifdef CONFIG_USE_BOOTI
 #define IMAGE_NAME Image
 #define BOOT_MTD booti
