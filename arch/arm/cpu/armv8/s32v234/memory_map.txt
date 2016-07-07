@@ -29,23 +29,32 @@ u-boot/include/configs/s32v234<xyz>.h (<xyz> is the platform).
 DDR Layout
 ============
 
+The maximum addressable DDR regions from each type of core are:
+
+=========================================================================
+|      Core      | Region | Starting address | Ending address |   Size  |
+|----------------|--------|------------------|----------------|---------|
+|       M4       |  DDR0  |    0x80000000    |  0xBFFFFFFF    |  1024 MB|
+|                |  DDR1  |    0xC0000000    |  0xDFFFFFFF    |  512 MB |
+|----------------|--------|------------------|----------------|---------|
+|       A53      |  DDR0  |    0x80000000    |  0xBFFFFFFF    |  1024 MB|
+|                |  DDR1  |    0xC0000000    |  0xEFFFFFFF    |  1024 MB|
+=========================================================================
+
 Entire DDR region splits into two regions:
 
 =========================================================================
 |     Board      | Region | Starting address | Ending address |   Size  |
 |----------------|--------|------------------|----------------|---------|
-| A53/M4 core    |  DDR0  |    0x80000000    |  0xBFFFFFFF    | 1024 MB |
-| memory map     |  DDR1  |    0xC0000000    |  0xDFFFFFFF    |  512 MB |
-|----------------|--------|------------------|----------------|---------|
-|   EVB, PCIE,   |  DDR0  |    0x80000000    |  0x8FFFFFFF    |  256 MB |
+| EVB, PCIE,     |  DDR0  |    0x80000000    |  0x8FFFFFFF    |  256 MB |
 | FVB_REVB, TMDP |  DDR1  |    0xC0000000    |  0xCFFFFFFF    |  256 MB |
 |----------------|--------|------------------|----------------|---------|
-|  FVB           |  DDR0  |    0x80000000    |  0x9FFFFFFF    |  512 MB |
-|                |  DDR1  |    0xC0000000    |  0xDFFFFFFF    |  512 MB |
+|  FVB           |  DDR0  |    0x80000000    |  0xBFFFFFFF    |  1024 MB|
+|                |  DDR1  |    0xC0000000    |  0xEFFFFFFF    |  1024 MB|
 =========================================================================
 
-DDR0 memory region is marked as none-cacheable.
-DDR1 memory region is marked as cache-enabled.
+DDR0 memory region is marked as non-cacheable.
+DDR1 memory region is marked as non-cacheable.
 
 Reserved regions:
 
@@ -55,11 +64,11 @@ Reserved regions:
 |=================|================|==============|==================|==================|================|==============|
 |                 |Starting address|Ending address| Starting address |  Ending address  |Starting address|Ending address|
 |=================|================|==============|===============  =|==================|================|==============|
-|MMU tables       |       -        |      -       |   0xC0000000     |    0xC0010000    |   0xC0000000   |  0xC0010000  |
+|MMU tables       |       -        |      -       |   0x80000000     |    0x80010000    |   0x80000000   |  0x80010000  |
 |-----------------|----------------|--------------|------------------|------------------|----------------|--------------|
-|u-boot           |       -        |      -       | DDR1, variable***| DDR1, variable***|       -        |      -       |
+|u-boot           |       -        |      -       | DDR0, variable***| DDR0, variable***|       -        |      -       |
 |-----------------|----------------|--------------|------------------|------------------|----------------|--------------|
-|linux            |       -        |      -       |       -          |      -           |    DDR1, See System.map       |
+|linux            |       -        |      -       |       -          |      -           |   DDR0 + DDR1, See System.map |
 =========================================================================================================================
 
 *** u-boot address and size, after relocation, is variable (depends on configuration).
@@ -70,6 +79,23 @@ Flash Layout
 
 Flash memory is used for storage (u-boot image, for example).
 
+Environment Variables
+=====================
+
+boot_mtd:       Select the booting method: bootm/booti. If CONFIG_USE_BOOTI is not defined
+                in the S32V234 SOC configuration bootm will be used by default.
+
+image:          It is the name of kernel image. Please note that the image has to be synchronised with
+                the used boot method.
+
+Configuration Defines
+=====================
+
+CSE_BLOB_BASE:  CSE (firmware + key image) blob loading address.
+
+CSE_BLOB_SIZE:  CSE (firmware + key image) blob size.
+
+KIA_BASE:       CSE key image start address.
 
 MMU Translation Tables
 ======================
