@@ -28,10 +28,6 @@
 /* Enable DCU QoS fix */
 #define CONFIG_DCU_QOS_FIX
 
-/* FVB_REVB board has 2x256 MB DDR chips, DDR0 and DDR1,
- * u-boot is using just one */
-#define DDR_SIZE		(256 * 1024 * 1024)
-
 #define CONFIG_DDR_INIT_DELAY		1000
 
 /* System Timer */
