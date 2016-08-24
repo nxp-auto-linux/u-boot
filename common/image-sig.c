@@ -16,6 +16,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <u-boot/rsa.h>
 #include <u-boot/rsa-checksum.h>
 
+#ifdef CONFIG_CSE3
+#include <u-boot/cmac.h>
+#endif
+
 #define IMAGE_MAX_HASHED_NODES		100
 
 #ifdef USE_HOSTCC
@@ -29,6 +33,7 @@ void *image_get_host_blob(void)
 	return host_blob;
 }
 #endif
+
 
 struct checksum_algo checksum_algos[] = {
 	{
@@ -85,7 +90,16 @@ struct image_sig_algo image_sig_algos[] = {
 		rsa_add_verify_data,
 		rsa_verify,
 		&checksum_algos[2],
+	},
+#ifdef CONFIG_CSE3
+	{
+		"cmac",
+		cmac_sign,
+		cmac_add_verify_data,
+		cmac_verify,
+		NULL
 	}
+#endif
 
 };
 

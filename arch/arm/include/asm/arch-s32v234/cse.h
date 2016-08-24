@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2015 Freescale Semiconductor, Inc.
+ * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -34,16 +34,13 @@
 #define CSE_SEQ_ERR	(0x02)
 
 #define OCOTP_BASE_ADDR			(0x4005F000UL)
+#define OCOTP_CFG3			(OCOTP_BASE_ADDR + 0x440UL)
 #define OCOTP_CFG5			(OCOTP_BASE_ADDR + 0x460UL)
 #define OCOTP_CFG5_SEC_BOOT_MODE	(0xC0UL)
+#define OCOTP_CFG3_EXPORT_CONTROL	(0x1UL)
 
 #if defined CONFIG_CSE3
 int cse_init(void);
-
-#if defined CONFIG_SECURE_BOOT
-int secure_boot(void);
-#endif
-
 #endif /* CONFIG_CSE3 */
 
 #endif /* __ASM_ARCH_CSE_H */

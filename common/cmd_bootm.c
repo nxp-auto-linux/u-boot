@@ -45,12 +45,6 @@ static int do_imls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 
 extern int cse_init(void);
 
-#ifdef CONFIG_SECURE_BOOT
-
-extern int secure_boot(void);
-
-#endif /* CONFIG_SECURE_BOOT */
-
 #endif /* CONFIG_CSE3 */
 
 bootm_headers_t images;		/* pointers to os/initrd/fdt images */
@@ -110,19 +104,10 @@ static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 #ifdef CONFIG_CSE3
-
 	if (cse_init()) {
 		printf("CSE init failed\n");
-		return 1;
+		return CMD_RET_FAILURE;
 	}
-
-#ifdef CONFIG_SECURE_BOOT
-
-	if(secure_boot())
-		printf("Secure Boot authentication failed\n");
-
-#endif /* CONFIG_SECURE_BOOT */
-
 #endif /* CONFIG_CSE3 */
 
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
@@ -691,7 +676,7 @@ static int booti_setup(bootm_headers_t *images)
 		puts("Bad Linux ARM64 Image magic!\n");
 		return 1;
 	}
-	
+
 	if (ih->image_size == 0) {
 		puts("Image lacks image_size field, assuming 16MiB\n");
 		ih->image_size = (16 << 20);

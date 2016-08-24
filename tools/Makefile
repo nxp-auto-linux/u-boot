@@ -63,6 +63,7 @@ LIBFDT_OBJS := $(addprefix lib/libfdt/, \
 RSA_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix lib/rsa/, \
 					rsa-sign.o rsa-verify.o rsa-checksum.o \
 					rsa-mod-exp.o)
+CMAC_OBJS-$(CONFIG_CSE3) := lib/cmac.o
 
 ROCKCHIP_OBS = lib/rc4.o rkcommon.o rkimage.o rksd.o rkspi.o
 
@@ -100,7 +101,8 @@ dumpimage-mkimage-objs := aisimage.o \
 			ublimage.o \
 			zynqimage.o \
 			$(LIBFDT_OBJS) \
-			$(RSA_OBJS-y)
+			$(RSA_OBJS-y) \
+			$(CMAC_OBJS-y)
 
 dumpimage-objs := $(dumpimage-mkimage-objs) dumpimage.o
 mkimage-objs   := $(dumpimage-mkimage-objs) mkimage.o

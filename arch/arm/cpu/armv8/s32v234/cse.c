@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2015 Freescale Semiconductor, Inc.
+ * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -10,6 +10,7 @@
 #include <malloc.h>
 #include <libfdt.h>
 #include <fs.h>
+#include <errno.h>
 
 #define CSE_TIMEOUT		1000000
 
@@ -47,12 +48,12 @@ static int mmc_load_cse_blob(void)
 	filename = getenv("cse_file");
 
 	if (fs_set_blk_dev("mmc", mmc_dev_part, FS_TYPE_FAT))
-		return 1;
+		return -ENOENT;
 
 	if (fs_read(filename, CSE_BLOB_BASE, pos, bytes, &len_read))
-		return 1;
+		return -ENOENT;
 
-	printf("%d bytes read\n", len_read);
+	printf("%llu bytes read\n", len_read);
 
 	return 0;
 }
@@ -62,6 +63,12 @@ int cse_init(void)
 {
 	uint32_t firmware;
 	uint32_t err;
+
+	/* check if CSE module is enabled */
+	if (readl(OCOTP_CFG3) & OCOTP_CFG3_EXPORT_CONTROL) {
+		printf("The security module (CSE3) is disabled.\n");
+		return -ENODEV;
+	}
 
 	/* check if secure boot is enabled on chip and if secure boot was
 	completed successfully in bootrom */
@@ -78,7 +85,7 @@ int cse_init(void)
 		writel(CSE_CMD_INIT_RNG, CSE_CMD);
 
 		if (cse_wait(CSE_TIMEOUT))
-			return -1;
+			return -ETIME;
 
 		err = readl(CSE_ECR);
 
@@ -97,7 +104,7 @@ cse_firmware_loading:
 
 	if (mmc_load_cse_blob()) {
 		printf("CSE firmware loading failed\n");
-		return 1;
+		return -ENOENT;
 	}
 
 	writel(KIA_BASE, CSE_KIA0);
@@ -107,7 +114,7 @@ init_cse:
 	if (readl(CSE_SR) & CSE_SR_BSY) {
 		cse_cancel_cmd();
 		if (cse_wait(CSE_TIMEOUT))
-			return -1;
+			return -EIO;
 	}
 
 	/* Init CSE3 */
@@ -115,27 +122,27 @@ init_cse:
 	writel(CSE_CMD_INIT_CSE, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
-		return -1;
+		return -EIO;
 
 	err = readl(CSE_ECR);
 
-	if (err && err != CSE_SEQ_ERR)
-		return -1;
+	if (err && (err != CSE_SEQ_ERR))
+		return -EIO;
 
 init_rng:
 	/* Init RNG */
 	writel(CSE_CMD_INIT_RNG, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
-		return -1;
+		return -EIO;
 	if (readl(CSE_ECR))
-		return -1;
+		return -EIO;
 
 	return 0;
 }
 
 #ifdef CONFIG_SECURE_BOOT
-static int cse_auth(ulong start_addr, unsigned long len, int key_id,
+int cse_auth(ulong start_addr, unsigned long len, int key_id,
 			uint8_t *exp_mac)
 {
 	/* Verify MAC */
@@ -147,65 +154,23 @@ static int cse_auth(ulong start_addr, unsigned long len, int key_id,
 	writel(CSE_CMD_VERIFY_MAC, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
-		return -1;
+		return -ETIME;
 	if (readl(CSE_ECR))
-		return -1;
+		return -EIO;
 	if (readl(CSE_P5))
-		return -1;
+		return -EIO;
 
 	return 0;
 }
 
-int secure_boot(void)
+int cse_genmac(ulong start_addr, unsigned long len, unsigned long key_id,
+		uint8_t mac[])
 {
-	unsigned long uimage_size, fdt_size;
-	uint8_t uimage_exp_mac[MAC_LEN];
-	uint8_t fdt_exp_mac[MAC_LEN];
-
-	uimage_size =  8 *
-	    (unsigned long)image_get_image_size((image_header_t *)load_addr);
-
-	memcpy(uimage_exp_mac, (uint8_t *)load_addr + uimage_size/8, MAC_LEN);
-
-	if (cse_auth(load_addr, uimage_size, SECURE_BOOT_KEY_ID,
-		     uimage_exp_mac)) {
-		printf("uImage was NOT successfully authenticated\n");
-		return 1;
-	}
-
-	printf("uImage was successfully authenticated\n");
-
-	fdt_size =  8 *
-	    (unsigned long)fdt_totalsize((struct fdt_header *)FDT_ADDR);
-
-	memcpy(fdt_exp_mac, (uint8_t *)FDT_ADDR + fdt_size/8, MAC_LEN);
-
-	if (cse_auth(FDT_ADDR, fdt_size, SECURE_BOOT_KEY_ID,
-		     fdt_exp_mac)) {
-		printf("fdt was NOT successfully authenticated\n");
-		return 1;
-	}
-
-	printf("fdt was successfully authenticated\n");
-
-	return 0;
-}
-
-int do_genmac(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	uint8_t mac[MAC_LEN];
-	int i;
-	ulong start_addr;
-	unsigned long len, key_id;
-
-	start_addr = simple_strtoul(argv[1], NULL, 16);
-	len = simple_strtoul(argv[2], NULL, 10);
-	key_id = simple_strtoul(argv[3], NULL, 16);
-
 	/* CSE init */
-	if (cse_init()) {
+	int ret = cse_init();
+	if (ret) {
 		printf("CSE init failed\n");
-		return 1;
+		return ret;
 	}
 
 	/* Generate MAC */
@@ -216,60 +181,51 @@ int do_genmac(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	writel(CSE_CMD_GENERATE_MAC, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
-		return -1;
+		return -ETIME;
 	if (readl(CSE_ECR))
-		return -1;
+		return -EIO;
+
+	return 0;
+}
+
+int do_genmac(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	uint8_t mac[MAC_LEN];
+	int i;
+	int err = 0;
+	ulong start_addr;
+	unsigned long len, key_id;
+
+	if (argc != 4) {
+		printf("Usage : %s start_address length key_id\n", argv[0]);
+		printf("Example: %s 0xC0000000 0x$filesize 0x4\n", argv[0]);
+		return err;
+	}
+
+	start_addr = simple_strtoul(argv[1], NULL, 16);
+	len = simple_strtoul(argv[2], NULL, 10);
+	key_id = simple_strtoul(argv[3], NULL, 16);
+
+	err = cse_genmac(start_addr, len, key_id, mac);
+	if (err) {
+		return err;
+	}
 
 	/* Print generated MAC */
 	printf("Generated MAC is: ");
 	for (i = 0; i < MAC_LEN; i++)
 		printf("%02x", mac[i]);
+	printf("\nGenerated MAC (hex) is: ");
+	for (i = 0; i < MAC_LEN; i++)
+		printf("\\x%02x", mac[i]);
 	printf("\n");
 
-	return 0;
-}
-
-int do_get_uimage_size(cmd_tbl_t *cmdtp, int flag, int argc,
-		       char * const argv[])
-{
-	unsigned long uimage_size;
-
-	uimage_size =  8 *
-	    (unsigned long)image_get_image_size((image_header_t *)load_addr);
-
-	printf("uImage size is %lu\n", uimage_size);
-
-	return 0;
-}
-
-int do_get_fdt_size(cmd_tbl_t *cmdtp, int flag, int argc,
-		       char * const argv[])
-{
-	unsigned long fdt_size;
-
-	fdt_size =  8 *
-	    (unsigned long)fdt_totalsize((struct fdt_header *)FDT_ADDR);
-
-	printf("fdt size is %lu\n", fdt_size);
-
-	return 0;
+	return err;
 }
 
 U_BOOT_CMD(
 		genmac, CONFIG_SYS_MAXARGS, 1, do_genmac,
 		"generate MAC",
-		""
-	);
-
-U_BOOT_CMD(
-		get_uimage_size, CONFIG_SYS_MAXARGS, 1, do_get_uimage_size,
-		"get uImage size in bits",
-		""
-	);
-
-U_BOOT_CMD(
-		get_fdt_size, CONFIG_SYS_MAXARGS, 1, do_get_fdt_size,
-		"get fdt size in bits",
 		""
 	);
 
