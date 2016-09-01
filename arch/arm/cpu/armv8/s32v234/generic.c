@@ -34,14 +34,14 @@ DECLARE_GLOBAL_DATA_PTR;
 
 u32 get_cpu_rev(void)
 {
-    struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_BASE_ADDR;
+	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_BASE_ADDR;
 	u32 cpu = readl(&mscmir->cpxtype);
 
 	return cpu;
 }
 
 static uintptr_t get_pllfreq(	u32 pll, u32 refclk_freq, u32 plldv,
-								u32 pllfd, u32 selected_output  )
+				u32 pllfd, u32 selected_output  )
 {
 	u32 vco = 0, plldv_prediv = 0, plldv_mfd = 0,	pllfd_mfn = 0;
 	u32 plldv_rfdphi_div = 0, fout = 0;
@@ -362,7 +362,7 @@ int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	printf("uSDHC clock:	   %5d MHz\n",
 		mxc_get_clock(MXC_USDHC_CLK) / 1000000);
 	printf("FEC clock:	%5d MHz\n",
-	    mxc_get_clock(MXC_FEC_CLK) / 1000000);
+		mxc_get_clock(MXC_FEC_CLK) / 1000000);
 	printf("UART clock: 	%5d MHz\n",
 		mxc_get_clock(MXC_UART_CLK) / 1000000);
 	printf("QSPI clock:	%5d MHz\n",
@@ -687,3 +687,96 @@ __weak int dram_init(void)
 
 	return 0;
 }
+
+/* start M4 core */
+static int do_start_m4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned long addr;
+	char *ep;
+
+	if (argc < 2)
+		return CMD_RET_USAGE;
+
+	addr = simple_strtoul(argv[1], &ep, 16);
+	if (ep == argv[1] || *ep != '\0')
+		return CMD_RET_USAGE;
+
+	if (!IS_ADDR_IN_IRAM(addr)) {
+		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n", addr);
+		return CMD_RET_USAGE;
+	}
+
+	printf("Starting core M4 at SRAM address 0x%08lX ...\n", addr);
+
+	/* write the M4 core's start address
+	   address is required by the hardware to be odd */
+	writel(addr | 0x1, MC_ME_CADDR0);
+
+	/* enable CM4 to be active during all modes of operation */
+	writew(MC_MC_CCTL_CORE_ACTIVE, MC_MC_CCTL0);
+
+	/* mode_enter(DRUN_M) */
+	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL );
+	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
+
+	printf("Wait while mode entry is in progress ...\n");
+
+	/* wait while mode entry is in process */
+	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
+
+	printf("Wait for the run mode to be entered ...\n");
+
+	/* check if the mode has been entered */
+	while( (readl(MC_ME_GS) & MC_ME_GS_S_CRT_MODE_DRUN) != 0x00000000 );
+
+	printf("M4 started.\n");
+
+	return CMD_RET_SUCCESS;
+}
+
+U_BOOT_CMD(
+	startm4,	2,	1,	do_start_m4,
+	"start M4 core from SRAM address",
+	"startAddress"
+);
+
+extern void dma_mem_clr(int addr, int size);
+
+static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned long addr;
+	unsigned size, max_size;
+	char *ep;
+
+	if (argc < 3)
+		return CMD_RET_USAGE;
+
+	addr = simple_strtoul(argv[1], &ep, 16);
+	if (ep == argv[1] || *ep != '\0')
+		return CMD_RET_USAGE;
+
+	size = simple_strtoul(argv[2], &ep, 16);
+	if (ep == argv[2] || *ep != '\0')
+		return CMD_RET_USAGE;
+
+	if (!IS_ADDR_IN_IRAM(addr)) {
+		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n", addr);
+		return CMD_RET_USAGE;
+	}
+
+	max_size = IRAM_SIZE - (addr - IRAM_BASE_ADDR);
+	if (size > max_size) {
+		printf("WARNING: given size exceeds SRAM boundaries.\n");
+		size = max_size;
+	}
+	printf("Init SRAM region at address 0x%08lX, size 0x%X bytes ...\n", addr, size);
+	dma_mem_clr(addr, size);
+
+	return CMD_RET_SUCCESS;
+}
+
+U_BOOT_CMD(
+	initsram,	3,	1,	do_init_sram,
+	"init SRAM from address",
+	"startAddress[hex] size[hex]"
+);

@@ -40,7 +40,7 @@
 #define MC_ME_MCTL						(MC_ME_BASE_ADDR + 0x00000004)
 
 #define MC_ME_MCTL_KEY					(0x00005AF0)
-#define MC_ME_MCTL_INVERTEDKEY			(0x0000A50F)
+#define MC_ME_MCTL_INVERTEDKEY				(0x0000A50F)
 #define MC_ME_MCTL_RESET				(0x0 << 28)
 #define MC_ME_MCTL_TEST					(0x1 << 28)
 #define MC_ME_MCTL_DRUN					(0x3 << 28)
@@ -206,6 +206,9 @@
 /* Cortex-A53 - Core 3 Control Register */
 #define MC_ME_CCTL4            (MC_ME_BASE_ADDR + 0x000001CE)
 
+/* Cortex-M4 core */
+#define MC_MC_CCTL_CORE_ACTIVE         (0xF8)
+/* Cortex-A53 cores */
 #define MC_ME_CCTL_DEASSERT_CORE       (0xFA)
 
 /* Cortex-M4 Core Address Register */
