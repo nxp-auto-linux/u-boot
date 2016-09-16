@@ -18,7 +18,7 @@
 #define CONFIG_DISPLAY_BOARDINFO
 
 /* Init CSE3 from u-boot */
-#ifdef CONFIG_CSE3
+#ifdef CONFIG_FSL_CSE3
 
 #define CONFIG_ARCH_MISC_INIT
 #define KIA_BASE		0x3e805000UL
@@ -30,7 +30,7 @@
 #define CSE_BLOB_BASE		0x3e801000UL
 #define CSE_BLOB_SIZE		0x00004500UL
 
-#endif /* CONFIG_CSE3 */
+#endif /* CONFIG_FSL_CSE3 */
 
 /* Config GIC */
 #define CONFIG_GICV2

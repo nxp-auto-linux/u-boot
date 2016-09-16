@@ -16,7 +16,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <u-boot/rsa.h>
 #include <u-boot/rsa-checksum.h>
 
-#ifdef CONFIG_CSE3
+#ifdef CONFIG_FSL_CSE3
 #include <u-boot/cmac.h>
 #endif
 
@@ -91,7 +91,7 @@ struct image_sig_algo image_sig_algos[] = {
 		rsa_verify,
 		&checksum_algos[2],
 	},
-#ifdef CONFIG_CSE3
+#ifdef CONFIG_FSL_CSE3
 	{
 		"cmac",
 		cmac_sign,

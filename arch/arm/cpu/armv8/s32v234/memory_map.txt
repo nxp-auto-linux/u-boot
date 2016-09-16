@@ -21,8 +21,8 @@ SRAM is from 0x3E800000 to 0x3EBFFFFF (4 MB)
 |u-boot           |   0x3E820000   |  variable**  |   0x3E820000   |  variable**  |       -        |      -       |
 ===================================================================================================================
 
-* CSE blob is reserved in SRAM just when CONFIG_CSE3 is enabled in
-u-boot/include/configs/s32v234<xyz>.h (<xyz> is the platform).
+* CSE blob is reserved in SRAM just when CONFIG_FSL_CSE3 is enabled
+from menuconfig (<xyz> is the platform).
 ** u-boot size is variable (depends on configuration).
 
 

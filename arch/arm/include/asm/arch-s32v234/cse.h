@@ -39,9 +39,9 @@
 #define OCOTP_CFG5_SEC_BOOT_MODE	(0xC0UL)
 #define OCOTP_CFG3_EXPORT_CONTROL	(0x1UL)
 
-#if defined CONFIG_CSE3
+#if defined CONFIG_FSL_CSE3
 int cse_init(void);
-#endif /* CONFIG_CSE3 */
+#endif /* CONFIG_FSL_CSE3 */
 
 #endif /* __ASM_ARCH_CSE_H */
 

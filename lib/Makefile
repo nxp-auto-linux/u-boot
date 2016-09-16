@@ -48,7 +48,7 @@ obj-$(CONFIG_TPM) += tpm.o
 obj-$(CONFIG_RBTREE)	+= rbtree.o
 obj-$(CONFIG_BITREVERSE) += bitrev.o
 obj-y += list_sort.o
-obj-$(CONFIG_CSE3) += cmac.o
+obj-$(CONFIG_FSL_CSE3) += cmac.o
 endif
 
 ifndef CONFIG_SPL_BUILD

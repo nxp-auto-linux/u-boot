@@ -63,7 +63,7 @@ LIBFDT_OBJS := $(addprefix lib/libfdt/, \
 RSA_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix lib/rsa/, \
 					rsa-sign.o rsa-verify.o rsa-checksum.o \
 					rsa-mod-exp.o)
-CMAC_OBJS-$(CONFIG_CSE3) := lib/cmac.o
+CMAC_OBJS-$(CONFIG_FSL_CSE3) := lib/cmac.o
 
 ROCKCHIP_OBS = lib/rc4.o rkcommon.o rkimage.o rksd.o rkspi.o
 

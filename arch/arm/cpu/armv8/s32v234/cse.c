@@ -33,7 +33,7 @@ static inline int cse_wait(int timeout)
 	return -1;
 }
 
-#ifdef CONFIG_CSE3
+#ifdef CONFIG_FSL_CSE3
 
 /*
  * Load cse blob file from sdhc at CSE_BLOB_BASE address
@@ -230,4 +230,4 @@ U_BOOT_CMD(
 	);
 
 #endif /* CONFIG_SECURE_BOOT */
-#endif /* CONFIG_CSE3 */
+#endif /* CONFIG_FSL_CSE3 */

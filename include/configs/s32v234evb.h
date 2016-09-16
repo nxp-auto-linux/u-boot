@@ -14,9 +14,6 @@
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32v234_common.h */
 
-/* Init CSE3 from u-boot */
-/* #define CONFIG_CSE3		1 */
-
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
 /* u-boot uses just DDR0 */
