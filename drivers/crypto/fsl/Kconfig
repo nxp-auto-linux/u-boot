@@ -4,3 +4,8 @@ config FSL_CAAM
 	  Enables the Freescale's Cryptographic Accelerator and Assurance
 	  Module (CAAM), also known as the SEC version 4 (SEC4). The driver uses
 	  Job Ring as interface to communicate with CAAM.
+
+config CSE3
+	bool "Freescale CSE3 Crypto Engine support"
+	help
+	  Enables Freescale's Cryptographic Services Engine (CSE3).
