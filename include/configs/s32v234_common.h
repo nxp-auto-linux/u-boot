@@ -19,16 +19,18 @@
 
 /* Init CSE3 from u-boot */
 #ifdef CONFIG_CSE3
+
+#define CONFIG_ARCH_MISC_INIT
 #define KIA_BASE		0x3e805000UL
 /* Secure Boot */
-#define CONFIG_SECURE_BOOT
 #ifdef CONFIG_SECURE_BOOT
 #define SECURE_BOOT_KEY_ID	0x4UL
 #endif
 /* start address and size of firmware+keyimage binary blob */
 #define CSE_BLOB_BASE		0x3e801000UL
 #define CSE_BLOB_SIZE		0x00004500UL
-#endif
+
+#endif /* CONFIG_CSE3 */
 
 /* Config GIC */
 #define CONFIG_GICV2

@@ -780,3 +780,15 @@ U_BOOT_CMD(
 	"init SRAM from address",
 	"startAddress[hex] size[hex]"
 );
+
+#ifdef CONFIG_ARCH_MISC_INIT
+int arch_misc_init(void)
+{
+#ifdef CONFIG_CSE3
+        if (cse_init()) {
+                printf("Failed to initialize CSE3 security engine\n");
+        }
+#endif
+        return 0;
+}
+#endif
