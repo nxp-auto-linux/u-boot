@@ -272,13 +272,12 @@ static void setup_aux_clocks( void )
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 2, MC_CGM_ACn_SEL_DDRPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 2, 0, 0 );
 
+	/* setup the aux clock source for DCU_AXI_CLK and DCU_PIX_CLK */
+	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
 	/* setup the aux clock divider for DCU_AXI_CLK (300MHz) */
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 0 );
-
 	/* setup the aux clock divider for DCU_PIX_CLK (150MHz) */
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 9, MC_CGM_ACn_SEL_VIDEOPLLDIV2 );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 0, 9 );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 9, 1, 1 );
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
