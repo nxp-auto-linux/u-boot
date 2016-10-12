@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2015 Freescale Semiconductor, Inc.
+ * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -171,36 +171,6 @@
 
 /* UART IMCR mux modes */
 #define SIUL2_IMCR_UART_RXD_to_pad	(SIUL2_MSCR_MUX_MODE_ALT2)
-
-
-/* CAN settings */
-/* CAN0 */
-#define SIUL2_MSCR_PA2			2
-
-#define SIUL2_MSCR_PA3			3
-#define SIUL2_IMCR_CAN_FD0_RXD		(700 - 512) /* 188 */
-
-/* CAN1 */
-#define SIUL2_MSCR_PA4			4
-
-#define SIUL2_MSCR_PA5			5
-#define SIUL2_IMCR_CAN_FD1_RXD		(701 - 512) /* 189 */
-
-/* CAN MSCR settings */
-#define SIUL2_MSCR_PORT_CTRL_CAN_TXD	\
-	(SIUL2_MSCR_OBE_EN |		\
-	SIUL2_MSCR_PUS_50K_DOWN |	\
-	SIUL2_MSCR_DSE_34ohm |		\
-	SIUL2_MSCR_PUE_EN |		\
-	SIUL2_MSCR_MUX_MODE_ALT1)
-#define SIUL2_MSCR_PORT_CTRL_CAN_RXD	\
-	(SIUL2_MSCR_PUE_EN |		\
-	SIUL2_MSCR_IBE_EN |		\
-	SIUL2_MSCR_PUS_50K_DOWN)
-
-/* CAN IMCR mux modes */
-#define SIUL2_IMCR_CAN_FDn_RXD_to_PA3	(SIUL2_MSCR_MUX_MODE_ALT2)
-#define SIUL2_IMCR_CAN_FDn_RXD_to_PA5	(SIUL2_MSCR_MUX_MODE_ALT3)
 
 /* uSDHC settings */
 #define SIUL2_USDHC_PAD_CTRL_BASE	(SIUL2_MSCR_SRE_SPEED_HIGH_200 | SIUL2_MSCR_OBE_EN |	\
