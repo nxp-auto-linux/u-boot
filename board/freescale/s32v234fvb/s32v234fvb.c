@@ -10,6 +10,8 @@
 #include <asm/arch/siul.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/xrdc.h>
+#include <fdt_support.h>
+#include <libfdt.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <miiphy.h>
@@ -158,3 +160,11 @@ int checkboard(void)
 
 	return 0;
 }
+
+#if defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP)
+int ft_board_setup(void *blob, bd_t *bd)
+{
+	ft_cpu_setup(blob, bd);
+	return 0;
+}
+#endif /* defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP) */
