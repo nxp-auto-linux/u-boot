@@ -656,7 +656,7 @@ void ddr_check_post_func_reset(uint8_t module) {
 __weak int dram_init(void)
 {
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
-	uint32_t func_event;
+	uint32_t enabled_hs_events, func_event;
 
 	/* Enable DDR handshake for all functional events */
 	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
@@ -669,14 +669,16 @@ __weak int dram_init(void)
 
 	/* If reset event was received, check DDR state */
 	func_event = readl(MC_RGM_FES);
-	if(func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
+	enabled_hs_events = readl(MC_RGM_FRHE);
+	if(func_event & enabled_hs_events) {
+		if(func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
 
-		/* Check if DDR handshake was done */
-		while(!(readl(MC_RGM_DDR_HS) & MC_RGM_DDR_HS_HNDSHK_DONE));
+			/* Check if DDR handshake was done */
+			while(!(readl(MC_RGM_DDR_HS) & MC_RGM_DDR_HS_HNDSHK_DONE));
 
-		ddr_check_post_func_reset(DDR0);
-		ddr_check_post_func_reset(DDR1);
-
+			ddr_check_post_func_reset(DDR0);
+			ddr_check_post_func_reset(DDR1);
+		}
 	}
 #endif
 	setup_iomux_ddr();
