@@ -80,6 +80,19 @@
 
 /* Set the amount of DRAM */
 /* Set DQS settings based on board type */
+#if defined(CONFIG_S32VEVB_REVA)
+#define MMDC_MDASP_MODULE0_VALUE	0x0000007F  /* 1 GB memory */
+#define MMDC_MPRDDLCTL_MODULE0_VALUE	0x44434442  /* Read delay line offsets */
+#define MMDC_MPWRDLCTL_MODULE0_VALUE	0x42434041  /* Write delay line offsets */
+#define MMDC_MPDGCTRL0_MODULE0_VALUE	0x41470138  /* Read DQS gating control 0 */
+#define MMDC_MPDGCTRL1_MODULE0_VALUE	0x012E0135  /* Read DQS gating control 1 */
+
+#define MMDC_MDASP_MODULE1_VALUE	0x0000007F  /* 1 GB memory */
+#define MMDC_MPRDDLCTL_MODULE1_VALUE	0x44434442  /* Read delay line offsets */
+#define MMDC_MPWRDLCTL_MODULE1_VALUE	0x3F3F4242  /* Write delay line offsets */
+#define MMDC_MPDGCTRL0_MODULE1_VALUE	0x414B0138  /* Read DQS gating control 0 */
+#define MMDC_MPDGCTRL1_MODULE1_VALUE	0x01320142  /* Read DQS gating control 1 */
+#else
 #define MMDC_MDASP_MODULE0_VALUE	0x0000007F  /* 1 GB memory */
 #define MMDC_MPRDDLCTL_MODULE0_VALUE	0x46464644  /* Read delay line offsets */
 #define MMDC_MPWRDLCTL_MODULE0_VALUE	0x3B333837  /* Write delay line offsets */
@@ -91,6 +104,7 @@
 #define MMDC_MPWRDLCTL_MODULE1_VALUE	0x3E333836  /* Write delay line offsets */
 #define MMDC_MPDGCTRL0_MODULE1_VALUE	0x417A0169  /* Read DQS gating control 0 */
 #define MMDC_MPDGCTRL1_MODULE1_VALUE	0x0137013F  /* Read DQS gating control 1 */
+#endif
 
 #define MMDC_MDRWD_VALUE		0x000026D2  /* Read/write command delay - default */
 #define MMDC_MDPDC_VALUE		0x00020024  /* Power down control */
