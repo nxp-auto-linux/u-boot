@@ -13,6 +13,45 @@
 
 #include <asm/arch/imx-regs.h>
 
+#undef CONFIG_RUN_FROM_IRAM_ONLY
+
+/* u-boot uses just DDR0 */
+#define CONFIG_RUN_FROM_DDR0
+#undef CONFIG_RUN_FROM_DDR1
+
+#define CONFIG_MACH_TYPE		4146
+
+/* Config CACHE */
+#define CONFIG_CMD_CACHE
+
+/* Enable DCU QoS fix */
+#define CONFIG_DCU_QOS_FIX
+
+/* Flat device tree definitions */
+#define CONFIG_OF_FDT
+#define CONFIG_OF_BOARD_SETUP
+
+/* System Timer */
+#define CONFIG_SYS_GENERIC_TIMER
+/* #define CONFIG_SYS_PIT_TIMER */
+
+#define CONFIG_LOADADDR		LOADADDR
+
+#define CONFIG_BOARD_EXTRA_ENV_SETTINGS \
+	"ipaddr=10.0.0.100\0" \
+	"serverip=10.0.0.1\0" \
+	"netmask=255.255.255.0\0" \
+	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs rw " \
+		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
+	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+	"nfsboot=echo Booting from net using tftp and nfs...; " \
+		"run nfsbootargs;"\
+		"run loadtftpimage; run loadtftpfdt;"\
+		"${boot_mtd} ${loadaddr} - ${fdt_addr};\0"\
+
 #define CONFIG_S32V234
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
