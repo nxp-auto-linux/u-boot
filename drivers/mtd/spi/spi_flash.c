@@ -20,12 +20,15 @@
 
 #include "sf_internal.h"
 
-static void spi_flash_addr(u32 addr, u8 *cmd)
+static void spi_flash_addr(struct spi_flash *flash, u32 addr, u8 *cmd)
 {
 	/* cmd[0] is actual command */
-	cmd[1] = addr >> 16;
-	cmd[2] = addr >> 8;
-	cmd[3] = addr >> 0;
+	int i;
+
+	for (i = flash->cmd_len - 1; i > 0; i--) {
+		cmd[i] = addr;
+		addr = addr >> 8;
+	}
 }
 
 static int read_sr(struct spi_flash *flash, u8 *rs)
@@ -314,7 +317,7 @@ int spi_flash_write_common(struct spi_flash *flash, const u8 *cmd,
 int spi_flash_cmd_erase_ops(struct spi_flash *flash, u32 offset, size_t len)
 {
 	u32 erase_size, erase_addr;
-	u8 cmd[SPI_FLASH_CMD_LEN];
+	u8 cmd[SPI_FLASH_CMD_MAX_LEN];
 	int ret = -1;
 
 	erase_size = flash->erase_size;
@@ -344,7 +347,7 @@ int spi_flash_cmd_erase_ops(struct spi_flash *flash, u32 offset, size_t len)
 		if (ret < 0)
 			return ret;
 #endif
-		spi_flash_addr(erase_addr, cmd);
+		spi_flash_addr(flash, erase_addr, cmd);
 
 		debug("SF: erase %2x %2x %2x %2x (%x)\n", cmd[0], cmd[1],
 		      cmd[2], cmd[3], erase_addr);
@@ -373,7 +376,7 @@ int spi_flash_cmd_write_ops(struct spi_flash *flash, u32 offset,
 	unsigned long byte_addr, page_size;
 	u32 write_addr;
 	size_t chunk_len, actual;
-	u8 cmd[SPI_FLASH_CMD_LEN];
+	u8 cmd[SPI_FLASH_CMD_MAX_LEN];
 	int ret = -1;
 
 	page_size = flash->page_size;
@@ -406,7 +409,7 @@ int spi_flash_cmd_write_ops(struct spi_flash *flash, u32 offset,
 			chunk_len = min(chunk_len,
 					spi->max_write_size - sizeof(cmd));
 
-		spi_flash_addr(write_addr, cmd);
+		spi_flash_addr(flash, write_addr, cmd);
 
 		debug("SF: 0x%p => cmd = { 0x%02x 0x%02x%02x%02x } chunk_len = %zu\n",
 		      buf + actual, cmd[0], cmd[1], cmd[2], cmd[3], chunk_len);
@@ -487,7 +490,7 @@ int spi_flash_cmd_read_ops(struct spi_flash *flash, u32 offset,
 		return 0;
 	}
 
-	cmdsz = SPI_FLASH_CMD_LEN + flash->dummy_byte;
+	cmdsz = flash->cmd_len + flash->dummy_byte;
 	cmd = calloc(1, cmdsz);
 	if (!cmd) {
 		debug("SF: Failed to allocate cmd\n");
@@ -508,8 +511,12 @@ int spi_flash_cmd_read_ops(struct spi_flash *flash, u32 offset,
 			return ret;
 		bank_sel = flash->bank_curr;
 #endif
-		remain_len = ((SPI_FLASH_16MB_BOUN << flash->shift) *
-				(bank_sel + 1)) - offset;
+		if (flash->cmd_len == 1 + SPI_FLASH_4B_ADDR_LEN)
+			remain_len = flash->size - offset;
+		else
+			remain_len = ((SPI_FLASH_16MB_BOUN << flash->shift) *
+				      (bank_sel + 1)) - offset;
+
 		if (len < remain_len)
 			read_len = len;
 		else
@@ -518,7 +525,7 @@ int spi_flash_cmd_read_ops(struct spi_flash *flash, u32 offset,
 		if (spi->max_read_size)
 			read_len = min(read_len, spi->max_read_size);
 
-		spi_flash_addr(read_addr, cmd);
+		spi_flash_addr(flash, read_addr, cmd);
 
 		ret = spi_flash_read_common(flash, cmd, cmdsz, data, read_len);
 		if (ret < 0) {
@@ -1314,15 +1321,20 @@ int spi_flash_scan(struct spi_flash *flash)
 	puts("\n");
 #endif
 
-#ifndef CONFIG_SPI_FLASH_BAR
-	if (((flash->dual_flash == SF_SINGLE_FLASH) &&
-	     (flash->size > SPI_FLASH_16MB_BOUN)) ||
-	     ((flash->dual_flash > SF_SINGLE_FLASH) &&
-	     (flash->size > SPI_FLASH_16MB_BOUN << 1))) {
-		puts("SF: Warning - Only lower 16MiB accessible,");
-		puts(" Full access #define CONFIG_SPI_FLASH_BAR\n");
-	}
-#endif
+	if (params->flags & ADDR_4B) {
+		flash->cmd_len = 1 + SPI_FLASH_4B_ADDR_LEN;
+	} else {
+		flash->cmd_len = 1 + SPI_FLASH_3B_ADDR_LEN;
 
+#ifndef CONFIG_SPI_FLASH_BAR
+		if ((flash->dual_flash == SF_SINGLE_FLASH &&
+		     flash->size > SPI_FLASH_16MB_BOUN) ||
+		     (flash->dual_flash > SF_SINGLE_FLASH &&
+		     flash->size > SPI_FLASH_16MB_BOUN << 1)) {
+			puts("SF: Warning - Only lower 16MiB accessible,");
+			puts(" Full access #define CONFIG_SPI_FLASH_BAR\n");
+		}
+#endif
+	}
 	return 0;
 }
