@@ -284,41 +284,61 @@ static void setup_aux_clocks( void )
 }
 static void enable_modules_clock( void )
 {
-	/* PIT0 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL58 );
-	/* PIT1 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL170 );
-	/* LINFLEX0 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL83 );
-	/* LINFLEX1 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL188 );
+	/* CRC0 */
+	writeb( MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(CRC0_PCTL));
+	/* CRC1 */
+	writeb( MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(CRC1_PCTL));
 	/* ENET */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL50 );
-	/* SDHC */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL93 );
-	/* DEC */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL39 );
-	/* DCU */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL40 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(ENET_PCTL));
+	/* HPSMI */
+	writeb( MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(HPSMI_PCTL));
 	/* IIC0 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL81 );
-	/* CAN0 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL85 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(IIC0_PCTL));
 	/* IIC1 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL184 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(IIC1_PCTL));
 	/* IIC2 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL186 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(IIC2_PCTL));
+	/* LINFLEX0 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(LINFLEX0_PCTL));
+	/* LINFLEX1 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(LINFLEX1_PCTL));
+	/* MBIST */
+	writeb( MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(MBIST_PCTL));
 	/* MMDC0 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL54 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(MMDC0_PCTL));
 	/* MMDC1 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL162 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(MMDC1_PCTL));
 	/* QuadSPI */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL166 );
-	/* CAN1 */
-	writeb( MC_ME_PCTLn_RUNPCm(0), MC_ME_PCTL190 );
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(QUADSPI0_PCTL));
+	/* SDHC */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(SDHC_PCTL));
+
+	/*
+	 * The ungating for the clocks of the above IPs should be
+	 * removed from u-boot, because they are used only in kernel
+	 * drivers.
+	 */
+
+	/* CSI0 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(CSI0_PCTL));
+	/* CSI1 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(CSI1_PCTL));
+	/* DEC200 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(DEC200_PCTL));
+	/* H264_DEC */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(H264_DEC_PCTL));
+	/* H264_ENC */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(H264_ENC_PCTL));
+	/* JPEG */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(JPEG_PCTL));
+	/* VIU0 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(VIU0_PCTL));
+	/* VIU1 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(VIU1_PCTL));
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
+
 void clock_init(void)
 {
 	unsigned int arm_dfs[ARM_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
@@ -341,8 +361,12 @@ void clock_init(void)
 		};
 
 	writel( MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
-			MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3,
-			MC_ME_RUN_PCn(0) );
+		MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3,
+		MC_ME_RUN_PCn(CFG_RUN_PC) );
+
+	writel( !(MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
+		MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3),
+		MC_ME_RUN_PCn(0) );
 
 	/* turn on FXOSC */
 	writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_XOSCON |
