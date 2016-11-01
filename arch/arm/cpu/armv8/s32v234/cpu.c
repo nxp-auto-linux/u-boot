@@ -127,12 +127,12 @@ static inline void early_mmu_setup(void)
 {
 	unsigned int el, i;
 	volatile struct ccsr_cci400 *cci = (struct ccsr_cci400 *)CCI400_BASE_ADDR;
-	u64 *level0_table = (u64 *) (CONFIG_SYS_FSL_IRAM_BASE + 0x6000);
-	u64 *level1_table0 = (u64 *)(CONFIG_SYS_FSL_IRAM_BASE + 0x7000);
-	u64 *level1_table1 = (u64 *)(CONFIG_SYS_FSL_IRAM_BASE + 0x8000);
-	u64 *level2_table0 = (u64 *)(CONFIG_SYS_FSL_IRAM_BASE + 0x9000);
-	u64 *level2_table1 = (u64 *)(CONFIG_SYS_FSL_IRAM_BASE + 0xA000);
-	u64 *level2_table2 = (u64 *)(CONFIG_SYS_FSL_IRAM_BASE + 0xB000);
+	u64 *level0_table = (u64 *) (IRAM_BASE_ADDR + 0x6000);
+	u64 *level1_table0 = (u64 *)(IRAM_BASE_ADDR + 0x7000);
+	u64 *level1_table1 = (u64 *)(IRAM_BASE_ADDR + 0x8000);
+	u64 *level2_table0 = (u64 *)(IRAM_BASE_ADDR + 0x9000);
+	u64 *level2_table1 = (u64 *)(IRAM_BASE_ADDR + 0xA000);
+	u64 *level2_table2 = (u64 *)(IRAM_BASE_ADDR + 0xB000);
 	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
 	/* Invalidate all table entries */
