@@ -1,0 +1,10 @@
+S32V244 Evaluation BOARD
+M:	-
+S:	Maintained
+F:	board/freescale/s32v244evb/
+F:	configs/s32v244evb_defconfig
+F:	include/configs/s32v244evb.h
+F:	include/config/s32v244
+F:	arch/arm/cpu/armv8/s32v244
+F:	arch/arm/include/asm/arch-s32v244
+

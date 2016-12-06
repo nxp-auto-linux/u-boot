@@ -1,0 +1,25 @@
+if TARGET_S32V244EVB
+
+config SYS_BOARD
+	string
+	default "s32v244evb"
+
+config SYS_CONFIG_NAME
+	string
+	default "s32v244evb"
+
+# DDR0(256MB) and DDR1(256MB).
+# U-boot uses only one DDR slot.
+
+config SYS_DDR_SIZE
+	int
+	default 268435456 if S32V244_LPDDR4
+
+config PHY_RGMII_DIRECT_CONNECTED
+	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
+	default n
+	help
+	  Adds the platform "fixed" MDIO Bus to cover the boards that
+	  use PHYs that are not connected to the real MDIO bus.
+
+endif

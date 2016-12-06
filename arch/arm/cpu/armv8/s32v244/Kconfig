@@ -1,0 +1,56 @@
+if ARCH_S32V244
+
+config SYS_CPU
+	string
+	default "armv8"
+
+config SYS_VENDOR
+	string
+	default "freescale"
+
+config SYS_SOC
+	string
+	default "s32v244"
+
+config BAUDRATE
+	int "Serial baudrate"
+	default 115200
+
+choice
+	prompt "Select S32V244 Target Board Support"
+	default TARGET_S32V244EVB
+	help
+	  S32V244 Target Board Selection
+
+config TARGET_S32V244EVB
+	bool "Support s32v244evb"
+
+endchoice
+
+choice
+	prompt "Select DDR type"
+	default S32V244_LPDDR4
+	help
+	  S32V244 DDR Configuration
+
+config S32V244_LPDDR4
+	bool "LPDDR4 Support"
+	help
+	  Enable the support for Micron LPDDR4
+
+config S32V244_DDR3
+	bool "DDR3 Support"
+	help
+	  Enable the support for Micron DDR3
+
+endchoice
+
+config DDR_HANDSHAKE_AT_RESET
+	bool "Enable DDR handshake"
+	default y
+	help
+	  Enable DDR handshake after functional reset
+
+source "board/freescale/s32v244evb/Kconfig"
+
+endif

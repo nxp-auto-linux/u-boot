@@ -581,6 +581,11 @@ config ARCH_S32V234
 	select ARM64
 	select CUSTOM_CMD_FLASH
 
+config ARCH_S32V244
+	bool "Support S32V244 SOC"
+	select ARM64
+	select CUSTOM_CMD_FLASH
+
 config TEGRA
 	bool "NVIDIA Tegra"
 
@@ -771,6 +776,7 @@ source "arch/arm/mach-zynq/Kconfig"
 source "arch/arm/cpu/armv7/Kconfig"
 
 source "arch/arm/cpu/armv8/s32v234/Kconfig"
+source "arch/arm/cpu/armv8/s32v244/Kconfig"
 
 source "arch/arm/cpu/armv8/zynqmp/Kconfig"
 
