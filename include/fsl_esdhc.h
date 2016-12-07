@@ -208,6 +208,11 @@ struct fsl_esdhc_cfg {
 #error "Endianess is not defined: please fix to continue"
 #endif
 
+#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
+	defined(CONFIG_S32V244)
+#define CORE_64BIT_PERIPHERALS_32BIT
+#endif
+
 #ifdef CONFIG_FSL_ESDHC
 int fsl_esdhc_mmc_init(bd_t *bis);
 int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg);

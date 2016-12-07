@@ -106,9 +106,8 @@ static uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
 		xfertyp |= XFERTYP_RSPTYP_48;
 
 #if defined(CONFIG_MX53) || defined(CONFIG_PPC_T4240) || \
-	defined(CONFIG_LS102XA) || defined(CONFIG_FSL_LAYERSCAPE) || \
-	defined(CONFIG_PPC_T4160) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32V244)
+	defined(CONFIG_LS102XA) || defined(CORE_64BIT_PERIPHERALS_32BIT) || \
+	defined(CONFIG_PPC_T4160)
 	if (cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION)
 		xfertyp |= XFERTYP_CMDTYP_ABORT;
 #endif
@@ -186,8 +185,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 	int timeout;
 	struct fsl_esdhc_cfg *cfg = mmc->priv;
 	struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32V244)
+#ifdef CORE_64BIT_PERIPHERALS_32BIT
 	dma_addr_t addr;
 #endif
 	uint wml_value;
@@ -200,8 +198,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 
 		esdhc_clrsetbits32(&regs->wml, WML_RD_WML_MASK, wml_value);
 #ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32V244)
+#ifdef CORE_64BIT_PERIPHERALS_32BIT
 		addr = virt_to_phys((void *)(data->dest));
 		if (upper_32_bits(addr))
 			printf("Error found for upper 32 bits\n");
@@ -227,8 +224,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 		esdhc_clrsetbits32(&regs->wml, WML_WR_WML_MASK,
 					wml_value << 16);
 #ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32V244)
+#ifdef CORE_64BIT_PERIPHERALS_32BIT
 		addr = virt_to_phys((void *)(data->src));
 		if (upper_32_bits(addr))
 			printf("Error found for upper 32 bits\n");
@@ -282,8 +278,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 static void check_and_invalidate_dcache_range
 	(struct mmc_cmd *cmd,
 	 struct mmc_data *data) {
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32V244)
+#ifdef CORE_64BIT_PERIPHERALS_32BIT
 	unsigned start = 0;
 #else
 	unsigned start = (unsigned)data->dest ;
@@ -291,8 +286,7 @@ static void check_and_invalidate_dcache_range
 	unsigned size = roundup(ARCH_DMA_MINALIGN,
 				data->blocks*data->blocksize);
 	unsigned end = start+size ;
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32V244)
+#ifdef CORE_64BIT_PERIPHERALS_32BIT
 	dma_addr_t addr;
 
 	addr = virt_to_phys((void *)(data->dest));
