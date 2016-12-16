@@ -81,7 +81,7 @@
 
 /* Set the amount of DRAM */
 /* Set DQS settings based on board type */
-#if defined(CONFIG_S32V234EVB_29288)
+#if defined(CONFIG_S32V234EVB_29288) || defined(CONFIG_S32V234BBMINI_29406)
 #define MMDC_MDASP_MODULE0_VALUE	0x0000007F  /* 1 GB memory */
 #define MMDC_MPRDDLCTL_MODULE0_VALUE	0x44434442  /* Read delay line offsets */
 #define MMDC_MPWRDLCTL_MODULE0_VALUE	0x42434041  /* Write delay line offsets */

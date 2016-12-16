@@ -36,6 +36,27 @@ config TARGET_S32V234TMDP
 
 endchoice
 
+if TARGET_S32V234EVB
+
+choice
+	prompt "S32V234EVB Board Family Member"
+	default S32V234EVB_28899
+	help
+	  S32V234EVB Board Family Members
+
+config S32V234EVB_28899
+	bool "S32V234EVB_28899"
+
+config S32V234EVB_29288
+	bool "S32V234EVB_29288"
+
+config S32V234BBMINI_29406
+	bool "S32V234BBMINI_29406"
+
+endchoice
+
+endif
+
 choice
 	prompt "Select DDR type"
 	default S32V234_LPDDR2
