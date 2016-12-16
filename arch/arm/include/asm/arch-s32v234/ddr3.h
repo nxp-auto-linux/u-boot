@@ -1,5 +1,6 @@
 /*
- * (C) Copyright 2015 Freescale Semiconductor, Inc.
+ * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2016 NXP
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -80,7 +81,7 @@
 
 /* Set the amount of DRAM */
 /* Set DQS settings based on board type */
-#if defined(CONFIG_S32VEVB_REVA)
+#if defined(CONFIG_S32V234EVB_29288)
 #define MMDC_MDASP_MODULE0_VALUE	0x0000007F  /* 1 GB memory */
 #define MMDC_MPRDDLCTL_MODULE0_VALUE	0x44434442  /* Read delay line offsets */
 #define MMDC_MPWRDLCTL_MODULE0_VALUE	0x42434041  /* Write delay line offsets */
