@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2016 Heinz Wrobel <heinz.wrobel@nxp.com>
  * Copyright (C) 2015 Aurelian Voicu <aurelian.voicu@nxp.com>
+ * Copyright (C) 2016 NXP
  *
  * Based on upstream iMX U-Boot driver:
  * pcie_imx.c:		Marek Vasut <marex@denx.de>
@@ -669,7 +670,7 @@ static int s32v_pcie_link_up(const int ep_mode)
 	 * up, otherwise no downstream devices are detected. After the
 	 * link is up, a managed Gen1->Gen2 transition can be initiated.
 	 */
-	printf("\nForcing PCIe RC to Gen1 operation\n");
+	printf("\nForcing PCIe to Gen1 operation\n");
 
 	tmp = readl(S32V234_DBI_ADDR + 0x7c);
 	tmp &= ~0xf;
