@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2016 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -445,7 +446,7 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-	printf("CPU:   Freescale Treerunner S32V234 at %d MHz\n",
+	printf("CPU:   NXP S32V234 at %d MHz\n",
 		mxc_get_clock(MXC_ARM_CLK) / 1000000);
 	printf("Reset cause: %s\n", get_reset_cause());
 
