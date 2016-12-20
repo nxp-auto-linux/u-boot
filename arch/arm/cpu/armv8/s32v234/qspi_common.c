@@ -128,3 +128,25 @@ void qspi_iomux()
 
 
 }				/* qspi_iomux */
+
+#ifdef CONFIG_S32V234_FLASH
+int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
+			    char * const argv[]);
+#else
+int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
+			    char * const argv[])
+{
+	printf("SD/eMMC is disabled. SPI flash is active and can be used!\n");
+	qspi_iomux();
+	return 0;
+}
+#endif
+
+/* qspinor setup */
+U_BOOT_CMD(
+	flsetup, 1, 1, do_qspinor_setup,
+	"setup qspi pinmuxing and qspi registers for access to flash",
+	"\n"
+	"Set up the pinmuxing and qspi registers to access the flash\n"
+	"    and disconnect from the SD/eMMC.\n"
+);

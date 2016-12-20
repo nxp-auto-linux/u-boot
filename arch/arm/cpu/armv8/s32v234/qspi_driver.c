@@ -290,7 +290,7 @@ void quadspi_set_lut(uint32_t index, uint32_t value)
 	while (QuadSPI.LCKCR.B.LOCK == 0) ;
 }
 
-static int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
+int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
 	printf("SD/eMMC is disabled. Hyperflash is active and can be used!\n");
@@ -420,15 +420,6 @@ U_BOOT_CMD(
 	#warning "Using U-Boot's protect and erase commands, not our custom ones"
 #endif
 
-
-/* qspinor setup */
-U_BOOT_CMD(
-	flsetup, 1, 1, do_qspinor_setup,
-	"setup qspi pinmuxing and qspi registers for access to hyperflash",
-	"\n"
-	"Set up the pinmuxing and qspi registers to access the hyperflash\n"
-	"    and disconnect from the SD/eMMC.\n"
-);
 
 /* quadspi_erase_hyp */
 U_BOOT_CMD(
