@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2016-2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -50,16 +50,18 @@
 
 #define IMX_FEC_BASE            ENET_BASE_ADDR
 
-#define CONFIG_S32V234_FLASH
-
 /* memory mapped external flash */
 #define CONFIG_SYS_FSL_FLASH0_BASE      0x20000000
 #define CONFIG_SYS_FSL_FLASH0_SIZE      0x10000000
 #define CONFIG_SYS_FSL_FLASH1_BASE      0x60000000
 #define CONFIG_SYS_FSL_FLASH1_SIZE      0x10000000
 
+/* flash related definitions */
+#define CONFIG_S32V234_FLASH
+
 /* QSPI/hyperflash configs */
 #ifdef CONFIG_S32V234_FLASH
+#define CONFIG_S32V234_USES_FLASH
 
 /* debug stuff for qspi/hyperflash */
 #undef CONFIG_DEBUG_S32V234_QSPI_QSPI
