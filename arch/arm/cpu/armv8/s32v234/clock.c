@@ -313,29 +313,6 @@ static void enable_modules_clock( void )
 	/* SDHC */
 	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(SDHC_PCTL));
 
-	/*
-	 * The ungating for the clocks of the above IPs should be
-	 * removed from u-boot, because they are used only in kernel
-	 * drivers.
-	 */
-
-	/* CSI0 */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(CSI0_PCTL));
-	/* CSI1 */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(CSI1_PCTL));
-	/* DEC200 */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(DEC200_PCTL));
-	/* H264_DEC */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(H264_DEC_PCTL));
-	/* H264_ENC */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(H264_ENC_PCTL));
-	/* JPEG */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(JPEG_PCTL));
-	/* VIU0 */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(VIU0_PCTL));
-	/* VIU1 */
-	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(VIU1_PCTL));
-
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
 
