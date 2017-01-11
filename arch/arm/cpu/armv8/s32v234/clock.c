@@ -313,6 +313,15 @@ static void enable_modules_clock( void )
 	/* SDHC */
 	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(SDHC_PCTL));
 
+	/*
+	 * The ungating for the clocks of the above IPs should be
+	 * removed from u-boot, because they are used only in kernel
+	 * drivers.
+	 */
+
+	/* DEC200 */
+	writeb(MC_ME_PCTLn_RUNPCm(CFG_RUN_PC), MC_ME_PCTLn(DEC200_PCTL));
+
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
 
