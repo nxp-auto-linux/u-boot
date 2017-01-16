@@ -35,25 +35,39 @@ static void setup_iomux_uart(void)
 
 static void setup_iomux_enet(void)
 {
-	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
-	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
-	writel(       0x2, SIUL2_MSCRn(981));
+	/* set PC13 - MSCR[45] - for MDC */
+	writel(SIUL2_MSCR_ENET_MDC, SIUL2_MSCRn(SIUL2_MSCR_PC13));
 
-	writel(0x0008c700, SIUL2_MSCRn(47));	//RMII_CLK_REF_IP //PC15
-	writel(       0x2, SIUL2_MSCRn(978));
+	/* set PC14 - MSCR[46] - for MDIO */
+	writel(SIUL2_MSCR_ENET_MDIO, SIUL2_MSCRn(SIUL2_MSCR_PC14));
+	writel(SIUL2_MSCR_ENET_MDIO_IN, SIUL2_MSCRn(SIUL2_MSCR_PC14_IN));
 
-	writel(0x0008c700, SIUL2_MSCRn(49));	//RX_D0  //PD1
-	writel(       0x2, SIUL2_MSCRn(974));
-	writel(0x0008c700, SIUL2_MSCRn(50));	//RX_D1  //PD2
-	writel(       0x2, SIUL2_MSCRn(975));
-	writel(0x0008c700, SIUL2_MSCRn(53));	//RX_DV  //PD5
-	writel(       0x2, SIUL2_MSCRn(973));
-	writel(0x0008c700, SIUL2_MSCRn(54));	//RX_ER  //PD6
-	writel(       0x2, SIUL2_MSCRn(970));
+	/* set PC15 - MSCR[47] - for RMII CLK REF IP */
+	writel(SIUL2_MSCR_ENET_RMII_CLK_REF_IP, SIUL2_MSCRn(SIUL2_MSCR_PC15));
+	writel(SIUL2_MSCR_ENET_TX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PC15_IN));
 
-	writel(0x0020c701, SIUL2_MSCRn(55));	//TX_D0  //PD7
-	writel(0x0020c701, SIUL2_MSCRn(56));	//TX_D1  //PD8
-	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
+	/* set PD1 - MSCR[49] - for RX_D0 */
+	writel(SIUL2_MSCR_ENET_RX_D0, SIUL2_MSCRn(SIUL2_MSCR_PD1));
+	writel(SIUL2_MSCR_ENET_RX_D0_IN, SIUL2_MSCRn(SIUL2_MSCR_PD1_IN));
+
+	/* set PD2 - MSCR[50] - for RX_D1 */
+	writel(SIUL2_MSCR_ENET_RX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD2));
+	writel(SIUL2_MSCR_ENET_RX_D1_IN, SIUL2_MSCRn(SIUL2_MSCR_PD2_IN));
+
+	/* set PD5 - MSCR[53] - for RX_DV */
+	writel(SIUL2_MSCR_ENET_RX_DV, SIUL2_MSCRn(SIUL2_MSCR_PD5));
+	writel(SIUL2_MSCR_ENET_RX_DV_IN, SIUL2_MSCRn(SIUL2_MSCR_PD5_IN));
+
+	/* set PD6 - MSCR[54] - for RX_ER */
+	writel(SIUL2_MSCR_ENET_RX_DV, SIUL2_MSCRn(SIUL2_MSCR_PD6));
+	writel(SIUL2_MSCR_ENET_RX_ER_IN, SIUL2_MSCRn(SIUL2_MSCR_PD6_IN));
+
+	/* set PD7 - MSCR[55] - for TX_D0 */
+	writel(SIUL2_MSCR_ENET_TX_D0, SIUL2_MSCRn(SIUL2_MSCR_PD7));
+	/* set PD8 - MSCR[56] - for TX_D1 */
+	writel(SIUL2_MSCR_ENET_TX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD8));
+	/* set PD11 - MSCR[59] - for TX_EN */
+	writel(SIUL2_MSCR_ENET_TX_EN, SIUL2_MSCRn(SIUL2_MSCR_PD11));
 
 #if 0
 	/* reset the Ethernet controller */
