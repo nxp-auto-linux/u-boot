@@ -1,11 +1,12 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
+#include <asm/arch/src.h>
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>
