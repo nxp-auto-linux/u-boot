@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2016 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -79,11 +80,6 @@ static void setup_iomux_enet(void)
 	writel(0x0020c701, SIUL2_MSCRn(58));	//TX_D3  //PD10
 	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
 
-#if 0
-	/* reset the Ethernet controller */
-	writel(0x1, 0x40032024);
-	while (readl(0x40032024) & 0x1);
-#endif
 }
 
 static void setup_iomux_i2c(void)
@@ -220,7 +216,7 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: s32v234evb\n");
+	printf("Board: %s\n", CONFIG_SYS_CONFIG_NAME);
 
 	return 0;
 }
