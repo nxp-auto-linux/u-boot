@@ -1,30 +1,15 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016 NXP
+ * (C) Copyright 2016-2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/mc_cgm_regs.h>
-#include <asm/arch/mc_me_regs.h>
-#include <asm/arch/mc_rgm_regs.h>
-#include <asm/arch/siul.h>
-#include <asm/arch/src.h>
+#include <asm/arch/soc.h>
 #include <fsl_esdhc.h>
 #include <mmc.h>
-#include <asm/arch/mmdc.h>
-#include <asm/arch/ddr.h>
-#if defined(CONFIG_S32V234_LPDDR2)
-#include <asm/arch/lpddr2.h>
-#elif defined(CONFIG_S32V234_DDR3)
-#include <asm/arch/ddr3.h>
-#else
-#error "Please define the DDR type for S32V234 board!"
-#endif
 #include <netdev.h>
 #include <div64.h>
 #include <errno.h>
@@ -500,6 +485,62 @@ int get_clocks(void)
 	gd->arch.sdhc_clk = mxc_get_clock(MXC_USDHC_CLK);
 #endif
 	return 0;
+}
+
+__weak void setup_iomux_enet(void)
+{
+#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+	/* set PC13 - MSCR[45] - for MDC */
+	writel(SIUL2_MSCR_ENET_MDC, SIUL2_MSCRn(SIUL2_MSCR_PC13));
+
+	/* set PC14 - MSCR[46] - for MDIO */
+	writel(SIUL2_MSCR_ENET_MDIO, SIUL2_MSCRn(SIUL2_MSCR_PC14));
+	writel(SIUL2_MSCR_ENET_MDIO_IN, SIUL2_MSCRn(SIUL2_MSCR_PC14_IN));
+#endif
+
+#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+	/* set PC15 - MSCR[47] - for TX CLK SWITCH */
+	writel(SIUL2_MSCR_ENET_TX_CLK_SWITCH, SIUL2_MSCRn(SIUL2_MSCR_PC15_SWITCH));
+#else
+	/* set PC15 - MSCR[47] - for TX CLK */
+	writel(SIUL2_MSCR_ENET_TX_CLK, SIUL2_MSCRn(SIUL2_MSCR_PC15));
+#endif
+	writel(SIUL2_MSCR_ENET_TX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PC15_IN));
+
+	/* set PD0 - MSCR[48] - for RX_CLK */
+	writel(SIUL2_MSCR_ENET_RX_CLK, SIUL2_MSCRn(SIUL2_MSCR_PD0));
+	writel(SIUL2_MSCR_ENET_RX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PD0_IN));
+
+	/* set PD1 - MSCR[49] - for RX_D0 */
+	writel(SIUL2_MSCR_ENET_RX_D0, SIUL2_MSCRn(SIUL2_MSCR_PD1));
+	writel(SIUL2_MSCR_ENET_RX_D0_IN, SIUL2_MSCRn(SIUL2_MSCR_PD1_IN));
+
+	/* set PD2 - MSCR[50] - for RX_D1 */
+	writel(SIUL2_MSCR_ENET_RX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD2));
+	writel(SIUL2_MSCR_ENET_RX_D1_IN, SIUL2_MSCRn(SIUL2_MSCR_PD2_IN));
+
+	/* set PD3 - MSCR[51] - for RX_D2 */
+	writel(SIUL2_MSCR_ENET_RX_D2, SIUL2_MSCRn(SIUL2_MSCR_PD3));
+	writel(SIUL2_MSCR_ENET_RX_D2_IN, SIUL2_MSCRn(SIUL2_MSCR_PD3_IN));
+
+	/* set PD4 - MSCR[52] - for RX_D3 */
+	writel(SIUL2_MSCR_ENET_RX_D3, SIUL2_MSCRn(SIUL2_MSCR_PD4));
+	writel(SIUL2_MSCR_ENET_RX_D3_IN, SIUL2_MSCRn(SIUL2_MSCR_PD4_IN));
+
+	/* set PD5 - MSCR[53] - for RX_DV */
+	writel(SIUL2_MSCR_ENET_RX_DV, SIUL2_MSCRn(SIUL2_MSCR_PD5));
+	writel(SIUL2_MSCR_ENET_RX_DV_IN, SIUL2_MSCRn(SIUL2_MSCR_PD5_IN));
+
+	/* set PD7 - MSCR[55] - for TX_D0 */
+	writel(SIUL2_MSCR_ENET_TX_D0, SIUL2_MSCRn(SIUL2_MSCR_PD7));
+	/* set PD8 - MSCR[56] - for TX_D1 */
+	writel(SIUL2_MSCR_ENET_TX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD8));
+	/* set PD9 - MSCR[57] - for TX_D2 */
+	writel(SIUL2_MSCR_ENET_TX_D2, SIUL2_MSCRn(SIUL2_MSCR_PD9));
+	/* set PD10 - MSCR[58] - for TX_D3 */
+	writel(SIUL2_MSCR_ENET_TX_D3, SIUL2_MSCRn(SIUL2_MSCR_PD10));
+	/* set PD11 - MSCR[59] - for TX_EN */
+	writel(SIUL2_MSCR_ENET_TX_EN, SIUL2_MSCRn(SIUL2_MSCR_PD11));
 }
 
 __weak void setup_iomux_sdhc(void)

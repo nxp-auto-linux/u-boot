@@ -1,15 +1,13 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/siul.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/xrdc.h>
+#include <asm/arch/soc.h>
 #include <fdt_support.h>
 #include <libfdt.h>
 #include <miiphy.h>
@@ -29,50 +27,6 @@ static void setup_iomux_uart(void)
 	writel(SIUL2_MSCR_PORT_CTRL_UART_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA11));
 	/* set UART0 RXD - IMCR[200] - to link to PA11 */
 	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART0_RXD));
-}
-
-static void setup_iomux_enet(void)
-{
-
-#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
-	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
-	writel(       0x2, SIUL2_MSCRn(981));
-#endif
-
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
-#else
-	writel(0x00203701, SIUL2_MSCRn(47));	//TX_CLK //PC15
-#endif
-	writel(       0x2, SIUL2_MSCRn(978));
-
-	writel(0x0008c700, SIUL2_MSCRn(48));	//RX_CLK //PD0
-	writel(       0x2, SIUL2_MSCRn(979));
-
-	writel(0x0008c700, SIUL2_MSCRn(49));	//RX_D0  //PD1
-	writel(       0x2, SIUL2_MSCRn(974));
-
-	writel(0x0008c700, SIUL2_MSCRn(50));	//RX_D1  //PD2
-	writel(       0x2, SIUL2_MSCRn(975));
-
-
-	writel(0x0008c700, SIUL2_MSCRn(51));	//RX_D2  //PD3
-	writel(       0x2, SIUL2_MSCRn(976));
-
-	writel(0x0008c700, SIUL2_MSCRn(52));	//RX_D3  //PD4
-	writel(       0x2, SIUL2_MSCRn(977));
-
-	writel(0x0008c700, SIUL2_MSCRn(53));	//RX_DV  //PD5
-	writel(       0x2, SIUL2_MSCRn(973));
-
-	writel(0x0020c701, SIUL2_MSCRn(55));	//TX_D0  //PD7
-	writel(0x0020c701, SIUL2_MSCRn(56));	//TX_D1  //PD8
-	writel(0x0020c701, SIUL2_MSCRn(57));	//TX_D2  //PD9
-	writel(0x0020c701, SIUL2_MSCRn(58));	//TX_D3  //PD10
-	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
-
-
 }
 
 static void setup_iomux_i2c(void)

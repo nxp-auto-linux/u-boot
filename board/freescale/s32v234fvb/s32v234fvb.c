@@ -1,15 +1,13 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/siul.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/xrdc.h>
+#include <asm/arch/soc.h>
 #include <fdt_support.h>
 #include <libfdt.h>
 #include <mmc.h>
@@ -33,7 +31,7 @@ static void setup_iomux_uart(void)
 	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART0_RXD));
 }
 
-static void setup_iomux_enet(void)
+void setup_iomux_enet(void)
 {
 	/* set PC13 - MSCR[45] - for MDC */
 	writel(SIUL2_MSCR_ENET_MDC, SIUL2_MSCRn(SIUL2_MSCR_PC13));
@@ -68,12 +66,6 @@ static void setup_iomux_enet(void)
 	writel(SIUL2_MSCR_ENET_TX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD8));
 	/* set PD11 - MSCR[59] - for TX_EN */
 	writel(SIUL2_MSCR_ENET_TX_EN, SIUL2_MSCRn(SIUL2_MSCR_PD11));
-
-#if 0
-	/* reset the Ethernet controller */
-	writel(0x1, 0x40032024);
-	while (readl(0x40032024) & 0x1);
-#endif
 }
 
 static void setup_iomux_i2c(void)

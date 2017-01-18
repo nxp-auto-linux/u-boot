@@ -1,15 +1,13 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/siul.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/xrdc.h>
+#include <asm/arch/soc.h>
 #include <fdt_support.h>
 #include <libfdt.h>
 #include <miiphy.h>
@@ -30,42 +28,56 @@ static void setup_iomux_uart(void)
 	/* set UART1 RXD - IMCR[202] - to link to PA13 */
 	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART1_RXD));
 }
-static void setup_iomux_enet(void)
+
+void setup_iomux_enet(void)
 {
 #ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	writel(0x0020c701, SIUL2_MSCRn(45));	//MDC   //PC13
-	writel(0x0028c701, SIUL2_MSCRn(46));	//MDIO  //PC14
-	writel(       0x2, SIUL2_MSCRn(981));
+	/* set PC13 - MSCR[45] - for MDC */
+	writel(SIUL2_MSCR_ENET_MDC, SIUL2_MSCRn(SIUL2_MSCR_PC13));
+
+	/* set PC14 - MSCR[46] - for MDIO */
+	writel(SIUL2_MSCR_ENET_MDIO, SIUL2_MSCRn(SIUL2_MSCR_PC14));
+	writel(SIUL2_MSCR_ENET_MDIO_IN, SIUL2_MSCRn(SIUL2_MSCR_PC14_IN));
 #endif
 
+	/* set PC15 - MSCR[47] - for TX CLK SWITCH */
+	writel(SIUL2_MSCR_ENET_TX_CLK_SWITCH, SIUL2_MSCRn(SIUL2_MSCR_PC15_SWITCH));
+	writel(SIUL2_MSCR_ENET_TX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PC15_IN));
 
-	writel(0x0020c701, SIUL2_MSCRn(47));	//TX_CLK //PC15
-	writel(       0x2, SIUL2_MSCRn(978));
+	/* set PD0 - MSCR[48] - for RX_CLK */
+	writel(SIUL2_MSCR_ENET_RX_CLK, SIUL2_MSCRn(SIUL2_MSCR_PD0));
+	writel(SIUL2_MSCR_ENET_RX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PD0_IN));
 
-	writel(0x0008c700, SIUL2_MSCRn(48));	//RX_CLK //PD0
-	writel(       0x2, SIUL2_MSCRn(979));
+	/* set PD1 - MSCR[49] - for RX_D0 */
+	writel(SIUL2_MSCR_ENET_RX_D0, SIUL2_MSCRn(SIUL2_MSCR_PD1));
+	writel(SIUL2_MSCR_ENET_RX_D0_IN, SIUL2_MSCRn(SIUL2_MSCR_PD1_IN));
 
-	writel(0x0008c700, SIUL2_MSCRn(49));	//RX_D0  //PD1
-	writel(       0x2, SIUL2_MSCRn(974));
+	/* set PD2 - MSCR[50] - for RX_D1 */
+	writel(SIUL2_MSCR_ENET_RX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD2));
+	writel(SIUL2_MSCR_ENET_RX_D1_IN, SIUL2_MSCRn(SIUL2_MSCR_PD2_IN));
 
-	writel(0x0008c700, SIUL2_MSCRn(50));	//RX_D1  //PD2
-	writel(       0x2, SIUL2_MSCRn(975));
+	/* set PD3 - MSCR[51] - for RX_D2 */
+	writel(SIUL2_MSCR_ENET_RX_D2, SIUL2_MSCRn(SIUL2_MSCR_PD3));
+	writel(SIUL2_MSCR_ENET_RX_D2_IN, SIUL2_MSCRn(SIUL2_MSCR_PD3_IN));
 
+	/* set PD4 - MSCR[52] - for RX_D3 */
+	writel(SIUL2_MSCR_ENET_RX_D3, SIUL2_MSCRn(SIUL2_MSCR_PD4));
+	writel(SIUL2_MSCR_ENET_RX_D3_IN, SIUL2_MSCRn(SIUL2_MSCR_PD4_IN));
 
-	writel(0x0008c700, SIUL2_MSCRn(51));	//RX_D2  //PD3
-	writel(       0x2, SIUL2_MSCRn(976));
+	/* set PD5 - MSCR[53] - for RX_DV */
+	writel(SIUL2_MSCR_ENET_RX_DV, SIUL2_MSCRn(SIUL2_MSCR_PD5));
+	writel(SIUL2_MSCR_ENET_RX_DV_IN, SIUL2_MSCRn(SIUL2_MSCR_PD5_IN));
 
-	writel(0x0008c700, SIUL2_MSCRn(52));	//RX_D3  //PD4
-	writel(       0x2, SIUL2_MSCRn(977));
-
-	writel(0x0008c700, SIUL2_MSCRn(53));	//RX_DV  //PD5
-	writel(       0x2, SIUL2_MSCRn(973));
-
-	writel(0x0020c701, SIUL2_MSCRn(55));	//TX_D0  //PD7
-	writel(0x0020c701, SIUL2_MSCRn(56));	//TX_D1  //PD8
-	writel(0x0020c701, SIUL2_MSCRn(57));	//TX_D2  //PD9
-	writel(0x0020c701, SIUL2_MSCRn(58));	//TX_D3  //PD10
-	writel(0x0020c701, SIUL2_MSCRn(59));	//TX_EN  //PD11
+	/* set PD7 - MSCR[55] - for TX_D0 */
+	writel(SIUL2_MSCR_ENET_TX_D0, SIUL2_MSCRn(SIUL2_MSCR_PD7));
+	/* set PD8 - MSCR[56] - for TX_D1 */
+	writel(SIUL2_MSCR_ENET_TX_D1, SIUL2_MSCRn(SIUL2_MSCR_PD8));
+	/* set PD9 - MSCR[57] - for TX_D2 */
+	writel(SIUL2_MSCR_ENET_TX_D2, SIUL2_MSCRn(SIUL2_MSCR_PD9));
+	/* set PD10 - MSCR[58] - for TX_D3 */
+	writel(SIUL2_MSCR_ENET_TX_D3, SIUL2_MSCRn(SIUL2_MSCR_PD10));
+	/* set PD11 - MSCR[59] - for TX_EN */
+	writel(SIUL2_MSCR_ENET_TX_EN, SIUL2_MSCRn(SIUL2_MSCR_PD11));
 }
 
 static void setup_iomux_i2c(void)
