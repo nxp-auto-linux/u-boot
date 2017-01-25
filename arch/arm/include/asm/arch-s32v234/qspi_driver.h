@@ -46,6 +46,7 @@ void quadspi_set_lut(uint32_t index, uint32_t value);
 #define BURST_SIZE 0x80	//max 256bytes!
 #define FLASH_PGSZ	(128)
 #define FLASH_DMA_PGSZ (512)
+#define FLASH_SECTOR_SIZE     0x40000 /* 256 KB */
 
 /* QUADSPI Instructions */
 #define CMD        1

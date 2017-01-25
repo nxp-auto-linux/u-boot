@@ -11,6 +11,27 @@
 #include <asm/arch/siul.h>
 #include <asm/io.h>
 
+/*
+ * If we have changed the content of the flash by writing or erasing,
+ * we need to invalidate the AHB buffer. If we do not do so, we may read out
+ * the wrong data. The spec tells us reset the AHB domain and Serial Flash
+ * domain at the same time.
+ */
+inline void qspi_ahb_invalid(void)
+{
+	QuadSPI.MCR.B.SWRSTSD = 1;
+	QuadSPI.MCR.B.SWRSTHD = 1; // |= QSPI_MCR_SWRSTHD_MASK | QSPI_MCR_SWRSTSD_MASK;
+
+	/*
+	 * The minimum delay : 1 AHB + 2 SFCK clocks.
+	 * Delay 1 us is enough.
+	 */
+	udelay(1);
+
+	QuadSPI.MCR.B.SWRSTSD = 0;
+	QuadSPI.MCR.B.SWRSTHD = 0; // |= QSPI_MCR_SWRSTHD_MASK | QSPI_MCR_SWRSTSD_MASK;
+}
+
 void QSPI_setup_hyp()
 {
 
@@ -119,6 +140,16 @@ void QSPI_setup_hyp()
 //sector = -1 means chip erase
 void quadspi_erase_hyp(int sector)
 {
+	int sector_start = sector & ~(FLASH_SECTOR_SIZE-1);
+
+	/* Invalidate all cache data otherwise read won't return correct data. */
+	qspi_ahb_invalid();
+	invalidate_icache_all();
+	if (sector == -1)
+		invalidate_dcache_range(FLASH_BASE_ADR, FLASH_BASE_ADR + CONFIG_SYS_FSL_FLASH0_SIZE);
+	else
+		invalidate_dcache_range(sector_start, sector_start + FLASH_SECTOR_SIZE);
+
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
@@ -182,12 +213,17 @@ void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 	unsigned int *data;
 
 	data = (unsigned int*)pdata;
+	address = (address & 0xfffffffe);
+	i = bytes & 0xFFFFFFFE;
+
+	/* Invalidate all cache data otherwise read won't return correct data. */
+	qspi_ahb_invalid();
+	invalidate_icache_all();
+	invalidate_dcache_range(address, address + i);
 
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
-	address = (address & 0xfffffffe);
-	i = bytes & 0xFFFFFFFE;
 	if ((address % 128) != 0) {
 		k = 128 - (address % 128);
 	} else if (i > 128)
