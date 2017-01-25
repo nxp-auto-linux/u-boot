@@ -17,7 +17,8 @@
 #define uint32_t u32
 
 /* minimum size to write into hyperflash */
-#define FLASH_MIN_PROG_SIZE (64 >> 3)
+#define FLASH_HALF_PAGE_SIZE	16
+#define FLASH_MIN_PROG_SIZE	8
 
 #define QuadSPI_X QuadSPI_0
 #define ARDB (*(volatile unsigned int *) 0x71000000)
@@ -43,9 +44,9 @@ void quadspi_program(unsigned long src, unsigned long base, unsigned long size);
 void quadspi_set_lut(uint32_t index, uint32_t value);
 
 /////////////////required defines to compile //////////////////////////////////
-#define BURST_SIZE 0x80	//max 256bytes!
-#define FLASH_PGSZ	(128)
-#define FLASH_DMA_PGSZ (512)
+#define BURST_SIZE 		512
+#define FLASH_PGSZ		128
+#define FLASH_DMA_PGSZ		512
 #define FLASH_SECTOR_SIZE     0x40000 /* 256 KB */
 
 /* QUADSPI Instructions */

@@ -10,6 +10,7 @@
 #include <asm/arch/qspi_driver.h>
 #include <asm/arch/siul.h>
 #include <asm/io.h>
+#include <linux/kernel.h>
 
 /*
  * If we have changed the content of the flash by writing or erasing,
@@ -209,12 +210,13 @@ bool is_flash_addr(unsigned int address, enum qspi_addr_t addr_type)
 void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 			 unsigned int bytes)
 {
-	int i, j, k, m;		// i: number total of bytes to flash    // k: number of bytes to flash at the next command      // m :number of word (16 bits) to flash at the next command
+	int i, j, k, m;	// i: number total of bytes to flash
+			// k: number of bytes to flash at the next command
+			// m :number of dword (32 bits) to flash at the next command
 	unsigned int *data;
 
 	data = (unsigned int*)pdata;
-	address = (address & 0xfffffffe);
-	i = bytes & 0xFFFFFFFE;
+	i = bytes;
 
 	/* Invalidate all cache data otherwise read won't return correct data. */
 	qspi_ahb_invalid();
@@ -224,18 +226,17 @@ void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
-	if ((address % 128) != 0) {
-		k = 128 - (address % 128);
-	} else if (i > 128)
-		k = 128;
-	else
-		k = i;
+	while (i > 0) {
+		/* 128 is the circular TX Buffer depth. */
+		k = i >= 128 ? 128 : i;
 
-	m = k >> 2;
-	if (k & 3)
-		m++;
+		/* 512-byte address boundary should not be crossed so write the minimum
+		 * number between k and the left number of bytes in the current burst area.
+		 */
+		k = min(k, (int)(BURST_SIZE - address % BURST_SIZE));
 
-	do {
+		/* Compute the number of dwords. */
+		m = k >> 2;
 
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xAA);
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554, 0x55);
@@ -262,19 +263,11 @@ void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 		while ((quadspi_status_hyp() & 0x8000) == 0) ;	//check status, wait to be done
 
 		address += k;
-
 		i -= k;
-		if (i > 128)
-			k = 128;
-		else
-			k = i;
-//              k = 128;
-		m = 32;
-	} while (i > 0);
+	}
 
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
-
 }
 
 void quadspi_read_hyp(void)
@@ -394,11 +387,17 @@ static int do_qspinor_prog(cmd_tbl_t *cmdtp, int flag, int argc,
 	if (!is_flash_addr(fladdr, qspi_real_address))
 		return 1;
 
+	if (fladdr % FLASH_HALF_PAGE_SIZE != 0)
+		printf("Address should be %d bytes aligned.\n",
+		       FLASH_HALF_PAGE_SIZE);
+
 	bufaddr = simple_strtol(argv[2], NULL, 16);
 	size = simple_strtol(argv[3], NULL, 16);
 
-	if (size < FLASH_MIN_PROG_SIZE) {
-		printf("The written size must be bigger than %d.\n",
+	/* It is strongly recommended that a multiple of 16-byte half-pages be
+	 * written and each half-page written only once. */
+	if (size < FLASH_HALF_PAGE_SIZE || size % FLASH_HALF_PAGE_SIZE != 0) {
+		printf("The written size must be multiple of %d.\n",
 		       FLASH_MIN_PROG_SIZE);
 		return 1;
 	}
