@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP Semiconductors
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -115,6 +115,13 @@
 #define RAMDISK_ADDR		0xC4000000
 #endif
 
+/* Flash booting */
+#define KERNEL_FLASH_ADDR		0x20100000
+#define KERNEL_FLASH_MAXSIZE	0xA00000
+#define FDT_FLASH_ADDR			0x20B00000
+#define FDT_FLASH_MAXSIZE		0x100000
+#define RAMDISK_FLASH_ADDR 	 	0x20C00000
+#define RAMDISK_FLASH_MAXSIZE	0x1E00000
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_GENERIC_TIMER)
@@ -296,7 +303,22 @@
 			"fi; " \
 		"else " \
 			"${boot_mtd}; " \
-		"fi;\0"
+		"fi;\0" \
+	"flashbootargs=setenv bootargs console=ttyLF0 " \
+		"root=/dev/ram rw " \
+		"rdinit=/bin/sh;" \
+		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
+		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
+		"setenv fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
+		"setenv fdt_maxsize " __stringify(FDT_FLASH_MAXSIZE) ";" \
+		"setenv ramdisk_flashaddr " __stringify(RAMDISK_FLASH_ADDR) ";" \
+		"setenv ramdisk_maxsize " __stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
+	"flashboot=echo Booting from flash...; " \
+		"run flashbootargs;"\
+		"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
+		"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
+		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
+		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
 
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
