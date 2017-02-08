@@ -25,3 +25,7 @@
 
 
 void setup_iomux_enet(void);
+
+#ifdef CONFIG_FSL_DCU_FB
+void setup_iomux_dcu(void);
+#endif
