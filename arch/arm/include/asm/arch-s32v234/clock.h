@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -19,6 +20,7 @@ enum mxc_clock {
 	MXC_I2C_CLK,
 	MXC_SYS6_CLK,
 	MXC_QSPI_CLK,
+	MXC_DCU_PIX_CLK,
 };
 enum pll_type {
 	ARM_PLL = 0,

@@ -17,3 +17,4 @@ obj-$(CONFIG_S32V234_DDR3)	+= ddr3.o
 obj-$(CONFIG_S32V234_FLASH)	+= qspi_driver.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
+obj-$(CONFIG_FSL_DCU_FB)	+= dcu.o
