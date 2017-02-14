@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -12,43 +13,66 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 
-#define US1_TDRE		(1 << 7)
-#define US1_RDRF		(1 << 5)
-#define UC2_TE			(1 << 3)
-#define LINCR1_INIT		(1 << 0)
-#define LINCR1_MME		(1 << 4)
-#define LINCR1_BF		(1 << 7)
-#define LINSR_LINS_INITMODE	(0x00001000)
-#define LINSR_LINS_MASK		(0x0000F000)
-#define UARTCR_UART		(1 << 0)
-#define UARTCR_WL0		(1 << 1)
-#define UARTCR_PCE		(1 << 2)
-#define UARTCR_PC0		(1 << 3)
-#define UARTCR_TXEN		(1 << 4)
-#define UARTCR_RXEN		(1 << 5)
-#define UARTCR_PC1		(1 << 6)
-#define UARTCR_TFBM		(1 << 8)
-#define UARTCR_RFBM		(1 << 9)
-#define UARTSR_DTF		(1 << 1)
-#define UARTSR_DRF		(1 << 2)
-#define UARTSR_RFE		(1 << 2)
-#define UARTSR_RFNE		(1 << 4)
-#define UARTSR_RMB		(1 << 9)
+#define US1_TDRE			(1 << 7)
+#define US1_RDRF			(1 << 5)
+#define UC2_TE				(1 << 3)
+#define LINCR1_INIT			(1 << 0)
+#define LINCR1_MME			(1 << 4)
+#define LINCR1_BF			(1 << 7)
+#define LINSR_LINS_INITMODE		(0x00001000)
+#define LINSR_LINS_MASK			(0x0000F000)
+#define UARTCR_UART			(1 << 0)
+#define UARTCR_WL0			(1 << 1)
+#define UARTCR_PCE			(1 << 2)
+#define UARTCR_PC0			(1 << 3)
+#define UARTCR_TXEN			(1 << 4)
+#define UARTCR_RXEN			(1 << 5)
+#define UARTCR_PC1			(1 << 6)
+#define UARTCR_TFBM			(1 << 8)
+#define UARTCR_RFBM			(1 << 9)
+#define UARTSR_DTF			(1 << 1)
+#define UARTSR_DRF			(1 << 2)
+#define UARTSR_RFE			(1 << 2)
+#define UARTSR_RFNE			(1 << 4)
+#define UARTSR_RMB			(1 << 9)
+#define LINFLEXD_UARTCR_OSR_MASK	(0xF<<24)
+#define LINFLEXD_UARTCR_OSR(uartcr)	(((uartcr) \
+					 & LINFLEXD_UARTCR_OSR_MASK) >> 24)
+
+#define LINFLEXD_UARTCR_ROSE		(1<<23)
+#define LINFLEX_LDIV_MULTIPLIER		(16)
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
 struct linflex_fsl *base = (struct linflex_fsl *)LINFLEXUART_BASE;
 
+static u32 linflex_ldiv_multiplier(void)
+{
+	u32 mul = LINFLEX_LDIV_MULTIPLIER;
+	u32 cr;
+
+	cr = __raw_readl(&base->uartcr);
+
+	if (cr & LINFLEXD_UARTCR_ROSE)
+		mul = LINFLEXD_UARTCR_OSR(cr);
+
+	return mul;
+}
+
 static void linflex_serial_setbrg(void)
 {
 	u32 clk = mxc_get_clock(MXC_UART_CLK);
-	u32 ibr, fbr;
+	u32 ibr, fbr, divisr, dividr;
 
 	if (!gd->baudrate)
 		gd->baudrate = CONFIG_BAUDRATE;
 
-	ibr = (u32)(clk / (16 * gd->baudrate));
-	fbr = (u32)(clk % (16 * gd->baudrate)) * 16;
+	divisr = clk;
+	dividr = (u32)(gd->baudrate * linflex_ldiv_multiplier());
+
+	ibr = (u32)(divisr / dividr);
+	fbr = (u32)((divisr % dividr) * 16 / dividr) & 0xF;
 
 	__raw_writel(ibr, &base->linibrr);
 	__raw_writel(fbr, &base->linfbrr);
