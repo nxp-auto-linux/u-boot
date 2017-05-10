@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2016-2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -32,7 +33,8 @@
 #define HNDSHK_TO_VAL			160
 
 #define MC_RGM_FES_ANY_FUNC_EVENT	0x846D
-#define MC_RGM_DDR_HE_VALUE		(HNDSHK_TO_VAL << 16) | (0x1)
+#define MC_RGM_DDR_HE_EN		(0x1)
+#define MC_RGM_DDR_HE_VALUE		(HNDSHK_TO_VAL << 16) | (MC_RGM_DDR_HE_EN)
 #define MC_RGM_FRHE_ALL_VALUE		0x846D
 #define MC_RGM_DDR_HS_HNDSHK_DONE	0x2
 

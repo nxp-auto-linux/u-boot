@@ -799,28 +799,35 @@ __weak int dram_init(void)
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
 	uint32_t enabled_hs_events, func_event;
 
-	/* Enable DDR handshake for all functional events */
-	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
+	if (readl(MC_RGM_DDR_HE) & MC_RGM_DDR_HE_EN) {
+		/* Enable DDR handshake for all functional events */
+		volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
 
-	writel(MC_RGM_DDR_HE_VALUE, MC_RGM_DDR_HE);
-	writel(MC_RGM_FRHE_ALL_VALUE, MC_RGM_FRHE);
+		src->ddr_self_ref_ctrl = src->ddr_self_ref_ctrl |
+					 SRC_DDR_EN_SLF_REF_VALUE;
 
-	src->ddr_self_ref_ctrl = src->ddr_self_ref_ctrl |
-				 SRC_DDR_EN_SLF_REF_VALUE;
+		/* If reset event was received, check DDR state */
+		func_event = readl(MC_RGM_FES);
+		enabled_hs_events = readl(MC_RGM_FRHE);
+		if(func_event & enabled_hs_events) {
+			if(func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
 
-	/* If reset event was received, check DDR state */
-	func_event = readl(MC_RGM_FES);
-	enabled_hs_events = readl(MC_RGM_FRHE);
-	if(func_event & enabled_hs_events) {
-		if(func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
+				/* Check if DDR handshake was done */
+				while(!(readl(MC_RGM_DDR_HS) & MC_RGM_DDR_HS_HNDSHK_DONE));
 
-			/* Check if DDR handshake was done */
-			while(!(readl(MC_RGM_DDR_HS) & MC_RGM_DDR_HS_HNDSHK_DONE));
-
-			ddr_check_post_func_reset(DDR0);
-			ddr_check_post_func_reset(DDR1);
+				ddr_check_post_func_reset(DDR0);
+				ddr_check_post_func_reset(DDR1);
+			}
 		}
+	} else {
+		/*
+		 * First boot so the handshake isn't necessary.
+		 * We should only enable it for future functional resets.
+		 */
+		writel(MC_RGM_DDR_HE_VALUE, MC_RGM_DDR_HE);
+		writel(MC_RGM_FRHE_ALL_VALUE, MC_RGM_FRHE);
 	}
+
 #endif
 	setup_iomux_ddr();
 
