@@ -307,7 +307,7 @@
 		"else " \
 			"${boot_mtd}; " \
 		"fi;\0" \
-	"flashbootargs=setenv bootargs console=ttyLF0 " \
+	"flashbootargs=setenv bootargs console=${console} " \
 		"root=/dev/ram rw " \
 		"rdinit=/bin/sh;" \
 		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
