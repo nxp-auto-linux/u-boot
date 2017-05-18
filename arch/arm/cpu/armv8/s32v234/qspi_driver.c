@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015, 2016, Freescale Semiconductor, Inc.
- * (C) Copyright 2016, NXP
+ * (C) Copyright 2016-2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -43,8 +43,8 @@ void QSPI_setup_hyp()
 	#warning "QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions"
 	QuadSPI.MCR.B.MDIS = 0;	//clear MDIS bit
 	QuadSPI.BUF0IND.R = 0x0;	//set AHB buffer size (64bits)
-	QuadSPI.SFA1AD.R = FLASH_BASE_ADR + 0x4000000;	//set top address of FA1 (size 512Mbit)
-	QuadSPI.SFA2AD.R = FLASH_BASE_ADR + 0x4000000;	//set top address of FA2 (size 0Mbit)
+	QuadSPI.SFA1AD.R = CONFIG_SYS_FLASH_BASE + 0x4000000;	//set top address of FA1 (size 512Mbit)
+	QuadSPI.SFA2AD.R = CONFIG_SYS_FLASH_BASE + 0x4000000;	//set top address of FA2 (size 0Mbit)
 	QuadSPI.SFB1AD.R = FLASH_BASE_ADR2 + 0x4000000;	//set top address of FB1 (size 512Mbit)
 	QuadSPI.SFB2AD.R = FLASH_BASE_ADR2 + 0x4000000;	//set top address of FB2 (size 0Mbit) 0x203FFFFF
 
@@ -53,7 +53,7 @@ void QSPI_setup_hyp()
 	QuadSPI.BUF2IND.R = 0x200;	/* buffer2 size 0 bytes */
 	QuadSPI.BUF3CR.R = 0x80000000;	/* All masters use buffer 3 */
 
-	QuadSPI.SFAR.R = FLASH_BASE_ADR;
+	QuadSPI.SFAR.R = CONFIG_SYS_FLASH_BASE;
 	QuadSPI.MCR.B.DDR_EN = 1;
 	QuadSPI.MCR.B.DQS_EN = 1;
 	QuadSPI.SFACR.R = 0x00010003;
@@ -74,23 +74,23 @@ void quadspi_erase_hyp(int sector)
 	qspi_ahb_invalid();
 	invalidate_icache_all();
 	if (sector == -1)
-		invalidate_dcache_range(FLASH_BASE_ADR, FLASH_BASE_ADR + CONFIG_SYS_FSL_FLASH0_SIZE);
+		invalidate_dcache_range(CONFIG_SYS_FLASH_BASE, CONFIG_SYS_FLASH_BASE + CONFIG_SYS_FSL_FLASH0_SIZE);
 	else
 		invalidate_dcache_range(sector_start, sector_start + FLASH_SECTOR_SIZE);
 
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xAA);
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554, 0x55);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xAA);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0x554, 0x55);
 
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0x80);
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xAA);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0x80);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xAA);
 
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554, 0x55);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0x554, 0x55);
 
 	if (sector == -1)
-		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0x10);
+		quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0x10);
 	else
 		quadspi_send_instruction_hyp((sector & 0xfffffffe), 0x30);
 
@@ -103,10 +103,10 @@ void quadspi_program_word_hyp(unsigned int address, unsigned int word)
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
 
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xAA);
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554, 0x55);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xAA);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0x554, 0x55);
 
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xA0);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xA0);
 	quadspi_send_instruction_hyp(address, word);
 
 	//check status, wait to be ready
@@ -122,13 +122,13 @@ bool is_flash_addr(unsigned int address, enum qspi_addr_t addr_type)
 {
 	bool isflash = 0;
 
-	isflash |= (address >= FLASH_BASE_ADR);
+	isflash |= (address >= CONFIG_SYS_FLASH_BASE);
 	isflash |= (address == qspi_real_and_all) && (address == -1);
 	if (!isflash) {
 		printf("Incorrect address '0x%.8x'.\n"
 		       "Must an address above or equal to '0x%.8x' (or '-1',"
 		       " if the command accepts it)\n", address,
-		       FLASH_BASE_ADR);
+		       CONFIG_SYS_FLASH_BASE);
 		return 0;
 	}
 	return 1;
@@ -165,9 +165,9 @@ void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 		/* Compute the number of dwords. */
 		m = k >> 2;
 
-		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xAA);
-		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554, 0x55);
-		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xA0);
+		quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xAA);
+		quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0x554, 0x55);
+		quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xA0);
 
 #ifndef CONFIG_DEBUG_S32V234_QSPI
 #warning "quadspi_program_hyp() uses baremetal QuadSPI settings and definitions"
@@ -245,9 +245,9 @@ unsigned int quadspi_status_hyp(void)
 {
 	unsigned int data;
 
-	quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0x70);
+	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0x70);
 
-	QuadSPI.SFAR.R = FLASH_BASE_ADR + 0x2;
+	QuadSPI.SFAR.R = CONFIG_SYS_FLASH_BASE + 0x2;
 	quadspi_set_lut(60, QSPI_LUT(ADDR_DDR, 3, 0x18, CMD_DDR, 3, 0x80));
 	quadspi_set_lut(61, QSPI_LUT(DUMMY, 3, 15, CADDR_DDR, 3, 0x10));
 	quadspi_set_lut(62, QSPI_LUT(STOP, 0, 0, READ_DDR, 3, 0x2));
@@ -431,3 +431,72 @@ U_BOOT_CMD(
 	"      buffer at address BUFF.\n"
 	"      Note: all numbers are in hexadecimal format\n"
 );
+
+#ifdef CONFIG_ENV_IS_IN_FLASH
+
+/*
+Wrappers for our flash memory functions, since
+common/env_flash.c's saveenv function expects those
+with different signatures. Done to enable the saving
+of u-boot's environment to flash memory. Temporary
+solution until this driver is updated to adhere to
+the U-boot Driver Model.
+*/
+
+int flash_sect_protect(int protect_on,unsigned long flash_begin_addr
+	,unsigned long flash_end_addr){
+
+	if (protect_on) {
+		quadspi_rm_write_erase_luts();
+		flash_lock = 1;
+	}
+	else {
+		flash_lock = 0;
+	}
+
+	return 0;
+}
+
+int flash_sect_erase(unsigned long flash_begin_addr
+	, unsigned long flash_end_addr){
+
+	if (!is_flash_addr((long)flash_begin_addr, qspi_real_and_all))
+		return 1;
+
+	if (!flash_lock)
+		quadspi_erase_hyp(flash_begin_addr);
+	else
+		return -1;
+
+	return 0;
+}
+
+flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];
+
+unsigned long flash_init(){
+
+	int i;
+
+	flash_info[0].size = CONFIG_SYS_MAX_FLASH_SECT * FLASH_SECTOR_SIZE;
+	flash_info[0].sector_count = CONFIG_SYS_MAX_FLASH_SECT;
+	flash_info[0].flash_id = 0;
+
+	flash_info[0].start[0] = CONFIG_SYS_FLASH_BASE;
+	flash_info[0].protect[0] = 0;
+
+	for (i = 1; i < flash_info[0].sector_count; i++) {
+		flash_info[0].start[i] = flash_info[0].start[i - 1] + CONFIG_ENV_SECT_SIZE; /* 256 KB */
+		flash_info[0].protect[i] = 0;
+	}
+
+	return flash_info[0].size;
+}
+
+int write_buff(flash_info_t* info,uchar* data,
+	ulong flash_addr ,ulong bytes){
+
+	quadspi_program_hyp((unsigned int)flash_addr, (uintptr_t)data, (unsigned int)bytes);
+	return 0;
+}
+
+#endif

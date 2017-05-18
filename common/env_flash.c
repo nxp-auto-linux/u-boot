@@ -4,7 +4,9 @@
  *
  * (C) Copyright 2001 Sysgo Real-Time Solutions, GmbH <www.elinos.com>
  * Andreas Heppel <aheppel@sysgo.de>
-
+ *
+ * (C) Copyright 2017 NXP
+ *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
@@ -20,7 +22,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if defined(CONFIG_CMD_SAVEENV) && defined(CONFIG_CMD_FLASH)
+#if defined(CONFIG_CMD_SAVEENV) && (defined(CONFIG_CMD_FLASH) || defined(CONFIG_CUSTOM_CMD_FLASH))
 #define CMD_SAVEENV
 #elif defined(CONFIG_ENV_ADDR_REDUND)
 #error CONFIG_ENV_ADDR_REDUND must have CONFIG_CMD_SAVEENV & CONFIG_CMD_FLASH

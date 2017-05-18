@@ -2,6 +2,8 @@
  * (C) Copyright 2015, 2016
  * Freescale Semiconductor, Inc.
  *
+ * (C) Copyright 2017 NXP
+ *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
@@ -47,7 +49,6 @@ void quadspi_set_lut(uint32_t index, uint32_t value);
 #define BURST_SIZE 		512
 #define FLASH_PGSZ		128
 #define FLASH_DMA_PGSZ		512
-#define FLASH_SECTOR_SIZE     0x40000 /* 256 KB */
 
 /* QUADSPI Instructions */
 #define CMD        1

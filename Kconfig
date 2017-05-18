@@ -1,3 +1,5 @@
+# Copyright 2017 NXP
+
 #
 # For a description of the syntax of this configuration file,
 # see Documentation/kbuild/kconfig-language.txt.
@@ -221,6 +223,22 @@ config SYS_CLK_FREQ
 	  TODO: Move CONFIG_SYS_CLK_FREQ for all the architecture
 
 endmenu		# Boot images
+
+menu "Environment location"
+
+config ENV_IS_IN_MMC
+	bool "Use MMC as storage for the environment"
+	default y
+	help
+	  Store the environment in MMC
+
+config ENV_IS_IN_FLASH
+	bool "Use flash memory as storage for the environment"
+	default n
+	help
+	  Store the environment in flash memory
+
+endmenu
 
 source "common/Kconfig"
 

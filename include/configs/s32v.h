@@ -12,6 +12,7 @@
 #define __S32V_COMMON_H
 
 #include <asm/arch/imx-regs.h>
+#include <generated/autoconf.h>
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
@@ -384,15 +385,29 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
-/* FLASH and environment organization */
+#if (defined(CONFIG_ENV_IS_IN_MMC) && defined(CONFIG_ENV_IS_IN_FLASH))
+#error "ENV_IN_MMC and ENV_IN_FLASH both defined"
+#endif
+
+#define CONFIG_SYS_FLASH_BASE 		CONFIG_SYS_FSL_FLASH0_BASE
+
+#if defined(CONFIG_ENV_IS_IN_FLASH)
+#define CONFIG_SYS_MAX_FLASH_BANKS	1
+#define CONFIG_ENV_SIZE 			(0x2000) /* 8 KB */
+#define CONFIG_ENV_SECT_SIZE		(FLASH_SECTOR_SIZE) /* 256 KB */
+#define CONFIG_SYS_MAX_FLASH_SECT 	(0x4000000 / CONFIG_ENV_SECT_SIZE)
+#define CONFIG_ENV_OFFSET			2 * CONFIG_ENV_SECT_SIZE
+
+#elif defined(CONFIG_ENV_IS_IN_MMC)
 #define CONFIG_SYS_NO_FLASH
-
-#define CONFIG_ENV_SIZE			(8 * 1024)
-#define CONFIG_ENV_IS_IN_MMC
-
-#define CONFIG_ENV_OFFSET		(12 * 64 * 1024)
+#define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
+#define CONFIG_ENV_OFFSET		(0xC0000) /* 12 * 64 * 1024 */
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_MMC_PART			1
+
+#else
+#warning "Warning: enviroment is neither in MMC nor in flash"
+#endif
 
 #define CONFIG_BOOTP_BOOTFILESIZE
 #define CONFIG_BOOTP_BOOTPATH

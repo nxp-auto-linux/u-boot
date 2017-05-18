@@ -1,6 +1,8 @@
 #
 # Copyright 2016 Freescale Semiconductor
 #
+# (C) Copyright 2017 NXP
+#
 # SPDX-License-Identifier:      GPL-2.0+
 #
 
@@ -78,6 +80,10 @@ Flash Layout
 ============
 
 Flash memory is used for storage (u-boot image, for example).
+
+If CONFIG_ENV_IS_IN_FLASH is defined, the third sector of flash is reserved for storing the u-boot environment. 
+The sector size is defined in /include/configs/s32v234_common.h with the name FLASH_SECTOR_SIZE. Based on the default value
+of 256 KB, the reserved area ranges from 0x80000 to 0xBFFFF.
 
 Environment Variables
 =====================
