@@ -1,3 +1,6 @@
+# Copyright 2015 Freescale Semiconductor, Inc.
+# Copyright 2017 NXP
+#
 # generate an u-boot image which can be flashed and booted via QSPI
 # Note: a pre-existing u-boot.s32 image is necessary
 
@@ -20,6 +23,10 @@
 # version 1.2_RC2 review (S32V234RM_rev1.2_RC2_review.pdf)
 #
 # we use $+ instead of $^ so the order of files is kept
+
+
+flash_type := s26kl
+
 u-boot.s32.qspi: zero.512 qspi_params.bin zero.3266 ../../u-boot.s32
 	cat $+ > $@
 
@@ -37,7 +44,7 @@ zero.3266:
 # thus it's endian agnostic
 #
 # this will break if we'll ever use *int16_t or *int32_t
-qspi_params.o: qspi_params.c
+qspi_params.o: qspi_params_$(flash_type).c
 	gcc -c $^ -o $@
 
 u-boot.s32.qspi.swab: u-boot.s32.qspi

@@ -1,3 +1,8 @@
+/*
+ * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
+ */
+
 #include <stdint.h>
 
 const uint8_t config_param[318] = {
