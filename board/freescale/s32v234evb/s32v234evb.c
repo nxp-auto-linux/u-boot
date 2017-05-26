@@ -143,6 +143,9 @@ int board_dcu_qos(void)
 
 int board_early_init_f(void)
 {
+#if defined(CONFIG_S32V234EVB_29288) && defined(CONFIG_DCU_QOS_FIX)
+	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+#endif
 	clock_init();
 	mscm_init();
 
@@ -153,8 +156,15 @@ int board_early_init_f(void)
 	setup_iomux_nfc();
 #endif
 	setup_iomux_dcu();
+
 #ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
+
+#ifdef CONFIG_S32V234EVB_29288
+	/* Set minimum value of 2D-ACE QoS. */
+	writel(0x8 << SRC_GPR8_2D_ACE_QOS_OFFSET, &src_regs->gpr8);
+#endif
+
 #endif
 
 	setup_xrdc();

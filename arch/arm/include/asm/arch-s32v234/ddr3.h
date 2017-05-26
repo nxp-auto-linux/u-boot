@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016 NXP
+ * (C) Copyright 2016-2017 NXP
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -109,7 +109,14 @@
 
 #define MMDC_MDRWD_VALUE		0x000026D2  /* Read/write command delay - default */
 #define MMDC_MDPDC_VALUE		0x00020024  /* Power down control */
+#ifdef CONFIG_DCU_QOS_FIX
+/* Restricts the number of DDR refresh commands executed each cycle to 1
+ * (MMDC_MDREF.REFR), keeping the refresh frequency at 64KHz.
+ */
+#define MMDC_MDREF_VALUE		0x30B00000  /* Refresh control */
+#else
 #define MMDC_MDREF_VALUE		0x30B01800  /* Refresh control */
+#endif
 #define MMDC_MPODTCTRL_VALUE		0x0002222F  /* 60R nominal */
 #define MMDC_MDSCR_RESET_VALUE		0x00000000  /* Deassert the configuration request */
 
