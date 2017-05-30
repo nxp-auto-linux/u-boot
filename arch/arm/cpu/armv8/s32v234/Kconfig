@@ -40,7 +40,7 @@ if TARGET_S32V234EVB
 
 choice
 	prompt "S32V234EVB Board Family Member"
-	default S32V234EVB_28899
+	default S32V234EVB_29288
 	help
 	  S32V234EVB Board Family Members
 

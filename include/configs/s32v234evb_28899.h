@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -38,7 +39,7 @@
 #ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 	#define FDT_FILE s32v234-evbbcm.dtb
 #else
-	#define	FDT_FILE s32v234-evb.dtb
+	#define	FDT_FILE s32v234-evb28899.dtb
 #endif
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
