@@ -190,6 +190,8 @@
 
 #define CONFIG_CMD_ENV
 
+#define CONFIG_HWCONFIG
+
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTI
 #define CONFIG_CMD_BOOTZ
