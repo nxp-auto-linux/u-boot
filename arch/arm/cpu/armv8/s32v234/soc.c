@@ -478,11 +478,15 @@ int cpu_eth_init(bd_t *bis)
 	int rc = -ENODEV;
 
 #if defined(CONFIG_FEC_MXC)
+	volatile struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
 /* enable RGMII mode */
 #if (CONFIG_FEC_XCV_TYPE == RGMII)
-	volatile struct src * src = (struct src *)SRC_SOC_BASE_ADDR;
-	writel( SRC_GPR3_ENET_MODE, &src->gpr3);
+	clrsetbits_le32(&src_regs->gpr3, SRC_GPR3_ENET_MODE,
+			SRC_GPR3_ENET_MODE);
+#else
+	clrsetbits_le32(&src_regs->gpr3, SRC_GPR3_ENET_MODE,
+			0);
 #endif
 
 	rc = fecmxc_initialize(bis);
