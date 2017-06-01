@@ -18,6 +18,7 @@
 #include <hwconfig.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/siul.h>
+#include <asm/arch/soc.h>
 #include <asm/arch/src.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_cgm_regs.h>
@@ -754,10 +755,18 @@ void s32v234_pcie_init(const int ep_mode)
 void pci_init_board(void)
 {
 	int epmode;
+	int clockexternal;
+
 #ifdef CONFIG_PCIE_EP_MODE
 	epmode = 1;
 #else
 	epmode = 0;
+#endif
+
+#ifdef CONFIG_PCIE_EXT_CLOCK
+	clockexternal = 1;
+#else
+	clockexternal = 0;
 #endif
 
 	/* We have a build time default, but we allow a custom
@@ -769,6 +778,15 @@ void pci_init_board(void)
 	if (hwconfig_subarg_cmp("pcie", "mode", "ep")) {
 		epmode = 1;
 	}
+
+	if (hwconfig_subarg_cmp("pcie", "clock", "ext")) {
+		clockexternal = 1;
+	}
+	if (hwconfig_subarg_cmp("pcie", "clock", "int")) {
+		clockexternal = 0;
+	}
+	
+	cpu_pci_init(clockexternal);
 
 	s32v234_pcie_init(epmode);
 }

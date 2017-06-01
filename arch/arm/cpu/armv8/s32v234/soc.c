@@ -495,6 +495,24 @@ int cpu_eth_init(bd_t *bis)
 	return rc;
 }
 
+#ifdef CONFIG_CMD_PCI
+void cpu_pci_init(const int clockexternal)
+{
+	volatile struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+
+
+	clrsetbits_le32(&src_regs->gpr3,
+			SRC_GPR3_PCIE_RFCC_CLK,
+			(clockexternal) ? SRC_GPR3_PCIE_RFCC_CLK : 0);
+	/* The RM does not state that a delay is required.
+	 * I want to be on the safe side however to ensure clock
+	 * stability before checking the link. With respect to boot
+	 * time delays, this can be revisited later on.
+	 */
+	udelay(100);
+}
+#endif
+
 static int detect_boot_interface(void)
 {
 	volatile struct src * src = (struct src *)SRC_SOC_BASE_ADDR;
