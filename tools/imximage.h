@@ -2,6 +2,8 @@
  * (C) Copyright 2009
  * Stefano Babic, DENX Software Engineering, sbabic@denx.de.
  *
+ * (C) Copyright 2017 NXP
+ *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
@@ -145,11 +147,15 @@ struct dcd_v2_cmd {
 	dcd_addr_data_t addr_data[MAX_HW_CFG_SIZE_V2];
 };
 
+/* When booting from qspi, s32v BootROM uses a DMA transfer
+ * to copy data from IVT header; the DMA expects a 64-bit
+ * aligned source address.
+ * */
 typedef struct {
 	ivt_header_t header;
 	struct dcd_v2_cmd dcd_cmd;
 	uint32_t padding[1]; /* end up on an 8-byte boundary */
-} dcd_v2_t;
+} dcd_v2_t __attribute__((__aligned__(8)));
 
 typedef struct {
 	uint32_t start;
