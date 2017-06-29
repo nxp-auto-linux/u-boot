@@ -18,6 +18,9 @@
 #define	FDT_FILE s32v234-bbmini.dtb
 
 #define CONFIG_PCIE_EP_MODE
+#define CONFIG_PCIE_EXT_CLOCK
+
+/* #define CONFIG_CMD_PCI */
 
 #define CONFIG_BOARD_EXTRA_ENV_SETTINGS \
 	"setphy=mii write 3 d 2; mii write 3 e 2; mii write 3 d 4002; " \

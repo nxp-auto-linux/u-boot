@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2016 Heinz Wrobel <heinz.wrobel@nxp.com>
  * Copyright (C) 2015 Aurelian Voicu <aurelian.voicu@nxp.com>
- * Copyright (C) 2016 NXP
+ * Copyright 2016-2017 NXP
  *
  * Based on upstream iMX U-Boot driver:
  * pcie_imx.c:		Marek Vasut <marex@denx.de>
@@ -15,8 +15,10 @@
 
 #include <common.h>
 #include <pci.h>
+#include <hwconfig.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/siul.h>
+#include <asm/arch/soc.h>
 #include <asm/arch/src.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_cgm_regs.h>
@@ -752,9 +754,47 @@ void s32v234_pcie_init(const int ep_mode)
 
 void pci_init_board(void)
 {
+	int epmode;
+	int clockexternal;
+
 #ifdef CONFIG_PCIE_EP_MODE
-	s32v234_pcie_init(1);
+	epmode = 1;
 #else
-	s32v234_pcie_init(0);
+	epmode = 0;
 #endif
+
+#ifdef CONFIG_PCIE_EXT_CLOCK
+	clockexternal = 1;
+#else
+	/* For CUT2.0 we MUST use external clock, since there is no
+	 * internal clock available.
+	 * This must be done for backwards compatibility, so that
+	 * PCIe works the same way with the default settings on
+	 * all CUTs, old and new */
+	if (get_siul2_midr1_major() >= 1)
+		clockexternal = 1;
+	else
+		clockexternal = 0;
+#endif
+
+	/* We have a build time default, but we allow a custom
+	 * override for configuration flexibility
+	 */
+	if (hwconfig_subarg_cmp("pcie", "mode", "rc")) {
+		epmode = 0;
+	}
+	if (hwconfig_subarg_cmp("pcie", "mode", "ep")) {
+		epmode = 1;
+	}
+
+	if (hwconfig_subarg_cmp("pcie", "clock", "ext")) {
+		clockexternal = 1;
+	}
+	if (hwconfig_subarg_cmp("pcie", "clock", "int")) {
+		clockexternal = 0;
+	}
+	
+	cpu_pci_clock_init(clockexternal);
+
+	s32v234_pcie_init(epmode);
 }
