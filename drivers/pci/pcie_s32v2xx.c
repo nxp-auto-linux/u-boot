@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2016 Heinz Wrobel <heinz.wrobel@nxp.com>
  * Copyright (C) 2015 Aurelian Voicu <aurelian.voicu@nxp.com>
- * Copyright (C) 2016 NXP
+ * Copyright 2016-2017 NXP
  *
  * Based on upstream iMX U-Boot driver:
  * pcie_imx.c:		Marek Vasut <marex@denx.de>
@@ -766,7 +766,15 @@ void pci_init_board(void)
 #ifdef CONFIG_PCIE_EXT_CLOCK
 	clockexternal = 1;
 #else
-	clockexternal = 0;
+	/* For CUT2.0 we MUST use external clock, since there is no
+	 * internal clock available.
+	 * This must be done for backwards compatibility, so that
+	 * PCIe works the same way with the default settings on
+	 * all CUTs, old and new */
+	if (get_siul2_midr1_major() >= 1)
+		clockexternal = 1;
+	else
+		clockexternal = 0;
 #endif
 
 	/* We have a build time default, but we allow a custom
@@ -786,7 +794,7 @@ void pci_init_board(void)
 		clockexternal = 0;
 	}
 	
-	cpu_pci_init(clockexternal);
+	cpu_pci_clock_init(clockexternal);
 
 	s32v234_pcie_init(epmode);
 }

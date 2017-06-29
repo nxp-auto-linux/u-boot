@@ -34,10 +34,4 @@ static inline void setup_iomux_dcu(void)
 }
 #endif
 
-#ifdef CONFIG_CMD_PCI
-void cpu_pci_init(const int clockexternal);
-#else
-static inline void cpu_pci_init(const int clockexternal)
-{
-}
-#endif
+void cpu_pci_clock_init(const int clockexternal);

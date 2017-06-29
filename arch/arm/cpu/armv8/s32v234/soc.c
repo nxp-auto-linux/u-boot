@@ -495,8 +495,7 @@ int cpu_eth_init(bd_t *bis)
 	return rc;
 }
 
-#ifdef CONFIG_CMD_PCI
-void cpu_pci_init(const int clockexternal)
+void cpu_pci_clock_init(const int clockexternal)
 {
 	volatile struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 
@@ -511,7 +510,6 @@ void cpu_pci_init(const int clockexternal)
 	 */
 	udelay(100);
 }
-#endif
 
 static int detect_boot_interface(void)
 {
