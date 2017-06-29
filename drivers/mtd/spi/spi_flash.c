@@ -908,9 +908,9 @@ int spi_flash_scan(struct spi_flash *flash)
 {
 	struct spi_slave *spi = flash->spi;
 	const struct spi_flash_params *params;
-	u16 jedec, ext_jedec;
-	u8 idcode[5];
-	u8 cmd;
+	u16 jedec;
+	u32 ext_jedec;
+	u8 cmd, idcode[6];
 	int ret;
 
 	/* Read the ID codes */
@@ -926,7 +926,7 @@ int spi_flash_scan(struct spi_flash *flash)
 #endif
 
 	jedec = idcode[1] << 8 | idcode[2];
-	ext_jedec = idcode[3] << 8 | idcode[4];
+	ext_jedec = idcode[3] << 16 | idcode[4] << 8;
 
 	/* Validate params from spi_flash_params table */
 	params = spi_flash_params_table;
@@ -936,6 +936,8 @@ int spi_flash_scan(struct spi_flash *flash)
 				if (params->ext_jedec == 0)
 					break;
 				else if (params->ext_jedec == ext_jedec)
+					break;
+				else if (params->ext_jedec == (ext_jedec | idcode[5]))
 					break;
 			}
 		}
