@@ -13,6 +13,7 @@
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/siul.h>
 #include "mp.h"
+#include <asm/arch/soc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -313,6 +314,17 @@ int arch_early_init_r(void)
 		printf("Did not wake secondary cores\n");
 
 	asm volatile("sev");
+
+	/* For CUT2.0 we MUST enable external clock for PCIe, no matter
+	 * if we enable PCI support in u-boot or not.
+	 * The OS (Linux) may have PCIe support enabled and in this
+	 * case PCIe should work.
+	 * Without external clock supplied to PCIe in u-boot by default,
+	 * the case above would hang the OS on boot for CUT2.0.
+	 */
+	if (get_siul2_midr1_major() >= 1)
+		cpu_pci_clock_init(1);
+
 	return 0;
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
