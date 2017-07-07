@@ -159,12 +159,6 @@ int board_early_init_f(void)
 
 #ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
-
-#ifdef CONFIG_S32V234EVB_29288
-	/* Set minimum value of 2D-ACE QoS. */
-	writel(0x8 << SRC_GPR8_2D_ACE_QOS_OFFSET, &src_regs->gpr8);
-#endif
-
 #endif
 
 	setup_xrdc();
