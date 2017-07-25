@@ -143,9 +143,6 @@ int board_dcu_qos(void)
 
 int board_early_init_f(void)
 {
-#if defined(CONFIG_S32V234EVB_29288) && defined(CONFIG_DCU_QOS_FIX)
-	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
-#endif
 	clock_init();
 	mscm_init();
 
