@@ -62,12 +62,12 @@
 #define _MDCTL 0x04190000
 
 #define MMDC_MDSCR_CFG_VALUE	0x00008000  /* Set MDSCR[CON_REQ] (configuration request) */
-#define MMDC_MDCFG0_VALUE	0x8F9598F4  /* tRFC=144 (270ns),tXS=150 (tRFC+10ns),tXP=4 (6ns),tXPDLL=13 (24ns),tFAW=16(30ns),tCL=7 */
+#define MMDC_MDCFG0_VALUE	0x8A8F7924  /* tRFC=139 (260ns),tXS=144 (tRFC+10ns),tXP=4 (6ns),tXPDLL=13 (24ns),tFAW=19(35ns),tCL=7 */
 #define MMDC_MDCFG1_VALUE	0xFF328E64  /* tRCD=8 (13.75ns),tRP=6 (13,75ns),tRC=26 (48.75ns),tRAS=19 (35ns),tRPA=1,tWR=8 (15ns),tMRD=4,tCWL=6 */
 #define MMDC_MDCFG2_VALUE	0x01FF00DB  /* tDLLK=512,tRTP=4,tWTR=4,tRRD=4 */
-#define MMDC_MDOTC_VALUE	0x09444030  /* tAOFPD=2,tAONPD=2,tANPD=5 (tCWL-1),tAXPD=5 (tCWL-1),tODTLon=5 (WL-2),tODT_idle_off=0 */
-#define MMDC_MDMISC_VALUE	0x00011640  /* WALAT=1, BI bank interleave on, MIF3=3, RALAT=1, 8 banks, DDR3 */
-#define MMDC_MDOR_VALUE		0x009A1023  /* tXPR=155 (tRFC+10ns), SDE_to_RST=14, RST_to_CKE=33 */
+#define MMDC_MDOTC_VALUE	0x09444070  /* tAOFPD=3,tAONPD=3,tANPD=5 (tCWL-1),tAXPD=5 (tCWL-1),tODTLon=4 (WL-2),tODT_idle_off=7 */
+#define MMDC_MDMISC_VALUE	0x00001640  /* WALAT=0, BI bank interleave on, MIF3=3, RALAT=1, 8 banks, DDR3 */
+#define MMDC_MDOR_VALUE		0x008F1023  /* tXPR=144 (tRFC+10ns), SDE_to_RST=14, RST_to_CKE=33 */
 
 /* P_form ZQ calibration */
 #define MMDC_MPZQHWCTRL_VALUE	0xA1390003;	/* Force h/w calibration */
@@ -76,7 +76,7 @@
 #define MMDC_MDSCR_MR2_VALUE	0x00088032  /* Configure MR2: CWL=6, self-refresh=off, self-refresh temp=normal */
 #define MMDC_MDSCR_MR3_VALUE	0x00008033  /* Configure MR3: normal operation */
 #define MMDC_MDSCR_MR1_VALUE	0x00068031  /* Configure MR1: enable DLL, drive strength=34R, AL off, ODT=60R, write levelling off, TDQS=0, Qoff=on */
-#define MMDC_MDSCR_MR0_VALUE	0x05308030  /* Configure MR0: BL=8, CL=7, DLL reset, write recovery=6, precharge PD off */
+#define MMDC_MDSCR_MR0_VALUE	0x09308030  /* Configure MR0: BL=8, CL=7, DLL reset, write recovery=4, precharge PD off */
 #define MMDC_MDSCR_ZQ_VALUE		0x04008040  /* DDR ZQ calibration */
 
 /* Set the amount of DRAM */
@@ -108,15 +108,9 @@
 #endif
 
 #define MMDC_MDRWD_VALUE		0x000026D2  /* Read/write command delay - default */
-#define MMDC_MDPDC_VALUE		0x00020024  /* Power down control */
-#ifdef CONFIG_DCU_QOS_FIX
-/* Restricts the number of DDR refresh commands executed each cycle to 1
- * (MMDC_MDREF.REFR), keeping the refresh frequency at 64KHz.
- */
-#define MMDC_MDREF_VALUE		0x30B00000  /* Refresh control */
-#else
-#define MMDC_MDREF_VALUE		0x30B01800  /* Refresh control */
-#endif
+#define MMDC_MDPDC_VALUE		0x00020036  /* Power down control */
+#define MMDC_MDREF_VALUE		0x08208000  /* Refresh control, 1
+						       refresh each 3.9us */
 #define MMDC_MPODTCTRL_VALUE		0x0002222F  /* 60R nominal */
 #define MMDC_MDSCR_RESET_VALUE		0x00000000  /* Deassert the configuration request */
 
