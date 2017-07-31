@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -14,6 +15,7 @@
 #define CSE_CMD_SECURE_BOOT	(0xDUL)
 #define CSE_CMD_INIT_CSE	(0x15UL)
 #define CSE_CMD_INIT_RNG	(0x0AUL)
+#define CSE_CMD_OPEN_SEC_RAM	(0x19UL)
 
 #define CSE_SR_BSY		(0x1UL)
 #define CSE_SR_BOK		(0x10UL)
@@ -38,6 +40,8 @@
 #define OCOTP_CFG5			(OCOTP_BASE_ADDR + 0x460UL)
 #define OCOTP_CFG5_SEC_BOOT_MODE	(0xC0UL)
 #define OCOTP_CFG3_EXPORT_CONTROL	(0x1UL)
+
+#define KRAM_ADDR	(0x7C01A000UL)
 
 #if defined CONFIG_FSL_CSE3
 int cse_init(void);

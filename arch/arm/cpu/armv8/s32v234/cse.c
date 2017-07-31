@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -120,6 +121,13 @@ init_cse:
 	/* Init CSE3 */
 	writel(virt_to_phys(&firmware), CSE_P1);
 	writel(CSE_CMD_INIT_CSE, CSE_CMD);
+
+	if (cse_wait(CSE_TIMEOUT))
+		return -EIO;
+
+	/* Open KRAM */
+	writel(KRAM_ADDR, CSE_P1);
+	writel(CSE_CMD_OPEN_SEC_RAM, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
 		return -EIO;
