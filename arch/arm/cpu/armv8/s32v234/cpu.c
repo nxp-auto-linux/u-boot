@@ -1,6 +1,6 @@
 /*
- * (C) Copyright 2014-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * Copyright 2014-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -304,6 +304,14 @@ int cpu_numcores(void)
 }
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
+static void print_soc_revision(void)
+{
+	int major = get_siul2_midr1_major() + 1;
+	int minor = get_siul2_midr1_minor();
+
+	printf("CPU Rev: %d.%d\n", major, minor);
+}
+
 int arch_early_init_r(void)
 {
 	int rv;
@@ -314,6 +322,8 @@ int arch_early_init_r(void)
 		printf("Did not wake secondary cores\n");
 
 	asm volatile("sev");
+
+	print_soc_revision();
 
 	/* For CUT2.0 we MUST enable external clock for PCIe, no matter
 	 * if we enable PCI support in u-boot or not.
