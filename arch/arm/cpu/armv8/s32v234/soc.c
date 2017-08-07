@@ -340,6 +340,11 @@ static u32 get_dcu_pix_clk(void)
 	#undef SOURCE_CLK_DIV
 }
 
+static u32 get_dspi_clk(void)
+{
+	return get_sys_clk(6);
+}
+
 /* return clocks in Hz */
 unsigned int mxc_get_clock(enum mxc_clock clk)
 {
@@ -362,6 +367,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return get_qspi_clk();
 	case MXC_DCU_PIX_CLK:
 		return get_dcu_pix_clk();
+	case MXC_DSPI_CLK:
+		return get_dspi_clk();
 	default:
 		break;
 	}
@@ -387,6 +394,8 @@ int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 		mxc_get_clock(MXC_UART_CLK) / 1000000);
 	printf("QSPI clock:	%5d MHz\n",
 		mxc_get_clock(MXC_QSPI_CLK) / 1000000);
+	printf("DSPI clock:	%5d MHz\n",
+		mxc_get_clock(MXC_DSPI_CLK) / 1000000);
 
 	return 0;
 }
