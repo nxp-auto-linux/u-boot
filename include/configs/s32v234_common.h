@@ -56,6 +56,7 @@
 #define CONFIG_SYS_FSL_FLASH1_BASE      0x60000000
 #define CONFIG_SYS_FSL_FLASH1_SIZE      0x10000000
 #define QSPI_BASE_ADDR		        0x400A6000
+#define MMAP_DSPI                       SPI0_BASE_ADDR
 
 /* flash related definitions */
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
