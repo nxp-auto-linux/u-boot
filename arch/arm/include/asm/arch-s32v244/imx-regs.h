@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -9,8 +10,8 @@
 
 #define ARCH_MXC
 
-#define IRAM_BASE_ADDR		0x30000000  /* internal ram */
-#define IRAM_SIZE		0x00400000  /* 5MB */
+#define IRAM_BASE_ADDR		0x38000000  /* internal ram */
+#define IRAM_SIZE		0x00400000  /* 4MB */
 #define IS_ADDR_IN_IRAM(addr) \
 	((addr) >= (IRAM_BASE_ADDR) && \
 	(addr) <= (IRAM_BASE_ADDR) + (IRAM_SIZE))

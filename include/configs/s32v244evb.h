@@ -105,7 +105,7 @@
 #define DDR_BASE_ADDR		0xA0000000
 #endif
 
-#define CONFIG_SYS_TEXT_BASE        0x30020000 /* SDRAM */
+#define CONFIG_SYS_TEXT_BASE        0x38020000 /* SDRAM */
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
 #endif

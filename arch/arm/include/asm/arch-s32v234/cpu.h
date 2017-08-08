@@ -1,5 +1,6 @@
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -39,8 +40,8 @@
 			TCR_IRGN_WBWA		| \
 			TCR_T0SZ(S32V_VA_BITS))
 
-#define CONFIG_SYS_FSL_IRAM_BASE        0x3e800000
-#define CONFIG_SYS_FSL_IRAM_SIZE        0x800000
+#define CONFIG_SYS_FSL_IRAM_BASE        (IRAM_BASE_ADDR)
+#define CONFIG_SYS_FSL_IRAM_SIZE        (0x800000) /* 8M */
 #define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
 #define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
 #define CONFIG_SYS_FSL_DRAM_BASE2       0xC0000000
