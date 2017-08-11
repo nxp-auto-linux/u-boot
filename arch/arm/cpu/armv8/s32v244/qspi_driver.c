@@ -1,6 +1,6 @@
 /*
- * (C) Copyright 2015, 2016
- * Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * Copyright 2016-2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -88,10 +88,12 @@ void QSPI_setup_hyp()
 	writel(SIUL2_PORT_IMCR_MUX_MODE_QSPI_A_DATA0_7,
 	       SIUL2_IMCRn(SIUL2_PK15_IMCR_QSPI_A_DATA4));
 
+	/* TODO Jira issue pending */
 #ifdef CONFIG_DEBUG_S32V234_QSPI_QSPI
-	#warning "QSPI_setup_hyp() HAS NO QuadSPI settings and definitions"
+	eprintf("ERROR: QSPI_setup_hyp() HAS NO QuadSPI settings and definitions");
 #else
-	#warning "QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions"
+	debug("QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions");
+
 	QuadSPI.MCR.B.MDIS = 0;	//clear MDIS bit
 	QuadSPI.BUF0IND.R = 0x0;	//set AHB buffer size (64bits)
 	QuadSPI.SFA1AD.R = FLASH_BASE_ADR + 0x4000000;	//set top address of FA1 (size 512Mbit)
@@ -205,8 +207,9 @@ void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0x554, 0x55);
 		quadspi_send_instruction_hyp(FLASH_BASE_ADR + 0xAAA, 0xA0);
 
+		/* TODO Jira issue pending */
 #ifndef CONFIG_DEBUG_S32V234_QSPI
-#warning "quadspi_program_hyp() uses baremetal QuadSPI settings and definitions"
+		debug("quadspi_program_hyp() uses baremetal QuadSPI settings and definitions");
 #endif
 		//prepare write/program instruction
 		QuadSPI.SFAR.R = address;

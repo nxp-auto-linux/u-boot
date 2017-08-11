@@ -1,6 +1,6 @@
 /*
- * (C) Copyright 2015, 2016
- * Freescale Semiconductor, Inc.
+ * Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * Copyright 2016-2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -9,11 +9,11 @@
 #define QSPI_DRIVER_H_
 
 #include "S32V244.h"
-/* TODO: use our own clean definitions */
-#warning "QuadSPI should be defined inside u-boot code in u-boot style"
+/* TODO: use our own clean definitions; QuadSPI should be defined
+ * inside u-boot code in u-boot style" */
 
-/* TODO: we use hacks to adapt easier to u-boot's code */
-#warning "uint32_t should be changed into u32"
+/* TODO: we use hacks to adapt easier to u-boot's code; for instance,
+ * uint32_t should be changed into u32 */
 #define uint32_t u32
 
 /* minimum size to write into hyperflash */
