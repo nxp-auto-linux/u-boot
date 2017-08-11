@@ -755,26 +755,12 @@ void s32v234_pcie_init(const int ep_mode)
 void pci_init_board(void)
 {
 	int epmode;
-	int clockexternal;
+	int clockexternal = 0;
 
 #ifdef CONFIG_PCIE_EP_MODE
 	epmode = 1;
 #else
 	epmode = 0;
-#endif
-
-#ifdef CONFIG_PCIE_EXT_CLOCK
-	clockexternal = 1;
-#else
-	/* For CUT2.0 we MUST use external clock, since there is no
-	 * internal clock available.
-	 * This must be done for backwards compatibility, so that
-	 * PCIe works the same way with the default settings on
-	 * all CUTs, old and new */
-	if (get_siul2_midr1_major() >= 1)
-		clockexternal = 1;
-	else
-		clockexternal = 0;
 #endif
 
 	/* We have a build time default, but we allow a custom

@@ -324,17 +324,6 @@ int arch_early_init_r(void)
 	asm volatile("sev");
 
 	print_soc_revision();
-
-	/* For CUT2.0 we MUST enable external clock for PCIe, no matter
-	 * if we enable PCI support in u-boot or not.
-	 * The OS (Linux) may have PCIe support enabled and in this
-	 * case PCIe should work.
-	 * Without external clock supplied to PCIe in u-boot by default,
-	 * the case above would hang the OS on boot for CUT2.0.
-	 */
-	if (get_siul2_midr1_major() >= 1)
-		cpu_pci_clock_init(1);
-
 	return 0;
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
