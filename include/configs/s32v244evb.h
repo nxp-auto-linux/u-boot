@@ -101,7 +101,7 @@
 #endif
 
 #ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR		0x60000000
+#define DDR_BASE_ADDR		0x80000000
 #else
 #define DDR_BASE_ADDR		0xA0000000
 #endif
