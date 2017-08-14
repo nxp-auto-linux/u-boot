@@ -14,9 +14,7 @@
 #include <div64.h>
 #include <errno.h>
 
-#ifdef CONFIG_FSL_ESDHC
 DECLARE_GLOBAL_DATA_PTR;
-#endif
 
 u32 get_cpu_rev(void)
 {
@@ -749,7 +747,6 @@ int board_mmc_init(bd_t *bis)
 		return 0;
 	}
 }
-#endif
 
 static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
@@ -785,6 +782,7 @@ U_BOOT_CMD(
 	"Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
 	"and disconnect from the Hyperflash.\n"
 );
+#endif
 
 void setup_iomux_ddr(void)
 {

@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -30,9 +31,7 @@
 #include <div64.h>
 #include <errno.h>
 
-#ifdef CONFIG_FSL_ESDHC
 DECLARE_GLOBAL_DATA_PTR;
-#endif
 
 u32 get_cpu_rev(void)
 {
@@ -506,6 +505,7 @@ int get_clocks(void)
 	return 0;
 }
 
+#ifdef CONFIG_FSL_ESDHC
 __weak void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */
@@ -551,7 +551,6 @@ __weak void setup_iomux_sdhc(void)
 	writel(0x3, SIUL2_MSCRn(910));
 }
 
-#ifdef CONFIG_FSL_ESDHC
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
 	{USDHC_BASE_ADDR},
 };
@@ -584,7 +583,6 @@ int board_mmc_init(bd_t *bis)
 		return 0;
 	}
 }
-#endif
 
 static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
@@ -620,6 +618,7 @@ U_BOOT_CMD(
 	"Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
 	"and disconnect from the Hyperflash.\n"
 );
+#endif
 
 void setup_iomux_ddr(void)
 {
