@@ -1,5 +1,6 @@
 /*
  * Copyright 2014, Freescale Semiconductor
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -28,7 +29,7 @@
 extern u64 __spin_table[];
 extern u64 *secondary_boot_page;
 extern size_t __secondary_boot_page_size;
-int fsl_s32v234_wake_seconday_cores(void);
+int fsl_s32v244_wake_seconday_cores(void);
 void *get_spin_tbl_addr(void);
 phys_addr_t determine_mp_bootpg(void);
 void secondary_boot_func(void);

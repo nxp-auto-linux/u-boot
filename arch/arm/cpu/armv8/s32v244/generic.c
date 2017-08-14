@@ -25,7 +25,7 @@
 #elif defined(CONFIG_S32V244_DDR3)
 #include <asm/arch/ddr3.h>
 #else
-#error "Please define the DDR type for S32V234 board!"
+#error "Please define the DDR type for S32V244 board!"
 #endif
 #include <netdev.h>
 #include <div64.h>
@@ -352,7 +352,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 }
 
 /* Dump some core clocks */
-int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
+int do_s32v244_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
 {
 	printf("Root clocks:\n");
@@ -373,7 +373,7 @@ int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 }
 
 U_BOOT_CMD(
-	clocks, CONFIG_SYS_MAXARGS, 1, do_s32v234_showclocks,
+	clocks, CONFIG_SYS_MAXARGS, 1, do_s32v244_showclocks,
 	"display clocks",
 	""
 );
@@ -446,7 +446,7 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-	printf("CPU:   Freescale Treerunner S32V234 at %d MHz\n",
+	printf("CPU:   NXP S32V244 at %d MHz\n",
 		mxc_get_clock(MXC_ARM_CLK) / 1000000);
 	printf("Reset cause: %s\n", get_reset_cause());
 

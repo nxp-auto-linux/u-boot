@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2014-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -304,7 +305,7 @@ int arch_early_init_r(void)
 {
 	int rv;
 	asm volatile("dsb sy");
-	rv = fsl_s32v234_wake_seconday_cores();
+	rv = fsl_s32v244_wake_seconday_cores();
 
 	if (rv)
 		printf("Did not wake secondary cores\n");
