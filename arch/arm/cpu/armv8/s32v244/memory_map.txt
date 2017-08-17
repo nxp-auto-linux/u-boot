@@ -1,10 +1,9 @@
 #
 # Copyright 2016 Freescale Semiconductor
+# Copyright 2017 NXP
 #
 # SPDX-License-Identifier:      GPL-2.0+
 #
-
-# TODO: To be updated for S32V244
 
 SRAM Layout
 ============
@@ -16,15 +15,16 @@ SRAM is from 0x3E800000 to 0x3EBFFFFF (4 MB)
 |=================|================|==============|================|==============|================|==============|
 |                 |Starting address|Ending address|Starting address|Ending address|Starting address|Ending address|
 |=================|================|==============|================|==============|================|==============|
-|CSE blob*        |   0x3E801000   |  0x3E805500  |   0x3E801000   |  0x3E805500  |   0x3E801000   |  0x3E805500  |
+|CSE blob*        |   0x38001000   |  0x38005500  |   0x38001000   |  0x38005500  |   0x38001000   |  0x38005500  |
 |-----------------|----------------|--------------|----------------|--------------|----------------|--------------|
-|MMU tables       |   0x3E806000   |  0x3E81FFFF  |       -        |      -       |       -        |      -       |
+|MMU tables       |   0x38006000   |  0x3801FFFF  |       -        |      -       |       -        |      -       |
 |-----------------|----------------|--------------|----------------|--------------|----------------|--------------|
-|u-boot           |   0x3E820000   |  variable**  |   0x3E820000   |  variable**  |       -        |      -       |
+|u-boot           |   0x38020000   |  variable**  |   0x38020000   |  variable**  |       -        |      -       |
 ===================================================================================================================
 
 * CSE blob is reserved in SRAM just when CONFIG_CSE3 is enabled in
-u-boot/include/configs/s32v234<xyz>.h (<xyz> is the platform).
+u-boot/include/configs/s32v244<xyz>.h (<xyz> is the platform). This
+feature isn't implemented yet.
 ** u-boot size is variable (depends on configuration).
 
 
@@ -85,19 +85,11 @@ Environment Variables
 =====================
 
 boot_mtd:       Select the booting method: bootm/booti. If CONFIG_USE_BOOTI is not defined
-                in the S32V234 SOC configuration bootm will be used by default.
+                in the S32V244 SOC configuration bootm will be used by default.
 
 image:          It is the name of kernel image. Please note that the image has to be synchronised with
                 the used boot method.
 
-Configuration Defines
-=====================
-
-CSE_BLOB_BASE:  CSE (firmware + key image) blob loading address.
-
-CSE_BLOB_SIZE:  CSE (firmware + key image) blob size.
-
-KIA_BASE:       CSE key image start address.
 
 MMU Translation Tables
 ======================
@@ -114,9 +106,9 @@ MMU Translation Tables
 ------------------   |    ------------------    | | |   ------------------
                      |    | 0x00_c000_0000 | -| | | |   |       ...      |
                      |    ------------------  | | | |   ------------------
-                     |    | 0x01_0000_0000 |  | | | |-> | 0x00_3E80_0000 |
+                     |    | 0x01_0000_0000 |  | | | |-> | 0x00_3800_0000 |
                      |    ------------------  | | |     ------------------
-                     |            ...         | | |     | 0x00_3EA0_0000 |
+                     |            ...         | | |     | 0x00_3820_0000 |
                      |                        | | |     ------------------
                      |                        | | |             ...
                      |                        | | |
@@ -152,9 +144,9 @@ MMU Translation Tables
 ------------------   |    ------------------    | | |   ------------------
                      |    | 0x00_c000_0000 | -| | | |   |       ...      |
                      |    ------------------  | | | |   ------------------
-                     |    | 0x01_0000_0000 |  | | | |-> | 0x00_3E80_0000 |
+                     |    | 0x01_0000_0000 |  | | | |-> | 0x00_3800_0000 |
                      |    ------------------  | | |     ------------------
-                     |            ...         | | |     | 0x00_3EA0_0000 |
+                     |            ...         | | |     | 0x00_3820_0000 |
                      |                        | | |     ------------------
                      |                        | | |             ...
                      |                        | | |
