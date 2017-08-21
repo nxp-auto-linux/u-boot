@@ -120,6 +120,11 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 	/* provide data bits, parity, stop bit, etc */
 	serial_setbrg();
 
+#ifdef VIRTUAL_PLATFORM
+	/* Set preset timeout register value. Otherwise, print is very slow. */
+	__raw_writel(0xf, &base->uartpto);
+#endif
+
 	/* 8 bit data, no parity, Tx and Rx enabled, UART mode */
 	__raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
 		     | UARTCR_WL0 | UARTCR_UART | UARTCR_RFBM | UARTCR_TFBM,
