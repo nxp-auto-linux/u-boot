@@ -187,8 +187,12 @@
 
 #define CONFIG_BOOTDELAY	3
 
+#ifdef VIRTUAL_PLATFORM
+#define CONFIG_BOOTARGS		"console=ttyAMA0 earlyprintk=pl011,0x20020000"
+#else
 #define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
 				" root=/dev/ram rw"
+#endif
 
 #define CONFIG_CMD_ENV
 
@@ -332,6 +336,10 @@
 		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
 
+#ifdef VIRTUAL_PLATFORM
+#define CONFIG_BOOTCOMMAND \
+	"${boot_mtd} ${loadaddr} - ${fdt_addr}"
+#else
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadimage; then " \
@@ -339,6 +347,7 @@
 		   "else run netboot; " \
 		   "fi; " \
 	   "else run netboot; fi"
+#endif
 
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LONGHELP		/* undef to save memory */
