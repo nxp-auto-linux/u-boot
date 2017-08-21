@@ -31,6 +31,10 @@
 #include <div64.h>
 #include <errno.h>
 
+#ifdef VIRTUAL_PLATFORM
+#define UART_CLK_FREQ	133333333
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 u32 get_cpu_rev(void)
@@ -224,6 +228,9 @@ static u32 get_peripherals_clk(void)
 
 static u32 get_uart_clk(void)
 {
+#ifdef VIRTUAL_PLATFORM
+	return UART_CLK_FREQ;
+#else
 	u32 auxclk3_div, auxclk3_sel, freq = 0;
 	#define SOURCE_CLK_DIV (3)
 
@@ -254,6 +261,7 @@ static u32 get_uart_clk(void)
 
 	return freq/auxclk3_div;
 	#undef SOURCE_CLK_DIV
+#endif
 }
 
 static u32 get_fec_clk(void)
