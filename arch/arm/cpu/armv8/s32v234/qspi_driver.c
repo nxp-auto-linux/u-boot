@@ -67,18 +67,18 @@ void QSPI_setup_hyp()
 #endif
 }				/* QSPI_setup */
 
-//sector = -1 means chip erase
-void quadspi_erase_hyp(int sector)
+//address = -1 means chip erase
+void quadspi_erase_hyp(int address)
 {
-	int sector_start = sector & ~(FLASH_SECTOR_SIZE-1);
+	int address_start = address & ~(FLASH_SECTOR_SIZE-1);
 
 	/* Invalidate all cache data otherwise read won't return correct data. */
 	qspi_ahb_invalid();
 	invalidate_icache_all();
-	if (sector == -1)
+	if (address == -1)
 		invalidate_dcache_range(CONFIG_SYS_FLASH_BASE, CONFIG_SYS_FLASH_BASE + CONFIG_SYS_FSL_FLASH0_SIZE);
 	else
-		invalidate_dcache_range(sector_start, sector_start + FLASH_SECTOR_SIZE);
+		invalidate_dcache_range(address_start, address_start + FLASH_SECTOR_SIZE);
 
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
@@ -91,10 +91,10 @@ void quadspi_erase_hyp(int sector)
 
 	quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0x554, 0x55);
 
-	if (sector == -1)
+	if (address == -1)
 		quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0x10);
 	else
-		quadspi_send_instruction_hyp((sector & 0xfffffffe), 0x30);
+		quadspi_send_instruction_hyp((address & 0xfffffffe), 0x30);
 
 	//check status, wait to be ready
 	while ((quadspi_status_hyp() & 0x8000) == 0) ;
