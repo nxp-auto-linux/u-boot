@@ -164,6 +164,7 @@
 #define CONFIG_CMD_FAT  /* FAT support */
 #define CONFIG_DOS_PARTITION
 
+#ifndef VIRTUAL_PLATFORM
 /* Ethernet config */
 #define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
@@ -182,6 +183,7 @@
 #define CONFIG_SYS_I2C_SPEED	100000
 #define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
+#endif
 
 #define CONFIG_BOOTDELAY	3
 
