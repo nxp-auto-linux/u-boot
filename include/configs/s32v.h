@@ -340,6 +340,10 @@
 #define CONFIG_BOOTCOMMAND \
 	"${boot_mtd} ${loadaddr} - ${fdt_addr}"
 #else
+#if defined(CONFIG_FLASH_BOOT)
+#define CONFIG_BOOTCOMMAND \
+	   "run flashboot"
+#elif defined(CONFIG_SD_BOOT)
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadimage; then " \
@@ -347,6 +351,7 @@
 		   "else run netboot; " \
 		   "fi; " \
 	   "else run netboot; fi"
+#endif
 #endif
 
 /* Miscellaneous configurable options */
