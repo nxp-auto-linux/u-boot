@@ -13,6 +13,8 @@
 #include <netdev.h>
 #include <div64.h>
 #include <errno.h>
+#include <asm/arch/cse.h>
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -963,7 +965,9 @@ U_BOOT_CMD(
 int arch_misc_init(void)
 {
 #ifdef CONFIG_FSL_CSE3
-        if (cse_init()) {
+		int ret;
+		ret = cse_init();
+        if (ret && ret!=-ENODEV) {
                 printf("Failed to initialize CSE3 security engine\n");
         }
 #endif
