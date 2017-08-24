@@ -224,22 +224,6 @@ config SYS_CLK_FREQ
 
 endmenu		# Boot images
 
-menu "Environment location"
-
-config ENV_IS_IN_MMC
-	bool "Use MMC as storage for the environment"
-	default y
-	help
-	  Store the environment in MMC
-
-config ENV_IS_IN_FLASH
-	bool "Use flash memory as storage for the environment"
-	default n
-	help
-	  Store the environment in flash memory
-
-endmenu
-
 source "common/Kconfig"
 
 source "dts/Kconfig"
