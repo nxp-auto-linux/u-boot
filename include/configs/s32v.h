@@ -138,8 +138,10 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
 
+#ifndef VIRTUAL_PLATFORM
 #define CONFIG_BOARD_EARLY_INIT_F
 #define CONFIG_ARCH_EARLY_INIT_R
+#endif
 
 #if CONFIG_FSL_LINFLEX_MODULE == 0
 #define LINFLEXUART_BASE	LINFLEXD0_BASE_ADDR
@@ -153,6 +155,7 @@
 
 #undef CONFIG_CMD_IMLS
 
+#ifndef VIRTUAL_PLATFORM
 #define CONFIG_MMC
 #define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_NUM	1
@@ -164,7 +167,6 @@
 #define CONFIG_CMD_FAT  /* FAT support */
 #define CONFIG_DOS_PARTITION
 
-#ifndef VIRTUAL_PLATFORM
 /* Ethernet config */
 #define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
@@ -185,7 +187,11 @@
 #define CONFIG_SYS_SPD_BUS_NUM	0
 #endif
 
+#ifdef VIRTUAL_PLATFORM
+#define CONFIG_BOOTDELAY	0
+#else
 #define CONFIG_BOOTDELAY	3
+#endif
 
 #ifdef VIRTUAL_PLATFORM
 #define CONFIG_BOOTARGS		"console=ttyAMA0 earlyprintk=pl011,0x20020000"
@@ -403,10 +409,14 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
+#ifndef VIRTUAL_PLATFORM
 #define CONFIG_SYS_FLASH_BASE 		CONFIG_SYS_FSL_FLASH0_BASE
-
 #define CONFIG_SD_BOOT
 /* #define CONFIG_FLASH_BOOT */
+#else
+#define CONFIG_ENV_IS_NOWHERE
+#define CONFIG_SYS_NO_FLASH
+#endif
 
 #if (defined(CONFIG_FLASH_BOOT) && defined(CONFIG_SD_BOOT))
 #error "CONFIG_FLASH_BOOT and CONFIG_SD_BOOT both defined"
@@ -428,6 +438,8 @@
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_MMC_PART			1
 
+#elif defined(CONFIG_ENV_IS_NOWHERE)
+#define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
 #else
 #warning "Warning: enviroment is neither in MMC nor in flash"
 #endif
