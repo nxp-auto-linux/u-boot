@@ -475,7 +475,6 @@ static void inthandler_pcie_link_req_rst_not(struct pt_regs *pt_regs,
  */
 static int s32v234_pcie_regions_setup(const int ep_mode)
 {
-	int socmask_info = readl(SIUL2_MIDR1) & 0x000000ff;
 	/*
 	 * S32V234 defines 16MB in the AXI address map for PCIe.
 	 *
@@ -488,7 +487,8 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 	 * 0x01F0_0000 --- 0x01FF_FFFF 1MB Cfg + Registers
 	 */
 
-	if (socmask_info == 0x00) {
+	/* We set up the ID for all Rev 1.x chips */
+	if (get_siul2_midr1_major() == 0x00) {
 		/*
 		 * Vendor ID is Freescale (now NXP): 0x1957
 		 * Device ID is split as follows

@@ -472,8 +472,9 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-	printf("CPU:   NXP S32V234 at %d MHz\n",
-		mxc_get_clock(MXC_ARM_CLK) / 1000000);
+	printf("CPU:   NXP S32V234 V%d.%d at %d MHz\n",
+	       get_siul2_midr1_major() + 1, get_siul2_midr1_minor(),
+	       mxc_get_clock(MXC_ARM_CLK) / 1000000);
 	printf("Reset cause: %s\n", get_reset_cause());
 
 	return 0;

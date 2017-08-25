@@ -304,14 +304,6 @@ int cpu_numcores(void)
 }
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
-static void print_soc_revision(void)
-{
-	int major = get_siul2_midr1_major() + 1;
-	int minor = get_siul2_midr1_minor();
-
-	printf("CPU Rev: %d.%d\n", major, minor);
-}
-
 int arch_early_init_r(void)
 {
 	int rv;
@@ -323,7 +315,6 @@ int arch_early_init_r(void)
 
 	asm volatile("sev");
 
-	print_soc_revision();
 	return 0;
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
