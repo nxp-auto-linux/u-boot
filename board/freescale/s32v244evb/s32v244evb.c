@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2016 NXP Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -58,7 +59,7 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: s32v244evb\n");
+	puts("Board: s32x simulator\n");
 
 	return 0;
 }
