@@ -328,7 +328,7 @@ static int do_qspinor_prog(cmd_tbl_t *cmdtp, int flag, int argc,
 	 * written and each half-page written only once. */
 	if (size < FLASH_HALF_PAGE_SIZE || size % FLASH_HALF_PAGE_SIZE != 0) {
 		printf("The written size must be multiple of %d.\n",
-		       FLASH_MIN_PROG_SIZE);
+		       FLASH_HALF_PAGE_SIZE);
 		return 1;
 	}
 
