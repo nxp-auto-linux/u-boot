@@ -36,8 +36,6 @@
 #define GICD_BASE		0x7D001000
 #define GICC_BASE		0x7D002000
 
-#define CONFIG_REMAKE_ELF
-
 /* Run by default from DDR1 */
 #ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR		0x80000000
