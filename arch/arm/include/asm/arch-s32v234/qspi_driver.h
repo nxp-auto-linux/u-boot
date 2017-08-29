@@ -33,7 +33,7 @@ void quadspi_program_hyp(unsigned int address, uintptr_t data,
 void quadspi_program_dma_hyp(unsigned int address, unsigned int *data,
 			     unsigned int bytes);
 void quadspi_read_hyp(void);
-void quadspi_erase_hyp(int sector);
+void quadspi_erase_hyp(int address);
 void quadspi_id_entry_hyp(void);
 void quadspi_cfi_entry_hyp(void);
 void quadspi_send_instruction_hyp(unsigned int address, unsigned int cmd);
