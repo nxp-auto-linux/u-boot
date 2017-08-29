@@ -16,6 +16,8 @@
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
+#define CONFIG_REMAKE_ELF
+
 /* u-boot uses just DDR0 */
 #define CONFIG_RUN_FROM_DDR0
 #undef CONFIG_RUN_FROM_DDR1
