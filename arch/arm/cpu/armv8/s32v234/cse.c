@@ -47,6 +47,11 @@ static int mmc_load_cse_blob(void)
 	loff_t bytes = 0, pos = 0, len_read;
 
 	filename = getenv("cse_file");
+	if (!filename)
+	{
+		printf("Failed to find \"cse_file\" environment variable! Default enviroment should be loaded.\n");
+		return -ENOENT;
+	}
 
 	if (fs_set_blk_dev("mmc", mmc_dev_part, FS_TYPE_FAT))
 		return -ENOENT;
