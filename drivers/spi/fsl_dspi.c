@@ -7,6 +7,7 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
+ * Copyright 2017, 2019-2022 NXP
  */
 
 #include <asm/global_data.h>
@@ -363,25 +364,34 @@ static int fsl_dspi_hz_to_spi_baud(int *pbr, int *br,
 		16, 32, 64, 128,
 		256, 512, 1024, 2048,
 		4096, 8192, 16384, 32768};
-	int temp, i = 0, j = 0;
+	int temp, minscale = INT_MAX, i = 0, j = 0;
 
 	temp = clkrate / speed_hz;
 
 	for (i = 0; i < ARRAY_SIZE(pbr_tbl); i++)
 		for (j = 0; j < ARRAY_SIZE(brs); j++) {
 			if (pbr_tbl[i] * brs[j] >= temp) {
-				*pbr = i;
-				*br = j;
-				return 0;
+				if (pbr_tbl[i] * brs[j] < minscale) {
+					*pbr = i;
+					*br = j;
+					minscale = pbr_tbl[i] * brs[j];
+				}
+				break;
 			}
 		}
 
-	debug("Can not find valid baud rate,speed_hz is %d, ", speed_hz);
-	debug("clkrate is %d, we use the max prescaler value.\n", clkrate);
+	if (minscale == INT_MAX) {
+		debug("Can not find valid baud rate,speed_hz is %d, ",
+		      speed_hz);
+		debug("clkrate is %d, we use the max prescaler value.\n",
+		      clkrate);
 
-	*pbr = ARRAY_SIZE(pbr_tbl) - 1;
-	*br =  ARRAY_SIZE(brs) - 1;
-	return -EINVAL;
+		*pbr = ARRAY_SIZE(pbr_tbl) - 1;
+		*br =  ARRAY_SIZE(brs) - 1;
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 static void ns_delay_scale(unsigned char *psc, unsigned char *sc, int delay_ns,
