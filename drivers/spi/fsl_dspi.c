@@ -261,7 +261,7 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 	uint len = bitlen >> 3;
 
 	if (priv->charbit == 16) {
-		bitlen >>= 1;
+		len >>= 1;
 		spi_wr16 = (u16 *)dout;
 		spi_rd16 = (u16 *)din;
 	} else {
@@ -283,16 +283,16 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 					dspi_tx(priv, ctrl, *spi_wr16++);
 				else
 					dspi_tx(priv, ctrl, *spi_wr++);
-				dspi_rx(priv);
-			}
+			} else
+				dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 
 			if (din != NULL) {
-				dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 				if (priv->charbit == 16)
 					*spi_rd16++ = dspi_rx(priv);
 				else
 					*spi_rd++ = dspi_rx(priv);
-			}
+			} else
+				dspi_rx(priv);
 		}
 
 		len = 1;	/* remaining byte */
@@ -307,16 +307,16 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 				dspi_tx(priv, ctrl, *spi_wr16);
 			else
 				dspi_tx(priv, ctrl, *spi_wr);
-			dspi_rx(priv);
-		}
+		} else
+			dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 
 		if (din != NULL) {
-			dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 			if (priv->charbit == 16)
 				*spi_rd16 = dspi_rx(priv);
 			else
 				*spi_rd = dspi_rx(priv);
-		}
+		} else
+			dspi_rx(priv);
 	} else {
 		/* dummy read */
 		dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
