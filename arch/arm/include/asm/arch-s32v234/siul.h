@@ -133,7 +133,7 @@ static inline int get_siul2_midr1_major(void) {
 
 #define SIUL2_MSCR_PUS(v)		((v) & 0x00001800)
 #define SIUL2_MSCR_PUS_100K_DOWN	(0 << 11)
-#define SIUL2_MSCR_PUS_50K_DOWN		(1 << 11)
+#define SIUL2_MSCR_PUS_50K_UP		(1 << 11)
 #define SIUL2_MSCR_PUS_100K_UP		(2 << 11)
 #define SIUL2_MSCR_PUS_33K_UP		(3 << 11)
 
