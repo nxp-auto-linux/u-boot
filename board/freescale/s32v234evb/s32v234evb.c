@@ -16,6 +16,31 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_FSL_DSPI
+static void setup_iomux_dspi(void)
+{
+	/* Muxing for DSPI0 */
+
+	/* Configure Chip Select Pins */
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS0_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB8));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS4_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC0));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS5_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC1));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS6_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC2));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS7_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC3));
+
+	/* MSCR */
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SOUT_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB6));
+
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SCK_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB5));
+
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SIN_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB7));
+
+	/* IMCR */
+	writel(SIUL2_PAD_CTRL_DSPI0_IMCR_SIN_IN,
+		SIUL2_IMCRn(SIUL2_PB7_IMCR_SPI0_SIN));
+}
+#endif
+
 static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex0 and linflex1 */
@@ -149,6 +174,9 @@ int board_early_init_f(void)
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
+#ifdef CONFIG_FSL_DSPI
+	setup_iomux_dspi();
+#endif
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
