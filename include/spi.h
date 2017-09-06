@@ -4,6 +4,8 @@
  * (C) Copyright 2001
  * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com.
  *
+ * Copyright 2017 NXP
+ *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
@@ -11,18 +13,21 @@
 #define _SPI_H_
 
 /* SPI mode flags */
-#define	SPI_CPHA	0x01			/* clock phase */
-#define	SPI_CPOL	0x02			/* clock polarity */
-#define	SPI_MODE_0	(0|0)			/* (original MicroWire) */
-#define	SPI_MODE_1	(0|SPI_CPHA)
-#define	SPI_MODE_2	(SPI_CPOL|0)
-#define	SPI_MODE_3	(SPI_CPOL|SPI_CPHA)
-#define	SPI_CS_HIGH	0x04			/* CS active high */
-#define	SPI_LSB_FIRST	0x08			/* per-word bits-on-wire */
-#define	SPI_3WIRE	0x10			/* SI/SO signals shared */
-#define	SPI_LOOP	0x20			/* loopback mode */
-#define	SPI_SLAVE	0x40			/* slave mode */
-#define	SPI_PREAMBLE	0x80			/* Skip preamble bytes */
+#define	SPI_CPHA		0x0001			/* clock phase */
+#define	SPI_CPOL		0x0002			/* clock polarity */
+#define	SPI_MODE_0		(0|0)			/* (original MicroWire) */
+#define	SPI_MODE_1		(0|SPI_CPHA)
+#define	SPI_MODE_2		(SPI_CPOL|0)
+#define	SPI_MODE_3		(SPI_CPOL|SPI_CPHA)
+#define	SPI_CS_HIGH		0x0004			/* CS active high */
+#define	SPI_LSB_FIRST	0x0008			/* per-word bits-on-wire */
+#define	SPI_3WIRE		0x0010			/* SI/SO signals shared */
+#define	SPI_LOOP		0x0020			/* loopback mode */
+#define	SPI_SLAVE		0x0040			/* slave mode */
+#define	SPI_PREAMBLE	0x0080			/* Skip preamble bytes */
+#define SPI_FMSZ_8		0x0100			/* Force frame size to 8 bits */
+#define SPI_FMSZ_16		0x0200
+#define SPI_FMSZ_32		0x0400
 
 /* SPI transfer flags */
 #define SPI_XFER_BEGIN		0x01	/* Assert CS before transfer */
