@@ -33,11 +33,18 @@
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
 
 #define CONFIG_CMD_PCI
+
 #ifdef CONFIG_CMD_PCI
 #define CONFIG_GICSUPPORT
 #define CONFIG_USE_IRQ
 #define CONFIG_CMD_IRQ
 #endif
+
+#ifdef CONFIG_SJA1105
+#define SJA_1_BUS	0
+#define SJA_1_CS	0
+#endif /* CONFIG_SJA1105 */
+
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32v234_common.h>
 
