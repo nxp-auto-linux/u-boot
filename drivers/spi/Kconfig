@@ -170,4 +170,11 @@ config TI_QSPI
 	  Enable the TI Quad-SPI (QSPI) driver for DRA7xx and AM43xx evms.
 	  This driver support spi flash single, quad and memory reads.
 
+config SJA1105
+	bool "NXP SJA1105x driver"
+	depends on FSL_DSPI
+	help
+	  Enable the NXP SJA1105x driver.
+	  The NXP SJA1105x switch is used on several boards, such as S32V234EVB.
+
 endmenu # menu "SPI Support"
