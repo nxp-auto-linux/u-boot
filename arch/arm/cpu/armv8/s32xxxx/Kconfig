@@ -10,7 +10,7 @@ config SYS_VENDOR
 
 config SYS_SOC
 	string
-	default "s32v234"
+	default "s32xxxx"
 
 config BAUDRATE
 	int "Serial baudrate"
