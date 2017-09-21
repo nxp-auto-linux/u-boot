@@ -1,112 +1,18 @@
 /*
- * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
- * Configuration settings for the Freescale S32V234 EVB board.
+ * Configuration settings for the Freescale S32V244 EVB board.
  */
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __S32V244_H
+#define __S32V244_H
 
-/* The configurations of this board depend on the definitions in this file and
-* the ones in the header included at the end, configs/s32v234_common.h */
-
-/* Init CSE3 from u-boot */
-/* #define CONFIG_CSE3		1 */
-
-#define VIRTUAL_PLATFORM
 #define CONFIG_S32V244
 
-#undef CONFIG_RUN_FROM_IRAM_ONLY
-
-/* u-boot uses just DDR0 */
-#define CONFIG_RUN_FROM_DDR0
-#undef CONFIG_RUN_FROM_DDR1
-
-#define CONFIG_MACH_TYPE		4146
-
-/* Config CACHE */
-#define CONFIG_CMD_CACHE
-
-/* Flat device tree definitions */
-#define CONFIG_OF_FDT
-#define CONFIG_OF_BOARD_SETUP
-
-/* System Timer */
-#define CONFIG_SYS_GENERIC_TIMER
-/* #define CONFIG_SYS_PIT_TIMER */
-
-#define CONFIG_FSL_USDHC
-#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
-
-/* #define CONFIG_CMD_EXT2 EXT2 Support */
-
-/* Ethernet config */
-
-#define CONFIG_FEC_XCV_TYPE     RGMII
-#define CONFIG_PHYLIB
-
-#ifdef VIRTUAL_PLATFORM
-/* The Phy is emulated */
-#define CONFIG_PHY_RGMII_DIRECT_CONNECTED
-#endif
-
-/* CONFIG_PHY_RGMII_DIRECT_CONNECTED should be enabled when
- * BCM switch is configured.
- */
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-#define CONFIG_BCM_SPEED	SPEED_1000
-#else
-#define CONFIG_FEC_MXC_PHYADDR  7
-#define CONFIG_PHY_MICREL
-#define CONFIG_PHY_MICREL_KSZ9031
-#endif
-
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	#define FDT_FILE s32v234-evbbcm.dtb
-#else
-	#define	FDT_FILE s32v234-evb.dtb
-#endif
-
-#define CONFIG_LOADADDR		LOADADDR
-
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
-
-/* #define CONFIG_CMD_PCI */
-#ifdef CONFIG_CMD_PCI
-#define CONFIG_GICSUPPORT
-#define CONFIG_USE_IRQ
-#define CONFIG_CMD_IRQ
-#endif
-/* we include this file here because it depends on the above definitions */
-#include <configs/s32v.h>
-
-#define IMX_FEC_BASE            ENET0_BASE_ADDR
-
-#define CONFIG_GICV3
-#define GIC_BASE		0x50800000
-#define GICD_BASE		GIC_BASE
-#define GICR_BASE		(GIC_BASE + 0x80000)
-
-#ifdef VIRTUAL_PLATFORM
-#ifdef CONFIG_SYS_FSL_ERRATUM_A008585
-#undef CONFIG_SYS_FSL_ERRATUM_A008585
-#endif
-#endif
-
-#ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR		0x80000000
-#else
-#define DDR_BASE_ADDR		0xA0000000
-#endif
-
-#define CONFIG_SYS_TEXT_BASE        0x38020000 /* SDRAM */
-#define CONFIG_SYS_TEXT_OFFSET      0x00020000
+#include <configs/s32xxxx-gen1.h>
 
 #endif

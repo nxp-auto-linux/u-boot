@@ -8,8 +8,8 @@
  * Configuration settings for all the Freescale S32XXXX boards.
  */
 
-#ifndef __S32V_COMMON_H
-#define __S32V_COMMON_H
+#ifndef __S32XXXX_COMMON_H
+#define __S32XXXX_COMMON_H
 
 #define CONFIG_S32XXXX
 

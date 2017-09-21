@@ -12,7 +12,7 @@
 
 #if defined(CONFIG_S32V234)
 #include <asm/arch/s32v234-regs.h>
-#elif defined(CONFIG_S32V244)
+#elif defined(CONFIG_S32XXXX_GEN1)
 #include <asm/arch/s32xxxx-gen1-regs.h>
 #endif
 

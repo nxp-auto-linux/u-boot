@@ -256,7 +256,7 @@ static u32 get_fec_clk(void)
 
 #if defined(CONFIG_S32V234)
 	auxclk2_div =  readl(CGM_ACn_DCm(MC_CGM2_BASE_ADDR, 2, 0)) & MC_CGM_ACn_DCm_PREDIV_MASK;
-#elif defined(CONFIG_S32V244)
+#elif defined(CONFIG_S32XXXX_GEN1)
 	auxclk2_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 7, 1)) & MC_CGM_ACn_DCm_PREDIV_MASK;
 #endif
 	auxclk2_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
@@ -943,7 +943,7 @@ U_BOOT_CMD(
 	"startAddress"
 );
 
-#elif defined(S32V244)
+#elif defined(CONFIG_S32XXXX_GEN1)
 /* start M7 core */
 static int do_start_m7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {

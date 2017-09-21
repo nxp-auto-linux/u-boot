@@ -46,7 +46,7 @@
 
 #if defined(CONFIG_S32V234)
 #define CONFIG_SYS_FSL_IRAM_SIZE        (0x800000) /* 8M */
-#elif defined(CONFIG_S32V244)
+#elif defined(CONFIG_S32XXXX_GEN1)
 #define CONFIG_SYS_FSL_IRAM_SIZE        (0x1400000) /* 20M */
 #endif
 
@@ -58,7 +58,7 @@
 
 #if defined(CONFIG_S32V234)
 #define CONFIG_SYS_FSL_PERIPH_SIZE      0x40000000
-#elif defined(CONFIG_S32V244)
+#elif defined(CONFIG_S32XXXX_GEN1)
 #define CONFIG_SYS_FSL_PERIPH_SIZE      0x20000000
 #endif
 
