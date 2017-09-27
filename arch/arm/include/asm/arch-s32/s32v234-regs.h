@@ -113,5 +113,71 @@
 #define MBIST_CONTROLLER_BASE_ADDR			(AIPS1_BASE_ADDR + 0x0006C000)
 #define BOOT_LOADER_BASE_ADDR				(AIPS1_BASE_ADDR + 0x0006F000)
 
+/* MSCM interrupt router */
+#define MSCM_IRSPRC_CPn_EN		3
+#define MSCM_IRSPRC_NUM			176
+#define MSCM_CPXTYPE_RYPZ_MASK		0xFF
+#define MSCM_CPXTYPE_RYPZ_OFFSET	0
+#define MSCM_CPXTYPE_PERS_MASK		0xFFFFFF00
+#define MSCM_CPXTYPE_PERS_OFFSET	8
+#define MSCM_CPXTYPE_PERS_A53		0x413533
+#define MSCM_CPXTYPE_PERS_CM4		0x434d34
+
+#if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
+#include <asm/types.h>
+
+/* MSCM Interrupt Router */
+struct mscm_ir {
+	u32 cpxtype;		/* Processor x Type Register			*/
+	u32 cpxnum;			/* Processor x Number Register			*/
+	u32 cpxmaster;		/* Processor x Master Number Register	*/
+	u32 cpxcount;		/* Processor x Count Register			*/
+	u32 cpxcfg0;		/* Processor x Configuration 0 Register */
+	u32 cpxcfg1;		/* Processor x Configuration 1 Register */
+	u32 cpxcfg2;		/* Processor x Configuration 2 Register */
+	u32 cpxcfg3;		/* Processor x Configuration 3 Register */
+	u32 cp0type;		/* Processor 0 Type Register			*/
+	u32 cp0num;			/* Processor 0 Number Register			*/
+	u32 cp0master;		/* Processor 0 Master Number Register	*/
+	u32 cp0count;		/* Processor 0 Count Register			*/
+	u32 cp0cfg0;		/* Processor 0 Configuration 0 Register	*/
+	u32 cp0cfg1;		/* Processor 0 Configuration 1 Register	*/
+	u32 cp0cfg2;		/* Processor 0 Configuration 2 Register	*/
+	u32 cp0cfg3;		/* Processor 0 Configuration 3 Register	*/
+	u32 cp1type;		/* Processor 1 Type Register			*/
+	u32 cp1num;			/* Processor 1 Number Register			*/
+	u32 cp1master;		/* Processor 1 Master Number Register	*/
+	u32 cp1count;		/* Processor 1 Count Register			*/
+	u32 cp1cfg0;		/* Processor 1 Configuration 0 Register	*/
+	u32 cp1cfg1;		/* Processor 1 Configuration 1 Register	*/
+	u32 cp1cfg2;		/* Processor 1 Configuration 2 Register	*/
+	u32 cp1cfg3;		/* Processor 1 Configuration 3 Register	*/
+	u32 reserved_0x060[232];
+	u32 ocmdr0;			/* On-Chip Memory Descriptor Register	*/
+	u32 reserved_0x404[2];
+	u32 ocmdr3;			/* On-Chip Memory Descriptor Register	*/
+	u32 reserved_0x410[28];
+	u32 tcmdr[4];		/* Generic Tightly Coupled Memory Descriptor Register	*/
+	u32 reserved_0x490[28];
+	u32 cpce0;			/* Core Parity Checking Enable Register 0				*/
+	u32 reserved_0x504[191];
+	u32 ircp0ir;		/* Interrupt Router CP0 Interrupt Register				*/
+	u32 ircp1ir;		/* Interrupt Router CP1 Interrupt Register				*/
+	u32 reserved_0x808[6];
+	u32 ircpgir;		/* Interrupt Router CPU Generate Interrupt Register		*/
+	u32 reserved_0x824[23];
+	u16 irsprc[MSCM_IRSPRC_NUM];	/* Interrupt Router Shared Peripheral Routing Control Register	*/
+	u32 reserved_0x9e0[136];
+	u32 iahbbe0;		/* Gasket Burst Enable Register							*/
+	u32 reserved_0xc04[63];
+	u32 ipcge;			/* Interconnect Parity Checking Global Enable Register	*/
+	u32 reserved_0xd04[3];
+	u32 ipce[4];		/* Interconnect Parity Checking Enable Register			*/
+	u32 reserved_0xd20[8];
+	u32 ipcgie;			/* Interconnect Parity Checking Global Injection Enable Register	*/
+	u32 reserved_0xd44[3];
+	u32 ipcie[4];           /* Interconnect Parity Checking Injection Enable Register       */
+};
+#endif
 
 #endif	/* __ASM_ARCH_S32V234_REGS_H__ */

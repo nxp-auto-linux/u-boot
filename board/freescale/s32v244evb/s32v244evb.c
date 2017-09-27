@@ -36,8 +36,7 @@ int board_phy_config(struct phy_device *phydev)
 
 int board_early_init_f(void)
 {
-	// start_secondary_cores();
-	clock_init();
+	//clock_init();
 	mscm_init();
 
 	//setup_iomux_uart();

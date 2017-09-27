@@ -176,4 +176,83 @@
 /* Peripheral group 8 */
 #define MC_CGM2_BASE_ADDR			(PER_GROUP8_BASE + 0x000C0000)
 
-#endif	/* __ASM_ARCH_S32_GEN1_REGS_H__ */
+/* MSCM interrupt router */
+#define MSCM_IRSPRC_CPn_EN		0xF
+#define MSCM_IRSPRC_NUM			248
+
+#if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
+#include <asm/types.h>
+
+/* MSCM Interrupt Router */
+struct mscm_ir {
+	u32 cpxtype;		/* Processor x Type Register			*/
+	u32 cpxnum;		/* Processor x Number Register			*/
+	u32 cpxmaster;		/* Processor x Master Number Register	*/
+	u32 cpxcount;		/* Processor x Count Register			*/
+	u32 cpxcfg0;		/* Processor x Configuration 0 Register */
+	u32 cpxcfg1;		/* Processor x Configuration 1 Register */
+	u32 cpxcfg2;		/* Processor x Configuration 2 Register */
+	u32 cpxcfg3;		/* Processor x Configuration 3 Register */
+	u32 cpntype;		/* Processor 0 Type Register			*/
+	u32 cpnnum;		/* Processor 0 Number Register			*/
+	u32 cpnmaster;		/* Processor 0 Master Number Register	*/
+	u32 cpncount;		/* Processor 0 Count Register			*/
+	u32 cpncfg0;		/* Processor 0 Configuration 0 Register	*/
+	u32 cpncfg1;		/* Processor 0 Configuration 1 Register	*/
+	u32 cpncfg2;		/* Processor 0 Configuration 2 Register	*/
+	u32 cpncfg3;		/* Processor 0 Configuration 3 Register	*/
+	u32 cpntype_1;		/* Processor 1 Type Register			*/
+	u32 cpnnum_1;		/* Processor 1 Number Register			*/
+	u32 cpnmaster_1;	/* Processor 1 Master Number Register	*/
+	u32 cpncount_1;		/* Processor 1 Count Register			*/
+	u32 cpncfg0_1;		/* Processor 1 Configuration 0 Register	*/
+	u32 cpncfg1_1;		/* Processor 1 Configuration 1 Register	*/
+	u32 cpncfg2_1;		/* Processor 1 Configuration 2 Register	*/
+	u32 cpncfg3_1;		/* Processor 1 Configuration 3 Register	*/
+	u32 cpntype_2;		/* Processor 2 Type Register			*/
+	u32 cpnnum_2;		/* Processor 2 Number Register			*/
+	u32 cpnmaster_2;	/* Processor 2 Master Number Register	*/
+	u32 cpncount_2;		/* Processor 2 Count Register			*/
+	u32 cpncfg0_2;		/* Processor 2 Configuration 0 Register	*/
+	u32 cpncfg1_2;		/* Processor 2 Configuration 1 Register	*/
+	u32 cpncfg2_2;		/* Processor 2 Configuration 2 Register	*/
+	u32 cpncfg3_2;		/* Processor 2 Configuration 3 Register	*/
+	u32 cpntype_3;		/* Processor 3 Type Register			*/
+	u32 cpnnum_3;		/* Processor 3 Number Register			*/
+	u32 cpnmaster_3;	/* Processor 3 Master Number Register	*/
+	u32 cpncount_3;		/* Processor 3 Count Register			*/
+	u32 cpncfg0_3;		/* Processor 3 Configuration 0 Register	*/
+	u32 cpncfg1_3;		/* Processor 3 Configuration 1 Register	*/
+	u32 cpncfg2_3;		/* Processor 3 Configuration 2 Register	*/
+	u32 cpncfg3_3;		/* Processor 3 Configuration 3 Register	*/
+	u32 reserved_0x060[216];
+	u32 ocmdr0;		/* On-Chip Memory Descriptor Register	*/
+	u32 ocmdr1;		/* On-Chip Memory Descriptor Register	*/
+	u32 ocmdr2;		/* On-Chip Memory Descriptor Register	*/
+	u32 ocmdr3;		/* On-Chip Memory Descriptor Register	*/
+	u32 reserved_0x410[28];
+	u32 tcmdr[4];		/* Generic Tightly Coupled Memory Descriptor Register	*/
+	u32 reserved_0x490[28];
+	u32 cpce0;		/* Core Parity Checking Enable Register 0	*/
+	u32 reserved_0x504[191];
+	u32 ircp0ir;		/* Interrupt Router CP0 Interrupt Register		*/
+	u32 ircp1ir;		/* Interrupt Router CP1 Interrupt Register		*/
+	u32 ircp2ir;		/* Interrupt Router CP2 Interrupt Register		*/
+	u32 ircp3ir;		/* Interrupt Router CP3 Interrupt Register		*/
+	u32 reserved_0x810[4];
+	u32 ircpgir;		/* Interrupt Router CPU Generate Interrupt Register		*/
+	u32 reserved_0x824[23];
+	u16 irsprc[MSCM_IRSPRC_NUM];	/* Interrupt Router Shared Peripheral Routing Control Register	*/
+	u32 reserved_0xa70[93];
+	u32 iahbbe0;		/* Gasket Burst Enable Register							*/
+	u32 reserved_0xc04[63];
+	u32 ipcge;			/* Interconnect Parity Checking Global Enable Register	*/
+	u32 reserved_0xd04[3];
+	u32 ipce[4];		/* Interconnect Parity Checking Enable Register			*/
+	u32 reserved_0xd20[8];
+	u32 ipcgie;			/* Interconnect Parity Checking Global Injection Enable Register	*/
+	u32 reserved_0xd44[3];
+	u32 ipcie[4];           /* Interconnect Parity Checking Injection Enable Register       */
+};
+#endif
+#endif	/* __ASM_ARCH_S32XXXX_GEN1_REGS_H__ */
