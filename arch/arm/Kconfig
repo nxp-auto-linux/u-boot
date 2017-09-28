@@ -773,7 +773,6 @@ source "arch/arm/mach-zynq/Kconfig"
 source "arch/arm/cpu/armv7/Kconfig"
 
 source "arch/arm/cpu/armv8/s32xxxx/Kconfig"
-source "arch/arm/cpu/armv8/s32v244/Kconfig"
 
 source "arch/arm/cpu/armv8/zynqmp/Kconfig"
 
