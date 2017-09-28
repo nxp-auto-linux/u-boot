@@ -14,6 +14,7 @@
 #include <asm/gic.h>
 #include "mp.h"
 
+#define SWT_SR(SWTn_BASE_ADDR) (SWTn_BASE_ADDR + 0x10)
 
 /*************************************************************************
  *
@@ -88,25 +89,9 @@ ENTRY(lowlevel_init)
 
 	branch_if_slave x0, 1f
 
-#if defined(CONFIG_S32V234)
-watchdog_m4_disable:
+watchdog_cortexm_disable:
 	/* disable SWT4 watchdog*/
-	ldr x0, =0x40086010
-	ldr w1, =0xC520
-	str w1, [x0]
-	ldr w1, =0xD928
-	str w1, [x0]
-	ldr x0, =0x40086000
-	ldr x1, [x0]
-	and x1, x1, 0xFFFFFFFE
-	str x1, [x0]
-	ldr x1, [x0]
-	orr x1, x1, 0x40
-	str x1, [x0]
-#elif defined(CONFIG_S32XXXX_GEN1)
-watchdog_m7_disable:
-	/* disable SWT4 watchdog*/
-	ldr x0, =SWT4_BASE_ADDR
+	ldr x0, =SWT_SR(SWT4_BASE_ADDR)
 	ldr w1, =0xC520
 	str w1, [x0]
 	ldr w1, =0xD928
@@ -118,7 +103,6 @@ watchdog_m7_disable:
 	ldr x1, [x0]
 	orr x1, x1, 0x40
 	str x1, [x0]
-#endif
 
 sram_init:
 	/* Size of the SRAM memory to init */

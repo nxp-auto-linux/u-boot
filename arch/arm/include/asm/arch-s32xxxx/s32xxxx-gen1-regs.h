@@ -11,11 +11,19 @@
 #define IRAM_BASE_ADDR		0x38000000  /* internal ram */
 #define IRAM_SIZE		0x00400000  /* 4MB */
 
+#if !defined(__ASSEMBLER__)
 #define PER_GROUP0_BASE				(0x40000000UL)
 #define PER_GROUP1_BASE				(0x40100000UL)
+#define PER_GROUP2_BASE				(0x40200000UL)
+#define PER_GROUP3_BASE				(0x40300000UL)
+#define PER_GROUP8_BASE				(0x44000000UL)
+#else
+#define PER_GROUP0_BASE				(0x40000000)
+#define PER_GROUP1_BASE				(0x40100000)
 #define PER_GROUP2_BASE				(0x40200000)
 #define PER_GROUP3_BASE				(0x40300000)
 #define PER_GROUP8_BASE				(0x44000000)
+#endif
 
 /* Peripheral group 0 */
 #define POST_BASE_ADDR				(PER_GROUP0_BASE)
