@@ -576,8 +576,8 @@ config ARCH_ZYNQMP
 	select DM_MMC
 	select DM_SERIAL
 
-config ARCH_S32XXXX
-	bool "Support S32XXXX SOCs"
+config ARCH_S32
+	bool "Support S32 SOCs"
 	select ARM64
 	select CUSTOM_CMD_FLASH
 	select ARM64
@@ -772,7 +772,7 @@ source "arch/arm/mach-zynq/Kconfig"
 
 source "arch/arm/cpu/armv7/Kconfig"
 
-source "arch/arm/cpu/armv8/s32xxxx/Kconfig"
+source "arch/arm/cpu/armv8/s32/Kconfig"
 
 source "arch/arm/cpu/armv8/zynqmp/Kconfig"
 

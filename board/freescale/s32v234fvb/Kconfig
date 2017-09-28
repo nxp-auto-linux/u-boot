@@ -15,7 +15,7 @@ config SYS_CONFIG_NAME
 # U-boot uses only one DDR slot.
 config SYS_DDR_SIZE
 	int
-	default 1073741824 if S32XXXX_DDR3
-	default 268435456  if S32XXXX_LPDDR2
+	default 1073741824 if S32_DDR3
+	default 268435456  if S32_LPDDR2
 
 endif

@@ -6,20 +6,20 @@
  */
 
 /*
- * Configuration settings for the Freescale/NXP S32XXXX-GEN1.
+ * Configuration settings for the Freescale/NXP S32-GEN1.
  */
 
-#ifndef __S32XXXX_GEN1_H
-#define __S32XXXX_GEN1_H
+#ifndef __S32_GEN1_H
+#define __S32_GEN1_H
 
 /* The configurations of this board depend on the definitions in this file and
-* the ones in the header included at the end, configs/s32xxxx.h */
+* the ones in the header included at the end, configs/s32.h */
 
 /* Init CSE3 from u-boot */
 /* #define CONFIG_CSE3		1 */
 
 #define VIRTUAL_PLATFORM
-#define CONFIG_S32XXXX_GEN1
+#define CONFIG_S32_GEN1
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
@@ -85,7 +85,7 @@
 #define CONFIG_CMD_IRQ
 #endif
 /* we include this file here because it depends on the above definitions */
-#include <configs/s32xxxx.h>
+#include <configs/s32.h>
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 

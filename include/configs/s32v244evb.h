@@ -8,11 +8,11 @@
  * Configuration settings for the Freescale S32V244 EVB board.
  */
 
-#ifndef __S32V244_H
-#define __S32V244_H
+#ifndef __S32V244EVB_H
+#define __S32V244EVB_H
 
 #define CONFIG_S32V244
 
-#include <configs/s32xxxx-gen1.h>
+#include <configs/s32-gen1.h>
 
 #endif

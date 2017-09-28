@@ -46,7 +46,7 @@
 
 #if defined(CONFIG_S32V234)
 #define CONFIG_SYS_FSL_IRAM_SIZE        (0x800000) /* 8M */
-#elif defined(CONFIG_S32XXXX_GEN1)
+#elif defined(CONFIG_S32_GEN1)
 #define CONFIG_SYS_FSL_IRAM_SIZE        (0x1400000) /* 20M */
 #endif
 
@@ -58,7 +58,7 @@
 
 #if defined(CONFIG_S32V234)
 #define CONFIG_SYS_FSL_PERIPH_SIZE      0x40000000
-#elif defined(CONFIG_S32XXXX_GEN1)
+#elif defined(CONFIG_S32_GEN1)
 #define CONFIG_SYS_FSL_PERIPH_SIZE      0x20000000
 #endif
 
@@ -76,7 +76,7 @@ struct table_info {
 	u64 entry_size;
 };
 
-static const struct sys_mmu_table s32xxxx_early_mmu_table[] = {
+static const struct sys_mmu_table s32_early_mmu_table[] = {
 	{ CONFIG_SYS_FSL_IRAM_BASE, CONFIG_SYS_FSL_IRAM_BASE,
 	  CONFIG_SYS_FSL_IRAM_SIZE, MT_NORMAL_NC, PMD_SECT_OUTER_SHARE },
 	{ CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
@@ -93,7 +93,7 @@ static const struct sys_mmu_table s32xxxx_early_mmu_table[] = {
 #endif
 };
 
-static const struct sys_mmu_table s32xxxx_final_mmu_table[] = {
+static const struct sys_mmu_table s32_final_mmu_table[] = {
 	{ CONFIG_SYS_FSL_IRAM_BASE, CONFIG_SYS_FSL_IRAM_BASE,
 	  CONFIG_SYS_FSL_IRAM_SIZE, MT_NORMAL_NC, PMD_SECT_OUTER_SHARE },
 	{ CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,

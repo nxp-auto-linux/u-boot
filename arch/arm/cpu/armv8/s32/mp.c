@@ -32,7 +32,7 @@ phys_addr_t determine_mp_bootpg(void)
 	return (phys_addr_t)SECONDARY_CPU_BOOT_PAGE;
 }
 
-int fsl_s32xxxx_wake_seconday_cores(void)
+int fsl_s32_wake_seconday_cores(void)
 {
 	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
 	size_t *boot_page_size = &(__secondary_boot_page_size);

@@ -5,8 +5,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#ifndef _S32XXXX_MP_H
-#define _S32XXXX_MP_H
+#ifndef _S32_MP_H
+#define _S32_MP_H
 
 /*
 * spin table is defined as
@@ -30,7 +30,7 @@ extern u64 __spin_table[];
 extern u64 __real_cntfrq;
 extern u64 *secondary_boot_page;
 extern size_t __secondary_boot_page_size;
-int fsl_s32xxxx_wake_seconday_cores(void);
+int fsl_s32_wake_seconday_cores(void);
 void *get_spin_tbl_addr(void);
 phys_addr_t determine_mp_bootpg(void);
 void secondary_boot_func(void);

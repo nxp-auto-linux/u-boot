@@ -50,7 +50,7 @@
 .endm
 
 /* Return from the exception in a benign fashion */
-#ifdef CONFIG_S32XXXX
+#ifdef CONFIG_S32
 .macro	exception_exit
 	ldp	x2, x0, [sp], #16
 

@@ -14,7 +14,7 @@
 
 #define CONFIG_S32V234
 
-#include <configs/s32xxxx.h>
+#include <configs/s32.h>
 
 /* Config DCU */
 #ifdef CONFIG_FSL_DCU_FB

@@ -165,14 +165,14 @@ static inline void early_mmu_setup(void)
 			  level2_table2);
 
 	/* Find the table and fill in the block entries */
-	for (i = 0; i < ARRAY_SIZE(s32xxxx_early_mmu_table); i++) {
-		if (find_table(&s32xxxx_early_mmu_table[i],
+	for (i = 0; i < ARRAY_SIZE(s32_early_mmu_table); i++) {
+		if (find_table(&s32_early_mmu_table[i],
 			&table, level0_table) == 0) {
 			/*
 			* If find_table() returns error, it cannot be dealt
 			* with here. Breakpoint can be added for debugging.
 			*/
-			set_block_entry(&s32xxxx_early_mmu_table[i], &table);
+			set_block_entry(&s32_early_mmu_table[i], &table);
 			/*
 			* If set_block_entry() returns error, it cannot be
 			* dealt with here too.
@@ -237,17 +237,17 @@ static inline void final_mmu_setup(void)
 
 
 	/* Find the table and fill in the block entries */
-	for (i = 0; i < ARRAY_SIZE(s32xxxx_final_mmu_table); i++) {
-		if (find_table(&s32xxxx_final_mmu_table[i],
+	for (i = 0; i < ARRAY_SIZE(s32_final_mmu_table); i++) {
+		if (find_table(&s32_final_mmu_table[i],
 			&table, level0_table) == 0) {
-			if (set_block_entry(&s32xxxx_final_mmu_table[i],
+			if (set_block_entry(&s32_final_mmu_table[i],
 					&table) != 0) {
 				printf("MMU error: could not set block entry for %p\n",
-				&s32xxxx_final_mmu_table[i]);
+				&s32_final_mmu_table[i]);
 			}
 			} else {
 				printf("MMU error: could not find the table for %p\n",
-				&s32xxxx_final_mmu_table[i]);
+				&s32_final_mmu_table[i]);
 			}
 	}
 
@@ -312,7 +312,7 @@ int arch_early_init_r(void)
 {
 	int rv;
 	asm volatile("dsb sy");
-	rv = fsl_s32xxxx_wake_seconday_cores();
+	rv = fsl_s32_wake_seconday_cores();
 
 	if (rv)
 		printf("Did not wake secondary cores\n");

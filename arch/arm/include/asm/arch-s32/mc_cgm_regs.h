@@ -184,7 +184,7 @@
 
 #if defined(CONFIG_S32V234)
 #define ARM_PLL_PHI1_FREQ			(1000000000)
-#elif defined(CONFIG_S32XXXX_GEN1)
+#elif defined(CONFIG_S32_GEN1)
 #define ARM_PLL_PHI1_FREQ			 (400000000)
 #endif
 
@@ -208,7 +208,7 @@
 
 #if defined(CONFIG_S32V234)
 #define PERIPH_PLL_PHI0_FREQ		(400000000)
-#elif defined(CONFIG_S32XXXX_GEN1)
+#elif defined(CONFIG_S32_GEN1)
 #define PERIPH_PLL_PHI0_FREQ		(2000000000)
 #endif
 

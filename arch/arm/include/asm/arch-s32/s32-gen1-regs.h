@@ -5,8 +5,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#ifndef __ASM_ARCH_S32XXXX_GEN1_REGS_H__
-#define __ASM_ARCH_S32XXXX_GEN1_REGS_H__
+#ifndef __ASM_ARCH_S32_GEN1_REGS_H__
+#define __ASM_ARCH_S32_GEN1_REGS_H__
 
 #define IRAM_BASE_ADDR		0x38000000  /* internal ram */
 #define IRAM_SIZE		0x00400000  /* 4MB */
@@ -176,4 +176,4 @@
 /* Peripheral group 8 */
 #define MC_CGM2_BASE_ADDR			(PER_GROUP8_BASE + 0x000C0000)
 
-#endif	/* __ASM_ARCH_S32XXXX_GEN1_REGS_H__ */
+#endif	/* __ASM_ARCH_S32_GEN1_REGS_H__ */

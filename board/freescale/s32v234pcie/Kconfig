@@ -13,7 +13,7 @@ config SYS_CONFIG_NAME
 # U-boot uses only one DDR slot.
 config SYS_DDR_SIZE
          int
-         default 268435456 if S32XXXX_LPDDR2
+         default 268435456 if S32_LPDDR2
 
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"

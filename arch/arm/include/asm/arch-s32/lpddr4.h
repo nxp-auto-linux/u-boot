@@ -5,8 +5,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#ifndef __ARCH_ARM_MACH_S32XXXX_LPDDR2_H__
-#define __ARCH_ARM_MACH_S32XXXX_LPDDR2_H__
+#ifndef __ARCH_ARM_MACH_S32_LPDDR4_H__
+#define __ARCH_ARM_MACH_S32_LPDDR4_H__
 
 /* definitions for LPDDR2 PAD values */
 #define LPDDR2_CLK0_PAD	\

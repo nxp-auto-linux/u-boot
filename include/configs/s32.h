@@ -5,13 +5,13 @@
  */
 
 /*
- * Configuration settings for all the Freescale S32XXXX boards.
+ * Configuration settings for all the Freescale S32 boards.
  */
 
-#ifndef __S32XXXX_COMMON_H
-#define __S32XXXX_COMMON_H
+#ifndef __S32_H
+#define __S32_H
 
-#define CONFIG_S32XXXX
+#define CONFIG_S32
 
 #include <asm/arch/imx-regs.h>
 #include <generated/autoconf.h>
@@ -462,4 +462,4 @@
 #define CONFIG_PCI_SCAN_SHOW
 #endif
 
-#endif /* __S32V_COMMON_H */
+#endif /* __S32_H */

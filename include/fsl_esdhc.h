@@ -169,8 +169,7 @@
 #define ESDHC_VENDORSPEC_VSELECT 0x00000002 /* Use 1.8V */
 
 struct fsl_esdhc_cfg {
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_S32XXXX_GEN1)
+#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32)
 	u64	esdhc_base;
 #else
 	u32	esdhc_base;
@@ -209,7 +208,7 @@ struct fsl_esdhc_cfg {
 #error "Endianess is not defined: please fix to continue"
 #endif
 
-#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32XXXX)
+#if defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32)
 #define CORE_64BIT_PERIPHERALS_32BIT
 #endif
 

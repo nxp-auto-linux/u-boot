@@ -15,11 +15,11 @@
 #include <asm/arch/src.h>
 #include <asm/arch/mmdc.h>
 #include <asm/arch/ddr.h>
-#if defined(CONFIG_S32XXXX_LPDDR2)
+#if defined(CONFIG_S32_LPDDR2)
 #include <asm/arch/lpddr2.h>
-#elif defined(CONFIG_S32XXXX_DDR3)
+#elif defined(CONFIG_S32_DDR3)
 #include <asm/arch/ddr3.h>
-#elif defined(CONFIG_S32XXXX_LPDDR4)
+#elif defined(CONFIG_S32_LPDDR4)
 #include <asm/arch/lpddr4.h>
 #else
 #error "Please define the DDR type!"

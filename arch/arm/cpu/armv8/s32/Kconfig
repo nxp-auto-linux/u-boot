@@ -1,4 +1,4 @@
-if ARCH_S32XXXX
+if ARCH_S32
 
 config SYS_VENDOR
 	string
@@ -6,7 +6,7 @@ config SYS_VENDOR
 
 config SYS_SOC
 	string
-	default "s32xxxx"
+	default "s32"
 
 config BAUDRATE
 	int "Serial baudrate"
@@ -58,21 +58,21 @@ endif
 
 choice
 	prompt "Select DDR type"
-	default S32XXXX_LPDDR2
+	default S32_LPDDR2
 	help
-	  S32XXXX DDR Configuration
+	  S32 DDR Configuration
 
-config S32XXXX_LPDDR2
+config S32_LPDDR2
 	bool "LPDDR2 Support"
 	help
 	  Enable the support for Micron LPDDR2
 
-config S32XXXX_LPDDR4
+config S32_LPDDR4
 	bool "LPDDR4 Support"
 	help
 	  Enable the support for Micron LPDDR4
 
-config S32XXXX_DDR3
+config S32_DDR3
 	bool "DDR3 Support"
 	help
 	  Enable the support for Micron DDR3
