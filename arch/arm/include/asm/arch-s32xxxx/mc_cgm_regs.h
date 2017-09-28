@@ -1,11 +1,14 @@
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_S32V234_MCCGM_REGS_H__
 #define __ARCH_ARM_MACH_S32V234_MCCGM_REGS_H__
+
+#include <config.h>
 
 #ifndef __ASSEMBLY__
 
@@ -178,8 +181,15 @@
 #define PLL_MAX_FREQ				(1300000000)
 
 #define ARM_PLL_PHI0_FREQ			(1000000000)
+
+#if defined(CONFIG_S32V234)
 #define ARM_PLL_PHI1_FREQ			(1000000000)
+#elif defined(CONFIG_S32V244)
+#define ARM_PLL_PHI1_FREQ			 (400000000)
+#endif
+
 /* ARM_PLL_PHI1_DFS1_FREQ - 266 Mhz */
+// TODO : Update it based on : F(dfsclkout) = F(dfsclkin)/(2*[mfi + (mfn/36)]) skyrunner
 #define ARM_PLL_PHI1_DFS1_EN		(1)
 #define ARM_PLL_PHI1_DFS1_MFI		(3)
 #define ARM_PLL_PHI1_DFS1_MFN		(194)
@@ -196,7 +206,12 @@
 #define ARM_PLL_PLLDV_MFD			(50)
 #define ARM_PLL_PLLDV_MFN			(0)
 
+#if defined(CONFIG_S32V234)
 #define PERIPH_PLL_PHI0_FREQ		(400000000)
+#elif defined(CONFIG_S32V244)
+#define PERIPH_PLL_PHI0_FREQ		(2000000000)
+#endif
+
 #define PERIPH_PLL_PHI1_FREQ		(100000000)
 #define PERIPH_PLL_PHI1_DFS_Nr		(0)
 #define PERIPH_PLL_PLLDV_PREDIV		(1)

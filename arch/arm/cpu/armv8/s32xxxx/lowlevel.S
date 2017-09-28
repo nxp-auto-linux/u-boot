@@ -88,6 +88,7 @@ ENTRY(lowlevel_init)
 
 	branch_if_slave x0, 1f
 
+#if defined(CONFIG_S32V234)
 watchdog_m4_disable:
 	/* disable SWT4 watchdog*/
 	ldr x0, =0x40086010
@@ -102,6 +103,22 @@ watchdog_m4_disable:
 	ldr x1, [x0]
 	orr x1, x1, 0x40
 	str x1, [x0]
+#elif defined(CONFIG_S32XXXX_GEN1)
+watchdog_m7_disable:
+	/* disable SWT4 watchdog*/
+	ldr x0, =SWT4_BASE_ADDR
+	ldr w1, =0xC520
+	str w1, [x0]
+	ldr w1, =0xD928
+	str w1, [x0]
+	ldr x0, =SWT4_BASE_ADDR
+	ldr x1, [x0]
+	and x1, x1, 0xFFFFFFFE
+	str x1, [x0]
+	ldr x1, [x0]
+	orr x1, x1, 0x40
+	str x1, [x0]
+#endif
 
 sram_init:
 	/* Size of the SRAM memory to init */
@@ -109,11 +126,13 @@ sram_init:
 	ldr x1, =IRAM_BASE_ADDR
 	add x1, x1, IRAM_SIZE
 	sub x1, x1, x0
-	
+
 	/* Start address of the SRAM memory to init */
 	ldr x0, =__bss_start
 
+#ifndef VIRTUAL_PLATFORM
 	bl dma_mem_clr
+#endif
 
 	/* turn on a53 slave cores from a53 master */
 	/* deassert cores on reset */

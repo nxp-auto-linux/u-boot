@@ -129,7 +129,9 @@ static int find_table(const struct sys_mmu_table *list,
 static inline void early_mmu_setup(void)
 {
 	unsigned int el, i;
+#ifdef CONFIG_S32V234
 	volatile struct ccsr_cci400 *cci = (struct ccsr_cci400 *)CCI400_BASE_ADDR;
+#endif
 	u64 *level0_table = (u64 *) (IRAM_BASE_ADDR + 0x6000);
 	u64 *level1_table0 = (u64 *)(IRAM_BASE_ADDR + 0x7000);
 	u64 *level1_table1 = (u64 *)(IRAM_BASE_ADDR + 0x8000);
@@ -163,25 +165,27 @@ static inline void early_mmu_setup(void)
 			  level2_table2);
 
 	/* Find the table and fill in the block entries */
-	for (i = 0; i < ARRAY_SIZE(lsch3_early_mmu_table); i++) {
-		if (find_table(&lsch3_early_mmu_table[i],
+	for (i = 0; i < ARRAY_SIZE(s32xxxx_early_mmu_table); i++) {
+		if (find_table(&s32xxxx_early_mmu_table[i],
 			&table, level0_table) == 0) {
 			/*
 			* If find_table() returns error, it cannot be dealt
 			* with here. Breakpoint can be added for debugging.
 			*/
-			set_block_entry(&lsch3_early_mmu_table[i], &table);
+			set_block_entry(&s32xxxx_early_mmu_table[i], &table);
 			/*
 			* If set_block_entry() returns error, it cannot be
 			* dealt with here too.
 			*/
 		}
 	}
+#ifdef CONFIG_S32V234
 	out_le32(&cci->slave[3].snoop_ctrl,
 			 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
 
 	out_le32(&cci->slave[4].snoop_ctrl,
 			 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
+#endif
 	el = current_el();
 	set_ttbr_tcr_mair(el, (u64)level0_table, S32V_TCR, MEMORY_ATTRIBUTES);
 	set_sctlr(get_sctlr() | CR_M);
@@ -233,17 +237,17 @@ static inline void final_mmu_setup(void)
 
 
 	/* Find the table and fill in the block entries */
-	for (i = 0; i < ARRAY_SIZE(lsch3_final_mmu_table); i++) {
-		if (find_table(&lsch3_final_mmu_table[i],
+	for (i = 0; i < ARRAY_SIZE(s32xxxx_final_mmu_table); i++) {
+		if (find_table(&s32xxxx_final_mmu_table[i],
 			&table, level0_table) == 0) {
-			if (set_block_entry(&lsch3_final_mmu_table[i],
+			if (set_block_entry(&s32xxxx_final_mmu_table[i],
 					&table) != 0) {
 				printf("MMU error: could not set block entry for %p\n",
-				&lsch3_final_mmu_table[i]);
+				&s32xxxx_final_mmu_table[i]);
 			}
 			} else {
 				printf("MMU error: could not find the table for %p\n",
-				&lsch3_final_mmu_table[i]);
+				&s32xxxx_final_mmu_table[i]);
 			}
 	}
 
@@ -308,7 +312,7 @@ int arch_early_init_r(void)
 {
 	int rv;
 	asm volatile("dsb sy");
-	rv = fsl_s32v234_wake_seconday_cores();
+	rv = fsl_s32xxxx_wake_seconday_cores();
 
 	if (rv)
 		printf("Did not wake secondary cores\n");
@@ -319,6 +323,7 @@ int arch_early_init_r(void)
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
 
+#ifdef CONFIG_S32V234
 int timer_init(void)
 {
 	if (get_siul2_midr1_major() >= 1)
@@ -336,3 +341,4 @@ int timer_init(void)
 	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
 	return 0;
 }
+#endif

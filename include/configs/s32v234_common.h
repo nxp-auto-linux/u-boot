@@ -12,10 +12,9 @@
 #ifndef __S32V234_COMMON_H
 #define __S32V234_COMMON_H
 
-#include <configs/s32v.h>
-#include <asm/arch/imx-regs.h>
-
 #define CONFIG_S32V234
+
+#include <configs/s32v.h>
 
 /* Config DCU */
 #ifdef CONFIG_FSL_DCU_FB

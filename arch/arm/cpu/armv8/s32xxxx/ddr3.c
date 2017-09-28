@@ -4,12 +4,12 @@
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
 
+#include <common.h>
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
 #include <asm/arch/ddr3.h>
 #include <asm/arch/mmdc.h>
-#include <common.h>
 
 void ddr_config_iomux(uint8_t module)
 {

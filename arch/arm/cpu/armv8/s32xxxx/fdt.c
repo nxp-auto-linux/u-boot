@@ -91,6 +91,9 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #ifdef CONFIG_MP
 	ft_fixup_cpu(blob);
 #endif
+
+#ifdef CONFIG_S32V234
 	ft_fixup_soc_revision(blob);
 	ft_fixup_clock_frequency(blob);
+#endif
 }

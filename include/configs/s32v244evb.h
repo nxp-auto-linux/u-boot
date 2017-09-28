@@ -19,6 +19,7 @@
 /* #define CONFIG_CSE3		1 */
 
 #define VIRTUAL_PLATFORM
+#define CONFIG_S32V244
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
@@ -87,7 +88,6 @@
 #include <configs/s32v.h>
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
-#define CONFIG_S32V244
 
 #define CONFIG_GICV3
 #define GIC_BASE		0x50800000

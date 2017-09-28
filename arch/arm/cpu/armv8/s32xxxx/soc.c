@@ -14,7 +14,11 @@
 #include <div64.h>
 #include <errno.h>
 #include <asm/arch/cse.h>
+#include <asm/arch/imx-regs.h>
 
+#ifdef VIRTUAL_PLATFORM
+#define UART_CLK_FREQ	133333333
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -209,6 +213,9 @@ static u32 get_peripherals_clk(void)
 
 static u32 get_uart_clk(void)
 {
+#ifdef VIRTUAL_PLATFORM
+	return UART_CLK_FREQ;
+#else
 	u32 auxclk3_div, auxclk3_sel, freq = 0;
 	#define SOURCE_CLK_DIV (3)
 
@@ -239,6 +246,7 @@ static u32 get_uart_clk(void)
 
 	return freq/auxclk3_div;
 	#undef SOURCE_CLK_DIV
+#endif
 }
 
 static u32 get_fec_clk(void)
@@ -246,7 +254,11 @@ static u32 get_fec_clk(void)
 	u32 auxclk2_div;
 	u32 freq = 0;
 
+#if defined(CONFIG_S32V234)
 	auxclk2_div =  readl(CGM_ACn_DCm(MC_CGM2_BASE_ADDR, 2, 0)) & MC_CGM_ACn_DCm_PREDIV_MASK;
+#elif defined(CONFIG_S32V244)
+	auxclk2_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 7, 1)) & MC_CGM_ACn_DCm_PREDIV_MASK;
+#endif
 	auxclk2_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
 	auxclk2_div += 1;
 
@@ -378,7 +390,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 }
 
 /* Dump some core clocks */
-int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
+int do_s32xxxx_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
 {
 	printf("Root clocks:\n");
@@ -401,7 +413,7 @@ int do_s32v234_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 }
 
 U_BOOT_CMD(
-	clocks, CONFIG_SYS_MAXARGS, 1, do_s32v234_showclocks,
+	clocks, CONFIG_SYS_MAXARGS, 1, do_s32xxxx_showclocks,
 	"display clocks",
 	""
 );
@@ -474,9 +486,14 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
+#if defined(CONFIG_S32V234)
 	printf("CPU:   NXP S32V234 V%d.%d at %d MHz\n",
 	       get_siul2_midr1_major() + 1, get_siul2_midr1_minor(),
 	       mxc_get_clock(MXC_ARM_CLK) / 1000000);
+#elif defined(CONFIG_S32XXXX_GEN1)
+	printf("CPU:   NXP S32X at %d MHz\n",
+	       mxc_get_clock(MXC_ARM_CLK) / 1000000);
+#endif
 	printf("Reset cause: %s\n", get_reset_cause());
 
 	return 0;
@@ -486,6 +503,7 @@ int print_cpuinfo(void)
 int cpu_eth_init(bd_t *bis)
 {
 	int rc = -ENODEV;
+#ifndef VIRTUAL_PLATFORM
 
 #if defined(CONFIG_FEC_MXC)
 	volatile struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
@@ -500,6 +518,8 @@ int cpu_eth_init(bd_t *bis)
 #endif
 
 	rc = fecmxc_initialize(bis);
+#endif
+
 #endif
 
 	return rc;
@@ -806,6 +826,7 @@ void ddr_check_post_func_reset(uint8_t module) {
 	unsigned long mmdc_addr;
 	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
 
+#ifndef VIRTUAL_PLATFORM
 	mmdc_addr = (module) ? MMDC1_BASE_ADDR : MMDC0_BASE_ADDR;
 	ddr_self_ref_clr = (module) ? SRC_DDR_EN_SELF_REF_CTRL_DDR1_SLF_REF_CLR
 				    : SRC_DDR_EN_SELF_REF_CTRL_DDR0_SLF_REF_CLR;
@@ -821,6 +842,7 @@ void ddr_check_post_func_reset(uint8_t module) {
 		mmdc_mapsr = readl(mmdc_addr + MMDC_MAPSR);
 		writel(mmdc_mapsr & ~MMDC_MAPSR_EN_SLF_REF, mmdc_addr + MMDC_MAPSR);
 	}
+#endif
 }
 #endif
 
@@ -868,6 +890,7 @@ __weak int dram_init(void)
 	return 0;
 }
 
+#if defined(CONFIG_S32V234)
 /* start M4 core */
 static int do_start_m4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -919,6 +942,37 @@ U_BOOT_CMD(
 	"start M4 core from SRAM address",
 	"startAddress"
 );
+
+#elif defined(S32V244)
+/* start M7 core */
+static int do_start_m7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned long addr;
+	char *ep;
+
+	if (argc < 2)
+		return CMD_RET_USAGE;
+
+	addr = simple_strtoul(argv[1], &ep, 16);
+	if (ep == argv[1] || *ep != '\0')
+		return CMD_RET_USAGE;
+
+	if (!IS_ADDR_IN_IRAM(addr)) {
+		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n", addr);
+		return CMD_RET_USAGE;
+	}
+
+	printf("Starting core M7 at SRAM address 0x%08lX ...\n", addr);
+	printf("Current functionality isn't supported.\n");
+	return CMD_RET_SUCCESS;
+}
+
+U_BOOT_CMD(
+	startm7,	2,	1,	do_start_m7,
+	"start M7 core from SRAM address",
+	"startAddress"
+);
+#endif
 
 extern void dma_mem_clr(int addr, int size);
 
