@@ -5,8 +5,8 @@
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
 
-#ifndef __ARCH_ARM_MACH_S32V234_DDR3_H__
-#define __ARCH_ARM_MACH_S32V234_DDR3_H__
+#ifndef __ARCH_ARM_MACH_S32XXXX_DDR3_H__
+#define __ARCH_ARM_MACH_S32XXXX_DDR3_H__
 
 
 /* definitions for DDR3 PAD values */

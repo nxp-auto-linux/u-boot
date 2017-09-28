@@ -1,11 +1,12 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#ifndef __ARCH_ARM_MACH_S32V234_LPDDR2_H__
-#define __ARCH_ARM_MACH_S32V234_LPDDR2_H__
+#ifndef __ARCH_ARM_MACH_S32XXXX_LPDDR2_H__
+#define __ARCH_ARM_MACH_S32XXXX_LPDDR2_H__
 
 /* definitions for LPDDR2 PAD values */
 #define LPDDR2_CLK0_PAD	\

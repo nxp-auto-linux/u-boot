@@ -58,21 +58,21 @@ endif
 
 choice
 	prompt "Select DDR type"
-	default S32V234_LPDDR2
+	default S32XXXX_LPDDR2
 	help
 	  S32XXXX DDR Configuration
 
-config S32V234_LPDDR2
+config S32XXXX_LPDDR2
 	bool "LPDDR2 Support"
 	help
 	  Enable the support for Micron LPDDR2
 
-config S32V244_LPDDR4
+config S32XXXX_LPDDR4
 	bool "LPDDR4 Support"
 	help
 	  Enable the support for Micron LPDDR4
 
-config S32V234_DDR3
+config S32XXXX_DDR3
 	bool "DDR3 Support"
 	help
 	  Enable the support for Micron DDR3
