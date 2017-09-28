@@ -9,7 +9,7 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/pinmux.h>
+#include <asm/arch/soc.h>
 #include <fdt_support.h>
 #include <libfdt.h>
 #include <miiphy.h>
@@ -40,12 +40,12 @@ int board_early_init_f(void)
 	clock_init();
 	mscm_init();
 
-	setup_iomux_uart();
-	setup_iomux_enet();
-	setup_iomux_i2c();
-	setup_iomux_nfc();
+	//setup_iomux_uart();
+	//setup_iomux_enet();
+	//setup_iomux_i2c();
+	//setup_iomux_nfc();
 
-	setup_xrdc();
+	//setup_xrdc();
 	return 0;
 }
 

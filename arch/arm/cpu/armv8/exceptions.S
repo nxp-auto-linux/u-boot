@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2013
+ * (C) Copyright 2017 NXP
  * David Feng <fenghua@phytium.com.cn>
  *
  * SPDX-License-Identifier:	GPL-2.0+
@@ -49,7 +50,7 @@
 .endm
 
 /* Return from the exception in a benign fashion */
-#ifdef CONFIG_S32V234
+#ifdef CONFIG_S32XXXX
 .macro	exception_exit
 	ldp	x2, x0, [sp], #16
 

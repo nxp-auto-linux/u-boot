@@ -1,8 +1,4 @@
-if ARCH_S32V234
-
-config SYS_CPU
-	string
-	default "armv8"
+if ARCH_S32XXXX
 
 config SYS_VENDOR
 	string
@@ -24,6 +20,9 @@ choice
 
 config TARGET_S32V234EVB
 	bool "Support s32v234evb"
+
+config TARGET_S32V244EVB
+	bool "Support s32v244evb"
 
 config TARGET_S32V234FVB
 	bool "Support s32v234fvb"
@@ -61,12 +60,17 @@ choice
 	prompt "Select DDR type"
 	default S32V234_LPDDR2
 	help
-	  S32V234 DDR Configuration
+	  S32XXXX DDR Configuration
 
 config S32V234_LPDDR2
 	bool "LPDDR2 Support"
 	help
 	  Enable the support for Micron LPDDR2
+
+config S32V244_LPDDR4
+	bool "LPDDR4 Support"
+	help
+	  Enable the support for Micron LPDDR4
 
 config S32V234_DDR3
 	bool "DDR3 Support"
@@ -85,5 +89,6 @@ source "board/freescale/s32v234evb/Kconfig"
 source "board/freescale/s32v234fvb/Kconfig"
 source "board/freescale/s32v234pcie/Kconfig"
 source "board/freescale/s32v234tmdp/Kconfig"
+source "board/freescale/s32v244evb/Kconfig"
 
 endif

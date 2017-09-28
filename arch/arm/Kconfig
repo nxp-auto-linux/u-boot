@@ -576,13 +576,10 @@ config ARCH_ZYNQMP
 	select DM_MMC
 	select DM_SERIAL
 
-config ARCH_S32V234
-	bool "Support S32V234 SOC"
+config ARCH_S32XXXX
+	bool "Support S32XXXX SOCs"
 	select ARM64
 	select CUSTOM_CMD_FLASH
-
-config ARCH_S32V244
-	bool "Support S32V244 SOC"
 	select ARM64
 	select CUSTOM_CMD_FLASH
 

@@ -17,7 +17,6 @@
 #include <asm/arch/ddr.h>
 #if defined(CONFIG_S32V234_LPDDR2)
 #include <asm/arch/lpddr2.h>
-<<<<<<< HEAD
 #elif defined(CONFIG_S32V234_DDR3) || defined(CONFIG_S32V244_DDR3)
 #include <asm/arch/ddr3.h>
 #elif defined(CONFIG_S32V244_LPDDR4)
