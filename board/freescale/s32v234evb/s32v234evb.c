@@ -228,6 +228,16 @@ int checkboard(void)
 	return 0;
 }
 
+void board_net_init(void)
+{
+#ifdef CONFIG_SJA1105
+	/* The SJA switch can have its ports RX lines go out of sync. They need
+	 * to be reseted in order to allow network traffic.
+	 */
+	sja1105_reset_ports(SJA_1_CS, SJA_1_BUS);
+#endif
+}
+
 
 #if defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
