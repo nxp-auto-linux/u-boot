@@ -6,6 +6,7 @@
  *	Copyright 2000 Roland Borde
  *	Copyright 2000 Paolo Scaffardi
  *	Copyright 2000-2002 Wolfgang Denk, wd@denx.de
+ *	Copyright 2017 NXP
  *	SPDX-License-Identifier:	GPL-2.0
  */
 
@@ -386,6 +387,15 @@ void net_init(void)
 	net_init_loop();
 }
 
+/*
+ * Board specific function that is called upon any net related task.
+ * Used to setup any needed board configuration before a network task can be
+ * started.
+ */
+__weak void board_net_init(void)
+{
+}
+
 /**********************************************************************/
 /*
  *	Main network processing loop.
@@ -413,6 +423,9 @@ int net_loop(enum proto_t protocol)
 	} else {
 		eth_init_state_only();
 	}
+
+	board_net_init();
+
 restart:
 #ifdef CONFIG_USB_KEYBOARD
 	net_busy_flag = 0;

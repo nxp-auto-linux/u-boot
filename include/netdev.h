@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2008
+ * (C) Copyright 2017 NXP
  * Benjamin Warren, biggerbadderben@gmail.com
  *
  * SPDX-License-Identifier:	GPL-2.0+
@@ -23,6 +24,7 @@
 
 int board_eth_init(bd_t *bis);
 int cpu_eth_init(bd_t *bis);
+void board_net_init(void);
 
 /* Driver initialization prototypes */
 int at91emac_register(bd_t *bis, unsigned long iobase);
