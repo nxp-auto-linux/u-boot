@@ -6,6 +6,8 @@
  * Chao Fu (B44548@freesacle.com)
  * Haikun Wang (B53464@freescale.com)
  *
+ * (C) Copyright 2017 NXP
+ *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
@@ -72,7 +74,7 @@ struct dspi {
 #define DSPI_CTAR_CPHA			0x02000000
 #define DSPI_CTAR_LSBFE			0x01000000
 #define DSPI_CTAR_PCSSCK(x)		(((x) & 0x03) << 22)
-#define DSPI_CTAR_PCSSCK_7CLK		0x00A00000
+#define DSPI_CTAR_PCSSCK_7CLK		0x00C00000
 #define DSPI_CTAR_PCSSCK_5CLK		0x00800000
 #define DSPI_CTAR_PCSSCK_3CLK		0x00400000
 #define DSPI_CTAR_PCSSCK_1CLK		0x00000000
