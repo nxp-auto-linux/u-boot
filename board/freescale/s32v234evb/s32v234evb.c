@@ -14,6 +14,10 @@
 #include <netdev.h>
 #include <i2c.h>
 
+#ifdef CONFIG_PHY_MICREL
+#include <micrel.h>
+#endif
+
 #ifdef CONFIG_SJA1105
 #include "sja1105.h"
 #endif
@@ -111,6 +115,17 @@ static void mscm_init(void)
 
 int board_phy_config(struct phy_device *phydev)
 {
+#ifdef CONFIG_PHY_MICREL
+	/* Enable all AutoNeg capabilities */
+	ksz9031_phy_extended_write(phydev, 0x02,
+				   MII_KSZ9031_EXT_OP_MODE_STRAP_OVRD,
+				   MII_KSZ9031_MOD_DATA_NO_POST_INC,
+				   MII_KSZ9031_EXT_OMSO_RGMII_ALL_CAP_OVRD);
+
+	/* Reset the PHY so that the previous changes take effect */
+	phy_write(phydev, CONFIG_FEC_MXC_PHYADDR, MII_BMCR, BMCR_RESET);
+#endif
+
 	if (phydev->drv->config)
 		phydev->drv->config(phydev);
 
