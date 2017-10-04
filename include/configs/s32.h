@@ -193,12 +193,8 @@
 #define CONFIG_BOOTDELAY	3
 #endif
 
-#ifdef VIRTUAL_PLATFORM
-#define CONFIG_BOOTARGS		"console=ttyAMA0 earlyprintk=pl011,0x20020000"
-#else
 #define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
 				" root=/dev/ram rw"
-#endif
 
 #define CONFIG_CMD_ENV
 
