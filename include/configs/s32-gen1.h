@@ -84,6 +84,15 @@
 #define CONFIG_USE_IRQ
 #define CONFIG_CMD_IRQ
 #endif
+
+#if CONFIG_FSL_LINFLEX_MODULE == 0
+#define LINFLEXUART_BASE	LINFLEXD0_BASE_ADDR
+#elif CONFIG_FSL_LINFLEX_MODULE == 1
+#define LINFLEXUART_BASE	LINFLEXD1_BASE_ADDR
+#else
+#define LINFLEXUART_BASE	LINFLEXD2_BASE_ADDR
+#endif
+
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32.h>
 

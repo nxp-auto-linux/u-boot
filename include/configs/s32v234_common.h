@@ -14,6 +14,12 @@
 
 #define CONFIG_S32V234
 
+#if CONFIG_FSL_LINFLEX_MODULE == 0
+#define LINFLEXUART_BASE	LINFLEXD0_BASE_ADDR
+#else
+#define LINFLEXUART_BASE	LINFLEXD1_BASE_ADDR
+#endif
+
 #include <configs/s32.h>
 
 /* Config DCU */
