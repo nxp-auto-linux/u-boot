@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2018 NXP
+ * Copyright 2018-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -42,9 +42,9 @@
 #endif
 
 #ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	#define FDT_FILE s32v234-pciebcm.dtb
+	#define FDT_FILE fsl-s32v234-pciebcm.dtb
 #else
-	#define	FDT_FILE s32v234-pcie.dtb
+	#define	FDT_FILE fsl-s32v234-pcie.dtb
 #endif
 
 #define CONFIG_SYS_INIT_SP_OFFSET \

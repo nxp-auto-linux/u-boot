@@ -63,9 +63,9 @@
 #endif
 
 #ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	#define FDT_FILE s32v234-evbbcm.dtb
+	#define FDT_FILE fsl-s32v234-evbbcm.dtb
 #else
-	#define	FDT_FILE s32v234-evb.dtb
+	#define	FDT_FILE fsl-s32v234-evb.dtb
 #endif
 
 #define CONFIG_LOADADDR		LOADADDR
