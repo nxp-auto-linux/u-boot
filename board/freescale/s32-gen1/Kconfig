@@ -1,12 +1,14 @@
-if TARGET_S32V244EVB
+if TARGET_S32V244 || TARGET_S32G2XX || TARGET_S32R45X
 
 config SYS_BOARD
 	string
-	default "s32v244evb"
+	default "s32-gen1"
 
 config SYS_CONFIG_NAME
 	string
-	default "s32v244evb"
+	default "s32v244" if TARGET_S32V244
+	default "s32g2xx" if TARGET_S32G2XX
+	default "s32r45x" if TARGET_S32R45X
 
 # DDR0(256MB) and DDR1(256MB).
 # U-boot uses only one DDR slot.

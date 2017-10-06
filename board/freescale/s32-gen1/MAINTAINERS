@@ -1,0 +1,25 @@
+S32-GEN1 BOARD
+M:	-
+S:	Maintained
+F:	board/freescale/s32-gen1/
+F:	arch/arm/cpu/armv8/s32
+F:	arch/arm/include/asm/arch-s32
+
+S32V244 BOARD
+M:	-
+S:	Maintained
+F:	configs/s32v244_defconfig
+F:	include/configs/s32v244.h
+
+S32G2XX BOARD
+M:	-
+S:	Maintained
+F:	configs/s32g2xx_defconfig
+F:	include/configs/s32g2xx.h
+
+S32R45X BOARD
+M:	-
+S:	Maintained
+F:	configs/s32r45x_defconfig
+F:	include/configs/s32r45x.h
+
