@@ -127,7 +127,7 @@ int sja1105_get_cfg(u32 devid, u32 cs, u32 *bin_len, u8 **cfg_bin)
 	*bin_len = 0;
 	*cfg_bin = NULL;
 
-	printf("No matching device ID found for devid %X, cs %d.", devid, cs);
+	printf("No matching device ID found for devid %X, cs %d.\n", devid, cs);
 
 	return -EINVAL;
 }
