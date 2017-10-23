@@ -214,10 +214,6 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 
-#ifdef CONFIG_SJA1105
-	sja1105_probe(SJA_1_CS, SJA_1_BUS);
-#endif
-
 	return 0;
 }
 
@@ -231,6 +227,11 @@ int checkboard(void)
 void board_net_init(void)
 {
 #ifdef CONFIG_SJA1105
+	/* Only probe the switch if we are going to use networking.
+	 * The probe has a self check so it will quietly exit if we call it
+	 * twice.
+	 */
+	sja1105_probe(SJA_1_CS, SJA_1_BUS);
 	/* The SJA switch can have its ports RX lines go out of sync. They need
 	 * to be reseted in order to allow network traffic.
 	 */
