@@ -32,6 +32,7 @@ phys_addr_t determine_mp_bootpg(void)
 	return (phys_addr_t)SECONDARY_CPU_BOOT_PAGE;
 }
 
+#ifdef CONFIG_S32V234
 int fsl_s32_wake_seconday_cores(void)
 {
 	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
@@ -66,6 +67,14 @@ int fsl_s32_wake_seconday_cores(void)
 
 	return 0;
 }
+#elif defined(CONFIG_S32_GEN1)
+int fsl_s32_wake_seconday_cores(void)
+{
+	return 0;
+}
+#else
+#error "Incomplete platform definition"
+#endif
 
 int is_core_valid(unsigned int core)
 {
