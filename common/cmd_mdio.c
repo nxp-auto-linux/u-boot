@@ -1,6 +1,7 @@
 /*
  * (C) Copyright 2011 Freescale Semiconductor, Inc
  * Andy Fleming
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -255,12 +256,6 @@ static int do_mdio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		break;
 	}
 
-	if (op[0] == 'l') {
-		mdio_list_devices();
-
-		return 0;
-	}
-
 	/* Save the chosen bus */
 	miiphy_set_current_dev(bus->name);
 
@@ -273,6 +268,10 @@ static int do_mdio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	case 'r':
 		mdio_read_ranges(phydev, bus, addrlo, addrhi, devadlo, devadhi,
 				 reglo, reghi, extended);
+		break;
+
+	case 'l':
+		mdio_list_devices();
 		break;
 	}
 
