@@ -13,16 +13,13 @@ config BAUDRATE
 	default 115200
 
 choice
-	prompt "Select S32V234 Target Board Support"
+	prompt "Select S32 Target Board Support"
 	default TARGET_S32V234EVB
 	help
-	  S32V234 Target Board Selection
+	  S32 Target Board Selection
 
 config TARGET_S32V234EVB
 	bool "Support s32v234evb"
-
-config TARGET_S32V244EVB
-	bool "Support s32v244evb"
 
 config TARGET_S32V234FVB
 	bool "Support s32v234fvb"
@@ -32,6 +29,15 @@ config TARGET_S32V234PCIE
 
 config TARGET_S32V234TMDP
 	bool "Support s32v234tmdp"
+
+config TARGET_S32V244
+	bool "Support s32v244"
+
+config TARGET_S32R45X
+	bool "Support s32r45x"
+
+config TARGET_S32G2XX
+	bool "Support s32g2xx"
 
 endchoice
 
@@ -89,6 +95,6 @@ source "board/freescale/s32v234evb/Kconfig"
 source "board/freescale/s32v234fvb/Kconfig"
 source "board/freescale/s32v234pcie/Kconfig"
 source "board/freescale/s32v234tmdp/Kconfig"
-source "board/freescale/s32v244evb/Kconfig"
+source "board/freescale/s32-gen1/Kconfig"
 
 endif

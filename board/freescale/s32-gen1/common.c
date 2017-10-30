@@ -34,6 +34,13 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
+void setup_xrdc(void)
+{
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_16);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_16);
+	writel(XRDC_VALID, XRDC_MRGD_W3_16);
+}
+
 int board_early_init_f(void)
 {
 	//clock_init();
@@ -44,7 +51,7 @@ int board_early_init_f(void)
 	//setup_iomux_i2c();
 	//setup_iomux_nfc();
 
-	//setup_xrdc();
+	setup_xrdc();
 	return 0;
 }
 
