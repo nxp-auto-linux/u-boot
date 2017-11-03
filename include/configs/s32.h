@@ -228,6 +228,18 @@
 #define CONFIG_BOARD_EXTRA_ENV_SETTINGS	""
 #endif
 
+/*
+ * Enable CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT if u-boot should use a ramdisk
+ * for nfsbooting.
+ */
+#ifdef CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
+#define NFSRAMFS_ADDR "${ramdisk_addr}"
+#define NFSRAMFS_TFTP_CMD "run loadtftpramdisk; "
+#else
+#define NFSRAMFS_ADDR "-"
+#define NFSRAMFS_TFTP_CMD ""
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	"ipaddr=10.0.0.100\0" \
@@ -238,11 +250,12 @@
 		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
 		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
+	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
-		"run loadtftpimage; run loadtftpfdt;"\
-		"${boot_mtd} ${loadaddr} - ${fdt_addr};\0"\
+		"run loadtftpimage; " NFSRAMFS_TFTP_CMD "run loadtftpfdt;"\
+		"${boot_mtd} ${loadaddr} " NFSRAMFS_ADDR " ${fdt_addr};\0" \
 	"script=boot.scr\0" \
 	"boot_mtd=" __stringify(BOOT_MTD) "\0" \
 	"image=" __stringify(IMAGE_NAME) "\0" \
