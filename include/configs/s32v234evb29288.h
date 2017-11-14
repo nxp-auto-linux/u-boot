@@ -20,6 +20,9 @@
 
 /* #define CONFIG_CMD_PCI */
 
+
+#define CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
+
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32v234evb_2016q4.h>
 
