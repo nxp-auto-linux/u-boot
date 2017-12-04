@@ -10,6 +10,7 @@
 #include <asm/system.h>
 #include <asm/io.h>
 #include <asm/arch/mc_me_regs.h>
+#include <asm/arch/mc_rgm_regs.h>
 #include "mp.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -70,6 +71,62 @@ int fsl_s32_wake_seconday_cores(void)
 #elif defined(CONFIG_S32_GEN1)
 int fsl_s32_wake_seconday_cores(void)
 {
+	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
+	size_t *boot_page_size = &(__secondary_boot_page_size);
+	u64 *table = get_spin_tbl_addr();
+	u32 reset;
+
+	/* Clear spin table so that secondary processors
+	 * observe the correct value after waking up from wfe.
+	 */
+	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
+	flush_dcache_range((unsigned long)boot_loc,
+			   (unsigned long)boot_loc + *boot_page_size);
+
+	/* Cluster 0 is already enabled by BootROM so we should enable
+	 * only cluster 1. The procedure can be found in
+	 * "MC_ME applicatoin core enable", S32R RM Rev1 DraftC.
+	 */
+	/* Set core clock enable bit. */
+	writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE, MC_ME_PRTN_1_CORE_M_PCONF(1));
+
+	/* Enable core clock triggering to update on writing CTRL key
+	 * sequence.
+	 */
+	writel(MC_ME_PRTN_N_CORE_M_PUPD_CCUPD,
+	       MC_ME_PRTN_1_CORE_M_PUPD(1));
+
+	/* Write start_address in MC_ME_PRTN_N_CORE_M_ADDR register. */
+	writel(CONFIG_SYS_TEXT_BASE, MC_ME_PRTN_1_CORE_M_ADDR(1));
+
+	/* Write valid key sequence to trigger the update. */
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+
+	/* Wait until hardware process to enable core is completed. */
+	while (readl(MC_ME_PRTN_1_CORE_M_PUPD(1)))
+		;
+
+	/* Releasing reset of A53 cores(1,2,3) using peripherals
+	 * reset in RGM.
+	 */
+	reset = readl(RGM_PRST(2));
+
+	/* Clear the bits corresponding to cores 1,2,3. */
+	reset &= ~0x1C;
+	writel(reset, RGM_PRST(2));
+
+	/* Wait until the bits corresponding to the cores in the RGM_PSTATn
+	 * are cleared (see "Individual Peripheral Resets",
+	 * S32R RM Rev1 DraftC).
+	 */
+	while (readl(RGM_PSTAT(2)) != reset)
+		;
+
+	smp_kick_all_cpus();
+
+	printf("All (%d) cores are up.\n", cpu_numcores());
+
 	return 0;
 }
 #else
