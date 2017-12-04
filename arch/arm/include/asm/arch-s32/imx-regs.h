@@ -11,9 +11,11 @@
 #define ARCH_MXC
 
 #if defined(CONFIG_S32V234)
-#include <asm/arch/s32v234-regs.h>
+#include "s32v234/s32v234-regs.h"
 #elif defined(CONFIG_S32_GEN1)
-#include <asm/arch/s32-gen1-regs.h>
+#include "s32-gen1/s32-gen1-regs.h"
+#else
+#error "Incomplete platform definition"
 #endif
 
 #define IS_ADDR_IN_IRAM(addr) \
