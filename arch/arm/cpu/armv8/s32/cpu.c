@@ -17,10 +17,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-u32 cpu_mask(void)
-{
-	return readl(MC_ME_CS);
-}
 #ifndef CONFIG_SYS_DCACHE_OFF
 /*
  * Set the block entries according to the information of the table.
@@ -288,24 +284,6 @@ void enable_caches(void)
 }
 
 #endif
-
-/*
- * Return the number of cores on this SOC.
- */
-int cpu_numcores(void)
-{
-	int numcores;
-	u32 mask;
-
-	mask = cpu_mask();
-	numcores = hweight32(cpu_mask());
-
-	/* Verify if M4 is deactivated */
-	if (mask & 0x1)
-		numcores--;
-
-	return numcores;
-}
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
 int arch_early_init_r(void)

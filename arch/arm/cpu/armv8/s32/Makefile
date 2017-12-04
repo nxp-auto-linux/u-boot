@@ -5,11 +5,12 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
-obj-y				+= clock.o
+obj-$(CONFIG_S32V234)		+= clock.o
 obj-y				+= cpu.o
 obj-$(CONFIG_S32V234)		+= cse.o
 obj-y				+= lowlevel.o
-obj-y				+= soc.o
+obj-$(CONFIG_S32V234)		+= s32v234/soc.o
+obj-$(CONFIG_S32_GEN1)		+= s32-gen1/soc.o
 obj-$(CONFIG_SYS_PIT_TIMER)	+= timer.o
 obj-$(CONFIG_S32_LPDDR2)	+= lpddr2.o
 obj-$(CONFIG_S32_LPDDR4)	+= lpddr4.o

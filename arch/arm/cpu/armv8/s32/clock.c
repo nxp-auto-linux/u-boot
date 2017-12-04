@@ -13,7 +13,6 @@
 #include <asm/arch/clock.h>
 
 /* System Reset Controller is not yet available on VirtualPlatform */
-#ifndef VIRTUAL_PLATFORM
 /*
  * Select the clock reference for required pll.
  * pll - ARM_PLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_PLL.
@@ -61,7 +60,6 @@ static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
 
 	return 0;
 }
-#endif
 
 void reset_misc(void)
 {
@@ -112,12 +110,10 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 		return -1;
 	}
 
-#ifndef VIRTUAL_PLATFORM
 	if( select_pll_source_clk( pll, refclk_freq ) < 0 )
 	{
 		return -1;
 	}
-#endif
 
 	rfdphi = fvco/freq0;
 
@@ -344,7 +340,6 @@ static void enable_modules_clock( void )
 
 void clock_init(void)
 {
-#ifndef VIRTUAL_PLATFORM
 	unsigned int arm_dfs[ARM_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
 			{ ARM_PLL_PHI1_DFS1_EN, ARM_PLL_PHI1_DFS1_MFN, ARM_PLL_PHI1_DFS1_MFI },
 			{ ARM_PLL_PHI1_DFS2_EN, ARM_PLL_PHI1_DFS2_MFN, ARM_PLL_PHI1_DFS2_MFI },
@@ -385,9 +380,7 @@ void clock_init(void)
 				ARM_PLL_PLLDV_MFD, ARM_PLL_PLLDV_MFN
 				);
 
-#endif
 	setup_sys_clocks();
-#ifndef VIRTUAL_PLATFORM
 
 	program_pll(
 				PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI0_FREQ,
@@ -416,7 +409,6 @@ void clock_init(void)
 				);
 
 	setup_aux_clocks();
-#endif
 	enable_modules_clock();
 
 }
