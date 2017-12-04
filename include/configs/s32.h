@@ -190,11 +190,7 @@
 #define CONFIG_SYS_SPD_BUS_NUM	0
 #endif
 
-#ifdef VIRTUAL_PLATFORM
-#define CONFIG_BOOTDELAY	0
-#else
 #define CONFIG_BOOTDELAY	3
-#endif
 
 #define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
 				" root=/dev/ram rw"
