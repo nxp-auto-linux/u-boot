@@ -25,7 +25,11 @@ DECLARE_GLOBAL_DATA_PTR;
 
 u32 cpu_mask(void)
 {
-	return 0xF;
+	/* 0 means out of reset. */
+	/* Bit 0 corresponds to cluster reset and is 0 if any
+	 * of the other bits 1-4 are 0.
+	 */
+	return (~(readl(RGM_PSTAT(2)))) >> 1;
 }
 
 /*
@@ -33,7 +37,7 @@ u32 cpu_mask(void)
  */
 int cpu_numcores(void)
 {
-	return 4;
+	return hweight32(cpu_mask());
 }
 
 static u32 get_uart_clk(void)
