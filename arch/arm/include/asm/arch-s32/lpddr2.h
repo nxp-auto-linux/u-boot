@@ -38,6 +38,8 @@
 #define _MDCTL							0x03010000
 
 #define MMDC_MDSCR_CFG_VALUE		0x00008000  /* Set MDSCR[CON_REQ] (configuration request) */
+#define MMDC_MDSCR_CS0_VALUE        0x00008010  /* Precharge-all command CS0 */
+#define MMDC_MDSCR_CS1_VALUE        0x00008018  /* Precharge-all command CS1 */
 #define MMDC_MDCFG0_VALUE		0x464F61A5  /* tRFCab=70 (=130ns),tXSR=80 (=tRFCab+10ns),tXP=4 (=7.5ns),tXPDLL=n/a,tFAW=27 (50 ns),tCL(RL)=8 */
 #define MMDC_MDCFG1_VALUE		0x00180E63  /* tRCD=n/a,tRPpb=n/a,tRC=n/a ,tRAS=25 (=47ns),tRPA=n/a,tWR=8 (=15.0ns),tMRD=3,tWL=4 */
 #define MMDC_MDCFG2_VALUE		0x000000DD  /* tDLLK=n/a,tRTP=4 (=7.5ns),tWTR=4 (=7.5ns),tRRD=6 (=10ns) */
