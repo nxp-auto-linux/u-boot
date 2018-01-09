@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -107,6 +107,7 @@ static int sja1105_write(struct sja_parms *sjap, u32 *cmd, u8 nb_words)
 
 done:
 	spi_release_bus(slave);
+	spi_free_slave(slave);
 
 	return ret;
 }
@@ -169,6 +170,7 @@ static u32 sja1105_read_reg32(struct sja_parms *sjap, u32 reg_addr)
 	if (rc)
 		printf("Error %d during SPI transaction\n", rc);
 	spi_release_bus(slave);
+	spi_free_slave(slave);
 
 	upper = (resp[1] & 0x0000FFFF) << 16;
 	down = (resp[1] & 0xFFFF0000) >> 16;
@@ -216,6 +218,7 @@ static u32 sja1105_write_reg32(struct sja_parms *sjap, u32 reg_addr, u32 val)
 	if (rc)
 		printf("Error %d during SPI transaction\n", rc);
 	spi_release_bus(slave);
+	spi_free_slave(slave);
 
 	upper = (resp[1] & 0x0000FFFF) << 16;
 	down = (resp[1] & 0xFFFF0000) >> 16;
