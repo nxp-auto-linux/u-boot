@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -79,6 +79,7 @@
  * SRC_GPR8 bit fields
  */
 #define SRC_GPR8_2D_ACE_QOS_OFFSET				0
+#define MIN_DCU_QOS_PRIORITY					0xD
 #endif
 
 /* SRC_DDR_SELF_REF_CTRL bit fields */
