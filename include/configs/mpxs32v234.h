@@ -56,6 +56,8 @@
 	 CONFIG_SYS_TEXT_OFFSET)
 
 
+#define CONFIG_BOARD_EXTRA_ENV_SETTINGS "dvi_on=i2c dev 2; i2c mw 3f 8 35\0"
+
 /* #define CONFIG_CMD_PCI */
 #ifdef CONFIG_CMD_PCI
 #define CONFIG_GICSUPPORT
