@@ -21,6 +21,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+void rtc_init(void);
+
 static void setup_iomux_uart(void)
 {
 	/* Muxing for linflex0 and linflex1 */
@@ -283,6 +285,8 @@ int board_init(void)
 {
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+
+	rtc_init();
 
 	return 0;
 }

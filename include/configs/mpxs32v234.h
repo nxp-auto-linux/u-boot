@@ -23,6 +23,8 @@
 #define CONFIG_CMD_EXT2
 #define CONFIG_CMD_EXT4
 
+#define CONFIG_CMD_DATE
+
 /* Config DCU */
 #define CONFIG_FSL_DCU_FB
 
@@ -32,7 +34,10 @@
 #define CONFIG_SYS_I2C_MXC_I2C2
 #define CONFIG_SYS_I2C_MXC_I2C3
 
+#define CONFIG_SYS_RTC_BUS_NUM          2
 #define CONFIG_SYS_I2C_RTC_ADDR		0x51
+
+#define CONFIG_RTC_PCF85263
 
 /* Ethernet config */
 
