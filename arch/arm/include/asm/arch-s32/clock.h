@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -23,6 +23,8 @@ enum mxc_clock {
 	MXC_DCU_PIX_CLK,
 	MXC_DSPI_CLK,
 };
+
+#if defined(CONFIG_S32V234)
 enum pll_type {
 	ARM_PLL = 0,
 	PERIPH_PLL,
@@ -30,6 +32,15 @@ enum pll_type {
 	DDR_PLL,
 	VIDEO_PLL,
 };
+#elif defined(CONFIG_S32_GEN1)
+enum pll_type {
+	ARM_PLL = 0,
+	PERIPH_PLL,
+	ACCEL_PLL,
+	DDR_PLL,
+	AURORA_PLL,
+};
+#endif
 
 unsigned int mxc_get_clock(enum mxc_clock clk);
 void clock_init(void);

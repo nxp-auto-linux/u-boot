@@ -1,6 +1,5 @@
 /*
- * (C) Copyright 2016 NXP Semiconductor, Inc.
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -43,8 +42,8 @@ void setup_xrdc(void)
 
 int board_early_init_f(void)
 {
-	//clock_init();
 	mscm_init();
+	clock_init();
 
 	//setup_iomux_uart();
 	//setup_iomux_enet();

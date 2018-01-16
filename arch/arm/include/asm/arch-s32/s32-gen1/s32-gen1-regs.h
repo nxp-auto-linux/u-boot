@@ -1,6 +1,5 @@
 /*
- * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -43,7 +42,7 @@
 #define DRAM_PLL_BASE_ADDR			(PER_GROUP0_BASE + 0x0044000)
 #define AURORA_PLL_BASE_ADDR			(PER_GROUP0_BASE + 0x0048000)
 #define XOSC_BASE_ADDR				(PER_GROUP0_BASE + 0x0050000)
-#define ARM_DFS_BASE_ADDR			(PER_GROUP0_BASE + 0x0053000)
+#define ARM_DFS_BASE_ADDR			(PER_GROUP0_BASE + 0x0054000)
 #define PERIPH_DFS_BASE_ADDR			(PER_GROUP0_BASE + 0x0058000)
 #define CMU_BASE_ADDR				(PER_GROUP0_BASE + 0x005C000)
 #define RTC_BASE_ADDR				(PER_GROUP0_BASE + 0x0060000)
