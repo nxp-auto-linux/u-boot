@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2017 NXP
+ * (C) Copyright 2016-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -10,6 +10,8 @@
 
 #define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x30 + (per) * 0x8)
 #define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x130 + (per) * 0x8)
+
+#define RGM_CORES_RESET_GROUP		3
 
 #endif /* __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__ */
 
