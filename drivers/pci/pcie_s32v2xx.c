@@ -4,6 +4,7 @@
  * Copyright (C) 2016 Heinz Wrobel <heinz.wrobel@nxp.com>
  * Copyright (C) 2015 Aurelian Voicu <aurelian.voicu@nxp.com>
  * Copyright 2016-2017 NXP
+ * (C) Copyright 2018 MicroSys Electronics GmbH
  *
  * Based on upstream iMX U-Boot driver:
  * pcie_imx.c:		Marek Vasut <marex@denx.de>
