@@ -166,7 +166,7 @@
 
 /*
  * The mathematical formula for fdfs_clockout is the following:
- * fdfs_clckout = fdfs_clkin / ( DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/256))
+ * fdfs_clckout = fdfs_clkin / (2 * (DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/36)))
  */
 #define DFS_DVPORTn_MFI_SET(val)	(DFS_DVPORTn_MFI_MASK & \
 		(((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET))
@@ -181,6 +181,8 @@
 #define DFS_MAXNUMBER			(6)
 
 #define DFS_PARAMS_Nr			(5)
+
+#define PHI_MAXNUMBER			(7)
 
 /* Frequencies are in Hz */
 #define FIRC_CLK_FREQ			(48000000)
