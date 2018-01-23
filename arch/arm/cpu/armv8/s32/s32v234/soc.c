@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2017 NXP
+ * (C) Copyright 2016-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -49,12 +49,13 @@ int cpu_numcores(void)
 	return numcores;
 }
 
-static uintptr_t get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
+static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 		u32 pllfd, u32 selected_output)
 {
-	u32 vco = 0, plldv_prediv = 0, plldv_mfd = 0,	pllfd_mfn = 0;
+	u32 plldv_prediv = 0, plldv_mfd = 0,	pllfd_mfn = 0;
 	u32 plldv_rfdphi_div = 0, fout = 0;
 	u32 dfs_portn = 0, dfs_mfn = 0, dfs_mfi = 0;
+	float vco = 0;
 
 	if (selected_output > DFS_MAXNUMBER)
 		return -1;
@@ -68,7 +69,7 @@ static uintptr_t get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	plldv_prediv = plldv_prediv == 0 ? 1 : plldv_prediv;
 
 	/* The formula for VCO is from TR manual, rev. 1 */
-	vco = (refclk_freq / plldv_prediv) *
+	vco = (refclk_freq / (float)plldv_prediv) *
 		(plldv_mfd + pllfd_mfn / (float)20480);
 
 	if (selected_output != 0) {
@@ -102,11 +103,10 @@ static uintptr_t get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 }
 
 /* Implemented for ARMPLL, PERIPH_PLL, ENET_PLL, DDR_PLL, VIDEO_LL */
-static uintptr_t decode_pll(enum pll_type pll, u32 refclk_freq,
+static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
 		u32 selected_output)
 {
-	u32 plldv, pllfd;
-	int freq;
+	u32 plldv, pllfd, freq;
 
 	plldv = readl(PLLDIG_PLLDV(pll));
 	pllfd = readl(PLLDIG_PLLFD(pll));
