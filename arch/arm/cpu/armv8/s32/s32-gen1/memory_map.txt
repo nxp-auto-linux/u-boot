@@ -23,7 +23,7 @@ SRAM is from 0x3E800000 to 0x3EBFFFFF (4 MB)
 ===================================================================================================================
 
 * CSE blob is reserved in SRAM just when CONFIG_CSE3 is enabled in
-u-boot/include/configs/s32v244<xyz>.h (<xyz> is the platform). This
+u-boot/include/configs/s32<xywz>.h (<xywz> is the platform). This
 feature isn't implemented yet.
 ** u-boot size is variable (depends on configuration).
 
@@ -85,7 +85,7 @@ Environment Variables
 =====================
 
 boot_mtd:       Select the booting method: bootm/booti. If CONFIG_USE_BOOTI is not defined
-                in the S32V244 SOC configuration bootm will be used by default.
+                in the S32 gen1 SOC configuration bootm will be used by default.
 
 image:          It is the name of kernel image. Please note that the image has to be synchronised with
                 the used boot method.

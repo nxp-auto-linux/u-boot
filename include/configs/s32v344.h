@@ -5,13 +5,13 @@
  */
 
 /*
- * Configuration settings for the Freescale S32R45X board.
+ * Configuration settings for the Freescale S32V344 board.
  */
 
-#ifndef __S32R45X_H
-#define __S32R45X_H
+#ifndef __S32V344_H
+#define __S32V344_H
 
-#define CONFIG_S32R45X
+#define CONFIG_S32V344
 
 #include <configs/s32-gen1.h>
 

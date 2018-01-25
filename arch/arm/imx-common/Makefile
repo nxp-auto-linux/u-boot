@@ -14,7 +14,8 @@ ifeq ($(SOC),$(filter $(SOC),vf610 sac58r mac57d5xh))
 obj-y	+= dmachmux.o
 endif
 
-ifeq ($(SOC),$(filter $(SOC),mx5 mx6 vf610 sac58r mac57d5xh s32v234 s32v244))
+ifeq ($(SOC),$(filter $(SOC),mx5 mx6 vf610 sac58r mac57d5xh s32v234 \
+	s32v344 s32r45 s32g275))
 obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
 endif
 

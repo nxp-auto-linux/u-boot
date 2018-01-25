@@ -30,14 +30,14 @@ config TARGET_S32V234PCIE
 config TARGET_S32V234TMDP
 	bool "Support s32v234tmdp"
 
-config TARGET_S32V244
-	bool "Support s32v244"
+config TARGET_S32V344
+	bool "Support s32v344"
 
 config TARGET_S32R45X
 	bool "Support s32r45x"
 
-config TARGET_S32G2XX
-	bool "Support s32g2xx"
+config TARGET_S32G275
+	bool "Support s32g275"
 
 endchoice
 
