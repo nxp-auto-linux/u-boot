@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -336,7 +336,6 @@
 		"fi;\0" \
 	"flashbootargs=setenv bootargs console=${console} " \
 		"root=/dev/ram rw " \
-		"rdinit=/bin/sh;" \
 		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setenv fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
