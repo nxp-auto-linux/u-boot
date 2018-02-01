@@ -53,7 +53,7 @@ static int select_pll_source_clk(enum pll_type pll, u32 refclk_freq)
  *)
  */
 static int program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
-		u32 freq[], u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr],
+		u64 freq[], u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr],
 		u32 plldv_rdiv, u32 plldv_mfi, u32 pllfd_mfn)
 {
 	u32 i, dfs_on = 0, fvco;
@@ -225,7 +225,7 @@ void setup_fxosc(void)
 
 void clock_init(void)
 {
-	unsigned int arm_dfs[ARM_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
+	u32 arm_dfs[ARM_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
 			{ ARM_PLL_DFS1_EN, ARM_PLL_DFS1_MFN, ARM_PLL_DFS1_MFI },
 			{ ARM_PLL_DFS2_EN, ARM_PLL_DFS2_MFN, ARM_PLL_DFS2_MFI },
 			{ ARM_PLL_DFS3_EN, ARM_PLL_DFS3_MFN, ARM_PLL_DFS3_MFI },
@@ -233,10 +233,10 @@ void clock_init(void)
 			{ ARM_PLL_DFS5_EN, ARM_PLL_DFS5_MFN, ARM_PLL_DFS5_MFI },
 			{ ARM_PLL_DFS6_EN, ARM_PLL_DFS6_MFN, ARM_PLL_DFS6_MFI }
 		};
-	unsigned int arm_phi[ARM_PLL_PHI_Nr] = {
+	u64 arm_phi[ARM_PLL_PHI_Nr] = {
 			ARM_PLL_PHI0_FREQ, ARM_PLL_PHI1_FREQ};
 
-	unsigned int periph_dfs[PERIPH_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
+	u32 periph_dfs[PERIPH_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
 			{ PERIPH_PLL_DFS1_EN, PERIPH_PLL_DFS1_MFN,
 				PERIPH_PLL_DFS1_MFI },
 			{ PERIPH_PLL_DFS2_EN, PERIPH_PLL_DFS2_MFN,
@@ -250,18 +250,18 @@ void clock_init(void)
 			{ PERIPH_PLL_DFS6_EN, PERIPH_PLL_DFS6_MFN,
 				PERIPH_PLL_DFS6_MFI }
 		};
-	unsigned int periph_phi[PERIPH_PLL_PHI_Nr] = {
+	u64 periph_phi[PERIPH_PLL_PHI_Nr] = {
 			PERIPH_PLL_PHI0_FREQ, PERIPH_PLL_PHI1_FREQ,
 			PERIPH_PLL_PHI2_FREQ, PERIPH_PLL_PHI3_FREQ,
 			PERIPH_PLL_PHI4_FREQ, PERIPH_PLL_PHI5_FREQ,
 			PERIPH_PLL_PHI6_FREQ
 		};
 
-	unsigned int ddr_phi[DDR_PLL_PHI_Nr] = { DDR_PLL_PHI0_FREQ };
-	unsigned int accel_phi[ACCEL_PLL_PHI_Nr] = {
+	u64 ddr_phi[DDR_PLL_PHI_Nr] = { DDR_PLL_PHI0_FREQ };
+	u64 accel_phi[ACCEL_PLL_PHI_Nr] = {
 				ACCEL_PLL_PHI0_FREQ, ACCEL_PLL_PHI1_FREQ
 				};
-	unsigned int aurora_phi[AURORA_PLL_PHI_Nr] = { AURORA_PLL_PHI0_FREQ };
+	u64 aurora_phi[AURORA_PLL_PHI_Nr] = { AURORA_PLL_PHI0_FREQ };
 
 	setup_fxosc();
 
