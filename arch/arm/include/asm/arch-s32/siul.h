@@ -1,6 +1,7 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 NXP
+ * (C) Copyright 2017 MicroSys Electronics GmbH
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -229,6 +230,42 @@ static inline int get_siul2_midr1_major(void) {
 						SIUL2_MSCR_ODE_EN | SIUL2_MSCR_DSE_34ohm)
 #define SIUL2_PAD_CTRL_I2C2_IMCR_SCLK	(SIUL2_MSCR_MUX_MODE_ALT2)
 
+/* I2C settings MPXS32V234-R1 */
+/* I2C0 - Serial Data Input */
+#define SIUL2_PAD_CTRL_I2C0_MSCR1_SDA		\
+		(SIUL2_MSCR_MUX_MODE_ALT1 |	\
+		 SIUL2_MSCR_OBE_EN |		\
+		 SIUL2_MSCR_IBE_EN |		\
+		 SIUL2_MSCR_ODE_EN |		\
+		 SIUL2_MSCR_DSE_34ohm)
+#define SIUL2_PAD_CTRL_I2C0_IMCR1_SDA	(SIUL2_MSCR_MUX_MODE_ALT2)
+
+/* I2C0 - Serial Clock Input */
+#define SIUL2_PAD_CTRL_I2C0_MSCR1_SCLK		\
+		(SIUL2_MSCR_MUX_MODE_ALT1 |	\
+		 SIUL2_MSCR_OBE_EN |		\
+		 SIUL2_MSCR_IBE_EN |		\
+		 SIUL2_MSCR_ODE_EN |		\
+		 SIUL2_MSCR_DSE_34ohm)
+#define SIUL2_PAD_CTRL_I2C0_IMCR1_SCLK	(SIUL2_MSCR_MUX_MODE_ALT2)
+
+/* I2C1 - Serial Data Input */
+#define SIUL2_PAD_CTRL_I2C1_MSCR1_SDA		\
+		(SIUL2_MSCR_MUX_MODE_ALT1 |	\
+		 SIUL2_MSCR_OBE_EN |		\
+		 SIUL2_MSCR_IBE_EN |		\
+		 SIUL2_MSCR_ODE_EN |		\
+		 SIUL2_MSCR_DSE_34ohm)
+#define SIUL2_PAD_CTRL_I2C1_IMCR1_SDA	(SIUL2_MSCR_MUX_MODE_ALT2)
+
+/* I2C1 - Serial Clock Input */
+#define SIUL2_PAD_CTRL_I2C1_MSCR1_SCLK		\
+		(SIUL2_MSCR_MUX_MODE_ALT1 |	\
+		 SIUL2_MSCR_OBE_EN |		\
+		 SIUL2_MSCR_IBE_EN |		\
+		 SIUL2_MSCR_ODE_EN |		\
+		 SIUL2_MSCR_DSE_34ohm)
+#define SIUL2_PAD_CTRL_I2C1_IMCR1_SCLK	(SIUL2_MSCR_MUX_MODE_ALT2)
 
 /* ENET settings */
 

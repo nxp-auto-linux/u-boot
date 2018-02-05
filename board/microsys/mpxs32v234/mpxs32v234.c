@@ -117,7 +117,7 @@ static void setup_iomux_i2c(void)
 	writel(SIUL2_PAD_CTRL_I2C1_MSCR1_SCLK, SIUL2_MSCRn(18));
 	writel(SIUL2_PAD_CTRL_I2C1_IMCR1_SCLK, SIUL2_IMCRn(270));
 
-#else
+#elif defined(CONFIG_MPXS32V234_R2)
 	/* MPXS32V234-R2 */
 	/* I2C0 - Serial Data Input */
 	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA, SIUL2_MSCRn(99));
@@ -134,6 +134,8 @@ static void setup_iomux_i2c(void)
 	/* I2C1 - Serial Clock Input */
 	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK, SIUL2_MSCRn(102));
 	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK, SIUL2_IMCRn(270));
+#else
+#error	Please define CONFIG_MPXS32V234_R1 or CONFIG_MPXS32V234_R2
 #endif
 	/* I2C2 - Serial Data Input */
 	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA, SIUL2_MSCRn(19));
@@ -289,7 +291,7 @@ int checkboard(void)
 {
 #ifdef	CONFIG_MPXS32V234_R1
 	puts("Board: mpxs32v234-R1\n");
-#elif	CONFIG_MPXS32V234_R2
+#elif	defined(CONFIG_MPXS32V234_R2)
 	puts("Board: mpxs32v234-R2\n");
 #else
 	puts("Board: Unknown board\n");
