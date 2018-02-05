@@ -1,9 +1,5 @@
 if ARCH_S32
 
-config SYS_VENDOR
-	string
-	default "freescale"
-
 config SYS_SOC
 	string
 	default "s32"
@@ -38,6 +34,9 @@ config TARGET_S32R45X
 
 config TARGET_S32G275
 	bool "Support s32g275"
+
+config TARGET_MPXS32V234
+	bool "Support s32v234sbc"
 
 endchoice
 
@@ -91,10 +90,7 @@ config DDR_HANDSHAKE_AT_RESET
 	help
 	  Enable DDR handshake after functional reset
 
-source "board/freescale/s32v234evb/Kconfig"
-source "board/freescale/s32v234fvb/Kconfig"
-source "board/freescale/s32v234pcie/Kconfig"
-source "board/freescale/s32v234tmdp/Kconfig"
-source "board/freescale/s32-gen1/Kconfig"
+source "board/freescale/Kconfig"
+source "board/microsys/mpxs32v234/Kconfig"
 
 endif
