@@ -335,7 +335,7 @@
 			"${boot_mtd}; " \
 		"fi;\0" \
 	"flashbootargs=setenv bootargs console=${console} " \
-		"root=/dev/ram rw " \
+		"root=/dev/ram rw;" \
 		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setenv fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
