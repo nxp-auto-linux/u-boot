@@ -492,4 +492,6 @@
 #define CONFIG_PCI_SCAN_SHOW
 #endif
 
+#define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
+
 #endif /* __S32_H */

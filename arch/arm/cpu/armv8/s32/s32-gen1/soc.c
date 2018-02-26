@@ -324,14 +324,14 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 	if (ep == argv[2] || *ep != '\0')
 		return CMD_RET_USAGE;
 
-	if (!IS_ALIGNED(addr, 8)) {
-		printf("ERROR: Address 0x%08lX is not 8 byte aligned ...\n",
+	if (!IS_ALIGNED(addr, 32)) {
+		printf("ERROR: Address 0x%08lX is not 32 byte aligned ...\n",
 		       addr);
 		return CMD_RET_USAGE;
 	}
 
-	if (!IS_ALIGNED(size, 8)) {
-		printf("ERROR: size 0x%08X is not an 8 byte multiple ...\n",
+	if (!IS_ALIGNED(size, 32)) {
+		printf("ERROR: size 0x%08X is not a 32 byte multiple ...\n",
 		       size);
 		return CMD_RET_USAGE;
 	}
