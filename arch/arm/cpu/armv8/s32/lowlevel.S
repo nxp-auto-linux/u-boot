@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2014 Freescale Semiconductor
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  *
@@ -14,6 +14,18 @@
 #include <asm/gic.h>
 #include "mp.h"
 
+#define DMA_CHANNEL 1
+#define DMA_CR					(EDMA_BASE_ADDR)
+#define DMA_ES					(EDMA_BASE_ADDR + 0x4)
+#define DMA_TCDn_SADDR(channel)			(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel))
+#define DMA_TCDn_SOFF(channel)			(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x4)
+#define DMA_TCDn_NBYTES_MLNO(channel)		(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x8)
+#define DMA_TCDn_DADDR(channel)			(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x10)
+#define DMA_TCDn_DOFF(channel)			(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x14)
+#define DMA_TCDn_CITER_ELINKNO(channel)		(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x16)
+#define DMA_TCDn_CSR(channel)			(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x1C)
+#define DMA_TCDn_BITER_ELINKNO(channel)		(EDMA_BASE_ADDR + 0x1000 + 0x20 * (channel) + 0x1E)
+
 #define SWT_SR(SWTn_BASE_ADDR) (SWTn_BASE_ADDR + 0x10)
 
 /*************************************************************************
@@ -24,6 +36,7 @@
  * (using DMA)
  *
  *************************************************************************/
+
 ENTRY(dma_mem_clr)
 	/*
 	 * x0: start address of memory to clear
@@ -31,55 +44,58 @@ ENTRY(dma_mem_clr)
 	 */
 dma_mem_clr:
 	/* DMA_TCDn_SOFF */
-	ldr x9, =0x40003020
+	ldr x9, =DMA_TCDn_SADDR(DMA_CHANNEL)
 	ldr w10, =0x6230
 	str w10, [x9]
 
 	/* DMA_TCDn_SOFF */
-	ldr x9, =0x40003024
+	ldr x9, =DMA_TCDn_SOFF(DMA_CHANNEL)
 	ldr x10, =0x03030000
 	str w10, [x9]
 
 	/* DMA_TCDn_NBYTES_MLNO */
-	ldr x9, =0x40003028
+	ldr x9, =DMA_TCDn_NBYTES_MLNO(DMA_CHANNEL)
 	/* load the size */
 	mov x10, x1
 	str x10, [x9]
 
 	/* DMA_TCDn_DADDR */
-	ldr x9, =0x40003030
+	ldr x9, =DMA_TCDn_DADDR(DMA_CHANNEL)
 	/* load the start address */
 	mov x10, x0
 	str x10, [x9]
 
 	/* DMA_TCDn_DOFF */
-	ldr x9, =0x40003034
+	ldr x9, =DMA_TCDn_DOFF(DMA_CHANNEL)
 	ldr w10, =0x8
 	str w10, [x9]
 
 	/* DMA_TCDn_CITER_ELINKNO */
-	ldr x9, =0x40003036
+	ldr x9, =DMA_TCDn_CITER_ELINKNO(DMA_CHANNEL)
 	ldr w10, =0x1
 	strb w10, [x9]
 
 	/* DMA_TCDn_CSR */
-	ldr x9, =0x4000303C
+	ldr x9, =DMA_TCDn_CSR(DMA_CHANNEL)
 	ldr w10, =0x1
 	strb w10, [x9]
 
 	/* DMA_TCDn_BITER_ELINKNO */
-	ldr x9, =0x4000303E
+	ldr x9, =DMA_TCDn_BITER_ELINKNO(DMA_CHANNEL)
 	ldr w10, =0x1
 	strb w10, [x9]
 
 	/* loop until write is done */
 ctrl_status:
-	ldr x9, =0x4000303C
+	ldr x9, =DMA_TCDn_CSR(DMA_CHANNEL)
 	ldr w10, [x9]
+	/* Check transfer done */
 	and w10, w10, #0x0080
 	sub w10, w10, #0x0080
 	cbnz w10, ctrl_status
+
 	ret
+
 ENDPROC(dma_mem_clr)
 
 
