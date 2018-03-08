@@ -44,9 +44,11 @@ ENTRY(dma_mem_clr)
 	 * x0: return 0 on error or size of memory cleared on success
 	 */
 dma_mem_clr:
-	/* DMA_TCDn_SOFF */
+
+	/* DMA_TCDn_SADDR */
 	ldr x9, =DMA_TCDn_SADDR(DMA_CHANNEL)
-	ldr w10, =0x6230
+	ldr w10, =initvar
+	/* Point DMA source address to initialization data block */
 	str w10, [x9]
 
 	/* DMA_TCDn_SOFF */
@@ -294,3 +296,7 @@ __real_cntfrq:
 	/* Secondary Boot Page ends here */
 __secondary_boot_page_size:
 	.quad .-secondary_boot_page
+
+	.data
+initvar:
+	.quad 0x0
