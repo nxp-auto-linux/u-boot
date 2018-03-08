@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
+#include <linux/kernel.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -303,13 +304,13 @@ U_BOOT_CMD(
 		"startAddress"
 	  );
 
-extern void dma_mem_clr(int addr, int size);
+int dma_mem_clr(int addr, int size);
 
 static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
 	unsigned long addr;
-	unsigned size, max_size;
+	unsigned size, max_size, ret_size;
 	char *ep;
 
 	if (argc < 3)
@@ -323,6 +324,18 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 	if (ep == argv[2] || *ep != '\0')
 		return CMD_RET_USAGE;
 
+	if (!IS_ALIGNED(addr, 8)) {
+		printf("ERROR: Address 0x%08lX is not 8 byte aligned ...\n",
+		       addr);
+		return CMD_RET_USAGE;
+	}
+
+	if (!IS_ALIGNED(size, 8)) {
+		printf("ERROR: size 0x%08X is not an 8 byte multiple ...\n",
+		       size);
+		return CMD_RET_USAGE;
+	}
+
 	if (!IS_ADDR_IN_IRAM(addr)) {
 		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n",
 		       addr);
@@ -334,9 +347,16 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 		printf("WARNING: given size exceeds SRAM boundaries.\n");
 		size = max_size;
 	}
+
+	ret_size = dma_mem_clr(addr, size);
+
+	if (!ret_size) {
+		printf("Init SRAM failed\n");
+		return CMD_RET_FAILURE;
+	}
+
 	printf("Init SRAM region at address 0x%08lX, size 0x%X bytes ...\n",
-	       addr, size);
-	dma_mem_clr(addr, size);
+	       addr, ret_size);
 
 	return CMD_RET_SUCCESS;
 }
