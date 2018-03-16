@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2017 NXP
+ * Copyright 2016-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -20,6 +20,12 @@
 
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
+
+/* HDMI configs */
+#define CONFIG_FSL_DCU_SII9022A
+#define CONFIG_SYS_I2C_MXC_I2C2         /* enable I2C bus 2 */
+#define CONFIG_SYS_I2C_DVI_BUS_NUM      1
+#define CONFIG_SYS_I2C_DVI_ADDR         0x39
 
 /* Ethernet config */
 
