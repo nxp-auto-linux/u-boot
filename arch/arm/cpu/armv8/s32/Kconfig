@@ -37,6 +37,7 @@ config TARGET_S32G275
 
 config TARGET_MPXS32V234
 	bool "Support s32v234sbc"
+	select S32V234EVB_29288
 
 endchoice
 

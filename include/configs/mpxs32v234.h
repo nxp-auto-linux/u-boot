@@ -9,8 +9,8 @@
  * Configuration settings for the MicroSys MPXS32V234 board.
  */
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __MPXS32V234_H
+#define __MPXS32V234_H
 
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32v234_common.h */
@@ -54,7 +54,6 @@
 	(CONFIG_SYS_INIT_RAM_SIZE -	\
 	 GENERATED_GBL_DATA_SIZE -	\
 	 CONFIG_SYS_TEXT_OFFSET)
-
 
 #define CONFIG_BOARD_EXTRA_ENV_SETTINGS "dvi_on=i2c dev 2; i2c mw 3f 8 35\0"
 

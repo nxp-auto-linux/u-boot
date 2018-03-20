@@ -22,7 +22,7 @@ config SYS_CONFIG_NAME
 
 config SYS_DDR_SIZE
 	int
-	default 2147483648 if S32V234_DDR3
-	default 268435456 if S32V234_LPDDR2
+	default 2147483648 if S32_DDR3
+	default 268435456 if S32_LPDDR2
 
 endif
