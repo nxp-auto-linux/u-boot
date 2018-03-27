@@ -192,7 +192,7 @@
 #define PLL_MAX_FREQ			(5000000000)
 
 #define ARM_PLL_PHI0_FREQ		(1000000000)
-#define ARM_PLL_PHI1_FREQ		(400000000)
+#define ARM_PLL_PHI1_FREQ		(500000000)
 #define ARM_PLL_PHI_Nr			(2)
 
 /* ARM_PLL_DFS1_FREQ - 800 Mhz */
@@ -242,7 +242,7 @@
 /* PERIPH_PLL_DFS2_freq - 960 mhz */
 #define PERIPH_PLL_DFS2_EN		(1)
 #define PERIPH_PLL_DFS2_MFI		(1)
-#define PERIPH_PLL_DFS2_MFN		(1)
+#define PERIPH_PLL_DFS2_MFN		(2)
 /* PERIPH_PLL_DFS3_freq - 800 mhz */
 #define PERIPH_PLL_DFS3_EN		(1)
 #define PERIPH_PLL_DFS3_MFI		(1)
