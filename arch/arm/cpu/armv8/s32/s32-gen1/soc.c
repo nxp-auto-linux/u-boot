@@ -76,7 +76,7 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 		fout = vco / (pllodiv_div + 1);
 	} else if (pll == ARM_PLL || pll == PERIPH_PLL) {
 		/* Determine the div for DFS. */
-		dfs_nr = selected_output - DFS_MAXNUMBER + 1;
+		dfs_nr = selected_output - PHI_MAXNUMBER + 1;
 
 		dfs_portn = readl(DFS_DVPORTn(pll,
 					dfs_nr - 1));

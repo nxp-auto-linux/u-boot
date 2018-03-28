@@ -194,11 +194,9 @@ static void setup_mux_clocks(void)
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 0,
 			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1);
 
-#ifndef VIRTUAL_PLATFORM
 	/* setup the mux clock divider for DSPI_CLK (100 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 16,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI7);
-#endif
 }
 
 void setup_fxosc(void)

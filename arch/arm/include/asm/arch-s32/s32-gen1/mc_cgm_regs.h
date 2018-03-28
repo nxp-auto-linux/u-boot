@@ -182,7 +182,7 @@
 
 #define DFS_PARAMS_Nr			(5)
 
-#define PHI_MAXNUMBER			(7)
+#define PHI_MAXNUMBER			(8)
 
 /* Frequencies are in Hz */
 #define FIRC_CLK_FREQ			(48000000)
