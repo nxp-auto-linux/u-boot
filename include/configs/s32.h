@@ -112,13 +112,43 @@
 #define RAMDISK_ADDR		0xC4000000
 #endif
 
+/* Flash related definitions */
+#define CONFIG_S32V234_USES_FLASH
+
+#if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
+
+/* Flash Size and Num need to be updated according to the board's flash type */
+#define FSL_QSPI_FLASH_SIZE            SZ_128M
+#define FSL_QSPI_FLASH_NUM             2
+
+#define QSPI0_BASE_ADDR                QSPI_BASE_ADDR
+#define QSPI0_AMBA_BASE                CONFIG_SYS_FSL_FLASH0_BASE
+
+#else
+#define CONFIG_S32V234_FLASH
+
+/* QSPI/hyperflash configs */
+
+/* Debug stuff for qspi/hyperflash */
+#undef CONFIG_DEBUG_S32V234_QSPI_QSPI
+
+/* Flash comand disabled until implemented */
+#undef CONFIG_CMD_FLASH
+
+#define FLASH_SECTOR_SIZE	0x40000 /* 256 KB */
+#define FLASH_BASE_ADR2		(CONFIG_SYS_FSL_FLASH0_BASE + 0x4000000)
+
+#endif
+
+#define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
+
 /* Flash booting */
-#define KERNEL_FLASH_ADDR		0x20100000
-#define KERNEL_FLASH_MAXSIZE	0xA00000
-#define FDT_FLASH_ADDR			0x20B00000
+#define KERNEL_FLASH_ADDR		(CONFIG_SYS_FSL_FLASH0_BASE + 0x100000)
+#define KERNEL_FLASH_MAXSIZE		0xA00000
+#define FDT_FLASH_ADDR			(CONFIG_SYS_FSL_FLASH0_BASE + 0xB00000)
 #define FDT_FLASH_MAXSIZE		0x100000
-#define RAMDISK_FLASH_ADDR 	 	0x20C00000
-#define RAMDISK_FLASH_MAXSIZE	0x1E00000
+#define RAMDISK_FLASH_ADDR		(CONFIG_SYS_FSL_FLASH0_BASE + 0xC00000)
+#define RAMDISK_FLASH_MAXSIZE		0x1E00000
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_GENERIC_TIMER)
@@ -188,7 +218,8 @@
 #define CONFIG_SYS_I2C_SPEED	100000
 #define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
-#endif
+
+#endif /* #ifndef VIRTUAL_PLATFORM */
 
 #define CONFIG_BOOTDELAY	3
 
@@ -336,12 +367,14 @@
 		"fi;\0" \
 	"flashbootargs=setenv bootargs console=${console} " \
 		"root=/dev/ram rw;" \
-		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
+		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
-		"setenv fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
+		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
 		"setenv fdt_maxsize " __stringify(FDT_FLASH_MAXSIZE) ";" \
-		"setenv ramdisk_flashaddr " __stringify(RAMDISK_FLASH_ADDR) ";" \
-		"setenv ramdisk_maxsize " __stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
+		"setexpr ramdisk_flashaddr " \
+				__stringify(RAMDISK_FLASH_ADDR) ";" \
+		"setenv ramdisk_maxsize " \
+				__stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
 		"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
@@ -351,7 +384,7 @@
 
 #ifdef VIRTUAL_PLATFORM
 #define CONFIG_BOOTCOMMAND \
-	"${boot_mtd} ${loadaddr} - ${fdt_addr}"
+		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
 #else
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_BOOTCOMMAND \
@@ -416,9 +449,7 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
-#ifndef VIRTUAL_PLATFORM
-#define CONFIG_SYS_FLASH_BASE 		CONFIG_SYS_FSL_FLASH0_BASE
-#else
+#ifdef VIRTUAL_PLATFORM
 #define CONFIG_ENV_IS_NOWHERE
 #define CONFIG_SYS_NO_FLASH
 #endif
