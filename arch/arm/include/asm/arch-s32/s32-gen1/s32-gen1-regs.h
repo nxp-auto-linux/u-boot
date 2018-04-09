@@ -270,4 +270,6 @@ struct mscm_ir {
 	u32 ipcie[4];           /* Interconnect Parity Checking Injection Enable Register       */
 };
 #endif
+#include "dma_macros.h"
+
 #endif	/* __ASM_ARCH_S32XXXX_GEN1_REGS_H__ */
