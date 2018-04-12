@@ -1,6 +1,6 @@
 #
 # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
-# (C) Copyright 2016-2017 NXP
+# (C) Copyright 2016-2018 NXP
 #
 # SPDX-License-Identifier:	GPL-2.0+
 #
@@ -22,3 +22,4 @@ obj-$(CONFIG_S32V234_USES_FLASH)	+= qspi_common.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
 obj-$(CONFIG_FSL_DCU_FB)	+= dcu.o
+obj-y				+= initsram.o
