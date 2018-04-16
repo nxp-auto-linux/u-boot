@@ -48,7 +48,7 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	u32 pllodiv_div = 0, fout = 0;
 	u32 dfs_portn = 0, dfs_mfn = 0, dfs_mfi = 0;
 	u32 phi_nr, dfs_nr;
-	float vco = 0;
+	double vco = 0;
 
 	if (selected_output > PHI_MAXNUMBER + DFS_MAXNUMBER) {
 		printf("Unsupported selected output\n");
@@ -64,8 +64,8 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	plldv_rdiv = plldv_rdiv == 0 ? 1 : plldv_rdiv;
 
 	/* The formula for VCO is from S32RS RefMan Rev. 1, draft D) */
-	vco = (refclk_freq / (float)plldv_rdiv) *
-		(plldv_mfi + pllfd_mfn / (float)18432);
+	vco = (refclk_freq / (double)plldv_rdiv) *
+		(plldv_mfi + pllfd_mfn / (double)18432);
 
 	if (selected_output < PHI_MAXNUMBER) {
 		/* Determine the div for PHI. */
