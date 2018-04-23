@@ -1,6 +1,7 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
+ * Copyright 2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -16,6 +17,8 @@
 * the ones in the header included at the end, configs/s32v234_common.h */
 
 #define CONFIG_MPXS32V234_R2
+
+#define CONFIG_DDR_INIT_DELAY 100
 
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
