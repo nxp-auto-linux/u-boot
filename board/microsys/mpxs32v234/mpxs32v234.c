@@ -1,6 +1,7 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
+ * Copyright 2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -276,6 +277,7 @@ int board_early_init_f(void)
 	setup_iomux_enet();
 	setup_iomux_i2c();
 
+	setup_iomux_dcu();
 #ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
 

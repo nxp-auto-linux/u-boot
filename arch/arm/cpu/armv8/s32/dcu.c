@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * FSL DCU Framebuffer driver
  *
@@ -51,7 +51,9 @@ int platform_dcu_init(unsigned int xres, unsigned int yres,
 		name = "LVDS";
 	} else {
 		name = "HDMI";
+#ifdef	CONFIG_FSL_DCU_SII9022A
 		dcu_set_dvi_encoder(dcu_fb_videomode);
+#endif
 	}
 
 	printf("DCU: Switching to %s monitor @ %ux%u\n", name, xres, yres);
