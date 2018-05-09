@@ -158,7 +158,8 @@ int board_dcu_qos(void)
 	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 	writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
 	       &src_regs->gpr8);
-#else
+#endif
+
 	/* m_fastdma1_ib */
 	writel(0x0, 0x40012380);
 	writel(0x0, 0x40012384);
@@ -210,7 +211,6 @@ int board_dcu_qos(void)
 	/* m_cores_cci0 */
 	writel(0x0, 0x40012F80);
 	writel(0x0, 0x40012F84);
-#endif
 
 	return 0;
 }
