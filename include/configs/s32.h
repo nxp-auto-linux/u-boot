@@ -223,8 +223,15 @@
 
 #define CONFIG_BOOTDELAY	3
 
-#define CONFIG_BOOTARGS		"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
-				" root=/dev/ram rw"
+#ifdef VIRTUAL_PLATFORM
+#define CONFIG_BOOTARGS		\
+	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) \
+	" root=/dev/ram rw loglevel=4"
+#else
+#define CONFIG_BOOTARGS		\
+	"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
+	" root=/dev/ram rw"
+#endif
 
 #define CONFIG_CMD_ENV
 
