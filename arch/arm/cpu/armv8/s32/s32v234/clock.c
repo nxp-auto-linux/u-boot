@@ -11,6 +11,7 @@
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>
 #include <asm/arch/clock.h>
+#include <asm/arch-s32/siul.h>
 
 /* System Reset Controller is not yet available on VirtualPlatform */
 /*
@@ -137,7 +138,7 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 		/* DFS clk enable programming */
 		writel( DFS_CTRL_DLL_RESET, DFS_CTRL(pll) );
 
-		writel( DFS_DLLPRG1_CPICTRL_SET(0x5) | DFS_DLLPRG1_VSETTLCTRL_SET(0x1) |
+		writel( DFS_DLLPRG1_CPICTRL_SET(0x7) | DFS_DLLPRG1_VSETTLCTRL_SET(0x1) |
 			DFS_DLLPRG1_CALBYPEN_SET(0x0) | DFS_DLLPRG1_DACIN_SET(0x1) |
 			DFS_DLLPRG1_LCKWT_SET(0x0) | DFS_DLLPRG1_V2IGC_SET(0x5),
 			DFS_DLLPRG1(pll) );
@@ -262,7 +263,7 @@ static void setup_aux_clocks( void )
 
 	/* setup the aux clock divider for SDHC_CLK (50 MHz). */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 15, MC_CGM_ACn_SEL_ENETPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 15, 0, 9 );
+	aux_div_clk_config( MC_CGM0_BASE_ADDR, 15, 0, 0 );
 
 	/* setup the aux clock divider for DDR_CLK (533MHz) and APEX_SYS_CLK (266MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 8, MC_CGM_ACn_SEL_DDRPLL );
@@ -341,10 +342,16 @@ static void enable_modules_clock( void )
 
 void clock_init(void)
 {
-	unsigned int arm_dfs[ARM_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ ARM_PLL_PHI1_DFS1_EN, ARM_PLL_PHI1_DFS1_MFN, ARM_PLL_PHI1_DFS1_MFI },
-			{ ARM_PLL_PHI1_DFS2_EN, ARM_PLL_PHI1_DFS2_MFN, ARM_PLL_PHI1_DFS2_MFI },
-			{ ARM_PLL_PHI1_DFS3_EN, ARM_PLL_PHI1_DFS3_MFN, ARM_PLL_PHI1_DFS3_MFI }
+	unsigned int arm_1ghz_dfs[ARM_1GHZ_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
+			{ ARM_1GHZ_PLL_PHI1_DFS1_EN, ARM_1GHZ_PLL_PHI1_DFS1_MFN, ARM_1GHZ_PLL_PHI1_DFS1_MFI },
+			{ ARM_1GHZ_PLL_PHI1_DFS2_EN, ARM_1GHZ_PLL_PHI1_DFS2_MFN, ARM_1GHZ_PLL_PHI1_DFS2_MFI },
+			{ ARM_1GHZ_PLL_PHI1_DFS3_EN, ARM_1GHZ_PLL_PHI1_DFS3_MFN, ARM_1GHZ_PLL_PHI1_DFS3_MFI }
+		};
+
+	unsigned int arm_800mhz_dfs[ARM_800MHZ_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
+			{ ARM_800MHZ_PLL_PHI1_DFS1_EN, ARM_800MHZ_PLL_PHI1_DFS1_MFN, ARM_800MHZ_PLL_PHI1_DFS1_MFI },
+			{ ARM_800MHZ_PLL_PHI1_DFS2_EN, ARM_800MHZ_PLL_PHI1_DFS2_MFN, ARM_800MHZ_PLL_PHI1_DFS2_MFI },
+			{ ARM_800MHZ_PLL_PHI1_DFS3_EN, ARM_800MHZ_PLL_PHI1_DFS3_MFN, ARM_800MHZ_PLL_PHI1_DFS3_MFI }
 		};
 
 	unsigned int enet_dfs[ENET_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
@@ -383,10 +390,18 @@ void clock_init(void)
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
-	program_pll(
-				ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI0_FREQ, ARM_PLL_PHI1_FREQ,
-				ARM_PLL_PHI1_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_PREDIV,
-				ARM_PLL_PLLDV_MFD, ARM_PLL_PLLDV_MFN
+	/* only 1 GHz and 800 MHz ARM versions supported */
+	if (get_siul2_midr2_speed() == SIUL2_MIDR2_SPEED_1GHZ)
+		program_pll(
+				ARM_PLL, XOSC_CLK_FREQ, ARM_1GHZ_PLL_PHI0_FREQ, ARM_1GHZ_PLL_PHI1_FREQ,
+				ARM_1GHZ_PLL_PHI1_DFS_Nr, arm_1ghz_dfs, ARM_1GHZ_PLL_PLLDV_PREDIV,
+				ARM_1GHZ_PLL_PLLDV_MFD, ARM_1GHZ_PLL_PLLDV_MFN
+				);
+	else
+		program_pll(
+				ARM_PLL, XOSC_CLK_FREQ, ARM_800MHZ_PLL_PHI0_FREQ, ARM_800MHZ_PLL_PHI1_FREQ,
+				ARM_800MHZ_PLL_PHI1_DFS_Nr, arm_800mhz_dfs, ARM_800MHZ_PLL_PLLDV_PREDIV,
+				ARM_800MHZ_PLL_PLLDV_MFD, ARM_800MHZ_PLL_PLLDV_MFN
 				);
 
 	setup_sys_clocks();
