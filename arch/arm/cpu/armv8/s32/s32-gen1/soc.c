@@ -252,8 +252,18 @@ static char *get_reset_cause(void)
 
 void reset_cpu(ulong addr)
 {
+	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF);
+
+	writel(MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD);
+
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+
+	/* If we get there, we are not in good shape */
+	mdelay(1000);
 	printf("FATAL: Reset Failed!\n");
-};
+	hang();
+}
 
 int print_cpuinfo(void)
 {

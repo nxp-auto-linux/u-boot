@@ -15,6 +15,12 @@
 #define MC_ME_CTL_KEY_KEY		(0x00005AF0)
 #define MC_ME_CTL_KEY_INVERTEDKEY	(0x0000A50F)
 
+#define MC_ME_MODE_CONF			((MC_ME_BASE_ADDR) + 0x00000004)
+#define MC_ME_MODE_CONF_FUNC_RST	(0x1 << 1)
+
+#define MC_ME_MODE_UPD			((MC_ME_BASE_ADDR) + 0x00000008)
+#define MC_ME_MODE_UPD_UPD		(0x1 << 0)
+
 /* MC_ME partition 1 m M definitions. */
 #define MC_ME_PRTN_N_CORE_M(n, m)	(MC_ME_BASE_ADDR + 0x140 + \
 						(n) * 0x200 + (m) * 0x20)
