@@ -186,6 +186,9 @@ static void setup_mux_clocks(void)
 	/* setup the mux clock divider for LIN_CLK (66,5 MHz),
 	 * LIN_BAUD_CLK (133 MHz)
 	 */
+	mux_source_clk_config(MC_CGM0_BASE_ADDR, 7,
+			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI2);
+
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 8,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI3);
 
