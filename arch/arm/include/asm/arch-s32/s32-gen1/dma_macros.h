@@ -24,7 +24,7 @@
 #define DMA_TCD_N_CSR(channel)		(DMA_CHANNEL(channel) + 0x3C)
 #define DMA_TCD_N_BITER_ELINKNO(channel)(DMA_CHANNEL(channel) + 0x3E)
 
-#ifdef __ASSEMBLY__
+#ifdef __INCLUDE_ASSEMBLY_MACROS__
 .macro check_done_bit
 	ldr x9, =DMA_CH_N_CSR(DMA_CHANNEL_1)
 	ldr w10, [x9]

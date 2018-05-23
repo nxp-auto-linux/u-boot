@@ -7,6 +7,9 @@
  * Extracted from armv8/start.S
  */
 
+/* Allow inclusion assembly macros */
+#define __INCLUDE_ASSEMBLY_MACROS__
+
 #include <config.h>
 #include <linux/linkage.h>
 #include <asm/armv8/mmu.h>
