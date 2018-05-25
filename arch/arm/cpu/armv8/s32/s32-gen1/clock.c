@@ -210,12 +210,15 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 12, 0, 1);
 
-
 	/* setup the mux clock divider for SDHC_CLK (208 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 14,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
 
+	/* setup the mux clock divider for DDR_CLK (800 MHz),
+	 */
+	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
+			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
 }
 
 void setup_fxosc(void)
