@@ -390,18 +390,21 @@ void clock_init(void)
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
-	/* only 1 GHz and 800 MHz ARM versions supported */
-	if (get_siul2_midr2_speed() == SIUL2_MIDR2_SPEED_1GHZ)
-		program_pll(
-				ARM_PLL, XOSC_CLK_FREQ, ARM_1GHZ_PLL_PHI0_FREQ, ARM_1GHZ_PLL_PHI1_FREQ,
-				ARM_1GHZ_PLL_PHI1_DFS_Nr, arm_1ghz_dfs, ARM_1GHZ_PLL_PLLDV_PREDIV,
-				ARM_1GHZ_PLL_PLLDV_MFD, ARM_1GHZ_PLL_PLLDV_MFN
-				);
-	else
+	if (get_siul2_midr2_speed() == SIUL2_MIDR2_SPEED_800MHZ)
 		program_pll(
 				ARM_PLL, XOSC_CLK_FREQ, ARM_800MHZ_PLL_PHI0_FREQ, ARM_800MHZ_PLL_PHI1_FREQ,
 				ARM_800MHZ_PLL_PHI1_DFS_Nr, arm_800mhz_dfs, ARM_800MHZ_PLL_PLLDV_PREDIV,
 				ARM_800MHZ_PLL_PLLDV_MFD, ARM_800MHZ_PLL_PLLDV_MFN
+				);
+	else
+		/* If the speed grading is unsupported or unrecognized, fall
+		 * back to 1 GHz. */
+		program_pll(
+				ARM_PLL, XOSC_CLK_FREQ, ARM_1GHZ_PLL_PHI0_FREQ,
+				ARM_1GHZ_PLL_PHI1_FREQ,
+				ARM_1GHZ_PLL_PHI1_DFS_Nr, arm_1ghz_dfs,
+				ARM_1GHZ_PLL_PLLDV_PREDIV,
+				ARM_1GHZ_PLL_PLLDV_MFD, ARM_1GHZ_PLL_PLLDV_MFN
 				);
 
 	setup_sys_clocks();
