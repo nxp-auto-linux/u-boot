@@ -1,3 +1,9 @@
+/*
+ * Copyright 2018 NXP
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ */
+
 #ifndef __EXPORTS_H__
 #define __EXPORTS_H__
 
@@ -10,12 +16,17 @@
 struct spi_slave;
 
 /* These are declarations of exported functions available in C code */
+#if defined(CONFIG_GICSUPPORT)
+int gic_register_handler(int, void (*handler)(struct pt_regs *, unsigned int),
+			 int type, const char *name);
+#endif
 unsigned long get_version(void);
 int  getc(void);
 int  tstc(void);
 void putc(const char);
 void puts(const char*);
 int printf(const char* fmt, ...);
+int fprintf(int stream, const char *fmt, ...);
 void install_hdlr(int, interrupt_handler_t, void*);
 void free_hdlr(int);
 void *malloc(size_t);
