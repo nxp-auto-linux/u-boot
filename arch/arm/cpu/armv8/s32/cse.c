@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * SPDX-License-Idenfifier:	GPL-2.0+
  */
@@ -128,6 +128,11 @@ init_cse:
 	writel(CSE_CMD_INIT_CSE, CSE_CMD);
 
 	if (cse_wait(CSE_TIMEOUT))
+		return -EIO;
+
+	err = readl(CSE_ECR);
+
+	if (err && (err != CSE_SEQ_ERR))
 		return -EIO;
 
 	/* Open KRAM */
