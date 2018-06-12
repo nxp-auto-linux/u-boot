@@ -224,14 +224,14 @@
 #define CONFIG_BOOTDELAY	3
 
 #ifdef VIRTUAL_PLATFORM
+#define CONFIG_LOGLEVEL " loglevel=4 "
+#else
+#define CONFIG_LOGLEVEL ""
+#endif
+
 #define CONFIG_BOOTARGS		\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) \
-	" root=/dev/ram rw loglevel=4"
-#else
-#define CONFIG_BOOTARGS		\
-	"console=ttyLF"	__stringify(CONFIG_FSL_LINFLEX_MODULE) \
-	" root=/dev/ram rw"
-#endif
+	" root=/dev/ram rw" CONFIG_LOGLEVEL
 
 #define CONFIG_CMD_ENV
 
@@ -272,6 +272,12 @@
 #else
 #define NFSRAMFS_ADDR "-"
 #define NFSRAMFS_TFTP_CMD ""
+#endif
+
+#ifdef VIRTUAL_PLATFORM
+#define CONFIG_FLASHBOOT_RAMDISK " - "
+#else
+#define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -372,8 +378,8 @@
 		"else " \
 			"${boot_mtd}; " \
 		"fi;\0" \
-	"flashbootargs=setenv bootargs console=${console} " \
-		"root=/dev/ram rw;" \
+	"flashbootargs=setenv bootargs console=${console}" \
+		CONFIG_LOGLEVEL "root=/dev/ram rw;" \
 		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
@@ -387,7 +393,8 @@
 		"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
 		"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
 		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
-		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
+		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
+		"${fdt_addr};\0"
 
 #ifdef VIRTUAL_PLATFORM
 #define CONFIG_BOOTCOMMAND \
