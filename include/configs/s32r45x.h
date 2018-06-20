@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -14,5 +14,8 @@
 #define CONFIG_S32R45X
 
 #include <configs/s32-gen1.h>
+
+/* TODO qspi desctivated until pinmuxing completed for QSPI */
+#undef CONFIG_S32V234_USES_FLASH
 
 #endif
