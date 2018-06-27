@@ -162,6 +162,29 @@ static u32 get_uart_clk(void)
 	return freq/div;
 }
 
+static u32 get_usdhc_clk(void)
+{
+	u32 div, css_sel;
+	u32 freq = 0;
+
+	css_sel = get_sel(14);
+	div = get_div(14);
+
+	switch (css_sel) {
+	case MC_CGM_MUXn_CSC_SEL_FIRC:
+		freq = FIRC_CLK_FREQ;
+		break;
+	case MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3:
+		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 10);
+		break;
+	default:
+		printf("unsupported system clock select\n");
+		freq = 0;
+	}
+
+	return freq / div;
+}
+
 static u32 get_dspi_clk(void)
 {
 	u32 div, css_sel, freq = 0;
@@ -212,6 +235,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	switch (clk) {
 	case MXC_UART_CLK:
 		return get_uart_clk();
+	case MXC_USDHC_CLK:
+		return get_usdhc_clk();
 	case MXC_QSPI_CLK:
 		return get_qspi_clk();
 	case MXC_DSPI_CLK:
@@ -230,6 +255,8 @@ int do_s32_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	printf("Root clocks:\n");
 	printf("UART clock:	%5d MHz\n",
 	       mxc_get_clock(MXC_UART_CLK) / 1000000);
+	printf("SDHC clock:	%5d MHz\n",
+	       mxc_get_clock(MXC_USDHC_CLK) / 1000000);
 	printf("DSPI clock:     %5d MHz\n",
 	       mxc_get_clock(MXC_DSPI_CLK) / 1000000);
 	printf("QSPI clock:     %5d MHz\n",
