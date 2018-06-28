@@ -282,7 +282,7 @@
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs rw " \
 		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
-		"nfsroot=${serverip}:/tftpboot/rfs,nolock \0" \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp \0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
