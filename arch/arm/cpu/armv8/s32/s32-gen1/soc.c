@@ -274,6 +274,49 @@ int print_cpuinfo(void)
 }
 #endif
 
+__weak void setup_iomux_sdhc(void)
+{
+	/* Set iomux PADS for USDHC */
+
+	/* PC14 pad: uSDHC clk */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_CLK, SIUL2_MSCRn(46));
+
+	/* PC15 pad: uSDHC CMD */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_CMD, SIUL2_MSCRn(47));
+	writel(0x2, SIUL2_MSCRn(515));
+
+	/* PD00 pad: uSDHC DAT0 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(48));
+	writel(0x2, SIUL2_MSCRn(516));
+
+	/* PD01 pad: uSDHC DAT1 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(49));
+	writel(0x2, SIUL2_MSCRn(517));
+
+	/* PD02 pad: uSDHC DAT2 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(50));
+	writel(0x2, SIUL2_MSCRn(520));
+
+	/* PD03 pad: uSDHC DAT3 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(51));
+	writel(0x2, SIUL2_MSCRn(521));
+
+	/* PD04 pad: uSDHC DAT4 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(52));
+	writel(0x2, SIUL2_MSCRn(522));
+
+	/* PD05 pad: uSDHC DAT5 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(53));
+	writel(0x2, SIUL2_MSCRn(523));
+
+	/* PD06 pad: uSDHC DAT6 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(54));
+	writel(0x2, SIUL2_MSCRn(519));
+
+	/* PD07 pad: uSDHC DAT7 */
+	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(55));
+	writel(0x2, SIUL2_MSCRn(518));
+}
 
 __weak int dram_init(void)
 {

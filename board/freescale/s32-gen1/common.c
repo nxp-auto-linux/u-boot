@@ -16,6 +16,22 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+__weak void setup_iomux_uart(void)
+{
+	/* Muxing for linflex0 */
+
+	/* set PC09 - MSCR[41] - for UART0 TXD */
+	writel(SIUL2_MSCR_S32_G1_PORT_CTRL_UART_TXD,
+	       SIUL2_MSCRn(SIUL2_PC09_MSCR_S32_G1_UART0));
+
+	/* set PC10 - MSCR[42] - for UART0 RXD */
+	writel(SIUL2_MSCR_S32_G1_PORT_CTRL_UART_RXD,
+	       SIUL2_MSCRn(SIUL2_PC10_MSCR_S32_G1_UART0));
+	/* set UART0 RXD - IMCR[512] - to link to PC10 */
+	writel(SIUL2_IMCR_S32_G1_UART_RXD_to_pad,
+	       SIUL2_IMCRn(SIUL2_PC10_ISCR_S32_G1_UART0));
+}
+
 static void mscm_init(void)
 {
 	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_BASE_ADDR;
@@ -45,10 +61,10 @@ int board_early_init_f(void)
 	mscm_init();
 	clock_init();
 
-	//setup_iomux_uart();
 	//setup_iomux_enet();
 	//setup_iomux_i2c();
 	//setup_iomux_nfc();
+	setup_iomux_uart();
 
 	setup_xrdc();
 	return 0;
