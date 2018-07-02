@@ -61,7 +61,7 @@ int board_early_init_f(void)
 	mscm_init();
 	clock_init();
 
-	//setup_iomux_enet();
+	setup_iomux_enet();
 	//setup_iomux_i2c();
 	//setup_iomux_nfc();
 	setup_iomux_uart();
