@@ -21,6 +21,10 @@
 #define MC_ME_MODE_UPD			((MC_ME_BASE_ADDR) + 0x00000008)
 #define MC_ME_MODE_UPD_UPD		(0x1 << 0)
 
+#define MC_ME_MODE_STAT			((MC_ME_BASE_ADDR) + 0x0000000C)
+#define MC_ME_MODE_STAT_PREVMODE	(0x1 << 0)
+
+
 /* MC_ME partition 1 m M definitions. */
 #define MC_ME_PRTN_N_CORE_M(n, m)	(MC_ME_BASE_ADDR + 0x140 + \
 						(n) * 0x200 + (m) * 0x20)

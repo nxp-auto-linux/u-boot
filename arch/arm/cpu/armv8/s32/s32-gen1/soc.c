@@ -245,8 +245,37 @@ U_BOOT_CMD(
 	 );
 
 #if defined(CONFIG_DISPLAY_CPUINFO)
-static char *get_reset_cause(void)
+static const char *get_reset_cause(void)
 {
+	u32 val;
+
+	val = readl(RGM_DES);
+	if (val & RGM_DES_POR) {
+		/* Clear bit */
+		writel(RGM_DES_POR, RGM_DES);
+		return "Power-On Reset";
+	}
+
+	if (val) {
+		writel(~RGM_DES_POR, RGM_DES);
+		return "Destructive Reset";
+	}
+
+	val = readl(RGM_FES);
+	if (val & RGM_FES_EXT) {
+		writel(RGM_FES_EXT, RGM_FES);
+		return "External Reset";
+	}
+
+	if (val) {
+		writel(~RGM_FES_EXT, RGM_FES);
+		return "Functional Reset";
+	}
+
+	val = readl(MC_ME_MODE_STAT);
+	if ((val & MC_ME_MODE_STAT_PREVMODE) == 0)
+		return "Reset";
+
 	return "unknown reset";
 }
 
