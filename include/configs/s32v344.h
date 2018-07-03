@@ -15,7 +15,4 @@
 
 #include <configs/s32-gen1.h>
 
-/* TODO qspi desctivated until pinmuxing completed for QSPI */
-#undef CONFIG_S32V234_USES_FLASH
-
 #endif
