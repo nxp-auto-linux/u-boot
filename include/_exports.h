@@ -1,4 +1,10 @@
 /*
+ * Copyright 2018 NXP
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ */
+
+/*
  * You need to use #ifdef around functions that may not exist
  * in the final configuration (such as i2c).
  * use a dummyfunction as first parameter to EXPORT_FUNC.
@@ -13,6 +19,7 @@
 	EXPORT_FUNC(putc, void, putc, const char)
 	EXPORT_FUNC(puts, void, puts, const char *)
 	EXPORT_FUNC(printf, int, printf, const char*, ...)
+	EXPORT_FUNC(fprintf, int, fprintf, int, const char*, ...)
 #if defined(CONFIG_X86) || defined(CONFIG_PPC)
 	EXPORT_FUNC(irq_install_handler, void, install_hdlr,
 		    int, interrupt_handler_t, void*)
@@ -85,4 +92,9 @@
 		    mdio_phydev_for_ethname, const char *ethname)
 	EXPORT_FUNC(miiphy_set_current_dev, int, miiphy_set_current_dev,
 		    const char *devname)
+#endif
+#if defined(CONFIG_GICSUPPORT)
+	EXPORT_FUNC(gic_register_handler, int, gic_register_handler, int,
+		    void (*handler)(struct pt_regs *, unsigned int),
+		    int, const char *)
 #endif
