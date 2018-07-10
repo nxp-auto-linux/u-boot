@@ -35,3 +35,26 @@ void setup_iomux_i2c(void)
 	writel(SIUL2_IMCR_S32R_PAD_CTRL_I2C1_SCLK,
 	       SIUL2_IMCRn(SIUL2_PA_14_IMCR_S32R_I2C1_SCLK));
 }
+
+#ifdef CONFIG_FSL_DSPI
+static void setup_iomux_dspi(void)
+{
+	/* Configure Chip Select Pins */
+	writel(SUIL2_MSCR_S32R_PAD_CTL_SPI5_CS0,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R_PA_10));
+
+	/* MSCR */
+	writel(SIUL2_MSCR_S32R_PAD_CTL_SPI5_SOUT,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R_PJ_5));
+
+	writel(SIUL2_MSCR_S32R_PAD_CTL_SPI5_SIN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R_PJ_4));
+
+	writel(SIUL2_MSCR_S32R_PAD_CTL_SPI5_SCK,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R_PA_9));
+
+	/* IMCR */
+	writel(SIUL2_IMCR_S32R_PAD_CTL_SPI5_SIN,
+	       SIUL2_IMCRn(SIUL2_PJ_4_IMCR_S32R_SPI5_SIN));
+}
+#endif
