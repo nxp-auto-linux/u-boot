@@ -22,6 +22,7 @@ enum mxc_clock {
 	MXC_QSPI_CLK,
 	MXC_DCU_PIX_CLK,
 	MXC_DSPI_CLK,
+	MXC_XBAR_CLK,
 };
 
 #if defined(CONFIG_S32V234)

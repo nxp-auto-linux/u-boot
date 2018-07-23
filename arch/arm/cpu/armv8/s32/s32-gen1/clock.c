@@ -196,6 +196,7 @@ static void setup_mux_clocks(void)
 	 * XBAR_DIV2_CLK (200 MHz), IPS_CLK (133 MHz), SbSW_CLK (66.5 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 0,
 			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1);
+	mux_div_clk_config(MC_CGM0_BASE_ADDR, 0, 0, 1);
 
 	/* setup the mux clock divider for DSPI_CLK (100 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 16,
