@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015, 2016, Freescale Semiconductor, Inc.
- * (C) Copyright 2016, NXP
+ * (C) Copyright 2016-2018, NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -22,7 +22,7 @@ void qspi_iomux()
 	writel(SIUL2_PK6_MSCR_MUX_MODE_QSPI_A_SCK |
 	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK6_MSCR));
 
-	#ifdef CONFIG_S32V234_FLASH
+	#ifdef CONFIG_S32_FLASH
 	/*
 	 * XXX: This signal should not be needed with hyperflash powered at 3V,
 	 * but it seems the AHB access blocks without it
@@ -73,7 +73,7 @@ void qspi_iomux()
 	writel(SIUL2_PORT_IMCR_MUX_MODE_QSPI_A_DATA0_7,
 	       SIUL2_IMCRn(SIUL2_PK8_IMCR_QSPI_A_DATA0));
 
-	#ifdef CONFIG_S32V234_FLASH
+	#ifdef CONFIG_S32_FLASH
 	/* A_DATA 4-7 */
 	/* QSPI0_A_DATA7 - R21 - PL2 */
 	writel(SIUL2_PORT_MSCR_CTRL_QSPI_A_DATA4_7,
@@ -129,10 +129,7 @@ void qspi_iomux()
 
 }				/* qspi_iomux */
 
-#ifdef CONFIG_S32V234_FLASH
-int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
-			    char * const argv[]);
-#else
+#ifndef CONFIG_S32_FLASH
 int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {

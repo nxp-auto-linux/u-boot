@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2017 NXP
+ * Copyright 2016-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -38,7 +38,7 @@ void QSPI_setup_hyp()
 {
 	qspi_iomux();
 	/* TODO Jira issue pending */
-#ifdef CONFIG_DEBUG_S32V234_QSPI_QSPI
+#ifdef CONFIG_DEBUG_S32_QSPI_QSPI
 	eprintf("ERROR: QSPI_setup_hyp() HAS NO QuadSPI settings and definitions");
 #else
 	debug("QSPI_setup_hyp() uses baremetal QuadSPI settings and definitions");
@@ -172,7 +172,7 @@ void quadspi_program_hyp(unsigned int address, uintptr_t pdata,
 		quadspi_send_instruction_hyp(CONFIG_SYS_FLASH_BASE + 0xAAA, 0xA0);
 
 		/* TOOD Jira issue pending */
-#ifndef CONFIG_DEBUG_S32V234_QSPI
+#ifndef CONFIG_DEBUG_S32_QSPI
 		debug("quadspi_program_hyp() uses baremetal QuadSPI settings and definitions");
 #endif
 		//prepare write/program instruction

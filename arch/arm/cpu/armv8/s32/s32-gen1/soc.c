@@ -363,6 +363,71 @@ int print_cpuinfo(void)
 }
 #endif
 
+__weak void setup_iomux_enet(void)
+{
+	/* set PE2 - MSCR[66] - for TX CLK */
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_CLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE2));
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_CLK_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE2_IN));
+
+	/* set PE3 - MSCR[67] - for TX_EN */
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_EN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE3));
+
+	/* set PE4 - MSCR[68] - for TX_D0 */
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_D0,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE4));
+
+	/* set PE5 - MSCR[69] - for TX_D1 */
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_D1,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE5));
+
+	/* set PE6 - MSCR[70] - for TX_D2 */
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_D2,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE6));
+
+	/* set PE7 - MSCR[71] - for TX_D3 */
+	writel(SIUL2_MSCR_S32_G1_ENET_TX_D3,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE7));
+
+	/* set PE8 - MSCR[72] - for RX_CLK */
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_CLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE8));
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_CLK_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE8_IN));
+
+	/* set PD9 - MSCR[73] - for RX_DV */
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_DV,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE9));
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_DV_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE9_IN));
+
+	/* set PE10 - MSCR[74] - for RX_D0 */
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D0,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE10));
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D0_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE10_IN));
+
+	/* set PE11 - MSCR[75] - for RX_D1 */
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D1,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE11));
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D1_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE11_IN));
+
+	/* set PE12 - MSCR[76] - for RX_D2 */
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D2,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE12));
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D2_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE12_IN));
+
+	/* set PE13 - MSCR[77] - for RX_D3 */
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D3,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE13));
+	writel(SIUL2_MSCR_S32_G1_ENET_RX_D3_IN,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE13_IN));
+}
+
 __weak void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */

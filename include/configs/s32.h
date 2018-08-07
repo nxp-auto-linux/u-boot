@@ -112,9 +112,6 @@
 #define RAMDISK_ADDR		0xC4000000
 #endif
 
-/* Flash related definitions */
-#define CONFIG_S32V234_USES_FLASH
-
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 
 /* Flash Size and Num need to be updated according to the board's flash type */
@@ -125,12 +122,12 @@
 #define QSPI0_AMBA_BASE                CONFIG_SYS_FSL_FLASH0_BASE
 
 #else
-#define CONFIG_S32V234_FLASH
+#define CONFIG_S32_FLASH
 
 /* QSPI/hyperflash configs */
 
 /* Debug stuff for qspi/hyperflash */
-#undef CONFIG_DEBUG_S32V234_QSPI_QSPI
+#undef CONFIG_DEBUG_S32_QSPI_QSPI
 
 /* Flash comand disabled until implemented */
 #undef CONFIG_CMD_FLASH
