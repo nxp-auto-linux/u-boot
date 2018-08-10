@@ -152,7 +152,12 @@
 /* COUNTER_FREQUENCY value will be used at startup but will be replaced
  * if an older chip version is determined at runtime.
  */
+#ifdef CONFIG_S32V234EVB_29288
+#define COUNTER_FREQUENCY               (12000000)     /* 12MHz */
+#else
 #define COUNTER_FREQUENCY               (10000000)     /* 10MHz*/
+#endif /* CONFIG_S32V234EVB_29288 */
+
 #define COUNTER_FREQUENCY_CUT1          (12000000)     /* 12MHz*/
 #elif defined(CONFIG_SYS_PIT_TIMER)
 #define COUNTER_FREQUENCY               (133056128)     /* 133MHz */
