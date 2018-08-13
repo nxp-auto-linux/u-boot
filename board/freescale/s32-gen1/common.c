@@ -14,6 +14,8 @@
 #include <miiphy.h>
 #include <netdev.h>
 
+#include "board_common.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 __weak void setup_iomux_uart(void)
@@ -62,10 +64,12 @@ int board_early_init_f(void)
 	clock_init();
 
 	setup_iomux_enet();
-	//setup_iomux_i2c();
+	setup_iomux_i2c();
 	//setup_iomux_nfc();
 	setup_iomux_uart();
-
+#ifdef CONFIG_FSL_DSPI
+	setup_iomux_dspi();
+#endif
 	setup_xrdc();
 	return 0;
 }
