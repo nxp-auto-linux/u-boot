@@ -9,6 +9,7 @@
 #include <common.h>
 #include <command.h>
 #include <asm/io.h>
+#include <asm/arch/soc.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
 #include <asm/arch/clock.h>
@@ -49,7 +50,7 @@ static void setup_iomux_uart(void)
 	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART1_RXD));
 }
 
-static void setup_iomux_enet(void)
+void setup_iomux_enet(void)
 {
 #ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 	/* MDC - PC13 */
@@ -192,6 +193,10 @@ void setup_xrdc(void)
 #ifdef CONFIG_DCU_QOS_FIX
 int board_dcu_qos(void)
 {
+	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+	writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
+	       &src_regs->gpr8);
+
 	/* m_fastdma1_ib */
 	writel(0x0, 0x40012380);
 	writel(0x0, 0x40012384);
@@ -280,7 +285,6 @@ int board_early_init_f(void)
 	setup_iomux_dcu();
 #ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
-
 #endif
 
 	setup_xrdc();

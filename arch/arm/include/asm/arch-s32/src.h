@@ -74,7 +74,8 @@
 #define SRC_GPR6_PCIE_PCS_TX_SWING_LOW_MASK				(0x7f << 25)
 #define SRC_GPR6_PCIE_PCS_TX_SWING_LOW_OFFSET			25
 
-#ifdef CONFIG_S32V234EVB_29288
+#if defined(CONFIG_S32V234EVB_29288) || defined(CONFIG_MPXS32V234_R1) || \
+	defined(CONFIG_MPXS32V234_R2)
 /*
  * SRC_GPR8 bit fields
  */
@@ -105,7 +106,8 @@ struct src {
 	u32 gpr4;
 	u32 gpr5;
 	u32 gpr6;
-#ifdef CONFIG_S32V234EVB_29288
+#if defined(CONFIG_S32V234EVB_29288) || defined(CONFIG_MPXS32V234_R1) || \
+	defined(CONFIG_MPXS32V234_R2)
 	u32 reserved_0x114[1];
 	u32 gpr8;
 	u32 reserved_0x120[1];
