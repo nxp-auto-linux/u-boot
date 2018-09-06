@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013 Xilinx Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ASM_ARCH_HARDWARE_H
@@ -14,8 +13,6 @@
 #define ZYNQ_GEM_BASEADDR1		0xE000C000
 #define ZYNQ_I2C_BASEADDR0		0xE0004000
 #define ZYNQ_I2C_BASEADDR1		0xE0005000
-#define ZYNQ_SPI_BASEADDR0		0xE0006000
-#define ZYNQ_SPI_BASEADDR1		0xE0007000
 #define ZYNQ_QSPI_BASEADDR		0xE000D000
 #define ZYNQ_SMC_BASEADDR		0xE000E000
 #define ZYNQ_NAND_BASEADDR		0xE1000000

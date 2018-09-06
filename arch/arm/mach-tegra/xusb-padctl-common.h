@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
- *
- * SPDX-License-Identifier: GPL-2.0
  */
 
 #ifndef _TEGRA_XUSB_PADCTL_COMMON_H_
@@ -9,9 +8,11 @@
 
 #include <common.h>
 #include <fdtdec.h>
+#include <dm/ofnode.h>
 
 #include <asm/io.h>
 #include <asm/arch-tegra/xusb-padctl.h>
+#include <linux/ioport.h>
 
 struct tegra_xusb_padctl_lane {
 	const char *name;
@@ -77,7 +78,7 @@ struct tegra_xusb_padctl_config {
 struct tegra_xusb_padctl {
 	const struct tegra_xusb_padctl_soc *socdata;
 	struct tegra_xusb_padctl_config config;
-	struct fdt_resource regs;
+	struct resource regs;
 	unsigned int enable;
 
 };
@@ -95,7 +96,7 @@ static inline void padctl_writel(struct tegra_xusb_padctl *padctl,
 	writel(value, padctl->regs.start + offset);
 }
 
-int tegra_xusb_process_nodes(const void *fdt, int nodes[], unsigned int count,
-	const struct tegra_xusb_padctl_soc *socdata);
+int tegra_xusb_process_nodes(ofnode nodes[], unsigned int count,
+			     const struct tegra_xusb_padctl_soc *socdata);
 
 #endif

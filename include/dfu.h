@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * dfu.h - DFU flashable area description
  *
  * Copyright (C) 2012 Samsung Electronics
  * authors: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
  *	    Lukasz Majewski <l.majewski@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __DFU_ENTITY_H_
@@ -110,7 +109,7 @@ struct dfu_entity {
 		struct sf_internal_data sf;
 	} data;
 
-	long (*get_medium_size)(struct dfu_entity *dfu);
+	int (*get_medium_size)(struct dfu_entity *dfu, u64 *size);
 
 	int (*read_medium)(struct dfu_entity *dfu,
 			u64 offset, void *buf, long *len);
@@ -132,7 +131,7 @@ struct dfu_entity {
 	u8 *i_buf;
 	u8 *i_buf_start;
 	u8 *i_buf_end;
-	long r_left;
+	u64 r_left;
 	long b_left;
 
 	u32 bad_skip;	/* for nand use */
@@ -162,6 +161,31 @@ bool dfu_usb_get_reset(void);
 int dfu_read(struct dfu_entity *de, void *buf, int size, int blk_seq_num);
 int dfu_write(struct dfu_entity *de, void *buf, int size, int blk_seq_num);
 int dfu_flush(struct dfu_entity *de, void *buf, int size, int blk_seq_num);
+
+/*
+ * dfu_defer_flush - pointer to store dfu_entity for deferred flashing.
+ *		     It should be NULL when not used.
+ */
+extern struct dfu_entity *dfu_defer_flush;
+/**
+ * dfu_get_defer_flush - get current value of dfu_defer_flush pointer
+ *
+ * @return - value of the dfu_defer_flush pointer
+ */
+static inline struct dfu_entity *dfu_get_defer_flush(void)
+{
+	return dfu_defer_flush;
+}
+
+/**
+ * dfu_set_defer_flush - set the dfu_defer_flush pointer
+ *
+ * @param dfu - pointer to the dfu_entity, which should be written
+ */
+static inline void dfu_set_defer_flush(struct dfu_entity *dfu)
+{
+	dfu_defer_flush = dfu;
+}
 
 /**
  * dfu_write_from_mem_addr - write data from memory to DFU managed medium

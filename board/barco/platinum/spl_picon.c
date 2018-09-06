@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014 Stefan Roese <sr@denx.de>
  *
  * Based on: gw_ventana_spl.c which is:
  * Copyright (C) 2014 Gateworks Corporation
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -14,14 +13,12 @@
 #include <asm/arch/mx6-ddr.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/imx-common/boot_mode.h>
-#include <asm/imx-common/iomux-v3.h>
-#include <asm/imx-common/mxc_i2c.h>
+#include <asm/mach-imx/boot_mode.h>
+#include <asm/mach-imx/iomux-v3.h>
+#include <asm/mach-imx/mxc_i2c.h>
 #include <spl.h>
 
 #include "platinum.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #undef RTT_NOM_120OHM	/* use 120ohm Rtt_nom vs 60ohm (lower power) */
 
@@ -138,6 +135,8 @@ static void spl_dram_init(int width)
 		.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
 		.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
 		.ddr_type = DDR_TYPE_DDR3,
+		.refsel = 1,	/* Refresh cycles at 32KHz */
+		.refr = 7, 	/* 8 refresh commands per refresh cycle */
 	};
 
 	mx6sdl_dram_iocfg(width, &mx6sdl_ddr_ioregs, &mx6sdl_grp_ioregs);

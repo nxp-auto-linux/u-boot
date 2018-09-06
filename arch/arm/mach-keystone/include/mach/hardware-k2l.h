@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * K2L: SoC definitions
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_HARDWARE_K2L_H
@@ -52,9 +51,6 @@
 #define KS2_LPSC_DPD4X			48
 #define KS2_LPSC_FFTC_B			49
 #define KS2_LPSC_IQN_AIL		50
-
-/* MSMC */
-#define KS2_MSMC_SEGMENT_PCIE1		14
 
 /* Chip Interrupt Controller */
 #define KS2_CIC2_DDR3_ECC_IRQ_NUM	0x0D3
@@ -104,5 +100,12 @@
 
 /* NETCP */
 #define KS2_NETCP_BASE			0x26000000
+
+#ifndef __ASSEMBLY__
+static inline int ddr3_get_size(void)
+{
+	return 2;
+}
+#endif
 
 #endif /* __ASM_ARCH_HARDWARE_K2L_H */

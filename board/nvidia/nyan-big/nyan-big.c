@@ -1,11 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
  * NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <errno.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
@@ -36,8 +36,9 @@ void pinmux_init(void)
 
 int tegra_board_id(void)
 {
-	static const int vector[] = {GPIO_PQ3, GPIO_PT1, GPIO_PX1,
-					GPIO_PX4, -1};
+	static const int vector[] = {TEGRA_GPIO(Q, 3), TEGRA_GPIO(T, 1),
+					TEGRA_GPIO(X, 1), TEGRA_GPIO(X, 4),
+					-1};
 
 	gpio_claim_vector(vector, "board_id%d");
 	return gpio_get_values_as_int(vector);
@@ -45,20 +46,23 @@ int tegra_board_id(void)
 
 int tegra_lcd_pmic_init(int board_id)
 {
-	struct udevice *pmic;
+	struct udevice *dev;
 	int ret;
 
-	ret = as3722_get(&pmic);
-	if (ret)
-		return -ENOENT;
+	ret = uclass_get_device_by_driver(UCLASS_PMIC,
+					  DM_GET_DRIVER(pmic_as3722), &dev);
+	if (ret) {
+		debug("%s: Failed to find PMIC\n", __func__);
+		return ret;
+	}
 
 	if (board_id == 0)
-		as3722_write(pmic, 0x00, 0x3c);
+		pmic_reg_write(dev, 0x00, 0x3c);
 	else
-		as3722_write(pmic, 0x00, 0x50);
-	as3722_write(pmic, 0x12, 0x10);
-	as3722_write(pmic, 0x0c, 0x07);
-	as3722_write(pmic, 0x20, 0x10);
+		pmic_reg_write(dev, 0x00, 0x50);
+	pmic_reg_write(dev, 0x12, 0x10);
+	pmic_reg_write(dev, 0x0c, 0x07);
+	pmic_reg_write(dev, 0x20, 0x10);
 
 	return 0;
 }

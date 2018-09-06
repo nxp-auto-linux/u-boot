@@ -1,38 +1,38 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Freescale Layerscape MC I/O wrapper
  *
- * Copyright (C) 2013-2015 Freescale Semiconductor, Inc.
- * Author: German Rivera <German.Rivera@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  */
 #ifndef _FSL_DPRC_H
 #define _FSL_DPRC_H
 
 /* DPRC Version */
-#define DPRC_VER_MAJOR				5
-#define DPRC_VER_MINOR				0
+#define DPRC_VER_MAJOR				6
+#define DPRC_VER_MINOR				1
 
 /* Command IDs */
-#define DPRC_CMDID_CLOSE			0x800
-#define DPRC_CMDID_OPEN				0x805
-#define DPRC_CMDID_CREATE			0x905
+#define DPRC_CMDID_CLOSE			0x8001
+#define DPRC_CMDID_OPEN				0x8051
+#define DPRC_CMDID_CREATE			0x9051
 
-#define DPRC_CMDID_GET_ATTR			0x004
-#define DPRC_CMDID_RESET_CONT			0x005
+#define DPRC_CMDID_GET_ATTR			0x0041
+#define DPRC_CMDID_RESET_CONT			0x0051
+#define DPRC_CMDID_GET_API_VERSION              0xa051
 
-#define DPRC_CMDID_CREATE_CONT			0x151
-#define DPRC_CMDID_DESTROY_CONT			0x152
-#define DPRC_CMDID_GET_CONT_ID			0x830
-#define DPRC_CMDID_GET_OBJ_COUNT		0x159
-#define DPRC_CMDID_GET_OBJ			0x15A
-#define DPRC_CMDID_GET_RES_COUNT		0x15B
-#define DPRC_CMDID_GET_RES_IDS			0x15C
-#define DPRC_CMDID_GET_OBJ_REG			0x15E
+#define DPRC_CMDID_CREATE_CONT			0x1511
+#define DPRC_CMDID_DESTROY_CONT			0x1521
+#define DPRC_CMDID_GET_CONT_ID			0x8301
+#define DPRC_CMDID_GET_OBJ_COUNT		0x1591
+#define DPRC_CMDID_GET_OBJ			0x15A1
+#define DPRC_CMDID_GET_RES_COUNT		0x15B1
+#define DPRC_CMDID_GET_RES_IDS			0x15C1
+#define DPRC_CMDID_GET_OBJ_REG			0x15E1
 
-#define DPRC_CMDID_CONNECT			0x167
-#define DPRC_CMDID_DISCONNECT			0x168
-#define DPRC_CMDID_GET_CONNECTION		0x16C
+#define DPRC_CMDID_CONNECT			0x1671
+#define DPRC_CMDID_DISCONNECT			0x1681
+#define DPRC_CMDID_GET_CONNECTION		0x16C1
 
 /*                cmd, param, offset, width, type, arg_name */
 #define DPRC_RSP_GET_CONTAINER_ID(cmd, container_id) \
@@ -88,8 +88,6 @@ do { \
 	MC_RSP_OP(cmd, 0, 32, 16, uint16_t, attr->icid); \
 	MC_RSP_OP(cmd, 1, 0,  32, uint32_t, attr->options);\
 	MC_RSP_OP(cmd, 1, 32, 32, int,      attr->portal_id); \
-	MC_RSP_OP(cmd, 2, 0,  16, uint16_t, attr->version.major);\
-	MC_RSP_OP(cmd, 2, 16, 16, uint16_t, attr->version.minor);\
 } while (0)
 
 /*                cmd, param, offset, width, type, arg_name */
@@ -110,6 +108,74 @@ do { \
 	MC_RSP_OP(cmd, 1, 32, 32, uint32_t, obj_desc->state);\
 	MC_RSP_OP(cmd, 2, 0,  16, uint16_t, obj_desc->ver_major);\
 	MC_RSP_OP(cmd, 2, 16, 16, uint16_t, obj_desc->ver_minor);\
+	MC_RSP_OP(cmd, 2, 32, 16, uint16_t, obj_desc->flags); \
+	MC_RSP_OP(cmd, 3, 0,  8,  char,	    obj_desc->type[0]);\
+	MC_RSP_OP(cmd, 3, 8,  8,  char,	    obj_desc->type[1]);\
+	MC_RSP_OP(cmd, 3, 16, 8,  char,	    obj_desc->type[2]);\
+	MC_RSP_OP(cmd, 3, 24, 8,  char,	    obj_desc->type[3]);\
+	MC_RSP_OP(cmd, 3, 32, 8,  char,	    obj_desc->type[4]);\
+	MC_RSP_OP(cmd, 3, 40, 8,  char,	    obj_desc->type[5]);\
+	MC_RSP_OP(cmd, 3, 48, 8,  char,	    obj_desc->type[6]);\
+	MC_RSP_OP(cmd, 3, 56, 8,  char,	    obj_desc->type[7]);\
+	MC_RSP_OP(cmd, 4, 0,  8,  char,	    obj_desc->type[8]);\
+	MC_RSP_OP(cmd, 4, 8,  8,  char,	    obj_desc->type[9]);\
+	MC_RSP_OP(cmd, 4, 16, 8,  char,	    obj_desc->type[10]);\
+	MC_RSP_OP(cmd, 4, 24, 8,  char,	    obj_desc->type[11]);\
+	MC_RSP_OP(cmd, 4, 32, 8,  char,	    obj_desc->type[12]);\
+	MC_RSP_OP(cmd, 4, 40, 8,  char,	    obj_desc->type[13]);\
+	MC_RSP_OP(cmd, 4, 48, 8,  char,	    obj_desc->type[14]);\
+	MC_RSP_OP(cmd, 4, 56, 8,  char,	    obj_desc->type[15]);\
+	MC_RSP_OP(cmd, 5, 0,  8,  char,	    obj_desc->label[0]);\
+	MC_RSP_OP(cmd, 5, 8,  8,  char,	    obj_desc->label[1]);\
+	MC_RSP_OP(cmd, 5, 16, 8,  char,	    obj_desc->label[2]);\
+	MC_RSP_OP(cmd, 5, 24, 8,  char,	    obj_desc->label[3]);\
+	MC_RSP_OP(cmd, 5, 32, 8,  char,	    obj_desc->label[4]);\
+	MC_RSP_OP(cmd, 5, 40, 8,  char,	    obj_desc->label[5]);\
+	MC_RSP_OP(cmd, 5, 48, 8,  char,	    obj_desc->label[6]);\
+	MC_RSP_OP(cmd, 5, 56, 8,  char,	    obj_desc->label[7]);\
+	MC_RSP_OP(cmd, 6, 0,  8,  char,	    obj_desc->label[8]);\
+	MC_RSP_OP(cmd, 6, 8,  8,  char,	    obj_desc->label[9]);\
+	MC_RSP_OP(cmd, 6, 16, 8,  char,	    obj_desc->label[10]);\
+	MC_RSP_OP(cmd, 6, 24, 8,  char,	    obj_desc->label[11]);\
+	MC_RSP_OP(cmd, 6, 32, 8,  char,	    obj_desc->label[12]);\
+	MC_RSP_OP(cmd, 6, 40, 8,  char,	    obj_desc->label[13]);\
+	MC_RSP_OP(cmd, 6, 48, 8,  char,	    obj_desc->label[14]);\
+	MC_RSP_OP(cmd, 6, 56, 8,  char,	    obj_desc->label[15]);\
+} while (0)
+
+/*                cmd, param, offset, width, type, arg_name */
+#define DPRC_CMD_GET_OBJ_DESC(cmd, obj_type, obj_id) \
+do { \
+	MC_CMD_OP(cmd, 0, 0,  32, int,	    obj_id);\
+	MC_CMD_OP(cmd, 1, 0,  8,  char,     obj_type[0]);\
+	MC_CMD_OP(cmd, 1, 8,  8,  char,	    obj_type[1]);\
+	MC_CMD_OP(cmd, 1, 16, 8,  char,	    obj_type[2]);\
+	MC_CMD_OP(cmd, 1, 24, 8,  char,	    obj_type[3]);\
+	MC_CMD_OP(cmd, 1, 32, 8,  char,	    obj_type[4]);\
+	MC_CMD_OP(cmd, 1, 40, 8,  char,	    obj_type[5]);\
+	MC_CMD_OP(cmd, 1, 48, 8,  char,	    obj_type[6]);\
+	MC_CMD_OP(cmd, 1, 56, 8,  char,	    obj_type[7]);\
+	MC_CMD_OP(cmd, 2, 0,  8,  char,	    obj_type[8]);\
+	MC_CMD_OP(cmd, 2, 8,  8,  char,	    obj_type[9]);\
+	MC_CMD_OP(cmd, 2, 16, 8,  char,	    obj_type[10]);\
+	MC_CMD_OP(cmd, 2, 24, 8,  char,	    obj_type[11]);\
+	MC_CMD_OP(cmd, 2, 32, 8,  char,	    obj_type[12]);\
+	MC_CMD_OP(cmd, 2, 40, 8,  char,	    obj_type[13]);\
+	MC_CMD_OP(cmd, 2, 48, 8,  char,     obj_type[14]);\
+	MC_CMD_OP(cmd, 2, 56, 8,  char,	    obj_type[15]);\
+} while (0)
+
+/*                cmd, param, offset, width, type, arg_name */
+#define DPRC_RSP_GET_OBJ_DESC(cmd, obj_desc) \
+do { \
+	MC_RSP_OP(cmd, 0, 32, 32, int,	    obj_desc->id); \
+	MC_RSP_OP(cmd, 1, 0,  16, uint16_t, obj_desc->vendor); \
+	MC_RSP_OP(cmd, 1, 16, 8,  uint8_t,  obj_desc->irq_count); \
+	MC_RSP_OP(cmd, 1, 24, 8,  uint8_t,  obj_desc->region_count); \
+	MC_RSP_OP(cmd, 1, 32, 32, uint32_t, obj_desc->state);\
+	MC_RSP_OP(cmd, 2, 0,  16, uint16_t, obj_desc->ver_major);\
+	MC_RSP_OP(cmd, 2, 16, 16, uint16_t, obj_desc->ver_minor);\
+	MC_RSP_OP(cmd, 2, 32, 16, uint16_t, obj_desc->flags); \
 	MC_RSP_OP(cmd, 3, 0,  8,  char,	    obj_desc->type[0]);\
 	MC_RSP_OP(cmd, 3, 8,  8,  char,	    obj_desc->type[1]);\
 	MC_RSP_OP(cmd, 3, 16, 8,  char,	    obj_desc->type[2]);\
@@ -277,9 +343,9 @@ do { \
 #define DPRC_CMD_CONNECT(cmd, endpoint1, endpoint2, cfg) \
 do { \
 	MC_CMD_OP(cmd, 0, 0,  32, int,      endpoint1->id); \
-	MC_CMD_OP(cmd, 0, 32, 16, uint16_t, endpoint1->if_id); \
+	MC_CMD_OP(cmd, 0, 32, 32, int, endpoint1->if_id); \
 	MC_CMD_OP(cmd, 1, 0,  32, int,	    endpoint2->id); \
-	MC_CMD_OP(cmd, 1, 32, 16, uint16_t, endpoint2->if_id); \
+	MC_CMD_OP(cmd, 1, 32, 32, int, endpoint2->if_id); \
 	MC_CMD_OP(cmd, 2, 0,  8,  char,     endpoint1->type[0]); \
 	MC_CMD_OP(cmd, 2, 8,  8,  char,	    endpoint1->type[1]); \
 	MC_CMD_OP(cmd, 2, 16, 8,  char,	    endpoint1->type[2]); \
@@ -342,8 +408,8 @@ do { \
 /*                cmd, param, offset, width, type, arg_name */
 #define DPRC_CMD_GET_CONNECTION(cmd, endpoint1) \
 do { \
-	MC_CMD_OP(cmd, 0, 0,  32, int,      endpoint1->id); \
-	MC_CMD_OP(cmd, 0, 32, 16, uint16_t, endpoint1->if_id); \
+	MC_CMD_OP(cmd, 0, 0,  32, int,	    endpoint1->id); \
+	MC_CMD_OP(cmd, 0, 32, 32, int,	    endpoint1->if_id); \
 	MC_CMD_OP(cmd, 1, 0,  8,  char,     endpoint1->type[0]); \
 	MC_CMD_OP(cmd, 1, 8,  8,  char,	    endpoint1->type[1]); \
 	MC_CMD_OP(cmd, 1, 16, 8,  char,	    endpoint1->type[2]); \
@@ -480,13 +546,12 @@ int dprc_close(struct fsl_mc_io	*mc_io,
  */
 #define DPRC_CFG_OPT_TOPOLOGY_CHANGES_ALLOWED	0x00000008
 
-/* IOMMU bypass - indicates whether objects of this container are permitted
- * to bypass the IOMMU.
- */
-#define DPRC_CFG_OPT_IOMMU_BYPASS		0x00000010
 
-/* AIOP - Indicates that container belongs to AIOP.  */
+/* AIOP - Indicates that container belongs to AIOP. */
 #define DPRC_CFG_OPT_AIOP			0x00000020
+
+/* IRQ Config - Indicates that the container allowed to configure its IRQs.*/
+#define DPRC_CFG_OPT_IRQ_CFG_ALLOWED		0x00000040
 
 /**
  * struct dprc_cfg - Container configuration options
@@ -590,15 +655,6 @@ struct dprc_attributes {
 	uint16_t icid;
 	int portal_id;
 	uint64_t options;
-	/**
-	 * struct version - DPRC version
-	 * @major: DPRC major version
-	 * @minor: DPRC minor version
-	 */
-	struct {
-		uint16_t major;
-		uint16_t minor;
-	} version;
 };
 
 /**
@@ -637,6 +693,14 @@ int dprc_get_obj_count(struct fsl_mc_io	*mc_io,
 #define DPRC_OBJ_STATE_PLUGGED		0x00000002
 
 /**
+ * Shareability flag - Object flag indicating no memory shareability.
+ *  the object generates memory accesses that are non coherent with other
+ *  masters;
+ *  user is responsible for proper memory handling through IOMMU configuration.
+ */
+#define DPRC_OBJ_FLAG_NO_MEM_SHAREABILITY		0x0001
+
+/**
  * struct dprc_obj_desc - Object descriptor, returned from dprc_get_obj()
  * @type: Type of object: NULL terminated string
  * @id: ID of logical object resource
@@ -647,6 +711,7 @@ int dprc_get_obj_count(struct fsl_mc_io	*mc_io,
  * @region_count: Number of mappable regions supported by the object
  * @state: Object state: combination of DPRC_OBJ_STATE_ states
  * @label: Object label
+ * @flags: Object's flags
  */
 struct dprc_obj_desc {
 	char type[16];
@@ -658,6 +723,7 @@ struct dprc_obj_desc {
 	uint8_t region_count;
 	uint32_t state;
 	char label[16];
+	uint16_t	flags;
 };
 
 /**
@@ -859,7 +925,10 @@ int dprc_disconnect(struct fsl_mc_io		*mc_io,
 * @token:	Token of DPRC object
 * @endpoint1:	Endpoint 1 configuration parameters
 * @endpoint2:	Returned endpoint 2 configuration parameters
-* @state:	Returned link state: 1 - link is up, 0 - link is down
+* @state:	Returned link state:
+*           1 - link is up;
+*           0 - link is down;
+*           -1 - no connection (endpoint2 information is irrelevant)
 *
 * Return:     '0' on Success; -ENAVAIL if connection does not exist.
 */
@@ -869,5 +938,20 @@ int dprc_get_connection(struct fsl_mc_io		*mc_io,
 			const struct dprc_endpoint	*endpoint1,
 			struct dprc_endpoint		*endpoint2,
 			int				*state);
+
+/**
+ * dprc_get_api_version - Retrieve DPRC Major and Minor version info.
+ *
+ * @mc_io:	Pointer to MC portal's I/O object
+ * @cmd_flags:	Command flags; one or more of 'MC_CMD_FLAG_'
+ * @major_ver:	DPRC major version
+ * @minor_ver:	DPRC minor version
+ *
+ * Return:     '0' on Success; Error code otherwise.
+ */
+int dprc_get_api_version(struct fsl_mc_io *mc_io,
+			 u32 cmd_flags,
+			 u16 *major_ver,
+			 u16 *minor_ver);
 
 #endif /* _FSL_DPRC_H */

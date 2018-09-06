@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2014 Broadcom Corporation.
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2014-2017 Broadcom.
  */
 
 #ifndef _BCM_SF2_ETH_H_
@@ -20,8 +19,6 @@
 /* Support 2 Ethernet ports now */
 #define BCM_ETH_MAX_PORT_NUM	2
 
-#define CONFIG_BCM_SF2_ETH_DEFAULT_PORT	0
-
 enum {
 	MAC_DMA_TX = 1,
 	MAC_DMA_RX = 2
@@ -30,8 +27,6 @@ enum {
 struct eth_dma {
 	void *tx_desc_aligned;
 	void *rx_desc_aligned;
-	void *tx_desc;
-	void *rx_desc;
 
 	uint8_t *tx_buf;
 	uint8_t *rx_buf;
@@ -54,10 +49,10 @@ struct eth_info {
 	struct phy_device *port[BCM_ETH_MAX_PORT_NUM];
 	int port_num;
 
-	int (*miiphy_read)(const char *devname, unsigned char phyaddr,
-			   unsigned char reg, unsigned short *value);
-	int (*miiphy_write)(const char *devname, unsigned char phyaddr,
-			    unsigned char reg, unsigned short value);
+	int (*miiphy_read)(struct mii_dev *bus, int phyaddr, int devad,
+			   int reg);
+	int (*miiphy_write)(struct mii_dev *bus, int phyaddr, int devad,
+			    int reg, u16 value);
 
 	int (*mac_init)(struct eth_device *dev);
 	int (*enable_mac)(void);

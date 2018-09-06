@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Keystone2: DDR3 initialization
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <asm/io.h>
@@ -52,8 +51,7 @@ void ddr3_init_ddrphy(u32 base, struct ddr3_phy_config *phy_cfg)
 	__raw_writel(phy_cfg->dtpr2, base + KS2_DDRPHY_DTPR2_OFFSET);
 	__raw_writel(phy_cfg->mr0,   base + KS2_DDRPHY_MR0_OFFSET);
 	__raw_writel(phy_cfg->mr1,   base + KS2_DDRPHY_MR1_OFFSET);
-	if (!cpu_is_k2g())
-		__raw_writel(phy_cfg->mr2,   base + KS2_DDRPHY_MR2_OFFSET);
+	__raw_writel(phy_cfg->mr2,   base + KS2_DDRPHY_MR2_OFFSET);
 	__raw_writel(phy_cfg->dtcr,  base + KS2_DDRPHY_DTCR_OFFSET);
 	__raw_writel(phy_cfg->pgcr2, base + KS2_DDRPHY_PGCR2_OFFSET);
 
@@ -65,13 +63,34 @@ void ddr3_init_ddrphy(u32 base, struct ddr3_phy_config *phy_cfg)
 	while ((__raw_readl(base + KS2_DDRPHY_PGSR0_OFFSET) & 0x1) != 0x1)
 		;
 
-	/* Disable ECC for K2G */
 	if (cpu_is_k2g()) {
-		clrbits_le32(base + KS2_DDRPHY_DATX8_4_OFFSET, 0x1);
-		clrbits_le32(base + KS2_DDRPHY_DATX8_5_OFFSET, 0x1);
-		clrbits_le32(base + KS2_DDRPHY_DATX8_6_OFFSET, 0x1);
-		clrbits_le32(base + KS2_DDRPHY_DATX8_7_OFFSET, 0x1);
-		clrbits_le32(base + KS2_DDRPHY_DATX8_8_OFFSET, 0x1);
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_2_OFFSET,
+				phy_cfg->datx8_2_mask,
+				phy_cfg->datx8_2_val);
+
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_3_OFFSET,
+				phy_cfg->datx8_3_mask,
+				phy_cfg->datx8_3_val);
+
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_4_OFFSET,
+				phy_cfg->datx8_4_mask,
+				phy_cfg->datx8_4_val);
+
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_5_OFFSET,
+				phy_cfg->datx8_5_mask,
+				phy_cfg->datx8_5_val);
+
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_6_OFFSET,
+				phy_cfg->datx8_6_mask,
+				phy_cfg->datx8_6_val);
+
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_7_OFFSET,
+				phy_cfg->datx8_7_mask,
+				phy_cfg->datx8_7_val);
+
+		clrsetbits_le32(base + KS2_DDRPHY_DATX8_8_OFFSET,
+				phy_cfg->datx8_8_mask,
+				phy_cfg->datx8_8_val);
 	}
 
 	__raw_writel(phy_cfg->pir_v2, base + KS2_DDRPHY_PIR_OFFSET);
@@ -139,7 +158,10 @@ static void ddr3_reset_data(u32 base, u32 ddr3_size)
 	puts("\nClear entire DDR3 memory to enable ECC\n");
 
 	/* save the SES MPAX regs */
-	msmc_get_ses_mpax(8, 0, mpax);
+	if (cpu_is_k2g())
+		msmc_get_ses_mpax(K2G_MSMC_SEGMENT_ARM, 0, mpax);
+	else
+		msmc_get_ses_mpax(K2HKLE_MSMC_SEGMENT_ARM, 0, mpax);
 
 	/* setup edma slot 1 configuration */
 	slot.opt = EDMA3_SLOPT_TRANS_COMP_INT_ENB |
@@ -170,8 +192,17 @@ static void ddr3_reset_data(u32 base, u32 ddr3_size)
 	for (seg = 0; seg < seg_num; seg += KS2_MSMC_MAP_SEG_NUM) {
 		/* map 2GB 36-bit DDR address to 32-bit DDR address in EMIF
 		   access slave interface so that edma driver can access */
-		msmc_map_ses_segment(8, 0, base >> KS2_MSMC_SEG_SIZE_SHIFT,
-				     KS2_MSMC_DST_SEG_BASE + seg, MPAX_SEG_2G);
+		if (cpu_is_k2g()) {
+			msmc_map_ses_segment(K2G_MSMC_SEGMENT_ARM, 0,
+					     base >> KS2_MSMC_SEG_SIZE_SHIFT,
+					     KS2_MSMC_DST_SEG_BASE + seg,
+					     MPAX_SEG_2G);
+		} else {
+			msmc_map_ses_segment(K2HKLE_MSMC_SEGMENT_ARM, 0,
+					     base >> KS2_MSMC_SEG_SIZE_SHIFT,
+					     KS2_MSMC_DST_SEG_BASE + seg,
+					     MPAX_SEG_2G);
+		}
 
 		if ((seg_num - seg) > KS2_MSMC_MAP_SEG_NUM)
 			edma_blks = KS2_MSMC_MAP_SEG_NUM <<
@@ -198,7 +229,10 @@ static void ddr3_reset_data(u32 base, u32 ddr3_size)
 	qedma3_stop(KS2_EDMA0_BASE, &edma_channel);
 
 	/* restore the SES MPAX regs */
-	msmc_set_ses_mpax(8, 0, mpax);
+	if (cpu_is_k2g())
+		msmc_set_ses_mpax(K2G_MSMC_SEGMENT_ARM, 0, mpax);
+	else
+		msmc_set_ses_mpax(K2HKLE_MSMC_SEGMENT_ARM, 0, mpax);
 }
 
 static void ddr3_ecc_init_range(u32 base)
@@ -296,7 +330,7 @@ void ddr3_check_ecc_int(u32 base)
 	int ecc_test = 0;
 	u32 value = __raw_readl(base + KS2_DDR3_ECC_INT_STATUS_OFFSET);
 
-	env = getenv("ecc_test");
+	env = env_get("ecc_test");
 	if (env)
 		ecc_test = simple_strtol(env, NULL, 0);
 

@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  Copyright (C) 2012 Samsung Electronics
  *  Lukasz Majewski <l.majewski@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __G_DOWNLOAD_H_
@@ -43,5 +42,6 @@ void g_dnl_set_serialnumber(char *);
 bool g_dnl_detach(void);
 void g_dnl_trigger_detach(void);
 void g_dnl_clear_detach(void);
+int run_usb_dnl_gadget(int usbctrl_index, char *usb_dnl_gadget);
 
 #endif /* __G_DOWNLOAD_H_ */

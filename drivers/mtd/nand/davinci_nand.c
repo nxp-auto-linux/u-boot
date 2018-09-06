@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * NAND driver for TI DaVinci based boards.
  *
@@ -15,8 +16,6 @@
  * Copyright (C) 2006 Texas Instruments.
  *
  * ----------------------------------------------------------------------------
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * ----------------------------------------------------------------------------
  *
@@ -54,7 +53,7 @@
  */
 static void nand_davinci_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 {
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 	const u32 *nand = chip->IO_ADDR_R;
 
 	/* Make sure that buf is 32 bit aligned */
@@ -99,7 +98,7 @@ static void nand_davinci_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 static void nand_davinci_write_buf(struct mtd_info *mtd, const uint8_t *buf,
 				   int len)
 {
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 	const u32 *nand = chip->IO_ADDR_W;
 
 	/* Make sure that buf is 32 bit aligned */
@@ -144,7 +143,7 @@ static void nand_davinci_write_buf(struct mtd_info *mtd, const uint8_t *buf,
 static void nand_davinci_hwcontrol(struct mtd_info *mtd, int cmd,
 		unsigned int ctrl)
 {
-	struct		nand_chip *this = mtd->priv;
+	struct		nand_chip *this = mtd_to_nand(mtd);
 	u_int32_t	IO_ADDR_W = (u_int32_t)this->IO_ADDR_W;
 
 	if (ctrl & NAND_CTRL_CHANGE) {
@@ -223,7 +222,7 @@ static int nand_davinci_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
 static int nand_davinci_correct_data(struct mtd_info *mtd, u_char *dat,
 		u_char *read_ecc, u_char *calc_ecc)
 {
-	struct nand_chip *this = mtd->priv;
+	struct nand_chip *this = mtd_to_nand(mtd);
 	u_int32_t ecc_nand = read_ecc[0] | (read_ecc[1] << 8) |
 					  (read_ecc[2] << 16);
 	u_int32_t ecc_calc = calc_ecc[0] | (calc_ecc[1] << 8) |
@@ -238,23 +237,22 @@ static int nand_davinci_correct_data(struct mtd_info *mtd, u_char *dat,
 				uint32_t find_byte = diff >> (12 + 3);
 
 				dat[find_byte] ^= find_bit;
-				MTDDEBUG(MTD_DEBUG_LEVEL0, "Correcting single "
+				pr_debug("Correcting single "
 					 "bit ECC error at offset: %d, bit: "
 					 "%d\n", find_byte, find_bit);
 				return 1;
 			} else {
-				return -1;
+				return -EBADMSG;
 			}
 		} else if (!(diff & (diff - 1))) {
 			/* Single bit ECC error in the ECC itself,
 			   nothing to fix */
-			MTDDEBUG(MTD_DEBUG_LEVEL0, "Single bit ECC error in "
-				 "ECC.\n");
+			pr_debug("Single bit ECC error in " "ECC.\n");
 			return 1;
 		} else {
 			/* Uncorrectable error */
-			MTDDEBUG(MTD_DEBUG_LEVEL0, "ECC UNCORRECTED_ERROR 1\n");
-			return -1;
+			pr_debug("ECC UNCORRECTED_ERROR 1\n");
+			return -EBADMSG;
 		}
 	}
 	return 0;
@@ -359,13 +357,12 @@ static struct nand_ecclayout nand_keystone_rbl_4bit_layout_oobfirst = {
  * @buf: the data to write
  * @oob_required: must write chip->oob_poi to OOB
  * @page: page number to write
- * @cached: cached programming
  * @raw: use _raw version of write_page
  */
 static int nand_davinci_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 				   uint32_t offset, int data_len,
 				   const uint8_t *buf, int oob_required,
-				   int page, int cached, int raw)
+				   int page, int raw)
 {
 	int status;
 	int ret = 0;
@@ -380,10 +377,13 @@ static int nand_davinci_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 	chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, page);
 
-	if (unlikely(raw))
-		status = chip->ecc.write_page_raw(mtd, chip, buf, oob_required);
-	else
-		status = chip->ecc.write_page(mtd, chip, buf, oob_required);
+	if (unlikely(raw)) {
+		status = chip->ecc.write_page_raw(mtd, chip, buf,
+						  oob_required, page);
+	} else {
+		status = chip->ecc.write_page(mtd, chip, buf,
+					      oob_required, page);
+	}
 
 	if (status < 0) {
 		ret = status;
@@ -392,13 +392,6 @@ static int nand_davinci_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 	chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
 	status = chip->waitfunc(mtd, chip);
-
-	/*
-	 * See if operation failed and additional status checks are
-	 * available.
-	 */
-	if ((status & NAND_STATUS_FAIL) && (chip->errstat))
-		status = chip->errstat(mtd, chip, FL_WRITING, status, page);
 
 	if (status & NAND_STATUS_FAIL) {
 		ret = -EIO;
@@ -698,7 +691,7 @@ static int nand_davinci_4bit_correct_data(struct mtd_info *mtd, uint8_t *dat,
 		return 0;
 	} else if (iserror == ECC_STATE_TOO_MANY_ERRS) {
 		val = __raw_readl(&davinci_emif_regs->nanderrval1);
-		return -1;
+		return -EBADMSG;
 	}
 
 	numerrors = ((__raw_readl(&davinci_emif_regs->nandfsr) >> 16)
@@ -795,6 +788,9 @@ void davinci_nand_init(struct nand_chip *nand)
 #endif
 #ifdef CONFIG_SYS_NAND_NO_SUBPAGE_WRITE
 	nand->options	  |= NAND_NO_SUBPAGE_WRITE;
+#endif
+#ifdef CONFIG_SYS_NAND_BUSWIDTH_16BIT
+	nand->options	  |= NAND_BUSWIDTH_16;
 #endif
 #ifdef CONFIG_SYS_NAND_HW_ECC
 	nand->ecc.mode = NAND_ECC_HW;

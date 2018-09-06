@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Based on code from coreboot
  */
@@ -9,11 +8,59 @@
 #include <common.h>
 #include <cpu.h>
 #include <dm.h>
+#include <pci.h>
 #include <asm/cpu.h>
 #include <asm/cpu_x86.h>
+#include <asm/io.h>
 #include <asm/lapic.h>
 #include <asm/msr.h>
 #include <asm/turbo.h>
+
+#define BYT_PRV_CLK			0x800
+#define BYT_PRV_CLK_EN			(1 << 0)
+#define BYT_PRV_CLK_M_VAL_SHIFT		1
+#define BYT_PRV_CLK_N_VAL_SHIFT		16
+#define BYT_PRV_CLK_UPDATE		(1 << 31)
+
+static void hsuart_clock_set(void *base)
+{
+	u32 m, n, reg;
+
+	/*
+	 * Configure the BayTrail UART clock for the internal HS UARTs
+	 * (PCI devices) to 58982400 Hz
+	 */
+	m = 0x2400;
+	n = 0x3d09;
+	reg = (m << BYT_PRV_CLK_M_VAL_SHIFT) | (n << BYT_PRV_CLK_N_VAL_SHIFT);
+	writel(reg, base + BYT_PRV_CLK);
+	reg |= BYT_PRV_CLK_EN | BYT_PRV_CLK_UPDATE;
+	writel(reg, base + BYT_PRV_CLK);
+}
+
+/*
+ * Configure the internal clock of both SIO HS-UARTs, if they are enabled
+ * via FSP
+ */
+int arch_cpu_init_dm(void)
+{
+	struct udevice *dev;
+	void *base;
+	int ret;
+	int i;
+
+	/* Loop over the 2 HS-UARTs */
+	for (i = 0; i < 2; i++) {
+		ret = dm_pci_bus_find_bdf(PCI_BDF(0, 0x1e, 3 + i), &dev);
+		if (!ret) {
+			base = dm_pci_map_bar(dev, PCI_BASE_ADDRESS_0,
+					      PCI_REGION_MEM);
+			hsuart_clock_set(base);
+		}
+	}
+
+	return 0;
+}
 
 static void set_max_freq(void)
 {
@@ -33,7 +80,7 @@ static void set_max_freq(void)
 	perf_ctl.lo = (msr.lo & 0x3f0000) >> 8;
 
 	/*
-	 * Set guaranteed vid [21:16] from IACORE_VIDS to bits [7:0] of
+	 * Set guaranteed vid [22:16] from IACORE_VIDS to bits [7:0] of
 	 * the PERF_CTL
 	 */
 	msr = msr_read(MSR_IACORE_VIDS);
@@ -141,6 +188,7 @@ static const struct cpu_ops cpu_x86_baytrail_ops = {
 	.get_desc	= cpu_x86_get_desc,
 	.get_info	= baytrail_get_info,
 	.get_count	= baytrail_get_count,
+	.get_vendor	= cpu_x86_get_vendor,
 };
 
 static const struct udevice_id cpu_x86_baytrail_ids[] = {

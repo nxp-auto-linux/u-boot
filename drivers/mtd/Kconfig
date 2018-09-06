@@ -8,6 +8,11 @@ config MTD
 	  flash, RAM and similar chips, often used for solid state file
 	  systems on embedded devices.
 
+config MTD_NOR_FLASH
+	bool "Enable parallel NOR flash support"
+	help
+	  Enable support for parallel NOR flash.
+
 config CFI_FLASH
 	bool "Enable Driver Model for CFI Flash driver"
 	depends on MTD
@@ -28,8 +33,24 @@ config ALTERA_QSPI
 	  NOR flash to parallel flash interface. Please find details on the
 	  "Embedded Peripherals IP User Guide" of Altera.
 
+config FLASH_PIC32
+	bool "Microchip PIC32 Flash driver"
+	depends on MACH_PIC32 && MTD
+	help
+	  This enables access to Microchip PIC32 internal non-CFI flash
+	  chips through PIC32 Non-Volatile-Memory Controller.
+
+config RENESAS_RPC_HF
+	bool "Renesas RCar Gen3 RPC Hyperflash driver"
+	depends on RCAR_GEN3 && MTD
+	help
+	  This enables access to Hyperflash memory through the Renesas
+	  RCar Gen3 RPC controller.
+
 endmenu
 
 source "drivers/mtd/nand/Kconfig"
 
 source "drivers/mtd/spi/Kconfig"
+
+source "drivers/mtd/ubi/Kconfig"

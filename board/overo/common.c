@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Maintainer : Steve Sakoman <steve@sakoman.com>
  *
@@ -9,8 +10,6 @@
  *
  * (C) Copyright 2004-2008
  * Texas Instruments, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 #include <twl4030.h>
 #include <common.h>
@@ -18,6 +17,7 @@
 #include <asm/arch/mux.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
+#include <asm/mach-types.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

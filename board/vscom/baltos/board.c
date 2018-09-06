@@ -1,15 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * board.c
  *
  * Board functions for TI AM335X based boards
  *
  * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <errno.h>
+#include <linux/libfdt.h>
 #include <spl.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/hardware.h>
@@ -38,6 +38,7 @@ DECLARE_GLOBAL_DATA_PTR;
 /* GPIO that controls power to DDR on EVM-SK */
 #define GPIO_DDR_VTT_EN		7
 #define DIP_S1			44
+#define MPCIE_SW		100
 
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 
@@ -66,7 +67,7 @@ static int baltos_set_console(void)
 	printf("DIPs: 0x%1x\n", (~dips) & 0xf);
 
 	if ((dips & 0xf) == 0xe)
-		setenv("console", "ttyUSB0,115200n8");
+		env_set("console", "ttyUSB0,115200n8");
 
 	return 0;
 }
@@ -329,6 +330,11 @@ int ft_board_setup(void *blob, bd_t *bd)
 	return 0;
 }
 
+static struct module_pin_mux pcie_sw_pin_mux[] = {
+	{OFFSET(mii1_rxdv), (MODE(7) | PULLUDEN )},     /* GPIO3_4 */
+	{-1},
+};
+
 static struct module_pin_mux dip_pin_mux[] = {
 	{OFFSET(gpmc_ad12), (MODE(7) | RXACTIVE )},	/* GPIO1_12 */
 	{OFFSET(gpmc_ad13), (MODE(7)  | RXACTIVE )},	/* GPIO1_13 */
@@ -346,7 +352,7 @@ int board_late_init(void)
 
 	/* get production data */
 	if (read_eeprom(&header)) {
-		sprintf(model, "211");
+		strcpy(model, "211");
 	} else {
 		sprintf(model, "%d", header.SystemId);
 		if (header.SystemId == 215) {
@@ -354,7 +360,19 @@ int board_late_init(void)
 			baltos_set_console();
 		}
 	}
-	setenv("board_name", model);
+
+	/* turn power for the mPCIe slot */
+	configure_module_pin_mux(pcie_sw_pin_mux);
+	if (gpio_request(MPCIE_SW, "mpcie_sw")) {
+		printf("failed to export GPIO %d\n", MPCIE_SW);
+		return -ENODEV;
+	}
+	if (gpio_direction_output(MPCIE_SW, 1)) {
+		printf("failed to set GPIO %d direction\n", MPCIE_SW);
+		return -ENODEV;
+	}
+
+	env_set("board_name", model);
 #endif
 
 	return 0;
@@ -404,7 +422,7 @@ static struct cpsw_platform_data cpsw_data = {
 };
 #endif
 
-#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USBETH_SUPPORT)) \
+#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USB_ETHER)) \
 		&& defined(CONFIG_SPL_BUILD)) || \
 	((defined(CONFIG_DRIVER_TI_CPSW) || \
 	  defined(CONFIG_USB_ETHER) && defined(CONFIG_USB_MUSB_GADGET)) && \
@@ -414,7 +432,6 @@ int board_eth_init(bd_t *bis)
 	int rv, n = 0;
 	uint8_t mac_addr[6];
 	uint32_t mac_hi, mac_lo;
-	__maybe_unused struct am335x_baseboard_id header;
 
 	/*
 	 * Note here that we're using CPSW1 since that has a 1Gbit PHY while
@@ -435,11 +452,11 @@ int board_eth_init(bd_t *bis)
 
 #if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
 	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
-	if (!getenv("ethaddr")) {
+	if (!env_get("ethaddr")) {
 		printf("<ethaddr> not set. Validating first E-fuse MAC\n");
 
 		if (is_valid_ethaddr(mac_addr))
-			eth_setenv_enetaddr("ethaddr", mac_addr);
+			eth_env_set_enetaddr("ethaddr", mac_addr);
 	}
 
 #ifdef CONFIG_DRIVER_TI_CPSW

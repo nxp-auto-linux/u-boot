@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #define MXC_CPU_MX23		0x23
@@ -17,15 +16,22 @@
 #define MXC_CPU_MX6SX		0x62
 #define MXC_CPU_MX6Q		0x63
 #define MXC_CPU_MX6UL		0x64
-#define MXC_CPU_MX6SOLO		0x65 /* dummy ID */
-#define MXC_CPU_MX6D		0x67
+#define MXC_CPU_MX6ULL		0x65
+#define MXC_CPU_MX6SOLO		0x66 /* dummy */
+#define MXC_CPU_MX6SLL		0x67
+#define MXC_CPU_MX6D		0x6A
 #define MXC_CPU_MX6DP		0x68
 #define MXC_CPU_MX6QP		0x69
+#define MXC_CPU_MX7S		0x71 /* dummy ID */
 #define MXC_CPU_MX7D		0x72
+#define MXC_CPU_MX8MQ		0x82
+#define MXC_CPU_MX7ULP		0xE1 /* Temporally hard code */
 #define MXC_CPU_VF610		0xF6 /* dummy ID */
 
 #define MXC_SOC_MX6		0x60
 #define MXC_SOC_MX7		0x70
+#define MXC_SOC_MX8M		0x80
+#define MXC_SOC_MX7ULP		0xE0 /* dummy */
 
 #define CHIP_REV_1_0            0x10
 #define CHIP_REV_1_1            0x11
@@ -45,3 +51,10 @@
 #define CS0_32M_CS1_32M_CS2_32M_CS3_32M		3
 
 u32 get_imx_reset_cause(void);
+ulong get_systemPLLCLK(void);
+ulong get_FCLK(void);
+ulong get_HCLK(void);
+ulong get_BCLK(void);
+ulong get_PERCLK1(void);
+ulong get_PERCLK2(void);
+ulong get_PERCLK3(void);

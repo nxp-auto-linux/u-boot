@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Gateworks Corporation
  *
  * Author: Tim Harvey <tharvey@gateworks.com>
- *
- * SPDX-License-Identifier: GPL-2.0+
  */
 
 #include <common.h>
@@ -14,13 +13,16 @@
 #include <asm/arch/mxc_hdmi.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/imx-common/boot_mode.h>
-#include <asm/imx-common/sata.h>
-#include <asm/imx-common/spi.h>
-#include <asm/imx-common/video.h>
+#include <asm/mach-imx/boot_mode.h>
+#include <asm/mach-imx/sata.h>
+#include <asm/mach-imx/spi.h>
+#include <asm/mach-imx/video.h>
 #include <asm/io.h>
+#include <asm/setup.h>
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
+#include <environment.h>
+#include <hwconfig.h>
 #include <i2c.h>
 #include <fdt_support.h>
 #include <fsl_esdhc.h>
@@ -51,18 +53,6 @@ struct ventana_board_info ventana_info;
 
 static int board_type;
 
-/* MMC */
-static iomux_v3_cfg_t const usdhc3_pads[] = {
-	IOMUX_PADS(PAD_SD3_CLK__SD3_CLK    | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD3_CMD__SD3_CMD    | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD3_DAT0__SD3_DATA0 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD3_DAT1__SD3_DATA1 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD3_DAT2__SD3_DATA2 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD3_DAT3__SD3_DATA3 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	/* CD */
-	IOMUX_PADS(PAD_SD3_DAT5__GPIO7_IO00  | MUX_PAD_CTRL(IRQ_PAD_CTRL)),
-};
-
 /* ENET */
 static iomux_v3_cfg_t const enet_pads[] = {
 	IOMUX_PADS(PAD_ENET_MDIO__ENET_MDIO  | MUX_PAD_CTRL(ENET_PAD_CTRL)),
@@ -87,7 +77,7 @@ static iomux_v3_cfg_t const enet_pads[] = {
 	IOMUX_PADS(PAD_ENET_TXD0__GPIO1_IO30 | DIO_PAD_CFG),
 };
 
-/* NAND */
+#ifdef CONFIG_CMD_NAND
 static iomux_v3_cfg_t const nfc_pads[] = {
 	IOMUX_PADS(PAD_NANDF_CLE__NAND_CLE     | MUX_PAD_CTRL(NO_PAD_CTRL)),
 	IOMUX_PADS(PAD_NANDF_ALE__NAND_ALE     | MUX_PAD_CTRL(NO_PAD_CTRL)),
@@ -106,7 +96,6 @@ static iomux_v3_cfg_t const nfc_pads[] = {
 	IOMUX_PADS(PAD_NANDF_D7__NAND_DATA07   | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
 
-#ifdef CONFIG_CMD_NAND
 static void setup_gpmi_nand(void)
 {
 	struct mxc_ccm_reg *mxc_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
@@ -143,8 +132,9 @@ static void setup_iomux_enet(int gpio)
 	/* toggle PHY_RST# */
 	gpio_request(gpio, "phy_rst#");
 	gpio_direction_output(gpio, 0);
-	mdelay(2);
+	mdelay(10);
 	gpio_set_value(gpio, 1);
+	mdelay(100);
 }
 
 #ifdef CONFIG_USB_EHCI_MX6
@@ -186,34 +176,14 @@ int board_ehci_hcd_init(int port)
 
 int board_ehci_power(int port, int on)
 {
-	if (port)
-		return 0;
-	gpio_set_value(GP_USB_OTG_PWR, on);
+	/* enable OTG VBUS */
+	if (!port && board_type < GW_UNKNOWN) {
+		if (gpio_cfg[board_type].otgpwr_en)
+			gpio_set_value(gpio_cfg[board_type].otgpwr_en, on);
+	}
 	return 0;
 }
 #endif /* CONFIG_USB_EHCI_MX6 */
-
-#ifdef CONFIG_FSL_ESDHC
-static struct fsl_esdhc_cfg usdhc_cfg = { USDHC3_BASE_ADDR };
-
-int board_mmc_getcd(struct mmc *mmc)
-{
-	/* Card Detect */
-	gpio_request(GP_SD3_CD, "sd_cd");
-	gpio_direction_input(GP_SD3_CD);
-	return !gpio_get_value(GP_SD3_CD);
-}
-
-int board_mmc_init(bd_t *bis)
-{
-	/* Only one USDHC controller on Ventana */
-	SETUP_IOMUX_PADS(usdhc3_pads);
-	usdhc_cfg.sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
-	usdhc_cfg.max_bus_width = 4;
-
-	return fsl_esdhc_initialize(bis, &usdhc_cfg);
-}
-#endif /* CONFIG_FSL_ESDHC */
 
 #ifdef CONFIG_MXC_SPI
 iomux_v3_cfg_t const ecspi1_pads[] = {
@@ -257,16 +227,62 @@ int board_phy_config(struct phy_device *phydev)
 		phy_write(phydev, MDIO_DEVAD_NONE, 22, 0);
 	}
 
+	/* TI DP83867 */
+	else if (phydev->phy_id == 0x2000a231) {
+		/* configure register 0x170 for ref CLKOUT */
+		phy_write(phydev, MDIO_DEVAD_NONE, 13, 0x001f);
+		phy_write(phydev, MDIO_DEVAD_NONE, 14, 0x0170);
+		phy_write(phydev, MDIO_DEVAD_NONE, 13, 0x401f);
+		val = phy_read(phydev, MDIO_DEVAD_NONE, 14);
+		val &= ~0x1f00;
+		val |= 0x0b00; /* chD tx clock*/
+		phy_write(phydev, MDIO_DEVAD_NONE, 14, val);
+	}
+
 	if (phydev->drv->config)
 		phydev->drv->config(phydev);
 
 	return 0;
 }
 
+#ifdef CONFIG_MV88E61XX_SWITCH
+int mv88e61xx_hw_reset(struct phy_device *phydev)
+{
+	struct mii_dev *bus = phydev->bus;
+
+	/* GPIO[0] output, CLK125 */
+	debug("enabling RGMII_REFCLK\n");
+	bus->write(bus, 0x1c /*MV_GLOBAL2*/, 0,
+		   0x1a /*MV_SCRATCH_MISC*/,
+		   (1 << 15) | (0x62 /*MV_GPIO_DIR*/ << 8) | 0xfe);
+	bus->write(bus, 0x1c /*MV_GLOBAL2*/, 0,
+		   0x1a /*MV_SCRATCH_MISC*/,
+		   (1 << 15) | (0x68 /*MV_GPIO01_CNTL*/ << 8) | 7);
+
+	/* RGMII delay - Physical Control register bit[15:14] */
+	debug("setting port%d RGMII rx/tx delay\n", CONFIG_MV88E61XX_CPU_PORT);
+	/* forced 1000mbps full-duplex link */
+	bus->write(bus, 0x10 + CONFIG_MV88E61XX_CPU_PORT, 0, 1, 0xc0fe);
+	phydev->autoneg = AUTONEG_DISABLE;
+	phydev->speed = SPEED_1000;
+	phydev->duplex = DUPLEX_FULL;
+
+	/* LED configuration: 7:4-green (8=Activity)  3:0 amber (9=10Link) */
+	bus->write(bus, 0x10, 0, 0x16, 0x8089);
+	bus->write(bus, 0x11, 0, 0x16, 0x8089);
+	bus->write(bus, 0x12, 0, 0x16, 0x8089);
+	bus->write(bus, 0x13, 0, 0x16, 0x8089);
+
+	return 0;
+}
+#endif // CONFIG_MV88E61XX_SWITCH
+
 int board_eth_init(bd_t *bis)
 {
 #ifdef CONFIG_FEC_MXC
-	if (board_type != GW551x && board_type != GW552x) {
+	struct ventana_board_info *info = &ventana_info;
+
+	if (test_bit(EECONFIG_ETH0, info->config)) {
 		setup_iomux_enet(GP_PHY_RST);
 		cpu_eth_init(bis);
 	}
@@ -282,11 +298,11 @@ int board_eth_init(bd_t *bis)
 #endif
 
 	/* default to the first detected enet dev */
-	if (!getenv("ethprime")) {
+	if (!env_get("ethprime")) {
 		struct eth_device *dev = eth_get_dev_by_index(0);
 		if (dev) {
-			setenv("ethprime", dev->name);
-			printf("set ethprime to %s\n", getenv("ethprime"));
+			env_set("ethprime", dev->name);
+			printf("set ethprime to %s\n", env_get("ethprime"));
 		}
 	}
 
@@ -317,6 +333,8 @@ static void enable_lvds(struct display_info_t const *dev)
 	writel(reg, &iomux->gpr[2]);
 
 	/* Enable Backlight */
+	gpio_request(IMX_GPIO_NR(1, 10), "bklt_gpio");
+	gpio_direction_output(IMX_GPIO_NR(1, 10), 0);
 	gpio_request(IMX_GPIO_NR(1, 18), "bklt_en");
 	SETUP_IOMUX_PAD(PAD_SD1_CMD__GPIO1_IO18 | DIO_PAD_CFG);
 	gpio_direction_output(IMX_GPIO_NR(1, 18), 1);
@@ -456,8 +474,7 @@ static void setup_display(void)
 	       <<IOMUXC_GPR3_LVDS0_MUX_CTL_OFFSET);
 	writel(reg, &iomux->gpr[3]);
 
-	/* Backlight CABEN on LVDS connector */
-	gpio_request(IMX_GPIO_NR(1, 10), "bklt_gpio");
+	/* LVDS Backlight GPIO on LVDS connector - output low */
 	SETUP_IOMUX_PAD(PAD_SD2_CLK__GPIO1_IO10 | DIO_PAD_CFG);
 	gpio_direction_output(IMX_GPIO_NR(1, 10), 0);
 }
@@ -488,14 +505,54 @@ int imx6_pcie_toggle_reset(void)
  * GPIO's as PERST# signals for its downstream ports - configure the GPIO's
  * properly and assert reset for 100ms.
  */
+#define MAX_PCI_DEVS	32
+struct pci_dev {
+	pci_dev_t devfn;
+	unsigned short vendor;
+	unsigned short device;
+	unsigned short class;
+	unsigned short busno; /* subbordinate busno */
+	struct pci_dev *ppar;
+};
+struct pci_dev pci_devs[MAX_PCI_DEVS];
+int pci_devno;
+int pci_bridgeno;
+
 void board_pci_fixup_dev(struct pci_controller *hose, pci_dev_t dev,
 			 unsigned short vendor, unsigned short device,
 			 unsigned short class)
 {
+	int i;
 	u32 dw;
+	struct pci_dev *pdev = &pci_devs[pci_devno++];
 
 	debug("%s: %02d:%02d.%02d: %04x:%04x\n", __func__,
 	      PCI_BUS(dev), PCI_DEV(dev), PCI_FUNC(dev), vendor, device);
+
+	/* store array of devs for later use in device-tree fixup */
+	pdev->devfn = dev;
+	pdev->vendor = vendor;
+	pdev->device = device;
+	pdev->class = class;
+	pdev->ppar = NULL;
+	if (class == PCI_CLASS_BRIDGE_PCI)
+		pdev->busno = ++pci_bridgeno;
+	else
+		pdev->busno = 0;
+
+	/* fixup RC - it should be 00:00.0 not 00:01.0 */
+	if (PCI_BUS(dev) == 0)
+		pdev->devfn = 0;
+
+	/* find dev's parent */
+	for (i = 0; i < pci_devno; i++) {
+		if (pci_devs[i].busno == PCI_BUS(pdev->devfn)) {
+			pdev->ppar = &pci_devs[i];
+			break;
+		}
+	}
+
+	/* assert downstream PERST# */
 	if (vendor == PCI_VENDOR_ID_PLX &&
 	    (device & 0xfff0) == 0x8600 &&
 	    PCI_DEV(dev) == 0 && PCI_FUNC(dev) == 0) {
@@ -522,7 +579,7 @@ void board_pci_fixup_dev(struct pci_controller *hose, pci_dev_t dev,
  */
 void get_board_serial(struct tag_serialnr *serialnr)
 {
-	char *serial = getenv("serial#");
+	char *serial = env_get("serial#");
 
 	if (serial) {
 		serialnr->high = 0;
@@ -576,7 +633,7 @@ int board_init(void)
 #endif
 	setup_ventana_i2c();
 
-#ifdef CONFIG_CMD_SATA
+#ifdef CONFIG_SATA
 	setup_sata();
 #endif
 	/* read Gateworks EEPROM into global struct (used later) */
@@ -601,11 +658,11 @@ int checkboard(void)
 	int quiet; /* Quiet or minimal output mode */
 
 	quiet = 0;
-	p = getenv("quiet");
+	p = env_get("quiet");
 	if (p)
 		quiet = simple_strtol(p, NULL, 10);
 	else
-		setenv("quiet", "0");
+		env_set("quiet", "0");
 
 	puts("\nGateworks Corporation Copyright 2014\n");
 	if (info->model[0]) {
@@ -649,6 +706,8 @@ int checkboard(void)
 static const struct boot_mode board_boot_modes[] = {
 	/* NAND: 64pages per block, 3 row addr cycles, 2 copies of FCB/DBBT */
 	{ "nand", MAKE_CFGVAL(0x80, 0x02, 0x00, 0x00) },
+	{ "emmc2", MAKE_CFGVAL(0x60, 0x48, 0x00, 0x00) }, /* GW5600 */
+	{ "emmc3", MAKE_CFGVAL(0x60, 0x50, 0x00, 0x00) }, /* GW5903/GW5904 */
 	{ NULL, 0 },
 };
 #endif
@@ -657,13 +716,14 @@ static const struct boot_mode board_boot_modes[] = {
 int misc_init_r(void)
 {
 	struct ventana_board_info *info = &ventana_info;
+	char buf[256];
+	int i;
 
 	/* set env vars based on EEPROM data */
 	if (ventana_info.model[0]) {
 		char str[16], fdt[36];
 		char *p;
 		const char *cputype = "";
-		int i;
 
 		/*
 		 * FDT name will be prefixed with CPU type.  Three versions
@@ -677,53 +737,69 @@ int misc_init_r(void)
 		else if (is_cpu_type(MXC_CPU_MX6DL) ||
 			 is_cpu_type(MXC_CPU_MX6SOLO))
 			cputype = "imx6dl";
-		setenv("soctype", cputype);
+		env_set("soctype", cputype);
 		if (8 << (ventana_info.nand_flash_size-1) >= 2048)
-			setenv("flash_layout", "large");
+			env_set("flash_layout", "large");
 		else
-			setenv("flash_layout", "normal");
+			env_set("flash_layout", "normal");
 		memset(str, 0, sizeof(str));
 		for (i = 0; i < (sizeof(str)-1) && info->model[i]; i++)
 			str[i] = tolower(info->model[i]);
-		setenv("model", str);
-		if (!getenv("fdt_file")) {
+		env_set("model", str);
+		if (!env_get("fdt_file")) {
 			sprintf(fdt, "%s-%s.dtb", cputype, str);
-			setenv("fdt_file", fdt);
+			env_set("fdt_file", fdt);
 		}
 		p = strchr(str, '-');
 		if (p) {
 			*p++ = 0;
 
-			setenv("model_base", str);
+			env_set("model_base", str);
 			sprintf(fdt, "%s-%s.dtb", cputype, str);
-			setenv("fdt_file1", fdt);
-			if (board_type != GW551x && board_type != GW552x)
+			env_set("fdt_file1", fdt);
+			if (board_type != GW551x &&
+			    board_type != GW552x &&
+			    board_type != GW553x &&
+			    board_type != GW560x)
 				str[4] = 'x';
 			str[5] = 'x';
 			str[6] = 0;
 			sprintf(fdt, "%s-%s.dtb", cputype, str);
-			setenv("fdt_file2", fdt);
+			env_set("fdt_file2", fdt);
 		}
 
 		/* initialize env from EEPROM */
 		if (test_bit(EECONFIG_ETH0, info->config) &&
-		    !getenv("ethaddr")) {
-			eth_setenv_enetaddr("ethaddr", info->mac0);
+		    !env_get("ethaddr")) {
+			eth_env_set_enetaddr("ethaddr", info->mac0);
 		}
 		if (test_bit(EECONFIG_ETH1, info->config) &&
-		    !getenv("eth1addr")) {
-			eth_setenv_enetaddr("eth1addr", info->mac1);
+		    !env_get("eth1addr")) {
+			eth_env_set_enetaddr("eth1addr", info->mac1);
 		}
 
 		/* board serial-number */
 		sprintf(str, "%6d", info->serial);
-		setenv("serial#", str);
+		env_set("serial#", str);
 
 		/* memory MB */
 		sprintf(str, "%d", (int) (gd->ram_size >> 20));
-		setenv("mem_mb", str);
+		env_set("mem_mb", str);
 	}
 
+	/* Set a non-initialized hwconfig based on board configuration */
+	if (!strcmp(env_get("hwconfig"), "_UNKNOWN_")) {
+		buf[0] = 0;
+		if (gpio_cfg[board_type].rs232_en)
+			strcat(buf, "rs232;");
+		for (i = 0; i < gpio_cfg[board_type].dio_num; i++) {
+			char buf1[32];
+			sprintf(buf1, "dio%d:mode=gpio;", i);
+			if (strlen(buf) + strlen(buf1) < sizeof(buf))
+				strcat(buf, buf1);
+		}
+		env_set("hwconfig", buf);
+	}
 
 	/* setup baseboard specific GPIO based on board and env */
 	setup_board_gpio(board_type, info);
@@ -738,7 +814,7 @@ int misc_init_r(void)
 	return 0;
 }
 
-#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
+#ifdef CONFIG_OF_BOARD_SETUP
 
 static int ft_sethdmiinfmt(void *blob, char *mode)
 {
@@ -776,6 +852,251 @@ static int ft_sethdmiinfmt(void *blob, char *mode)
 	return 0;
 }
 
+/* enable a property of a node if the node is found */
+static inline void ft_enable_path(void *blob, const char *path)
+{
+	int i = fdt_path_offset(blob, path);
+	if (i >= 0) {
+		debug("enabling %s\n", path);
+		fdt_status_okay(blob, i);
+	}
+}
+
+/* remove a property of a node if the node is found */
+static inline void ft_delprop_path(void *blob, const char *path,
+				   const char *name)
+{
+	int i = fdt_path_offset(blob, path);
+	if (i) {
+		debug("removing %s/%s\n", path, name);
+		fdt_delprop(blob, i, name);
+	}
+}
+
+#if defined(CONFIG_CMD_PCI)
+#define PCI_ID(x) ( \
+	(PCI_BUS(x->devfn)<<16)| \
+	(PCI_DEV(x->devfn)<<11)| \
+	(PCI_FUNC(x->devfn)<<8) \
+	)
+#define PCIE_PATH	"/soc/pcie@0x01000000"
+int fdt_add_pci_node(void *blob, int par, struct pci_dev *dev)
+{
+	uint32_t reg[5];
+	char node[32];
+	int np;
+
+	sprintf(node, "pcie@%d,%d,%d", PCI_BUS(dev->devfn),
+		PCI_DEV(dev->devfn), PCI_FUNC(dev->devfn));
+
+	np = fdt_subnode_offset(blob, par, node);
+	if (np >= 0)
+		return np;
+	np = fdt_add_subnode(blob, par, node);
+	if (np < 0) {
+		printf("   %s failed: no space\n", __func__);
+		return np;
+	}
+
+	memset(reg, 0, sizeof(reg));
+	reg[0] = cpu_to_fdt32(PCI_ID(dev));
+	fdt_setprop(blob, np, "reg", reg, sizeof(reg));
+
+	return np;
+}
+
+/* build a path of nested PCI devs for all bridges passed through */
+int fdt_add_pci_path(void *blob, struct pci_dev *dev)
+{
+	struct pci_dev *bridges[MAX_PCI_DEVS];
+	int k, np;
+
+	/* build list of parents */
+	np = fdt_path_offset(blob, PCIE_PATH);
+	if (np < 0)
+		return np;
+
+	k = 0;
+	while (dev) {
+		bridges[k++] = dev;
+		dev = dev->ppar;
+	};
+
+	/* now add them the to DT in reverse order */
+	while (k--) {
+		np = fdt_add_pci_node(blob, np, bridges[k]);
+		if (np < 0)
+			break;
+	}
+
+	return np;
+}
+
+/*
+ * The GW16082 has a hardware errata errata such that it's
+ * INTA/B/C/D are mis-mapped to its four slots (slot12-15). Because
+ * of this normal PCI interrupt swizzling will not work so we will
+ * provide an irq-map via device-tree.
+ */
+int fdt_fixup_gw16082(void *blob, int np, struct pci_dev *dev)
+{
+	int len;
+	int host;
+	uint32_t imap_new[8*4*4];
+	const uint32_t *imap;
+	uint32_t irq[4];
+	uint32_t reg[4];
+	int i;
+
+	/* build irq-map based on host controllers map */
+	host = fdt_path_offset(blob, PCIE_PATH);
+	if (host < 0) {
+		printf("   %s failed: missing host\n", __func__);
+		return host;
+	}
+
+	/* use interrupt data from root complex's node */
+	imap = fdt_getprop(blob, host, "interrupt-map", &len);
+	if (!imap || len != 128) {
+		printf("   %s failed: invalid interrupt-map\n",
+		       __func__);
+		return -FDT_ERR_NOTFOUND;
+	}
+
+	/* obtain irq's of host controller in pin order */
+	for (i = 0; i < 4; i++)
+		irq[(fdt32_to_cpu(imap[(i*8)+3])-1)%4] = imap[(i*8)+6];
+
+	/*
+	 * determine number of swizzles necessary:
+	 *   For each bridge we pass through we need to swizzle
+	 *   the number of the slot we are on.
+	 */
+	struct pci_dev *d;
+	int b;
+	b = 0;
+	d = dev->ppar;
+	while(d && d->ppar) {
+		b += PCI_DEV(d->devfn);
+		d = d->ppar;
+	}
+
+	/* create new irq mappings for slots12-15
+	 * <skt> <idsel> <slot> <skt-inta> <skt-intb>
+	 * J3    AD28    12     INTD      INTA
+	 * J4    AD29    13     INTC      INTD
+	 * J5    AD30    14     INTB      INTC
+	 * J2    AD31    15     INTA      INTB
+	 */
+	for (i = 0; i < 4; i++) {
+		/* addr matches bus:dev:func */
+		u32 addr = dev->busno << 16 | (12+i) << 11;
+
+		/* default cells from root complex */
+		memcpy(&imap_new[i*32], imap, 128);
+		/* first cell is PCI device address (BDF) */
+		imap_new[(i*32)+(0*8)+0] = cpu_to_fdt32(addr);
+		imap_new[(i*32)+(1*8)+0] = cpu_to_fdt32(addr);
+		imap_new[(i*32)+(2*8)+0] = cpu_to_fdt32(addr);
+		imap_new[(i*32)+(3*8)+0] = cpu_to_fdt32(addr);
+		/* third cell is pin */
+		imap_new[(i*32)+(0*8)+3] = cpu_to_fdt32(1);
+		imap_new[(i*32)+(1*8)+3] = cpu_to_fdt32(2);
+		imap_new[(i*32)+(2*8)+3] = cpu_to_fdt32(3);
+		imap_new[(i*32)+(3*8)+3] = cpu_to_fdt32(4);
+		/* sixth cell is relative interrupt */
+		imap_new[(i*32)+(0*8)+6] = irq[(15-(12+i)+b+0)%4];
+		imap_new[(i*32)+(1*8)+6] = irq[(15-(12+i)+b+1)%4];
+		imap_new[(i*32)+(2*8)+6] = irq[(15-(12+i)+b+2)%4];
+		imap_new[(i*32)+(3*8)+6] = irq[(15-(12+i)+b+3)%4];
+	}
+	fdt_setprop(blob, np, "interrupt-map", imap_new,
+		    sizeof(imap_new));
+	reg[0] = cpu_to_fdt32(0xfff00);
+	reg[1] = 0;
+	reg[2] = 0;
+	reg[3] = cpu_to_fdt32(0x7);
+	fdt_setprop(blob, np, "interrupt-map-mask", reg, sizeof(reg));
+	fdt_setprop_cell(blob, np, "#interrupt-cells", 1);
+	fdt_setprop_string(blob, np, "device_type", "pci");
+	fdt_setprop_cell(blob, np, "#address-cells", 3);
+	fdt_setprop_cell(blob, np, "#size-cells", 2);
+	printf("   Added custom interrupt-map for GW16082\n");
+
+	return 0;
+}
+
+/* The sky2 GigE MAC obtains it's MAC addr from device-tree by default */
+int fdt_fixup_sky2(void *blob, int np, struct pci_dev *dev)
+{
+	char *tmp, *end;
+	char mac[16];
+	unsigned char mac_addr[6];
+	int j;
+
+	sprintf(mac, "eth1addr");
+	tmp = env_get(mac);
+	if (tmp) {
+		for (j = 0; j < 6; j++) {
+			mac_addr[j] = tmp ?
+				      simple_strtoul(tmp, &end,16) : 0;
+			if (tmp)
+				tmp = (*end) ? end+1 : end;
+		}
+		fdt_setprop(blob, np, "local-mac-address", mac_addr,
+			    sizeof(mac_addr));
+		printf("   Added mac addr for eth1\n");
+		return 0;
+	}
+
+	return -1;
+}
+
+/*
+ * PCI DT nodes must be nested therefore if we need to apply a DT fixup
+ * we will walk the PCI bus and add bridge nodes up to the device receiving
+ * the fixup.
+ */
+void ft_board_pci_fixup(void *blob, bd_t *bd)
+{
+	int i, np;
+	struct pci_dev *dev;
+
+	for (i = 0; i < pci_devno; i++) {
+		dev = &pci_devs[i];
+
+		/*
+		 * The GW16082 consists of a TI XIO2001 PCIe-to-PCI bridge and
+		 * an EEPROM at i2c1-0x50.
+		 */
+		if ((dev->vendor == PCI_VENDOR_ID_TI) &&
+		    (dev->device == 0x8240) &&
+		    (i2c_set_bus_num(1) == 0) &&
+		    (i2c_probe(0x50) == 0))
+		{
+			np = fdt_add_pci_path(blob, dev);
+			if (np > 0)
+				fdt_fixup_gw16082(blob, np, dev);
+		}
+
+		/* ethernet1 mac address */
+		else if ((dev->vendor == PCI_VENDOR_ID_MARVELL) &&
+		         (dev->device == 0x4380))
+		{
+			np = fdt_add_pci_path(blob, dev);
+			if (np > 0)
+				fdt_fixup_sky2(blob, np, dev);
+		}
+	}
+}
+#endif /* if defined(CONFIG_CMD_PCI) */
+
+void ft_board_wdog_fixup(void *blob, const char *path)
+{
+	ft_delprop_path(blob, path, "ext-reset-output");
+	ft_delprop_path(blob, path, "fsl,ext-reset-output");
+}
+
 /*
  * called prior to booting kernel or by 'fdt boardsetup' command
  *
@@ -785,6 +1106,10 @@ static int ft_sethdmiinfmt(void *blob, char *mode)
  *  - board (full model from EEPROM)
  *  - peripherals removed from DTB if not loaded on board (per EEPROM config)
  */
+#define UART1_PATH	"/soc/aips-bus@02100000/serial@021ec000"
+#define WDOG1_PATH	"/soc/aips-bus@02000000/wdog@020bc000"
+#define WDOG2_PATH	"/soc/aips-bus@02000000/wdog@020c0000"
+#define GPIO3_PATH	"/soc/aips-bus@02000000/gpio@020a4000"
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	struct ventana_board_info *info = &ventana_info;
@@ -793,8 +1118,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 		{ "sst,w25q256",          MTD_DEV_TYPE_NOR, },  /* SPI flash */
 		{ "fsl,imx6q-gpmi-nand",  MTD_DEV_TYPE_NAND, }, /* NAND flash */
 	};
-	const char *model = getenv("model");
-	const char *display = getenv("display");
+	const char *model = env_get("model");
+	const char *display = env_get("display");
 	int i;
 	char rev = 0;
 
@@ -806,7 +1131,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 		}
 	}
 
-	if (getenv("fdt_noauto")) {
+	if (env_get("fdt_noauto")) {
 		puts("   Skiping ft_board_setup (fdt_noauto defined)\n");
 		return 0;
 	}
@@ -827,104 +1152,179 @@ int ft_board_setup(void *blob, bd_t *bd)
 	printf("   Adjusting FDT per EEPROM for %s...\n", model);
 
 	/* board serial number */
-	fdt_setprop(blob, 0, "system-serial", getenv("serial#"),
-		    strlen(getenv("serial#")) + 1);
+	fdt_setprop(blob, 0, "system-serial", env_get("serial#"),
+		    strlen(env_get("serial#")) + 1);
 
 	/* board (model contains model from device-tree) */
 	fdt_setprop(blob, 0, "board", info->model,
 		    strlen((const char *)info->model) + 1);
 
 	/* set desired digital video capture format */
-	ft_sethdmiinfmt(blob, getenv("hdmiinfmt"));
+	ft_sethdmiinfmt(blob, env_get("hdmiinfmt"));
 
 	/*
-	 * disable serial2 node for GW54xx for compatibility with older
-	 * 3.10.x kernel that improperly had this node enabled in the DT
+	 * Board model specific fixups
 	 */
-	if (board_type == GW54xx) {
-		i = fdt_path_offset(blob,
-				    "/soc/aips-bus@02100000/serial@021ec000");
+	switch (board_type) {
+	case GW51xx:
+		/*
+		 * disable wdog node for GW51xx-A/B to work around
+		 * errata causing wdog timer to be unreliable.
+		 */
+		if (rev >= 'A' && rev < 'C') {
+			i = fdt_path_offset(blob, WDOG1_PATH);
+			if (i)
+				fdt_status_disabled(blob, i);
+		}
+
+		/* GW51xx-E adds WDOG1_B external reset */
+		if (rev < 'E')
+			ft_board_wdog_fixup(blob, WDOG1_PATH);
+		break;
+
+	case GW52xx:
+		/* GW522x Uses GPIO3_IO23 instead of GPIO1_IO29 */
+		if (info->model[4] == '2') {
+			u32 handle = 0;
+			u32 *range = NULL;
+
+			i = fdt_node_offset_by_compatible(blob, -1,
+							  "fsl,imx6q-pcie");
+			if (i)
+				range = (u32 *)fdt_getprop(blob, i,
+							   "reset-gpio", NULL);
+
+			if (range) {
+				i = fdt_path_offset(blob, GPIO3_PATH);
+				if (i)
+					handle = fdt_get_phandle(blob, i);
+				if (handle) {
+					range[0] = cpu_to_fdt32(handle);
+					range[1] = cpu_to_fdt32(23);
+				}
+			}
+
+			/* these have broken usd_vsel */
+			if (strstr((const char *)info->model, "SP318-B") ||
+			    strstr((const char *)info->model, "SP331-B"))
+				gpio_cfg[board_type].usd_vsel = 0;
+
+			/* GW522x-B adds WDOG1_B external reset */
+			ft_board_wdog_fixup(blob, WDOG1_PATH);
+		}
+
+		/* GW520x-E adds WDOG1_B external reset */
+		else if (info->model[4] == '0' && rev < 'E')
+			ft_board_wdog_fixup(blob, WDOG1_PATH);
+		break;
+
+	case GW53xx:
+		/* GW53xx-E adds WDOG1_B external reset */
+		if (rev < 'E')
+			ft_board_wdog_fixup(blob, WDOG1_PATH);
+		break;
+
+	case GW54xx:
+		/*
+		 * disable serial2 node for GW54xx for compatibility with older
+		 * 3.10.x kernel that improperly had this node enabled in the DT
+		 */
+		i = fdt_path_offset(blob, UART1_PATH);
 		if (i)
 			fdt_del_node(blob, i);
-	}
 
-	/*
-	 * disable wdog1/wdog2 nodes for GW51xx below revC to work around
-	 * errata causing wdog timer to be unreliable.
-	 */
-	if (board_type == GW51xx && rev >= 'A' && rev < 'C') {
-		i = fdt_path_offset(blob,
-				    "/soc/aips-bus@02000000/wdog@020bc000");
-		if (i)
-			fdt_status_disabled(blob, i);
-	}
+		/* GW54xx-E adds WDOG2_B external reset */
+		if (rev < 'E')
+			ft_board_wdog_fixup(blob, WDOG2_PATH);
+		break;
 
-	/* GW522x Uses GPIO3_IO23 instead of GPIO1_IO29 */
-	else if (board_type == GW52xx && info->model[4] == '2') {
-		u32 handle = 0;
-		u32 *range = NULL;
+	case GW551x:
+		/*
+		 * isolate CSI0_DATA_EN for GW551x-A to work around errata
+		 * causing non functional digital video in (it is not hooked up)
+		 */
+		if (rev == 'A') {
+			u32 *range = NULL;
+			int len;
+			const u32 *handle = NULL;
 
-		i = fdt_node_offset_by_compatible(blob, -1, "fsl,imx6q-pcie");
-		if (i)
-			range = (u32 *)fdt_getprop(blob, i, "reset-gpio",
-						   NULL);
-
-		if (range) {
-			i = fdt_path_offset(blob,
-					    "/soc/aips-bus@02000000/gpio@020a4000");
+			i = fdt_node_offset_by_compatible(blob, -1,
+						"fsl,imx-tda1997x-video");
 			if (i)
-				handle = fdt_get_phandle(blob, i);
-			if (handle) {
-				range[0] = cpu_to_fdt32(handle);
-				range[1] = cpu_to_fdt32(23);
+				handle = fdt_getprop(blob, i, "pinctrl-0",
+						     NULL);
+			if (handle)
+				i = fdt_node_offset_by_phandle(blob,
+							fdt32_to_cpu(*handle));
+			if (i)
+				range = (u32 *)fdt_getprop(blob, i, "fsl,pins",
+							   &len);
+			if (range) {
+				len /= sizeof(u32);
+				for (i = 0; i < len; i += 6) {
+					u32 mux_reg = fdt32_to_cpu(range[i+0]);
+					u32 conf_reg = fdt32_to_cpu(range[i+1]);
+					/* mux PAD_CSI0_DATA_EN to GPIO */
+					if (is_cpu_type(MXC_CPU_MX6Q) &&
+					    mux_reg == 0x260 &&
+					    conf_reg == 0x630)
+						range[i+3] = cpu_to_fdt32(0x5);
+					else if (!is_cpu_type(MXC_CPU_MX6Q) &&
+						 mux_reg == 0x08c &&
+						 conf_reg == 0x3a0)
+						range[i+3] = cpu_to_fdt32(0x5);
+				}
+				fdt_setprop_inplace(blob, i, "fsl,pins", range,
+						    len);
 			}
+
+			/* set BT656 video format */
+			ft_sethdmiinfmt(blob, "yuv422bt656");
+		}
+
+		/* GW551x-C adds WDOG1_B external reset */
+		if (rev < 'C')
+			ft_board_wdog_fixup(blob, WDOG1_PATH);
+		break;
+	}
+
+	/* Configure DIO */
+	for (i = 0; i < gpio_cfg[board_type].dio_num; i++) {
+		struct dio_cfg *cfg = &gpio_cfg[board_type].dio_cfg[i];
+		char arg[10];
+
+		sprintf(arg, "dio%d", i);
+		if (!hwconfig(arg))
+			continue;
+		if (hwconfig_subarg_cmp(arg, "mode", "pwm") && cfg->pwm_param)
+		{
+			char path[48];
+			sprintf(path, "/soc/aips-bus@02000000/pwm@%08x",
+				0x02080000 + (0x4000 * (cfg->pwm_param - 1)));
+			printf("   Enabling pwm%d for DIO%d\n",
+			       cfg->pwm_param, i);
+			ft_enable_path(blob, path);
 		}
 	}
 
-	/*
-	 * isolate CSI0_DATA_EN for GW551x below revB to work around
-	 * errata causing non functional digital video in (it is not hooked up)
-	 */
-	else if (board_type == GW551x && rev == 'A') {
-		u32 *range = NULL;
-		int len;
-		const u32 *handle = NULL;
-
-		i = fdt_node_offset_by_compatible(blob, -1,
-						  "fsl,imx-tda1997x-video");
-		if (i)
-			handle = fdt_getprop(blob, i, "pinctrl-0", NULL);
-		if (handle)
-			i = fdt_node_offset_by_phandle(blob,
-						       fdt32_to_cpu(*handle));
-		if (i)
-			range = (u32 *)fdt_getprop(blob, i, "fsl,pins", &len);
-		if (range) {
-			len /= sizeof(u32);
-			for (i = 0; i < len; i += 6) {
-				u32 mux_reg = fdt32_to_cpu(range[i+0]);
-				u32 conf_reg = fdt32_to_cpu(range[i+1]);
-				/* mux PAD_CSI0_DATA_EN to GPIO */
-				if (is_cpu_type(MXC_CPU_MX6Q) &&
-				    mux_reg == 0x260 && conf_reg == 0x630)
-					range[i+3] = cpu_to_fdt32(0x5);
-				else if (!is_cpu_type(MXC_CPU_MX6Q) &&
-				    mux_reg == 0x08c && conf_reg == 0x3a0)
-					range[i+3] = cpu_to_fdt32(0x5);
-			}
-			fdt_setprop_inplace(blob, i, "fsl,pins", range, len);
-		}
-
-		/* set BT656 video format */
-		ft_sethdmiinfmt(blob, "yuv422bt656");
+	/* remove no-1-8-v if UHS-I support is present */
+	if (gpio_cfg[board_type].usd_vsel) {
+		debug("Enabling UHS-I support\n");
+		ft_delprop_path(blob, "/soc/aips-bus@02100000/usdhc@02198000",
+				"no-1-8-v");
 	}
+
+#if defined(CONFIG_CMD_PCI)
+	if (!env_get("nopcifixup"))
+		ft_board_pci_fixup(blob, bd);
+#endif
 
 	/*
 	 * Peripheral Config:
 	 *  remove nodes by alias path if EEPROM config tells us the
 	 *  peripheral is not loaded on the board.
 	 */
-	if (getenv("fdt_noconfig")) {
+	if (env_get("fdt_noconfig")) {
 		puts("   Skiping periperhal config (fdt_noconfig defined)\n");
 		return 0;
 	}
@@ -939,7 +1339,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	return 0;
 }
-#endif /* defined(CONFIG_OF_FLAT_TREE) && defined(CONFIG_OF_BOARD_SETUP) */
+#endif /* CONFIG_OF_BOARD_SETUP */
 
 static struct mxc_serial_platdata ventana_mxc_serial_plat = {
 	.reg = (struct mxc_uart *)UART2_BASE,

@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * fat_write.c
  *
  * R/W (V)FAT 12/16/32 filesystem implementation by Donggeun Kim
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -32,7 +31,7 @@ static int disk_write(__u32 block, __u32 nr_blocks, void *buf)
 {
 	ulong ret;
 
-	if (!cur_dev || !cur_dev->block_write)
+	if (!cur_dev)
 		return -1;
 
 	if (cur_part_info.start + block + nr_blocks >
@@ -41,9 +40,7 @@ static int disk_write(__u32 block, __u32 nr_blocks, void *buf)
 		return -1;
 	}
 
-	ret = cur_dev->block_write(cur_dev->dev,
-				   cur_part_info.start + block,
-				   nr_blocks, buf);
+	ret = blk_dwrite(cur_dev, cur_part_info.start + block, nr_blocks, buf);
 	if (nr_blocks && ret == 0)
 		return -1;
 
@@ -106,17 +103,24 @@ static __u8 num_of_fats;
 /*
  * Write fat buffer into block device
  */
-static int flush_fat_buffer(fsdata *mydata)
+static int flush_dirty_fat_buffer(fsdata *mydata)
 {
 	int getsize = FATBUFBLOCKS;
 	__u32 fatlength = mydata->fatlength;
 	__u8 *bufptr = mydata->fatbuf;
 	__u32 startblock = mydata->fatbufnum * FATBUFBLOCKS;
 
-	startblock += mydata->fat_sect;
+	debug("debug: evicting %d, dirty: %d\n", mydata->fatbufnum,
+	      (int)mydata->fat_dirty);
 
-	if (getsize > fatlength)
-		getsize = fatlength;
+	if ((!mydata->fat_dirty) || (mydata->fatbufnum == -1))
+		return 0;
+
+	/* Cap length if fatlength is not a multiple of FATBUFBLOCKS */
+	if (startblock + getsize > fatlength)
+		getsize = fatlength - startblock;
+
+	startblock += mydata->fat_sect;
 
 	/* Write FAT buf */
 	if (disk_write(startblock, getsize, bufptr) < 0) {
@@ -132,118 +136,9 @@ static int flush_fat_buffer(fsdata *mydata)
 			return -1;
 		}
 	}
+	mydata->fat_dirty = 0;
 
 	return 0;
-}
-
-/*
- * Get the entry at index 'entry' in a FAT (12/16/32) table.
- * On failure 0x00 is returned.
- * When bufnum is changed, write back the previous fatbuf to the disk.
- */
-static __u32 get_fatent_value(fsdata *mydata, __u32 entry)
-{
-	__u32 bufnum;
-	__u32 off16, offset;
-	__u32 ret = 0x00;
-	__u16 val1, val2;
-
-	if (CHECK_CLUST(entry, mydata->fatsize)) {
-		printf("Error: Invalid FAT entry: 0x%08x\n", entry);
-		return ret;
-	}
-
-	switch (mydata->fatsize) {
-	case 32:
-		bufnum = entry / FAT32BUFSIZE;
-		offset = entry - bufnum * FAT32BUFSIZE;
-		break;
-	case 16:
-		bufnum = entry / FAT16BUFSIZE;
-		offset = entry - bufnum * FAT16BUFSIZE;
-		break;
-	case 12:
-		bufnum = entry / FAT12BUFSIZE;
-		offset = entry - bufnum * FAT12BUFSIZE;
-		break;
-
-	default:
-		/* Unsupported FAT size */
-		return ret;
-	}
-
-	debug("FAT%d: entry: 0x%04x = %d, offset: 0x%04x = %d\n",
-	       mydata->fatsize, entry, entry, offset, offset);
-
-	/* Read a new block of FAT entries into the cache. */
-	if (bufnum != mydata->fatbufnum) {
-		int getsize = FATBUFBLOCKS;
-		__u8 *bufptr = mydata->fatbuf;
-		__u32 fatlength = mydata->fatlength;
-		__u32 startblock = bufnum * FATBUFBLOCKS;
-
-		if (getsize > fatlength)
-			getsize = fatlength;
-
-		fatlength *= mydata->sect_size;	/* We want it in bytes now */
-		startblock += mydata->fat_sect;	/* Offset from start of disk */
-
-		/* Write back the fatbuf to the disk */
-		if (mydata->fatbufnum != -1) {
-			if (flush_fat_buffer(mydata) < 0)
-				return -1;
-		}
-
-		if (disk_read(startblock, getsize, bufptr) < 0) {
-			debug("Error reading FAT blocks\n");
-			return ret;
-		}
-		mydata->fatbufnum = bufnum;
-	}
-
-	/* Get the actual entry from the table */
-	switch (mydata->fatsize) {
-	case 32:
-		ret = FAT2CPU32(((__u32 *) mydata->fatbuf)[offset]);
-		break;
-	case 16:
-		ret = FAT2CPU16(((__u16 *) mydata->fatbuf)[offset]);
-		break;
-	case 12:
-		off16 = (offset * 3) / 4;
-
-		switch (offset & 0x3) {
-		case 0:
-			ret = FAT2CPU16(((__u16 *) mydata->fatbuf)[off16]);
-			ret &= 0xfff;
-			break;
-		case 1:
-			val1 = FAT2CPU16(((__u16 *)mydata->fatbuf)[off16]);
-			val1 &= 0xf000;
-			val2 = FAT2CPU16(((__u16 *)mydata->fatbuf)[off16 + 1]);
-			val2 &= 0x00ff;
-			ret = (val2 << 4) | (val1 >> 12);
-			break;
-		case 2:
-			val1 = FAT2CPU16(((__u16 *)mydata->fatbuf)[off16]);
-			val1 &= 0xff00;
-			val2 = FAT2CPU16(((__u16 *)mydata->fatbuf)[off16 + 1]);
-			val2 &= 0x000f;
-			ret = (val2 << 8) | (val1 >> 8);
-			break;
-		case 3:
-			ret = FAT2CPU16(((__u16 *)mydata->fatbuf)[off16]);
-			ret = (ret & 0xfff0) >> 4;
-			break;
-		default:
-			break;
-		}
-		break;
-	}
-	debug("FAT%d: ret: %08x, entry: %08x, offset: %04x\n",
-	       mydata->fatsize, ret, entry, offset);
-
-	return ret;
 }
 
 /*
@@ -325,13 +220,12 @@ static void flush_dir_table(fsdata *mydata, dir_entry **dentptr);
 static void
 fill_dir_slot(fsdata *mydata, dir_entry **dentptr, const char *l_name)
 {
-	dir_slot *slotptr = (dir_slot *)get_contents_vfatname_block;
+	__u8 temp_dir_slot_buffer[MAX_LFN_SLOT * sizeof(dir_slot)];
+	dir_slot *slotptr = (dir_slot *)temp_dir_slot_buffer;
 	__u8 counter = 0, checksum;
 	int idx = 0, ret;
-	char s_name[16];
 
-	/* Get short file name and checksum value */
-	strncpy(s_name, (*dentptr)->name, 16);
+	/* Get short file name checksum value */
 	checksum = mkcksum((*dentptr)->name, (*dentptr)->ext);
 
 	do {
@@ -404,7 +298,7 @@ get_long_file_name(fsdata *mydata, int curclust, __u8 *cluster,
 	if ((__u8 *)slotptr >= buflimit) {
 		if (curclust == 0)
 			return -1;
-		curclust = get_fatent_value(mydata, dir_curclust);
+		curclust = get_fatent(mydata, dir_curclust);
 		if (CHECK_CLUST(curclust, mydata->fatsize)) {
 			debug("curclust: 0x%x\n", curclust);
 			printf("Invalid FAT entry\n");
@@ -450,7 +344,7 @@ get_long_file_name(fsdata *mydata, int curclust, __u8 *cluster,
 		*l_name = '\0';
 	else if (*l_name == aRING)
 		*l_name = DELETED_FLAG;
-	downcase(l_name);
+	downcase(l_name, INT_MAX);
 
 	/* Return the real directory entry */
 	*retdent = realdent;
@@ -466,11 +360,12 @@ get_long_file_name(fsdata *mydata, int curclust, __u8 *cluster,
 }
 
 /*
- * Set the entry at index 'entry' in a FAT (16/32) table.
+ * Set the entry at index 'entry' in a FAT (12/16/32) table.
  */
 static int set_fatent_value(fsdata *mydata, __u32 entry, __u32 entry_value)
 {
-	__u32 bufnum, offset;
+	__u32 bufnum, offset, off16;
+	__u16 val1, val2;
 
 	switch (mydata->fatsize) {
 	case 32:
@@ -480,6 +375,10 @@ static int set_fatent_value(fsdata *mydata, __u32 entry, __u32 entry_value)
 	case 16:
 		bufnum = entry / FAT16BUFSIZE;
 		offset = entry - bufnum * FAT16BUFSIZE;
+		break;
+	case 12:
+		bufnum = entry / FAT12BUFSIZE;
+		offset = entry - bufnum * FAT12BUFSIZE;
 		break;
 	default:
 		/* Unsupported FAT size */
@@ -493,16 +392,14 @@ static int set_fatent_value(fsdata *mydata, __u32 entry, __u32 entry_value)
 		__u32 fatlength = mydata->fatlength;
 		__u32 startblock = bufnum * FATBUFBLOCKS;
 
-		fatlength *= mydata->sect_size;
+		/* Cap length if fatlength is not a multiple of FATBUFBLOCKS */
+		if (startblock + getsize > fatlength)
+			getsize = fatlength - startblock;
+
+		if (flush_dirty_fat_buffer(mydata) < 0)
+			return -1;
+
 		startblock += mydata->fat_sect;
-
-		if (getsize > fatlength)
-			getsize = fatlength;
-
-		if (mydata->fatbufnum != -1) {
-			if (flush_fat_buffer(mydata) < 0)
-				return -1;
-		}
 
 		if (disk_read(startblock, getsize, bufptr) < 0) {
 			debug("Error reading FAT blocks\n");
@@ -510,6 +407,9 @@ static int set_fatent_value(fsdata *mydata, __u32 entry, __u32 entry_value)
 		}
 		mydata->fatbufnum = bufnum;
 	}
+
+	/* Mark as dirty */
+	mydata->fat_dirty = 1;
 
 	/* Set the actual entry */
 	switch (mydata->fatsize) {
@@ -519,6 +419,45 @@ static int set_fatent_value(fsdata *mydata, __u32 entry, __u32 entry_value)
 	case 16:
 		((__u16 *) mydata->fatbuf)[offset] = cpu_to_le16(entry_value);
 		break;
+	case 12:
+		off16 = (offset * 3) / 4;
+
+		switch (offset & 0x3) {
+		case 0:
+			val1 = cpu_to_le16(entry_value) & 0xfff;
+			((__u16 *)mydata->fatbuf)[off16] &= ~0xfff;
+			((__u16 *)mydata->fatbuf)[off16] |= val1;
+			break;
+		case 1:
+			val1 = cpu_to_le16(entry_value) & 0xf;
+			val2 = (cpu_to_le16(entry_value) >> 4) & 0xff;
+
+			((__u16 *)mydata->fatbuf)[off16] &= ~0xf000;
+			((__u16 *)mydata->fatbuf)[off16] |= (val1 << 12);
+
+			((__u16 *)mydata->fatbuf)[off16 + 1] &= ~0xff;
+			((__u16 *)mydata->fatbuf)[off16 + 1] |= val2;
+			break;
+		case 2:
+			val1 = cpu_to_le16(entry_value) & 0xff;
+			val2 = (cpu_to_le16(entry_value) >> 8) & 0xf;
+
+			((__u16 *)mydata->fatbuf)[off16] &= ~0xff00;
+			((__u16 *)mydata->fatbuf)[off16] |= (val1 << 8);
+
+			((__u16 *)mydata->fatbuf)[off16 + 1] &= ~0xf;
+			((__u16 *)mydata->fatbuf)[off16 + 1] |= val2;
+			break;
+		case 3:
+			val1 = cpu_to_le16(entry_value) & 0xfff;
+			((__u16 *)mydata->fatbuf)[off16] &= ~0xfff0;
+			((__u16 *)mydata->fatbuf)[off16] |= (val1 << 4);
+			break;
+		default:
+			break;
+		}
+
+		break;
 	default:
 		return -1;
 	}
@@ -527,15 +466,17 @@ static int set_fatent_value(fsdata *mydata, __u32 entry, __u32 entry_value)
 }
 
 /*
- * Determine the entry value at index 'entry' in a FAT (16/32) table
+ * Determine the next free cluster after 'entry' in a FAT (12/16/32) table
+ * and link it to 'entry'. EOC marker is not set on returned entry.
  */
 static __u32 determine_fatent(fsdata *mydata, __u32 entry)
 {
 	__u32 next_fat, next_entry = entry + 1;
 
 	while (1) {
-		next_fat = get_fatent_value(mydata, next_entry);
+		next_fat = get_fatent(mydata, next_entry);
 		if (next_fat == 0) {
+			/* found free entry, link to entry */
 			set_fatent_value(mydata, entry, next_entry);
 			break;
 		}
@@ -560,8 +501,7 @@ set_cluster(fsdata *mydata, __u32 clustnum, __u8 *buffer,
 	int ret;
 
 	if (clustnum > 0)
-		startsect = mydata->data_begin +
-				clustnum * mydata->clust_size;
+		startsect = clust_to_sect(mydata, clustnum);
 	else
 		startsect = mydata->rootdir_sect;
 
@@ -619,7 +559,7 @@ static int find_empty_cluster(fsdata *mydata)
 	__u32 fat_val, entry = 3;
 
 	while (1) {
-		fat_val = get_fatent_value(mydata, entry);
+		fat_val = get_fatent(mydata, entry);
 		if (fat_val == 0)
 			break;
 		entry++;
@@ -647,10 +587,12 @@ static void flush_dir_table(fsdata *mydata, dir_entry **dentptr)
 		set_fatent_value(mydata, dir_newclust, 0xffffff8);
 	else if (mydata->fatsize == 16)
 		set_fatent_value(mydata, dir_newclust, 0xfff8);
+	else if (mydata->fatsize == 12)
+		set_fatent_value(mydata, dir_newclust, 0xff8);
 
 	dir_curclust = dir_newclust;
 
-	if (flush_fat_buffer(mydata) < 0)
+	if (flush_dirty_fat_buffer(mydata) < 0)
 		return;
 
 	memset(get_dentfromdir_block, 0x00,
@@ -666,21 +608,18 @@ static int clear_fatent(fsdata *mydata, __u32 entry)
 {
 	__u32 fat_val;
 
-	while (1) {
-		fat_val = get_fatent_value(mydata, entry);
+	while (!CHECK_CLUST(entry, mydata->fatsize)) {
+		fat_val = get_fatent(mydata, entry);
 		if (fat_val != 0)
 			set_fatent_value(mydata, entry, 0);
 		else
-			break;
-
-		if (fat_val == 0xfffffff || fat_val == 0xffff)
 			break;
 
 		entry = fat_val;
 	}
 
 	/* Flush fat buffer */
-	if (flush_fat_buffer(mydata) < 0)
+	if (flush_dirty_fat_buffer(mydata) < 0)
 		return -1;
 
 	return 0;
@@ -746,7 +685,9 @@ set_contents(fsdata *mydata, dir_entry *dentptr, __u8 *buffer,
 		*gotsize += actsize;
 
 		/* Mark end of file in FAT */
-		if (mydata->fatsize == 16)
+		if (mydata->fatsize == 12)
+			newclust = 0xfff;
+		else if (mydata->fatsize == 16)
 			newclust = 0xffff;
 		else if (mydata->fatsize == 32)
 			newclust = 0xfffffff;
@@ -808,8 +749,7 @@ static int check_overflow(fsdata *mydata, __u32 clustnum, loff_t size)
 	__u32 startsect, sect_num, offset;
 
 	if (clustnum > 0) {
-		startsect = mydata->data_begin +
-				clustnum * mydata->clust_size;
+		startsect = clust_to_sect(mydata, clustnum);
 	} else {
 		startsect = mydata->rootdir_sect;
 	}
@@ -819,7 +759,7 @@ static int check_overflow(fsdata *mydata, __u32 clustnum, loff_t size)
 	if (offset != 0)
 		sect_num++;
 
-	if (startsect + sect_num > cur_part_info.start + total_sector)
+	if (startsect + sect_num > total_sector)
 		return -1;
 	return 0;
 }
@@ -848,7 +788,7 @@ static dir_entry *empty_dentptr;
 static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 	char *filename, dir_entry *retdent, __u32 start)
 {
-	__u32 curclust = (startsect - mydata->data_begin) / mydata->clust_size;
+	__u32 curclust = sect_to_clust(mydata, startsect);
 
 	debug("get_dentfromdir: %s\n", filename);
 
@@ -878,8 +818,7 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 				continue;
 			}
 			if ((dentptr->attr & ATTR_VOLUME)) {
-				if (vfat_enabled &&
-				    (dentptr->attr & ATTR_VFAT) &&
+				if ((dentptr->attr & ATTR_VFAT) &&
 				    (dentptr->name[0] & LAST_LONG_ENTRY_MASK)) {
 					get_long_file_name(mydata, curclust,
 						     get_dentfromdir_block,
@@ -901,8 +840,8 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 
 			get_name(dentptr, s_name);
 
-			if (strcmp(filename, s_name)
-			    && strcmp(filename, l_name)) {
+			if (strncasecmp(filename, s_name, sizeof(s_name)) &&
+			    strncasecmp(filename, l_name, sizeof(l_name))) {
 				debug("Mismatch: |%s|%s|\n",
 					s_name, l_name);
 				dentptr++;
@@ -945,7 +884,7 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 			return NULL;
 		}
 
-		curclust = get_fatent_value(mydata, dir_curclust);
+		curclust = get_fatent(mydata, dir_curclust);
 		if (IS_LAST_CLUST(curclust, mydata->fatsize)) {
 			empty_dentptr = dentptr;
 			return NULL;
@@ -1016,6 +955,7 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 	}
 
 	mydata->fatbufnum = -1;
+	mydata->fat_dirty = 0;
 	mydata->fatbuf = memalign(ARCH_DMA_MINALIGN, FATBUFSIZE);
 	if (mydata->fatbuf == NULL) {
 		debug("Error: allocating memory\n");
@@ -1037,7 +977,7 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 
 	memcpy(l_filename, filename, name_len);
 	l_filename[name_len] = 0; /* terminate the string */
-	downcase(l_filename);
+	downcase(l_filename, INT_MAX);
 
 	startsect = mydata->rootdir_sect;
 	retdent = find_directory_entry(mydata, startsect,
@@ -1116,7 +1056,7 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 	debug("attempt to write 0x%llx bytes\n", *actwrite);
 
 	/* Flush fat buffer */
-	ret = flush_fat_buffer(mydata);
+	ret = flush_dirty_fat_buffer(mydata);
 	if (ret) {
 		printf("Error: flush fat buffer\n");
 		goto exit;
@@ -1137,7 +1077,7 @@ int file_fat_write(const char *filename, void *buffer, loff_t offset,
 		   loff_t maxsize, loff_t *actwrite)
 {
 	if (offset != 0) {
-		printf("Error: non zero offset is currently not suported.\n");
+		printf("Error: non zero offset is currently not supported.\n");
 		return -1;
 	}
 

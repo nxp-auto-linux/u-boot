@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * From coreboot file of same name
  *
  * Copyright (C) 2008-2009 coresystems GmbH
  * Copyright (C) 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -65,23 +64,27 @@ void lapic_write(unsigned long reg, unsigned long v)
 
 void enable_lapic(void)
 {
-	msr_t msr;
+	if (!IS_ENABLED(CONFIG_INTEL_QUARK)) {
+		msr_t msr;
 
-	msr = msr_read(MSR_IA32_APICBASE);
-	msr.hi &= 0xffffff00;
-	msr.lo |= MSR_IA32_APICBASE_ENABLE;
-	msr.lo &= ~MSR_IA32_APICBASE_BASE;
-	msr.lo |= LAPIC_DEFAULT_BASE;
-	msr_write(MSR_IA32_APICBASE, msr);
+		msr = msr_read(MSR_IA32_APICBASE);
+		msr.hi &= 0xffffff00;
+		msr.lo |= MSR_IA32_APICBASE_ENABLE;
+		msr.lo &= ~MSR_IA32_APICBASE_BASE;
+		msr.lo |= LAPIC_DEFAULT_BASE;
+		msr_write(MSR_IA32_APICBASE, msr);
+	}
 }
 
 void disable_lapic(void)
 {
-	msr_t msr;
+	if (!IS_ENABLED(CONFIG_INTEL_QUARK)) {
+		msr_t msr;
 
-	msr = msr_read(MSR_IA32_APICBASE);
-	msr.lo &= ~MSR_IA32_APICBASE_ENABLE;
-	msr_write(MSR_IA32_APICBASE, msr);
+		msr = msr_read(MSR_IA32_APICBASE);
+		msr.lo &= ~MSR_IA32_APICBASE_ENABLE;
+		msr_write(MSR_IA32_APICBASE, msr);
+	}
 }
 
 unsigned long lapicid(void)
@@ -120,7 +123,6 @@ int lapic_remote_read(int apicid, int reg, unsigned long *pvalue)
 
 void lapic_setup(void)
 {
-#ifdef CONFIG_SMP
 	/* Only Pentium Pro and later have those MSR stuff */
 	debug("Setting up local apic: ");
 
@@ -150,11 +152,7 @@ void lapic_setup(void)
 		    LAPIC_DELIVERY_MODE_NMI));
 
 	debug("apic_id: 0x%02lx, ", lapicid());
-#else /* !CONFIG_SMP */
-	/* Only Pentium Pro and later have those MSR stuff */
-	debug("Disabling local apic: ");
-	disable_lapic();
-#endif /* CONFIG_SMP */
+
 	debug("done.\n");
 	post_code(POST_LAPIC);
 }

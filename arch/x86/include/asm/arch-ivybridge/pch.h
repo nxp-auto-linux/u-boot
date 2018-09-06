@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2014 Google, Inc
  *
@@ -5,8 +6,6 @@
  *
  * Copyright (C) 2008-2009 coresystems GmbH
  * Copyright (C) 2012 The Chromium OS Authors.  All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _ASM_ARCH_PCH_H
@@ -29,11 +28,6 @@
 #define DEFAULT_PMBASE		0x0500
 
 #define SMBUS_IO_BASE		0x0400
-
-int pch_silicon_revision(void);
-int pch_silicon_type(void);
-int pch_silicon_supported(int type, int rev);
-void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 
 #define MAINBOARD_POWER_OFF	0
 #define MAINBOARD_POWER_ON	1
@@ -74,8 +68,6 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 #define RTC_POWER_FAILED	(1 << 1)
 #define SLEEP_AFTER_POWER_FAIL	(1 << 0)
 
-#define PMBASE			0x40
-#define ACPI_CNTL		0x44
 #define BIOS_CNTL		0xDC
 #define GPIO_BASE		0x48 /* LPC GPIO Base Address Register */
 #define GPIO_CNTL		0x4C /* LPC GPIO Control Register */
@@ -104,49 +96,10 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 #define GPIO_CNTL		0x4C /* LPC GPIO Control Register */
 #define GPIO_ROUT		0xb8
 
-#define LPC_IO_DEC		0x80 /* IO Decode Ranges Register */
-#define LPC_EN			0x82 /* LPC IF Enables Register */
-#define  CNF2_LPC_EN		(1 << 13) /* 0x4e/0x4f */
-#define  CNF1_LPC_EN		(1 << 12) /* 0x2e/0x2f */
-#define  MC_LPC_EN		(1 << 11) /* 0x62/0x66 */
-#define  KBC_LPC_EN		(1 << 10) /* 0x60/0x64 */
-#define  GAMEH_LPC_EN		(1 << 9)  /* 0x208/0x20f */
-#define  GAMEL_LPC_EN		(1 << 8)  /* 0x200/0x207 */
-#define  FDD_LPC_EN		(1 << 3)  /* LPC_IO_DEC[12] */
-#define  LPT_LPC_EN		(1 << 2)  /* LPC_IO_DEC[9:8] */
-#define  COMB_LPC_EN		(1 << 1)  /* LPC_IO_DEC[6:4] */
-#define  COMA_LPC_EN		(1 << 0)  /* LPC_IO_DEC[3:2] */
-#define LPC_GEN1_DEC		0x84 /* LPC IF Generic Decode Range 1 */
-#define LPC_GEN2_DEC		0x88 /* LPC IF Generic Decode Range 2 */
-#define LPC_GEN3_DEC		0x8c /* LPC IF Generic Decode Range 3 */
-#define LPC_GEN4_DEC		0x90 /* LPC IF Generic Decode Range 4 */
-#define LPC_GENX_DEC(x)		(0x84 + 4 * (x))
-
 /* PCI Configuration Space (D31:F1): IDE */
 #define PCH_IDE_DEV		PCI_BDF(0, 0x1f, 1)
 #define PCH_SATA_DEV		PCI_BDF(0, 0x1f, 2)
 #define PCH_SATA2_DEV		PCI_BDF(0, 0x1f, 5)
-
-#define INTR_LN			0x3c
-#define IDE_TIM_PRI		0x40	/* IDE timings, primary */
-#define   IDE_DECODE_ENABLE	(1 << 15)
-#define   IDE_SITRE		(1 << 14)
-#define   IDE_ISP_5_CLOCKS	(0 << 12)
-#define   IDE_ISP_4_CLOCKS	(1 << 12)
-#define   IDE_ISP_3_CLOCKS	(2 << 12)
-#define   IDE_RCT_4_CLOCKS	(0 <<  8)
-#define   IDE_RCT_3_CLOCKS	(1 <<  8)
-#define   IDE_RCT_2_CLOCKS	(2 <<  8)
-#define   IDE_RCT_1_CLOCKS	(3 <<  8)
-#define   IDE_DTE1		(1 <<  7)
-#define   IDE_PPE1		(1 <<  6)
-#define   IDE_IE1		(1 <<  5)
-#define   IDE_TIME1		(1 <<  4)
-#define   IDE_DTE0		(1 <<  3)
-#define   IDE_PPE0		(1 <<  2)
-#define   IDE_IE0		(1 <<  1)
-#define   IDE_TIME0		(1 <<  0)
-#define IDE_TIM_SEC		0x42	/* IDE timings, secondary */
 
 #define IDE_SDMA_CNT		0x48	/* Synchronous DMA control */
 #define   IDE_SSDE1		(1 <<  3)
@@ -179,39 +132,6 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 /* SATA IOBP Registers */
 #define SATA_IOBP_SP0G3IR	0xea000151
 #define SATA_IOBP_SP1G3IR	0xea000051
-
-/* PCI Configuration Space (D31:F3): SMBus */
-#define PCH_SMBUS_DEV		PCI_BDF(0, 0x1f, 3)
-#define SMB_BASE		0x20
-#define HOSTC			0x40
-#define SMB_RCV_SLVA		0x09
-
-/* HOSTC bits */
-#define I2C_EN			(1 << 2)
-#define SMB_SMI_EN		(1 << 1)
-#define HST_EN			(1 << 0)
-
-/* SMBus I/O bits. */
-#define SMBHSTSTAT		0x0
-#define SMBHSTCTL		0x2
-#define SMBHSTCMD		0x3
-#define SMBXMITADD		0x4
-#define SMBHSTDAT0		0x5
-#define SMBHSTDAT1		0x6
-#define SMBBLKDAT		0x7
-#define SMBTRNSADD		0x9
-#define SMBSLVDATA		0xa
-#define SMLINK_PIN_CTL		0xe
-#define SMBUS_PIN_CTL		0xf
-
-#define SMBUS_TIMEOUT		(10 * 1000 * 100)
-
-
-/* Root Complex Register Block */
-#define DEFAULT_RCBA		0xfed1c000
-#define RCB_REG(reg)		(DEFAULT_RCBA + (reg))
-
-#define PCH_RCBA_BASE		0xf0
 
 #define VCH		0x0000	/* 32bit */
 #define VCAP1		0x0004	/* 32bit */
@@ -334,16 +254,12 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 #define SPI_FREQ_SWSEQ	0x3893
 #define SPI_DESC_COMP0	0x38b0
 #define SPI_FREQ_WR_ERA	0x38b4
-#define SOFT_RESET_CTRL 0x38f4
-#define SOFT_RESET_DATA 0x38f8
 
 #define DIR_ROUTE(a, b, c, d) \
 		(((d) << DIR_IDR) | ((c) << DIR_ICR) | \
 			((b) << DIR_IBR) | ((a) << DIR_IAR))
 
-#define RC		0x3400	/* 32bit */
 #define HPTC		0x3404	/* 32bit */
-#define GCS		0x3410	/* 32bit */
 #define BUC		0x3414	/* 32bit */
 #define PCH_DISABLE_GBE		(1 << 5)
 #define FD		0x3418	/* 32bit */
@@ -460,17 +376,23 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 #define   DMISCI_STS	(1 << 9)
 #define TCO2_STS	0x66
 
-int lpc_init(struct pci_controller *hose, pci_dev_t dev);
-void lpc_enable(pci_dev_t dev);
+/**
+ * pch_silicon_revision() - Read silicon device ID from the PCH
+ *
+ * @dev:	PCH device
+ * @return silicon device ID
+ */
+int pch_silicon_type(struct udevice *dev);
 
 /**
- * lpc_early_init() - set up LPC serial ports and other early things
+ * pch_pch_iobp_update() - Update a pch register
  *
- * @blob:	Device tree blob
- * @node:	Offset of LPC node
- * @dev:	PCH PCI device containing the LPC
- * @return 0 if OK, -ve on error
+ * @dev:	PCH device
+ * @address:	Address to update
+ * @andvalue:	Value to AND with existing value
+ * @orvalue:	Value to OR with existing value
  */
-int lpc_early_init(const void *blob, int node, pci_dev_t dev);
+void pch_iobp_update(struct udevice *dev, u32 address, u32 andvalue,
+			     u32 orvalue);
 
 #endif

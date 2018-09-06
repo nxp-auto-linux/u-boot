@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2012 Samsung Electronics
  * Donghwa Lee <dh09.lee@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARM_ARCH_SYSTEM_H_
@@ -36,16 +35,6 @@ struct exynos5_sysreg {
 #endif
 
 #define USB20_PHY_CFG_HOST_LINK_EN	(1 << 0)
-
-/*
- * Data Synchronization Barrier acts as a special kind of memory barrier.
- * No instruction in program order after this instruction executes until
- * this instruction completes. This instruction completes when:
- * - All explicit memory accesses before this instruction complete.
- * - All Cache, Branch predictor and TLB maintenance operations before
- *   this instruction complete.
- */
-#define dsb() __asm__ __volatile__ ("dsb\n\t" : : );
 
 /*
  * This instruction causes an event to be signaled to all cores

@@ -1,7 +1,5 @@
-#
+# SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2012 The Chromium OS Authors.
-#
-# SPDX-License-Identifier:	GPL-2.0+
 #
 
 import os
@@ -23,6 +21,8 @@ import command
 import commit
 import terminal
 import toolchain
+
+use_network = True
 
 settings_data = '''
 # Buildman settings file
@@ -89,7 +89,7 @@ boards = [
     ['Active', 'arm', 'armv7', '', 'Tester', 'ARM Board 1', 'board0',  ''],
     ['Active', 'arm', 'armv7', '', 'Tester', 'ARM Board 2', 'board1', ''],
     ['Active', 'powerpc', 'powerpc', '', 'Tester', 'PowerPC board 1', 'board2', ''],
-    ['Active', 'powerpc', 'mpc5xx', '', 'Tester', 'PowerPC board 2', 'board3', ''],
+    ['Active', 'powerpc', 'mpc83xx', '', 'Tester', 'PowerPC board 2', 'board3', ''],
     ['Active', 'sandbox', 'sandbox', '', 'Tester', 'Sandbox board', 'board4', ''],
 ]
 
@@ -198,9 +198,9 @@ class TestBuild(unittest.TestCase):
             if line.text.strip():
                 count += 1
 
-        # We should get one starting message, then an update for every commit
+        # We should get two starting messages, then an update for every commit
         # built.
-        self.assertEqual(count, len(commits) * len(boards) + 1)
+        self.assertEqual(count, len(commits) * len(boards) + 2)
         build.SetDisplayOptions(show_errors=True);
         build.ShowSummary(self.commits, board_selected)
         #terminal.EchoPrintTestLines()
@@ -312,50 +312,60 @@ class TestBuild(unittest.TestCase):
     def testBoardSingle(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['sandbox']),
-                         {'all': 1, 'sandbox': 1})
+                         {'all': ['board4'], 'sandbox': ['board4']})
 
     def testBoardArch(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['arm']),
-                         {'all': 2, 'arm': 2})
+                         {'all': ['board0', 'board1'],
+                          'arm': ['board0', 'board1']})
 
     def testBoardArchSingle(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['arm sandbox']),
-                         {'all': 3, 'arm': 2, 'sandbox' : 1})
+                         {'sandbox': ['board4'],
+                          'all': ['board0', 'board1', 'board4'],
+                          'arm': ['board0', 'board1']})
+
 
     def testBoardArchSingleMultiWord(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['arm', 'sandbox']),
-                         {'all': 3, 'arm': 2, 'sandbox' : 1})
+                         {'sandbox': ['board4'], 'all': ['board0', 'board1', 'board4'], 'arm': ['board0', 'board1']})
 
     def testBoardSingleAnd(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['Tester & arm']),
-                         {'all': 2, 'Tester&arm': 2})
+                         {'Tester&arm': ['board0', 'board1'], 'all': ['board0', 'board1']})
 
     def testBoardTwoAnd(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['Tester', '&', 'arm',
                                                    'Tester' '&', 'powerpc',
                                                    'sandbox']),
-                         {'all': 5, 'Tester&powerpc': 2, 'Tester&arm': 2,
-                          'sandbox' : 1})
+                         {'sandbox': ['board4'],
+                          'all': ['board0', 'board1', 'board2', 'board3',
+                                  'board4'],
+                          'Tester&powerpc': ['board2', 'board3'],
+                          'Tester&arm': ['board0', 'board1']})
 
     def testBoardAll(self):
         """Test single board selection"""
-        self.assertEqual(self.boards.SelectBoards([]), {'all': 5})
+        self.assertEqual(self.boards.SelectBoards([]),
+                         {'all': ['board0', 'board1', 'board2', 'board3',
+                                  'board4']})
 
     def testBoardRegularExpression(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['T.*r&^Po']),
-                         {'T.*r&^Po': 2, 'all': 2})
+                         {'all': ['board2', 'board3'],
+                          'T.*r&^Po': ['board2', 'board3']})
 
     def testBoardDuplicate(self):
         """Test single board selection"""
         self.assertEqual(self.boards.SelectBoards(['sandbox sandbox',
                                                    'sandbox']),
-                         {'all': 1, 'sandbox': 1})
+                         {'all': ['board4'], 'sandbox': ['board4']})
     def CheckDirs(self, build, dirname):
         self.assertEqual('base%s' % dirname, build._GetOutputDir(1))
         self.assertEqual('base%s/fred' % dirname,
@@ -411,8 +421,9 @@ class TestBuild(unittest.TestCase):
 
     def testToolchainDownload(self):
         """Test that we can download toolchains"""
-        self.assertEqual('https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.9.0/x86_64-gcc-4.9.0-nolibc_arm-unknown-linux-gnueabi.tar.xz',
-            self.toolchains.LocateArchUrl('arm'))
+        if use_network:
+            self.assertEqual('https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.9.0/x86_64-gcc-4.9.0-nolibc_arm-unknown-linux-gnueabi.tar.xz',
+                self.toolchains.LocateArchUrl('arm'))
 
 
 if __name__ == "__main__":

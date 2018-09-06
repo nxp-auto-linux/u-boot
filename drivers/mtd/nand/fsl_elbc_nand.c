@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /* Freescale Enhanced Local Bus Controller FCM NAND driver
  *
  * Copyright (c) 2006-2008 Freescale Semiconductor
  *
  * Authors: Nick Spence <nick.spence@freescale.com>,
  *          Scott Wood <scottwood@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -13,11 +12,11 @@
 #include <nand.h>
 
 #include <linux/mtd/mtd.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
 #include <linux/mtd/nand_ecc.h>
 
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 
 #ifdef VERBOSE_DEBUG
 #define DEBUG_ELBC
@@ -154,8 +153,8 @@ static struct nand_bbt_descr bbt_mirror_descr = {
  */
 static void set_addr(struct mtd_info *mtd, int column, int page_addr, int oob)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	fsl_lbc_t *lbc = ctrl->regs;
 	int buf_num;
@@ -194,8 +193,8 @@ static void set_addr(struct mtd_info *mtd, int column, int page_addr, int oob)
  */
 static int fsl_elbc_run_command(struct mtd_info *mtd)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	fsl_lbc_t *lbc = ctrl->regs;
 	u32 timeo = (CONFIG_SYS_HZ * 10) / 1000;
@@ -246,7 +245,7 @@ static int fsl_elbc_run_command(struct mtd_info *mtd)
 
 static void fsl_elbc_do_read(struct nand_chip *chip, int oob)
 {
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	fsl_lbc_t *lbc = ctrl->regs;
 
@@ -279,8 +278,8 @@ static void fsl_elbc_do_read(struct nand_chip *chip, int oob)
 static void fsl_elbc_cmdfunc(struct mtd_info *mtd, unsigned int command,
 			     int column, int page_addr)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	fsl_lbc_t *lbc = ctrl->regs;
 
@@ -489,8 +488,8 @@ static void fsl_elbc_select_chip(struct mtd_info *mtd, int chip)
  */
 static void fsl_elbc_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	unsigned int bufsize = mtd->writesize + mtd->oobsize;
 
@@ -526,8 +525,8 @@ static void fsl_elbc_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
  */
 static u8 fsl_elbc_read_byte(struct mtd_info *mtd)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 
 	/* If there are still bytes in the FCM, then use the next byte. */
@@ -543,8 +542,8 @@ static u8 fsl_elbc_read_byte(struct mtd_info *mtd)
  */
 static void fsl_elbc_read_buf(struct mtd_info *mtd, u8 *buf, int len)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	int avail;
 
@@ -566,7 +565,7 @@ static void fsl_elbc_read_buf(struct mtd_info *mtd, u8 *buf, int len)
  */
 static int fsl_elbc_wait(struct mtd_info *mtd, struct nand_chip *chip)
 {
-	struct fsl_elbc_mtd *priv = chip->priv;
+	struct fsl_elbc_mtd *priv = nand_get_controller_data(chip);
 	struct fsl_elbc_ctrl *ctrl = priv->ctrl;
 	fsl_lbc_t *lbc = ctrl->regs;
 
@@ -611,7 +610,8 @@ static int fsl_elbc_read_page(struct mtd_info *mtd, struct nand_chip *chip,
  * waitfunc.
  */
 static int fsl_elbc_write_page(struct mtd_info *mtd, struct nand_chip *chip,
-				const uint8_t *buf, int oob_required)
+				const uint8_t *buf, int oob_required,
+				int page)
 {
 	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
 	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
@@ -626,7 +626,7 @@ static struct fsl_elbc_ctrl *elbc_ctrl;
  */
 static int fsl_elbc_write_subpage(struct mtd_info *mtd, struct nand_chip *chip,
 				uint32_t offset, uint32_t data_len,
-				const uint8_t *buf, int oob_required)
+				const uint8_t *buf, int oob_required, int page)
 {
 	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
 	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
@@ -656,7 +656,7 @@ static void fsl_elbc_ctrl_init(void)
 
 static int fsl_elbc_chip_init(int devnum, u8 *addr)
 {
-	struct mtd_info *mtd = &nand_info[devnum];
+	struct mtd_info *mtd;
 	struct nand_chip *nand;
 	struct fsl_elbc_mtd *priv;
 	uint32_t br = 0, or = 0;
@@ -697,7 +697,7 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr)
 	}
 
 	nand = &priv->chip;
-	mtd->priv = nand;
+	mtd = nand_to_mtd(nand);
 
 	elbc_ctrl->chips[priv->bank] = priv;
 
@@ -719,7 +719,7 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr)
 	nand->bbt_options = NAND_BBT_USE_FLASH;
 
 	nand->controller = &elbc_ctrl->controller;
-	nand->priv = priv;
+	nand_set_controller_data(nand, priv);
 
 	nand->ecc.read_page = fsl_elbc_read_page;
 	nand->ecc.write_page = fsl_elbc_write_page;
@@ -787,7 +787,7 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr)
 	if (ret)
 		return ret;
 
-	ret = nand_register(devnum);
+	ret = nand_register(devnum, mtd);
 	if (ret)
 		return ret;
 

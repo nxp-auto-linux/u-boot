@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2012 Freescale Semiconductor, Inc.
  * Author: Sandeep Kumar Singh <sandeep@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* This file is based on board/freescale/corenet_ds/eth_superhydra.c */
@@ -213,7 +212,7 @@ int board_eth_init(bd_t *bis)
 		fm_info_set_phy_address(FM1_DTSEC6,
 				CONFIG_SYS_FM1_ONBOARD_PHY2_ADDR);
 		break;
-#ifdef CONFIG_PPC_B4420
+#ifdef CONFIG_ARCH_B4420
 	case 0x17:
 	case 0x18:
 		/* Serdes 1: A-D SGMII, Configuring on board dual SGMII Phy */
@@ -269,7 +268,7 @@ int board_eth_init(bd_t *bis)
 		fm_info_set_phy_address(FM1_DTSEC4,
 				CONFIG_SYS_FM1_DTSEC2_RISER_PHY_ADDR);
 		/*
-		 * XFI does not need a PHY to work, but to make U-boot
+		 * XFI does not need a PHY to work, but to make U-Boot
 		 * happy, assign a fake PHY address for a XFI port.
 		 */
 		fm_info_set_phy_address(FM1_10GEC1, 0);
@@ -408,22 +407,22 @@ void board_ft_fman_fixup_port(void *fdt, char *compat, phys_addr_t addr,
 				    sizeof(f_link));
 			break;
 		case 0x98: /* XAUI interface */
-			sprintf(alias, "phy_xaui_slot1");
+			strcpy(alias, "phy_xaui_slot1");
 			fdt_status_okay_by_alias(fdt, alias);
 
-			sprintf(alias, "phy_xaui_slot2");
+			strcpy(alias, "phy_xaui_slot2");
 			fdt_status_okay_by_alias(fdt, alias);
 			break;
 		case 0x9e: /* XAUI interface */
 		case 0x9a:
 		case 0x93:
 		case 0x91:
-			sprintf(alias, "phy_xaui_slot1");
+			strcpy(alias, "phy_xaui_slot1");
 			fdt_status_okay_by_alias(fdt, alias);
 			break;
 		case 0x97: /* XAUI interface */
 		case 0xc3:
-			sprintf(alias, "phy_xaui_slot2");
+			strcpy(alias, "phy_xaui_slot2");
 			fdt_status_okay_by_alias(fdt, alias);
 			break;
 		default:

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -14,7 +13,7 @@
 #include "high_speed_env_spec.h"
 #include "board_env_spec.h"
 
-#define	SERDES_VERION	"2.1.5"
+#define	SERDES_VERSION	"2.1.5"
 #define ENDED_OK	"High speed PHY - Ended Successfully\n"
 
 static const u8 serdes_cfg[][SERDES_LAST_UNIT] = BIN_SERDES_CFG;
@@ -75,16 +74,24 @@ static u32 board_id_get(void)
 #endif
 }
 
-static u8 board_sat_r_get(u8 dev_num, u8 reg)
+__weak u8 board_sat_r_get(u8 dev_num, u8 reg)
 {
 	u8 data;
 	u8 *dev;
 	u32 board_id = board_id_get();
 	int ret;
 
-	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
-
 	switch (board_id) {
+	case DB_78X60_AMC_ID:
+	case DB_78X60_PCAC_REV2_ID:
+	case RD_78460_CUSTOMER_ID:
+	case RD_78460_SERVER_ID:
+	case RD_78460_SERVER_REV2_ID:
+	case DB_78X60_PCAC_ID:
+		return (0x1 << 1) | 1;
+	case FPGA_88F78XX0_ID:
+	case RD_78460_NAS_ID:
+		return (0x0 << 1) | 1;
 	case DB_784MP_GP_ID:
 		dev = rd78460gp_twsi_dev;
 
@@ -94,15 +101,12 @@ static u8 board_sat_r_get(u8 dev_num, u8 reg)
 		dev = db88f78xx0rev2_twsi_dev;
 		break;
 
-	case DB_78X60_PCAC_ID:
-	case FPGA_88F78XX0_ID:
-	case DB_78X60_PCAC_REV2_ID:
-	case RD_78460_SERVER_REV2_ID:
 	default:
 		return 0;
 	}
 
 	/* Read MPP module ID */
+	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	ret = i2c_read(dev[dev_num], 0, 1, (u8 *)&data, 1);
 	if (ret)
 		return MV_ERROR;
@@ -190,8 +194,17 @@ __weak MV_BIN_SERDES_CFG *board_serdes_cfg_get(u8 pex_mode)
 
 u16 ctrl_model_get(void)
 {
-	/* Right now only MV78460 supported */
+	/*
+	 * SoC version can't be autodetected. So we need to rely on a define
+	 * from the config system here.
+	 */
+#if defined(CONFIG_MV78230)
+	return MV_78230_DEV_ID;
+#elif defined(CONFIG_MV78260)
+	return MV_78260_DEV_ID;
+#else
 	return MV_78460_DEV_ID;
+#endif
 }
 
 u32 get_line_cfg(u32 line_num, MV_BIN_SERDES_CFG *info)
@@ -201,6 +214,34 @@ u32 get_line_cfg(u32 line_num, MV_BIN_SERDES_CFG *info)
 	else
 		return (info->line8_15 >> ((line_num - 8) << 2)) & 0xF;
 }
+
+static int serdes_max_lines_get(void)
+{
+	switch (ctrl_model_get()) {
+	case MV_78230_DEV_ID:
+		return 7;
+	case MV_78260_DEV_ID:
+		return 12;
+	case MV_78460_DEV_ID:
+		return 16;
+	}
+
+	return 0;
+}
+
+/*
+ * Tests have shown that on some boards the default width of the
+ * configuration pulse for the PEX link detection might lead to
+ * non-established PCIe links (link down). Especially under certain
+ * conditions (higher temperature) and with specific PCIe devices.
+ * To enable a board-specific detection pulse width this weak
+ * array "serdes_pex_pulse_width[4]" is introduced which can be
+ * overwritten if needed by a board-specific version. If the board
+ * code does not provide a non-weak version of this variable, the
+ * default value will be used. So nothing is changed from the
+ * current setup on the supported board.
+ */
+__weak u8 serdes_pex_pulse_width[4] = { 2, 2, 2, 2 };
 
 int serdes_phy_config(void)
 {
@@ -221,39 +262,19 @@ int serdes_phy_config(void)
 	u8 device_rev;
 	u32 rx_high_imp_mode;
 	u16 ctrl_mode;
-	u32 board_id = board_id_get();
 	u32 pex_if;
 	u32 pex_if_num;
 
 	/*
-	 * TODO:
-	 * Right now we only support the MV78460 with 16 serdes lines
+	 * Get max. serdes lines count
 	 */
-	max_serdes_lines = 16;
+	max_serdes_lines = serdes_max_lines_get();
 	if (max_serdes_lines == 0)
 		return MV_OK;
 
-	switch (board_id) {
-	case DB_78X60_AMC_ID:
-	case DB_78X60_PCAC_REV2_ID:
-	case RD_78460_CUSTOMER_ID:
-	case RD_78460_SERVER_ID:
-	case RD_78460_SERVER_REV2_ID:
-	case DB_78X60_PCAC_ID:
-		satr11 = (0x1 << 1) | 1;
-		break;
-	case FPGA_88F78XX0_ID:
-	case RD_78460_NAS_ID:
-		satr11 = (0x0 << 1) | 1;
-		break;
-	case DB_88F78XX0_BP_REV2_ID:
-	case DB_784MP_GP_ID:
-	case DB_88F78XX0_BP_ID:
-		satr11 = board_sat_r_get(1, 1);
-		if ((u8) MV_ERROR == (u8) satr11)
-			return MV_ERROR;
-		break;
-	}
+	satr11 = board_sat_r_get(1, 1);
+	if ((u8) MV_ERROR == (u8) satr11)
+		return MV_ERROR;
 
 	board_modules_scan();
 	memset(addr, 0, sizeof(addr));
@@ -263,12 +284,12 @@ int serdes_phy_config(void)
 	if (reg_read(REG_BOOTROM_ROUTINE_ADDR) &
 	    (1 << REG_BOOTROM_ROUTINE_DRAM_INIT_OFFS)) {
 		DEBUG_INIT_S("High speed PHY - Version: ");
-		DEBUG_INIT_S(SERDES_VERION);
+		DEBUG_INIT_S(SERDES_VERSION);
 		DEBUG_INIT_S(" - 2nd boot - Skip\n");
 		return MV_OK;
 	}
 	DEBUG_INIT_S("High speed PHY - Version: ");
-	DEBUG_INIT_S(SERDES_VERION);
+	DEBUG_INIT_S(SERDES_VERSION);
 	DEBUG_INIT_S(" (COM-PHY-V20)\n");
 
 	/*
@@ -332,16 +353,16 @@ int serdes_phy_config(void)
 	}
 
 	info = board_serdes_cfg_get(PEX_MODE_GET(satr11));
-	DEBUG_INIT_FULL_S("info->line0_7= 0x");
-	DEBUG_INIT_FULL_D(info->line0_7, 8);
-	DEBUG_INIT_FULL_S("   info->line8_15= 0x");
-	DEBUG_INIT_FULL_D(info->line8_15, 8);
-	DEBUG_INIT_FULL_S("\n");
 
 	if (info == NULL) {
 		DEBUG_INIT_S("Hight speed PHY Error #1\n");
 		return MV_ERROR;
 	}
+	DEBUG_INIT_FULL_S("info->line0_7= 0x");
+	DEBUG_INIT_FULL_D(info->line0_7, 8);
+	DEBUG_INIT_FULL_S("   info->line8_15= 0x");
+	DEBUG_INIT_FULL_D(info->line8_15, 8);
+	DEBUG_INIT_FULL_S("\n");
 
 	if (config_module & ETM_MODULE_DETECT) {	/* step 0.9 ETM */
 		DEBUG_INIT_FULL_S("ETM module detect Step 0.9:\n");
@@ -883,6 +904,23 @@ int serdes_phy_config(void)
 			pex_unit = line_num >> 2;
 			pex_line_num = line_num % 4;
 			if (0 == pex_line_num) {
+				/*
+				 * Configure the detection pulse with before
+				 * the reset is deasserted
+				 */
+
+				/* Read the old value (indirect access) */
+				reg_write(PEX_PHY_ACCESS_REG(pex_unit),
+					  (0x48 << 16) | (1 << 31) |
+					  (pex_line_num << 24));
+				tmp = reg_read(PEX_PHY_ACCESS_REG(pex_unit));
+				tmp &= ~(1 << 31);	/* Clear read */
+				tmp &= ~(3 << 6);	/* Mask width */
+				/* Insert new detection pulse width */
+				tmp |= serdes_pex_pulse_width[pex_unit] << 6;
+				/* Write value back */
+				reg_write(PEX_PHY_ACCESS_REG(pex_unit), tmp);
+
 				reg_write(PEX_PHY_ACCESS_REG(pex_unit),
 					  (0xC1 << 16) | 0x24);
 				DEBUG_WR_REG(PEX_PHY_ACCESS_REG(pex_unit),
@@ -1356,19 +1394,19 @@ int serdes_phy_config(void)
 						 pex_if, PEX_DEVICE_AND_VENDOR_ID));
 			devId &= 0xFFFF;
 			devId |= ((ctrl_mode << 16) & 0xffff0000);
-			DEBUG_INIT_S("Update Device ID PEX");
-			DEBUG_INIT_D(pex_if, 1);
-			DEBUG_INIT_D(devId, 8);
-			DEBUG_INIT_S("\n");
+			DEBUG_INIT_FULL_S("Update Device ID PEX");
+			DEBUG_INIT_FULL_D(pex_if, 1);
+			DEBUG_INIT_FULL_D(devId, 8);
+			DEBUG_INIT_FULL_S("\n");
 			reg_write(PEX_CFG_DIRECT_ACCESS
 				  (pex_if, PEX_DEVICE_AND_VENDOR_ID), devId);
 			if ((pex_if < 8) &&
 			    (info->pex_mode[pex_unit] == PEX_BUS_MODE_X4))
 				pex_if += 3;
 		}
-		DEBUG_INIT_S("Update PEX Device ID 0x");
-		DEBUG_INIT_D(ctrl_mode, 4);
-		DEBUG_INIT_S("0\n");
+		DEBUG_INIT_FULL_S("Update PEX Device ID 0x");
+		DEBUG_INIT_FULL_D(ctrl_mode, 4);
+		DEBUG_INIT_FULL_S("0\n");
 	}
 	tmp = reg_read(PEX_DBG_STATUS_REG(0));
 	DEBUG_RD_REG(PEX_DBG_STATUS_REG(0), tmp);

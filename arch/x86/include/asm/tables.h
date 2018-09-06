@@ -1,18 +1,20 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _X86_TABLES_H_
 #define _X86_TABLES_H_
 
-/*
- * All x86 tables happen to like the address range from 0xf0000 to 0x100000.
- * We use 0xf0000 as the starting address to store those tables, including
- * PIRQ routing table, Multi-Processor table and ACPI table.
- */
-#define ROM_TABLE_ADDR	0xf0000
+#include <tables_csum.h>
+
+#define ROM_TABLE_ADDR	CONFIG_ROM_TABLE_ADDR
+#define ROM_TABLE_END	(CONFIG_ROM_TABLE_ADDR + CONFIG_ROM_TABLE_SIZE - 1)
+
+#define ROM_TABLE_ALIGN	1024
+
+/* SeaBIOS expects coreboot tables at address range 0x0000-0x1000 */
+#define CB_TABLE_ADDR	0x800
 
 /**
  * table_compute_checksum() - Compute a table checksum
@@ -58,6 +60,6 @@ void write_tables(void);
  * @start:	start address to write PIRQ routing table
  * @return:	end address of PIRQ routing table
  */
-u32 write_pirq_routing_table(u32 start);
+ulong write_pirq_routing_table(ulong start);
 
 #endif /* _X86_TABLES_H_ */

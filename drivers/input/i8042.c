@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2002 ELTEC Elektronik AG
  * Frank Gottschling <fgottschling@eltec.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* i8042.c - Intel 8042 keyboard driver routines */
@@ -132,6 +131,10 @@ static int kbd_reset(int quirk)
 	if (kbd_write(I8042_DATA_REG, CMD_RESET_KBD) ||
 	    kbd_read(I8042_DATA_REG) != KBD_ACK ||
 	    kbd_read(I8042_DATA_REG) != KBD_POR)
+		goto err;
+
+	if (kbd_write(I8042_DATA_REG, CMD_DRAIN_OUTPUT) ||
+	    kbd_read(I8042_DATA_REG) != KBD_ACK)
 		goto err;
 
 	/* set AT translation and disable irq */
@@ -270,7 +273,7 @@ static int i8042_start(struct udevice *dev)
 
 	/* Init keyboard device (default US layout) */
 	keymap = KBD_US;
-	penv = getenv("keymap");
+	penv = env_get("keymap");
 	if (penv != NULL) {
 		if (strncmp(penv, "de", 3) == 0)
 			keymap = KBD_GER;
@@ -311,7 +314,7 @@ static int i8042_kbd_probe(struct udevice *dev)
 	struct input_config *input = &uc_priv->input;
 	int ret;
 
-	if (fdtdec_get_bool(gd->fdt_blob, dev->of_offset,
+	if (fdtdec_get_bool(gd->fdt_blob, dev_of_offset(dev),
 			    "intel,duplicate-por"))
 		priv->quirks |= QUIRK_DUP_POR;
 

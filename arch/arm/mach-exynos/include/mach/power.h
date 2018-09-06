@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2011 Samsung Electronics
  * Heungjun Kim <riverful.kim@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARM_ARCH_POWER_H_
@@ -1717,7 +1716,7 @@ void set_usbdrd_phy_ctrl(unsigned int enable);
 #define POWER_USB_DRD_PHY_CTRL_EN		(1 << 0)
 #define POWER_USB_DRD_PHY_CTRL_DISABLE		(0 << 0)
 
-void set_dp_phy_ctrl(unsigned int enable);
+void exynos_dp_phy_ctrl(unsigned int enable);
 
 #define EXYNOS_DP_PHY_ENABLE		(1 << 0)
 

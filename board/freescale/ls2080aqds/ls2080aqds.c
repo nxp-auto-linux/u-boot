@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <malloc.h>
@@ -11,20 +10,24 @@
 #include <fsl_ddr.h>
 #include <asm/io.h>
 #include <fdt_support.h>
-#include <libfdt.h>
-#include <fsl_debug_server.h>
+#include <linux/libfdt.h>
 #include <fsl-mc/fsl_mc.h>
 #include <environment.h>
 #include <i2c.h>
 #include <rtc.h>
 #include <asm/arch/soc.h>
 #include <hwconfig.h>
+#include <fsl_sec.h>
+#include <asm/arch/ppa.h>
+
 
 #include "../common/qixis.h"
 #include "ls2080aqds_qixis.h"
+#include "../common/vid.h"
 
 #define PIN_MUX_SEL_SDHC	0x00
 #define PIN_MUX_SEL_DSPI	0x0a
+#define SCFG_QSPICLKCTRL_DIV_20	(5 << 27)
 
 #define SET_SDHC_MUX_SEL(reg, value)	((reg & 0xf0) | value)
 
@@ -79,6 +82,8 @@ int checkboard(void)
 		puts("PromJet\n");
 	else if (sw == 0x9)
 		puts("NAND\n");
+	else if (sw == 0xf)
+		puts("QSPI\n");
 	else if (sw == 0x15)
 		printf("IFCCard\n");
 	else
@@ -198,7 +203,7 @@ int board_init(void)
 
 	val = in_le32(dcfg_ccsr + DCFG_RCWSR13 / 4);
 
-	env_hwconfig = getenv("hwconfig");
+	env_hwconfig = env_get("hwconfig");
 
 	if (hwconfig_f("dspi", env_hwconfig) &&
 	    DCFG_RCWSR13_DSPI == (val & (u32)(0xf << 8)))
@@ -206,18 +211,49 @@ int board_init(void)
 	else
 		config_board_mux(MUX_TYPE_SDHC);
 
+#if defined(CONFIG_NAND) && defined(CONFIG_FSL_QSPI)
+	val = in_le32(dcfg_ccsr + DCFG_RCWSR15 / 4);
+
+	if (DCFG_RCWSR15_IFCGRPABASE_QSPI == (val & (u32)0x3))
+		QIXIS_WRITE(brdcfg[9],
+			    (QIXIS_READ(brdcfg[9]) & 0xf8) |
+			     FSL_QIXIS_BRDCFG9_QSPI);
+#endif
+
 #ifdef CONFIG_ENV_IS_NOWHERE
 	gd->env_addr = (ulong)&default_environment[0];
 #endif
 	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);
 	rtc_enable_32khz_output();
+#ifdef CONFIG_FSL_CAAM
+	sec_init();
+#endif
+
+#ifdef CONFIG_FSL_LS_PPA
+	ppa_init();
+#endif
 
 	return 0;
 }
 
 int board_early_init_f(void)
 {
+#ifdef CONFIG_SYS_I2C_EARLY_INIT
+	i2c_early_init_f();
+#endif
 	fsl_lsch3_early_init_f();
+#ifdef CONFIG_FSL_QSPI
+	/* input clk: 1/2 platform clk, output: input/20 */
+	out_le32(SCFG_BASE + SCFG_QSPICLKCTLR, SCFG_QSPICLKCTRL_DIV_20);
+#endif
+	return 0;
+}
+
+int misc_init_r(void)
+{
+	if (adjust_vdd(0))
+		printf("Warning: Adjusting core voltage failed.\n");
+
 	return 0;
 }
 
@@ -227,7 +263,7 @@ void detail_board_ddr_info(void)
 	print_size(gd->bd->bi_dram[0].size + gd->bd->bi_dram[1].size, "");
 	print_ddr_info(0);
 #ifdef CONFIG_SYS_FSL_HAS_DP_DDR
-	if (gd->bd->bi_dram[2].size) {
+	if (soc_has_dp_ddr() && gd->bd->bi_dram[2].size) {
 		puts("\nDP-DDR ");
 		print_size(gd->bd->bi_dram[2].size, "");
 		print_ddr_info(CONFIG_DP_DDR_CTRL);
@@ -235,33 +271,22 @@ void detail_board_ddr_info(void)
 #endif
 }
 
-int dram_init(void)
-{
-	gd->ram_size = initdram(0);
-
-	return 0;
-}
-
 #if defined(CONFIG_ARCH_MISC_INIT)
 int arch_misc_init(void)
 {
-#ifdef CONFIG_FSL_DEBUG_SERVER
-	debug_server_init();
-#endif
-
 	return 0;
 }
 #endif
 
-#ifdef CONFIG_FSL_MC_ENET
+#if defined(CONFIG_FSL_MC_ENET) && !defined(CONFIG_SPL_BUILD)
 void fdt_fixup_board_enet(void *fdt)
 {
 	int offset;
 
-	offset = fdt_path_offset(fdt, "/fsl-mc");
+	offset = fdt_path_offset(fdt, "/soc/fsl-mc");
 
 	if (offset < 0)
-		offset = fdt_path_offset(fdt, "/fsl,dprc@0");
+		offset = fdt_path_offset(fdt, "/fsl-mc");
 
 	if (offset < 0) {
 		printf("%s: ERROR: fsl-mc node not found in device tree (error %d)\n",
@@ -269,17 +294,21 @@ void fdt_fixup_board_enet(void *fdt)
 		return;
 	}
 
-	if (get_mc_boot_status() == 0)
+	if ((get_mc_boot_status() == 0) && (get_dpl_apply_status() == 0))
 		fdt_status_okay(fdt, offset);
 	else
 		fdt_status_fail(fdt, offset);
+}
+
+void board_quiesce_devices(void)
+{
+	fsl_mc_ldpaa_exit(gd->bd);
 }
 #endif
 
 #ifdef CONFIG_OF_BOARD_SETUP
 int ft_board_setup(void *blob, bd_t *bd)
 {
-	int err;
 	u64 base[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
 
@@ -291,13 +320,22 @@ int ft_board_setup(void *blob, bd_t *bd)
 	base[1] = gd->bd->bi_dram[1].start;
 	size[1] = gd->bd->bi_dram[1].size;
 
+#ifdef CONFIG_RESV_RAM
+	/* reduce size if reserved memory is within this bank */
+	if (gd->arch.resv_ram >= base[0] &&
+	    gd->arch.resv_ram < base[0] + size[0])
+		size[0] = gd->arch.resv_ram - base[0];
+	else if (gd->arch.resv_ram >= base[1] &&
+		 gd->arch.resv_ram < base[1] + size[1])
+		size[1] = gd->arch.resv_ram - base[1];
+#endif
+
 	fdt_fixup_memory_banks(blob, base, size, 2);
 
-#ifdef CONFIG_FSL_MC_ENET
+	fsl_fdt_fixup_dr_usb(blob, bd);
+
+#if defined(CONFIG_FSL_MC_ENET) && !defined(CONFIG_SPL_BUILD)
 	fdt_fixup_board_enet(blob);
-	err = fsl_mc_ldpaa_exit(bd);
-	if (err)
-		return err;
 #endif
 
 	return 0;

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Sun8i platform dram controller register and constant defines
  *
@@ -5,8 +6,6 @@
  *                         Jerry Wang <wangflord@allwinnertech.com>
  * (C) Copyright 2015      Vishnu Patekar <vishnupatekar0510@gmail.com>
  * (C) Copyright 2014-2015 Hans de Goede <hdegoede@redhat.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _SUNXI_DRAM_SUN8I_A83T_H
@@ -186,7 +185,7 @@ struct sunxi_mctl_ctl_reg {
 #define MCTL_CR_BUSW8			(0 << 12)
 #define MCTL_CR_BUSW16			(1 << 12)
 #define MCTL_CR_SEQUENCE		(1 << 15)
-#define MCTL_CR_DDR3			(3 << 16)
+#define MCTL_CR_DRAM_TYPE(x)		((x) << 16)
 #define MCTL_CR_CHANNEL_MASK		(1 << 19)
 #define MCTL_CR_CHANNEL(x)		(((x) - 1) << 19)
 #define MCTL_CR_UNKNOWN			(0x4 << 20)
@@ -198,4 +197,11 @@ struct sunxi_mctl_ctl_reg {
 #define MCTL_MR2			0x18 /* CWL=8 */
 #define MCTL_MR3			0x0
 
+#define MCTL_LPDDR3_MR0			0x0
+#define MCTL_LPDDR3_MR1			0xc3	/* twr=8, bl=8 */
+#define MCTL_LPDDR3_MR2			0xa	/* RL=12, CWL=6 */
+#define MCTL_LPDDR3_MR3			0x0
+
+#define DRAM_TYPE_DDR3		3
+#define DRAM_TYPE_LPDDR3	7
 #endif /* _SUNXI_DRAM_SUN8I_A83T_H */

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,9 +16,4 @@ int board_early_init_f(void)
 			  KBD_IRQ, MSE_IRQ);
 
 	return 0;
-}
-
-void setup_pch_gpios(u16 gpiobase, const struct pch_gpio_map *gpio)
-{
-	return;
 }

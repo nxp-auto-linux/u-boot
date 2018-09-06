@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FSL_EPU_H
@@ -63,6 +62,14 @@
 #define EPCTR31		0xA7C
 #define EPCTR_STRIDE	FSL_STRIDE_4B
 
+#define FSM_END_FLAG	0xFFFFFFFFUL
+
+struct fsm_reg_vals {
+	u32 offset;
+	u32 value;
+};
+
+void fsl_epu_setup(void *epu_base);
 void fsl_epu_clean(void *epu_base);
 
 #endif

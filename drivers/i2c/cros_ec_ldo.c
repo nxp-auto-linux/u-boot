@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -72,6 +71,5 @@ U_BOOT_DRIVER(cros_ec_ldo) = {
 	.name	= "cros_ec_ldo_tunnel",
 	.id	= UCLASS_I2C,
 	.of_match = cros_ec_i2c_ids,
-	.per_child_auto_alloc_size = sizeof(struct dm_i2c_chip),
 	.ops	= &cros_ec_i2c_ops,
 };

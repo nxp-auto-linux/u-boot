@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ARCH_QEMU_H_
@@ -32,5 +31,10 @@
 
 #define LOW_RAM_ADDR		0x34
 #define HIGH_RAM_ADDR		0x35
+
+/* PM registers */
+#define PMBA		0x40
+#define PMREGMISC	0x80
+#define PMIOSE		(1 << 0)
 
 #endif /* _ARCH_QEMU_H_ */

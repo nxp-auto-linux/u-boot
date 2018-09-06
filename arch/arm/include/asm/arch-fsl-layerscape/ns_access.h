@@ -1,11 +1,11 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FSL_NS_ACCESS_H_
 #define __FSL_NS_ACCESS_H_
+#include <fsl_csu.h>
 
 enum csu_cslx_ind {
 	CSU_CSLX_PCIE2_IO = 0,
@@ -25,6 +25,7 @@ enum csu_cslx_ind {
 	CSU_CSLX_PCIE3_IO,
 	CSU_CSLX_USB3 = 20,
 	CSU_CSLX_USB2,
+	CSU_CSLX_PFE = 23,
 	CSU_CSLX_SERDES = 32,
 	CSU_CSLX_QDMA,
 	CSU_CSLX_LPUART2,
@@ -69,7 +70,12 @@ enum csu_cslx_ind {
 	CSU_CSLX_IIC4 = 77,
 	CSU_CSLX_WDT4,
 	CSU_CSLX_WDT3,
+	CSU_CSLX_ESDHC2 = 80,
 	CSU_CSLX_WDT5 = 81,
+	CSU_CSLX_SAI2,
+	CSU_CSLX_SAI1,
+	CSU_CSLX_SAI4,
+	CSU_CSLX_SAI3,
 	CSU_CSLX_FTM2 = 86,
 	CSU_CSLX_FTM1,
 	CSU_CSLX_FTM4,
@@ -99,6 +105,7 @@ static struct csu_ns_dev ns_dev[] = {
 	 {CSU_CSLX_PCIE3_IO, CSU_ALL_RW},
 	 {CSU_CSLX_USB3, CSU_ALL_RW},
 	 {CSU_CSLX_USB2, CSU_ALL_RW},
+	 {CSU_CSLX_PFE, CSU_ALL_RW},
 	 {CSU_CSLX_SERDES, CSU_ALL_RW},
 	 {CSU_CSLX_QDMA, CSU_ALL_RW},
 	 {CSU_CSLX_LPUART2, CSU_ALL_RW},
@@ -143,7 +150,12 @@ static struct csu_ns_dev ns_dev[] = {
 	 {CSU_CSLX_IIC4, CSU_ALL_RW},
 	 {CSU_CSLX_WDT4, CSU_ALL_RW},
 	 {CSU_CSLX_WDT3, CSU_ALL_RW},
+	 {CSU_CSLX_ESDHC2, CSU_ALL_RW},
 	 {CSU_CSLX_WDT5, CSU_ALL_RW},
+	 {CSU_CSLX_SAI2, CSU_ALL_RW},
+	 {CSU_CSLX_SAI1, CSU_ALL_RW},
+	 {CSU_CSLX_SAI4, CSU_ALL_RW},
+	 {CSU_CSLX_SAI3, CSU_ALL_RW},
 	 {CSU_CSLX_FTM2, CSU_ALL_RW},
 	 {CSU_CSLX_FTM1, CSU_ALL_RW},
 	 {CSU_CSLX_FTM4, CSU_ALL_RW},

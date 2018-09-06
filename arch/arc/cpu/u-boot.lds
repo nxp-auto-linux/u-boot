@@ -1,41 +1,32 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013-2014 Synopsys, Inc. All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
-OUTPUT_FORMAT("elf32-littlearc", "elf32-littlearc", "elf32-littlearc")
+#include <config.h>
+
+OUTPUT_FORMAT("elf32-littlearc", "elf32-bigarc", "elf32-littlearc")
 OUTPUT_ARCH(arc)
 ENTRY(_start)
 SECTIONS
 {
-	. = ALIGN(4);
+	. = CONFIG_SYS_TEXT_BASE;
+	__image_copy_start = .;
+	. = ALIGN(1024);
+	__ivt_start = .;
+	.ivt :
+	{
+		KEEP(*(.ivt))
+	}
+	__ivt_end = .;
+
+	. = ALIGN(1024);
+	__text_start = .;
 	.text :	{
-		*(.__text_start)
-		*(.__image_copy_start)
 		arch/arc/lib/start.o (.text*)
 		*(.text*)
 	}
-
-	. = ALIGN(4);
-	.text_end :
-	{
-		*(.__text_end)
-	}
-
-	. = ALIGN(1024);
-	.ivt_start : {
-		*(.__ivt_start)
-	}
-
-	.ivt :
-	{
-		*(.ivt)
-	}
-
-	.ivt_end : {
-		*(.__ivt_end)
-	}
+	__text_end = .;
 
 	. = ALIGN(4);
 	.rodata : {
@@ -53,34 +44,20 @@ SECTIONS
 	}
 
 	. = ALIGN(4);
-	.rel_dyn_start : {
-		*(.__rel_dyn_start)
-	}
-
+	__rel_dyn_start = .;
 	.rela.dyn : {
 		*(.rela.dyn)
 	}
-
-	.rel_dyn_end : {
-		*(.__rel_dyn_end)
-	}
+	__rel_dyn_end = .;
 
 	. = ALIGN(4);
-	.bss_start : {
-		*(.__bss_start);
-	}
-
+	__bss_start = .;
 	.bss : {
 		*(.bss*)
 	}
-
-	.bss_end : {
-		*(.__bss_end);
-	}
+	__bss_end = .;
 
 	. = ALIGN(4);
-	.image_copy_end : {
-		*(.__image_copy_end)
-		*(.__init_end)
-	}
+	__image_copy_end = .;
+	__init_end = .;
 }

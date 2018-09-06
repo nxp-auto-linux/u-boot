@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013 Google, Inc
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
  * Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _DM_PLATDATA_H
@@ -22,10 +21,14 @@
  *
  * @name:	Driver name
  * @platdata:	Driver-specific platform data
+ * @platdata_size: Size of platform data structure
  */
 struct driver_info {
 	const char *name;
 	const void *platdata;
+#if CONFIG_IS_ENABLED(OF_PLATDATA)
+	uint platdata_size;
+#endif
 };
 
 /**

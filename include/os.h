@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Operating System Interface
  *
@@ -5,7 +6,6 @@
  * They are kept in a separate file so we can include system headers.
  *
  * Copyright (c) 2011 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __OS_H__
@@ -215,9 +215,18 @@ struct os_dirent_node {
 int os_dirent_ls(const char *dirname, struct os_dirent_node **headp);
 
 /**
+ * Free directory list
+ *
+ * This frees a linked list containing a directory listing.
+ *
+ * @param node		Pointer to head of linked list
+ */
+void os_dirent_free(struct os_dirent_node *node);
+
+/**
  * Get the name of a directory entry type
  *
- * @param type		Type to cehck
+ * @param type		Type to check
  * @return string containing the name of that type, or "???" if none/invalid
  */
 const char *os_dirent_get_typename(enum os_dirent_t type);
@@ -287,6 +296,31 @@ int os_read_ram_buf(const char *fname);
 int os_jump_to_image(const void *dest, int size);
 
 /**
+ * os_find_u_boot() - Determine the path to U-Boot proper
+ *
+ * This function is intended to be called from within sandbox SPL. It uses
+ * a few heuristics to find U-Boot proper. Normally it is either in the same
+ * directory, or the directory above (since u-boot-spl is normally in an
+ * spl/ subdirectory when built).
+ *
+ * @fname:	Place to put full path to U-Boot
+ * @maxlen:	Maximum size of @fname
+ * @return 0 if OK, -NOSPC if the filename is too large, -ENOENT if not found
+ */
+int os_find_u_boot(char *fname, int maxlen);
+
+/**
+ * os_spl_to_uboot() - Run U-Boot proper
+ *
+ * When called from SPL, this runs U-Boot proper. The filename is obtained by
+ * calling os_find_u_boot().
+ *
+ * @fname:	Full pathname to U-Boot executable
+ * @return 0 if OK, -ve on error
+ */
+int os_spl_to_uboot(const char *fname);
+
+/**
  * Read the current system time
  *
  * This reads the current Local Time and places it into the provided
@@ -295,5 +329,26 @@ int os_jump_to_image(const void *dest, int size);
  * @param rt		Place to put system time
  */
 void os_localtime(struct rtc_time *rt);
+
+/**
+ * os_setjmp() - Call setjmp()
+ *
+ * Call the host system's setjmp() function.
+ *
+ * @jmp: Buffer to store current execution state
+ * @size: Size of buffer
+ * @return normal setjmp() value if OK, -ENOSPC if @size is too small
+ */
+int os_setjmp(ulong *jmp, int size);
+
+/**
+ * os_longjmp() - Call longjmp()
+ *
+ * Call the host system's longjmp() function.
+ *
+ * @jmp: Buffer where previous execution state was stored
+ * @ret: Value to pass to longjmp()
+ */
+void os_longjmp(ulong *jmp, int ret);
 
 #endif

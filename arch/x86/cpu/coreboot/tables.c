@@ -1,16 +1,14 @@
+// SPDX-License-Identifier: BSD-3-Clause
 /*
  * This file is part of the libpayload project.
  *
  * Copyright (C) 2008 Advanced Micro Devices, Inc.
  * Copyright (C) 2009 coresystems GmbH
- *
- * SPDX-License-Identifier:	BSD-3-Clause
  */
 
 #include <common.h>
 #include <net.h>
 #include <asm/arch/sysinfo.h>
-#include <asm/arch/tables.h>
 
 /*
  * This needs to be in the .data section so that it's copied over during

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007,2009-2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,7 +10,7 @@
 #include <asm/mmu.h>
 #include <asm/fsl_pci.h>
 #include <asm/io.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
 #include <netdev.h>
 #include <fdtdec.h>
@@ -50,13 +49,19 @@ uint64_t get_phys_ccsrbar_addr_early(void)
 {
 	void *fdt = get_fdt_virt();
 	uint64_t r;
+	int size, node;
+	u32 naddr;
+	const fdt32_t *prop;
 
 	/*
 	 * To be able to read the FDT we need to create a temporary TLB
 	 * map for it.
 	 */
 	map_fdt_as(10);
-	r = fdt_get_base_address(fdt, fdt_path_offset(fdt, "/soc"));
+	node = fdt_path_offset(fdt, "/soc");
+	naddr = fdt_address_cells(fdt, node);
+	prop = fdt_getprop(fdt, node, "ranges", &size);
+	r = fdt_translate_address(fdt, node, prop + naddr);
 	disable_tlb(10);
 
 	return r;
@@ -205,10 +210,10 @@ int last_stage_init(void)
 	/* -kernel boot */
 	prop = fdt_getprop(fdt, chosen, "qemu,boot-kernel", &len);
 	if (prop && (len >= 8))
-		setenv_hex("qemu_kernel_addr", *prop);
+		env_set_hex("qemu_kernel_addr", *prop);
 
 	/* Give the user a variable for the host fdt */
-	setenv_hex("fdt_addr_r", (ulong)fdt);
+	env_set_hex("fdt_addr_r", (ulong)fdt);
 
 	return 0;
 }

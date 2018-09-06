@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
  * Command for accessing Arcturus factory environment.
  *
  * Copyright 2013-2015 Arcturus Networks Inc.
  *           http://www.arcturusnetworks.com/products/ucp1020/
  *           by Oleksandr G Zhadan et al.
- *
- * SPDX-License-Identifier: GPL-2.0+ BSD-3-Clause
  *
  */
 
@@ -138,7 +137,7 @@ int get_arc_info(void)
 			printf("\t<not found>\n");
 		} else {
 			printf("\t%s\n", smac[3]);
-			setenv("SERIAL", smac[3]);
+			env_set("SERIAL", smac[3]);
 		}
 	}
 
@@ -149,10 +148,10 @@ int get_arc_info(void)
 	if (smac[2][0] == 0xFF) {
 		printf("\t<not found>\n");
 	} else {
-		char *ret = getenv("ethaddr");
+		char *ret = env_get("ethaddr");
 
 		if (strcmp(ret, __stringify(CONFIG_ETHADDR)) == 0) {
-			setenv("ethaddr", smac[2]);
+			env_set("ethaddr", smac[2]);
 			printf("\t%s (factory)\n", smac[2]);
 		} else {
 			printf("\t%s\n", ret);
@@ -160,8 +159,8 @@ int get_arc_info(void)
 	}
 
 	if (strcmp(smac[1], "00:00:00:00:00:00") == 0) {
-		setenv("eth1addr", smac[2]);
-		setenv("eth2addr", smac[2]);
+		env_set("eth1addr", smac[2]);
+		env_set("eth2addr", smac[2]);
 		return 0;
 	}
 
@@ -169,10 +168,10 @@ int get_arc_info(void)
 	if (smac[1][0] == 0xFF) {
 		printf("\t<not found>\n");
 	} else {
-		char *ret = getenv("eth1addr");
+		char *ret = env_get("eth1addr");
 
 		if (strcmp(ret, __stringify(CONFIG_ETH1ADDR)) == 0) {
-			setenv("eth1addr", smac[1]);
+			env_set("eth1addr", smac[1]);
 			printf("\t%s (factory)\n", smac[1]);
 		} else {
 			printf("\t%s\n", ret);
@@ -180,7 +179,7 @@ int get_arc_info(void)
 	}
 
 	if (strcmp(smac[0], "00:00:00:00:00:00") == 0) {
-		setenv("eth2addr", smac[1]);
+		env_set("eth2addr", smac[1]);
 		return 0;
 	}
 
@@ -188,10 +187,10 @@ int get_arc_info(void)
 	if (smac[0][0] == 0xFF) {
 		printf("\t<not found>\n");
 	} else {
-		char *ret = getenv("eth2addr");
+		char *ret = env_get("eth2addr");
 
 		if (strcmp(ret, __stringify(CONFIG_ETH2ADDR)) == 0) {
-			setenv("eth2addr", smac[0]);
+			env_set("eth2addr", smac[0]);
 			printf("\t%s (factory)\n", smac[0]);
 		} else {
 			printf("\t%s\n", ret);

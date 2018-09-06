@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002
  * Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
@@ -8,8 +9,6 @@
  *
  * (C) 2013 Atmel Corporation
  *	    Bo Shen <voice.shen@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 MEMORY { .sram : ORIGIN = CONFIG_SPL_TEXT_BASE, \
@@ -37,12 +36,17 @@ SECTIONS
 	.data : { *(SORT_BY_ALIGNMENT(.data*)) } >.sram
 
 	. = ALIGN(4);
+	.u_boot_list : { KEEP(*(SORT(.u_boot_list*))) } > .sram
+
+	. = ALIGN(4);
 	__image_copy_end = .;
 
 	.end :
 	{
 		*(.__end)
 	} >.sram
+
+	_image_binary_end = .;
 
 	.bss :
 	{

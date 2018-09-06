@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2008 by NXP Semiconductors
  * @Author: Kevin Wells
  * @Descr: LPC3250 DMA controller interface support functions
  *
  * Copyright (c) 2015 Tyco Fire Protection Products.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -96,7 +95,7 @@ int lpc32xx_dma_start_xfer(unsigned int channel,
 {
 	if (unlikely(((BIT_MASK(channel) & alloc_ch) == 0) ||
 		     (channel >= DMA_NO_OF_CHANNELS))) {
-		error("Request for xfer on unallocated channel %d", channel);
+		pr_err("Request for xfer on unallocated channel %d", channel);
 		return -1;
 	}
 	writel(BIT_MASK(channel), &dma->int_tc_clear);
@@ -117,7 +116,7 @@ int lpc32xx_dma_wait_status(unsigned int channel)
 
 	/* Check if given channel is valid */
 	if (unlikely(channel >= DMA_NO_OF_CHANNELS)) {
-		error("Request for status on unallocated channel %d", channel);
+		pr_err("Request for status on unallocated channel %d", channel);
 		return -1;
 	}
 
@@ -129,7 +128,7 @@ int lpc32xx_dma_wait_status(unsigned int channel)
 			break;
 
 		if (get_timer(start) > CONFIG_SYS_HZ) {
-			error("DMA status timeout channel %d\n", channel);
+			pr_err("DMA status timeout channel %d\n", channel);
 			return -ETIMEDOUT;
 		}
 		udelay(1);
@@ -138,7 +137,7 @@ int lpc32xx_dma_wait_status(unsigned int channel)
 	if (unlikely(readl(&dma->raw_err_stat) & BIT_MASK(channel))) {
 		setbits_le32(&dma->int_err_clear, BIT_MASK(channel));
 		setbits_le32(&dma->raw_err_stat, BIT_MASK(channel));
-		error("DMA error on channel %d\n", channel);
+		pr_err("DMA error on channel %d\n", channel);
 		return -1;
 	}
 	setbits_le32(&dma->int_tc_clear, BIT_MASK(channel));

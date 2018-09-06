@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2006 Freescale Semiconductor, Inc.
  *                    Dave Liu <daveliu@freescale.com>
@@ -10,8 +11,6 @@
  *
  * (C) Copyright 2008 - 2010
  * Heiko Schocher, DENX Software Engineering, hs@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -23,10 +22,12 @@
 #include <asm/mmu.h>
 #include <asm/processor.h>
 #include <pci.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <post.h>
 
 #include "../common/common.h"
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static uchar ivm_content[CONFIG_SYS_IVM_EEPROM_MAX_LEN];
 
@@ -261,11 +262,11 @@ int last_stage_init(void)
 	mv88e_sw_reset(name, CONFIG_KM_MVEXTSW_ADDR);
 
 	if (piggy_present()) {
-		setenv("ethact", "UEC2");
-		setenv("netdev", "eth1");
+		env_set("ethact", "UEC2");
+		env_set("netdev", "eth1");
 		puts("using PIGGY for network boot\n");
 	} else {
-		setenv("netdev", "eth0");
+		env_set("netdev", "eth0");
 		puts("using frontport for network boot\n");
 	}
 #endif
@@ -278,7 +279,7 @@ int last_stage_init(void)
 	if (dip_switch != 0) {
 		/* start bootloader */
 		puts("DIP:   Enabled\n");
-		setenv("actual_bank", "0");
+		env_set("actual_bank", "0");
 	}
 #endif
 	set_km_env();
@@ -328,13 +329,13 @@ static int fixed_sdram(void)
 	return msize;
 }
 
-phys_size_t initdram(int board_type)
+int dram_init(void)
 {
 	immap_t *im = (immap_t *)CONFIG_SYS_IMMR;
 	u32 msize = 0;
 
 	if ((in_be32(&im->sysconf.immrbar) & IMMRBAR_BASE_ADDR) != (u32)im)
-		return -1;
+		return -ENXIO;
 
 	out_be32(&im->sysconf.ddrlaw[0].bar,
 		CONFIG_SYS_DDR_BASE & LAWBAR_BAR);
@@ -348,7 +349,9 @@ phys_size_t initdram(int board_type)
 #endif
 
 	/* return total bus SDRAM size(bytes)  -- DDR */
-	return msize * 1024 * 1024;
+	gd->ram_size = msize * 1024 * 1024;
+
+	return 0;
 }
 
 int checkboard(void)

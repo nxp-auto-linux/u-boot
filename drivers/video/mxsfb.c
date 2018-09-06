@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Freescale i.MX23/i.MX28 LCDIF driver
  *
  * Copyright (C) 2011-2013 Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <malloc.h>
@@ -12,10 +11,10 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 
-#include <asm/imx-common/dma.h>
+#include <asm/mach-imx/dma.h>
 
 #include "videomodes.h"
 
@@ -36,7 +35,7 @@ __weak void mxsfb_system_setup(void)
 }
 
 /*
- * DENX M28EVK:
+ * ARIES M28EVK:
  * setenv videomode
  * video=ctfb:x:800,y:480,depth:18,mode:0,pclk:30066,
  *       le:0,ri:256,up:0,lo:45,hs:1,vs:1,sync:100663296,vmode:0
@@ -136,6 +135,9 @@ void lcdif_power_down(void)
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
 	int timeout = 1000000;
 
+	if (!panel.frameAdrs)
+		return;
+
 	writel(panel.frameAdrs, &regs->hw_lcdif_cur_buf_reg);
 	writel(panel.frameAdrs, &regs->hw_lcdif_next_buf_reg);
 	writel(LCDIF_CTRL1_VSYNC_EDGE_IRQ, &regs->hw_lcdif_ctrl1_clr);
@@ -158,7 +160,7 @@ void *video_hw_init(void)
 	puts("Video: ");
 
 	/* Suck display configuration from "videomode" variable */
-	penv = getenv("videomode");
+	penv = env_get("videomode");
 	if (!penv) {
 		puts("MXSFB: 'videomode' variable not set!\n");
 		return NULL;

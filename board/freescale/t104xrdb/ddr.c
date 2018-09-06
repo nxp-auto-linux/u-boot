@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -77,6 +76,8 @@ found:
 	 */
 #ifdef CONFIG_SYS_FSL_DDR4
 	popts->half_strength_driver_enable = 1;
+	/* optimize cpo for erratum A-009942 */
+	popts->cpo_sample = 0x59;
 #else
 	popts->half_strength_driver_enable = 0;
 #endif
@@ -118,25 +119,24 @@ void board_mem_sleep_setup(void)
 }
 #endif
 
-phys_size_t initdram(int board_type)
+int dram_init(void)
 {
 	phys_size_t dram_size;
 
 #if defined(CONFIG_SPL_BUILD) || !defined(CONFIG_RAMBOOT_PBL)
 	puts("Initializing....using SPD\n");
-
 	dram_size = fsl_ddr_sdram();
-
-	dram_size = setup_ddr_tlbs(dram_size / 0x100000);
-	dram_size *= 0x100000;
-
 #else
 	dram_size =  fsl_ddr_sdram_size();
 #endif
+	dram_size = setup_ddr_tlbs(dram_size / 0x100000);
+	dram_size *= 0x100000;
 
 #if defined(CONFIG_DEEP_SLEEP) && !defined(CONFIG_SPL_BUILD)
 	fsl_dp_resume();
 #endif
 
-	return dram_size;
+	gd->ram_size = dram_size;
+
+	return 0;
 }

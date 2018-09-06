@@ -1,14 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2009-2010 Amit Kucheria <amit.kucheria@canonical.com>
  * Copyright (C) 2010 Freescale Semiconductor, Inc.
  * Copyright (C) 2009-2012 Genesi USA, Inc.
- *
- * The code contained herein is licensed under the GNU General Public
- * License. You may obtain a copy of the GNU General Public License
- * Version 2 or later at the following locations:
- *
- * http://www.opensource.org/licenses/gpl-license.html
- * http://www.gnu.org/copyleft/gpl.html
  */
 
 /*
@@ -19,7 +13,7 @@
 #ifndef __IOMUX_MX51_H__
 #define __IOMUX_MX51_H__
 
-#include <asm/imx-common/iomux-v3.h>
+#include <asm/mach-imx/iomux-v3.h>
 
 /* Pad control groupings */
 #define MX51_UART_PAD_CTRL	(PAD_CTL_PUS_100K_DOWN | PAD_CTL_DSE_HIGH | \

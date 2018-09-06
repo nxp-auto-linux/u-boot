@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  (C) Copyright 2010-2015
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -219,6 +218,7 @@ static struct ns16550_platdata ns16550_com1_pdata = {
 	.base = CONFIG_SYS_NS16550_COM1,
 	.reg_shift = 2,
 	.clock = CONFIG_SYS_NS16550_CLK,
+	.fcr = UART_FCR_DEFVAL,
 };
 
 U_BOOT_DEVICE(ns16550_com1) = {

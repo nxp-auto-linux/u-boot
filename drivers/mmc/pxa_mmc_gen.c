@@ -1,15 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2010 Marek Vasut <marek.vasut@gmail.com>
  *
  * Loosely based on the old code and Linux's PXA MMC driver
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/regs-mmc.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <malloc.h>
 #include <mmc.h>
@@ -313,7 +312,7 @@ static int pxa_mmc_request(struct mmc *mmc, struct mmc_cmd *cmd,
 	return 0;
 }
 
-static void pxa_mmc_set_ios(struct mmc *mmc)
+static int pxa_mmc_set_ios(struct mmc *mmc)
 {
 	struct pxa_mmc_priv *priv = mmc->priv;
 	struct pxa_mmc_regs *regs = priv->regs;
@@ -322,13 +321,13 @@ static void pxa_mmc_set_ios(struct mmc *mmc)
 
 	if (!mmc->clock) {
 		pxa_mmc_stop_clock(mmc);
-		return;
+		return 0;
 	}
 
 	/* PXA3xx can do 26MHz with special settings. */
 	if (mmc->clock == 26000000) {
 		writel(0x7, &regs->clkrt);
-		return;
+		return 0;
 	}
 
 	/* Set clock to the card the usual way. */
@@ -342,6 +341,8 @@ static void pxa_mmc_set_ios(struct mmc *mmc)
 	}
 
 	writel(pxa_mmc_clock, &regs->clkrt);
+
+	return 0;
 }
 
 static int pxa_mmc_init(struct mmc *mmc)

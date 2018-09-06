@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Extracted from gic_64.S
  */
@@ -58,4 +57,25 @@ ENTRY(ccn504_set_qos)
 
 	ret
 ENDPROC(ccn504_set_qos)
+
+/*************************************************************************
+ *
+ * void ccn504_set_aux(CCI_AUX_CONTROL_BASE, Value);
+ *
+ * Initialize AUX control settings
+ *
+ *************************************************************************/
+ENTRY(ccn504_set_aux)
+	/*
+	 * x0: CCI_AUX_CONTROL_BASE
+	 * x1: Value
+	 */
+
+	ldr	x9, [x0]
+	mov	x10, x1
+	orr	x9, x9, x10
+	str	x9, [x0]
+
+	ret
+ENDPROC(ccn504_set_aux)
 

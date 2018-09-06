@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
  * (C) Copyright 2011 NVIDIA Corporation <www.nvidia.com>
  * (C) Copyright 2006 Detlev Zundel, dzu@denx.de
  * (C) Copyright 2006 DENX Software Engineering
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -14,10 +13,11 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/funcmux.h>
 #include <asm/arch-tegra/clk_rst.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/gpio.h>
 #include <fdtdec.h>
 #include <bouncebuf.h>
+#include <dm.h>
 #include "tegra_nand.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -28,6 +28,13 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /* ECC bytes to be generated for tag data */
 #define TAG_ECC_BYTES			4
+
+static const struct udevice_id tegra_nand_dt_ids[] = {
+	{
+		.compatible = "nvidia,tegra20-nand",
+	},
+	{ /* sentinel */ }
+};
 
 /* 64 byte oob block info for large page (== 2KB) device
  *
@@ -91,9 +98,11 @@ struct nand_drv {
 	struct fdt_nand config;
 };
 
-static struct nand_drv nand_ctrl;
-static struct mtd_info *our_mtd;
-static struct nand_chip nand_chip[CONFIG_SYS_MAX_NAND_DEVICE];
+struct tegra_nand_info {
+	struct udevice *dev;
+	struct nand_drv nand_ctrl;
+	struct nand_chip nand_chip;
+};
 
 /**
  * Wait for command completion
@@ -143,10 +152,10 @@ static int nand_waitfor_cmd_completion(struct nand_ctlr *reg)
  */
 static uint8_t read_byte(struct mtd_info *mtd)
 {
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 	struct nand_drv *info;
 
-	info = (struct nand_drv *)chip->priv;
+	info = (struct nand_drv *)nand_get_controller_data(chip);
 
 	writel(CMD_GO | CMD_PIO | CMD_RX | CMD_CE0 | CMD_A_VALID,
 	       &info->reg->command);
@@ -169,8 +178,8 @@ static void read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 {
 	int i, s;
 	unsigned int reg;
-	struct nand_chip *chip = mtd->priv;
-	struct nand_drv *info = (struct nand_drv *)chip->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct nand_drv *info = (struct nand_drv *)nand_get_controller_data(chip);
 
 	for (i = 0; i < len; i += 4) {
 		s = (len - i) > 4 ? 4 : len - i;
@@ -194,11 +203,11 @@ static void read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
  */
 static int nand_dev_ready(struct mtd_info *mtd)
 {
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 	int reg_val;
 	struct nand_drv *info;
 
-	info = (struct nand_drv *)chip->priv;
+	info = (struct nand_drv *)nand_get_controller_data(chip);
 
 	reg_val = readl(&info->reg->status);
 	if (reg_val & STATUS_RBSY0)
@@ -245,10 +254,10 @@ static void nand_clear_interrupt_status(struct nand_ctlr *reg)
 static void nand_command(struct mtd_info *mtd, unsigned int command,
 	int column, int page_addr)
 {
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 	struct nand_drv *info;
 
-	info = (struct nand_drv *)chip->priv;
+	info = (struct nand_drv *)nand_get_controller_data(chip);
 
 	/*
 	 * Write out the command to the device.
@@ -453,8 +462,8 @@ static void stop_command(struct nand_ctlr *reg)
  * @param *reg_val	address of reg_val
  * @return 0 if ok, -1 on error
  */
-static int set_bus_width_page_size(struct fdt_nand *config,
-	u32 *reg_val)
+static int set_bus_width_page_size(struct mtd_info *our_mtd,
+				   struct fdt_nand *config, u32 *reg_val)
 {
 	if (config->width == 8)
 		*reg_val = CFG_BUS_WIDTH_8BIT;
@@ -512,9 +521,9 @@ static int nand_rw_page(struct mtd_info *mtd, struct nand_chip *chip,
 		return -EINVAL;
 	}
 
-	info = (struct nand_drv *)chip->priv;
+	info = (struct nand_drv *)nand_get_controller_data(chip);
 	config = &info->config;
-	if (set_bus_width_page_size(config, &reg_val))
+	if (set_bus_width_page_size(mtd, config, &reg_val))
 		return -EINVAL;
 
 	/* Need to be 4-byte aligned */
@@ -657,16 +666,9 @@ static int nand_read_page_hwecc(struct mtd_info *mtd,
  * @param buf	data buffer
  */
 static int nand_write_page_hwecc(struct mtd_info *mtd,
-	struct nand_chip *chip, const uint8_t *buf, int oob_required)
+	struct nand_chip *chip, const uint8_t *buf, int oob_required,
+	int page)
 {
-	int page;
-	struct nand_drv *info;
-
-	info = (struct nand_drv *)chip->priv;
-
-	page = (readl(&info->reg->addr_reg1) >> 16) |
-		(readl(&info->reg->addr_reg2) << 16);
-
 	nand_rw_page(mtd, chip, (uint8_t *)buf, page, 1, 1);
 	return 0;
 }
@@ -697,15 +699,9 @@ static int nand_read_page_raw(struct mtd_info *mtd,
  * @param buf	data buffer
  */
 static int nand_write_page_raw(struct mtd_info *mtd,
-		struct nand_chip *chip,	const uint8_t *buf, int oob_required)
+		struct nand_chip *chip,	const uint8_t *buf,
+		int oob_required, int page)
 {
-	int page;
-	struct nand_drv *info;
-
-	info = (struct nand_drv *)chip->priv;
-	page = (readl(&info->reg->addr_reg1) >> 16) |
-		(readl(&info->reg->addr_reg2) << 16);
-
 	nand_rw_page(mtd, chip, (uint8_t *)buf, page, 0, 1);
 	return 0;
 }
@@ -734,8 +730,8 @@ static int nand_rw_oob(struct mtd_info *mtd, struct nand_chip *chip,
 
 	if (((int)chip->oob_poi) & 0x03)
 		return -EINVAL;
-	info = (struct nand_drv *)chip->priv;
-	if (set_bus_width_page_size(&info->config, &reg_val))
+	info = (struct nand_drv *)nand_get_controller_data(chip);
+	if (set_bus_width_page_size(mtd, &info->config, &reg_val))
 		return -EINVAL;
 
 	stop_command(info->reg);
@@ -896,51 +892,39 @@ static void setup_timing(unsigned timing[FDT_NAND_TIMING_COUNT],
 /**
  * Decode NAND parameters from the device tree
  *
- * @param blob	Device tree blob
- * @param node	Node containing "nand-flash" compatble node
+ * @param dev		Driver model device
+ * @param config	Device tree NAND configuration
  * @return 0 if ok, -ve on error (FDT_ERR_...)
  */
-static int fdt_decode_nand(const void *blob, int node, struct fdt_nand *config)
+static int fdt_decode_nand(struct udevice *dev, struct fdt_nand *config)
 {
 	int err;
 
-	config->reg = (struct nand_ctlr *)fdtdec_get_addr(blob, node, "reg");
-	config->enabled = fdtdec_get_is_enabled(blob, node);
-	config->width = fdtdec_get_int(blob, node, "nvidia,nand-width", 8);
-	err = gpio_request_by_name_nodev(blob, node, "nvidia,wp-gpios", 0,
-				 &config->wp_gpio, GPIOD_IS_OUT);
+	config->reg = (struct nand_ctlr *)dev_read_addr(dev);
+	config->enabled = dev_read_enabled(dev);
+	config->width = dev_read_u32_default(dev, "nvidia,nand-width", 8);
+	err = gpio_request_by_name(dev, "nvidia,wp-gpios", 0, &config->wp_gpio,
+				   GPIOD_IS_OUT);
 	if (err)
 		return err;
-	err = fdtdec_get_int_array(blob, node, "nvidia,timing",
-			config->timing, FDT_NAND_TIMING_COUNT);
+	err = dev_read_u32_array(dev, "nvidia,timing", config->timing,
+				 FDT_NAND_TIMING_COUNT);
 	if (err < 0)
 		return err;
-
-	/* Now look up the controller and decode that */
-	node = fdt_next_node(blob, node, NULL);
-	if (node < 0)
-		return node;
 
 	return 0;
 }
 
-/**
- * Board-specific NAND initialization
- *
- * @param nand	nand chip info structure
- * @return 0, after initialized, -1 on error
- */
-int tegra_nand_init(struct nand_chip *nand, int devnum)
+static int tegra_probe(struct udevice *dev)
 {
-	struct nand_drv *info = &nand_ctrl;
+	struct tegra_nand_info *tegra = dev_get_priv(dev);
+	struct nand_chip *nand = &tegra->nand_chip;
+	struct nand_drv *info = &tegra->nand_ctrl;
 	struct fdt_nand *config = &info->config;
-	int node, ret;
+	struct mtd_info *our_mtd;
+	int ret;
 
-	node = fdtdec_next_compatible(gd->fdt_blob, 0,
-				      COMPAT_NVIDIA_TEGRA20_NAND);
-	if (node < 0)
-		return -1;
-	if (fdt_decode_nand(gd->fdt_blob, node, config)) {
+	if (fdt_decode_nand(dev, config)) {
 		printf("Could not decode nand-flash in device tree\n");
 		return -1;
 	}
@@ -963,7 +947,7 @@ int tegra_nand_init(struct nand_chip *nand, int devnum)
 	nand->ecc.strength = 1;
 	nand->select_chip = nand_select_chip;
 	nand->dev_ready  = nand_dev_ready;
-	nand->priv = &nand_ctrl;
+	nand_set_controller_data(nand, &tegra->nand_ctrl);
 
 	/* Disable subpage writes as we do not provide ecc->hwctl */
 	nand->options |= NAND_NO_SUBPAGE_WRITE;
@@ -976,8 +960,7 @@ int tegra_nand_init(struct nand_chip *nand, int devnum)
 
 	dm_gpio_set_value(&config->wp_gpio, 1);
 
-	our_mtd = &nand_info[devnum];
-	our_mtd->priv = nand;
+	our_mtd = nand_to_mtd(nand);
 	ret = nand_scan_ident(our_mtd, CONFIG_SYS_NAND_MAX_CHIPS, NULL);
 	if (ret)
 		return ret;
@@ -989,17 +972,31 @@ int tegra_nand_init(struct nand_chip *nand, int devnum)
 	if (ret)
 		return ret;
 
-	ret = nand_register(devnum);
-	if (ret)
+	ret = nand_register(0, our_mtd);
+	if (ret) {
+		dev_err(dev, "Failed to register MTD: %d\n", ret);
 		return ret;
+	}
 
 	return 0;
 }
 
+U_BOOT_DRIVER(tegra_nand) = {
+	.name = "tegra-nand",
+	.id = UCLASS_MTD,
+	.of_match = tegra_nand_dt_ids,
+	.probe = tegra_probe,
+	.priv_auto_alloc_size = sizeof(struct tegra_nand_info),
+};
+
 void board_nand_init(void)
 {
-	struct nand_chip *nand = &nand_chip[0];
+	struct udevice *dev;
+	int ret;
 
-	if (tegra_nand_init(nand, 0))
-		puts("Tegra NAND init failed\n");
+	ret = uclass_get_device_by_driver(UCLASS_MTD,
+					  DM_GET_DRIVER(tegra_nand), &dev);
+	if (ret && ret != -ENODEV)
+		pr_err("Failed to initialize %s. (error %d)\n", dev->name,
+		       ret);
 }

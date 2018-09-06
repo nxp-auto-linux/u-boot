@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010 Freescale Semiconductor, Inc.
  *
@@ -6,8 +7,6 @@
  * Description:
  * ULI 526x Ethernet port driver.
  * Based on the Linux driver: drivers/net/tulip/uli526x.c
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -166,7 +165,6 @@ static int mode = 8;
 
 /* function declaration -- */
 static int uli526x_start_xmit(struct eth_device *dev, void *packet, int length);
-static const struct ethtool_ops netdev_ethtool_ops;
 static u16 read_srom_word(long, int);
 static void uli526x_descriptor_init(struct uli526x_board_info *, unsigned long);
 static void allocate_rx_buffer(struct uli526x_board_info *);

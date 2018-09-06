@@ -1,11 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  linux/arch/arm/lib/memset.S
  *
  *  Copyright (C) 1995-2000 Russell King
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
  *
  *  ASM optimised string functions
  */
@@ -16,7 +13,7 @@
 	.align	5
 
 	.syntax unified
-#if defined(CONFIG_SYS_THUMB_BUILD) && !defined(MEMSET_NO_THUMB_BUILD)
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD) && !defined(MEMSET_NO_THUMB_BUILD)
 	.thumb
 	.thumb_func
 #endif

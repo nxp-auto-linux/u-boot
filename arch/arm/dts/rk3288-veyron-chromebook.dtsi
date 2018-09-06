@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Google Veyron (and derivatives) board device tree source
  *
  * Copyright 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <dt-bindings/clock/rockchip,rk808.h>
@@ -13,6 +12,8 @@
 / {
 	aliases {
 		i2c20 = &i2c_tunnel;
+		video0 = &vopl;
+		video1 = &vopb;
 	};
 
 	gpio_keys: gpio-keys {
@@ -91,12 +92,16 @@
 
 &spi0 {
 	status = "okay";
+	spi-activate-delay = <100>;
+	spi-max-frequency = <3000000>;
+	spi-deactivate-delay = <200>;
 
 	cros_ec: ec@0 {
 		compatible = "google,cros-ec-spi";
 		spi-max-frequency = <3000000>;
 		interrupt-parent = <&gpio7>;
 		interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
+		ec-interrupt = <&gpio7 7 GPIO_ACTIVE_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&ec_int>;
 		reg = <0>;

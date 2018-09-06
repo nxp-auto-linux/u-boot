@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * This file is part of UBIFS.
  *
  * Copyright (C) 2006-2008 Nokia Corporation.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Authors: Artem Bityutskiy (Битюцкий Артём)
  *          Adrian Hunter
@@ -31,6 +30,7 @@
 #include <common.h>
 #include <malloc.h>
 #include <memalign.h>
+#include <linux/bug.h>
 #include <linux/log2.h>
 #include <linux/stat.h>
 #include <linux/err.h>
@@ -47,7 +47,6 @@ struct vfsmount;
 #define INODE_LOCKED_MAX	64
 
 struct super_block *ubifs_sb;
-LIST_HEAD(super_blocks);
 
 static struct inode *inodes_locked_down[INODE_LOCKED_MAX];
 
@@ -1334,7 +1333,10 @@ static int check_free_space(struct ubifs_info *c)
 static int mount_ubifs(struct ubifs_info *c)
 {
 	int err;
-	long long x, y;
+	long long x;
+#ifndef CONFIG_UBIFS_SILENCE_MSG
+	long long y;
+#endif
 	size_t sz;
 
 	c->ro_mount = !!(c->vfs_sb->s_flags & MS_RDONLY);
@@ -1613,7 +1615,9 @@ static int mount_ubifs(struct ubifs_info *c)
 		  c->vi.ubi_num, c->vi.vol_id, c->vi.name,
 		  c->ro_mount ? ", R/O mode" : "");
 	x = (long long)c->main_lebs * c->leb_size;
+#ifndef CONFIG_UBIFS_SILENCE_MSG
 	y = (long long)c->log_lebs * c->leb_size + c->max_bud_bytes;
+#endif
 	ubifs_msg(c, "LEB size: %d bytes (%d KiB), min./max. I/O unit sizes: %d bytes/%d bytes",
 		  c->leb_size, c->leb_size >> 10, c->min_io_size,
 		  c->max_write_size);
@@ -2424,10 +2428,10 @@ retry:
 	s->s_type = type;
 #ifndef __UBOOT__
 	strlcpy(s->s_id, type->name, sizeof(s->s_id));
+	list_add_tail(&s->s_list, &super_blocks);
 #else
 	strncpy(s->s_id, type->name, sizeof(s->s_id));
 #endif
-	list_add_tail(&s->s_list, &super_blocks);
 	hlist_add_head(&s->s_instances, &type->fs_supers);
 #ifndef __UBOOT__
 	spin_unlock(&sb_lock);

@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2015 National Instruments
  *
  * (C) Copyright 2015
  * Joe Hershberger <joe.hershberger@ni.com>
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <asm/eth-raw-os.h>
@@ -76,6 +75,10 @@ static int _raw_packet_start(const char *ifname, unsigned char *ethmac,
 		printf("Failed to set promiscuous mode: %d %s\n"
 		       "Falling back to the old \"flags\" way...\n",
 			errno, strerror(errno));
+		if (strlen(ifname) >= IFNAMSIZ) {
+			printf("Interface name %s is too long.\n", ifname);
+			return -EINVAL;
+		}
 		strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 		if (ioctl(priv->sd, SIOCGIFFLAGS, &ifr) < 0) {
 			printf("Failed to read flags: %d %s\n", errno,
@@ -194,7 +197,8 @@ int sandbox_eth_raw_os_send(void *packet, int length,
 		addr.sin_family = AF_INET;
 		addr.sin_port = udph->source;
 		addr.sin_addr.s_addr = iph->saddr;
-		retval = bind(priv->local_bind_sd, &addr, sizeof(addr));
+		retval = bind(priv->local_bind_sd, (struct sockaddr *)&addr,
+			      sizeof(addr));
 		if (retval < 0)
 			printf("Failed to bind: %d %s\n", errno,
 			       strerror(errno));

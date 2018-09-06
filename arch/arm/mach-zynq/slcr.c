@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (c) 2013 Xilinx Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright (c) 2013 - 2017 Xilinx Inc.
  */
 
 #include <common.h>
@@ -9,10 +8,12 @@
 #include <malloc.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/arch/clk.h>
 
 #define SLCR_LOCK_MAGIC		0x767B
 #define SLCR_UNLOCK_MAGIC	0xDF0D
+
+#define SLCR_NAND_L2_SEL		0x10
+#define SLCR_NAND_L2_SEL_MASK		0x1F
 
 #define SLCR_USB_L1_SEL			0x04
 
@@ -36,6 +37,14 @@ struct zynq_slcr_mio_get_status {
 	u32 check_val;
 };
 
+static const int nand8_pins[] = {
+	0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
+};
+
+static const int nand16_pins[] = {
+	16, 17, 18, 19, 20, 21, 22, 23
+};
+
 static const int usb0_pins[] = {
 	28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
 };
@@ -45,6 +54,20 @@ static const int usb1_pins[] = {
 };
 
 static const struct zynq_slcr_mio_get_status mio_periphs[] = {
+	{
+		"nand8",
+		nand8_pins,
+		ARRAY_SIZE(nand8_pins),
+		SLCR_NAND_L2_SEL_MASK,
+		SLCR_NAND_L2_SEL,
+	},
+	{
+		"nand16",
+		nand16_pins,
+		ARRAY_SIZE(nand16_pins),
+		SLCR_NAND_L2_SEL_MASK,
+		SLCR_NAND_L2_SEL,
+	},
 	{
 		"usb0",
 		usb0_pins,
@@ -97,34 +120,6 @@ void zynq_slcr_cpu_reset(void)
 	clrbits_le32(&slcr_base->reboot_status, 0xF000000);
 
 	writel(1, &slcr_base->pss_rst_ctrl);
-}
-
-/* Setup clk for network */
-void zynq_slcr_gem_clk_setup(u32 gem_id, unsigned long clk_rate)
-{
-	int ret;
-
-	zynq_slcr_unlock();
-
-	if (gem_id > 1) {
-		printf("Non existing GEM id %d\n", gem_id);
-		goto out;
-	}
-
-	ret = zynq_clk_set_rate(gem0_clk + gem_id, clk_rate);
-	if (ret)
-		goto out;
-
-	if (gem_id) {
-		/* Configure GEM_RCLK_CTRL */
-		writel(1, &slcr_base->gem1_rclk_ctrl);
-	} else {
-		/* Configure GEM_RCLK_CTRL */
-		writel(1, &slcr_base->gem0_rclk_ctrl);
-	}
-	udelay(100000);
-out:
-	zynq_slcr_lock();
 }
 
 void zynq_slcr_devcfg_disable(void)
@@ -183,8 +178,9 @@ u32 zynq_slcr_get_idcode(void)
 int zynq_slcr_get_mio_pin_status(const char *periph)
 {
 	const struct zynq_slcr_mio_get_status *mio_ptr;
-	int val, i, j;
+	int val, j;
 	int mio = 0;
+	u32 i;
 
 	for (i = 0; i < ARRAY_SIZE(mio_periphs); i++) {
 		if (strcmp(periph, mio_periphs[i].peri_name) == 0) {

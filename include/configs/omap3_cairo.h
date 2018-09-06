@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuration settings for the QUIPOS Cairo board.
  *
@@ -13,8 +14,6 @@
  *	Syed Mohammed Khasim <khasim@ti.com>
  *
  * Also derived from include/configs/omap3_beagle.h
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __OMAP3_CAIRO_CONFIG_H
@@ -29,22 +28,13 @@
  * other needs.  We use this rather than the inherited defines from
  * ti_armv7_common.h for backwards compatibility.
  */
-#define CONFIG_SYS_TEXT_BASE		0x80100000
 #define CONFIG_SYS_UBOOT_START		CONFIG_SYS_TEXT_BASE
 #define CONFIG_SPL_BSS_START_ADDR	0x80000000
 #define CONFIG_SPL_BSS_MAX_SIZE		(512 << 10)	/* 512 KB */
 #define CONFIG_SYS_SPL_MALLOC_START	0x80208000
 #define CONFIG_SYS_SPL_MALLOC_SIZE	0x100000
 
-#define CONFIG_NAND
-
 #include <configs/ti_omap3_common.h>
-
-/*
- * Display CPU and Board information
- */
-#define CONFIG_DISPLAY_CPUINFO		1
-#define CONFIG_DISPLAY_BOARDINFO	1
 
 #define CONFIG_MISC_INIT_R
 
@@ -57,11 +47,6 @@
 /* Probe all devices */
 #define CONFIG_SYS_I2C_NOPROBES		{ {0x0, 0x0} }
 
-#define CONFIG_NAND
-
-/* commands to include */
-#define CONFIG_CMD_NAND_LOCK_UNLOCK
-
 /*
  * TWL4030
  */
@@ -70,13 +55,8 @@
 /*
  * Board NAND Info.
  */
-#define CONFIG_NAND_OMAP_GPMC
 #define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of NAND */
 							/* devices */
-/* override default CONFIG_BOOTDELAY */
-#undef CONFIG_BOOTDELAY
-#define CONFIG_BOOTDELAY	0
-
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"machid=ffffffff\0" \
 	"fdt_high=0x87000000\0" \
@@ -185,21 +165,14 @@
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_FLASH_BASE
 #define CONFIG_SYS_ONENAND_BASE		ONENAND_MAP
 
-#define CONFIG_ENV_IS_IN_NAND		1
 #define CONFIG_ENV_SIZE			(128 << 10)	/* 128 KiB */
 #define ONENAND_ENV_OFFSET		0x260000 /* environment starts here */
-#define SMNAND_ENV_OFFSET		0x260000 /* environment starts here */
 
 #define CONFIG_SYS_ENV_SECT_SIZE	(128 << 10)	/* 128 KiB */
-#define CONFIG_ENV_OFFSET		SMNAND_ENV_OFFSET
-#define CONFIG_ENV_ADDR			SMNAND_ENV_OFFSET
-
-#define CONFIG_OMAP3_SPI
-
-#define CONFIG_SYS_CACHELINE_SIZE	64
+#define CONFIG_ENV_OFFSET		0x260000
+#define CONFIG_ENV_ADDR			0x260000
 
 /* Defines for SPL */
-#define CONFIG_SPL_OMAP3_ID_NAND
 
 /* NAND boot config */
 #define CONFIG_SYS_NAND_5_ADDR_CYCLE
@@ -216,9 +189,7 @@
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x80000
 /* NAND: SPL falcon mode configs */
 #ifdef CONFIG_SPL_OS_BOOT
-#define CONFIG_CMD_SPL_NAND_OFS		0x240000
 #define CONFIG_SYS_NAND_SPL_KERNEL_OFFS	0x280000
-#define CONFIG_CMD_SPL_WRITE_SIZE	0x2000
 #endif
 
 /* env defaults */
@@ -231,8 +202,6 @@
  * are needed and peripheral clocks for UART2 must be enabled in
  * function per_clocks_enable().
  */
-#undef CONFIG_CONS_INDEX
-#define CONFIG_CONS_INDEX		2
 #ifdef CONFIG_SPL_BUILD
 #undef CONFIG_SYS_NS16550_COM3
 #define CONFIG_SYS_NS16550_COM2		OMAP34XX_UART2
@@ -240,9 +209,8 @@
 #define CONFIG_SERIAL2
 #endif
 
-/* Provide MACH_TYPE for compatibility with non-DT kernels */
-#define MACH_TYPE_OMAP3_CAIRO	3063
-#define CONFIG_MACH_TYPE	MACH_TYPE_OMAP3_CAIRO
+/* Provide the MACH_TYPE value the vendor kernel requires */
+#define CONFIG_MACH_TYPE	3063
 
 /*-----------------------------------------------------------------------
  * FLASH and environment organization

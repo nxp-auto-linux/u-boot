@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2015 Linaro
  * Peter Griffin <peter.griffin@linaro.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <dm.h>
@@ -19,6 +18,7 @@
 #include <asm/arch/periph.h>
 #include <asm/arch/pinmux.h>
 #include <asm/arch/hi6220.h>
+#include <asm/armv8/mmu.h>
 
 /*TODO drop this table in favour of device tree */
 static const struct hikey_gpio_platdata hi6220_gpio[] = {
@@ -70,13 +70,15 @@ U_BOOT_DEVICES(hi6220_gpios) = {
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if !CONFIG_IS_ENABLED(OF_CONTROL)
+
 static const struct pl01x_serial_platdata serial_platdata = {
 #if CONFIG_CONS_INDEX == 1
 	.base = HI6220_UART0_BASE,
 #elif CONFIG_CONS_INDEX == 4
 	.base = HI6220_UART3_BASE,
 #else
-#error "Unsuported console index value."
+#error "Unsupported console index value."
 #endif
 	.type = TYPE_PL011,
 	.clock = 19200000
@@ -86,6 +88,29 @@ U_BOOT_DEVICE(hikey_seriala) = {
 	.name = "serial_pl01x",
 	.platdata = &serial_platdata,
 };
+#endif
+
+static struct mm_region hikey_mem_map[] = {
+	{
+		.virt = 0x0UL,
+		.phys = 0x0UL,
+		.size = 0x80000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			 PTE_BLOCK_INNER_SHARE
+	}, {
+		.virt = 0x80000000UL,
+		.phys = 0x80000000UL,
+		.size = 0x80000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			 PTE_BLOCK_NON_SHARE |
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
+		/* List terminator */
+		0,
+	}
+};
+
+struct mm_region *mem_map = hikey_mem_map;
 
 #ifdef CONFIG_BOARD_EARLY_INIT_F
 int board_uart_init(void)
@@ -269,12 +294,46 @@ static void mmc1_reset_clk(void)
 		data = readl(&peri_sc->rst0_stat);
 	} while (!(data & PERI_RST0_MMC1));
 
-	/* unreset mmc0 clock domain */
+	/* unreset mmc1 clock domain */
 	writel(PERI_RST0_MMC1, &peri_sc->rst0_dis);
 	do {
 		data = readl(&peri_sc->rst0_stat);
 	} while (data & PERI_RST0_MMC1);
 }
+
+static void mmc0_reset_clk(void)
+{
+	unsigned int data;
+
+	/* disable mmc0 bus clock */
+	hi6220_clk_disable(PERI_CLK0_MMC0, &peri_sc->clk0_dis);
+
+	/* enable mmc0 bus clock */
+	hi6220_clk_enable(PERI_CLK0_MMC0, &peri_sc->clk0_en);
+
+	/* reset mmc0 clock domain */
+	writel(PERI_RST0_MMC0, &peri_sc->rst0_en);
+
+	/* bypass mmc0 clock phase */
+	data = readl(&peri_sc->ctrl2);
+	data |= 3;
+	writel(data, &peri_sc->ctrl2);
+
+	/* disable low power */
+	data = readl(&peri_sc->ctrl13);
+	data |= 1 << 3;
+	writel(data, &peri_sc->ctrl13);
+	do {
+		data = readl(&peri_sc->rst0_stat);
+	} while (!(data & PERI_RST0_MMC0));
+
+	/* unreset mmc0 clock domain */
+	writel(PERI_RST0_MMC0, &peri_sc->rst0_dis);
+	do {
+		data = readl(&peri_sc->rst0_stat);
+	} while (data & PERI_RST0_MMC0);
+}
+
 
 /* PMU SSI is the IP that maps the external PMU hi6553 registers as IO */
 static void hi6220_pmussi_init(void)
@@ -315,15 +374,16 @@ int board_init(void)
 	return 0;
 }
 
-#ifdef CONFIG_GENERIC_MMC
+#ifdef CONFIG_MMC
 
 static int init_dwmmc(void)
 {
-	int ret;
+	int ret = 0;
 
-#ifdef CONFIG_DWMMC
+#ifdef CONFIG_MMC_DW
 
-	/* mmc0 clocks are already configured by ATF */
+	/* mmc0 pll is already configured by ATF */
+	mmc0_reset_clk();
 	ret = hi6220_pinmux_config(PERIPH_ID_SDMMC0);
 	if (ret)
 		printf("%s: Error configuring pinmux for eMMC (%d)\n"
@@ -384,14 +444,44 @@ int dram_init(void)
 	return 0;
 }
 
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
+	/*
+	 * Reserve regions below from DT memory node (which gets generated
+	 * by U-Boot from the dram banks in arch_fixup_fdt() before booting
+	 * the kernel. This will then match the kernel hikey dts memory node.
+	 *
+	 *  0x05e0,0000 - 0x05ef,ffff: MCU firmware runtime using
+	 *  0x05f0,1000 - 0x05f0,1fff: Reboot reason
+	 *  0x06df,f000 - 0x06df,ffff: Mailbox message data
+	 *  0x0740,f000 - 0x0740,ffff: MCU firmware section
+	 *  0x21f0,0000 - 0x21ff,ffff: pstore/ramoops buffer
+	 *  0x3e00,0000 - 0x3fff,ffff: OP-TEE
+	*/
+
 	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
-	gd->bd->bi_dram[0].size = PHYS_SDRAM_1_SIZE;
+	gd->bd->bi_dram[0].size = 0x05e00000;
+
+	gd->bd->bi_dram[1].start = 0x05f00000;
+	gd->bd->bi_dram[1].size = 0x00001000;
+
+	gd->bd->bi_dram[2].start = 0x05f02000;
+	gd->bd->bi_dram[2].size = 0x00efd000;
+
+	gd->bd->bi_dram[3].start = 0x06e00000;
+	gd->bd->bi_dram[3].size = 0x0060f000;
+
+	gd->bd->bi_dram[4].start = 0x07410000;
+	gd->bd->bi_dram[4].size = 0x1aaf0000;
+
+	gd->bd->bi_dram[5].start = 0x22000000;
+	gd->bd->bi_dram[5].size = 0x1c000000;
+
+	return 0;
 }
 
-/* Use the Watchdog to cause reset */
 void reset_cpu(ulong addr)
 {
-	/* TODO program the watchdog */
+	writel(0x48698284, &ao_sc->stat0);
+	wfi();
 }

@@ -20,7 +20,7 @@
 	EXPORT_FUNC(puts, void, puts, const char *)
 	EXPORT_FUNC(printf, int, printf, const char*, ...)
 	EXPORT_FUNC(fprintf, int, fprintf, int, const char*, ...)
-#if defined(CONFIG_X86) || defined(CONFIG_PPC)
+#if (defined(CONFIG_X86) && !defined(CONFIG_X86_64)) || defined(CONFIG_PPC)
 	EXPORT_FUNC(irq_install_handler, void, install_hdlr,
 		    int, interrupt_handler_t, void*)
 
@@ -38,8 +38,8 @@
 	EXPORT_FUNC(vprintf, int, vprintf, const char *, va_list)
 	EXPORT_FUNC(do_reset, int, do_reset, cmd_tbl_t *,
 		    int , int , char * const [])
-	EXPORT_FUNC(getenv, char  *, getenv, const char*)
-	EXPORT_FUNC(setenv, int, setenv, const char *, const char *)
+	EXPORT_FUNC(env_get, char  *, env_get, const char*)
+	EXPORT_FUNC(env_set, int, env_set, const char *, const char *)
 	EXPORT_FUNC(simple_strtoul, unsigned long, simple_strtoul,
 		    const char *, char **, unsigned int)
 	EXPORT_FUNC(strict_strtoul, int, strict_strtoul,
@@ -82,6 +82,7 @@
 		    const char *, char **, unsigned int)
 	EXPORT_FUNC(strcpy, char *, strcpy, char *dest, const char *src)
 	EXPORT_FUNC(mdelay, void, mdelay, unsigned long msec)
+	EXPORT_FUNC(memset, void *, memset, void *, int, size_t)
 #ifdef CONFIG_PHY_AQUANTIA
 	EXPORT_FUNC(mdio_get_current_dev, struct mii_dev *,
 		    mdio_get_current_dev, void)

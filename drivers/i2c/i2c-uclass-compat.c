@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -9,7 +8,7 @@
 #include <errno.h>
 #include <i2c.h>
 
-static int cur_busnum;
+static int cur_busnum __attribute__((section(".data")));
 
 static int i2c_compat_get_device(uint chip_addr, int alen,
 				 struct udevice **devp)

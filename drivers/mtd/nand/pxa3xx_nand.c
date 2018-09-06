@@ -1,31 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/mtd/nand/pxa3xx_nand.c
  *
  * Copyright © 2005 Intel Corporation
  * Copyright © 2006 Marvell International Ltd.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
 #include <malloc.h>
+#include <fdtdec.h>
 #include <nand.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/arch/cpu.h>
 #include <linux/mtd/mtd.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
 #include <linux/types.h>
 
 #include "pxa3xx_nand.h"
 
-/* Some U-Boot compatibility macros */
-#define writesl(a, d, s)	__raw_writesl((unsigned long)a, d, s)
-#define readsl(a, d, s)		__raw_readsl((unsigned long)a, d, s)
-#define writesw(a, d, s)	__raw_writesw((unsigned long)a, d, s)
-#define readsw(a, d, s)		__raw_readsw((unsigned long)a, d, s)
-#define writesb(a, d, s)	__raw_writesb((unsigned long)a, d, s)
-#define readsb(a, d, s)		__raw_readsb((unsigned long)a, d, s)
+DECLARE_GLOBAL_DATA_PTR;
 
 #define TIMEOUT_DRAIN_FIFO	5	/* in ms */
 #define	CHIP_DELAY_TIMEOUT	200
@@ -238,6 +232,7 @@ static struct pxa3xx_nand_flash builtin_flash_types[] = {
 	{ 0xba20, 16, 16, &timing[3] },
 };
 
+#ifdef CONFIG_SYS_NAND_USE_FLASH_BBT
 static u8 bbt_pattern[] = {'M', 'V', 'B', 'b', 't', '0' };
 static u8 bbt_mirror_pattern[] = {'1', 't', 'b', 'B', 'V', 'M' };
 
@@ -260,6 +255,7 @@ static struct nand_bbt_descr bbt_mirror_descr = {
 	.maxblocks = 8,		/* Last 8 blocks in each chip */
 	.pattern = bbt_mirror_pattern
 };
+#endif
 
 static struct nand_ecclayout ecc_layout_2KB_bch4bit = {
 	.eccbytes = 32,
@@ -908,7 +904,8 @@ static int prepare_set_command(struct pxa3xx_nand_info *info, int command,
 static void nand_cmdfunc(struct mtd_info *mtd, unsigned command,
 			 int column, int page_addr)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	int exec_cmd;
 
@@ -968,7 +965,8 @@ static void nand_cmdfunc_extended(struct mtd_info *mtd,
 				  const unsigned command,
 				  int column, int page_addr)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	int exec_cmd, ext_cmd_type;
 
@@ -1087,7 +1085,8 @@ static void nand_cmdfunc_extended(struct mtd_info *mtd,
 }
 
 static int pxa3xx_nand_write_page_hwecc(struct mtd_info *mtd,
-		struct nand_chip *chip, const uint8_t *buf, int oob_required)
+		struct nand_chip *chip, const uint8_t *buf, int oob_required,
+		int page)
 {
 	chip->write_buf(mtd, buf, mtd->writesize);
 	chip->write_buf(mtd, chip->oob_poi, mtd->oobsize);
@@ -1099,7 +1098,7 @@ static int pxa3xx_nand_read_page_hwecc(struct mtd_info *mtd,
 		struct nand_chip *chip, uint8_t *buf, int oob_required,
 		int page)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 
 	chip->read_buf(mtd, buf, mtd->writesize);
@@ -1125,7 +1124,8 @@ static int pxa3xx_nand_read_page_hwecc(struct mtd_info *mtd,
 
 static uint8_t pxa3xx_nand_read_byte(struct mtd_info *mtd)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	char retval = 0xFF;
 
@@ -1138,7 +1138,8 @@ static uint8_t pxa3xx_nand_read_byte(struct mtd_info *mtd)
 
 static u16 pxa3xx_nand_read_word(struct mtd_info *mtd)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	u16 retval = 0xFFFF;
 
@@ -1151,7 +1152,8 @@ static u16 pxa3xx_nand_read_word(struct mtd_info *mtd)
 
 static void pxa3xx_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	int real_len = min_t(size_t, len, info->buf_count - info->buf_start);
 
@@ -1162,7 +1164,8 @@ static void pxa3xx_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 static void pxa3xx_nand_write_buf(struct mtd_info *mtd,
 		const uint8_t *buf, int len)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	int real_len = min_t(size_t, len, info->buf_count - info->buf_start);
 
@@ -1177,7 +1180,8 @@ static void pxa3xx_nand_select_chip(struct mtd_info *mtd, int chip)
 
 static int pxa3xx_nand_waitfunc(struct mtd_info *mtd, struct nand_chip *this)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 
 	if (info->need_wait) {
@@ -1218,7 +1222,7 @@ static int pxa3xx_nand_config_flash(struct pxa3xx_nand_info *info)
 {
 	struct pxa3xx_nand_host *host = info->host[info->cs];
 	struct mtd_info *mtd = host->mtd;
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 
 	info->reg_ndcr |= (host->col_addr_cycles == 2) ? NDCR_RA_START : 0;
 	info->reg_ndcr |= (chip->page_shift == 6) ? NDCR_PG_PER_BLK : 0;
@@ -1270,7 +1274,7 @@ static int pxa3xx_nand_sensing(struct pxa3xx_nand_host *host)
 	int ret;
 
 	mtd = info->host[info->cs]->mtd;
-	chip = mtd->priv;
+	chip = mtd_to_nand(mtd);
 
 	/* configure default flash values */
 	info->reg_ndcr = 0x0; /* enable all interrupts */
@@ -1362,10 +1366,10 @@ static int pxa_ecc_init(struct pxa3xx_nand_info *info,
 
 static int pxa3xx_nand_scan(struct mtd_info *mtd)
 {
-	struct pxa3xx_nand_host *host = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct pxa3xx_nand_host *host = nand_get_controller_data(chip);
 	struct pxa3xx_nand_info *info = host->info_data;
 	struct pxa3xx_nand_platform_data *pdata = info->pdata;
-	struct nand_chip *chip = mtd->priv;
 	int ret;
 	uint16_t ecc_strength, ecc_step;
 
@@ -1485,18 +1489,18 @@ static int alloc_nand_resource(struct pxa3xx_nand_info *info)
 
 	info->variant = pxa3xx_nand_get_variant();
 	for (cs = 0; cs < pdata->num_cs; cs++) {
-		mtd = &nand_info[cs];
-		chip = (struct nand_chip *)info +
-			sizeof(struct pxa3xx_nand_host);
+		chip = (struct nand_chip *)
+			((u8 *)&info[1] + sizeof(*host) * cs);
+		mtd = nand_to_mtd(chip);
 		host = (struct pxa3xx_nand_host *)chip;
 		info->host[cs] = host;
 		host->mtd = mtd;
 		host->cs = cs;
 		host->info_data = info;
 		host->read_id_bytes = 4;
-		mtd->priv = host;
 		mtd->owner = THIS_MODULE;
 
+		nand_set_controller_data(chip, host);
 		chip->ecc.read_page	= pxa3xx_nand_read_page_hwecc;
 		chip->ecc.write_page	= pxa3xx_nand_write_page_hwecc;
 		chip->controller        = &info->controller;
@@ -1509,8 +1513,6 @@ static int alloc_nand_resource(struct pxa3xx_nand_info *info)
 		chip->options		|= NAND_NO_SUBPAGE_WRITE;
 		chip->cmdfunc		= nand_cmdfunc;
 	}
-
-	info->mmio_base = (void __iomem *)MVEBU_NAND_BASE;
 
 	/* Allocate a buffer to allow flash detection */
 	info->buf_size = INIT_BUFFER_SIZE;
@@ -1533,17 +1535,62 @@ fail_disable_clk:
 static int pxa3xx_nand_probe_dt(struct pxa3xx_nand_info *info)
 {
 	struct pxa3xx_nand_platform_data *pdata;
+	const void *blob = gd->fdt_blob;
+	int node = -1;
 
 	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
 	if (!pdata)
 		return -ENOMEM;
 
-	pdata->enable_arbiter = 1;
-	pdata->num_cs = 1;
+	/* Get address decoding nodes from the FDT blob */
+	do {
+		node = fdt_node_offset_by_compatible(blob, node,
+						     "marvell,mvebu-pxa3xx-nand");
+		if (node < 0)
+			break;
 
-	info->pdata = pdata;
+		/* Bypass disabeld nodes */
+		if (!fdtdec_get_is_enabled(blob, node))
+			continue;
 
-	return 0;
+		/* Get the first enabled NAND controler base address */
+		info->mmio_base =
+			(void __iomem *)fdtdec_get_addr_size_auto_noparent(
+					blob, node, "reg", 0, NULL, true);
+
+		pdata->num_cs = fdtdec_get_int(blob, node, "num-cs", 1);
+		if (pdata->num_cs != 1) {
+			pr_err("pxa3xx driver supports single CS only\n");
+			break;
+		}
+
+		if (fdtdec_get_bool(blob, node, "nand-enable-arbiter"))
+			pdata->enable_arbiter = 1;
+
+		if (fdtdec_get_bool(blob, node, "nand-keep-config"))
+			pdata->keep_config = 1;
+
+		/*
+		 * ECC parameters.
+		 * If these are not set, they will be selected according
+		 * to the detected flash type.
+		 */
+		/* ECC strength */
+		pdata->ecc_strength = fdtdec_get_int(blob, node,
+						     "nand-ecc-strength", 0);
+
+		/* ECC step size */
+		pdata->ecc_step_size = fdtdec_get_int(blob, node,
+						      "nand-ecc-step-size", 0);
+
+		info->pdata = pdata;
+
+		/* Currently support only a single NAND controller */
+		return 0;
+
+	} while (node >= 0);
+
+	return -EINVAL;
 }
 
 static int pxa3xx_nand_probe(struct pxa3xx_nand_info *info)
@@ -1581,8 +1628,10 @@ static int pxa3xx_nand_probe(struct pxa3xx_nand_info *info)
 			continue;
 		}
 
-		if (!ret)
-			probe_success = 1;
+		if (nand_register(cs, mtd))
+			continue;
+
+		probe_success = 1;
 	}
 
 	if (!probe_success)
@@ -1600,22 +1649,13 @@ void board_nand_init(void)
 	struct pxa3xx_nand_host *host;
 	int ret;
 
-	info = kzalloc(sizeof(*info) + (sizeof(struct mtd_info) +
-					sizeof(*host)) *
-		       CONFIG_SYS_MAX_NAND_DEVICE, GFP_KERNEL);
+	info = kzalloc(sizeof(*info) +
+		       sizeof(*host) * CONFIG_SYS_MAX_NAND_DEVICE,
+		       GFP_KERNEL);
 	if (!info)
 		return;
-
-	/*
-	 * If CONFIG_SYS_NAND_SELF_INIT is defined, each driver is responsible
-	 * for instantiating struct nand_chip, while drivers/mtd/nand/nand.c
-	 * still provides a "struct mtd_info nand_info" instance.
-	 */
-	info->host[0]->mtd = &nand_info[0];
 
 	ret = pxa3xx_nand_probe(info);
 	if (ret)
 		return;
-
-	nand_register(0);
 }

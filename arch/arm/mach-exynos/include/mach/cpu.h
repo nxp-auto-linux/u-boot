@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2010 Samsung Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _EXYNOS4_CPU_H
@@ -270,7 +269,7 @@ IS_EXYNOS_TYPE(exynos5420, 0x5420)
 IS_EXYNOS_TYPE(exynos5422, 0x5422)
 
 #define SAMSUNG_BASE(device, base)				\
-static inline unsigned int __attribute__((no_instrument_function)) \
+static inline unsigned long __attribute__((no_instrument_function)) \
 	samsung_get_base_##device(void) \
 {								\
 	if (cpu_is_exynos4()) {				\
@@ -288,9 +287,7 @@ static inline unsigned int __attribute__((no_instrument_function)) \
 SAMSUNG_BASE(adc, ADC_BASE)
 SAMSUNG_BASE(clock, CLOCK_BASE)
 SAMSUNG_BASE(ace_sfr, ACE_SFR_BASE)
-SAMSUNG_BASE(dp, DP_BASE)
 SAMSUNG_BASE(sysreg, SYSREG_BASE)
-SAMSUNG_BASE(fimd, FIMD_BASE)
 SAMSUNG_BASE(i2c, I2C_BASE)
 SAMSUNG_BASE(i2s, I2S_BASE)
 SAMSUNG_BASE(mipi_dsim, MIPI_DSIM_BASE)

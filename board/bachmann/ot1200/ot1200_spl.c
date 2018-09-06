@@ -1,14 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015, Bachmann electronic GmbH
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
 #include <spl.h>
 #include <asm/arch/mx6-ddr.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Configure MX6Q/DUAL mmdc DDR io registers */
 static struct mx6dq_iomux_ddr_regs ot1200_ddr_ioregs = {
@@ -85,6 +82,8 @@ static struct mx6_ddr_sysinfo ot1200_ddr_sysinfo = {
 	.bi_on      = 1,	/* Bank interleaving enabled */	/* war 1 */
 	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
 	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
+	.refsel = 1,		/* Refresh cycles at 32KHz */
+	.refr = 7,		/* 8 refresh commands per refresh cycle */
 };
 
 /* MT41K128M16JT-125 */
@@ -149,10 +148,4 @@ void board_init_f(ulong dummy)
 
 	/* configure MMDC for SDRAM width/size and per-model calibration */
 	ot1200_spl_dram_init();
-
-	/* Clear the BSS. */
-	memset(__bss_start, 0, __bss_end - __bss_start);
-
-	/* load/boot image from boot device */
-	board_init_r(NULL, 0);
 }

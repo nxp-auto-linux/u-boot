@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Faraday FTGMAC100 Ethernet
  *
@@ -6,8 +7,6 @@
  *
  * (C) Copyright 2010 Andes Technology
  * Macpaul Lin <macpaul@andestech.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -346,7 +345,7 @@ static void ftgmac100_set_mac(struct eth_device *dev,
 
 static void ftgmac100_set_mac_from_env(struct eth_device *dev)
 {
-	eth_getenv_enetaddr("ethaddr", dev->enetaddr);
+	eth_env_get_enetaddr("ethaddr", dev->enetaddr);
 
 	ftgmac100_set_mac(dev, dev->enetaddr);
 }
@@ -562,7 +561,7 @@ int ftgmac100_initialize(bd_t *bd)
 	memset(dev, 0, sizeof(*dev));
 	memset(priv, 0, sizeof(*priv));
 
-	sprintf(dev->name, "FTGMAC100");
+	strcpy(dev->name, "FTGMAC100");
 	dev->iobase	= CONFIG_FTGMAC100_BASE;
 	dev->init	= ftgmac100_init;
 	dev->halt	= ftgmac100_halt;

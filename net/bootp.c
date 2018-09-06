@@ -10,11 +10,11 @@
 
 #include <common.h>
 #include <command.h>
+#include <efi_loader.h>
 #include <net.h>
 #include <net/tftp.h>
 #include "bootp.h"
-#include "nfs.h"
-#ifdef CONFIG_STATUS_LED
+#ifdef CONFIG_LED_STATUS
 #include <status_led.h>
 #endif
 #ifdef CONFIG_BOOTP_RANDOM_DELAY
@@ -59,6 +59,8 @@ ulong		bootp_timeout;
 char net_nis_domain[32] = {0,}; /* Our NIS domain */
 char net_hostname[32] = {0,}; /* Our hostname */
 char net_root_path[64] = {0,}; /* Our bootpath */
+
+static ulong time_taken_max;
 
 #if defined(CONFIG_CMD_DHCP)
 static dhcp_state_t dhcp_state = INIT;
@@ -130,6 +132,8 @@ static int check_reply_packet(uchar *pkt, unsigned dest, unsigned src,
 		retval = -5;
 	else if (!bootp_match_id(net_read_u32(&bp->bp_id)))
 		retval = -6;
+	else if (memcmp(bp->bp_chaddr, net_ethaddr, HWL_ETHER) != 0)
+		retval = -7;
 
 	debug("Filtering pkt = %d\n", retval);
 
@@ -143,9 +147,14 @@ static void store_net_params(struct bootp_hdr *bp)
 {
 #if !defined(CONFIG_BOOTP_SERVERIP)
 	struct in_addr tmp_ip;
+	bool overwrite_serverip = true;
+
+#if defined(CONFIG_BOOTP_PREFER_SERVERIP)
+	overwrite_serverip = false;
+#endif
 
 	net_copy_ip(&tmp_ip, &bp->bp_siaddr);
-	if (tmp_ip.s_addr != 0)
+	if (tmp_ip.s_addr != 0 && (overwrite_serverip || !net_server_ip.s_addr))
 		net_copy_ip(&net_server_ip, &bp->bp_siaddr);
 	memcpy(net_server_ethaddr,
 	       ((struct ethernet_hdr *)net_rx_packet)->et_src, 6);
@@ -153,7 +162,8 @@ static void store_net_params(struct bootp_hdr *bp)
 #if defined(CONFIG_CMD_DHCP)
 	    !(dhcp_option_overload & OVERLOAD_FILE) &&
 #endif
-	    (strlen(bp->bp_file) > 0)) {
+	    (strlen(bp->bp_file) > 0) &&
+	    !net_boot_file_name_explicit) {
 		copy_filename(net_boot_file_name, bp->bp_file,
 			      sizeof(net_boot_file_name));
 	}
@@ -165,7 +175,7 @@ static void store_net_params(struct bootp_hdr *bp)
 	 * not contain a new value
 	 */
 	if (*net_boot_file_name)
-		setenv("bootfile", net_boot_file_name);
+		env_set("bootfile", net_boot_file_name);
 #endif
 	net_copy_ip(&net_ip, &bp->bp_yiaddr);
 }
@@ -329,7 +339,7 @@ static void bootp_process_vendor(u8 *ext, int size)
 		debug("net_nis_domain : %s\n", net_nis_domain);
 
 #if defined(CONFIG_CMD_SNTP) && defined(CONFIG_BOOTP_NTPSERVER)
-	if (net_ntp_server)
+	if (net_ntp_server.s_addr)
 		debug("net_ntp_server : %pI4\n", &net_ntp_server);
 #endif
 }
@@ -354,8 +364,8 @@ static void bootp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 	/*
 	 *	Got a good BOOTP reply.	 Copy the data into our variables.
 	 */
-#if defined(CONFIG_STATUS_LED) && defined(STATUS_LED_BOOT)
-	status_led_set(STATUS_LED_BOOT, STATUS_LED_OFF);
+#if defined(CONFIG_LED_STATUS) && defined(CONFIG_LED_STATUS_BOOT_ENABLE)
+	status_led_set(CONFIG_LED_STATUS_BOOT, CONFIG_LED_STATUS_OFF);
 #endif
 
 	store_net_params(bp);		/* Store net parameters from reply */
@@ -380,14 +390,21 @@ static void bootp_timeout_handler(void)
 {
 	ulong time_taken = get_timer(bootp_start);
 
-	if (time_taken >= TIMEOUT_MS) {
+	if (time_taken >= time_taken_max) {
 #ifdef CONFIG_BOOTP_MAY_FAIL
-		puts("\nRetry time exceeded\n");
-		net_set_state(NETLOOP_FAIL);
-#else
-		puts("\nRetry time exceeded; starting again\n");
-		net_start_again();
+		char *ethrotate;
+
+		ethrotate = env_get("ethrotate");
+		if ((ethrotate && strcmp(ethrotate, "no") == 0) ||
+		    net_restart_wrap) {
+			puts("\nRetry time exceeded\n");
+			net_set_state(NETLOOP_FAIL);
+		} else
 #endif
+		{
+			puts("\nRetry time exceeded; starting again\n");
+			net_start_again();
+		}
 	} else {
 		bootp_timeout *= 2;
 		if (bootp_timeout > 2000)
@@ -406,6 +423,26 @@ static void bootp_timeout_handler(void)
 		e += vci_strlen;				\
 	} while (0)
 
+static u8 *add_vci(u8 *e)
+{
+	char *vci = NULL;
+	char *env_vci = env_get("bootp_vci");
+
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_NET_VCI_STRING)
+	vci = CONFIG_SPL_NET_VCI_STRING;
+#elif defined(CONFIG_BOOTP_VCI_STRING)
+	vci = CONFIG_BOOTP_VCI_STRING;
+#endif
+
+	if (env_vci)
+		vci = env_vci;
+
+	if (vci)
+		put_vci(e, vci);
+
+	return e;
+}
+
 /*
  *	Initialize BOOTP extension fields in the request.
  */
@@ -415,10 +452,10 @@ static int dhcp_extended(u8 *e, int message_type, struct in_addr server_ip,
 {
 	u8 *start = e;
 	u8 *cnt;
-#if defined(CONFIG_BOOTP_PXE)
+#ifdef CONFIG_LIB_UUID
 	char *uuid;
-	u16 clientarch;
 #endif
+	int clientarch = -1;
 
 #if defined(CONFIG_BOOTP_VENDOREX)
 	u8 *x;
@@ -463,7 +500,7 @@ static int dhcp_extended(u8 *e, int message_type, struct in_addr server_ip,
 		*e++ = tmp & 0xff;
 	}
 #if defined(CONFIG_BOOTP_SEND_HOSTNAME)
-	hostname = getenv("hostname");
+	hostname = env_get("hostname");
 	if (hostname) {
 		int hostnamelen = strlen(hostname);
 
@@ -474,12 +511,19 @@ static int dhcp_extended(u8 *e, int message_type, struct in_addr server_ip,
 	}
 #endif
 
-#if defined(CONFIG_BOOTP_PXE)
+#ifdef CONFIG_BOOTP_PXE_CLIENTARCH
 	clientarch = CONFIG_BOOTP_PXE_CLIENTARCH;
-	*e++ = 93;	/* Client System Architecture */
-	*e++ = 2;
-	*e++ = (clientarch >> 8) & 0xff;
-	*e++ = clientarch & 0xff;
+#endif
+
+	if (env_get("bootp_arch"))
+		clientarch = env_get_ulong("bootp_arch", 16, clientarch);
+
+	if (clientarch > 0) {
+		*e++ = 93;	/* Client System Architecture */
+		*e++ = 2;
+		*e++ = (clientarch >> 8) & 0xff;
+		*e++ = clientarch & 0xff;
+	}
 
 	*e++ = 94;	/* Client Network Interface Identifier */
 	*e++ = 3;
@@ -487,7 +531,8 @@ static int dhcp_extended(u8 *e, int message_type, struct in_addr server_ip,
 	*e++ = 0;	/* major revision */
 	*e++ = 0;	/* minor revision */
 
-	uuid = getenv("pxeuuid");
+#ifdef CONFIG_LIB_UUID
+	uuid = env_get("pxeuuid");
 
 	if (uuid) {
 		if (uuid_str_valid(uuid)) {
@@ -503,11 +548,7 @@ static int dhcp_extended(u8 *e, int message_type, struct in_addr server_ip,
 	}
 #endif
 
-#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_NET_VCI_STRING)
-	put_vci(e, CONFIG_SPL_NET_VCI_STRING);
-#elif defined(CONFIG_BOOTP_VCI_STRING)
-	put_vci(e, CONFIG_BOOTP_VCI_STRING);
-#endif
+	e = add_vci(e);
 
 #if defined(CONFIG_BOOTP_VENDOREX)
 	x = dhcp_vendorex_prep(e);
@@ -593,14 +634,7 @@ static int bootp_extended(u8 *e)
 	*e++ = (576 - 312 + OPT_FIELD_SIZE) & 0xff;
 #endif
 
-#if defined(CONFIG_BOOTP_VCI_STRING) || \
-	(defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_NET_VCI_STRING))
-#ifdef CONFIG_SPL_BUILD
-	put_vci(e, CONFIG_SPL_NET_VCI_STRING);
-#else
-	put_vci(e, CONFIG_BOOTP_VCI_STRING);
-#endif
-#endif
+	add_vci(e);
 
 #if defined(CONFIG_BOOTP_SUBNETMASK)
 	*e++ = 1;		/* Subnet mask request */
@@ -651,6 +685,15 @@ static int bootp_extended(u8 *e)
 
 	*e++ = 255;		/* End of the list */
 
+	/*
+	 * If nothing in list, remove it altogether. Some DHCP servers get
+	 * upset by this minor faux pas and do not respond at all.
+	 */
+	if (e == start + 3) {
+		printf("*** Warning: no DHCP options requested\n");
+		e -= 3;
+	}
+
 	return e - start;
 }
 #endif
@@ -675,11 +718,18 @@ void bootp_request(void)
 	u32 bootp_id;
 	struct in_addr zero_ip;
 	struct in_addr bcast_ip;
+	char *ep;  /* Environment pointer */
 
 	bootstage_mark_name(BOOTSTAGE_ID_BOOTP_START, "bootp_start");
 #if defined(CONFIG_CMD_DHCP)
 	dhcp_state = INIT;
 #endif
+
+	ep = env_get("bootpretryperiod");
+	if (ep != NULL)
+		time_taken_max = simple_strtoul(ep, NULL, 10);
+	else
+		time_taken_max = TIMEOUT_MS;
 
 #ifdef CONFIG_BOOTP_RANDOM_DELAY		/* Random BOOTP delay */
 	if (bootp_try == 0)
@@ -845,10 +895,13 @@ static void dhcp_process_options(uchar *popt, uchar *end)
 		case 66:	/* Ignore TFTP server name */
 			break;
 		case 67:	/* Bootfile option */
-			size = truncate_sz("Bootfile",
-					   sizeof(net_boot_file_name), oplen);
-			memcpy(&net_boot_file_name, popt + 2, size);
-			net_boot_file_name[size] = 0;
+			if (!net_boot_file_name_explicit) {
+				size = truncate_sz("Bootfile",
+						   sizeof(net_boot_file_name),
+						   oplen);
+				memcpy(&net_boot_file_name, popt + 2, size);
+				net_boot_file_name[size] = 0;
+			}
 			break;
 		default:
 #if defined(CONFIG_BOOTP_VENDOREX)
@@ -949,6 +1002,7 @@ static void dhcp_send_request_packet(struct bootp_hdr *bp_offer)
 	net_write_ip(&bp->bp_giaddr, zero_ip);
 
 	memcpy(bp->bp_chaddr, net_ethaddr, 6);
+	copy_filename(bp->bp_file, net_boot_file_name, sizeof(bp->bp_file));
 
 	/*
 	 * ID is the id of the OFFER packet
@@ -995,6 +1049,9 @@ static void dhcp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 	debug("DHCPHandler: got DHCP packet: (src=%d, dst=%d, len=%d) state: "
 	      "%d\n", src, dest, len, dhcp_state);
 
+	if (net_read_ip(&bp->bp_yiaddr).s_addr == 0)
+		return;
+
 	switch (dhcp_state) {
 	case SELECTING:
 		/*
@@ -1010,6 +1067,7 @@ static void dhcp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 			    strlen(CONFIG_SYS_BOOTFILE_PREFIX)) == 0) {
 #endif	/* CONFIG_SYS_BOOTFILE_PREFIX */
 			dhcp_packet_process_options(bp);
+			efi_net_set_dhcp_ack(pkt, len);
 
 			debug("TRANSITIONING TO REQUESTING STATE\n");
 			dhcp_state = REQUESTING;

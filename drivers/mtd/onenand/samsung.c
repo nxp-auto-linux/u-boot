@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * S5PC100 OneNAND driver at U-Boot
  *
@@ -6,8 +7,6 @@
  *
  * Implementation:
  *	Emulate the pseudo BufferRAM
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,7 +18,7 @@
 #include <linux/mtd/samsung_onenand.h>
 
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 
 #define ONENAND_ERASE_STATUS		0x00
 #define ONENAND_MULTI_ERASE_SET		0x01

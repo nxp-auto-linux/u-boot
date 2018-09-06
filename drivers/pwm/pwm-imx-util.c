@@ -1,21 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * (C) Copyright 2014
  * Heiko Schocher, DENX Software Engineering, hs@denx.de.
  *
- * Basic support for the pwm modul on imx6.
+ * Basic support for the pwm module on imx6.
  *
  * Based on linux:drivers/pwm/pwm-imx.c
  * from
  * Sascha Hauer <s.hauer@pengutronix.de>
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
 #include <div64.h>
 #include <asm/arch/imx-regs.h>
 
-/* pwm_id from 0..3 */
+/* pwm_id from 0..7 */
 struct pwm_regs *pwm_id_to_reg(int pwm_id)
 {
 	switch (pwm_id) {
@@ -23,10 +22,22 @@ struct pwm_regs *pwm_id_to_reg(int pwm_id)
 		return (struct pwm_regs *)PWM1_BASE_ADDR;
 	case 1:
 		return (struct pwm_regs *)PWM2_BASE_ADDR;
+#ifdef CONFIG_MX6
 	case 2:
 		return (struct pwm_regs *)PWM3_BASE_ADDR;
 	case 3:
 		return (struct pwm_regs *)PWM4_BASE_ADDR;
+#endif
+#ifdef CONFIG_MX6SX
+	case 4:
+		return (struct pwm_regs *)PWM5_BASE_ADDR;
+	case 5:
+		return (struct pwm_regs *)PWM6_BASE_ADDR;
+	case 6:
+		return (struct pwm_regs *)PWM7_BASE_ADDR;
+	case 7:
+		return (struct pwm_regs *)PWM8_BASE_ADDR;
+#endif
 	default:
 		printf("unknown pwm_id: %d\n", pwm_id);
 		break;

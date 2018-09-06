@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010
  * Texas Instruments Incorporated, <www.ti.com>
  * Aneesh V       <aneesh@ti.com>
  * Steve Sakoman  <steve@sakoman.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <palmas.h>
@@ -20,10 +19,11 @@
 
 #include "mux_data.h"
 
-#if defined(CONFIG_USB_EHCI) || defined(CONFIG_USB_XHCI_OMAP)
+#if defined(CONFIG_USB_EHCI_HCD) || defined(CONFIG_USB_XHCI_OMAP)
 #include <sata.h>
 #include <usb.h>
 #include <asm/gpio.h>
+#include <asm/mach-types.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/ehci.h>
 #include <asm/ehci-omap.h>
@@ -151,7 +151,7 @@ int board_eth_init(bd_t *bis)
 	return 0;
 }
 
-#if defined(CONFIG_USB_EHCI) || defined(CONFIG_USB_XHCI_OMAP)
+#if defined(CONFIG_USB_EHCI_HCD) || defined(CONFIG_USB_XHCI_OMAP)
 static void enable_host_clocks(void)
 {
 	int auxclk;
@@ -198,7 +198,7 @@ int misc_init_r(void)
 	return 0;
 }
 
-void set_muxconf_regs_essential(void)
+void set_muxconf_regs(void)
 {
 	do_set_mux((*ctrl)->control_padconf_core_base,
 		   core_padconf_array_essential,
@@ -211,7 +211,7 @@ void set_muxconf_regs_essential(void)
 		   sizeof(struct pad_conf_entry));
 }
 
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_GENERIC_MMC)
+#if defined(CONFIG_MMC)
 int board_mmc_init(bd_t *bis)
 {
 	omap_mmc_init(0, 0, 0, -1, -1);
@@ -220,7 +220,7 @@ int board_mmc_init(bd_t *bis)
 }
 #endif
 
-#ifdef CONFIG_USB_EHCI
+#ifdef CONFIG_USB_EHCI_HCD
 static struct omap_usbhs_board_data usbhs_bdata = {
 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
 	.port_mode[1] = OMAP_EHCI_PORT_MODE_HSIC,
@@ -245,13 +245,10 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 
 int ehci_hcd_stop(void)
 {
-	int ret;
-
-	ret = omap_ehci_hcd_stop();
-	return ret;
+	return omap_ehci_hcd_stop();
 }
 
-void usb_hub_reset_devices(int port)
+void usb_hub_reset_devices(struct usb_hub_device *hub, int port)
 {
 	/* The LAN9730 needs to be reset after the port power has been set. */
 	if (port == 3) {

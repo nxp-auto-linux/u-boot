@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Board functions for TI AM335X based pxm2 board
  * (C) Copyright 2013 Siemens Schweiz AG
@@ -9,11 +10,10 @@
  * Board functions for TI AM335X based boards
  *
  * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <environment.h>
 #include <errno.h>
 #include <spl.h>
 #include <asm/arch/cpu.h>
@@ -37,8 +37,6 @@
 #include "pmic.h"
 #include <nand.h>
 #include <bmp_layout.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_SPL_BUILD
 static void board_init_ddr(void)
@@ -225,7 +223,7 @@ int board_eth_init(bd_t *bis)
 	if (!is_valid_ethaddr(factory_dat.mac))
 		printf("Error: no valid mac address\n");
 	else
-		eth_setenv_enetaddr("ethaddr", factory_dat.mac);
+		eth_env_set_enetaddr("ethaddr", factory_dat.mac);
 #endif /* #ifdef CONFIG_FACTORYSET */
 
 	/* Set rgmii mode and enable rmii clock to be sourced from chip */
@@ -446,12 +444,12 @@ int board_late_init(void)
 			factory_dat.pxm50 = 0;
 		sprintf(tmp, "%s_%s", factory_dat.asn,
 			factory_dat.comp_version);
-		ret = setenv("boardid", tmp);
+		ret = env_set("boardid", tmp);
 		if (ret)
 			printf("error setting board id\n");
 	} else {
 		factory_dat.pxm50 = 1;
-		ret = setenv("boardid", "PXM50_1.0");
+		ret = env_set("boardid", "PXM50_1.0");
 		if (ret)
 			printf("error setting board id\n");
 	}

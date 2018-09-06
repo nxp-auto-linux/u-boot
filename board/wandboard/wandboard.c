@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Freescale Semiconductor, Inc.
  * Copyright (C) 2014 O.S. Systems Software LTDA.
  *
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -15,10 +14,11 @@
 #include <asm/arch/mxc_hdmi.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/imx-common/iomux-v3.h>
-#include <asm/imx-common/mxc_i2c.h>
-#include <asm/imx-common/boot_mode.h>
-#include <asm/imx-common/video.h>
+#include <asm/mach-imx/iomux-v3.h>
+#include <asm/mach-imx/mxc_i2c.h>
+#include <asm/mach-imx/boot_mode.h>
+#include <asm/mach-imx/video.h>
+#include <asm/mach-imx/sata.h>
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <common.h>
@@ -27,8 +27,9 @@
 #include <miiphy.h>
 #include <netdev.h>
 #include <phy.h>
-#include <input.h>
 #include <i2c.h>
+#include <power/pmic.h>
+#include <power/pfuze100_pmic.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -50,7 +51,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #define USDHC1_CD_GPIO		IMX_GPIO_NR(1, 2)
 #define USDHC3_CD_GPIO		IMX_GPIO_NR(3, 9)
 #define ETH_PHY_RESET		IMX_GPIO_NR(3, 29)
+#define ETH_PHY_AR8035_POWER	IMX_GPIO_NR(7, 13)
 #define REV_DETECTION		IMX_GPIO_NR(2, 28)
+
+static bool with_pmic;
 
 int dram_init(void)
 {
@@ -106,6 +110,11 @@ static iomux_v3_cfg_t const enet_pads[] = {
 	IOMUX_PADS(PAD_EIM_D29__GPIO3_IO29    | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
 
+static iomux_v3_cfg_t const enet_ar8035_power_pads[] = {
+	/* AR8035 POWER */
+	IOMUX_PADS(PAD_GPIO_18__GPIO7_IO13    | MUX_PAD_CTRL(NO_PAD_CTRL)),
+};
+
 static iomux_v3_cfg_t const rev_detection_pad[] = {
 	IOMUX_PADS(PAD_EIM_EB0__GPIO2_IO28  | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
@@ -118,6 +127,14 @@ static void setup_iomux_uart(void)
 static void setup_iomux_enet(void)
 {
 	SETUP_IOMUX_PADS(enet_pads);
+
+	if (with_pmic) {
+		SETUP_IOMUX_PADS(enet_ar8035_power_pads);
+		/* enable AR8035 POWER */
+		gpio_direction_output(ETH_PHY_AR8035_POWER, 0);
+	}
+	/* wait until 3.3V of PHY and clock become stable */
+	mdelay(10);
 
 	/* Reset AR8031 PHY */
 	gpio_direction_output(ETH_PHY_RESET, 0);
@@ -155,7 +172,7 @@ int board_mmc_init(bd_t *bis)
 
 	/*
 	 * Following map is done:
-	 * (U-boot device node)    (Physical Port)
+	 * (U-Boot device node)    (Physical Port)
 	 * mmc0                    SOM MicroSD
 	 * mmc1                    Carrier board MicroSD
 	 */
@@ -184,6 +201,45 @@ int board_mmc_init(bd_t *bis)
 		if (ret)
 			return ret;
 	}
+
+	return 0;
+}
+
+static int ar8031_phy_fixup(struct phy_device *phydev)
+{
+	unsigned short val;
+	int mask;
+
+	/* To enable AR8031 ouput a 125MHz clk from CLK_25M */
+	phy_write(phydev, MDIO_DEVAD_NONE, 0xd, 0x7);
+	phy_write(phydev, MDIO_DEVAD_NONE, 0xe, 0x8016);
+	phy_write(phydev, MDIO_DEVAD_NONE, 0xd, 0x4007);
+
+	val = phy_read(phydev, MDIO_DEVAD_NONE, 0xe);
+	if (with_pmic)
+		mask = 0xffe7;	/* AR8035 */
+	else
+		mask = 0xffe3;	/* AR8031 */
+
+	val &= mask;
+	val |= 0x18;
+	phy_write(phydev, MDIO_DEVAD_NONE, 0xe, val);
+
+	/* introduce tx clock delay */
+	phy_write(phydev, MDIO_DEVAD_NONE, 0x1d, 0x5);
+	val = phy_read(phydev, MDIO_DEVAD_NONE, 0x1e);
+	val |= 0x0100;
+	phy_write(phydev, MDIO_DEVAD_NONE, 0x1e, val);
+
+	return 0;
+}
+
+int board_phy_config(struct phy_device *phydev)
+{
+	ar8031_phy_fixup(phydev);
+
+	if (phydev->drv->config)
+		phydev->drv->config(phydev);
 
 	return 0;
 }
@@ -220,6 +276,40 @@ struct i2c_pads_info mx6dl_i2c2_pad_info = {
 		.gpio_mode = MX6DL_PAD_KEY_ROW3__GPIO4_IO13
 			| MUX_PAD_CTRL(I2C_PAD_CTRL),
 		.gp = IMX_GPIO_NR(4, 13)
+	}
+};
+
+struct i2c_pads_info mx6q_i2c3_pad_info = {
+	.scl = {
+		.i2c_mode = MX6Q_PAD_GPIO_5__I2C3_SCL
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = MX6Q_PAD_GPIO_5__GPIO1_IO05
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(1, 5)
+	},
+	.sda = {
+		.i2c_mode = MX6Q_PAD_GPIO_16__I2C3_SDA
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = MX6Q_PAD_GPIO_16__GPIO7_IO11
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(7, 11)
+	}
+};
+
+struct i2c_pads_info mx6dl_i2c3_pad_info = {
+	.scl = {
+		.i2c_mode = MX6DL_PAD_GPIO_5__I2C3_SCL
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = MX6DL_PAD_GPIO_5__GPIO1_IO05
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(1, 5)
+	},
+	.sda = {
+		.i2c_mode = MX6DL_PAD_GPIO_16__I2C3_SDA
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = MX6DL_PAD_GPIO_16__GPIO7_IO11
+			| MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(7, 11)
 	}
 };
 
@@ -342,9 +432,35 @@ int board_eth_init(bd_t *bis)
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
-#if defined(CONFIG_VIDEO_IPUV3)
-	setup_display();
+#ifdef CONFIG_SATA
+	setup_sata();
 #endif
+
+	return 0;
+}
+
+#define PMIC_I2C_BUS		2
+
+int power_init_board(void)
+{
+	struct pmic *p;
+	u32 reg;
+
+	/* configure PFUZE100 PMIC */
+	power_pfuze100_init(PMIC_I2C_BUS);
+	p = pmic_get("PFUZE100");
+	if (p && !pmic_probe(p)) {
+		pmic_reg_read(p, PFUZE100_DEVICEID, &reg);
+		printf("PMIC:  PFUZE100 ID=0x%02x\n", reg);
+		with_pmic = true;
+
+		/* Set VGEN2 to 1.5V and enable */
+		pmic_reg_read(p, PFUZE100_VGEN2VOL, &reg);
+		reg &= ~(LDO_VOL_MASK);
+		reg |= (LDOA_1_50V | (1 << (LDO_EN)));
+		pmic_reg_write(p, PFUZE100_VGEN2VOL, reg);
+	}
+
 	return 0;
 }
 
@@ -377,6 +493,14 @@ static bool is_revc1(void)
 		return false;
 }
 
+static bool is_revd1(void)
+{
+	if (with_pmic)
+		return true;
+	else
+		return false;
+}
+
 int board_late_init(void)
 {
 #ifdef CONFIG_CMD_BMODE
@@ -384,15 +508,19 @@ int board_late_init(void)
 #endif
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
-	if (is_cpu_type(MXC_CPU_MX6Q) || is_cpu_type(MXC_CPU_MX6D))
-		setenv("board_rev", "MX6Q");
+	if (is_mx6dqp())
+		env_set("board_rev", "MX6QP");
+	else if (is_mx6dq())
+		env_set("board_rev", "MX6Q");
 	else
-		setenv("board_rev", "MX6DL");
+		env_set("board_rev", "MX6DL");
 
-	if (is_revc1())
-		setenv("board_name", "C1");
+	if (is_revd1())
+		env_set("board_name", "D1");
+	else if (is_revc1())
+		env_set("board_name", "C1");
 	else
-		setenv("board_name", "B1");
+		env_set("board_name", "B1");
 #endif
 	return 0;
 }
@@ -402,18 +530,27 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 
+#if defined(CONFIG_VIDEO_IPUV3)
 	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c2_pad_info);
-	if (is_cpu_type(MXC_CPU_MX6Q) || is_cpu_type(MXC_CPU_MX6D))
+	if (is_mx6dq() || is_mx6dqp()) {
 		setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6q_i2c2_pad_info);
-	else
+		setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6q_i2c3_pad_info);
+	} else {
 		setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c2_pad_info);
+		setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c3_pad_info);
+	}
+
+	setup_display();
+#endif
 
 	return 0;
 }
 
 int checkboard(void)
 {
-	if (is_revc1())
+	if (is_revd1())
+		puts("Board: Wandboard rev D1\n");
+	else if (is_revc1())
 		puts("Board: Wandboard rev C1\n");
 	else
 		puts("Board: Wandboard rev B1\n");

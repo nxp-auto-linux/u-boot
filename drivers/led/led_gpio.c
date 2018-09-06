@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,32 +10,73 @@
 #include <led.h>
 #include <asm/gpio.h>
 #include <dm/lists.h>
-
-DECLARE_GLOBAL_DATA_PTR;
+#include <dm/uclass-internal.h>
 
 struct led_gpio_priv {
 	struct gpio_desc gpio;
 };
 
-static int gpio_led_set_on(struct udevice *dev, int on)
+static int gpio_led_set_state(struct udevice *dev, enum led_state_t state)
 {
 	struct led_gpio_priv *priv = dev_get_priv(dev);
+	int ret;
 
 	if (!dm_gpio_is_valid(&priv->gpio))
 		return -EREMOTEIO;
+	switch (state) {
+	case LEDST_OFF:
+	case LEDST_ON:
+		break;
+	case LEDST_TOGGLE:
+		ret = dm_gpio_get_value(&priv->gpio);
+		if (ret < 0)
+			return ret;
+		state = !ret;
+		break;
+	default:
+		return -ENOSYS;
+	}
 
-	return dm_gpio_set_value(&priv->gpio, on);
+	return dm_gpio_set_value(&priv->gpio, state);
+}
+
+static enum led_state_t gpio_led_get_state(struct udevice *dev)
+{
+	struct led_gpio_priv *priv = dev_get_priv(dev);
+	int ret;
+
+	if (!dm_gpio_is_valid(&priv->gpio))
+		return -EREMOTEIO;
+	ret = dm_gpio_get_value(&priv->gpio);
+	if (ret < 0)
+		return ret;
+
+	return ret ? LEDST_ON : LEDST_OFF;
 }
 
 static int led_gpio_probe(struct udevice *dev)
 {
-	struct led_uclass_plat *uc_plat = dev_get_uclass_platdata(dev);
+	struct led_uc_plat *uc_plat = dev_get_uclass_platdata(dev);
 	struct led_gpio_priv *priv = dev_get_priv(dev);
+	const char *default_state;
+	int ret;
 
 	/* Ignore the top-level LED node */
 	if (!uc_plat->label)
 		return 0;
-	return gpio_request_by_name(dev, "gpios", 0, &priv->gpio, GPIOD_IS_OUT);
+
+	ret = gpio_request_by_name(dev, "gpios", 0, &priv->gpio, GPIOD_IS_OUT);
+	if (ret)
+		return ret;
+
+	default_state = dev_read_string(dev, "default-state");
+	if (default_state) {
+		if (!strncmp(default_state, "on", 2))
+			gpio_led_set_state(dev, LEDST_ON);
+		else if (!strncmp(default_state, "off", 3))
+			gpio_led_set_state(dev, LEDST_OFF);
+	}
+	return 0;
 }
 
 static int led_gpio_remove(struct udevice *dev)
@@ -57,37 +97,43 @@ static int led_gpio_remove(struct udevice *dev)
 
 static int led_gpio_bind(struct udevice *parent)
 {
-	const void *blob = gd->fdt_blob;
 	struct udevice *dev;
-	int node;
+	ofnode node;
 	int ret;
 
-	for (node = fdt_first_subnode(blob, parent->of_offset);
-	     node > 0;
-	     node = fdt_next_subnode(blob, node)) {
-		struct led_uclass_plat *uc_plat;
+	dev_for_each_subnode(node, parent) {
+		struct led_uc_plat *uc_plat;
 		const char *label;
 
-		label = fdt_getprop(blob, node, "label", NULL);
+		label = ofnode_read_string(node, "label");
 		if (!label) {
 			debug("%s: node %s has no label\n", __func__,
-			      fdt_get_name(blob, node, NULL));
+			      ofnode_get_name(node));
 			return -EINVAL;
 		}
 		ret = device_bind_driver_to_node(parent, "gpio_led",
-						 fdt_get_name(blob, node, NULL),
+						 ofnode_get_name(node),
 						 node, &dev);
 		if (ret)
 			return ret;
 		uc_plat = dev_get_uclass_platdata(dev);
 		uc_plat->label = label;
+
+		if (ofnode_read_bool(node, "default-state")) {
+			struct udevice *devp;
+
+			ret = uclass_get_device_tail(dev, 0, &devp);
+			if (ret)
+				return ret;
+		}
 	}
 
 	return 0;
 }
 
 static const struct led_ops gpio_led_ops = {
-	.set_on		= gpio_led_set_on,
+	.set_state	= gpio_led_set_state,
+	.get_state	= gpio_led_get_state,
 };
 
 static const struct udevice_id led_gpio_ids[] = {

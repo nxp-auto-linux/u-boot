@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * i2c driver for Freescale i.MX series
  *
@@ -10,19 +11,18 @@
  *  Copyright (C) 2007 RightHand Technologies, Inc.
  *  Copyright (C) 2008 Darius Augulis <darius.augulis at teltonika.lt>
  *
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
-#include <asm/errno.h>
-#include <asm/imx-common/mxc_i2c.h>
+#include <linux/errno.h>
+#include <asm/mach-imx/mxc_i2c.h>
 #include <asm/io.h>
 #include <i2c.h>
 #include <watchdog.h>
 #include <dm.h>
+#include <dm/pinctrl.h>
 #include <fdtdec.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -31,6 +31,14 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define IMX_I2C_REGSHIFT	2
 #define VF610_I2C_REGSHIFT	0
+
+#define I2C_EARLY_INIT_INDEX		0
+#ifdef CONFIG_SYS_I2C_IFDR_DIV
+#define I2C_IFDR_DIV_CONSERVATIVE	CONFIG_SYS_I2C_IFDR_DIV
+#else
+#define I2C_IFDR_DIV_CONSERVATIVE	0x7e
+#endif
+
 /* Register index */
 #define IADR	0
 #define IFDR	1
@@ -58,10 +66,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define I2CR_IEN	(1 << 7)
 #define I2CR_IDIS	(0 << 7)
 #define I2SR_IIF_CLEAR	(0 << 1)
-#endif
-
-#if defined(CONFIG_HARD_I2C) && !defined(CONFIG_SYS_I2C_BASE)
-#error "define CONFIG_SYS_I2C_BASE to use the mxc_i2c driver"
 #endif
 
 #ifdef I2C_QUIRK_REG
@@ -172,7 +176,7 @@ static int bus_i2c_set_bus_speed(struct mxc_i2c_bus *i2c_bus, int speed)
 	int reg_shift = quirk ? VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 
 	if (!base)
-		return -ENODEV;
+		return -EINVAL;
 
 	/* Store divider value */
 	writeb(idx, base + (IFDR << reg_shift));
@@ -235,7 +239,7 @@ static int tx_byte(struct mxc_i2c_bus *i2c_bus, u8 byte)
 	if (ret < 0)
 		return ret;
 	if (ret & I2SR_RX_NO_AK)
-		return -ENODEV;
+		return -EREMOTEIO;
 	return 0;
 }
 
@@ -313,16 +317,19 @@ static int i2c_init_transfer_(struct mxc_i2c_bus *i2c_bus, u8 chip,
 	temp |= I2CR_MTX | I2CR_TX_NO_AK;
 	writeb(temp, base + (I2CR << reg_shift));
 
-	/* write slave address */
-	ret = tx_byte(i2c_bus, chip << 1);
-	if (ret < 0)
-		return ret;
-
-	while (alen--) {
-		ret = tx_byte(i2c_bus, (addr >> (alen * 8)) & 0xff);
+	if (alen >= 0)	{
+		/* write slave address */
+		ret = tx_byte(i2c_bus, chip << 1);
 		if (ret < 0)
 			return ret;
+
+		while (alen--) {
+			ret = tx_byte(i2c_bus, (addr >> (alen * 8)) & 0xff);
+			if (ret < 0)
+				return ret;
+		}
 	}
+
 	return 0;
 }
 
@@ -335,17 +342,74 @@ int i2c_idle_bus(struct mxc_i2c_bus *i2c_bus)
 }
 #else
 /*
- * Since pinmux is not supported, implement a weak function here.
- * You can implement your i2c_bus_idle in board file. When pinctrl
- * is supported, this can be removed.
+ * See Linux Documentation/devicetree/bindings/i2c/i2c-imx.txt
+ * "
+ *  scl-gpios: specify the gpio related to SCL pin
+ *  sda-gpios: specify the gpio related to SDA pin
+ *  add pinctrl to configure i2c pins to gpio function for i2c
+ *  bus recovery, call it "gpio" state
+ * "
+ *
+ * The i2c_idle_bus is an implementation following Linux Kernel.
  */
-int __i2c_idle_bus(struct mxc_i2c_bus *i2c_bus)
-{
-	return 0;
-}
-
 int i2c_idle_bus(struct mxc_i2c_bus *i2c_bus)
-	__attribute__((weak, alias("__i2c_idle_bus")));
+{
+	struct udevice *bus = i2c_bus->bus;
+	struct gpio_desc *scl_gpio = &i2c_bus->scl_gpio;
+	struct gpio_desc *sda_gpio = &i2c_bus->sda_gpio;
+	int sda, scl;
+	int i, ret = 0;
+	ulong elapsed, start_time;
+
+	if (pinctrl_select_state(bus, "gpio")) {
+		dev_dbg(bus, "Can not to switch to use gpio pinmux\n");
+		/*
+		 * GPIO pinctrl for i2c force idle is not a must,
+		 * but it is strongly recommended to be used.
+		 * Because it can help you to recover from bad
+		 * i2c bus state. Do not return failure, because
+		 * it is not a must.
+		 */
+		return 0;
+	}
+
+	dm_gpio_set_dir_flags(scl_gpio, GPIOD_IS_IN);
+	dm_gpio_set_dir_flags(sda_gpio, GPIOD_IS_IN);
+	scl = dm_gpio_get_value(scl_gpio);
+	sda = dm_gpio_get_value(sda_gpio);
+
+	if ((sda & scl) == 1)
+		goto exit;		/* Bus is idle already */
+
+	/* Send high and low on the SCL line */
+	for (i = 0; i < 9; i++) {
+		dm_gpio_set_dir_flags(scl_gpio, GPIOD_IS_OUT);
+		dm_gpio_set_value(scl_gpio, 0);
+		udelay(50);
+		dm_gpio_set_dir_flags(scl_gpio, GPIOD_IS_IN);
+		udelay(50);
+	}
+	start_time = get_timer(0);
+	for (;;) {
+		dm_gpio_set_dir_flags(scl_gpio, GPIOD_IS_IN);
+		dm_gpio_set_dir_flags(sda_gpio, GPIOD_IS_IN);
+		scl = dm_gpio_get_value(scl_gpio);
+		sda = dm_gpio_get_value(sda_gpio);
+		if ((sda & scl) == 1)
+			break;
+		WATCHDOG_RESET();
+		elapsed = get_timer(start_time);
+		if (elapsed > (CONFIG_SYS_HZ / 5)) {	/* .2 seconds */
+			ret = -EBUSY;
+			printf("%s: failed to clear bus, sda=%d scl=%d\n", __func__, sda, scl);
+			break;
+		}
+	}
+
+exit:
+	pinctrl_select_state(bus, "default");
+	return ret;
+}
 #endif
 
 static int i2c_init_transfer(struct mxc_i2c_bus *i2c_bus, u8 chip,
@@ -357,14 +421,14 @@ static int i2c_init_transfer(struct mxc_i2c_bus *i2c_bus, u8 chip,
 			VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 
 	if (!i2c_bus->base)
-		return -ENODEV;
+		return -EINVAL;
 
 	for (retry = 0; retry < 3; retry++) {
 		ret = i2c_init_transfer_(i2c_bus, chip, addr, alen);
 		if (ret >= 0)
 			return 0;
 		i2c_imx_stop(i2c_bus);
-		if (ret == -ENODEV)
+		if (ret == -EREMOTEIO)
 			return ret;
 
 		printf("%s: failed for chip 0x%x retry=%d\n", __func__, chip,
@@ -476,9 +540,11 @@ static int bus_i2c_read(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
 	if (ret < 0)
 		return ret;
 
-	temp = readb(base + (I2CR << reg_shift));
-	temp |= I2CR_RSTA;
-	writeb(temp, base + (I2CR << reg_shift));
+	if (alen >= 0) {
+		temp = readb(base + (I2CR << reg_shift));
+		temp |= I2CR_RSTA;
+		writeb(temp, base + (I2CR << reg_shift));
+	}
 
 	ret = tx_byte(i2c_bus, (chip << 1) | 1);
 	if (ret < 0) {
@@ -523,18 +589,42 @@ static int bus_i2c_write(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
 #define I2C4_BASE_ADDR	0
 #endif
 
+#if !defined(I2C5_BASE_ADDR)
+#define I2C5_BASE_ADDR 0
+#endif
+
+#if !defined(I2C6_BASE_ADDR)
+#define I2C6_BASE_ADDR 0
+#endif
+
+#if !defined(I2C7_BASE_ADDR)
+#define I2C7_BASE_ADDR 0
+#endif
+
+#if !defined(I2C8_BASE_ADDR)
+#define I2C8_BASE_ADDR 0
+#endif
+
 static struct mxc_i2c_bus mxc_i2c_buses[] = {
-#if defined(CONFIG_LS102XA) || defined(CONFIG_VF610) || \
+#if defined(CONFIG_LS1021A) || defined(CONFIG_VF610) || \
 	defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234)
 	{ 0, I2C1_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 1, I2C2_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 2, I2C3_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 3, I2C4_BASE_ADDR, I2C_QUIRK_FLAG },
+	{ 4, I2C5_BASE_ADDR, I2C_QUIRK_FLAG },
+	{ 5, I2C6_BASE_ADDR, I2C_QUIRK_FLAG },
+	{ 6, I2C7_BASE_ADDR, I2C_QUIRK_FLAG },
+	{ 7, I2C8_BASE_ADDR, I2C_QUIRK_FLAG },
 #else
 	{ 0, I2C1_BASE_ADDR, 0 },
 	{ 1, I2C2_BASE_ADDR, 0 },
 	{ 2, I2C3_BASE_ADDR, 0 },
 	{ 3, I2C4_BASE_ADDR, 0 },
+	{ 4, I2C5_BASE_ADDR, 0 },
+	{ 5, I2C6_BASE_ADDR, 0 },
+	{ 6, I2C7_BASE_ADDR, 0 },
+	{ 7, I2C8_BASE_ADDR, 0 },
 #endif
 };
 
@@ -603,6 +693,25 @@ void bus_i2c_init(int index, int speed, int unused,
 }
 
 /*
+ * Early init I2C for prepare read the clk through I2C.
+ */
+void i2c_early_init_f(void)
+{
+	ulong base = mxc_i2c_buses[I2C_EARLY_INIT_INDEX].base;
+	bool quirk = mxc_i2c_buses[I2C_EARLY_INIT_INDEX].driver_data
+					& I2C_QUIRK_FLAG ? true : false;
+	int reg_shift = quirk ? VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
+
+	/* Set I2C divider value */
+	writeb(I2C_IFDR_DIV_CONSERVATIVE, base + (IFDR << reg_shift));
+	/* Reset module */
+	writeb(I2CR_IDIS, base + (I2CR << reg_shift));
+	writeb(0, base + (I2SR << reg_shift));
+	/* Enable I2C */
+	writeb(I2CR_IEN, base + (I2CR << reg_shift));
+}
+
+/*
  * Init I2C Bus
  */
 static void mxc_i2c_init(struct i2c_adapter *adap, int speed, int slaveaddr)
@@ -653,6 +762,38 @@ U_BOOT_I2C_ADAP_COMPLETE(mxc3, mxc_i2c_init, mxc_i2c_probe,
 			 CONFIG_SYS_MXC_I2C4_SLAVE, 3)
 #endif
 
+#ifdef CONFIG_SYS_I2C_MXC_I2C5
+U_BOOT_I2C_ADAP_COMPLETE(mxc4, mxc_i2c_init, mxc_i2c_probe,
+			 mxc_i2c_read, mxc_i2c_write,
+			 mxc_i2c_set_bus_speed,
+			 CONFIG_SYS_MXC_I2C5_SPEED,
+			 CONFIG_SYS_MXC_I2C5_SLAVE, 4)
+#endif
+
+#ifdef CONFIG_SYS_I2C_MXC_I2C6
+U_BOOT_I2C_ADAP_COMPLETE(mxc5, mxc_i2c_init, mxc_i2c_probe,
+			 mxc_i2c_read, mxc_i2c_write,
+			 mxc_i2c_set_bus_speed,
+			 CONFIG_SYS_MXC_I2C6_SPEED,
+			 CONFIG_SYS_MXC_I2C6_SLAVE, 5)
+#endif
+
+#ifdef CONFIG_SYS_I2C_MXC_I2C7
+U_BOOT_I2C_ADAP_COMPLETE(mxc6, mxc_i2c_init, mxc_i2c_probe,
+			 mxc_i2c_read, mxc_i2c_write,
+			 mxc_i2c_set_bus_speed,
+			 CONFIG_SYS_MXC_I2C7_SPEED,
+			 CONFIG_SYS_MXC_I2C7_SLAVE, 6)
+#endif
+
+#ifdef CONFIG_SYS_I2C_MXC_I2C8
+U_BOOT_I2C_ADAP_COMPLETE(mxc7, mxc_i2c_init, mxc_i2c_probe,
+			 mxc_i2c_read, mxc_i2c_write,
+			 mxc_i2c_set_bus_speed,
+			 CONFIG_SYS_MXC_I2C8_SPEED,
+			 CONFIG_SYS_MXC_I2C8_SLAVE, 7)
+#endif
+
 #else
 
 static int mxc_i2c_set_bus_speed(struct udevice *bus, unsigned int speed)
@@ -665,22 +806,47 @@ static int mxc_i2c_set_bus_speed(struct udevice *bus, unsigned int speed)
 static int mxc_i2c_probe(struct udevice *bus)
 {
 	struct mxc_i2c_bus *i2c_bus = dev_get_priv(bus);
+	const void *fdt = gd->fdt_blob;
+	int node = dev_of_offset(bus);
 	fdt_addr_t addr;
-	int ret;
+	int ret, ret2;
 
 	i2c_bus->driver_data = dev_get_driver_data(bus);
 
-	addr = dev_get_addr(bus);
+	addr = devfdt_get_addr(bus);
 	if (addr == FDT_ADDR_T_NONE)
-		return -ENODEV;
+		return -EINVAL;
 
 	i2c_bus->base = addr;
 	i2c_bus->index = bus->seq;
+	i2c_bus->bus = bus;
 
 	/* Enable clk */
 	ret = enable_i2c_clk(1, bus->seq);
 	if (ret < 0)
 		return ret;
+
+	/*
+	 * See Documentation/devicetree/bindings/i2c/i2c-imx.txt
+	 * Use gpio to force bus idle when necessary.
+	 */
+	ret = fdt_stringlist_search(fdt, node, "pinctrl-names", "gpio");
+	if (ret < 0) {
+		debug("i2c bus %d at 0x%2lx, no gpio pinctrl state.\n", bus->seq, i2c_bus->base);
+	} else {
+		ret = gpio_request_by_name_nodev(offset_to_ofnode(node),
+				"scl-gpios", 0, &i2c_bus->scl_gpio,
+				GPIOD_IS_OUT);
+		ret2 = gpio_request_by_name_nodev(offset_to_ofnode(node),
+				"sda-gpios", 0, &i2c_bus->sda_gpio,
+				GPIOD_IS_OUT);
+		if (!dm_gpio_is_valid(&i2c_bus->sda_gpio) ||
+		    !dm_gpio_is_valid(&i2c_bus->scl_gpio) ||
+		    ret || ret2) {
+			dev_err(dev, "i2c bus %d at %lu, fail to request scl/sda gpio\n", bus->seq, i2c_bus->base);
+			return -EINVAL;
+		}
+	}
 
 	ret = i2c_idle_bus(i2c_bus);
 	if (ret < 0) {

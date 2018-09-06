@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ARCH_IRQ_H_
@@ -23,6 +22,11 @@ enum pirq_config {
 	PIRQ_VIA_IBASE
 };
 
+struct pirq_regmap {
+	int link;
+	int offset;
+};
+
 /**
  * Intel interrupt router control block
  *
@@ -30,17 +34,26 @@ enum pirq_config {
  *
  * @config:	PIRQ_VIA_PCI or PIRQ_VIA_IBASE
  * @link_base:	link value base number
+ * @link_num:	number of PIRQ links supported
+ * @has_regmap:	has mapping table between PIRQ link and routing register offset
  * @irq_mask:	IRQ mask reprenting the 16 IRQs in 8259, bit N is 1 means
  *		IRQ N is available to be routed
  * @lb_bdf:	irq router's PCI bus/device/function number encoding
  * @ibase:	IBASE register block base address
+ * @actl_8bit:	ACTL register width is 8-bit (for ICH series chipset)
+ * @actl_addr:	ACTL register offset
  */
 struct irq_router {
 	int config;
 	u32 link_base;
+	int link_num;
+	bool has_regmap;
+	struct pirq_regmap *regmap;
 	u16 irq_mask;
 	u32 bdf;
 	u32 ibase;
+	bool actl_8bit;
+	int actl_addr;
 };
 
 struct pirq_routing {
@@ -49,30 +62,6 @@ struct pirq_routing {
 	int pirq;
 };
 
-/* PIRQ link number and value conversion */
-#define LINK_V2N(link, base)	(link - base)
-#define LINK_N2V(link, base)	(link + base)
-
 #define PIRQ_BITMAP		0xdef8
-
-/**
- * cpu_irq_init() - Initialize CPU IRQ routing
- *
- * This initializes some platform-specific registers related to IRQ routing,
- * like configuring internal PCI devices to use which PCI interrupt pin,
- * and which PCI interrupt pin is mapped to which PIRQ line. Note on some
- * platforms, such IRQ routing might be hard-coded thus cannot configure.
- */
-void cpu_irq_init(void);
-
-/**
- * pirq_init() - Initialize platform PIRQ routing
- *
- * This initializes the PIRQ routing on the platform and configures all PCI
- * devices' interrupt line register to a working IRQ number on the 8259 PIC.
- *
- * @return 0 if OK, -ve on error
- */
-int pirq_init(void);
 
 #endif /* _ARCH_IRQ_H_ */

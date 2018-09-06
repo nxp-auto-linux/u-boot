@@ -1,6 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -46,23 +46,6 @@ int dram_init(void)
 	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
 	return 0;
 }
-
-#ifdef CONFIG_BOARD_EARLY_INIT_F
-int board_early_init_f(void)
-{
-#ifdef CONFIG_VIDEO_SANDBOX_SDL
-	int ret;
-
-	ret = sandbox_lcd_sdl_early_init();
-	if (ret) {
-		puts("Could not init sandbox LCD emulation\n");
-		return ret;
-	}
-#endif
-
-	return 0;
-}
-#endif
 
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)

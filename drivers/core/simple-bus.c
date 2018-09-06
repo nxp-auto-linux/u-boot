@@ -1,14 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
-#include <dm/root.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 struct simple_bus_plat {
 	u32 base;
@@ -28,11 +24,13 @@ fdt_addr_t simple_bus_translate(struct udevice *dev, fdt_addr_t addr)
 
 static int simple_bus_post_bind(struct udevice *dev)
 {
+#if CONFIG_IS_ENABLED(OF_PLATDATA)
+	return 0;
+#else
 	u32 cell[3];
 	int ret;
 
-	ret = fdtdec_get_int_array(gd->fdt_blob, dev->of_offset, "ranges",
-				   cell, ARRAY_SIZE(cell));
+	ret = dev_read_u32_array(dev, "ranges", cell, ARRAY_SIZE(cell));
 	if (!ret) {
 		struct simple_bus_plat *plat = dev_get_uclass_platdata(dev);
 
@@ -41,7 +39,8 @@ static int simple_bus_post_bind(struct udevice *dev)
 		plat->size = cell[2];
 	}
 
-	return dm_scan_fdt_node(dev, gd->fdt_blob, dev->of_offset, false);
+	return dm_scan_fdt_dev(dev);
+#endif
 }
 
 UCLASS_DRIVER(simple_bus) = {
@@ -53,6 +52,7 @@ UCLASS_DRIVER(simple_bus) = {
 
 static const struct udevice_id generic_simple_bus_ids[] = {
 	{ .compatible = "simple-bus" },
+	{ .compatible = "simple-mfd" },
 	{ }
 };
 

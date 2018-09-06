@@ -7,17 +7,43 @@ config SYS_ARCH
 config SYS_BOARD
 	default "sandbox"
 
-config SYS_CONFIG_NAME
+config SYS_CPU
 	default "sandbox"
 
-config PCI
-	bool "PCI support"
-	help
-	  Enable support for PCI (Peripheral Interconnect Bus), a type of bus
-	  used on some devices to allow the CPU to communicate with its
-	  peripherals.
+config SANDBOX64
+	bool "Use 64-bit addresses"
+	select PHYS_64BIT
+	select HOST_64BIT
 
-config DM_KEYBOARD
-	default y
+config SANDBOX_SPL
+	bool "Enable SPL for sandbox"
+	select SUPPORT_SPL
+
+config SYS_CONFIG_NAME
+	default "sandbox_spl" if SANDBOX_SPL
+	default "sandbox" if !SANDBOX_SPL
+
+choice
+	prompt "Run sandbox on 32/64-bit host"
+	default HOST_64BIT
+	help
+	  Sandbox can be built on 32-bit and 64-bit hosts.
+	  The default is to build on a 64-bit host and run
+	  on a 64-bit host. If you want to run sandbox on
+	  a 32-bit host, change it here.
+
+config HOST_32BIT
+	bool "32-bit host"
+	depends on !PHYS_64BIT
+
+config HOST_64BIT
+	bool "64-bit host"
+
+endchoice
+
+config SANDBOX_BITS_PER_LONG
+	int
+	default 32 if HOST_32BIT
+	default 64 if HOST_64BIT
 
 endmenu

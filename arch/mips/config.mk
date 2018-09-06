@@ -1,9 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2003
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 ifdef CONFIG_SYS_BIG_ENDIAN
 32bit-emul		:= elf32btsmip
@@ -35,13 +33,9 @@ PLATFORM_LDFLAGS	+= -m$(64bit-emul)
 OBJCOPYFLAGS		+= -O $(64bit-bfd)
 endif
 
-cpuflags-$(CONFIG_CPU_MIPS32_R1) += -march=mips32 -Wa,-mips32
-cpuflags-$(CONFIG_CPU_MIPS32_R2) += -march=mips32r2 -Wa,-mips32r2
-cpuflags-$(CONFIG_CPU_MIPS64_R1) += -march=mips64 -Wa,-mips64
-cpuflags-$(CONFIG_CPU_MIPS64_R2) += -march=mips64r2 -Wa,-mips64r2
-PLATFORM_CPPFLAGS += $(cpuflags-y)
-
 PLATFORM_CPPFLAGS += -D__MIPS__
+PLATFORM_ELFENTRY = "__start"
+PLATFORM_ELFFLAGS += -B mips $(OBJCOPYFLAGS)
 
 #
 # From Linux arch/mips/Makefile
@@ -60,13 +54,14 @@ PLATFORM_CPPFLAGS += -D__MIPS__
 # LDFLAGS_vmlinux		+= -G 0 -static -n -nostdlib
 # MODFLAGS			+= -mlong-calls
 #
-# On the other hand, we want PIC in the U-Boot code to relocate it from ROM
-# to RAM. $28 is always used as gp.
-#
-PLATFORM_CPPFLAGS		+= -G 0 -mabicalls -fpic
+ifndef CONFIG_SPL_BUILD
+OBJCOPYFLAGS			+= -j .got -j .rel -j .padding -j .dtb.init.rodata
+LDFLAGS_FINAL			+= --emit-relocs
+endif
+
+PLATFORM_CPPFLAGS		+= -G 0 -mno-abicalls -fno-pic
 PLATFORM_CPPFLAGS		+= -msoft-float
 PLATFORM_LDFLAGS		+= -G 0 -static -n -nostdlib
 PLATFORM_RELFLAGS		+= -ffunction-sections -fdata-sections
-LDFLAGS_FINAL			+= --gc-sections -pie
-OBJCOPYFLAGS			+= -j .text -j .rodata -j .data -j .got
-OBJCOPYFLAGS			+= -j .u_boot_list -j .rel.dyn -j .padding
+LDFLAGS_FINAL			+= --gc-sections
+OBJCOPYFLAGS			+= -j .text -j .rodata -j .data -j .u_boot_list

@@ -1,22 +1,32 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * TI PHY drivers
- *
- * SPDX-License-Identifier:	GPL-2.0
  *
  */
 #include <common.h>
 #include <phy.h>
+#include <linux/compat.h>
+#include <malloc.h>
+
+#include <fdtdec.h>
+#include <dm.h>
+#include <dt-bindings/net/ti-dp83867.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /* TI DP83867 */
 #define DP83867_DEVADDR		0x1f
 
 #define MII_DP83867_PHYCTRL	0x10
 #define MII_DP83867_MICR	0x12
+#define MII_DP83867_CFG2	0x14
+#define MII_DP83867_BISCR	0x16
 #define DP83867_CTRL		0x1f
 
 /* Extended Registers */
 #define DP83867_RGMIICTL	0x0032
 #define DP83867_RGMIIDCTL	0x0086
+#define DP83867_IO_MUX_CFG	0x0170
 
 #define DP83867_SW_RESET	BIT(15)
 #define DP83867_SW_RESTART	BIT(14)
@@ -41,9 +51,23 @@
 
 /* PHY CTRL bits */
 #define DP83867_PHYCR_FIFO_DEPTH_SHIFT		14
+#define DP83867_MDI_CROSSOVER		5
+#define DP83867_MDI_CROSSOVER_AUTO	2
+#define DP83867_MDI_CROSSOVER_MDIX	2
+#define DP83867_PHYCTRL_SGMIIEN			0x0800
+#define DP83867_PHYCTRL_RXFIFO_SHIFT	12
+#define DP83867_PHYCTRL_TXFIFO_SHIFT	14
 
 /* RGMIIDCTL bits */
 #define DP83867_RGMII_TX_CLK_DELAY_SHIFT	4
+
+/* CFG2 bits */
+#define MII_DP83867_CFG2_SPEEDOPT_10EN		0x0040
+#define MII_DP83867_CFG2_SGMII_AUTONEGEN	0x0080
+#define MII_DP83867_CFG2_SPEEDOPT_ENH		0x0100
+#define MII_DP83867_CFG2_SPEEDOPT_CNT		0x0800
+#define MII_DP83867_CFG2_SPEEDOPT_INTLOW	0x2000
+#define MII_DP83867_CFG2_MASK			0x003F
 
 #define MII_MMD_CTRL	0x0d /* MMD Access Control Register */
 #define MII_MMD_DATA	0x0e /* MMD Access Data Register */
@@ -54,6 +78,24 @@
 #define MII_MMD_CTRL_NOINCR	0x4000 /* no post increment */
 #define MII_MMD_CTRL_INCR_RDWT	0x8000 /* post increment on reads & writes */
 #define MII_MMD_CTRL_INCR_ON_WT	0xC000 /* post increment on writes only */
+
+/* User setting - can be taken from DTS */
+#define DEFAULT_RX_ID_DELAY	DP83867_RGMIIDCTL_2_25_NS
+#define DEFAULT_TX_ID_DELAY	DP83867_RGMIIDCTL_2_75_NS
+#define DEFAULT_FIFO_DEPTH	DP83867_PHYCR_FIFO_DEPTH_4_B_NIB
+
+/* IO_MUX_CFG bits */
+#define DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL	0x1f
+
+#define DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX	0x0
+#define DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN	0x1f
+
+struct dp83867_private {
+	int rx_id_delay;
+	int tx_id_delay;
+	int fifo_depth;
+	int io_impedance;
+};
 
 /**
  * phy_read_mmd_indirect - reads data from the MMD registers
@@ -121,26 +163,69 @@ void phy_write_mmd_indirect(struct phy_device *phydev, int prtad,
 	phy_write(phydev, addr, MII_MMD_DATA, data);
 }
 
+#if defined(CONFIG_DM_ETH)
 /**
- * phy_interface_is_rgmii - Convenience function for testing if a PHY interface
- * is RGMII (all variants)
+ * dp83867_data_init - Convenience function for setting PHY specific data
+ *
  * @phydev: the phy_device struct
  */
-static inline bool phy_interface_is_rgmii(struct phy_device *phydev)
+static int dp83867_of_init(struct phy_device *phydev)
 {
-	return phydev->interface >= PHY_INTERFACE_MODE_RGMII &&
-		phydev->interface <= PHY_INTERFACE_MODE_RGMII_TXID;
-}
+	struct dp83867_private *dp83867 = phydev->priv;
+	struct udevice *dev = phydev->dev;
+	int node = dev_of_offset(dev);
+	const void *fdt = gd->fdt_blob;
 
-/* User setting - can be taken from DTS */
-#define RX_ID_DELAY	8
-#define TX_ID_DELAY	0xa
-#define FIFO_DEPTH	1
+	if (fdtdec_get_bool(fdt, node, "ti,max-output-impedance"))
+		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX;
+	else if (fdtdec_get_bool(fdt, node, "ti,min-output-impedance"))
+		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN;
+	else
+		dp83867->io_impedance = -EINVAL;
+
+	dp83867->rx_id_delay = fdtdec_get_uint(gd->fdt_blob, dev_of_offset(dev),
+				 "ti,rx-internal-delay", -1);
+
+	dp83867->tx_id_delay = fdtdec_get_uint(gd->fdt_blob, dev_of_offset(dev),
+				 "ti,tx-internal-delay", -1);
+
+	dp83867->fifo_depth = fdtdec_get_uint(gd->fdt_blob, dev_of_offset(dev),
+				 "ti,fifo-depth", -1);
+
+	return 0;
+}
+#else
+static int dp83867_of_init(struct phy_device *phydev)
+{
+	struct dp83867_private *dp83867 = phydev->priv;
+
+	dp83867->rx_id_delay = DEFAULT_RX_ID_DELAY;
+	dp83867->tx_id_delay = DEFAULT_TX_ID_DELAY;
+	dp83867->fifo_depth = DEFAULT_FIFO_DEPTH;
+	dp83867->io_impedance = -EINVAL;
+
+	return 0;
+}
+#endif
 
 static int dp83867_config(struct phy_device *phydev)
 {
-	unsigned int val, delay;
+	struct dp83867_private *dp83867;
+	unsigned int val, delay, cfg2;
 	int ret;
+
+	if (!phydev->priv) {
+		dp83867 = kzalloc(sizeof(*dp83867), GFP_KERNEL);
+		if (!dp83867)
+			return -ENOMEM;
+
+		phydev->priv = dp83867;
+		ret = dp83867_of_init(phydev);
+		if (ret)
+			goto err_out;
+	} else {
+		dp83867 = (struct dp83867_private *)phydev->priv;
+	}
 
 	/* Restart the PHY.  */
 	val = phy_read(phydev, MDIO_DEVAD_NONE, DP83867_CTRL);
@@ -149,13 +234,36 @@ static int dp83867_config(struct phy_device *phydev)
 
 	if (phy_interface_is_rgmii(phydev)) {
 		ret = phy_write(phydev, MDIO_DEVAD_NONE, MII_DP83867_PHYCTRL,
-			(FIFO_DEPTH << DP83867_PHYCR_FIFO_DEPTH_SHIFT));
+			(DP83867_MDI_CROSSOVER_AUTO << DP83867_MDI_CROSSOVER) |
+			(dp83867->fifo_depth << DP83867_PHYCR_FIFO_DEPTH_SHIFT));
 		if (ret)
-			return ret;
+			goto err_out;
+	} else if (phy_interface_is_sgmii(phydev)) {
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR,
+			  (BMCR_ANENABLE | BMCR_FULLDPLX | BMCR_SPEED1000));
+
+		cfg2 = phy_read(phydev, phydev->addr, MII_DP83867_CFG2);
+		cfg2 &= MII_DP83867_CFG2_MASK;
+		cfg2 |= (MII_DP83867_CFG2_SPEEDOPT_10EN |
+			 MII_DP83867_CFG2_SGMII_AUTONEGEN |
+			 MII_DP83867_CFG2_SPEEDOPT_ENH |
+			 MII_DP83867_CFG2_SPEEDOPT_CNT |
+			 MII_DP83867_CFG2_SPEEDOPT_INTLOW);
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_DP83867_CFG2, cfg2);
+
+		phy_write_mmd_indirect(phydev, DP83867_RGMIICTL,
+				       DP83867_DEVADDR, phydev->addr, 0x0);
+
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_DP83867_PHYCTRL,
+			  DP83867_PHYCTRL_SGMIIEN |
+			  (DP83867_MDI_CROSSOVER_MDIX <<
+			  DP83867_MDI_CROSSOVER) |
+			  (dp83867->fifo_depth << DP83867_PHYCTRL_RXFIFO_SHIFT) |
+			  (dp83867->fifo_depth << DP83867_PHYCTRL_TXFIFO_SHIFT));
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_DP83867_BISCR, 0x0);
 	}
 
-	if ((phydev->interface >= PHY_INTERFACE_MODE_RGMII_ID) &&
-	    (phydev->interface <= PHY_INTERFACE_MODE_RGMII_RXID)) {
+	if (phy_interface_is_rgmii(phydev)) {
 		val = phy_read_mmd_indirect(phydev, DP83867_RGMIICTL,
 					    DP83867_DEVADDR, phydev->addr);
 
@@ -172,15 +280,32 @@ static int dp83867_config(struct phy_device *phydev)
 		phy_write_mmd_indirect(phydev, DP83867_RGMIICTL,
 				       DP83867_DEVADDR, phydev->addr, val);
 
-		delay = (RX_ID_DELAY |
-			 (TX_ID_DELAY << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
+		delay = (dp83867->rx_id_delay |
+			 (dp83867->tx_id_delay << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
 
 		phy_write_mmd_indirect(phydev, DP83867_RGMIIDCTL,
 				       DP83867_DEVADDR, phydev->addr, delay);
+
+		if (dp83867->io_impedance >= 0) {
+			val = phy_read_mmd_indirect(phydev,
+						    DP83867_IO_MUX_CFG,
+						    DP83867_DEVADDR,
+						    phydev->addr);
+			val &= ~DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
+			val |= dp83867->io_impedance &
+			       DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
+			phy_write_mmd_indirect(phydev, DP83867_IO_MUX_CFG,
+					       DP83867_DEVADDR, phydev->addr,
+					       val);
+		}
 	}
 
 	genphy_config_aneg(phydev);
 	return 0;
+
+err_out:
+	kfree(dp83867);
+	return ret;
 }
 
 static struct phy_driver DP83867_driver = {

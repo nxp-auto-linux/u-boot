@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013 Google, Inc
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <errno.h>
 #include <malloc.h>
 #include <dm/device.h>
@@ -116,7 +116,7 @@ int uclass_destroy(struct uclass *uc)
 	while (!list_empty(&uc->dev_head)) {
 		dev = list_first_entry(&uc->dev_head, struct udevice,
 				       uclass_node);
-		ret = device_remove(dev);
+		ret = device_remove(dev, DM_REMOVE_NORMAL);
 		if (ret)
 			return ret;
 		ret = device_unbind(dev);
@@ -146,6 +146,29 @@ int uclass_get(enum uclass_id id, struct uclass **ucp)
 	*ucp = uc;
 
 	return 0;
+}
+
+const char *uclass_get_name(enum uclass_id id)
+{
+	struct uclass *uc;
+
+	if (uclass_get(id, &uc))
+		return NULL;
+	return uc->uc_drv->name;
+}
+
+enum uclass_id uclass_get_by_name(const char *name)
+{
+	int i;
+
+	for (i = 0; i < UCLASS_COUNT; i++) {
+		struct uclass_driver *uc_drv = lists_uclass_lookup(i);
+
+		if (uc_drv && !strcmp(uc_drv->name, name))
+			return i;
+	}
+
+	return UCLASS_INVALID;
 }
 
 int uclass_find_device(enum uclass_id id, int index, struct udevice **devp)
@@ -241,7 +264,7 @@ int uclass_find_device_by_seq(enum uclass_id id, int seq_or_req_seq,
 		return ret;
 
 	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
-		debug("   - %d %d\n", dev->req_seq, dev->seq);
+		debug("   - %d %d '%s'\n", dev->req_seq, dev->seq, dev->name);
 		if ((find_req_seq ? dev->req_seq : dev->seq) ==
 				seq_or_req_seq) {
 			*devp = dev;
@@ -254,8 +277,8 @@ int uclass_find_device_by_seq(enum uclass_id id, int seq_or_req_seq,
 	return -ENODEV;
 }
 
-static int uclass_find_device_by_of_offset(enum uclass_id id, int node,
-					   struct udevice **devp)
+int uclass_find_device_by_of_offset(enum uclass_id id, int node,
+				    struct udevice **devp)
 {
 	struct uclass *uc;
 	struct udevice *dev;
@@ -269,7 +292,7 @@ static int uclass_find_device_by_of_offset(enum uclass_id id, int node,
 		return ret;
 
 	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
-		if (dev->of_offset == node) {
+		if (dev_of_offset(dev) == node) {
 			*devp = dev;
 			return 0;
 		}
@@ -278,6 +301,31 @@ static int uclass_find_device_by_of_offset(enum uclass_id id, int node,
 	return -ENODEV;
 }
 
+int uclass_find_device_by_ofnode(enum uclass_id id, ofnode node,
+				 struct udevice **devp)
+{
+	struct uclass *uc;
+	struct udevice *dev;
+	int ret;
+
+	*devp = NULL;
+	if (!ofnode_valid(node))
+		return -ENODEV;
+	ret = uclass_get(id, &uc);
+	if (ret)
+		return ret;
+
+	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
+		if (ofnode_equal(dev_ofnode(dev), node)) {
+			*devp = dev;
+			return 0;
+		}
+	}
+
+	return -ENODEV;
+}
+
+#if CONFIG_IS_ENABLED(OF_CONTROL)
 static int uclass_find_device_by_phandle(enum uclass_id id,
 					 struct udevice *parent,
 					 const char *name,
@@ -289,8 +337,7 @@ static int uclass_find_device_by_phandle(enum uclass_id id,
 	int ret;
 
 	*devp = NULL;
-	find_phandle = fdtdec_get_int(gd->fdt_blob, parent->of_offset, name,
-				      -1);
+	find_phandle = dev_read_u32_default(parent, name, -1);
 	if (find_phandle <= 0)
 		return -ENOENT;
 	ret = uclass_get(id, &uc);
@@ -298,7 +345,9 @@ static int uclass_find_device_by_phandle(enum uclass_id id,
 		return ret;
 
 	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
-		uint phandle = fdt_get_phandle(gd->fdt_blob, dev->of_offset);
+		uint phandle;
+
+		phandle = dev_read_phandle(dev);
 
 		if (phandle == find_phandle) {
 			*devp = dev;
@@ -308,9 +357,29 @@ static int uclass_find_device_by_phandle(enum uclass_id id,
 
 	return -ENODEV;
 }
+#endif
 
-int uclass_get_device_tail(struct udevice *dev, int ret,
-				  struct udevice **devp)
+int uclass_get_device_by_driver(enum uclass_id id,
+				const struct driver *find_drv,
+				struct udevice **devp)
+{
+	struct udevice *dev;
+	struct uclass *uc;
+	int ret;
+
+	ret = uclass_get(id, &uc);
+	if (ret)
+		return ret;
+
+	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
+		if (dev->driver == find_drv)
+			return uclass_get_device_tail(dev, 0, devp);
+	}
+
+	return -ENODEV;
+}
+
+int uclass_get_device_tail(struct udevice *dev, int ret, struct udevice **devp)
 {
 	if (ret)
 		return ret;
@@ -374,6 +443,45 @@ int uclass_get_device_by_of_offset(enum uclass_id id, int node,
 	return uclass_get_device_tail(dev, ret, devp);
 }
 
+int uclass_get_device_by_ofnode(enum uclass_id id, ofnode node,
+				struct udevice **devp)
+{
+	struct udevice *dev;
+	int ret;
+
+	*devp = NULL;
+	ret = uclass_find_device_by_ofnode(id, node, &dev);
+
+	return uclass_get_device_tail(dev, ret, devp);
+}
+
+#if CONFIG_IS_ENABLED(OF_CONTROL)
+int uclass_get_device_by_phandle_id(enum uclass_id id, uint phandle_id,
+				    struct udevice **devp)
+{
+	struct udevice *dev;
+	struct uclass *uc;
+	int ret;
+
+	*devp = NULL;
+	ret = uclass_get(id, &uc);
+	if (ret)
+		return ret;
+
+	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
+		uint phandle;
+
+		phandle = dev_read_phandle(dev);
+
+		if (phandle == phandle_id) {
+			*devp = dev;
+			return uclass_get_device_tail(dev, ret, devp);
+		}
+	}
+
+	return -ENODEV;
+}
+
 int uclass_get_device_by_phandle(enum uclass_id id, struct udevice *parent,
 				 const char *name, struct udevice **devp)
 {
@@ -384,6 +492,7 @@ int uclass_get_device_by_phandle(enum uclass_id id, struct udevice *parent,
 	ret = uclass_find_device_by_phandle(id, parent, name, &dev);
 	return uclass_get_device_tail(dev, ret, devp);
 }
+#endif
 
 int uclass_first_device(enum uclass_id id, struct udevice **devp)
 {
@@ -397,6 +506,19 @@ int uclass_first_device(enum uclass_id id, struct udevice **devp)
 	return uclass_get_device_tail(dev, ret, devp);
 }
 
+int uclass_first_device_err(enum uclass_id id, struct udevice **devp)
+{
+	int ret;
+
+	ret = uclass_first_device(id, devp);
+	if (ret)
+		return ret;
+	else if (!*devp)
+		return -ENODEV;
+
+	return 0;
+}
+
 int uclass_next_device(struct udevice **devp)
 {
 	struct udevice *dev = *devp;
@@ -407,6 +529,33 @@ int uclass_next_device(struct udevice **devp)
 	if (!dev)
 		return 0;
 	return uclass_get_device_tail(dev, ret, devp);
+}
+
+int uclass_first_device_check(enum uclass_id id, struct udevice **devp)
+{
+	int ret;
+
+	*devp = NULL;
+	ret = uclass_find_first_device(id, devp);
+	if (ret)
+		return ret;
+	if (!*devp)
+		return 0;
+
+	return device_probe(*devp);
+}
+
+int uclass_next_device_check(struct udevice **devp)
+{
+	int ret;
+
+	ret = uclass_find_next_device(devp);
+	if (ret)
+		return ret;
+	if (!*devp)
+		return 0;
+
+	return device_probe(*devp);
 }
 
 int uclass_bind_device(struct udevice *dev)
@@ -425,11 +574,6 @@ int uclass_bind_device(struct udevice *dev)
 			if (ret)
 				goto err;
 		}
-	}
-	if (uc->uc_drv->post_bind) {
-		ret = uc->uc_drv->post_bind(dev);
-		if (ret)
-			goto err;
 	}
 
 	return 0;

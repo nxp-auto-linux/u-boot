@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Address map functions for Marvell EBU SoCs (Kirkwood, Armada
  * 370/XP, Dove, Orion5x and MV78xx0)
@@ -10,8 +11,6 @@
  *
  * based on mbus driver from Linux
  *   (C) Copyright 2008 Marvell Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0
  *
  * The Marvell EBU SoCs have a configurable physical address space:
  * the physical address at which certain devices (PCIe, NOR, NAND,
@@ -48,7 +47,7 @@
  */
 
 #include <common.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/soc.h>
@@ -491,7 +490,7 @@ int mvebu_mbus_probe(struct mbus_win windows[], int count)
 #if defined(CONFIG_KIRKWOOD)
 	mbus_state.soc = &kirkwood_mbus_data;
 #endif
-#if defined(CONFIG_ARMADA_XP)
+#if defined(CONFIG_ARCH_MVEBU)
 	mbus_state.soc = &armada_370_xp_mbus_data;
 #endif
 

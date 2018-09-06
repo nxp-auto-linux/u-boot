@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2011-2012 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,12 +10,11 @@
 #include <linux/compiler.h>
 #include <asm/mmu.h>
 #include <asm/processor.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/cache.h>
 #include <asm/immap_85xx.h>
 #include <asm/fsl_law.h>
 #include <asm/fsl_serdes.h>
-#include <asm/fsl_portals.h>
 #include <asm/fsl_liodn.h>
 #include <fm_eth.h>
 #include <hwconfig.h>
@@ -196,7 +194,7 @@ static int adjust_vdd(ulong vdd_override)
 	      vid, vdd_target/10);
 
 	/* check override variable for overriding VDD */
-	vdd_string = getenv("b4qds_vdd_mv");
+	vdd_string = env_get("b4qds_vdd_mv");
 	if (vdd_override == 0 && vdd_string &&
 	    !strict_strtoul(vdd_string, 10, &vdd_string_override))
 		vdd_override = vdd_string_override;
@@ -438,7 +436,7 @@ int configure_vsc3316_3308(void)
 		}
 		break;
 
-#ifdef CONFIG_PPC_B4420
+#ifdef CONFIG_ARCH_B4420
 	case 0x17:
 	case 0x18:
 			/*
@@ -497,7 +495,7 @@ int configure_vsc3316_3308(void)
 	/* Configure VSC3308 crossbar switch */
 	ret = select_i2c_ch_pca(I2C_CH_VSC3308);
 	switch (serdes2_prtcl) {
-#ifdef CONFIG_PPC_B4420
+#ifdef CONFIG_ARCH_B4420
 	case 0x9d:
 #endif
 	case 0x9E:
@@ -543,7 +541,7 @@ int configure_vsc3316_3308(void)
 			 * Extract hwconfig from environment since environment
 			 * is not setup properly yet
 			 */
-			getenv_f("hwconfig", buffer, sizeof(buffer));
+			env_get_f("hwconfig", buffer, sizeof(buffer));
 			buf = buffer;
 
 			if (hwconfig_subarg_cmp_f("fsl_b4860_serdes2",
@@ -930,7 +928,7 @@ int config_serdes2_refclks(void)
 	 * For this SerDes2's Refclk1 need to be set to 100MHz
 	 */
 	switch (serdes2_prtcl) {
-#ifdef CONFIG_PPC_B4420
+#ifdef CONFIG_ARCH_B4420
 	case 0x9d:
 #endif
 	case 0x9E:
@@ -1023,10 +1021,6 @@ int board_early_init_r(void)
 			MAS3_SX|MAS3_SW|MAS3_SR, MAS2_I|MAS2_G,
 			0, flash_esel, BOOKE_PAGESZ_256M, 1);
 
-	set_liodns();
-#ifdef CONFIG_SYS_DPAA_QBMAN
-	setup_portals();
-#endif
 	/*
 	 * Adjust core voltage according to voltage ID
 	 * This function changes I2C mux to channel 2.
@@ -1202,8 +1196,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	ft_cpu_setup(blob, bd);
 
-	base = getenv_bootm_low();
-	size = getenv_bootm_size();
+	base = env_get_bootm_low();
+	size = env_get_bootm_size();
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 
@@ -1214,7 +1208,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 	fdt_fixup_liodn(blob);
 
 #ifdef CONFIG_HAS_FSL_DR_USB
-	fdt_fixup_dr_usb(blob, bd);
+	fsl_fdt_fixup_dr_usb(blob, bd);
 #endif
 
 #ifdef CONFIG_SYS_DPAA_FMAN

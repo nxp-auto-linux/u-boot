@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013 Google, Inc
  *
  * (C) Copyright 2012
  * Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -74,11 +73,12 @@ int lists_bind_drivers(struct udevice *parent, bool pre_reloc_only)
 int device_bind_driver(struct udevice *parent, const char *drv_name,
 		       const char *dev_name, struct udevice **devp)
 {
-	return device_bind_driver_to_node(parent, drv_name, dev_name, -1, devp);
+	return device_bind_driver_to_node(parent, drv_name, dev_name,
+					  ofnode_null(), devp);
 }
 
 int device_bind_driver_to_node(struct udevice *parent, const char *drv_name,
-			       const char *dev_name, int node,
+			       const char *dev_name, ofnode node,
 			       struct udevice **devp)
 {
 	struct driver *drv;
@@ -89,48 +89,32 @@ int device_bind_driver_to_node(struct udevice *parent, const char *drv_name,
 		debug("Cannot find driver '%s'\n", drv_name);
 		return -ENOENT;
 	}
-	ret = device_bind(parent, drv, dev_name, NULL, node, devp);
-	if (ret) {
-		debug("Cannot create device named '%s' (err=%d)\n",
-		      dev_name, ret);
-		return ret;
-	}
+	ret = device_bind_with_driver_data(parent, drv, dev_name, 0 /* data */,
+					   node, devp);
 
-	return 0;
+	return ret;
 }
 
-#if CONFIG_IS_ENABLED(OF_CONTROL)
+#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
 /**
- * driver_check_compatible() - Check if a driver is compatible with this node
+ * driver_check_compatible() - Check if a driver matches a compatible string
  *
- * @param blob:		Device tree pointer
- * @param offset:	Offset of node in device tree
  * @param of_match:	List of compatible strings to match
  * @param of_idp:	Returns the match that was found
- * @return 0 if there is a match, -ENOENT if no match, -ENODEV if the node
- * does not have a compatible string, other error <0 if there is a device
- * tree error
+ * @param compat:	The compatible string to search for
+ * @return 0 if there is a match, -ENOENT if no match
  */
-static int driver_check_compatible(const void *blob, int offset,
-				   const struct udevice_id *of_match,
-				   const struct udevice_id **of_idp)
+static int driver_check_compatible(const struct udevice_id *of_match,
+				   const struct udevice_id **of_idp,
+				   const char *compat)
 {
-	int ret;
-
-	*of_idp = NULL;
 	if (!of_match)
 		return -ENOENT;
 
 	while (of_match->compatible) {
-		ret = fdt_node_check_compatible(blob, offset,
-						of_match->compatible);
-		if (!ret) {
+		if (!strcmp(of_match->compatible, compat)) {
 			*of_idp = of_match;
 			return 0;
-		} else if (ret == -FDT_ERR_NOTFOUND) {
-			return -ENODEV;
-		} else if (ret < 0) {
-			return -EINVAL;
 		}
 		of_match++;
 	}
@@ -138,8 +122,7 @@ static int driver_check_compatible(const void *blob, int offset,
 	return -ENOENT;
 }
 
-int lists_bind_fdt(struct udevice *parent, const void *blob, int offset,
-		   struct udevice **devp)
+int lists_bind_fdt(struct udevice *parent, ofnode node, struct udevice **devp)
 {
 	struct driver *driver = ll_entry_start(struct driver, driver);
 	const int n_ents = ll_entry_count(struct driver, driver);
@@ -147,35 +130,59 @@ int lists_bind_fdt(struct udevice *parent, const void *blob, int offset,
 	struct driver *entry;
 	struct udevice *dev;
 	bool found = false;
-	const char *name;
+	const char *name, *compat_list, *compat;
+	int compat_length, i;
 	int result = 0;
 	int ret = 0;
 
-	dm_dbg("bind node %s\n", fdt_get_name(blob, offset, NULL));
 	if (devp)
 		*devp = NULL;
-	for (entry = driver; entry != driver + n_ents; entry++) {
-		ret = driver_check_compatible(blob, offset, entry->of_match,
-					      &id);
-		name = fdt_get_name(blob, offset, NULL);
-		if (ret == -ENOENT) {
-			continue;
-		} else if (ret == -ENODEV) {
-			dm_dbg("Device '%s' has no compatible string\n", name);
-			break;
-		} else if (ret) {
-			dm_warn("Device tree error at offset %d\n", offset);
-			result = ret;
-			break;
+	name = ofnode_get_name(node);
+	pr_debug("bind node %s\n", name);
+
+	compat_list = ofnode_get_property(node, "compatible", &compat_length);
+	if (!compat_list) {
+		if (compat_length == -FDT_ERR_NOTFOUND) {
+			pr_debug("Device '%s' has no compatible string\n",
+				 name);
+			return 0;
 		}
 
-		dm_dbg("   - found match at '%s'\n", entry->name);
-		ret = device_bind(parent, entry, name, NULL, offset, &dev);
+		dm_warn("Device tree error at node '%s'\n", name);
+		return compat_length;
+	}
+
+	/*
+	 * Walk through the compatible string list, attempting to match each
+	 * compatible string in order such that we match in order of priority
+	 * from the first string to the last.
+	 */
+	for (i = 0; i < compat_length; i += strlen(compat) + 1) {
+		compat = compat_list + i;
+		pr_debug("   - attempt to match compatible string '%s'\n",
+			 compat);
+
+		for (entry = driver; entry != driver + n_ents; entry++) {
+			ret = driver_check_compatible(entry->of_match, &id,
+						      compat);
+			if (!ret)
+				break;
+		}
+		if (entry == driver + n_ents)
+			continue;
+
+		pr_debug("   - found match at '%s'\n", entry->name);
+		ret = device_bind_with_driver_data(parent, entry, name,
+						   id->data, node, &dev);
+		if (ret == -ENODEV) {
+			pr_debug("Driver '%s' refuses to bind\n", entry->name);
+			continue;
+		}
 		if (ret) {
-			dm_warn("Error binding driver '%s'\n", entry->name);
+			dm_warn("Error binding driver '%s': %d\n", entry->name,
+				ret);
 			return ret;
 		} else {
-			dev->driver_data = id->data;
 			found = true;
 			if (devp)
 				*devp = dev;
@@ -183,10 +190,8 @@ int lists_bind_fdt(struct udevice *parent, const void *blob, int offset,
 		break;
 	}
 
-	if (!found && !result && ret != -ENODEV) {
-		dm_dbg("No match for node '%s'\n",
-		       fdt_get_name(blob, offset, NULL));
-	}
+	if (!found && !result && ret != -ENODEV)
+		pr_debug("No match for node '%s'\n", name);
 
 	return result;
 }

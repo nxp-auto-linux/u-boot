@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * This file handles the board muxing between the RGMII/SGMII PHYs on
  * Freescale LS1021AQDS board. The RGMII PHYs are the three on-board 1Gb
@@ -113,7 +112,7 @@ static int ls1021a_mdio_init(char *realbusname, char *fakebusname)
 	bus->read = ls1021a_mdio_read;
 	bus->write = ls1021a_mdio_write;
 	bus->reset = ls1021a_mdio_reset;
-	sprintf(bus->name, fakebusname);
+	strcpy(bus->name, fakebusname);
 
 	lsmdio->realbus = miiphy_get_dev_by_name(realbusname);
 

@@ -1,14 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Keystone : Board initialization
  *
  * (C) Copyright 2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
-#include "board.h"
 #include <common.h>
+#include "board.h"
 #include <spl.h>
 #include <exports.h>
 #include <fdt_support.h>
@@ -20,6 +19,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if defined(CONFIG_TI_AEMIF)
 static struct aemif_config aemif_configs[] = {
 	{			/* CS0 */
 		.mode		= AEMIF_MODE_NAND,
@@ -33,6 +33,7 @@ static struct aemif_config aemif_configs[] = {
 		.width		= AEMIF_WIDTH_8,
 	},
 };
+#endif
 
 int dram_init(void)
 {
@@ -42,9 +43,19 @@ int dram_init(void)
 
 	gd->ram_size = get_ram_size((long *)CONFIG_SYS_SDRAM_BASE,
 				    CONFIG_MAX_RAM_BANK_SIZE);
-	aemif_init(ARRAY_SIZE(aemif_configs), aemif_configs);
-	if (ddr3_size)
-		ddr3_init_ecc(KS2_DDR3A_EMIF_CTRL_BASE, ddr3_size);
+#if defined(CONFIG_TI_AEMIF)
+	if (!board_is_k2g_ice())
+		aemif_init(ARRAY_SIZE(aemif_configs), aemif_configs);
+#endif
+
+	if (!board_is_k2g_ice()) {
+		if (ddr3_size)
+			ddr3_init_ecc(KS2_DDR3A_EMIF_CTRL_BASE, ddr3_size);
+		else
+			ddr3_init_ecc(KS2_DDR3A_EMIF_CTRL_BASE,
+				      gd->ram_size >> 30);
+	}
+
 	return 0;
 }
 
@@ -56,12 +67,13 @@ int board_init(void)
 }
 
 #ifdef CONFIG_DRIVER_TI_KEYSTONE_NET
+#ifndef CONFIG_DM_ETH
 int get_eth_env_param(char *env_name)
 {
 	char *env;
 	int res = -1;
 
-	env = getenv(env_name);
+	env = env_get(env_name);
 	if (env)
 		res = simple_strtol(env, NULL, 0);
 
@@ -105,6 +117,7 @@ int board_eth_init(bd_t *bis)
 	return 0;
 }
 #endif
+#endif
 
 #ifdef CONFIG_SPL_BUILD
 void spl_board_init(void)
@@ -124,7 +137,7 @@ u32 spl_boot_device(void)
 }
 #endif
 
-#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
+#ifdef CONFIG_OF_BOARD_SETUP
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	int lpae;
@@ -137,16 +150,14 @@ int ft_board_setup(void *blob, bd_t *bd)
 	u32 ddr3a_size;
 	int unitrd_fixup = 0;
 
-	env = getenv("mem_lpae");
+	env = env_get("mem_lpae");
 	lpae = env && simple_strtol(env, NULL, 0);
-	env = getenv("uinitrd_fixup");
+	env = env_get("uinitrd_fixup");
 	unitrd_fixup = env && simple_strtol(env, NULL, 0);
 
 	ddr3a_size = 0;
 	if (lpae) {
-		env = getenv("ddr3a_size");
-		if (env)
-			ddr3a_size = simple_strtol(env, NULL, 10);
+		ddr3a_size = ddr3_get_size();
 		if ((ddr3a_size != 8) && (ddr3a_size != 4))
 			ddr3a_size = 0;
 	}
@@ -168,13 +179,13 @@ int ft_board_setup(void *blob, bd_t *bd)
 	}
 
 	/* reserve memory at start of bank */
-	env = getenv("mem_reserve_head");
+	env = env_get("mem_reserve_head");
 	if (env) {
 		start[0] += ustrtoul(env, &endp, 0);
 		size[0] -= ustrtoul(env, &endp, 0);
 	}
 
-	env = getenv("mem_reserve");
+	env = env_get("mem_reserve");
 	if (env)
 		size[0] -= ustrtoul(env, &endp, 0);
 
@@ -239,7 +250,7 @@ void ft_board_setup_ex(void *blob, bd_t *bd)
 	char *env;
 	u64 *reserve_start;
 
-	env = getenv("mem_lpae");
+	env = env_get("mem_lpae");
 	lpae = env && simple_strtol(env, NULL, 0);
 
 	if (lpae) {
@@ -267,5 +278,12 @@ void ft_board_setup_ex(void *blob, bd_t *bd)
 	}
 
 	ddr3_check_ecc_int(KS2_DDR3A_EMIF_CTRL_BASE);
+}
+#endif /* CONFIG_OF_BOARD_SETUP */
+
+#if defined(CONFIG_DTB_RESELECT)
+int __weak embedded_dtb_select(void)
+{
+	return 0;
 }
 #endif

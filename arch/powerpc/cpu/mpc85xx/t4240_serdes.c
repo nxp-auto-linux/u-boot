@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2012 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -15,7 +14,7 @@ struct serdes_config {
 	u8 lanes[SRDS_MAX_LANES];
 };
 
-#ifdef CONFIG_PPC_T4240
+#ifdef CONFIG_ARCH_T4240
 static const struct serdes_config serdes1_cfg_tbl[] = {
 	/* SerDes 1 */
 	{1, {XAUI_FM1_MAC9, XAUI_FM1_MAC9,
@@ -263,7 +262,7 @@ static const struct serdes_config serdes4_cfg_tbl[] = {
 	{18, {PCIE3, PCIE3, PCIE3, PCIE3, AURORA, AURORA, AURORA, AURORA}},
 	{}
 };
-#elif defined(CONFIG_PPC_T4160) || defined(CONFIG_PPC_T4080)
+#elif defined(CONFIG_ARCH_T4160)
 static const struct serdes_config serdes1_cfg_tbl[] = {
 	/* SerDes 1 */
 	{1, {NONE, NONE, NONE, NONE,

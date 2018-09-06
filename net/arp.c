@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  *	Copied from Linux Monitor (LiMon) - Networking.
  *
@@ -6,7 +7,6 @@
  *	Copyright 2000 Roland Borde
  *	Copyright 2000 Paolo Scaffardi
  *	Copyright 2000-2002 Wolfgang Denk, wd@denx.de
- *	SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -125,7 +125,6 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 {
 	struct arp_hdr *arp;
 	struct in_addr reply_ip_addr;
-	uchar *pkt;
 	int eth_hdr_size;
 
 	/*
@@ -163,9 +162,7 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 	case ARPOP_REQUEST:
 		/* reply with our IP address */
 		debug_cond(DEBUG_DEV_PKT, "Got ARP REQUEST, return our IP\n");
-		pkt = (uchar *)et;
 		eth_hdr_size = net_update_ether(et, et->et_src, PROT_ARP);
-		pkt += eth_hdr_size;
 		arp->ar_op = htons(ARPOP_REPLY);
 		memcpy(&arp->ar_tha, &arp->ar_sha, ARP_HLEN);
 		net_copy_ip(&arp->ar_tpa, &arp->ar_spa);
@@ -185,7 +182,8 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 		    (net_read_ip(&arp->ar_spa).s_addr & net_netmask.s_addr))
 			udelay(5000);
 #endif
-		net_send_packet((uchar *)et, eth_hdr_size + ARP_HDR_SIZE);
+		memcpy(net_tx_packet, et, eth_hdr_size + ARP_HDR_SIZE);
+		net_send_packet(net_tx_packet, eth_hdr_size + ARP_HDR_SIZE);
 		return;
 
 	case ARPOP_REPLY:		/* arp reply */
@@ -197,7 +195,7 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 		if (net_server_ip.s_addr == net_arp_wait_packet_ip.s_addr) {
 			char buf[20];
 			sprintf(buf, "%pM", &arp->ar_sha);
-			setenv("serveraddr", buf);
+			env_set("serveraddr", buf);
 		}
 #endif
 

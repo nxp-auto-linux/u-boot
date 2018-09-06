@@ -1,13 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuation settings for the Sentec Cobra Board.
  *
  * (C) Copyright 2003 Josef Baumgartner <josef.baumgartner@telex.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* ---
- * Version: U-boot 1.0.0 - initial release for Sentec COBRA5272 board
+ * Version: U-Boot 1.0.0 - initial release for Sentec COBRA5272 board
  * Date: 2004-03-29
  * Author: Florian Schlote
  *
@@ -52,7 +51,6 @@
 
 #define CONFIG_MCFUART
 #define CONFIG_SYS_UART_PORT		(0)
-#define CONFIG_BAUDRATE		19200
 
 /* ---
  * set "#if 0" to "#if 1" if (Hardware)-WATCHDOG should be enabled & change
@@ -97,32 +95,23 @@
 #ifndef CONFIG_MONITOR_IS_IN_RAM
 #define CONFIG_ENV_OFFSET		0x4000
 #define CONFIG_ENV_SECT_SIZE	0x2000
-#define CONFIG_ENV_IS_IN_FLASH	1
 #else
 #define CONFIG_ENV_ADDR		0xffe04000
 #define CONFIG_ENV_SECT_SIZE	0x2000
-#define CONFIG_ENV_IS_IN_FLASH	1
 #endif
 
 #define LDS_BOARD_TEXT \
-        . = DEFINED(env_offset) ? env_offset : .; \
-        common/env_embedded.o (.text);
+	. = DEFINED(env_offset) ? env_offset : .; \
+	env/embedded.o(.text);
 
 /*
  * BOOTP options
  */
 #define CONFIG_BOOTP_BOOTFILESIZE
-#define CONFIG_BOOTP_BOOTPATH
-#define CONFIG_BOOTP_GATEWAY
-#define CONFIG_BOOTP_HOSTNAME
-
 
 /*
  * Command line configuration.
  */
-#define CONFIG_CMD_PING
-
-#undef CONFIG_CMD_MII
 
 #ifdef CONFIG_MCFFEC
 #	define CONFIG_MII		1
@@ -153,12 +142,6 @@
 
 /*AUTOBOOT settings - booting images automatically by u-boot after power on*/
 
-#define CONFIG_BOOTDELAY	5		/* used for autoboot, delay in
-seconds u-boot will wait before starting defined (auto-)boot command, setting
-to -1 disables delay, setting to 0 will too prevent access to u-boot command
-interface: u-boot then has to reflashed */
-
-
 /* The following settings will be contained in the environment block ; if you
 want to use a neutral environment all those settings can be manually set in
 u-boot: 'set' command */
@@ -167,9 +150,6 @@ u-boot: 'set' command */
 
 #define CONFIG_BOOTCOMMAND	"bootm 0xffe80000"	/*Autoboto command, please
 enter a valid image address in flash */
-
-#define CONFIG_BOOTARGS		" "			/* default bootargs that are
-considered during boot */
 
 /* User network settings */
 
@@ -182,17 +162,6 @@ considered during boot */
 from which user programs will be started */
 
 /*---*/
-
-#define CONFIG_SYS_LONGHELP				/* undef to save memory		*/
-
-#if defined(CONFIG_CMD_KGDB)
-#define CONFIG_SYS_CBSIZE		1024		/* Console I/O Buffer Size	*/
-#else
-#define CONFIG_SYS_CBSIZE		256		/* Console I/O Buffer Size	*/
-#endif
-#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
-#define CONFIG_SYS_MAXARGS		16		/* max number of command args	*/
-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE	/* Boot Argument Buffer Size	*/
 
 /*
  *-----------------------------------------------------------------------------

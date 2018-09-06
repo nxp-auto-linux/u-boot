@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2012 Freescale Semiconductor, Inc.
  *	Roy Zang <tie-fei.zang@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __MEMAC_H__
@@ -226,6 +225,7 @@ struct memac {
 #define PHY_SGMII_CR_PHY_RESET      0x8000
 #define PHY_SGMII_CR_RESET_AN       0x0200
 #define PHY_SGMII_CR_DEF_VAL        0x1140
+#define PHY_SGMII_IF_SPEED_GIGABIT  0x0008
 #define PHY_SGMII_DEV_ABILITY_SGMII 0x4001
 #define PHY_SGMII_IF_MODE_AN        0x0002
 #define PHY_SGMII_IF_MODE_SGMII     0x0001

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2011
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Lei Wen <leiwen@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -24,9 +23,6 @@
 #endif /* CONFIG_KW88F6281 */
 
 #include <asm/arch/soc.h>
-#define CONFIG_SYS_CACHELINE_SIZE	32
-				/* default Dcache Line length for kirkwood */
-#define CONFIG_MD5	/* get_random_hex on krikwood needs MD5 support */
 #define CONFIG_KIRKWOOD_EGIGA_INIT	/* Enable GbePort0/1 for kernel */
 #define CONFIG_KIRKWOOD_RGMII_PAD_1V8	/* Set RGMII Pad voltage to 1.8V */
 #define CONFIG_KIRKWOOD_PCIE_INIT       /* Enable PCIE Port0 for kernel */
@@ -63,8 +59,6 @@
  * SPI Flash configuration
  */
 #ifdef CONFIG_CMD_SF
-#define CONFIG_HARD_SPI			1
-#define CONFIG_KIRKWOOD_SPI		1
 #ifndef CONFIG_ENV_SPI_BUS
 # define CONFIG_ENV_SPI_BUS		0
 #endif
@@ -80,10 +74,8 @@
  * Ethernet Driver configuration
  */
 #ifdef CONFIG_CMD_NET
-#define CONFIG_CMD_MII
 #define CONFIG_NETCONSOLE	/* include NetConsole support   */
 #define CONFIG_MII		/* expose smi ove miiphy interface */
-#define CONFIG_MVGBE		/* Enable Marvell Gbe Controller Driver */
 #define CONFIG_SYS_FAULT_ECHO_LINK_DOWN	/* detect link using phy */
 #define CONFIG_ENV_OVERWRITE	/* ethaddr can be reprogrammed */
 #define CONFIG_RESET_PHY_R	/* use reset_phy() to init mv8831116 PHY */
@@ -93,17 +85,14 @@
  * USB/EHCI
  */
 #ifdef CONFIG_CMD_USB
-#define CONFIG_USB_EHCI_MARVELL
 #define CONFIG_EHCI_IS_TDI
 #endif /* CONFIG_CMD_USB */
 
 /*
  * IDE Support on SATA ports
  */
-#ifdef CONFIG_CMD_IDE
+#ifdef CONFIG_IDE
 #define __io
-#define CONFIG_CMD_EXT2
-#define CONFIG_MVSATA_IDE
 #define CONFIG_IDE_PREINIT
 #define CONFIG_MVSATA_IDE_USE_PORT1
 /* Needs byte-swapping for ATA data register */
@@ -116,17 +105,17 @@
 #define CONFIG_SYS_ATA_STRIDE		4
 /* Controller supports 48-bits LBA addressing */
 #define CONFIG_LBA48
-/* CONFIG_CMD_IDE requires some #defines for ATA registers */
+/* CONFIG_IDE requires some #defines for ATA registers */
 #define CONFIG_SYS_IDE_MAXBUS		2
 #define CONFIG_SYS_IDE_MAXDEVICE	2
 /* ATA registers base is at SATA controller base */
 #define CONFIG_SYS_ATA_BASE_ADDR	MV_SATA_BASE
-#endif /* CONFIG_CMD_IDE */
+#endif /* CONFIG_IDE */
 
 /*
  * I2C related stuff
  */
-#ifdef CONFIG_CMD_I2C
+#if defined(CONFIG_CMD_I2C) && !defined(CONFIG_DM_I2C)
 #ifndef CONFIG_SYS_I2C_SOFT
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MVTWSI
@@ -134,5 +123,10 @@
 #define CONFIG_SYS_I2C_SLAVE		0x0
 #define CONFIG_SYS_I2C_SPEED		100000
 #endif
+
+/* Use common timer */
+#define CONFIG_SYS_TIMER_COUNTS_DOWN
+#define CONFIG_SYS_TIMER_COUNTER	(MVEBU_TIMER_BASE + 0x14)
+#define CONFIG_SYS_TIMER_RATE		CONFIG_SYS_TCLK
 
 #endif /* _KW_CONFIG_H */

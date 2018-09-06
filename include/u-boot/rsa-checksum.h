@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013, Andreas Oetken.
- *
- * SPDX-License-Identifier:    GPL-2.0+
-*/
+ */
 
 #ifndef _RSA_CHECKSUM_H
 #define _RSA_CHECKSUM_H
@@ -11,10 +10,6 @@
 #include <image.h>
 #include <u-boot/sha1.h>
 #include <u-boot/sha256.h>
-
-extern const uint8_t padding_sha256_rsa4096[];
-extern const uint8_t padding_sha256_rsa2048[];
-extern const uint8_t padding_sha1_rsa2048[];
 
 /**
  * hash_calculate() - Calculate hash over the data

@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007 Michal Simek
  *
  * Michal  SIMEK <monstr@monstr.eu>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* This is a board specific file.  It's OK to include board specific
@@ -12,7 +11,6 @@
 #include <common.h>
 #include <config.h>
 #include <fdtdec.h>
-#include <netdev.h>
 #include <asm/processor.h>
 #include <asm/microblaze_intc.h>
 #include <asm/asm.h>
@@ -24,13 +22,14 @@ DECLARE_GLOBAL_DATA_PTR;
 static int reset_pin = -1;
 #endif
 
-#if CONFIG_IS_ENABLED(OF_CONTROL)
 ulong ram_base;
 
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = ram_base;
 	gd->bd->bi_dram[0].size = get_effective_memsize();
+
+	return 0;
 }
 
 int dram_init(void)
@@ -58,14 +57,6 @@ int dram_init(void)
 
 	return 0;
 };
-#else
-int dram_init(void)
-{
-	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
-
-	return 0;
-}
-#endif
 
 int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -86,7 +77,7 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 
-int gpio_init (void)
+static int gpio_init(void)
 {
 #ifdef CONFIG_XILINX_GPIO
 	reset_pin = gpio_alloc(CONFIG_SYS_GPIO_0_ADDR, "reset", 1);
@@ -96,32 +87,9 @@ int gpio_init (void)
 	return 0;
 }
 
-void board_init(void)
+int board_late_init(void)
 {
 	gpio_init();
-}
 
-int board_eth_init(bd_t *bis)
-{
-	int ret = 0;
-
-#ifdef CONFIG_XILINX_AXIEMAC
-	ret |= xilinx_axiemac_initialize(bis, XILINX_AXIEMAC_BASEADDR,
-						XILINX_AXIDMA_BASEADDR);
-#endif
-
-#if defined(CONFIG_XILINX_EMACLITE) && defined(XILINX_EMACLITE_BASEADDR)
-	u32 txpp = 0;
-	u32 rxpp = 0;
-# ifdef CONFIG_XILINX_EMACLITE_TX_PING_PONG
-	txpp = 1;
-# endif
-# ifdef CONFIG_XILINX_EMACLITE_RX_PING_PONG
-	rxpp = 1;
-# endif
-	ret |= xilinx_emaclite_initialize(bis, XILINX_EMACLITE_BASEADDR,
-			txpp, rxpp);
-#endif
-
-	return ret;
+	return 0;
 }

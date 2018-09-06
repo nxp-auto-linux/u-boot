@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,7 +9,7 @@
 #include <asm/io.h>
 
 
-static u8 serdes_cfg_tbl[][4] = {
+static u8 serdes_cfg_tbl[][SRDS_MAX_LANES] = {
 	[0x40] = {PCIE1, PCIE1, PCIE1, PCIE1},
 	[0xD5] = {QSGMII_FM1_A, PCIE3, PCIE2, PCIE1},
 	[0xD6] = {QSGMII_FM1_A, PCIE3, PCIE2, SATA1},
@@ -45,7 +44,7 @@ int is_serdes_prtcl_valid(int serdes, u32 prtcl)
 	if (prtcl >= ARRAY_SIZE(serdes_cfg_tbl))
 		return 0;
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < SRDS_MAX_LANES; i++) {
 		if (serdes_cfg_tbl[prtcl][i] != NONE)
 			return 1;
 	}

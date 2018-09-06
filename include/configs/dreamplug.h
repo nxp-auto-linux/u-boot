@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2011
  * Jason Cooper <u-boot@lakedaemon.net>
@@ -5,30 +6,10 @@
  * Based on work by:
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Siddarth Gore <gores@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _CONFIG_DREAMPLUG_H
 #define _CONFIG_DREAMPLUG_H
-
-/*
- * FIXME: This belongs in mach-types.h.  However, we only pull mach-types
- * from Linus' kernel.org tree.  This hasn't been updated primarily due to
- * the recent arch/arm reshuffling.  So, in the meantime, we'll place it
- * here.
- */
-#include <asm/mach-types.h>
-#ifdef MACH_TYPE_DREAMPLUG
-#error "MACH_TYPE_DREAMPLUG has been defined properly, please remove this."
-#else
-#define MACH_TYPE_DREAMPLUG            3550
-#endif
-
-/*
- * Version number information
- */
-#define CONFIG_IDENT_STRING	"\nMarvell-DreamPlug"
 
 /*
  * High Level Configuration Options (easy to change)
@@ -39,8 +20,6 @@
 /*
  * Commands configuration
  */
-#define CONFIG_CMD_EXT2
-#define CONFIG_CMD_FAT
 
 /*
  * mv-plug-common.h should be defined after CMD configs since it used them
@@ -52,15 +31,11 @@
  *  Environment variables configurations
  */
 #ifdef CONFIG_SPI_FLASH
-#define CONFIG_ENV_IS_IN_SPI_FLASH	1
 #define CONFIG_ENV_SECT_SIZE		0x10000	/* 64k */
-#else
-#define CONFIG_ENV_IS_NOWHERE		1	/* if env in SDRAM */
 #endif
 
 #ifdef CONFIG_CMD_SF
 #define CONFIG_HARD_SPI			1
-#define CONFIG_KIRKWOOD_SPI		1
 #define CONFIG_ENV_SPI_BUS		0
 #define CONFIG_ENV_SPI_CS		0
 #define CONFIG_ENV_SPI_MAX_HZ		50000000 /* 50 MHz */

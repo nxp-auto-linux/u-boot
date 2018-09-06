@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2007 Sergey Kubushyn <ksi@koi8.net>
  *
@@ -8,20 +9,19 @@
  *  linux/include/asm-arm/arch-davinci/hardware.h
  *
  *  Copyright (C) 2006 Texas Instruments.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef __ASM_ARCH_HARDWARE_H
 #define __ASM_ARCH_HARDWARE_H
 
-#include <config.h>
 #include <linux/sizes.h>
 
 #define	REG(addr)	(*(volatile unsigned int *)(addr))
 #define REG_P(addr)	((volatile unsigned int *)(addr))
 
+#ifndef __ASSEMBLY__
 typedef volatile unsigned int	dv_reg;
 typedef volatile unsigned int *	dv_reg_p;
+#endif
 
 /*
  * Base register addresses
@@ -285,6 +285,7 @@ typedef volatile unsigned int *	dv_reg_p;
 
 #endif /* CONFIG_SOC_DA8XX */
 
+#ifndef __ASSEMBLY__
 void lpsc_on(unsigned int id);
 void lpsc_syncreset(unsigned int id);
 void lpsc_disable(unsigned int id);
@@ -475,12 +476,15 @@ int clk_get(enum davinci_clk_ids id);
 /* Boot config */
 struct davinci_syscfg_regs {
 	dv_reg	revid;
-	dv_reg	rsvd[13];
+	dv_reg	rsvd[7];
+	dv_reg	bootcfg;
+	dv_reg	chiprevidr;
+	dv_reg	rsvd2[4];
 	dv_reg	kick0;
 	dv_reg	kick1;
 	dv_reg	rsvd1[52];
 	dv_reg	mstpri[3];
-	dv_reg  rsvd2;
+	dv_reg  rsvd3;
 	dv_reg	pinmux[20];
 	dv_reg	suspsrc;
 	dv_reg	chipsig;
@@ -495,6 +499,15 @@ struct davinci_syscfg_regs {
 #define davinci_syscfg_regs \
 	((struct davinci_syscfg_regs *)DAVINCI_BOOTCFG_BASE)
 
+enum {
+	DAVINCI_NAND8_BOOT	= 0b001110,
+	DAVINCI_NAND16_BOOT	= 0b010000,
+	DAVINCI_SD_OR_MMC_BOOT	= 0b011100,
+	DAVINCI_MMC_ONLY_BOOT	= 0b111100,
+	DAVINCI_SPI0_FLASH_BOOT	= 0b001010,
+	DAVINCI_SPI1_FLASH_BOOT	= 0b001100,
+};
+
 #define pinmux(x)	(&davinci_syscfg_regs->pinmux[x])
 
 /* Emulation suspend bits */
@@ -503,6 +516,7 @@ struct davinci_syscfg_regs {
 #define DAVINCI_SYSCFG_SUSPSRC_SPI0		(1 << 21)
 #define DAVINCI_SYSCFG_SUSPSRC_SPI1		(1 << 22)
 #define DAVINCI_SYSCFG_SUSPSRC_UART0		(1 << 18)
+#define DAVINCI_SYSCFG_SUSPSRC_UART1		(1 << 19)
 #define DAVINCI_SYSCFG_SUSPSRC_UART2		(1 << 20)
 #define DAVINCI_SYSCFG_SUSPSRC_TIMER0		(1 << 27)
 
@@ -612,5 +626,6 @@ static inline enum davinci_clk_ids get_async3_src(void)
 #define FLAG_FLGOFF		0x00000010
 
 #endif
+#endif /* !__ASSEMBLY__ */
 
 #endif /* __ASM_ARCH_HARDWARE_H */

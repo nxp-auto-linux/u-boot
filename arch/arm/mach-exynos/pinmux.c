@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2012 Samsung Electronics.
  * Abhilash Kesavan <a.kesavan@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -506,6 +505,9 @@ static int exynos5_pinmux_config(int peripheral, int flags)
 		 */
 		gpio_set_pull(EXYNOS5_GPIO_X07, S5P_GPIO_PULL_NONE);
 		break;
+	case PERIPH_ID_PWM0:
+		gpio_cfg_pin(EXYNOS5_GPIO_B20, S5P_GPIO_FUNC(2));
+		break;
 	default:
 		debug("%s: invalid peripheral %d", __func__, peripheral);
 		return -1;
@@ -547,6 +549,9 @@ static int exynos5420_pinmux_config(int peripheral, int flags)
 	case PERIPH_ID_I2C9:
 	case PERIPH_ID_I2C10:
 		exynos5420_i2c_config(peripheral);
+		break;
+	case PERIPH_ID_PWM0:
+		gpio_cfg_pin(EXYNOS5420_GPIO_B20, S5P_GPIO_FUNC(2));
 		break;
 	default:
 		debug("%s: invalid peripheral %d", __func__, peripheral);

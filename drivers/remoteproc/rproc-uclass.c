@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2015
  * Texas Instruments Incorporated - http://www.ti.com/
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #define pr_fmt(fmt) "%s: " fmt, __func__
 #include <common.h>
@@ -116,7 +116,7 @@ static int rproc_pre_probe(struct udevice *dev)
 
 	if (!dev->platdata) {
 #if CONFIG_IS_ENABLED(OF_CONTROL)
-		int node = dev->of_offset;
+		int node = dev_of_offset(dev);
 		const void *blob = gd->fdt_blob;
 		bool tmp;
 		if (!blob) {

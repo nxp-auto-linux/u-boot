@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 
 /*
  * Copyright (C) 2012 Samsung Electronics
  *
  * Configuration settings for the SAMSUNG EXYNOS5250 board.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_5250_H
@@ -13,10 +12,7 @@
 #define CONFIG_EXYNOS5250
 
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
-#define CONFIG_SYS_TEXT_BASE		0x43E00000
 
-/* MACH_TYPE_SMDK5250 macro will be removed once added to mach-types */
-#define MACH_TYPE_SMDK5250		3774
 #define CONFIG_MACH_TYPE		MACH_TYPE_SMDK5250
 
 #define CONFIG_SPL_MAX_FOOTPRINT	(14 * 1024)
@@ -28,12 +24,9 @@
 #define CONFIG_SYS_INIT_SP_ADDR	CONFIG_IRAM_STACK
 
 /* USB */
-#define CONFIG_USB_EHCI
 #define CONFIG_USB_EHCI_EXYNOS
 
-#define CONFIG_USB_HOST_ETHER
-#define CONFIG_USB_ETHER_ASIX
-#define CONFIG_USB_ETHER_ASIX88179
+#define CONFIG_USB_XHCI_EXYNOS
 
 /* DRAM Memory Banks */
 #define CONFIG_NR_DRAM_BANKS	8

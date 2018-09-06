@@ -1,7 +1,5 @@
-#
+# SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2014 Google, Inc
-#
-# SPDX-License-Identifier:      GPL-2.0+
 #
 
 import os
@@ -39,7 +37,6 @@ boards = [
     ['Active', 'arm', 'armv7', '', 'Tester', 'ARM Board 1', 'board0',  ''],
     ['Active', 'arm', 'armv7', '', 'Tester', 'ARM Board 2', 'board1', ''],
     ['Active', 'powerpc', 'powerpc', '', 'Tester', 'PowerPC board 1', 'board2', ''],
-    ['Active', 'powerpc', 'mpc5xx', '', 'Tester', 'PowerPC board 2', 'board3', ''],
     ['Active', 'sandbox', 'sandbox', '', 'Tester', 'Sandbox board', 'board4', ''],
 ]
 
@@ -180,7 +177,7 @@ class TestFunctional(unittest.TestCase):
         self._base_dir = tempfile.mkdtemp()
         self._git_dir = os.path.join(self._base_dir, 'src')
         self._buildman_pathname = sys.argv[0]
-        self._buildman_dir = os.path.dirname(sys.argv[0])
+        self._buildman_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
         command.test_result = self._HandleCommand
         self.setupToolchains()
         self._toolchains.Add('arm-gcc', test=False)
@@ -232,7 +229,10 @@ class TestFunctional(unittest.TestCase):
         command.test_result = None
         result = self._RunBuildman('-H')
         help_file = os.path.join(self._buildman_dir, 'README')
-        self.assertEqual(len(result.stdout), os.path.getsize(help_file))
+        # Remove possible extraneous strings
+        extra = '::::::::::::::\n' + help_file + '\n::::::::::::::\n'
+        gothelp = result.stdout.replace(extra, '')
+        self.assertEqual(len(gothelp), os.path.getsize(help_file))
         self.assertEqual(0, len(result.stderr))
         self.assertEqual(0, result.return_code)
 
@@ -255,6 +255,8 @@ class TestFunctional(unittest.TestCase):
         self.assertEqual(gitutil.use_no_decorate, True)
 
     def _HandleCommandGitLog(self, args):
+        if args[-1] == '--':
+            args = args[:-1]
         if '-n0' in args:
             return command.CommandResult(return_code=0)
         elif args[-1] == 'upstream/master..%s' % self._test_branch:
@@ -325,6 +327,9 @@ class TestFunctional(unittest.TestCase):
     def _HandleCommandObjdump(self, args):
         return command.CommandResult(return_code=0)
 
+    def _HandleCommandObjcopy(self, args):
+        return command.CommandResult(return_code=0)
+
     def _HandleCommandSize(self, args):
         return command.CommandResult(return_code=0)
 
@@ -357,6 +362,8 @@ class TestFunctional(unittest.TestCase):
             return self._HandleCommandNm(args)
         elif cmd.endswith('objdump'):
             return self._HandleCommandObjdump(args)
+        elif cmd.endswith('objcopy'):
+            return self._HandleCommandObjcopy(args)
         elif cmd.endswith( 'size'):
             return self._HandleCommandSize(args)
 
@@ -517,3 +524,12 @@ class TestFunctional(unittest.TestCase):
         self._RunControl('-b', self._test_branch, clean_dir=False)
         self.assertEqual(self._builder.count, self._total_builds)
         self.assertEqual(self._builder.fail, 0)
+
+    def testBadOutputDir(self):
+        """Test building with an output dir the same as out current dir"""
+        self._test_branch = '/__dev/__testbranch'
+        with self.assertRaises(SystemExit):
+            self._RunControl('-b', self._test_branch, '-o', os.getcwd())
+        with self.assertRaises(SystemExit):
+            self._RunControl('-b', self._test_branch, '-o',
+                             os.path.join(os.getcwd(), 'test'))

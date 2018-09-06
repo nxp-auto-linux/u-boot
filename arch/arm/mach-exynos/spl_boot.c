@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Samsung Electronics
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -177,7 +176,7 @@ static void exynos_spi_copy(unsigned int uboot_size, unsigned int uboot_addr)
 #endif
 
 /*
-* Copy U-boot from mmc to RAM:
+* Copy U-Boot from mmc to RAM:
 * COPY_BL2_FNPTR_ADDR: Address in iRAM, which Contains
 * Pointer to API (Data transfer from mmc to ram)
 */

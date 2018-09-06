@@ -1,16 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2009-2010, 2013 Freescale Semiconductor, Inc.
  *	Jun-jie Zhang <b18070@freescale.com>
  *	Mingkai Hu <Mingkai.hu@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
+
 #include <common.h>
 #include <miiphy.h>
 #include <phy.h>
 #include <fsl_mdio.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 
 void tsec_local_mdio_write(struct tsec_mii_mng __iomem *phyregs, int port_addr,
 		int dev_addr, int regnum, int value)
@@ -32,8 +32,7 @@ int tsec_local_mdio_read(struct tsec_mii_mng __iomem *phyregs, int port_addr,
 	int value;
 	int timeout = 1000000;
 
-	/* Put the address of the phy, and the register
-	 * number into MIIMADD */
+	/* Put the address of the phy, and the register number into MIIMADD */
 	out_be32(&phyregs->miimadd, (port_addr << 8) | (regnum & 0x1f));
 
 	/* Clear the command register, and wait */
@@ -104,7 +103,7 @@ int fsl_pq_mdio_init(bd_t *bis, struct fsl_pq_mdio_info *info)
 	bus->read = tsec_phy_read;
 	bus->write = tsec_phy_write;
 	bus->reset = fsl_pq_mdio_reset;
-	sprintf(bus->name, info->name);
+	strcpy(bus->name, info->name);
 
 	bus->priv = (void *)info->regs;
 

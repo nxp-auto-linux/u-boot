@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2009-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -14,7 +13,6 @@
 #include <asm/immap_85xx.h>
 #include <asm/fsl_law.h>
 #include <asm/fsl_serdes.h>
-#include <asm/fsl_portals.h>
 #include <asm/fsl_liodn.h>
 #include <fm_eth.h>
 
@@ -27,8 +25,8 @@ int checkboard (void)
 {
 	u8 sw;
 	struct cpu_type *cpu = gd->arch.cpu;
-#if defined(CONFIG_P3041DS) || defined(CONFIG_P5020DS) || \
-	defined(CONFIG_P5040DS)
+#if defined(CONFIG_TARGET_P3041DS) || defined(CONFIG_TARGET_P5020DS) || \
+	defined(CONFIG_TARGET_P5040DS)
 	unsigned int i;
 #endif
 	static const char * const freq[] = {"100", "125", "156.25", "212.5" };
@@ -57,15 +55,15 @@ int checkboard (void)
 	 * don't match.
 	 */
 	puts("SERDES Reference Clocks: ");
-#if defined(CONFIG_P3041DS) || defined(CONFIG_P5020DS) \
-	|| defined(CONFIG_P5040DS)
+#if defined(CONFIG_TARGET_P3041DS) || defined(CONFIG_TARGET_P5020DS) || \
+	defined(CONFIG_TARGET_P5040DS)
 	sw = in_8(&PIXIS_SW(5));
 	for (i = 0; i < 3; i++) {
 		unsigned int clock = (sw >> (6 - (2 * i))) & 3;
 
 		printf("Bank%u=%sMhz ", i+1, freq[clock]);
 	}
-#ifdef CONFIG_P5040DS
+#ifdef CONFIG_TARGET_P5040DS
 	/* On P5040DS, SW11[7:8] determines the Bank 4 frequency */
 	sw = in_8(&PIXIS_SW(9));
 	printf("Bank4=%sMhz ", freq[sw & 3]);
@@ -125,11 +123,6 @@ int board_early_init_r(void)
 			MAS3_SX|MAS3_SW|MAS3_SR, MAS2_I|MAS2_G,	/* perms, wimge */
 			0, flash_esel, BOOKE_PAGESZ_256M, 1);	/* ts, esel, tsize, iprot */
 
-	set_liodns();
-#ifdef CONFIG_SYS_DPAA_QBMAN
-	setup_portals();
-#endif
-
 	return 0;
 }
 
@@ -142,8 +135,8 @@ int misc_init_r(void)
 	unsigned int i;
 	u8 sw;
 
-#if defined(CONFIG_P3041DS) || defined(CONFIG_P5020DS) \
-	|| defined(CONFIG_P5040DS)
+#if defined(CONFIG_TARGET_P3041DS) || defined(CONFIG_TARGET_P5020DS) || \
+	defined(CONFIG_TARGET_P5040DS)
 	sw = in_8(&PIXIS_SW(5));
 	for (i = 0; i < 3; i++) {
 		unsigned int clock = (sw >> (6 - (2 * i))) & 3;
@@ -197,8 +190,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	ft_cpu_setup(blob, bd);
 
-	base = getenv_bootm_low();
-	size = getenv_bootm_size();
+	base = env_get_bootm_low();
+	size = env_get_bootm_size();
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 
@@ -207,7 +200,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 #endif
 
 	fdt_fixup_liodn(blob);
-	fdt_fixup_dr_usb(blob, bd);
+	fsl_fdt_fixup_dr_usb(blob, bd);
 
 #ifdef CONFIG_SYS_DPAA_FMAN
 	fdt_fixup_fman_ethernet(blob);

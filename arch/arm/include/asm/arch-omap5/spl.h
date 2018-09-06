@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2012
  * Texas Instruments, <www.ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef	_ASM_ARCH_SPL_H_
 #define	_ASM_ARCH_SPL_H_
@@ -20,7 +19,7 @@
 #define BOOT_DEVICE_QSPI_1	0x0A
 #define BOOT_DEVICE_QSPI_4	0x0B
 #define BOOT_DEVICE_UART	0x43
-#define BOOT_DEVICE_USB		0x45
+#define BOOT_DEVICE_DFU		0x45
 
 #define MMC_BOOT_DEVICES_START	BOOT_DEVICE_MMC1
 #define MMC_BOOT_DEVICES_END	BOOT_DEVICE_MMC2_2

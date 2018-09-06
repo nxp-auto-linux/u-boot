@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2010-2015
  * NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _TEGRA_H_
@@ -95,6 +94,11 @@ enum {
 
 	TEGRA_SOC_CNT,
 	TEGRA_SOC_UNKNOWN	= -1,
+};
+
+/* Tegra system controller (SYSCON) devices */
+enum {
+	TEGRA_SYSCON_PMC,
 };
 
 #else  /* __ASSEMBLY__ */

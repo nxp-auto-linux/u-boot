@@ -1,14 +1,23 @@
+/* SPDX-License-Identifier: Intel */
 /*
  * Copyright (C) 2013, Intel Corporation
  * Copyright (C) 2014, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	Intel
  */
 
 #ifndef __FSP_API_H__
 #define __FSP_API_H__
 
 #include <linux/linkage.h>
+
+/*
+ * FSP common configuration structure.
+ * This needs to be included in the platform-specific struct fsp_config_data.
+ */
+struct fsp_cfg_common {
+	struct fsp_header	*fsp_hdr;
+	u32			stack_top;
+	u32			boot_mode;
+};
 
 /*
  * FspInit continuation function prototype.
@@ -30,10 +39,11 @@ struct common_buf {
 	 * Stack top pointer used by the bootloader. The new stack frame will be
 	 * set up at this location after FspInit API call.
 	 */
-	u32	*stack_top;
+	u32	stack_top;
 	u32	boot_mode;	/* Current system boot mode */
 	void	*upd_data;	/* User platform configuraiton data region */
-	u32	reserved[7];	/* Reserved */
+	u32	tolum_size;	/* Top of low usable memory size (FSP 1.1) */
+	u32	reserved[6];	/* Reserved */
 };
 
 enum fsp_phase {

@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * hardware_am43xx.h
  *
  * AM43xx hardware specific header
  *
  * Copyright (C) 2013, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __AM43XX_HARDWARE_AM43XX_H
@@ -84,19 +83,6 @@
 
 #define	USBOTGSSX_CLKCTRL_OPTFCLKEN_REFCLK960	(1 << 8)
 #define	USBPHY0_CLKCTRL_OPTFCLKEN_CLK32K	(1 << 8)
-
-/* Control status register */
-#define CTRL_CRYSTAL_FREQ_SRC_MASK		(1 << 31)
-#define CTRL_CRYSTAL_FREQ_SRC_SHIFT		31
-#define CTRL_CRYSTAL_FREQ_SELECTION_MASK	(0x3 << 29)
-#define CTRL_CRYSTAL_FREQ_SELECTION_SHIFT	29
-#define CTRL_SYSBOOT_15_14_MASK			(0x3 << 22)
-#define CTRL_SYSBOOT_15_14_SHIFT		22
-
-#define CTRL_CRYSTAL_FREQ_SRC_SYSBOOT		0x0
-#define CTRL_CRYSTAL_FREQ_SRC_EFUSE		0x1
-
-#define NUM_CRYSTAL_FREQ			0x4
 
 /* EDMA3 Base Address */
 #define EDMA3_BASE				0x49000000

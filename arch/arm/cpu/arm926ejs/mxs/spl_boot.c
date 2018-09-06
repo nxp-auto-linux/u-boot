@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Freescale i.MX28 Boot setup
  *
  * Copyright (C) 2011 Marek Vasut <marek.vasut@gmail.com>
  * on behalf of DENX Software Engineering GmbH
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -40,17 +39,17 @@ void early_delay(int delay)
 		;
 }
 
+#if defined(CONFIG_MX23)
 #define	MUX_CONFIG_BOOTMODE_PAD	(MXS_PAD_3V3 | MXS_PAD_4MA | MXS_PAD_NOPULL)
 static const iomux_cfg_t iomux_boot[] = {
-#if defined(CONFIG_MX23)
 	MX23_PAD_LCD_D00__GPIO_1_0 | MUX_CONFIG_BOOTMODE_PAD,
 	MX23_PAD_LCD_D01__GPIO_1_1 | MUX_CONFIG_BOOTMODE_PAD,
 	MX23_PAD_LCD_D02__GPIO_1_2 | MUX_CONFIG_BOOTMODE_PAD,
 	MX23_PAD_LCD_D03__GPIO_1_3 | MUX_CONFIG_BOOTMODE_PAD,
 	MX23_PAD_LCD_D04__GPIO_1_4 | MUX_CONFIG_BOOTMODE_PAD,
 	MX23_PAD_LCD_D05__GPIO_1_5 | MUX_CONFIG_BOOTMODE_PAD,
-#endif
 };
+#endif
 
 static uint8_t mxs_get_bootmode_index(void)
 {
@@ -120,8 +119,7 @@ void mxs_common_spl_init(const uint32_t arg, const uint32_t *resptr,
 			 const iomux_cfg_t *iomux_setup,
 			 const unsigned int iomux_size)
 {
-	struct mxs_spl_data *data = (struct mxs_spl_data *)
-		((CONFIG_SYS_TEXT_BASE - sizeof(struct mxs_spl_data)) & ~0xf);
+	struct mxs_spl_data *data = MXS_SPL_DATA;
 	uint8_t bootmode = mxs_get_bootmode_index();
 	gd = &gdata;
 
@@ -147,6 +145,7 @@ void mxs_common_spl_init(const uint32_t arg, const uint32_t *resptr,
 	}
 }
 
+#ifndef CONFIG_SPL_FRAMEWORK
 /* Support aparatus */
 inline void board_init_f(unsigned long bootflag)
 {
@@ -159,3 +158,4 @@ inline void board_init_r(gd_t *id, ulong dest_addr)
 	for (;;)
 		;
 }
+#endif

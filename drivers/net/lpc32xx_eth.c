@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * LPC32xx Ethernet MAC interface driver
  *
  * (C) Copyright 2014  DENX Software Engineering GmbH
  * Written-by: Albert ARIBAUD - 3ADEV <albert.aribaud@3adev.fr>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -12,7 +11,7 @@
 #include <malloc.h>
 #include <miiphy.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/types.h>
 #include <asm/system.h>
 #include <asm/byteorder.h>
@@ -218,17 +217,17 @@ struct lpc32xx_eth_device {
 
 #define MII_MAX_PHY (MADR_PHY_MASK >> MADR_PHY_OFFSET)
 
-DECLARE_GLOBAL_DATA_PTR;
-
 #if defined(CONFIG_PHYLIB) || defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
 /*
  * mii_reg_read - miiphy_read callback function.
  *
  * Returns 16bit phy register value, or 0xffff on error
  */
-static int mii_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 *data)
+static int mii_reg_read(struct mii_dev *bus, int phy_adr, int devad,
+			int reg_ofs)
 {
-	struct eth_device *dev = eth_get_dev_by_name(devname);
+	u16 data = 0;
+	struct eth_device *dev = eth_get_dev_by_name(bus->name);
 	struct lpc32xx_eth_device *dlpc32xx_eth = to_lpc32xx_eth(dev);
 	struct lpc32xx_eth_registers *regs = dlpc32xx_eth->regs;
 	u32 mind_reg;
@@ -270,12 +269,12 @@ static int mii_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 *data)
 		return -EFAULT;
 	}
 
-	*data = (u16) readl(&regs->mrdd);
+	data = (u16) readl(&regs->mrdd);
 
 	debug("%s:(adr %d, off %d) => %04x\n", __func__, phy_adr,
-	      reg_ofs, *data);
+	      reg_ofs, data);
 
-	return 0;
+	return data;
 }
 
 /*
@@ -284,9 +283,10 @@ static int mii_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 *data)
  * Returns 0 if write succeed, -EINVAL on bad parameters
  * -ETIME on timeout
  */
-static int mii_reg_write(const char *devname, u8 phy_adr, u8 reg_ofs, u16 data)
+static int mii_reg_write(struct mii_dev *bus, int phy_adr, int devad,
+			 int reg_ofs, u16 data)
 {
-	struct eth_device *dev = eth_get_dev_by_name(devname);
+	struct eth_device *dev = eth_get_dev_by_name(bus->name);
 	struct lpc32xx_eth_device *dlpc32xx_eth = to_lpc32xx_eth(dev);
 	struct lpc32xx_eth_registers *regs = dlpc32xx_eth->regs;
 	u32 mind_reg;
@@ -304,6 +304,13 @@ static int mii_reg_write(const char *devname, u8 phy_adr, u8 reg_ofs, u16 data)
 		return -EFAULT;
 	}
 
+	/* write the phy and reg addressse into the MII address reg */
+	writel((phy_adr << MADR_PHY_OFFSET) | (reg_ofs << MADR_REG_OFFSET),
+	       &regs->madr);
+
+	/* write data to the MII write register */
+	writel(data, &regs->mwtd);
+
 	/* wait till the MII is not busy */
 	timeout = MII_TIMEOUT;
 	do {
@@ -319,36 +326,10 @@ static int mii_reg_write(const char *devname, u8 phy_adr, u8 reg_ofs, u16 data)
 		return -EFAULT;
 	}
 
-	/* write the phy and reg addressse into the MII address reg */
-	writel((phy_adr << MADR_PHY_OFFSET) | (reg_ofs << MADR_REG_OFFSET),
-	       &regs->madr);
-
-	/* write data to the MII write register */
-	writel(data, &regs->mwtd);
-
 	/*debug("%s:(adr %d, off %d) <= %04x\n", __func__, phy_adr,
 		reg_ofs, data);*/
 
 	return 0;
-}
-#endif
-
-#if defined(CONFIG_PHYLIB)
-int lpc32xx_eth_phy_read(struct mii_dev *bus, int phy_addr, int dev_addr,
-	int reg_addr)
-{
-	u16 data;
-	int ret;
-	ret = mii_reg_read(bus->name, phy_addr, reg_addr, &data);
-	if (ret)
-		return ret;
-	return data;
-}
-
-int lpc32xx_eth_phy_write(struct mii_dev *bus, int phy_addr, int dev_addr,
-	int reg_addr, u16 data)
-{
-	return mii_reg_write(bus->name, phy_addr, reg_addr, data);
 }
 #endif
 
@@ -580,9 +561,9 @@ int lpc32xx_eth_phylib_init(struct eth_device *dev, int phyid)
 		printf("mdio_alloc failed\n");
 		return -ENOMEM;
 	}
-	bus->read = lpc32xx_eth_phy_read;
-	bus->write = lpc32xx_eth_phy_write;
-	sprintf(bus->name, dev->name);
+	bus->read = mii_reg_read;
+	bus->write = mii_reg_write;
+	strcpy(bus->name, dev->name);
 
 	ret = mdio_register(bus);
 	if (ret) {
@@ -645,7 +626,17 @@ int lpc32xx_eth_initialize(bd_t *bis)
 #if defined(CONFIG_PHYLIB)
 	lpc32xx_eth_phylib_init(dev, CONFIG_PHY_ADDR);
 #elif defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
-	miiphy_register(dev->name, mii_reg_read, mii_reg_write);
+	int retval;
+	struct mii_dev *mdiodev = mdio_alloc();
+	if (!mdiodev)
+		return -ENOMEM;
+	strncpy(mdiodev->name, dev->name, MDIO_NAME_LEN);
+	mdiodev->read = mii_reg_read;
+	mdiodev->write = mii_reg_write;
+
+	retval = mdio_register(mdiodev);
+	if (retval < 0)
+		return retval;
 #endif
 
 	return 0;

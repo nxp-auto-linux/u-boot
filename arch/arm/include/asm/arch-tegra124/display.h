@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  (C) Copyright 2010
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_TEGRA_DISPLAY_H
@@ -11,7 +10,7 @@
 /**
  * Register a new display based on device tree configuration.
  *
- * The frame buffer can be positioned by U-Boot or overriden by the fdt.
+ * The frame buffer can be positioned by U-Boot or overridden by the fdt.
  * You should pass in the U-Boot address here, and check the contents of
  * struct fdt_disp_config to see what was actually chosen.
  *

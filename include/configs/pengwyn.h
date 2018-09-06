@@ -1,19 +1,16 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * pengwyn.h
  *
  * Copyright (C) 2013 Lothar Felten <lothar.felten@gmail.com>
  *
  * based on am335x_evm.h, Copyright (C) 2011 Texas Instruments Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_PENGWYN_H
 #define __CONFIG_PENGWYN_H
 
-#define CONFIG_NAND
 #define CONFIG_SERIAL1
-#define CONFIG_CONS_INDEX		1
 
 #include <configs/ti_am335x_common.h>
 
@@ -23,8 +20,6 @@
 
 /* set env size */
 #define CONFIG_ENV_SIZE			0x4000
-
-#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -83,8 +78,8 @@
 		"tftp ${fdtaddr} ${fdtfile}; " \
 		"run netargs; " \
 		"bootz ${loadaddr} - ${fdtaddr}\0" \
-	"mtdids=" MTDIDS_DEFAULT "\0" \
-	"mtdparts=" MTDPARTS_DEFAULT "\0" \
+	"mtdids=" CONFIG_MTDIDS_DEFAULT "\0" \
+	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0" \
 	"nandargs=setenv bootargs console=${console} " \
 		"${optargs} " \
 		"root=${nandroot} " \
@@ -102,30 +97,18 @@
 	"run mmcboot;" \
 	"run nandboot;"
 
-/* NS16550 Configuration: primary UART via FDTI */
+/* NS16550 Configuration: primary UART via FTDI */
 #define CONFIG_SYS_NS16550_COM1		0x44e09000
-#define CONFIG_BAUDRATE			115200
 
 /* I2C Configuration */
 #define	CONFIG_SYS_I2C_SPEED		100000
-#define CONFIG_CMD_EEPROM
 #define CONFIG_ENV_EEPROM_IS_ON_I2C
 #define CONFIG_SYS_I2C_EEPROM_ADDR	0x50
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	2
 
 /* SPL */
-#define CONFIG_SPL_POWER_SUPPORT
-#define CONFIG_SPL_YMODEM_SUPPORT
-
-/* General network SPL */
-#define CONFIG_SPL_NET_SUPPORT
-#define CONFIG_SPL_ENV_SUPPORT
-#define CONFIG_SPL_NET_VCI_STRING	"AM335x U-Boot SPL"
 
 /* NAND support */
-#define CONFIG_CMD_NAND
-#define CONFIG_NAND_OMAP_GPMC
-#define CONFIG_NAND_OMAP_ELM
 
 /* NAND Configuration. */
 #define CONFIG_SYS_NAND_5_ADDR_CYCLE
@@ -149,7 +132,6 @@
 					  174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193,\
 					  194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209}
 
-
 #define CONFIG_SYS_NAND_ECCSIZE		512
 #define CONFIG_SYS_NAND_ECCBYTES	26
 #define CONFIG_SYS_NAND_ECCSTEPS	8
@@ -162,30 +144,12 @@
 /* #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x80000 */
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x200000
 
-
-
-#define CONFIG_CMD_MTDPARTS
-
-#define CONFIG_CMD_ASKENV /* monitor functions : ask for env variable */
-#define CONFIG_VERSION_VARIABLE /* monitor functions :  u-boot version */
-#define CONFIG_CMD_DIAG /* monitor functions : Diagnostics */
-
-#define MTDIDS_DEFAULT			"nand0=omap2-nand.0"
 /* Size must be a multiple of Nand erase size (524288 b) */
-#define MTDPARTS_DEFAULT		"mtdparts=omap2-nand.0:512k(SPL)," \
-					"512k(SPL.backup1)," \
-					"512k(SPL.backup2)," \
-					"512k(SPL.backup3),1536k(u-boot)," \
-					"512k(u-boot-spl-os)," \
-					"512k(u-boot-env),5m(kernel),-(rootfs)"
-#define CONFIG_ENV_IS_IN_NAND
 #define CONFIG_ENV_OFFSET		0x260000 /* environment starts here */
 #define CONFIG_SYS_ENV_SECT_SIZE	(128 << 10)	/* 128 KiB */
 /* NAND: SPL falcon mode configs */
 #ifdef CONFIG_SPL_OS_BOOT
-#define CONFIG_CMD_SPL_NAND_OFS		0x240000 /* un-assigned */
 #define CONFIG_SYS_NAND_SPL_KERNEL_OFFS	0x280000
-#define CONFIG_CMD_SPL_WRITE_SIZE	0x2000
 #endif
 
 /*
@@ -194,45 +158,15 @@
  * board schematic and physical port wired to each.  Then for host we
  * add mass storage support.
  */
-#define CONFIG_USB_MUSB_DSPS
-#define CONFIG_ARCH_MISC_INIT
-#define CONFIG_USB_MUSB_GADGET
-#define CONFIG_USB_MUSB_PIO_ONLY
 #define CONFIG_USB_MUSB_DISABLE_BULK_COMBINE_SPLIT
-#define CONFIG_USB_GADGET
-#define CONFIG_USB_GADGET_DUALSPEED
-#define CONFIG_USB_GADGET_VBUS_DRAW	2
-#define CONFIG_USB_MUSB_HOST
 #define CONFIG_AM335X_USB0
 #define CONFIG_AM335X_USB0_MODE	MUSB_PERIPHERAL
 #define CONFIG_AM335X_USB1
 #define CONFIG_AM335X_USB1_MODE MUSB_HOST
 
-#if defined(CONFIG_USB_MUSB_HOST)
-#define CONFIG_CMD_USB
-#define CONFIG_USB_STORAGE
-#endif
-
-#if defined(CONFIG_SPL_BUILD)
-/* disable host part of MUSB in SPL */
-#undef CONFIG_USB_MUSB_HOST
-/* Disable CPSW SPL support so we fit within the 101KiB limit. */
-#undef CONFIG_SPL_ETH_SUPPORT
-#endif
-
-/* CPSW ethernet */
-#define CONFIG_NET_MULTI
-
 /* Network */
-#define CONFIG_CMD_MII
-#define CONFIG_PHYLIB
 #define CONFIG_PHY_RESET	1
 #define CONFIG_PHY_NATSEMI
 #define CONFIG_PHY_REALTEK
-
-/* CPSW support */
-#define CONFIG_SPL_ETH_SUPPORT
-
-#define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/am33xx/u-boot-spl.lds"
 
 #endif	/* ! __CONFIG_PENGWYN_H */

@@ -12,7 +12,7 @@
 
 	aliases {
 		usb0 = "/usb@c5008000";
-		sdhci0 = "/sdhci@c8000600";
+		mmc0 = "/sdhci@c8000600";
 	};
 
 	memory {
@@ -36,14 +36,6 @@
 	};
 
 	i2c@7000d000 {
-		status = "disabled";
-	};
-
-	usb@c5000000 {
-		status = "disabled";
-	};
-
-	usb@c5004000 {
 		status = "disabled";
 	};
 };

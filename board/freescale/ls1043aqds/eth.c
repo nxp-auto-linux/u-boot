@@ -1,15 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
 #include <netdev.h>
+#include <fdt_support.h>
 #include <fm_eth.h>
 #include <fsl_mdio.h>
 #include <fsl_dtsec.h>
+#include <linux/libfdt.h>
 #include <malloc.h>
 #include <asm/arch/fsl_serdes.h>
 
@@ -136,7 +137,7 @@ static int ls1043aqds_mdio_init(char *realbusname, u8 muxval)
 	bus->read = ls1043aqds_mdio_read;
 	bus->write = ls1043aqds_mdio_write;
 	bus->reset = ls1043aqds_mdio_reset;
-	sprintf(bus->name, ls1043aqds_mdio_name_for_muxval(muxval));
+	strcpy(bus->name, ls1043aqds_mdio_name_for_muxval(muxval));
 
 	pmdio->realbus = miiphy_get_dev_by_name(realbusname);
 
@@ -174,9 +175,9 @@ void board_ft_fman_fixup_port(void *fdt, char *compat, phys_addr_t addr,
 	} else if (fm_info_get_enet_if(port) ==
 		   PHY_INTERFACE_MODE_SGMII_2500) {
 		/* 2.5G SGMII interface */
-		f_link.phy_id = port;
-		f_link.duplex = 1;
-		f_link.link_speed = 1000;
+		f_link.phy_id = cpu_to_fdt32(port);
+		f_link.duplex = cpu_to_fdt32(1);
+		f_link.link_speed = cpu_to_fdt32(1000);
 		f_link.pause = 0;
 		f_link.asym_pause = 0;
 		/* no PHY for 2.5G SGMII */
@@ -239,9 +240,9 @@ void board_ft_fman_fixup_port(void *fdt, char *compat, phys_addr_t addr,
 	} else if (fm_info_get_enet_if(port) == PHY_INTERFACE_MODE_XGMII &&
 		   port == FM1_10GEC1) {
 		/* XFI interface */
-		f_link.phy_id = port;
-		f_link.duplex = 1;
-		f_link.link_speed = 10000;
+		f_link.phy_id = cpu_to_fdt32(port);
+		f_link.duplex = cpu_to_fdt32(1);
+		f_link.link_speed = cpu_to_fdt32(10000);
 		f_link.pause = 0;
 		f_link.asym_pause = 0;
 		/* no PHY for XFI */
@@ -474,6 +475,7 @@ int board_eth_init(bd_t *bis)
 			}
 			break;
 		case PHY_INTERFACE_MODE_RGMII:
+		case PHY_INTERFACE_MODE_RGMII_TXID:
 			if (i == FM1_DTSEC3)
 				mdio_mux[i] = EMI1_RGMII1;
 			else if (i == FM1_DTSEC4)

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007 Michal Simek
  *
  * Michal  SIMEK <monstr@monstr.eu>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* FSL macros */
@@ -50,7 +49,7 @@
 #define NOP	__asm__ __volatile__ ("nop");
 
 /* use machine status registe USE_MSR_REG */
-#if XILINX_USE_MSR_INSTR == 1
+#if CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR == 1
 #define MSRSET(val) \
 	__asm__ __volatile__ ("msrset r0," #val );
 

@@ -1,15 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Common SPI flash Interface
  *
  * Copyright (C) 2008 Atmel Corporation
  * Copyright (C) 2013 Jagannadha Sutradharudu Teki, Xilinx Inc.
- *
- * See file CREDITS for list of people who contributed to this
- * project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation.
  */
 
 #ifndef _SPI_FLASH_H_
@@ -171,8 +165,6 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 /* Compatibility function - this is the old U-Boot API */
 void spi_flash_free(struct spi_flash *flash);
 
-int spi_flash_remove(struct udevice *flash);
-
 static inline int spi_flash_read(struct spi_flash *flash, u32 offset,
 				 size_t len, void *buf)
 {
@@ -201,18 +193,6 @@ void sandbox_sf_unbind_emul(struct sandbox_state *state, int busnum, int cs);
 #else
 struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 		unsigned int max_hz, unsigned int spi_mode);
-
-/**
- * Set up a new SPI flash from an fdt node
- *
- * @param blob		Device tree blob
- * @param slave_node	Pointer to this SPI slave node in the device tree
- * @param spi_node	Cached pointer to the SPI interface this node belongs
- *			to
- * @return 0 if ok, -1 on error
- */
-struct spi_flash *spi_flash_probe_fdt(const void *blob, int slave_node,
-				      int spi_node);
 
 void spi_flash_free(struct spi_flash *flash);
 
@@ -246,8 +226,5 @@ static inline int spi_flash_protect(struct spi_flash *flash, u32 ofs, u32 len,
 	else
 		return flash->flash_unlock(flash, ofs, len);
 }
-
-void spi_boot(void) __noreturn;
-void spi_spl_load_image(uint32_t offs, unsigned int size, void *vdst);
 
 #endif /* _SPI_FLASH_H_ */

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * [origin: Linux kernel arch/arm/mach-at91/include/mach/at91_pmc.h]
  *
@@ -7,8 +8,6 @@
  *
  * Power Management Controller (PMC) - System peripherals registers.
  * Based on AT91RM9200 datasheet revision E.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef AT91_PMC_H
@@ -51,19 +50,15 @@ typedef struct at91_pmc {
 	u32	imr;		/* 0x6C Interrupt Mask Register */
 	u32	reserved4[4];
 	u32	pllicpr;	/* 0x80 Change Pump Current Register (SAM9) */
-	u32	reserved5[21];
+	u32	reserved5[24];
 	u32	wpmr;		/* 0xE4 Write Protect Mode Register (CAP0) */
 	u32	wpsr;		/* 0xE8 Write Protect Status Register (CAP0) */
-#ifdef CPU_HAS_PCR
-	u32	reserved6[8];
+	u32	reserved6[5];
 	u32	pcer1;		/* 0x100 Periperial Clock Enable Register 1 */
 	u32	pcdr1;		/* 0x104 Periperial Clock Disable Register 1 */
 	u32	pcsr1;		/* 0x108 Periperial Clock Status Register 1 */
 	u32	pcr;		/* 0x10c Periperial Control Register */
 	u32	ocr;		/* 0x110 Oscillator Calibration Register */
-#else
-	u32	reserved8[5];
-#endif
 } at91_pmc_t;
 
 #endif	/* end not assembly */
@@ -71,18 +66,18 @@ typedef struct at91_pmc {
 #define AT91_PMC_MOR_MOSCEN		0x01
 #define AT91_PMC_MOR_OSCBYPASS		0x02
 #define AT91_PMC_MOR_MOSCRCEN		0x08
-#define AT91_PMC_MOR_OSCOUNT(x)		((x & 0xff) << 8)
-#define AT91_PMC_MOR_KEY(x)		((x & 0xff) << 16)
+#define AT91_PMC_MOR_OSCOUNT(x)		(((x) & 0xff) << 8)
+#define AT91_PMC_MOR_KEY(x)		(((x) & 0xff) << 16)
 #define AT91_PMC_MOR_MOSCSEL		(1 << 24)
 
-#define AT91_PMC_PLLXR_DIV(x)		(x & 0xFF)
-#define AT91_PMC_PLLXR_PLLCOUNT(x)	((x & 0x3F) << 8)
-#define AT91_PMC_PLLXR_OUT(x)		((x & 0x03) << 14)
+#define AT91_PMC_PLLXR_DIV(x)		((x) & 0xFF)
+#define AT91_PMC_PLLXR_PLLCOUNT(x)	(((x) & 0x3F) << 8)
+#define AT91_PMC_PLLXR_OUT(x)		(((x) & 0x03) << 14)
 #if defined(CONFIG_SAMA5D2) || defined(CONFIG_SAMA5D3) || \
 	defined(CONFIG_SAMA5D4)
-#define AT91_PMC_PLLXR_MUL(x)		((x & 0x7F) << 18)
+#define AT91_PMC_PLLXR_MUL(x)		(((x) & 0x7F) << 18)
 #else
-#define AT91_PMC_PLLXR_MUL(x)		((x & 0x7FF) << 16)
+#define AT91_PMC_PLLXR_MUL(x)		(((x) & 0x7FF) << 16)
 #endif
 #define AT91_PMC_PLLAR_29		0x20000000
 #define AT91_PMC_PLLBR_USBDIV_1		0x00000000
@@ -91,6 +86,8 @@ typedef struct at91_pmc {
 
 #define AT91_PMC_MCFR_MAINRDY		0x00010000
 #define AT91_PMC_MCFR_MAINF_MASK	0x0000FFFF
+#define AT91_PMC_MCFR_RCMEAS		0x00100000
+#define AT91_PMC_MCFR_CCSS_XTAL_OSC	0x01000000
 
 #define AT91_PMC_MCKR_CSS_SLOW		0x00000000
 #define AT91_PMC_MCKR_CSS_MAIN		0x00000001
@@ -153,6 +150,9 @@ typedef struct at91_pmc {
 
 #define AT91_PMC_PCR_PID_MASK		(0x3f)
 #define AT91_PMC_PCR_GCKCSS		(0x7 << 8)
+#define AT91_PMC_PCR_GCKCSS_MASK	0x07
+#define AT91_PMC_PCR_GCKCSS_OFFSET	8
+#define AT91_PMC_PCR_GCKCSS_(x)		((x & 0x07) << 8)
 #define		AT91_PMC_PCR_GCKCSS_SLOW_CLK	(0x0 << 8)
 #define		AT91_PMC_PCR_GCKCSS_MAIN_CLK	(0x1 << 8)
 #define		AT91_PMC_PCR_GCKCSS_PLLA_CLK	(0x2 << 8)
@@ -162,8 +162,9 @@ typedef struct at91_pmc {
 #define AT91_PMC_PCR_CMD_WRITE		(0x1 << 12)
 #define AT91_PMC_PCR_DIV		(0x3 << 16)
 #define AT91_PMC_PCR_GCKDIV		(0xff << 20)
-#define		AT91_PMC_PCR_GCKDIV_(x)		((x & 0xff) << 20)
-#define		AT91_PMC_PCR_GCKDIV_OFFSET	20
+#define AT91_PMC_PCR_GCKDIV_MASK	0xff
+#define AT91_PMC_PCR_GCKDIV_OFFSET	20
+#define AT91_PMC_PCR_GCKDIV_(x)		((x & 0xff) << 20)
 #define AT91_PMC_PCR_EN			(0x1 << 28)
 #define AT91_PMC_PCR_GCKEN		(0x1 << 29)
 
@@ -231,9 +232,15 @@ typedef struct at91_pmc {
 #define			AT91_PMC_PDIV_1			(0 << 12)
 #define			AT91_PMC_PDIV_2			(1 << 12)
 
+#define AT91_PMC_USB_USBS_MASK		0x1
+#define AT91_PMC_USB_USBS_OFFSET		0
+#define AT91_PMC_USB_USBS_(x)		(x & 0x1)
 #define		AT91_PMC_USBS_USB_PLLA		(0x0)		/* USB Clock Input is PLLA */
 #define		AT91_PMC_USBS_USB_UPLL		(0x1)		/* USB Clock Input is UPLL */
 #define		AT91_PMC_USBS_USB_PLLB		(0x1)		/* USB Clock Input is PLLB, AT91SAM9N12 only */
+#define AT91_PMC_USB_DIV_MASK		0xf
+#define AT91_PMC_USB_DIV_OFFSET		8
+#define AT91_PMC_USB_DIV_(x)		((x & 0xf) << 8)
 #define		AT91_PMC_USB_DIV_2		(0x1 <<  8)	/* USB Clock divided by 2 */
 #define		AT91_PMC_USBDIV_8		(0x7 <<  8)	/* USB Clock divided by 8 */
 #define		AT91_PMC_USBDIV_10		(0x9 <<  8)	/* USB Clock divided by 10 */
@@ -247,7 +254,15 @@ typedef struct at91_pmc {
 #define		AT91_PMC_PCK1RDY	(1 <<  9)		/* Programmable Clock 1 */
 #define		AT91_PMC_PCK2RDY	(1 << 10)		/* Programmable Clock 2 */
 #define		AT91_PMC_PCK3RDY	(1 << 11)		/* Programmable Clock 3 */
+#define		AT91_PMC_MOSCSELS	BIT(16)			/* Main Oscillator Selection Status */
+#define		AT91_PMC_MOSCRCS	BIT(17)			/* 12 MHz RC Oscillator Status */
 #define		AT91_PMC_GCKRDY		(1 << 24)
-
 #define		AT91_PMC_PROTKEY	0x504d4301	/* Activation Code */
+
+/* PLL Charge Pump Current Register (PMC_PLLICPR) */
+#define AT91_PMC_ICP_PLLA(x)		(((x) & 0x3) << 0)
+#define AT91_PMC_IPLL_PLLA(x)		(((x) & 0x7) << 8)
+#define AT91_PMC_ICP_PLLU(x)		(((x) & 0x3) << 16)
+#define AT91_PMC_IVCO_PLLU(x)		(((x) & 0x3) << 24)
+
 #endif

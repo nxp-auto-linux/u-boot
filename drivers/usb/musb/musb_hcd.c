@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Mentor USB OTG Core host controller driver.
  *
  * Copyright (c) 2008 Texas Instruments
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Author: Thomas Abraham t-abraham@ti.com, Texas Instruments
  */
@@ -73,9 +72,9 @@ static void write_toggle(struct usb_device *dev, u8 ep, u8 dir_out)
 }
 
 /*
- * This function checks if RxStall has occured on the endpoint. If a RxStall
- * has occured, the RxStall is cleared and 1 is returned. If RxStall has
- * not occured, 0 is returned.
+ * This function checks if RxStall has occurred on the endpoint. If a RxStall
+ * has occurred, the RxStall is cleared and 1 is returned. If RxStall has
+ * not occurred, 0 is returned.
  */
 static u8 check_stall(u8 ep, u8 dir_out)
 {
@@ -912,11 +911,6 @@ int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 		while (txlen < len) {
 			nextlen = ((len-txlen) < dev->epmaxpacketout[ep]) ?
 					(len-txlen) : dev->epmaxpacketout[ep];
-
-#ifdef CONFIG_USB_BLACKFIN
-			/* Set the transfer data size */
-			writew(nextlen, &musbr->txcount);
-#endif
 
 			/* Write the data to the FIFO */
 			write_fifo(MUSB_BULK_EP, nextlen,

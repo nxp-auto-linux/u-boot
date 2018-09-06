@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2008-2011 Freescale Semiconductor, Inc.
  *
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -188,7 +187,7 @@ int set_ddr_laws(u64 start, u64 sz, enum law_trgt_if id)
 	if (start == 0)
 		start_align = 1ull << (LAW_SIZE_32G + 1);
 	else
-		start_align = 1ull << (__ffs64(start) - 1);
+		start_align = 1ull << (__ffs64(start));
 	law_sz = min(start_align, sz);
 	law_sz_enc = __ilog2_u64(law_sz) - 1;
 
@@ -203,7 +202,7 @@ int set_ddr_laws(u64 start, u64 sz, enum law_trgt_if id)
 	if (sz) {
 		start += law_sz;
 
-		start_align = 1ull << (__ffs64(start) - 1);
+		start_align = 1ull << (__ffs64(start));
 		law_sz = min(start_align, sz);
 		law_sz_enc = __ilog2_u64(law_sz) - 1;
 

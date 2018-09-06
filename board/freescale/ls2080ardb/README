@@ -1,52 +1,17 @@
 Overview
 --------
 The LS2080A Reference Design (RDB) is a high-performance computing,
-evaluation, and development platform that supports the QorIQ LS2080A
+evaluation, and development platform that supports the QorIQ LS2080A, LS2088A
 Layerscape Architecture processor.
 
-LS2080A SoC Overview
-------------------
-The LS2080A integrated multicore processor combines eight ARM Cortex-A57
-processor cores with high-performance data path acceleration logic and network
-and peripheral bus interfaces required for networking, telecom/datacom,
-wireless infrastructure, and mil/aerospace applications.
+The LS2081A Reference Design (RDB) is a high-performance computing,
+evaluation, and development platform that supports the QorIQ LS2081A
+Layerscape Architecture processor.More details in below sections
 
-The LS2080A SoC includes the following function and features:
-
- - Eight 64-bit ARM Cortex-A57 CPUs
- - 1 MB platform cache with ECC
- - Two 64-bit DDR4 SDRAM memory controllers with ECC and interleaving support
- - One secondary 32-bit DDR4 SDRAM memory controller, intended for use by
-  the AIOP
- - Data path acceleration architecture (DPAA2) incorporating acceleration for
- the following functions:
-   - Packet parsing, classification, and distribution (WRIOP)
-   - Queue and Hardware buffer management for scheduling, packet sequencing, and
-     congestion management, buffer allocation and de-allocation (QBMan)
-   - Cryptography acceleration (SEC) at up to 10 Gbps
-   - RegEx pattern matching acceleration (PME) at up to 10 Gbps
-   - Decompression/compression acceleration (DCE) at up to 20 Gbps
-   - Accelerated I/O processing (AIOP) at up to 20 Gbps
-   - QDMA engine
- - 16 SerDes lanes at up to 10.3125 GHz
- - Ethernet interfaces
-   - Up to eight 10 Gbps Ethernet MACs
-   - Up to eight 1 / 2.5 Gbps Ethernet MACs
- - High-speed peripheral interfaces
-   - Four PCIe 3.0 controllers, one supporting SR-IOV
- - Additional peripheral interfaces
-   - Two serial ATA (SATA 3.0) controllers
-   - Two high-speed USB 3.0 controllers with integrated PHY
-   - Enhanced secure digital host controller (eSDXC/eMMC)
-   - Serial peripheral interface (SPI) controller
-   - Quad Serial Peripheral Interface (QSPI) Controller
-   - Four I2C controllers
-   - Two DUARTs
-   - Integrated flash controller (IFC 2.0) supporting NAND and NOR flash
- - Support for hardware virtualization and partitioning enforcement
- - QorIQ platform's trust architecture 3.0
- - Service processor (SP) provides pre-boot initialization and secure-boot
-  capabilities
+LS2080A, LS2088A, LS2081A SoC Overview
+--------------------------------------
+Please refer arch/arm/cpu/armv8/fsl-layerscape/doc/README.soc for LS2080A,
+LS2081A, LS2088A SoC overview.
 
  LS2080ARDB board Overview
  -----------------------
@@ -77,17 +42,28 @@ The LS2080A SoC includes the following function and features:
  - UART
  - ARM JTAG support
 
+ LS2081ARDB board Overview
+ -------------------------
+ LS2081ARDB board is similar to LS2080ARDB board
+ with few differences like
+  - Hosts LS2081A SoC
+  - Default boot source is QSPI-boot
+  - Does not have IFC interface
+  - RTC and QSPI flash devices are different
+  - Provides QIXIS access via I2C
+
 Memory map from core's view
 ----------------------------
 0x00_0000_0000 .. 0x00_000F_FFFF	Boot Rom
 0x00_0100_0000 .. 0x00_0FFF_FFFF	CCSR
 0x00_1800_0000 .. 0x00_181F_FFFF	OCRAM
+0x00_2000_0000 .. 0x00_2FFF_FFFF	QSPI region #1
 0x00_3000_0000 .. 0x00_3FFF_FFFF	IFC region #1
 0x00_8000_0000 .. 0x00_FFFF_FFFF	DDR region #1
 0x05_1000_0000 .. 0x05_FFFF_FFFF	IFC region #2
 0x80_8000_0000 .. 0xFF_FFFF_FFFF	DDR region #2
 
-Other addresses are either reserved, or not used directly by u-boot.
+Other addresses are either reserved, or not used directly by U-Boot.
 This list should be updated when more addresses are used.
 
 IFC region map from core's view
@@ -107,6 +83,45 @@ Booting Options
 ---------------
 a) NOR boot
 b) NAND boot
+c) QSPI boot
+
+Memory map for NOR boot
+-------------------------
+Image				Flash Offset
+RCW+PBI				0x00000000
+Boot firmware (U-Boot)		0x00100000
+Boot firmware Environment	0x00300000
+PPA firmware			0x00400000
+Secure Headers			0x00600000
+Cortina PHY firmware		0x00980000
+DPAA2 MC			0x00A00000
+DPAA2 DPL			0x00D00000
+DPAA2 DPC			0x00E00000
+Kernel.itb			0x01000000
+
+cfg_rcw_src switches needs to be changed for booting from different option.
+Refer to board documentation for correct switch setting.
+
+QSPI boot details
+===================
+Supported only for
+ LS2088ARDB RevF board with LS2088A SoC.
+
+Images needs to be copied to QSPI flash
+as per memory map given below.
+
+Memory map for QSPI flash
+-------------------------
+Image				Flash Offset
+RCW+PBI				0x00000000
+Boot firmware (U-Boot)		0x00100000
+Boot firmware Environment	0x00300000
+PPA firmware			0x00400000
+Cortina PHY firmware		0x00980000
+DPAA2 MC			0x00A00000
+DPAA2 DPL			0x00D00000
+DPAA2 DPC			0x00E00000
+Kernel.itb			0x01000000
 
 Booting Linux flavors which do not support 48-bit VA (< Linux 3.18)
 -------------------------------------------------------------------

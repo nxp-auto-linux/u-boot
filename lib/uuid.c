@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2011 Calxeda, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -291,7 +290,7 @@ int do_uuid(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (argc == 1)
 		printf("%s\n", uuid);
 	else
-		setenv(argv[1], uuid);
+		env_set(argv[1], uuid);
 
 	return CMD_RET_SUCCESS;
 }

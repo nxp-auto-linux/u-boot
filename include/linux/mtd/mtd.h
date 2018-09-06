@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright © 1999-2010 David Woodhouse <dwmw2@infradead.org> et al.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  */
 
@@ -20,7 +19,7 @@
 #else
 #include <linux/compat.h>
 #include <mtd/mtd-abi.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <div64.h>
 
 #define MAX_MTD_DEVICES 32
@@ -103,6 +102,36 @@ struct mtd_oob_ops {
 #else
 #define MTD_MAX_ECCPOS_ENTRIES_LARGE	680
 #endif
+/**
+ * struct mtd_oob_region - oob region definition
+ * @offset: region offset
+ * @length: region length
+ *
+ * This structure describes a region of the OOB area, and is used
+ * to retrieve ECC or free bytes sections.
+ * Each section is defined by an offset within the OOB area and a
+ * length.
+ */
+struct mtd_oob_region {
+	u32 offset;
+	u32 length;
+};
+
+/*
+ * struct mtd_ooblayout_ops - NAND OOB layout operations
+ * @ecc: function returning an ECC region in the OOB area.
+ *	 Should return -ERANGE if %section exceeds the total number of
+ *	 ECC sections.
+ * @free: function returning a free region in the OOB area.
+ *	  Should return -ERANGE if %section exceeds the total number of
+ *	  free sections.
+ */
+struct mtd_ooblayout_ops {
+	int (*ecc)(struct mtd_info *mtd, int section,
+		   struct mtd_oob_region *oobecc);
+	int (*free)(struct mtd_info *mtd, int section,
+		    struct mtd_oob_region *oobfree);
+};
 
 /*
  * Internal ECC layout control structure. For historical reasons, there is a
@@ -178,6 +207,9 @@ struct mtd_info {
 	char *name;
 #endif
 	int index;
+
+	/* OOB layout description */
+	const struct mtd_ooblayout_ops *ooblayout;
 
 	/* ECC layout structure pointer - read only! */
 	struct nand_ecclayout *ecclayout;
@@ -277,6 +309,35 @@ struct mtd_info {
 #endif
 	int usecount;
 };
+
+int mtd_ooblayout_ecc(struct mtd_info *mtd, int section,
+		      struct mtd_oob_region *oobecc);
+int mtd_ooblayout_find_eccregion(struct mtd_info *mtd, int eccbyte,
+				 int *section,
+				 struct mtd_oob_region *oobregion);
+int mtd_ooblayout_get_eccbytes(struct mtd_info *mtd, u8 *eccbuf,
+			       const u8 *oobbuf, int start, int nbytes);
+int mtd_ooblayout_set_eccbytes(struct mtd_info *mtd, const u8 *eccbuf,
+			       u8 *oobbuf, int start, int nbytes);
+int mtd_ooblayout_free(struct mtd_info *mtd, int section,
+		       struct mtd_oob_region *oobfree);
+int mtd_ooblayout_get_databytes(struct mtd_info *mtd, u8 *databuf,
+				const u8 *oobbuf, int start, int nbytes);
+int mtd_ooblayout_set_databytes(struct mtd_info *mtd, const u8 *databuf,
+				u8 *oobbuf, int start, int nbytes);
+int mtd_ooblayout_count_freebytes(struct mtd_info *mtd);
+int mtd_ooblayout_count_eccbytes(struct mtd_info *mtd);
+
+static inline void mtd_set_ooblayout(struct mtd_info *mtd,
+				     const struct mtd_ooblayout_ops *ooblayout)
+{
+	mtd->ooblayout = ooblayout;
+}
+
+static inline int mtd_oobavail(struct mtd_info *mtd, struct mtd_oob_ops *ops)
+{
+	return ops->mode == MTD_OPS_AUTO_OOB ? mtd->oobavail : mtd->oobsize;
+}
 
 int mtd_erase(struct mtd_info *mtd, struct erase_info *instr);
 #ifndef __UBOOT__
@@ -437,38 +498,6 @@ static inline void mtd_erase_callback(struct erase_info *instr)
 }
 #endif
 
-#ifdef __UBOOT__
-/*
- * Debugging macro and defines
- */
-#define MTD_DEBUG_LEVEL0	(0)	/* Quiet   */
-#define MTD_DEBUG_LEVEL1	(1)	/* Audible */
-#define MTD_DEBUG_LEVEL2	(2)	/* Loud    */
-#define MTD_DEBUG_LEVEL3	(3)	/* Noisy   */
-
-#ifdef CONFIG_MTD_DEBUG
-#define pr_debug(args...)	MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#define MTDDEBUG(n, args...)				\
-	do {						\
-		if (n <= CONFIG_MTD_DEBUG_VERBOSE)	\
-			printk(KERN_INFO args);		\
-	} while(0)
-#else /* CONFIG_MTD_DEBUG */
-#define pr_debug(args...)
-#define MTDDEBUG(n, args...)				\
-	do {						\
-		if (0)					\
-			printk(KERN_INFO args);		\
-	} while(0)
-#endif /* CONFIG_MTD_DEBUG */
-#define pr_info(args...)	MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#define pr_warn(args...)	MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#define pr_err(args...)		MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#define pr_crit(args...)	MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#define pr_cont(args...)	MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#define pr_notice(args...)	MTDDEBUG(MTD_DEBUG_LEVEL0, args)
-#endif
- 
 static inline int mtd_is_bitflip(int err) {
 	return err == -EUCLEAN;
 }
@@ -495,5 +524,10 @@ int mtd_arg_off(const char *arg, int *idx, loff_t *off, loff_t *size,
 int mtd_arg_off_size(int argc, char *const argv[], int *idx, loff_t *off,
 		     loff_t *size, loff_t *maxsize, int devtype,
 		     uint64_t chipsize);
+
+/* drivers/mtd/mtdcore.c */
+void mtd_get_len_incl_bad(struct mtd_info *mtd, uint64_t offset,
+			  const uint64_t length, uint64_t *len_incl_bad,
+			  int *truncated);
 #endif
 #endif /* __MTD_MTD_H__ */

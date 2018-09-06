@@ -1,13 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2000
  * Paolo Scaffardi, AIRVENT SAM s.p.a - RIMINI(ITALY), arsenio@tin.it
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _STDIO_DEV_H_
 #define _STDIO_DEV_H_
 
+#include <stdio.h>
 #include <linux/list.h>
 
 /*
@@ -16,6 +16,7 @@
 
 #define DEV_FLAGS_INPUT	 0x00000001	/* Device can be used as input	console */
 #define DEV_FLAGS_OUTPUT 0x00000002	/* Device can be used as output console */
+#define DEV_FLAGS_DM     0x00000004	/* Device priv is a struct udevice * */
 
 /* Device information */
 struct stdio_dev {
@@ -46,24 +47,6 @@ struct stdio_dev {
 	void *priv;			/* Private extensions			*/
 	struct list_head list;
 };
-
-/*
- * VIDEO EXTENSIONS
- */
-#define VIDEO_FORMAT_RGB_INDEXED	0x0000
-#define VIDEO_FORMAT_RGB_DIRECTCOLOR	0x0001
-#define VIDEO_FORMAT_YUYV_4_4_4		0x0010
-#define VIDEO_FORMAT_YUYV_4_2_2		0x0011
-
-typedef struct {
-	void *address;			/* Address of framebuffer		*/
-	ushort	width;			/* Horizontal resolution		*/
-	ushort	height;			/* Vertical resolution			*/
-	uchar	format;			/* Format				*/
-	uchar	colors;			/* Colors number or color depth		*/
-	void (*setcolreg) (int, int, int, int);
-	void (*getcolreg) (int, void *);
-} video_ext_t;
 
 /*
  * VARIABLES
@@ -100,7 +83,7 @@ int stdio_add_devices(void);
 int stdio_init(void);
 
 void	stdio_print_current_devices(void);
-#ifdef CONFIG_SYS_STDIO_DEREGISTER
+#if CONFIG_IS_ENABLED(SYS_STDIO_DEREGISTER)
 int stdio_deregister(const char *devname, int force);
 int stdio_deregister_dev(struct stdio_dev *dev, int force);
 #endif

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /**
  * ti_usb_phy.c - USB3 and USB3 PHY programming for dwc3
  *
@@ -13,8 +14,6 @@
  *
  * "commit eb82a3 : phy: omap-usb2: Balance pm_runtime_enable() on probe failure
  * and remove" for phy-omap-usb2.c
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -24,6 +23,7 @@
 #include <linux/ioport.h>
 #include <asm/io.h>
 #include <asm/arch/sys_proto.h>
+#include <dm.h>
 
 #include "linux-compat.h"
 
@@ -193,7 +193,7 @@ void ti_usb2_phy_power(struct ti_usb_phy *phy, int on)
 	val = readl(phy->usb2_phy_power);
 
 	if (on) {
-#if defined(CONFIG_DRA7XX) || defined(CONFIG_AM57XX)
+#if defined(CONFIG_DRA7XX)
 		if (phy->index == 1)
 			val &= ~OMAP_CTRL_USB2_PHY_PD;
 		else
@@ -205,7 +205,7 @@ void ti_usb2_phy_power(struct ti_usb_phy *phy, int on)
 			AM437X_CTRL_USB2_OTGSESSEND_EN);
 #endif
 	} else {
-#if defined(CONFIG_DRA7XX) || defined(CONFIG_AM57XX)
+#if defined(CONFIG_DRA7XX)
 		if (phy->index == 1)
 			val |= OMAP_CTRL_USB2_PHY_PD;
 		else

@@ -1,10 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2011, Google Inc. All rights reserved.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _TEGRA_GPIO_H_
 #define _TEGRA_GPIO_H_
+
+#include <dt-bindings/gpio/tegra-gpio.h>
 
 #define TEGRA_GPIOS_PER_PORT	8
 #define TEGRA_PORTS_PER_BANK	4

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2011 Infineon Technologies
  *
@@ -16,30 +17,41 @@
  * Dorn, Dave Safford, Reiner Sailer, and Kyleen Hall.
  *
  * Version: 2.1.1
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
 #include <dm.h>
 #include <fdtdec.h>
 #include <i2c.h>
-#include <tpm.h>
-#include <asm-generic/errno.h>
+#include <tpm-v1.h>
+#include <linux/errno.h>
 #include <linux/compiler.h>
 #include <linux/types.h>
 #include <linux/unaligned/be_byteshift.h>
 
-#include "tpm_tis_infineon.h"
+#include "tpm_tis.h"
 #include "tpm_internal.h"
 
-DECLARE_GLOBAL_DATA_PTR;
+enum i2c_chip_type {
+	SLB9635,
+	SLB9645,
+	UNKNOWN,
+};
+
+/* expected value for DIDVID register */
+#define TPM_TIS_I2C_DID_VID_9635 0x000b15d1L
+#define TPM_TIS_I2C_DID_VID_9645 0x001a15d1L
 
 static const char * const chip_name[] = {
 	[SLB9635] = "slb9635tt",
 	[SLB9645] = "slb9645tt",
 	[UNKNOWN] = "unknown/fallback to slb9635",
 };
+
+#define	TPM_ACCESS(l)			(0x0000 | ((l) << 4))
+#define	TPM_STS(l)			(0x0001 | ((l) << 4))
+#define	TPM_DATA_FIFO(l)		(0x0005 | ((l) << 4))
+#define	TPM_DID_VID(l)			(0x0006 | ((l) << 4))
 
 /*
  * tpm_tis_i2c_read() - read from TPM register
@@ -359,7 +371,8 @@ static int tpm_tis_i2c_recv(struct udevice *dev, u8 *buf, size_t count)
 {
 	struct tpm_chip *chip = dev_get_priv(dev);
 	int size = 0;
-	int expected, status;
+	int status;
+	unsigned int expected;
 	int rc;
 
 	status = tpm_tis_i2c_status(dev);
@@ -379,7 +392,7 @@ static int tpm_tis_i2c_recv(struct udevice *dev, u8 *buf, size_t count)
 	}
 
 	expected = get_unaligned_be32(buf + TPM_RSP_SIZE_BYTE);
-	if ((size_t)expected > count) {
+	if ((size_t)expected > count || (size_t)expected < TPM_HEADER_SIZE) {
 		debug("Error size=%x, expected=%x, count=%x\n", size, expected,
 		      count);
 		return -ENOSPC;
@@ -524,7 +537,7 @@ static int tpm_tis_i2c_init(struct udevice *dev)
 	}
 
 	if (chip->chip_type != UNKNOWN && vendor != expected_did_vid) {
-		error("Vendor id did not match! ID was %08x\n", vendor);
+		pr_err("Vendor id did not match! ID was %08x\n", vendor);
 		return -ENODEV;
 	}
 

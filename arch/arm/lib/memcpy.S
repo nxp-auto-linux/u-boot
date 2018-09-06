@@ -1,23 +1,14 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  linux/arch/arm/lib/memcpy.S
  *
  *  Author:	Nicolas Pitre
  *  Created:	Sep 28, 2005
  *  Copyright:	MontaVista Software, Inc.
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as
- *  published by the Free Software Foundation.
  */
 
 #include <linux/linkage.h>
 #include <asm/assembler.h>
-
-#if defined(CONFIG_SYS_THUMB_BUILD) && !defined(MEMCPY_NO_THUMB_BUILD)
-#define W(instr)	instr.w
-#else
-#define W(instr)	instr
-#endif
 
 #define LDR1W_SHIFT	0
 #define STR1W_SHIFT	0
@@ -62,7 +53,7 @@
 
 /* Prototype: void *memcpy(void *dest, const void *src, size_t n); */
 	.syntax unified
-#if defined(CONFIG_SYS_THUMB_BUILD) && !defined(MEMCPY_NO_THUMB_BUILD)
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD) && !defined(MEMCPY_NO_THUMB_BUILD)
 	.thumb
 	.thumb_func
 #endif

@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Chromium OS cros_ec driver - sandbox emulation
  *
  * Copyright (c) 2013 The Chromium OS Authors.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -50,8 +49,6 @@
  * Other features can be added, although a better path is probably to link
  * the EC image in with U-Boot (Vic has demonstrated a prototype for this).
  */
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #define KEYBOARD_ROWS	8
 #define KEYBOARD_COLS	13
@@ -188,18 +185,16 @@ static int get_image_used(struct ec_state *ec, struct fmap_entry *entry)
  * RR=Row CC=Column KKKK=Key Code
  *
  * @param ec	Current emulated EC state
- * @param blob	Device tree blob containing keyscan information
  * @param node	Keyboard node of device tree containing keyscan information
  * @return 0 if ok, -1 on error
  */
-static int keyscan_read_fdt_matrix(struct ec_state *ec, const void *blob,
-				   int node)
+static int keyscan_read_fdt_matrix(struct ec_state *ec, ofnode node)
 {
 	const u32 *cell;
 	int upto;
 	int len;
 
-	cell = fdt_getprop(blob, node, "linux,keymap", &len);
+	cell = ofnode_get_property(node, "linux,keymap", &len);
 	ec->matrix_count = len / 4;
 	ec->matrix = calloc(ec->matrix_count, sizeof(*ec->matrix));
 	if (!ec->matrix) {
@@ -516,19 +511,29 @@ int cros_ec_probe(struct udevice *dev)
 {
 	struct ec_state *ec = dev->priv;
 	struct cros_ec_dev *cdev = dev->uclass_priv;
-	const void *blob = gd->fdt_blob;
-	int node;
+	struct udevice *keyb_dev;
+	ofnode node;
 	int err;
 
 	memcpy(ec, &s_state, sizeof(*ec));
-	err = cros_ec_decode_ec_flash(blob, dev->of_offset, &ec->ec_config);
-	if (err)
+	err = cros_ec_decode_ec_flash(dev, &ec->ec_config);
+	if (err) {
+		debug("%s: Cannot device EC flash\n", __func__);
 		return err;
+	}
 
-	node = fdtdec_next_compatible(blob, 0, COMPAT_GOOGLE_CROS_EC_KEYB);
-	if (node < 0) {
+	node = ofnode_null();
+	for (device_find_first_child(dev, &keyb_dev);
+	     keyb_dev;
+	     device_find_next_child(&keyb_dev)) {
+		if (device_get_uclass_id(keyb_dev) == UCLASS_KEYBOARD) {
+			node = dev_ofnode(keyb_dev);
+			break;
+		}
+	}
+	if (!ofnode_valid(node)) {
 		debug("%s: No cros_ec keyboard found\n", __func__);
-	} else if (keyscan_read_fdt_matrix(ec, blob, node)) {
+	} else if (keyscan_read_fdt_matrix(ec, node)) {
 		debug("%s: Could not read key matrix\n", __func__);
 		return -1;
 	}

@@ -1,10 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Digilent ZYBO board DTS
- *
  *  Copyright (C) 2011 - 2015 Xilinx
  *  Copyright (C) 2012 National Instruments Corp.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 /dts-v1/;
 #include "zynq-7000.dtsi"
@@ -20,19 +17,20 @@
 		mmc0 = &sdhci0;
 	};
 
-	memory {
+	memory@0 {
 		device_type = "memory";
 		reg = <0x0 0x20000000>;
 	};
 
 	chosen {
-		bootargs = "earlyprintk";
+		bootargs = "";
 		stdout-path = "serial0:115200n8";
 	};
 
 	usb_phy0: phy0 {
-		compatible = "usb-nop-xceiv";
 		#phy-cells = <0>;
+		compatible = "usb-nop-xceiv";
+		reset-gpios = <&gpio0 46 1>;
 	};
 };
 
@@ -47,7 +45,13 @@
 
 	ethernet_phy: ethernet-phy@0 {
 		reg = <0>;
+		device_type = "ethernet-phy";
 	};
+};
+
+&qspi {
+	u-boot,dm-pre-reloc;
+	status = "okay";
 };
 
 &sdhci0 {
@@ -56,11 +60,6 @@
 };
 
 &uart1 {
-	u-boot,dm-pre-reloc;
-	status = "okay";
-};
-
-&qspi {
 	u-boot,dm-pre-reloc;
 	status = "okay";
 };

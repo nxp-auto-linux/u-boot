@@ -1,15 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2014-2015 Masahiro Yamada <yamada.masahiro@socionext.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright (C) 2014      Panasonic Corporation
+ * Copyright (C) 2015-2016 Socionext Inc.
+ *   Author: Masahiro Yamada <yamada.masahiro@socionext.com>
  */
 
 #include <common.h>
 #include <spl.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <nand.h>
+#include <stdio.h>
 #include <linux/io.h>
+#include <linux/printk.h>
 #include <../drivers/mtd/nand/denali.h>
+
+#include "init.h"
 
 static void nand_denali_wp_disable(void)
 {
@@ -26,62 +31,69 @@ static void nand_denali_wp_disable(void)
 #endif
 }
 
-struct uniphier_fdt_file {
-	const char *compatible;
-	const char *file_name;
-};
-
-static const struct uniphier_fdt_file uniphier_fdt_files[] = {
-	{ "socionext,ph1-ld4-ref", "uniphier-ph1-ld4-ref.dtb", },
-	{ "socionext,ph1-ld6b-ref", "uniphier-ph1-ld6b-ref.dtb", },
-	{ "socionext,ph1-ld10-ref", "uniphier-ph1-ld10-ref.dtb", },
-	{ "socionext,ph1-pro4-ref", "uniphier-ph1-pro4-ref.dtb", },
-	{ "socionext,ph1-pro5-4kbox", "uniphier-ph1-pro5-4kbox.dtb", },
-	{ "socionext,ph1-sld3-ref", "uniphier-ph1-sld3-ref.dtb", },
-	{ "socionext,ph1-sld8-ref", "uniphier-ph1-sld8-ref.dtb", },
-	{ "socionext,proxstream2-gentil", "uniphier-proxstream2-gentil.dtb", },
-	{ "socionext,proxstream2-vodka", "uniphier-proxstream2-vodka.dtb", },
-};
-
-static void uniphier_set_fdt_file(void)
+static int uniphier_set_fdt_file(void)
 {
 	DECLARE_GLOBAL_DATA_PTR;
-	int i;
+	const char *compat;
+	char dtb_name[256];
+	int buf_len = sizeof(dtb_name);
 
-	/* lookup DTB file name based on the compatible string */
-	for (i = 0; i < ARRAY_SIZE(uniphier_fdt_files); i++) {
-		if (!fdt_node_check_compatible(gd->fdt_blob, 0,
-					uniphier_fdt_files[i].compatible)) {
-			setenv("fdt_file", uniphier_fdt_files[i].file_name);
-			return;
-		}
-	}
+	if (env_get("fdtfile"))
+		return 0;	/* do nothing if it is already set */
+
+	compat = fdt_stringlist_get(gd->fdt_blob, 0, "compatible", 0, NULL);
+	if (!compat)
+		return -EINVAL;
+
+	/* rip off the vendor prefix "socionext,"  */
+	compat = strchr(compat, ',');
+	if (!compat)
+		return -EINVAL;
+	compat++;
+
+	strncpy(dtb_name, compat, buf_len);
+	buf_len -= strlen(compat);
+
+	strncat(dtb_name, ".dtb", buf_len);
+
+	return env_set("fdtfile", dtb_name);
 }
 
 int board_late_init(void)
 {
 	puts("MODE:  ");
 
-	switch (spl_boot_device()) {
+	switch (uniphier_boot_device_raw()) {
 	case BOOT_DEVICE_MMC1:
-		printf("eMMC Boot\n");
-		setenv("bootmode", "emmcboot");
+		printf("eMMC Boot");
+		env_set("bootmode", "emmcboot");
 		break;
 	case BOOT_DEVICE_NAND:
-		printf("NAND Boot\n");
-		setenv("bootmode", "nandboot");
+		printf("NAND Boot");
+		env_set("bootmode", "nandboot");
 		nand_denali_wp_disable();
 		break;
 	case BOOT_DEVICE_NOR:
-		printf("NOR Boot\n");
-		setenv("bootmode", "norboot");
+		printf("NOR Boot");
+		env_set("bootmode", "norboot");
+		break;
+	case BOOT_DEVICE_USB:
+		printf("USB Boot");
+		env_set("bootmode", "usbboot");
 		break;
 	default:
-		printf("Unsupported Boot Mode\n");
-		return -1;
+		printf("Unknown");
+		break;
 	}
 
-	uniphier_set_fdt_file();
+	if (uniphier_have_internal_stm())
+		printf(" (STM: %s)",
+		       uniphier_boot_from_backend() ? "OFF" : "ON");
+
+	printf("\n");
+
+	if (uniphier_set_fdt_file())
+		pr_warn("fdt_file environment was not set correctly\n");
 
 	return 0;
 }

@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  (C) Copyright 2015
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_TEGRA_GPU_H
@@ -26,7 +25,7 @@ int tegra_gpu_enable_node(void *blob, const char *gpupath);
 
 #else /* CONFIG_OF_LIBFDT */
 
-static inline int tegra_gpu_enable_node(void *blob, const char *gpupath)
+static inline int tegra_gpu_enable_node(void *blob, const char *compat)
 {
 	return 0;
 }

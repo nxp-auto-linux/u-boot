@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,8 +10,8 @@
 #include <asm/arch/crm_regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/iomux-mx53.h>
-#include <asm/errno.h>
-#include <asm/imx-common/boot_mode.h>
+#include <linux/errno.h>
+#include <asm/mach-imx/boot_mode.h>
 #include <netdev.h>
 #include <i2c.h>
 #include <mmc.h>

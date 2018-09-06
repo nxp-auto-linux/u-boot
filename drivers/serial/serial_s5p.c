@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009 SAMSUNG Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
  * Heungjun Kim <riverful.kim@samsung.com>
  *
  * based on drivers/serial/s3c64xx.c
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,6 +16,7 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/uart.h>
 #include <serial.h>
+#include <clk.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -90,7 +90,19 @@ int s5p_serial_setbrg(struct udevice *dev, int baudrate)
 {
 	struct s5p_serial_platdata *plat = dev->platdata;
 	struct s5p_uart *const uart = plat->reg;
-	u32 uclk = get_uart_clk(plat->port_id);
+	u32 uclk;
+
+#ifdef CONFIG_CLK_EXYNOS
+	struct clk clk;
+	u32 ret;
+
+	ret = clk_get_by_index(dev, 1, &clk);
+	if (ret < 0)
+		return ret;
+	uclk = clk_get_rate(&clk);
+#else
+	uclk = get_uart_clk(plat->port_id);
+#endif
 
 	s5p_serial_baud(uart, uclk, baudrate);
 
@@ -169,13 +181,13 @@ static int s5p_serial_ofdata_to_platdata(struct udevice *dev)
 	struct s5p_serial_platdata *plat = dev->platdata;
 	fdt_addr_t addr;
 
-	addr = dev_get_addr(dev);
+	addr = devfdt_get_addr(dev);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
 	plat->reg = (struct s5p_uart *)addr;
-	plat->port_id = fdtdec_get_int(gd->fdt_blob, dev->of_offset, "id", -1);
-
+	plat->port_id = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
+					"id", dev->seq);
 	return 0;
 }
 

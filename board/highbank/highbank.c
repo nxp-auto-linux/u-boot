@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2010-2011 Calxeda, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -67,7 +66,7 @@ void scsi_init(void)
 	cphy_disable_overrides();
 	if (reg & PWRDOM_STAT_SATA) {
 		ahci_init((void __iomem *)HB_AHCI_BASE);
-		scsi_scan(1);
+		scsi_scan(true);
 	}
 }
 #endif
@@ -80,11 +79,11 @@ int misc_init_r(void)
 
 	boot_choice = readl(HB_SREG_A9_BOOT_SRC_STAT) & 0xff;
 	sprintf(envbuffer, "bootcmd%d", boot_choice);
-	if (getenv(envbuffer)) {
+	if (env_get(envbuffer)) {
 		sprintf(envbuffer, "run bootcmd%d", boot_choice);
-		setenv("bootcmd", envbuffer);
+		env_set("bootcmd", envbuffer);
 	} else
-		setenv("bootcmd", "");
+		env_set("bootcmd", "");
 
 	return 0;
 }

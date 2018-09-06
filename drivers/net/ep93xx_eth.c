@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Cirrus Logic EP93xx ethernet MAC / MII driver.
  *
@@ -13,8 +14,6 @@
  * (C) Copyright 2002 2003
  * Adam Bezanson, Network Audio Technologies, Inc.
  * <bezanson@netaudiotech.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <command.h>
@@ -30,10 +29,10 @@
 #define GET_REGS(eth_dev)	(GET_PRIV(eth_dev)->regs)
 
 /* ep93xx_miiphy ops forward declarations */
-static int ep93xx_miiphy_read(const char * const dev, unsigned char const addr,
-			unsigned char const reg, unsigned short * const value);
-static int ep93xx_miiphy_write(const char * const dev, unsigned char const addr,
-			unsigned char const reg, unsigned short const value);
+static int ep93xx_miiphy_read(struct mii_dev *bus, int addr, int devad,
+			      int reg);
+static int ep93xx_miiphy_write(struct mii_dev *bus, int addr, int devad,
+			       int reg, u16 value);
 
 #if defined(EP93XX_MAC_DEBUG)
 /**
@@ -324,7 +323,7 @@ static int ep93xx_eth_rcv_packet(struct eth_device *dev)
 			debug("reporting %d bytes...\n", len);
 		} else {
 			/* Do we have an erroneous packet? */
-			error("packet rx error, status %08X %08X",
+			pr_err("packet rx error, status %08X %08X",
 				priv->rx_sq.current->word1,
 				priv->rx_sq.current->word2);
 			dump_rx_descriptor_queue(dev);
@@ -401,7 +400,7 @@ static int ep93xx_eth_send_packet(struct eth_device *dev,
 		; /* noop */
 
 	if (!TX_STATUS_TXWE(priv->tx_sq.current)) {
-		error("packet tx error, status %08X",
+		pr_err("packet tx error, status %08X",
 			priv->tx_sq.current->word1);
 		dump_tx_descriptor_queue(dev);
 		dump_tx_status_queue(dev);
@@ -421,7 +420,17 @@ eth_send_out:
 #if defined(CONFIG_MII)
 int ep93xx_miiphy_initialize(bd_t * const bd)
 {
-	miiphy_register("ep93xx_eth0", ep93xx_miiphy_read, ep93xx_miiphy_write);
+	int retval;
+	struct mii_dev *mdiodev = mdio_alloc();
+	if (!mdiodev)
+		return -ENOMEM;
+	strncpy(mdiodev->name, "ep93xx_eth0", MDIO_NAME_LEN);
+	mdiodev->read = ep93xx_miiphy_read;
+	mdiodev->write = ep93xx_miiphy_write;
+
+	retval = mdio_register(mdiodev);
+	if (retval < 0)
+		return retval;
 	return 0;
 }
 #endif
@@ -442,7 +451,7 @@ int ep93xx_eth_initialize(u8 dev_num, int base_addr)
 
 	priv = malloc(sizeof(*priv));
 	if (!priv) {
-		error("malloc() failed");
+		pr_err("malloc() failed");
 		goto eth_init_failed_0;
 	}
 	memset(priv, 0, sizeof(*priv));
@@ -452,34 +461,34 @@ int ep93xx_eth_initialize(u8 dev_num, int base_addr)
 	priv->tx_dq.base = calloc(NUMTXDESC,
 				sizeof(struct tx_descriptor));
 	if (priv->tx_dq.base == NULL) {
-		error("calloc() failed");
+		pr_err("calloc() failed");
 		goto eth_init_failed_1;
 	}
 
 	priv->tx_sq.base = calloc(NUMTXDESC,
 				sizeof(struct tx_status));
 	if (priv->tx_sq.base == NULL) {
-		error("calloc() failed");
+		pr_err("calloc() failed");
 		goto eth_init_failed_2;
 	}
 
 	priv->rx_dq.base = calloc(NUMRXDESC,
 				sizeof(struct rx_descriptor));
 	if (priv->rx_dq.base == NULL) {
-		error("calloc() failed");
+		pr_err("calloc() failed");
 		goto eth_init_failed_3;
 	}
 
 	priv->rx_sq.base = calloc(NUMRXDESC,
 				sizeof(struct rx_status));
 	if (priv->rx_sq.base == NULL) {
-		error("calloc() failed");
+		pr_err("calloc() failed");
 		goto eth_init_failed_4;
 	}
 
 	dev = malloc(sizeof *dev);
 	if (dev == NULL) {
-		error("malloc() failed");
+		pr_err("malloc() failed");
 		goto eth_init_failed_5;
 	}
 	memset(dev, 0, sizeof *dev);
@@ -542,9 +551,10 @@ eth_init_done:
 /**
  * Read a 16-bit value from an MII register.
  */
-static int ep93xx_miiphy_read(const char * const dev, unsigned char const addr,
-			unsigned char const reg, unsigned short * const value)
+static int ep93xx_miiphy_read(struct mii_dev *bus, int addr, int devad,
+			      int reg)
 {
+	unsigned short value = 0;
 	struct mac_regs *mac = (struct mac_regs *)MAC_BASE;
 	int ret = -1;
 	uint32_t self_ctl;
@@ -552,10 +562,9 @@ static int ep93xx_miiphy_read(const char * const dev, unsigned char const addr,
 	debug("+ep93xx_miiphy_read");
 
 	/* Parameter checks */
-	BUG_ON(dev == NULL);
+	BUG_ON(bus->name == NULL);
 	BUG_ON(addr > MII_ADDRESS_MAX);
 	BUG_ON(reg > MII_REGISTER_MAX);
-	BUG_ON(value == NULL);
 
 	/*
 	 * Save the current SelfCTL register value.  Set MAC to suppress
@@ -579,7 +588,7 @@ static int ep93xx_miiphy_read(const char * const dev, unsigned char const addr,
 	while (readl(&mac->miists) & MIISTS_BUSY)
 		; /* noop */
 
-	*value = (unsigned short)readl(&mac->miidata);
+	value = (unsigned short)readl(&mac->miidata);
 
 	/* Restore the saved SelfCTL value and return. */
 	writel(self_ctl, &mac->selfctl);
@@ -588,14 +597,16 @@ static int ep93xx_miiphy_read(const char * const dev, unsigned char const addr,
 	/* Fall through */
 
 	debug("-ep93xx_miiphy_read");
-	return ret;
+	if (ret < 0)
+		return ret;
+	return value;
 }
 
 /**
  * Write a 16-bit value to an MII register.
  */
-static int ep93xx_miiphy_write(const char * const dev, unsigned char const addr,
-			unsigned char const reg, unsigned short const value)
+static int ep93xx_miiphy_write(struct mii_dev *bus, int addr, int devad,
+			       int reg, u16 value)
 {
 	struct mac_regs *mac = (struct mac_regs *)MAC_BASE;
 	int ret = -1;
@@ -604,7 +615,7 @@ static int ep93xx_miiphy_write(const char * const dev, unsigned char const addr,
 	debug("+ep93xx_miiphy_write");
 
 	/* Parameter checks */
-	BUG_ON(dev == NULL);
+	BUG_ON(bus->name == NULL);
 	BUG_ON(addr > MII_ADDRESS_MAX);
 	BUG_ON(reg > MII_REGISTER_MAX);
 

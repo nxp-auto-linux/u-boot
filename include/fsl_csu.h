@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  */
 
@@ -30,5 +29,7 @@ struct csu_ns_dev {
 };
 
 void enable_layerscape_ns_access(void);
+void set_devices_ns_access(unsigned long, u16 val);
+void set_pcie_ns_access(int pcie, u16 val);
 
 #endif

@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2009
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -36,35 +35,41 @@ unsigned long notrace timer_read_counter(void)
 	return readl(CONFIG_SYS_TIMER_COUNTER);
 #endif
 }
+
+ulong timer_get_boot_us(void)
+{
+	ulong count = timer_read_counter();
+
+#if CONFIG_SYS_TIMER_RATE == 1000000
+	return count;
+#elif CONFIG_SYS_TIMER_RATE > 1000000
+	return lldiv(count, CONFIG_SYS_TIMER_RATE / 1000000);
+#elif defined(CONFIG_SYS_TIMER_RATE)
+	return (unsigned long long)count * 1000000 / CONFIG_SYS_TIMER_RATE;
+#else
+	/* Assume the counter is in microseconds */
+	return count;
+#endif
+}
+
 #else
 extern unsigned long __weak timer_read_counter(void);
 #endif
 
 #ifdef CONFIG_TIMER
-static int notrace dm_timer_init(void)
-{
-	struct udevice *dev;
-	int ret;
-
-	if (!gd->timer) {
-		ret = uclass_first_device(UCLASS_TIMER, &dev);
-		if (ret)
-			return ret;
-		if (!dev)
-			return -ENODEV;
-		gd->timer = dev;
-	}
-
-	return 0;
-}
-
 ulong notrace get_tbclk(void)
 {
-	int ret;
+	if (!gd->timer) {
+#ifdef CONFIG_TIMER_EARLY
+		return timer_early_get_rate();
+#else
+		int ret;
 
-	ret = dm_timer_init();
-	if (ret)
-		return ret;
+		ret = dm_timer_init();
+		if (ret)
+			return ret;
+#endif
+	}
 
 	return timer_get_rate(gd->timer);
 }
@@ -74,9 +79,17 @@ uint64_t notrace get_ticks(void)
 	u64 count;
 	int ret;
 
-	ret = dm_timer_init();
-	if (ret)
-		return ret;
+	if (!gd->timer) {
+#ifdef CONFIG_TIMER_EARLY
+		return timer_early_get_count();
+#else
+		int ret;
+
+		ret = dm_timer_init();
+		if (ret)
+			return ret;
+#endif
+	}
 
 	ret = timer_get_count(gd->timer, &count);
 	if (ret)
@@ -156,10 +169,4 @@ void udelay(unsigned long usec)
 		__udelay (kv);
 		usec -= kv;
 	} while(usec);
-}
-
-void mdelay(unsigned long msec)
-{
-	while (msec--)
-		udelay(1000);
 }

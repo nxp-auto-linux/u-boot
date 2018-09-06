@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
  *
@@ -6,8 +7,6 @@
  *
  * (C) Copyright 2002, 2003
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -79,48 +78,6 @@ const char *pci_class_str(u8 class)
 	};
 }
 
-pci_dev_t pci_find_class(uint find_class, int index)
-{
-	int bus;
-	int devnum;
-	pci_dev_t bdf;
-	uint32_t class;
-
-	for (bus = 0; bus <= pci_last_busno(); bus++) {
-		for (devnum = 0; devnum < PCI_MAX_PCI_DEVICES - 1; devnum++) {
-			pci_read_config_dword(PCI_BDF(bus, devnum, 0),
-					      PCI_CLASS_REVISION, &class);
-			if (class >> 16 == 0xffff)
-				continue;
-
-			for (bdf = PCI_BDF(bus, devnum, 0);
-					bdf <= PCI_BDF(bus, devnum,
-						PCI_MAX_PCI_FUNCTIONS - 1);
-					bdf += PCI_BDF(0, 0, 1)) {
-				pci_read_config_dword(bdf, PCI_CLASS_REVISION,
-						      &class);
-				class >>= 8;
-
-				if (class != find_class)
-					continue;
-				/*
-				 * Decrement the index. We want to return the
-				 * correct device, so index is 0 for the first
-				 * matching device, 1 for the second, etc.
-				 */
-				if (index) {
-					index--;
-					continue;
-				}
-				/* Return index'th controller. */
-				return bdf;
-			}
-		}
-	}
-
-	return -ENODEV;
-}
-
 __weak int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 {
 	/*
@@ -131,7 +88,7 @@ __weak int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 		/*
 		 * Only skip configuration if "pciconfighost" is not set
 		 */
-		if (getenv("pciconfighost") == NULL)
+		if (env_get("pciconfighost") == NULL)
 			return 1;
 #else
 		return 1;
@@ -141,6 +98,7 @@ __weak int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 	return 0;
 }
 
+#if !defined(CONFIG_DM_PCI) || defined(CONFIG_DM_PCI_COMPAT)
 /* Get a virtual address associated with a BAR region */
 void *pci_map_bar(pci_dev_t pdev, int bar, int flags)
 {
@@ -222,11 +180,6 @@ phys_addr_t pci_hose_bus_to_phys(struct pci_controller *hose,
 		return phys_addr;
 	}
 
-#ifdef CONFIG_DM_PCI
-	/* The root controller has the region information */
-	hose = pci_bus_to_hose(0);
-#endif
-
 	/*
 	 * if PCI_REGION_MEM is set we do a two pass search with preference
 	 * on matches that don't have PCI_REGION_SYS_MEMORY set
@@ -277,6 +230,13 @@ int __pci_hose_phys_to_bus(struct pci_controller *hose,
 	return 1;
 }
 
+/*
+ * pci_hose_phys_to_bus(): Convert physical address to bus address
+ * @hose:	PCI hose of the root PCI controller
+ * @phys_addr:	physical address to convert
+ * @flags:	flags of pci regions
+ * @return bus address if OK, 0 on error
+ */
 pci_addr_t pci_hose_phys_to_bus(struct pci_controller *hose,
 				phys_addr_t phys_addr,
 				unsigned long flags)
@@ -288,11 +248,6 @@ pci_addr_t pci_hose_phys_to_bus(struct pci_controller *hose,
 		puts("pci_hose_phys_to_bus: invalid hose\n");
 		return bus_addr;
 	}
-
-#ifdef CONFIG_DM_PCI
-	/* The root controller has the region information */
-	hose = pci_bus_to_hose(0);
-#endif
 
 	/*
 	 * if PCI_REGION_MEM is set we do a two pass search with preference
@@ -363,3 +318,46 @@ pci_dev_t pci_hose_find_devices(struct pci_controller *hose, int busnum,
 
 	return -1;
 }
+
+pci_dev_t pci_find_class(uint find_class, int index)
+{
+	int bus;
+	int devnum;
+	pci_dev_t bdf;
+	uint32_t class;
+
+	for (bus = 0; bus <= pci_last_busno(); bus++) {
+		for (devnum = 0; devnum < PCI_MAX_PCI_DEVICES - 1; devnum++) {
+			pci_read_config_dword(PCI_BDF(bus, devnum, 0),
+					      PCI_CLASS_REVISION, &class);
+			if (class >> 16 == 0xffff)
+				continue;
+
+			for (bdf = PCI_BDF(bus, devnum, 0);
+					bdf <= PCI_BDF(bus, devnum,
+						PCI_MAX_PCI_FUNCTIONS - 1);
+					bdf += PCI_BDF(0, 0, 1)) {
+				pci_read_config_dword(bdf, PCI_CLASS_REVISION,
+						      &class);
+				class >>= 8;
+
+				if (class != find_class)
+					continue;
+				/*
+				 * Decrement the index. We want to return the
+				 * correct device, so index is 0 for the first
+				 * matching device, 1 for the second, etc.
+				 */
+				if (index) {
+					index--;
+					continue;
+				}
+				/* Return index'th controller. */
+				return bdf;
+			}
+		}
+	}
+
+	return -ENODEV;
+}
+#endif /* !CONFIG_DM_PCI || CONFIG_DM_PCI_COMPAT */

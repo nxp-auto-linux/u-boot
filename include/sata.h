@@ -2,6 +2,7 @@
 #define __SATA_H__
 #include <part.h>
 
+#if !defined(CONFIG_DM_SCSI) && !defined(CONFIG_AHCI)
 int init_sata(int dev);
 int reset_sata(int dev);
 int scan_sata(int dev);
@@ -14,6 +15,10 @@ int sata_stop(void);
 int __sata_stop(void);
 int sata_port_status(int dev, int port);
 
-extern block_dev_desc_t sata_dev_desc[];
+extern struct blk_desc sata_dev_desc[];
+#endif
+
+int sata_probe(int devnum);
+int sata_remove(int devnum);
 
 #endif

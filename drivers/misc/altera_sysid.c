@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2004, Psyent Corporation <www.psyent.com>
  * Scott McNutt <smcnutt@psyent.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -32,10 +31,8 @@ void display_sysid(void)
 	int ret;
 
 	/* the first misc device will be used */
-	ret = uclass_first_device(UCLASS_MISC, &dev);
+	ret = uclass_first_device_err(UCLASS_MISC, &dev);
 	if (ret)
-		return;
-	if (!dev)
 		return;
 	ret = misc_read(dev, 0, &sysid, sizeof(sysid));
 	if (ret)
@@ -76,7 +73,7 @@ static int altera_sysid_ofdata_to_platdata(struct udevice *dev)
 {
 	struct altera_sysid_platdata *plat = dev_get_platdata(dev);
 
-	plat->regs = map_physmem(dev_get_addr(dev),
+	plat->regs = map_physmem(devfdt_get_addr(dev),
 				 sizeof(struct altera_sysid_regs),
 				 MAP_NOCACHE);
 

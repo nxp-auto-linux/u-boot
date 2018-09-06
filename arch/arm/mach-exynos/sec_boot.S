@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013 Samsung Electronics
  * Akshay Saraswat <akshay.s@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -30,10 +29,10 @@ relocate_wait_code:
  * because that comes out to be the last 4KB of the iRAM
  * (Base Address - 0x02020000, Limit Address - 0x020740000).
  *
- * U-boot and kernel are aware of this code and flags by the simple
+ * U-Boot and kernel are aware of this code and flags by the simple
  * fact that we are implementing a workaround in the last 4KB
  * of the iRAM and we have already defined these flag and address
- * values in both kernel and U-boot for our use.
+ * values in both kernel and U-Boot for our use.
  */
 code_base:
 	b	 1f

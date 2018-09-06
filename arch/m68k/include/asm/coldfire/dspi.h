@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * MCF5227x Internal Memory Map
  *
@@ -5,8 +6,6 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  *
  * (C) Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __DSPI_H__

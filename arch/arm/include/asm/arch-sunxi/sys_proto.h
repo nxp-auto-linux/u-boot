@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * Tom Cubie <tangliang@allwinnertech.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _SYS_PROTO_H_
@@ -24,6 +23,10 @@ void sdelay(unsigned long);
 void return_to_fel(uint32_t lr, uint32_t sp);
 
 /* Board / SoC level designware gmac init */
-int sunxi_gmac_initialize(bd_t *bis);
+#if !defined CONFIG_SPL_BUILD && defined CONFIG_SUN7I_GMAC
+void eth_init_board(void);
+#else
+static inline void eth_init_board(void) {}
+#endif
 
 #endif

@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2012 The Chromium OS Authors.
  *
  * (C) Copyright 2010
  * Petr Stetiar <ynezz@true.cz>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Contains stolen code from ddcprobe project which is:
  * Copyright (C) Nalin Dahyabhai <bigfun@pobox.com>
@@ -17,6 +16,10 @@
 
 /* Size of the EDID data */
 #define EDID_SIZE	128
+#define EDID_EXT_SIZE	256
+
+/* OUI of HDMI vendor specific data block */
+#define HDMI_IEEE_OUI 0x000c03
 
 #define GET_BIT(_x, _pos) \
 	(((_x) >> (_pos)) & 1)
@@ -233,6 +236,13 @@ struct edid1_info {
 	unsigned char checksum;
 } __attribute__ ((__packed__));
 
+enum edid_cea861_db_types {
+	EDID_CEA861_DB_AUDIO = 0x01,
+	EDID_CEA861_DB_VIDEO = 0x02,
+	EDID_CEA861_DB_VENDOR = 0x03,
+	EDID_CEA861_DB_SPEAKER = 0x04,
+};
+
 struct edid_cea861_info {
 	unsigned char extension_tag;
 #define EDID_CEA861_EXTENSION_TAG	0x02
@@ -250,6 +260,10 @@ struct edid_cea861_info {
 #define EDID_CEA861_DTD_COUNT(_x) \
 	GET_BITS(((_x).dtd_count), 3, 0)
 	unsigned char data[124];
+#define EDID_CEA861_DB_TYPE(_x, offset) \
+	GET_BITS((_x).data[offset], 7, 5)
+#define EDID_CEA861_DB_LEN(_x, offset) \
+	GET_BITS((_x).data[offset], 4, 0)
 } __attribute__ ((__packed__));
 
 /**

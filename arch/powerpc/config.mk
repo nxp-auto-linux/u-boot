@@ -1,9 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2000-2010
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 ifeq ($(CROSS_COMPILE),)
 CROSS_COMPILE := ppc_8xx-
@@ -41,7 +39,8 @@ archprepare: checkgcc4
 # that U-Boot wants.
 # See http://lists.denx.de/pipermail/u-boot/2012-September/135156.html
 checkgcc4:
-	@if test $(call cc-version) -lt 0400; then \
+	@if test "$(call cc-name)" = "gcc" -a \
+			$(call cc-version) -lt 0400; then \
 		echo -n '*** Your GCC is too old, please upgrade to GCC 4.x or newer'; \
 		false; \
 	fi

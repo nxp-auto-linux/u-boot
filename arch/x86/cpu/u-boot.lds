@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002
  * Daniel Engström, Omicron Ceti AB, daniel@omicron.se.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -12,6 +11,10 @@ ENTRY(_start)
 
 SECTIONS
 {
+#ifndef CONFIG_CMDLINE
+	/DISCARD/ : { *(.u_boot_list_2_cmd_*) }
+#endif
+
 	. = CONFIG_SYS_TEXT_BASE;	/* Location of bootcode in flash */
 	__text_start = .;
 	.text  : { *(.text*); }
@@ -24,7 +27,10 @@ SECTIONS
 	}
 
 	. = ALIGN(4);
-	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+	.rodata : {
+		*(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
+		KEEP(*(.rodata.efi.init));
+	}
 
 	. = ALIGN(4);
 	.data : { *(.data*) }
@@ -36,6 +42,37 @@ SECTIONS
 	.got : { *(.got*) }
 
 	. = ALIGN(4);
+
+	.__efi_runtime_start : {
+		*(.__efi_runtime_start)
+	}
+
+	.efi_runtime : {
+		*(efi_runtime_text)
+		*(efi_runtime_data)
+	}
+
+	.__efi_runtime_stop : {
+		*(.__efi_runtime_stop)
+	}
+
+	.efi_runtime_rel_start :
+	{
+		*(.__efi_runtime_rel_start)
+	}
+
+	.efi_runtime_rel : {
+		*(.relefi_runtime_text)
+		*(.relefi_runtime_data)
+	}
+
+	.efi_runtime_rel_stop :
+	{
+		*(.__efi_runtime_rel_stop)
+	}
+
+	. = ALIGN(4);
+
 	__data_end = .;
 	__init_end = .;
 
@@ -65,7 +102,7 @@ SECTIONS
 	/DISCARD/ : { *(.interp*) }
 	/DISCARD/ : { *(.gnu*) }
 
-#ifdef CONFIG_X86_RESET_VECTOR
+#ifdef CONFIG_X86_16BIT_INIT
 	/*
 	 * The following expressions place the 16-bit Real-Mode code and
 	 * Reset Vector at the end of the Flash ROM

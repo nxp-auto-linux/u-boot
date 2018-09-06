@@ -1,13 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
 #include <dm/device-internal.h>
-#include <dm/root.h>
 #include <dm/test.h>
 #include <dm/uclass-internal.h>
 #include <dm/util.h>
@@ -30,7 +28,7 @@ static struct dm_test_state *test_state;
 
 static int testbus_drv_probe(struct udevice *dev)
 {
-	return dm_scan_fdt_node(dev, gd->fdt_blob, dev->of_offset, false);
+	return dm_scan_fdt_dev(dev);
 }
 
 static int testbus_child_post_bind(struct udevice *dev)
@@ -106,7 +104,7 @@ UCLASS_DRIVER(testbus) = {
 /* Test that we can probe for children */
 static int dm_test_bus_children(struct unit_test_state *uts)
 {
-	int num_devices = 6;
+	int num_devices = 7;
 	struct udevice *bus;
 	struct uclass *uc;
 
@@ -161,16 +159,33 @@ static int dm_test_bus_children_funcs(struct unit_test_state *uts)
 	node = fdt_path_offset(blob, "/d-test");
 	ut_asserteq(-ENODEV, device_find_child_by_of_offset(bus, node, &dev));
 
+	return 0;
+}
+DM_TEST(dm_test_bus_children_funcs, DM_TESTF_SCAN_PDATA | DM_TESTF_SCAN_FDT);
+
+static int dm_test_bus_children_of_offset(struct unit_test_state *uts)
+{
+	const void *blob = gd->fdt_blob;
+	struct udevice *bus, *dev;
+	int node;
+
+	ut_assertok(uclass_get_device(UCLASS_TEST_BUS, 0, &bus));
+	ut_assertnonnull(bus);
+
 	/* Find a valid child */
 	node = fdt_path_offset(blob, "/some-bus/c-test@1");
+	ut_assert(node > 0);
 	ut_assertok(device_find_child_by_of_offset(bus, node, &dev));
+	ut_assertnonnull(dev);
 	ut_assert(!(dev->flags & DM_FLAG_ACTIVATED));
 	ut_assertok(device_get_child_by_of_offset(bus, node, &dev));
+	ut_assertnonnull(dev);
 	ut_assert(dev->flags & DM_FLAG_ACTIVATED);
 
 	return 0;
 }
-DM_TEST(dm_test_bus_children_funcs, DM_TESTF_SCAN_PDATA | DM_TESTF_SCAN_FDT);
+DM_TEST(dm_test_bus_children_of_offset,
+	DM_TESTF_SCAN_PDATA | DM_TESTF_SCAN_FDT | DM_TESTF_FLAT_TREE);
 
 /* Test that we can iterate through children */
 static int dm_test_bus_children_iterators(struct unit_test_state *uts)
@@ -223,7 +238,7 @@ static int test_bus_parent_data(struct unit_test_state *uts)
 	/* Check that it starts at 0 and goes away when device is removed */
 	parent_data->sum += 5;
 	ut_asserteq(5, parent_data->sum);
-	device_remove(dev);
+	device_remove(dev, DM_REMOVE_NORMAL);
 	ut_asserteq_ptr(NULL, dev_get_parent_priv(dev));
 
 	/* Check that we can do this twice */
@@ -324,7 +339,7 @@ static int dm_test_bus_parent_ops(struct unit_test_state *uts)
 			continue;
 		parent_data = dev_get_parent_priv(dev);
 		ut_asserteq(FLAG_CHILD_PROBED, parent_data->flag);
-		ut_assertok(device_remove(dev));
+		ut_assertok(device_remove(dev, DM_REMOVE_NORMAL));
 		ut_asserteq_ptr(NULL, dev_get_parent_priv(dev));
 		ut_asserteq_ptr(dms->removed, dev);
 	}
@@ -361,7 +376,7 @@ static int test_bus_parent_platdata(struct unit_test_state *uts)
 		plat->count++;
 		ut_asserteq(1, plat->count);
 		device_probe(dev);
-		device_remove(dev);
+		device_remove(dev, DM_REMOVE_NORMAL);
 
 		ut_asserteq_ptr(plat, dev_get_parent_platdata(dev));
 		ut_asserteq(1, plat->count);
@@ -371,7 +386,7 @@ static int test_bus_parent_platdata(struct unit_test_state *uts)
 	ut_asserteq(3, child_count);
 
 	/* Removing the bus should also have no effect (it is still bound) */
-	device_remove(bus);
+	device_remove(bus, DM_REMOVE_NORMAL);
 	for (device_find_first_child(bus, &dev), child_count = 0;
 	     dev;
 	     device_find_next_child(&dev)) {

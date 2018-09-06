@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013 Google, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __DM_TEST_H
@@ -150,10 +149,22 @@ enum {
 	DM_TESTF_SCAN_PDATA	= 1 << 0,	/* test needs platform data */
 	DM_TESTF_PROBE_TEST	= 1 << 1,	/* probe test uclass */
 	DM_TESTF_SCAN_FDT	= 1 << 2,	/* scan device tree */
+	DM_TESTF_FLAT_TREE	= 1 << 3,	/* test needs flat DT */
+	DM_TESTF_LIVE_TREE	= 1 << 4,	/* needs live device tree */
 };
 
 /* Declare a new driver model test */
 #define DM_TEST(_name, _flags)	UNIT_TEST(_name, _flags, dm_test)
+
+/* This platform data is needed in tests, so declare it here */
+struct sandbox_sdl_plat {
+	int xres;
+	int yres;
+	int bpix;
+	int rot;
+	const char *vidconsole_drv_name;
+	int font_size;
+};
 
 /* Declare ping methods for the drivers */
 int test_ping(struct udevice *dev, int pingval, int *pingret);

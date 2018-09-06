@@ -1,22 +1,24 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2014 Suriyan Ramasami
-#
-#  SPDX-License-Identifier:	GPL-2.0+
-#
 
 # Invoke this test script from U-Boot base directory as ./test/fs/fs-test.sh
 # It currently tests the fs/sb and native commands for ext4 and fat partitions
 # Expected results are as follows:
 # EXT4 tests:
-# fs-test.sb.ext4.out: Summary: PASS: 17 FAIL: 2
-# fs-test.ext4.out: Summary: PASS: 10 FAIL: 9
-# fs-test.fs.ext4.out: Summary: PASS: 10 FAIL: 9
-# FAT tests:
-# fs-test.sb.fat.out: Summary: PASS: 17 FAIL: 2
-# fs-test.fat.out: Summary: PASS: 19 FAIL: 0
-# fs-test.fs.fat.out: Summary: PASS: 19 FAIL: 0
-# Total Summary: TOTAL PASS: 92 TOTAL FAIL: 22
+# fs-test.sb.ext4.out: Summary: PASS: 24 FAIL: 0
+# fs-test.ext4.out: Summary: PASS: 24 FAIL: 0
+# fs-test.fs.ext4.out: Summary: PASS: 24 FAIL: 0
+# FAT16 tests:
+# fs-test.sb.fat16.out: Summary: PASS: 24 FAIL: 0
+# fs-test.fat16.out: Summary: PASS: 21 FAIL: 3
+# fs-test.fs.fat16.out: Summary: PASS: 21 FAIL: 3
+# FAT32 tests:
+# fs-test.sb.fat32.out: Summary: PASS: 24 FAIL: 0
+# fs-test.fat32.out: Summary: PASS: 21 FAIL: 3
+# fs-test.fs.fat32.out: Summary: PASS: 21 FAIL: 3
+# Total Summary: TOTAL PASS: 204 TOTAL FAIL: 12
 
 # pre-requisite binaries list.
 PREREQ_BINS="md5sum mkfs mount umount dd fallocate mkdir"
@@ -41,7 +43,7 @@ SMALL_FILE="1MB.file"
 BIG_FILE="2.5GB.file"
 
 # $MD5_FILE will have the expected md5s when we do the test
-# They shall have a suffix which represents their file system (ext4/fat)
+# They shall have a suffix which represents their file system (ext4/fat16/...)
 MD5_FILE="${OUT_DIR}/md5s.list"
 
 # $OUT shall be the prefix of the test output. Their suffix will be .out
@@ -100,47 +102,53 @@ function compile_sandbox() {
 # We save time by not deleting and recreating the file system images
 function prepare_env() {
 	rm -f ${MD5_FILE}.* ${OUT}.*
-	mkdir ${OUT_DIR}
+	mkdir -p ${OUT_DIR}
 }
 
 # 1st parameter is the name of the image file to be created
-# 2nd parameter is the filesystem - fat ext4 etc
+# 2nd parameter is the filesystem - fat16 ext4 etc
 # -F cant be used with fat as it means something else.
 function create_image() {
 	# Create image if not already present - saves time, while debugging
-	if [ "$2" = "ext4" ]; then
+	case "$2" in
+		fat16)
+		MKFS_OPTION="-F 16"
+		FS_TYPE="fat"
+		;;
+		fat32)
+		MKFS_OPTION="-F 32"
+		FS_TYPE="fat"
+		;;
+		ext4)
 		MKFS_OPTION="-F"
-	else
-		MKFS_OPTION=""
-	fi
+		FS_TYPE="ext4"
+		;;
+	esac
+
 	if [ ! -f "$1" ]; then
 		fallocate -l 3G "$1" &> /dev/null
-		mkfs -t "$2" $MKFS_OPTION "$1" &> /dev/null
-		if [ $? -ne 0 -a "$2" = "fat" ]; then
+		if [ $? -ne 0 ]; then
+			echo fallocate failed - using dd instead
+			dd if=/dev/zero of=$1 bs=1024 count=$((3 * 1024 * 1024))
+			if [ $? -ne 0 ]; then
+				echo Could not create empty disk image
+				exit $?
+			fi
+		fi
+		mkfs -t "$FS_TYPE" $MKFS_OPTION "$1" &> /dev/null
+		if [ $? -ne 0 -a "$FS_TYPE" = "fat" ]; then
 			# If we fail and we did fat, try vfat.
 			mkfs -t vfat $MKFS_OPTION "$1" &> /dev/null
+		fi
+		if [ $? -ne 0 ]; then
+			echo Could not create filesystem
+			exit $?
 		fi
 	fi
 }
 
-# 1st parameter is the FS type: fat/ext4
-# 2nd parameter is the name of small file
-# Returns filename which can be used for fat or ext4 for writing
-function fname_for_write() {
-	case $1 in
-		ext4)
-			# ext4 needs absolute path name of file
-			echo /${2}.w
-			;;
-
-		*)
-			echo ${2}.w
-			;;
-	esac
-}
-
 # 1st parameter is image file
-# 2nd parameter is file system type - fat/ext4
+# 2nd parameter is file system type - fat16/ext4/...
 # 3rd parameter is name of small file
 # 4th parameter is name of big file
 # 5th parameter is fs/nonfs/sb - to dictate generic fs commands or
@@ -153,12 +161,15 @@ function test_image() {
 	length="0x00100000"
 
 	case "$2" in
-		fat)
+		fat*)
+		FPATH=""
 		PREFIX="fat"
 		WRITE="write"
 		;;
 
 		ext4)
+		# ext4 needs absolute path
+		FPATH="/"
 		PREFIX="ext4"
 		WRITE="write"
 		;;
@@ -193,15 +204,14 @@ function test_image() {
 
 	esac
 
-	if [ -z "$6" ]; then
-		FILE_WRITE=`fname_for_write $2 $3`
-		FILE_SMALL=$3
-		FILE_BIG=$4
-	else
-		FILE_WRITE=$6/`fname_for_write $2 $3`
-		FILE_SMALL=$6/$3
-		FILE_BIG=$6/$4
+	# sb always uses full path to mointpoint, irrespective of filesystem
+	if [ "$5" = "sb" ]; then
+		FPATH=${6}/
 	fi
+
+	FILE_WRITE=${3}.w
+	FILE_SMALL=$3
+	FILE_BIG=$4
 
 	# In u-boot commands, <interface> stands for host or hostfs
 	# hostfs maps to the host fs.
@@ -213,18 +223,24 @@ setenv bind 'if test "\$sb" != sb; then sb bind 0 "$1"; fi'
 run bind
 # Test Case 1 - ls
 ${PREFIX}ls host${SUFFIX} $6
+# In addition, test with a nonexistent directory to see if we crash.
+${PREFIX}ls host${SUFFIX} invalid_d
 #
 # We want ${PREFIX}size host 0:0 $3 for host commands and
 # sb size hostfs - $3 for hostfs commands.
 # 1MB is 0x0010 0000
-# Test Case 2 - size of small file
-${PREFIX}size host${SUFFIX} $FILE_SMALL
+# Test Case 2a - size of small file
+${PREFIX}size host${SUFFIX} ${FPATH}$FILE_SMALL
+printenv filesize
+setenv filesize
+# Test Case 2b - size of small file via a path using '..'
+${PREFIX}size host${SUFFIX} ${FPATH}SUBDIR/../$FILE_SMALL
 printenv filesize
 setenv filesize
 
 # 2.5GB (1024*1024*2500) is 0x9C40 0000
 # Test Case 3 - size of big file
-${PREFIX}size host${SUFFIX} $FILE_BIG
+${PREFIX}size host${SUFFIX} ${FPATH}$FILE_BIG
 printenv filesize
 setenv filesize
 
@@ -233,14 +249,14 @@ setenv filesize
 # Last two parameters are size and offset.
 
 # Test Case 4a - Read full 1MB of small file
-${PREFIX}load host${SUFFIX} $addr $FILE_SMALL
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_SMALL
 printenv filesize
 # Test Case 4b - Read full 1MB of small file
 md5sum $addr \$filesize
 setenv filesize
 
 # Test Case 5a - First 1MB of big file
-${PREFIX}load host${SUFFIX} $addr $FILE_BIG $length 0x0
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_BIG $length 0x0
 printenv filesize
 # Test Case 5b - First 1MB of big file
 md5sum $addr \$filesize
@@ -248,7 +264,7 @@ setenv filesize
 
 # fails for ext as no offset support
 # Test Case 6a - Last 1MB of big file
-${PREFIX}load host${SUFFIX} $addr $FILE_BIG $length 0x9C300000
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_BIG $length 0x9C300000
 printenv filesize
 # Test Case 6b - Last 1MB of big file
 md5sum $addr \$filesize
@@ -256,7 +272,7 @@ setenv filesize
 
 # fails for ext as no offset support
 # Test Case 7a - One from the last 1MB chunk of 2GB
-${PREFIX}load host${SUFFIX} $addr $FILE_BIG $length 0x7FF00000
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_BIG $length 0x7FF00000
 printenv filesize
 # Test Case 7b - One from the last 1MB chunk of 2GB
 md5sum $addr \$filesize
@@ -264,7 +280,7 @@ setenv filesize
 
 # fails for ext as no offset support
 # Test Case 8a - One from the start 1MB chunk from 2GB
-${PREFIX}load host${SUFFIX} $addr $FILE_BIG $length 0x80000000
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_BIG $length 0x80000000
 printenv filesize
 # Test Case 8b - One from the start 1MB chunk from 2GB
 md5sum $addr \$filesize
@@ -272,7 +288,7 @@ setenv filesize
 
 # fails for ext as no offset support
 # Test Case 9a - One 1MB chunk crossing the 2GB boundary
-${PREFIX}load host${SUFFIX} $addr $FILE_BIG $length 0x7FF80000
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_BIG $length 0x7FF80000
 printenv filesize
 # Test Case 9b - One 1MB chunk crossing the 2GB boundary
 md5sum $addr \$filesize
@@ -280,18 +296,41 @@ setenv filesize
 
 # Generic failure case
 # Test Case 10 - 2MB chunk from the last 1MB of big file
-${PREFIX}load host${SUFFIX} $addr $FILE_BIG 0x00200000 0x9C300000
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_BIG 0x00200000 0x9C300000
 printenv filesize
 #
 
 # Read 1MB from small file
-${PREFIX}load host${SUFFIX} $addr $FILE_SMALL
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_SMALL
 # Write it back to test the writes
 # Test Case 11a - Check that the write succeeded
-${PREFIX}${WRITE} host${SUFFIX} $addr $FILE_WRITE \$filesize
+${PREFIX}${WRITE} host${SUFFIX} $addr ${FPATH}$FILE_WRITE \$filesize
 mw.b $addr 00 100
-${PREFIX}load host${SUFFIX} $addr $FILE_WRITE
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_WRITE
 # Test Case 11b - Check md5 of written to is same as the one read from
+md5sum $addr \$filesize
+setenv filesize
+#
+
+# Next test case checks writing a file whose dirent
+# is the first in the block, which is always true for "."
+# The write should fail, but the lookup should work
+# Test Case 12 - Check directory traversal
+${PREFIX}${WRITE} host${SUFFIX} $addr ${FPATH}. 0x10
+
+# Read 1MB from small file
+${PREFIX}load host${SUFFIX} $addr ${FPATH}$FILE_SMALL
+# Write it via "same directory", i.e. "." dirent
+# Test Case 13a - Check directory traversal
+${PREFIX}${WRITE} host${SUFFIX} $addr ${FPATH}./${FILE_WRITE}2 \$filesize
+mw.b $addr 00 100
+${PREFIX}load host${SUFFIX} $addr ${FPATH}./${FILE_WRITE}2
+# Test Case 13b - Check md5 of written to is same as the one read from
+md5sum $addr \$filesize
+setenv filesize
+mw.b $addr 00 100
+${PREFIX}load host${SUFFIX} $addr ${FPATH}${FILE_WRITE}2
+# Test Case 13c - Check md5 of written to is same as the one read from
 md5sum $addr \$filesize
 setenv filesize
 #
@@ -312,6 +351,9 @@ function create_files() {
 	mkdir -p "$MOUNT_DIR"
 	sudo mount -o loop,rw "$1" "$MOUNT_DIR"
 
+	# Create a subdirectory.
+	sudo mkdir -p "$MOUNT_DIR/SUBDIR"
+
 	# Create big file in this image.
 	# Note that we work only on the start 1MB, couple MBs in the 2GB range
 	# and the last 1 MB of the huge 2.5GB file.
@@ -331,9 +373,10 @@ function create_files() {
 			&> /dev/null
 	fi
 
-	# Delete the small file which possibly is written as part of a
+	# Delete the small file copies which possibly are written as part of a
 	# previous test.
 	sudo rm -f "${MB1}.w"
+	sudo rm -f "${MB1}.w2"
 
 	# Generate the md5sums of reads that we will test against small file
 	dd if="${MB1}" bs=1M skip=0 count=1 2> /dev/null | md5sum > "$2"
@@ -388,7 +431,7 @@ check_md5() {
 	# md5sum in u-boot has output of form:
 	# md5 for 01000008 ... 01100007 ==> <md5>
 	# the 7th field is the actual md5
-	md5_src=`grep -A3 "$1" "$2" | grep "md5 for"`
+	md5_src=`grep -A2 "$1" "$2" | grep "md5 for" | tr -d '\r'`
 	md5_src=($md5_src)
 	md5_src=${md5_src[6]}
 
@@ -417,64 +460,79 @@ function check_results() {
 	FAIL=0
 
 	# Check if the ls is showing correct results for 2.5 gb file
-	grep -A6 "Test Case 1 " "$1" | egrep -iq "2621440000 *$4"
+	grep -A7 "Test Case 1 " "$1" | egrep -iq "2621440000 *$4"
 	pass_fail "TC1: ls of $4"
 
 	# Check if the ls is showing correct results for 1 mb file
-	grep -A6 "Test Case 1 " "$1" | egrep -iq "1048576 *$3"
+	grep -A7 "Test Case 1 " "$1" | egrep -iq "1048576 *$3"
 	pass_fail "TC1: ls of $3"
 
 	# Check size command on 1MB.file
-	egrep -A3 "Test Case 2 " "$1" | grep -q "filesize=100000"
+	egrep -A3 "Test Case 2a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC2: size of $3"
+	# Check size command on 1MB.file via a path using '..'
+	egrep -A3 "Test Case 2b " "$1" | grep -q "filesize=100000"
+	pass_fail "TC2: size of $3 via a path using '..'"
 
 	# Check size command on 2.5GB.file
 	egrep -A3 "Test Case 3 " "$1" | grep -q "filesize=9c400000"
 	pass_fail "TC3: size of $4"
 
 	# Check read full mb of 1MB.file
-	grep -A6 "Test Case 4a " "$1" | grep -q "filesize=100000"
+	grep -A4 "Test Case 4a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC4: load of $3 size"
 	check_md5 "Test Case 4b " "$1" "$2" 1 "TC4: load from $3"
 
 	# Check first mb of 2.5GB.file
-	grep -A6 "Test Case 5a " "$1" | grep -q "filesize=100000"
+	grep -A4 "Test Case 5a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC5: load of 1st MB from $4 size"
 	check_md5 "Test Case 5b " "$1" "$2" 2 "TC5: load of 1st MB from $4"
 
 	# Check last mb of 2.5GB.file
-	grep -A6 "Test Case 6a " "$1" | grep -q "filesize=100000"
+	grep -A4 "Test Case 6a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC6: load of last MB from $4 size"
 	check_md5 "Test Case 6b " "$1" "$2" 3 "TC6: load of last MB from $4"
 
 	# Check last 1mb chunk of 2gb from 2.5GB file
-	grep -A6 "Test Case 7a " "$1" | grep -q "filesize=100000"
+	grep -A4 "Test Case 7a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC7: load of last 1mb chunk of 2GB from $4 size"
 	check_md5 "Test Case 7b " "$1" "$2" 4 \
 		"TC7: load of last 1mb chunk of 2GB from $4"
 
 	# Check first 1mb chunk after 2gb from 2.5GB file
-	grep -A6 "Test Case 8a " "$1" | grep -q "filesize=100000"
+	grep -A4 "Test Case 8a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC8: load 1st MB chunk after 2GB from $4 size"
 	check_md5 "Test Case 8b " "$1" "$2" 5 \
 		"TC8: load 1st MB chunk after 2GB from $4"
 
 	# Check 1mb chunk crossing the 2gb boundary from 2.5GB file
-	grep -A6 "Test Case 9a " "$1" | grep -q "filesize=100000"
+	grep -A4 "Test Case 9a " "$1" | grep -q "filesize=100000"
 	pass_fail "TC9: load 1MB chunk crossing 2GB boundary from $4 size"
 	check_md5 "Test Case 9b " "$1" "$2" 6 \
 		"TC9: load 1MB chunk crossing 2GB boundary from $4"
 
 	# Check 2mb chunk from the last 1MB of 2.5GB file loads 1MB
-	grep -A6 "Test Case 10 " "$1" | grep -q "filesize=100000"
+	grep -A5 "Test Case 10 " "$1" | grep -q "filesize=100000"
 	pass_fail "TC10: load 2MB from the last 1MB of $4 loads 1MB"
 
 	# Check 1mb chunk write
-	grep -A3 "Test Case 11a " "$1" | \
-		egrep -q '1048576 bytes written|update journal'
-	pass_fail "TC11: 1MB write to $5 - write succeeded"
+	grep -A2 "Test Case 11a " "$1" | grep -q '1048576 bytes written'
+	pass_fail "TC11: 1MB write to $3.w - write succeeded"
 	check_md5 "Test Case 11b " "$1" "$2" 1 \
-		"TC11: 1MB write to $5 - content verified"
+		"TC11: 1MB write to $3.w - content verified"
+
+	# Check lookup of 'dot' directory
+	grep -A4 "Test Case 12 " "$1" | grep -q 'Unable to write file'
+	pass_fail "TC12: 1MB write to . - write denied"
+
+	# Check directory traversal
+	grep -A2 "Test Case 13a " "$1" | grep -q '1048576 bytes written'
+	pass_fail "TC13: 1MB write to ./$3.w2 - write succeeded"
+	check_md5 "Test Case 13b " "$1" "$2" 1 \
+		"TC13: 1MB read from ./$3.w2 - content verified"
+	check_md5 "Test Case 13c " "$1" "$2" 1 \
+		"TC13: 1MB read from $3.w2 - content verified"
+
 	echo "** End $1"
 }
 
@@ -488,8 +546,12 @@ function test_fs_nonfs() {
 	OUT_FILE="${OUT}.$1.${fs}.out"
 	test_image $IMAGE $fs $SMALL_FILE $BIG_FILE $1 "" \
 		> ${OUT_FILE} 2>&1
-	check_results $OUT_FILE $MD5_FILE_FS $SMALL_FILE $BIG_FILE \
-		$WRITE_FILE
+	# strip out noise from fs code
+	grep -v -e "File System is consistent\|update journal finished" \
+		-e "reading .*\.file\|writing .*\.file.w" \
+		< ${OUT_FILE} > ${OUT_FILE}_clean
+	check_results ${OUT_FILE}_clean $MD5_FILE_FS $SMALL_FILE \
+		$BIG_FILE
 	TOTAL_FAIL=$((TOTAL_FAIL + FAIL))
 	TOTAL_PASS=$((TOTAL_PASS + PASS))
 	echo "Summary: PASS: $PASS FAIL: $FAIL"
@@ -512,7 +574,7 @@ TOTAL_PASS=0
 # In each loop, for a given file system image, we test both the
 # fs command, like load/size/write, the file system specific command
 # like: ext4load/ext4size/ext4write and the sb load/ls/save commands.
-for fs in ext4 fat; do
+for fs in ext4 fat16 fat32; do
 
 	echo "Creating $fs image if not already present."
 	IMAGE=${IMG}.${fs}.img
@@ -525,11 +587,14 @@ for fs in ext4 fat; do
 
 	# Lets mount the image and test sb hostfs commands
 	mkdir -p "$MOUNT_DIR"
-	if [ "$fs" = "fat" ]; then
+	case "$fs" in
+		fat*)
 		uid="uid=`id -u`"
-	else
+		;;
+		*)
 		uid=""
-	fi
+		;;
+	esac
 	sudo mount -o loop,rw,$uid "$IMAGE" "$MOUNT_DIR"
 	sudo chmod 777 "$MOUNT_DIR"
 
@@ -539,8 +604,7 @@ for fs in ext4 fat; do
 	sudo umount "$MOUNT_DIR"
 	rmdir "$MOUNT_DIR"
 
-	check_results $OUT_FILE $MD5_FILE_FS $SMALL_FILE $BIG_FILE \
-		$WRITE_FILE
+	check_results $OUT_FILE $MD5_FILE_FS $SMALL_FILE $BIG_FILE
 	TOTAL_FAIL=$((TOTAL_FAIL + FAIL))
 	TOTAL_PASS=$((TOTAL_PASS + PASS))
 	echo "Summary: PASS: $PASS FAIL: $FAIL"

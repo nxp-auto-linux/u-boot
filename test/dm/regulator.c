@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Tests for the driver model regulator API
  *
  * Copyright (c) 2015 Samsung Electronics
  * Przemyslaw Marczak <p.marczak@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -22,11 +21,10 @@
 #include <power/sandbox_pmic.h>
 #include <test/ut.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 enum {
 	BUCK1,
 	BUCK2,
+	BUCK3,
 	LDO1,
 	LDO2,
 	OUTPUT_COUNT,
@@ -42,6 +40,7 @@ static const char *regulator_names[OUTPUT_COUNT][OUTPUT_NAME_COUNT] = {
 	/* devname, platname */
 	{ SANDBOX_BUCK1_DEVNAME, SANDBOX_BUCK1_PLATNAME },
 	{ SANDBOX_BUCK2_DEVNAME, SANDBOX_BUCK2_PLATNAME },
+	{ SANDBOX_BUCK3_DEVNAME, SANDBOX_BUCK3_PLATNAME },
 	{ SANDBOX_LDO1_DEVNAME, SANDBOX_LDO1_PLATNAME},
 	{ SANDBOX_LDO2_DEVNAME, SANDBOX_LDO2_PLATNAME},
 };

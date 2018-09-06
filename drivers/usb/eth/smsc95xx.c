@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Copyright (c) 2011 The Chromium OS Authors.
  * Copyright (C) 2009 NVIDIA, Corporation
  * Copyright (C) 2007-2008 SMSC (Steve Glendinning)
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -188,10 +187,10 @@ static int smsc95xx_read_reg(struct usb_device *udev, u32 index, u32 *data)
 	len = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
 			      USB_VENDOR_REQUEST_READ_REGISTER,
 			      USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-			      0, index, tmpbuf, sizeof(data),
+			      0, index, tmpbuf, sizeof(*data),
 			      USB_CTRL_GET_TIMEOUT);
 	*data = tmpbuf[0];
-	if (len != sizeof(data)) {
+	if (len != sizeof(*data)) {
 		debug("smsc95xx_read_reg failed: index=%d, len=%d",
 		      index, len);
 		return -EIO;
@@ -391,8 +390,8 @@ static int smsc95xx_write_hwaddr_common(struct usb_device *udev,
 					struct smsc95xx_private *priv,
 					unsigned char *enetaddr)
 {
-	u32 addr_lo = __get_unaligned_le32(&enetaddr[0]);
-	u32 addr_hi = __get_unaligned_le16(&enetaddr[4]);
+	u32 addr_lo = get_unaligned_le32(&enetaddr[0]);
+	u32 addr_hi = get_unaligned_le16(&enetaddr[4]);
 	int ret;
 
 	/* set hardware address */
@@ -519,9 +518,11 @@ static int smsc95xx_init_common(struct usb_device *udev, struct ueth_data *dev,
 		debug("timeout waiting for PHY Reset\n");
 		return -ETIMEDOUT;
 	}
+#ifndef CONFIG_DM_ETH
 	if (!priv->have_hwaddr && smsc95xx_init_mac_address(enetaddr, udev) ==
 			0)
 		priv->have_hwaddr = 1;
+#endif
 	if (!priv->have_hwaddr) {
 		puts("Error: SMSC95xx: No MAC address set - set usbethaddr\n");
 		return -EADDRNOTAVAIL;
@@ -996,7 +997,7 @@ int smsc95xx_eth_recv(struct udevice *dev, int flags, uchar **packetp)
 	}
 
 	*packetp = ptr + sizeof(packet_len);
-	return packet_len;
+	return packet_len - 4;
 
 err:
 	usb_ether_advance_rxbuf(ueth, -1);
@@ -1007,7 +1008,7 @@ static int smsc95xx_free_pkt(struct udevice *dev, uchar *packet, int packet_len)
 {
 	struct smsc95xx_private *priv = dev_get_priv(dev);
 
-	packet_len = ALIGN(packet_len, 4);
+	packet_len = ALIGN(packet_len + sizeof(u32), 4);
 	usb_ether_advance_rxbuf(&priv->ueth, sizeof(u32) + packet_len);
 
 	return 0;
@@ -1020,6 +1021,19 @@ int smsc95xx_write_hwaddr(struct udevice *dev)
 	struct smsc95xx_private *priv = dev_get_priv(dev);
 
 	return smsc95xx_write_hwaddr_common(udev, priv, pdata->enetaddr);
+}
+
+int smsc95xx_read_rom_hwaddr(struct udevice *dev)
+{
+	struct usb_device *udev = dev_get_parent_priv(dev);
+	struct eth_pdata *pdata = dev_get_platdata(dev);
+	int ret;
+
+	ret = smsc95xx_init_mac_address(pdata->enetaddr, udev);
+	if (ret)
+		memset(pdata->enetaddr, 0, 6);
+
+	return 0;
 }
 
 static int smsc95xx_eth_probe(struct udevice *dev)
@@ -1037,6 +1051,7 @@ static const struct eth_ops smsc95xx_eth_ops = {
 	.free_pkt = smsc95xx_free_pkt,
 	.stop	= smsc95xx_eth_stop,
 	.write_hwaddr = smsc95xx_write_hwaddr,
+	.read_rom_hwaddr = smsc95xx_read_rom_hwaddr,
 };
 
 U_BOOT_DRIVER(smsc95xx_eth) = {

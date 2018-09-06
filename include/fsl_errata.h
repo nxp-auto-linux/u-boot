@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013 - 2015  Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:    GPL-2.0+
  */
 
 #ifndef _FSL_ERRATA_H
@@ -10,7 +9,7 @@
 #include <common.h>
 #if defined(CONFIG_PPC)
 #include <asm/processor.h>
-#elif defined(CONFIG_LS102XA)
+#elif defined(CONFIG_ARCH_LS1021A)
 #include <asm/arch-ls102xa/immap_ls102xa.h>
 #elif defined(CONFIG_FSL_LAYERSCAPE)
 #include <asm/arch/soc.h>
@@ -66,7 +65,7 @@ static inline bool has_erratum_a008378(void)
 
 
 	switch (soc) {
-#ifdef CONFIG_LS102XA
+#ifdef CONFIG_ARCH_LS1021A
 	case SOC_VER_LS1020:
 	case SOC_VER_LS1021:
 	case SOC_VER_LS1022:

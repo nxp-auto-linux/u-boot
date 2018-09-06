@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _CTRL_PEX_H
@@ -47,6 +46,7 @@
 
 /* Controller revision info */
 #define PEX_DEVICE_AND_VENDOR_ID	0x000
+#define PEX_CFG_DIRECT_ACCESS(if, reg)	(PEX_IF_REGS_BASE(if) + (reg))
 
 /* PCI Express Configuration Address Register */
 #define PXCAR_REG_NUM_OFFS		2
@@ -82,5 +82,7 @@ int hws_pex_config(const struct serdes_map *serdes_map, u8 count);
 int pex_local_bus_num_set(u32 pex_if, u32 bus_num);
 int pex_local_dev_num_set(u32 pex_if, u32 dev_num);
 u32 pex_config_read(u32 pex_if, u32 bus, u32 dev, u32 func, u32 reg_off);
+
+void board_pex_config(void);
 
 #endif

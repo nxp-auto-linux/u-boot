@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -12,8 +11,6 @@
 #include <power/pmic.h>
 #include <power/regulator.h>
 #include <power/s5m8767.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 static const struct sec_voltage_desc buck_v1 = {
 	.max = 2225000,
@@ -186,7 +183,7 @@ static int reg_set_enable(struct udevice *dev, const struct s5m8767_para *param,
 	return ret;
 }
 
-static bool ldo_get_enable(struct udevice *dev)
+static int ldo_get_enable(struct udevice *dev)
 {
 	int ldo = dev->driver_data;
 
@@ -226,7 +223,7 @@ static int buck_set_value(struct udevice *dev, int uv)
 	return reg_set_value(dev, &buck_param[buck], uv);
 }
 
-static bool buck_get_enable(struct udevice *dev)
+static int buck_get_enable(struct udevice *dev)
 {
 	int buck = dev->driver_data;
 

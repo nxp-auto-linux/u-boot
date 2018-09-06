@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  (C) Copyright 2011
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -18,8 +17,6 @@
 #include <asm/arch/funcmux.h>
 #include <asm/arch-tegra/timer.h>
 #include <linux/input.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 enum {
 	KBC_MAX_GPIO		= 24,
@@ -290,10 +287,9 @@ static int tegra_kbd_probe(struct udevice *dev)
 	struct keyboard_priv *uc_priv = dev_get_uclass_priv(dev);
 	struct stdio_dev *sdev = &uc_priv->sdev;
 	struct input_config *input = &uc_priv->input;
-	int node = dev->of_offset;
 	int ret;
 
-	priv->kbc = (struct kbc_tegra *)dev_get_addr(dev);
+	priv->kbc = (struct kbc_tegra *)devfdt_get_addr(dev);
 	if ((fdt_addr_t)priv->kbc == FDT_ADDR_T_NONE) {
 		debug("%s: No keyboard register found\n", __func__);
 		return -EINVAL;
@@ -306,12 +302,13 @@ static int tegra_kbd_probe(struct udevice *dev)
 		debug("%s: Could not init key matrix: %d\n", __func__, ret);
 		return ret;
 	}
-	ret = key_matrix_decode_fdt(&priv->matrix, gd->fdt_blob, node);
+	ret = key_matrix_decode_fdt(dev, &priv->matrix);
 	if (ret) {
 		debug("%s: Could not decode key matrix from fdt: %d\n",
 		      __func__, ret);
 		return ret;
 	}
+	input_add_tables(input, false);
 	if (priv->matrix.fn_keycode) {
 		ret = input_add_table(input, KEY_FN, -1,
 				      priv->matrix.fn_keycode,
@@ -326,7 +323,6 @@ static int tegra_kbd_probe(struct udevice *dev)
 	priv->input = input;
 	input->dev = dev;
 	input->read_keys = tegra_kbc_check;
-	input_add_tables(input, false);
 	strcpy(sdev->name, "tegra-kbc");
 	ret = input_stdio_register(sdev);
 	if (ret) {

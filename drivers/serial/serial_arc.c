@@ -42,23 +42,7 @@ static int arc_serial_setbrg(struct udevice *dev, int baudrate)
 	int arc_console_baud = gd->cpu_clk / (baudrate * 4) - 1;
 
 	writeb(arc_console_baud & 0xff, &regs->baudl);
-
-#ifdef CONFIG_ARC
-	/*
-	 * UART ISS(Instruction Set simulator) emulation has a subtle bug:
-	 * A existing value of Baudh = 0 is used as a indication to startup
-	 * it's internal state machine.
-	 * Thus if baudh is set to 0, 2 times, it chokes.
-	 * This happens with BAUD=115200 and the formaula above
-	 * Until that is fixed, when running on ISS, we will set baudh to !0
-	 */
-	if (gd->arch.running_on_hw)
-		writeb((arc_console_baud & 0xff00) >> 8, &regs->baudh);
-	else
-		writeb(1, &regs->baudh);
-#else
 	writeb((arc_console_baud & 0xff00) >> 8, &regs->baudh);
-#endif
 
 	return 0;
 }
@@ -67,9 +51,6 @@ static int arc_serial_putc(struct udevice *dev, const char c)
 {
 	struct arc_serial_platdata *plat = dev->platdata;
 	struct arc_serial_regs *const regs = plat->reg;
-
-	if (c == '\n')
-		arc_serial_putc(dev, '\r');
 
 	while (!(readb(&regs->status) & UART_TXEMPTY))
 		;
@@ -133,8 +114,8 @@ static int arc_serial_ofdata_to_platdata(struct udevice *dev)
 	struct arc_serial_platdata *plat = dev_get_platdata(dev);
 	DECLARE_GLOBAL_DATA_PTR;
 
-	plat->reg = (struct arc_serial_regs *)dev_get_addr(dev);
-	plat->uartclk = fdtdec_get_int(gd->fdt_blob, dev->of_offset,
+	plat->reg = (struct arc_serial_regs *)devfdt_get_addr(dev);
+	plat->uartclk = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 				       "clock-frequency", 0);
 
 	return 0;
@@ -149,3 +130,29 @@ U_BOOT_DRIVER(serial_arc) = {
 	.ops	= &arc_serial_ops,
 	.flags = DM_FLAG_PRE_RELOC,
 };
+
+#ifdef CONFIG_DEBUG_ARC_SERIAL
+#include <debug_uart.h>
+
+static inline void _debug_uart_init(void)
+{
+	struct arc_serial_regs *regs = (struct arc_serial_regs *)CONFIG_DEBUG_UART_BASE;
+	int arc_console_baud = CONFIG_DEBUG_UART_CLOCK / (CONFIG_BAUDRATE * 4) - 1;
+
+	writeb(arc_console_baud & 0xff, &regs->baudl);
+	writeb((arc_console_baud & 0xff00) >> 8, &regs->baudh);
+}
+
+static inline void _debug_uart_putc(int c)
+{
+	struct arc_serial_regs *regs = (struct arc_serial_regs *)CONFIG_DEBUG_UART_BASE;
+
+	while (!(readb(&regs->status) & UART_TXEMPTY))
+		;
+
+	writeb(c, &regs->data);
+}
+
+DEBUG_UART_FUNCS
+
+#endif

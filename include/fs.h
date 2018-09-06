@@ -1,17 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef _FS_H
 #define _FS_H
@@ -23,6 +12,7 @@
 #define FS_TYPE_EXT	2
 #define FS_TYPE_SANDBOX	3
 #define FS_TYPE_UBIFS	4
+#define FS_TYPE_BTRFS	5
 
 /*
  * Tell the fs layer which block device an partition to use for future
@@ -35,6 +25,27 @@
  * no known filesystem type could be recognized on it.
  */
 int fs_set_blk_dev(const char *ifname, const char *dev_part_str, int fstype);
+
+/*
+ * fs_set_blk_dev_with_part - Set current block device + partition
+ *
+ * Similar to fs_set_blk_dev(), but useful for cases where you already
+ * know the blk_desc and part number.
+ *
+ * Returns 0 on success.
+ * Returns non-zero if invalid partition or error accessing the disk.
+ */
+int fs_set_blk_dev_with_part(struct blk_desc *desc, int part);
+
+/**
+ * fs_get_type_name() - Get type of current filesystem
+ *
+ * Return: Pointer to filesystem name
+ *
+ * Returns a string describing the current filesystem, or the sentinel
+ * "unsupported" for any unrecognised filesystem.
+ */
+const char *fs_get_type_name(void);
 
 /*
  * Print the list of files on the partition previously set by fs_set_blk_dev(),
@@ -87,6 +98,62 @@ int fs_read(const char *filename, ulong addr, loff_t offset, loff_t len,
  */
 int fs_write(const char *filename, ulong addr, loff_t offset, loff_t len,
 	     loff_t *actwrite);
+
+/*
+ * Directory entry types, matches the subset of DT_x in posix readdir()
+ * which apply to u-boot.
+ */
+#define FS_DT_DIR  4         /* directory */
+#define FS_DT_REG  8         /* regular file */
+#define FS_DT_LNK  10        /* symbolic link */
+
+/*
+ * A directory entry, returned by fs_readdir().  Returns information
+ * about the file/directory at the current directory entry position.
+ */
+struct fs_dirent {
+	unsigned type;       /* one of FS_DT_x (not a mask) */
+	loff_t size;         /* size in bytes */
+	char name[256];
+};
+
+/* Note: fs_dir_stream should be treated as opaque to the user of fs layer */
+struct fs_dir_stream {
+	/* private to fs. layer: */
+	struct blk_desc *desc;
+	int part;
+};
+
+/*
+ * fs_opendir - Open a directory
+ *
+ * @filename: the path to directory to open
+ * @return a pointer to the directory stream or NULL on error and errno
+ *    set appropriately
+ */
+struct fs_dir_stream *fs_opendir(const char *filename);
+
+/*
+ * fs_readdir - Read the next directory entry in the directory stream.
+ *
+ * Works in an analogous way to posix readdir().  The previously returned
+ * directory entry is no longer valid after calling fs_readdir() again.
+ * After fs_closedir() is called, the returned directory entry is no
+ * longer valid.
+ *
+ * @dirs: the directory stream
+ * @return the next directory entry (only valid until next fs_readdir() or
+ *    fs_closedir() call, do not attempt to free()) or NULL if the end of
+ *    the directory is reached.
+ */
+struct fs_dirent *fs_readdir(struct fs_dir_stream *dirs);
+
+/*
+ * fs_closedir - close a directory stream
+ *
+ * @dirs: the directory stream
+ */
+void fs_closedir(struct fs_dir_stream *dirs);
 
 /*
  * Common implementation for various filesystem commands, optionally limited

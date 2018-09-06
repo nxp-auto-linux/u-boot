@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Samsung Electronics
  * Przemyslaw Marczak <p.marczak@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <errno.h>
@@ -61,7 +60,7 @@ int sandbox_adc_channel_data(struct udevice *dev, int channel,
 	/* For single-channel conversion mode, check if channel was selected */
 	if ((priv->conversion_mode == SANDBOX_ADC_MODE_SINGLE_CHANNEL) &&
 	    !(priv->active_channel_mask & (1 << channel))) {
-		error("Request for an inactive channel!");
+		pr_err("Request for an inactive channel!");
 		return -EINVAL;
 	}
 
@@ -82,12 +81,12 @@ int sandbox_adc_channels_data(struct udevice *dev, unsigned int channel_mask,
 
 	/* Return error for single-channel conversion mode */
 	if (priv->conversion_mode == SANDBOX_ADC_MODE_SINGLE_CHANNEL) {
-		error("ADC in single-channel mode!");
+		pr_err("ADC in single-channel mode!");
 		return -EPERM;
 	}
 	/* Check channel selection */
 	if (!(priv->active_channel_mask & channel_mask)) {
-		error("Request for an inactive channel!");
+		pr_err("Request for an inactive channel!");
 		return -EINVAL;
 	}
 	/* The conversion must be started before reading the data */

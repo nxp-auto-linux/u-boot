@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Broadcom Corporation.
- *
- * SPDX-License-Identifier:      GPL-2.0+
  */
 
 #include <common.h>
@@ -69,13 +68,15 @@ int dram_init(void)
 }
 
 /* This is called after dram_init() so use get_ram_size result */
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
 	gd->bd->bi_dram[0].size = gd->ram_size;
+
+	return 0;
 }
 
-#ifdef CONFIG_KONA_SDHCI
+#ifdef CONFIG_MMC_SDHCI_KONA
 /*
  * mmc_init - Initializes mmc
  */
@@ -108,7 +109,7 @@ int board_usb_init(int index, enum usb_init_type init)
 int g_dnl_bind_fixup(struct usb_device_descriptor *dev, const char *name)
 {
 	debug("%s\n", __func__);
-	if (!getenv("serial#"))
+	if (!env_get("serial#"))
 		g_dnl_set_serialnumber(CONFIG_USB_SERIALNO);
 	return 0;
 }

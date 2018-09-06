@@ -63,9 +63,8 @@ executed.
 Build the kernel
 ----------------
 
-Note: these instructions assume a 32-bit kernel. U-Boot does not currently
-support booting a 64-bit kernel as it has no way of going into 64-bit mode on
-x86.
+Note: these instructions assume a 32-bit kernel. U-Boot also supports directly
+booting a 64-bit kernel by jumping into 64-bit mode first (see below).
 
 You can build the kernel as normal with 'make'. This will create a file called
 'vmlinux'. This is a standard ELF file and you can look at it if you like:
@@ -168,8 +167,9 @@ Create a FIT
 ------------
 
 To create a FIT you will need a source file describing what should go in the
-FIT. See kernel.its for an example for x86. Put this into a file called
-image.its.
+FIT. See kernel.its for an example for x86 and also instructions on setting
+the 'arch' value for booting 64-bit kernels if desired. Put this into a file
+called image.its.
 
 Note that setup is loaded to the special address of 0x90000 (a special address
 you just have to know) and the kernel is loaded to 0x01000000 (the address you
@@ -197,7 +197,7 @@ You can take a look at the resulting fit file if you like:
 $ dumpimage -l image.fit
 FIT description: Simple image with single Linux kernel on x86
 Created:         Tue Oct  7 10:57:24 2014
- Image 0 (kernel@1)
+ Image 0 (kernel)
   Description:  Vanilla Linux kernel
   Created:      Tue Oct  7 10:57:24 2014
   Type:         Kernel Image
@@ -209,7 +209,7 @@ Created:         Tue Oct  7 10:57:24 2014
   Entry Point:  0x00000000
   Hash algo:    sha1
   Hash value:   446b5163ebfe0fb6ee20cbb7a8501b263cd92392
- Image 1 (setup@1)
+ Image 1 (setup)
   Description:  Linux setup.bin
   Created:      Tue Oct  7 10:57:24 2014
   Type:         x86 setup.bin
@@ -217,10 +217,10 @@ Created:         Tue Oct  7 10:57:24 2014
   Data Size:    12912 Bytes = 12.61 kB = 0.01 MB
   Hash algo:    sha1
   Hash value:   a1f2099cf47ff9816236cd534c77af86e713faad
- Default Configuration: 'config@1'
- Configuration 0 (config@1)
+ Default Configuration: 'config-1'
+ Configuration 0 (config-1)
   Description:  Boot Linux kernel
-  Kernel:       kernel@1
+  Kernel:       kernel
 
 
 Booting the FIT
@@ -262,10 +262,6 @@ References
 In the Linux kernel, Documentation/x86/boot.txt defines the boot protocol for
 the kernel including the setup.bin format. This is handled in U-Boot in
 arch/x86/lib/zimage.c and arch/x86/lib/bootm.c.
-
-The procedure for entering 64-bit mode on x86 seems to be described here:
-
-   http://wiki.osdev.org/64-bit_Higher_Half_Kernel_with_GRUB_2
 
 Various files in the same directory as this file describe the FIT format.
 

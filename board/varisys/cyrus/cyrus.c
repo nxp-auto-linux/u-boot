@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Based on corenet_ds.c
- *
- * SPDX-License-Identifier:    GPL-2.0+
  */
 
 #include <common.h>
@@ -21,8 +20,6 @@
 
 #include "cyrus.h"
 #include "../common/eeprom.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #define GPIO_OPENDRAIN 0x30000000
 #define GPIO_DIR       0x3c000004
@@ -69,7 +66,7 @@ int board_early_init_r(void)
 	set_liodns();
 
 #ifdef CONFIG_SYS_DPAA_QBMAN
-	setup_portals();
+	setup_qbman_portals();
 #endif
 	print_lbc_regs();
 	return 0;
@@ -87,8 +84,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	ft_cpu_setup(blob, bd);
 
-	base = getenv_bootm_low();
-	size = getenv_bootm_size();
+	base = env_get_bootm_low();
+	size = env_get_bootm_size();
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 
@@ -97,7 +94,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 #endif
 
 	fdt_fixup_liodn(blob);
-	fdt_fixup_dr_usb(blob, bd);
+	fsl_fdt_fixup_dr_usb(blob, bd);
 
 #ifdef CONFIG_SYS_DPAA_FMAN
 	fdt_fixup_fman_ethernet(blob);

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*------------------------------------------------------------------------
  . smc91111.h - macros for the LAN91C111 Ethernet Driver
  .
@@ -7,8 +8,6 @@
  . Copyright (C) 2001 Standard Microsystems Corporation (SMSC)
  .       Developed by Simple Network Magic Corporation (SNMC)
  . Copyright (C) 1996 by Erik Stahlman (ES)
- .
-  * SPDX-License-Identifier:	GPL-2.0+
  .
  . This file contains register information and access macros for
  . the LAN91C111 single chip ethernet controller.  It is a modified
@@ -253,8 +252,6 @@ struct smc91111_priv{
 
 #ifdef CONFIG_ADNPESC1
 #define	SMC_inw(a,r)	(*((volatile word *)((a)->iobase+((r)<<1))))
-#elif CONFIG_BLACKFIN
-#define	SMC_inw(a,r)	({ word __v = (*((volatile word *)((a)->iobase+(r)))); SSYNC(); __v;})
 #elif CONFIG_ARM64
 #define	SMC_inw(a, r)	(*((volatile word*)((a)->iobase+((dword)(r)))))
 #else
@@ -264,11 +261,6 @@ struct smc91111_priv{
 
 #ifdef CONFIG_ADNPESC1
 #define	SMC_outw(a,d,r)	(*((volatile word *)((a)->iobase+((r)<<1))) = d)
-#elif CONFIG_BLACKFIN
-#define	SMC_outw(a, d, r)	\
-			({	(*((volatile word*)((a)->iobase+((r)))) = d); \
-				SSYNC(); \
-			})
 #elif CONFIG_ARM64
 #define	SMC_outw(a, d, r)	\
 			(*((volatile word*)((a)->iobase+((dword)(r)))) = d)

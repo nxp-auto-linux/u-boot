@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2013 Siemens Schweiz AG
  * (C) Heiko Schocher, DENX Software Engineering, hs@denx.de.
@@ -6,8 +7,6 @@
  * U-Boot file:/include/configs/am335x_evm.h
  *
  * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_RASTABAN_H
@@ -15,10 +14,7 @@
 
 #include "siemens-am33x-common.h"
 
-#define CONFIG_DISPLAY_CPUINFO
-#define CONFIG_SYS_MPUCLK	300
 #define DDR_PLL_FREQ	303
-#undef CONFIG_SPL_AM33XX_ENABLE_RTC32K_OSC
 
 /* FWD Button = 27
  * SRV Button = 87 */
@@ -35,11 +31,6 @@
 	"led4=60,0,1\0" \
 	"led5=63,0,1\0"
 
-#undef CONFIG_DOS_PARTITION
-#undef CONFIG_CMD_FAT
-
-#define CONFIG_BOARD_LATE_INIT
-
  /* Physical Memory Map */
 #define CONFIG_MAX_RAM_BANK_SIZE	(1024 << 20)	/* 1GB */
 
@@ -50,35 +41,22 @@
 #define EEPROM_ADDR_DDR3 0x90
 #define EEPROM_ADDR_CHIP 0x120
 
-#define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x300
-
-#undef CONFIG_SPL_NET_SUPPORT
-#undef CONFIG_SPL_NET_VCI_STRING
-#undef CONFIG_SPL_ETH_SUPPORT
-
 #undef CONFIG_MII
-#undef CONFIG_PHY_GIGE
 #define CONFIG_PHY_SMSC
 
 #define CONFIG_FACTORYSET
-
-/* Watchdog */
-#define CONFIG_OMAP_WATCHDOG
 
 /* Define own nand partitions */
 #define CONFIG_ENV_OFFSET_REDUND	0x2E0000
 #define CONFIG_ENV_SIZE_REDUND		0x2000
 #define CONFIG_ENV_RANGE		(4 * CONFIG_SYS_ENV_SECT_SIZE)
 
-
-
-#define MTDPARTS_DEFAULT	MTDPARTS_DEFAULT_V3
-
 #ifndef CONFIG_SPL_BUILD
 
 /* Default env settings */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"hostname=rastaban\0" \
+	"ubi_off=2048\0"\
 	"nand_img_size=0x400000\0" \
 	"optargs=\0" \
 	"preboot=draco_led 0\0" \
@@ -88,7 +66,6 @@
 
 #ifndef CONFIG_RESTORE_FLASH
 /* set to negative value for no autoboot */
-#define CONFIG_BOOTDELAY		3
 
 #define CONFIG_BOOTCOMMAND \
 "if dfubutton; then " \
@@ -99,9 +76,7 @@
 "run nand_boot_backup;" \
 "reset;"
 
-
 #else
-#define CONFIG_BOOTDELAY		0
 
 #define CONFIG_BOOTCOMMAND			\
 	"setenv autoload no; "			\

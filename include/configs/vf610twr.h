@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
  *
  * Configuration settings for the Freescale Vybrid vf610twr board.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -11,10 +10,6 @@
 
 #include <asm/arch/imx-regs.h>
 
-#define CONFIG_VF610
-
-#define CONFIG_DISPLAY_CPUINFO
-#define CONFIG_DISPLAY_BOARDINFO
 #define CONFIG_SYS_FSL_CLK
 
 #define CONFIG_MACH_TYPE		4146
@@ -24,7 +19,6 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
-#define CONFIG_CMD_FUSE
 #ifdef CONFIG_CMD_FUSE
 #define CONFIG_MXC_OCOTP
 #endif
@@ -32,48 +26,21 @@
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 
-#define CONFIG_BOARD_EARLY_INIT_F
-
-#define CONFIG_FSL_LPUART
-#define LPUART_BASE			UART1_BASE
-
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
-#define CONFIG_SYS_UART_PORT		(1)
-#define CONFIG_BAUDRATE			115200
 
 /* NAND support */
-#define CONFIG_CMD_NAND
-#define CONFIG_CMD_NAND_TRIMFFS
 #define CONFIG_SYS_NAND_ONFI_DETECTION
 
 #ifdef CONFIG_CMD_NAND
-#define CONFIG_USE_ARCH_MEMCPY
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE		NFC_BASE_ADDR
 
-/* UBI */
-#define CONFIG_CMD_UBI
-#define CONFIG_CMD_UBIFS
-#define CONFIG_RBTREE
-#define CONFIG_LZO
-
 /* Dynamic MTD partition support */
-#define CONFIG_CMD_MTDPARTS
 #define CONFIG_MTD_PARTITIONS
 #define CONFIG_MTD_DEVICE
-#define MTDIDS_DEFAULT			"nand0=fsl_nfc"
-#define MTDPARTS_DEFAULT		"mtdparts=fsl_nfc:"		\
-					"128k(vf-bcb)ro,"		\
-					"1408k(u-boot)ro,"		\
-					"512k(u-boot-env),"		\
-					"4m(kernel),"			\
-					"512k(fdt),"		\
-					"-(rootfs)"
 #endif
 
-#define CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 #define CONFIG_SYS_FSL_ESDHC_NUM	1
 
@@ -94,20 +61,16 @@
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE		RMII
 #define CONFIG_FEC_MXC_PHYADDR          0
-#define CONFIG_PHYLIB
-#define CONFIG_PHY_MICREL
 
 /* QSPI Configs*/
 
 #ifdef CONFIG_FSL_QSPI
-#define CONFIG_CMD_SF
 #define FSL_QSPI_FLASH_SIZE		(1 << 24)
 #define FSL_QSPI_FLASH_NUM		2
 #define CONFIG_SYS_FSL_QSPI_LE
 #endif
 
 /* I2C Configs */
-#define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
@@ -122,8 +85,7 @@
 #define CONFIG_SYS_LOAD_ADDR		0x82000000
 
 /* We boot from the gfxRAM area of the OCRAM. */
-#define CONFIG_SYS_TEXT_BASE		0x3f408000
-#define CONFIG_BOARD_SIZE_LIMIT		524288
+#define CONFIG_BOARD_SIZE_LIMIT		520192
 
 /*
  * We do have 128MB of memory on the Vybrid Tower board. Leave the last
@@ -242,14 +204,9 @@
 #define CONFIG_CMDLINE_EDITING
 
 #define CONFIG_CMD_MEMTEST
+
 #define CONFIG_SYS_MEMTEST_START	0x80010000
 #define CONFIG_SYS_MEMTEST_END		0x87C00000
-
-/*
- * Stack sizes
- * The stack sizes are set up in start.S using the settings below
- */
-#define CONFIG_STACKSIZE		(128 * 1024)	/* regular stack */
 
 /* Physical memory map */
 #define CONFIG_NR_DRAM_BANKS		1
@@ -265,9 +222,6 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
-/* FLASH and environment organization */
-#define CONFIG_SYS_NO_FLASH
-
 #ifdef CONFIG_ENV_IS_IN_MMC
 #define CONFIG_ENV_SIZE			(8 * 1024)
 
@@ -281,8 +235,5 @@
 #define CONFIG_ENV_RANGE		(512 * 1024)
 #define CONFIG_ENV_OFFSET		0x180000
 #endif
-
-#define CONFIG_OF_LIBFDT
-#define CONFIG_CMD_BOOTZ
 
 #endif

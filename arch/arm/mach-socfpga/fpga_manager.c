@@ -1,21 +1,18 @@
+// SPDX-License-Identifier: BSD-3-Clause
 /*
  * Copyright (C) 2012 Altera Corporation <www.altera.com>
  * All rights reserved.
  *
  * This file contains only support functions used also by the SoCFPGA
  * platform code, the real meat is located in drivers/fpga/socfpga.c .
- *
- * SPDX-License-Identifier:	BSD-3-Clause
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/arch/fpga_manager.h>
 #include <asm/arch/reset_manager.h>
 #include <asm/arch/system_manager.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Timeout count */
 #define FPGA_TIMEOUT_CNT		0x1000000

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008
  * Grazvydas Ignotas <notasas@gmail.com>
@@ -10,8 +11,6 @@
  *
  * (C) Copyright 2004-2008
  * Texas Instruments, <www.ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <twl4030.h>
@@ -121,7 +120,7 @@ void set_muxconf_regs(void)
 	}
 }
 
-#ifdef CONFIG_GENERIC_MMC
+#ifdef CONFIG_MMC
 int board_mmc_init(bd_t *bis)
 {
 	return omap_mmc_init(0, 0, 0, -1, -1);

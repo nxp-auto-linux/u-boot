@@ -1,12 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <fsl_ddr_sdram.h>
 #include <fsl_ddr_dimm_params.h>
+#include <asm/arch/soc.h>
+#include <asm/arch/clock.h>
 #include "ddr.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -83,6 +84,8 @@ found:
 		pbsp->wrlvl_ctl_3);
 #ifdef CONFIG_SYS_FSL_HAS_DP_DDR
 	if (ctrl_num == CONFIG_DP_DDR_CTRL) {
+		if (popts->registered_dimm_en)
+			printf("WARN: RDIMM not supported.\n");
 		/* force DDR bus width to 32 bits */
 		popts->data_bus_width = 1;
 		popts->otf_burst_chop_en = 0;
@@ -133,6 +136,9 @@ found:
 	/* Enable ZQ calibration */
 	popts->zq_en = 1;
 
+	/* optimize cpo for erratum A-009942 */
+	popts->cpo_sample = 0x6e;
+
 	if (ddr_freq < 2350) {
 		if (pdimm[0].n_ranks == 2 && pdimm[1].n_ranks == 2) {
 			/* four chip-selects */
@@ -154,69 +160,15 @@ found:
 	}
 }
 
-phys_size_t initdram(int board_type)
+int fsl_initdram(void)
 {
-	phys_size_t dram_size;
-
 #if defined(CONFIG_SPL) && !defined(CONFIG_SPL_BUILD)
-	return fsl_ddr_sdram_size();
+	gd->ram_size = fsl_ddr_sdram_size();
 #else
 	puts("Initializing DDR....using SPD\n");
 
-	dram_size = fsl_ddr_sdram();
+	gd->ram_size = fsl_ddr_sdram();
 #endif
 
-	return dram_size;
-}
-
-void dram_init_banksize(void)
-{
-#ifdef CONFIG_SYS_DP_DDR_BASE_PHY
-	phys_size_t dp_ddr_size;
-#endif
-
-	/*
-	 * gd->secure_ram tracks the location of secure memory.
-	 * It was set as if the memory starts from 0.
-	 * The address needs to add the offset of its bank.
-	 */
-	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
-	if (gd->ram_size > CONFIG_SYS_LS2_DDR_BLOCK1_SIZE) {
-		gd->bd->bi_dram[0].size = CONFIG_SYS_LS2_DDR_BLOCK1_SIZE;
-		gd->bd->bi_dram[1].start = CONFIG_SYS_DDR_BLOCK2_BASE;
-		gd->bd->bi_dram[1].size = gd->ram_size -
-					  CONFIG_SYS_LS2_DDR_BLOCK1_SIZE;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->secure_ram = gd->bd->bi_dram[1].start +
-				 gd->secure_ram -
-				 CONFIG_SYS_LS2_DDR_BLOCK1_SIZE;
-		gd->secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	} else {
-		gd->bd->bi_dram[0].size = gd->ram_size;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->secure_ram = gd->bd->bi_dram[0].start + gd->secure_ram;
-		gd->secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	}
-
-#ifdef CONFIG_SYS_DP_DDR_BASE_PHY
-	/* initialize DP-DDR here */
-	puts("DP-DDR:  ");
-	/*
-	 * DDR controller use 0 as the base address for binding.
-	 * It is mapped to CONFIG_SYS_DP_DDR_BASE for core to access.
-	 */
-	dp_ddr_size = fsl_other_ddr_sdram(CONFIG_SYS_DP_DDR_BASE_PHY,
-					  CONFIG_DP_DDR_CTRL,
-					  CONFIG_DP_DDR_NUM_CTRLS,
-					  CONFIG_DP_DDR_DIMM_SLOTS_PER_CTLR,
-					  NULL, NULL, NULL);
-	if (dp_ddr_size) {
-		gd->bd->bi_dram[2].start = CONFIG_SYS_DP_DDR_BASE;
-		gd->bd->bi_dram[2].size = dp_ddr_size;
-	} else {
-		puts("Not detected");
-	}
-#endif
+	return 0;
 }

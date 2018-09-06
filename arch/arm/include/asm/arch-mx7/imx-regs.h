@@ -1,15 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc. All Rights Reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_MX7_IMX_REGS_H__
 #define __ASM_ARCH_MX7_IMX_REGS_H__
 
 #define ARCH_MXC
-
-#define CONFIG_SYS_CACHELINE_SIZE	64
 
 #define ROM_SW_INFO_ADDR                0x000001E8
 #define ROMCP_ARB_BASE_ADDR             0x00000000
@@ -212,12 +209,21 @@
 #define DEBUG_MONITOR_BASE_ADDR IP2APB_AXIMON_IPS_BASE_ADDR
 
 #define USB_BASE_ADDR USBOTG1_IPS_BASE_ADDR
+#define SEMAPHORE1_BASE_ADDR SEMA41_IPS_BASE_ADDR
+#define SEMAPHORE2_BASE_ADDR SEMA42_IPS_BASE_ADDR
+#define RDC_BASE_ADDR RDC_IPS_BASE_ADDR
 
 #define FEC_QUIRK_ENET_MAC
 #define SNVS_LPGPR	0x68
-
+#define CONFIG_SYS_FSL_SEC_OFFSET       0
+#define CONFIG_SYS_FSL_SEC_ADDR         (CAAM_IPS_BASE_ADDR + \
+					 CONFIG_SYS_FSL_SEC_OFFSET)
+#define CONFIG_SYS_FSL_JR0_OFFSET       0x1000
+#define CONFIG_SYS_FSL_JR0_ADDR         (CONFIG_SYS_FSL_SEC_ADDR + \
+					 CONFIG_SYS_FSL_JR0_OFFSET)
+#define CONFIG_SYS_FSL_MAX_NUM_OF_SEC   1
 #if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
-#include <asm/imx-common/regs-lcdif.h>
+#include <asm/mach-imx/regs-lcdif.h>
 #include <asm/types.h>
 
 extern void imx_get_mac_from_fuse(int dev_id, unsigned char *mac);
@@ -257,6 +263,17 @@ struct src {
 	u32 ddrc_rcr;
 };
 
+#define src_base ((struct src *)SRC_BASE_ADDR)
+
+#define SRC_M4_REG_OFFSET		0xC
+#define SRC_M4C_NON_SCLR_RST_OFFSET	0
+#define SRC_M4C_NON_SCLR_RST_MASK	BIT(0)
+#define SRC_M4_ENABLE_OFFSET		3
+#define SRC_M4_ENABLE_MASK		BIT(3)
+
+#define SRC_DDRC_RCR_DDRC_CORE_RST_OFFSET	1
+#define SRC_DDRC_RCR_DDRC_CORE_RST_MASK		(1 << 1)
+
 /* GPR0 Bit Fields */
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL0_MASK     0x1u
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL0_SHIFT    0
@@ -272,6 +289,8 @@ struct src {
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL5_SHIFT    5
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL6_MASK     0x40u
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL6_SHIFT    6
+#define IOMUXC_GPR_GPR0_ENET_MDIO_OPEN_DRAIN_MASK (3 << 7)
+#define IOMUXC_GPR_GPR0_ENET_MDIO_OPEN_DRAIN_SHIFT 7
 /* GPR1 Bit Fields */
 #define IOMUXC_GPR_GPR1_GPR_WEIM_ACT_CS0_MASK    0x1u
 #define IOMUXC_GPR_GPR1_GPR_WEIM_ACT_CS0_SHIFT   0
@@ -1191,14 +1210,6 @@ extern void pcie_power_off(void);
 #define	is_boot_from_usb(void) (readl(USBOTG1_IPS_BASE_ADDR + 0x158) || \
 	readl(USBOTG2_IPS_BASE_ADDR + 0x158))
 #define	disconnect_from_pc(void) writel(0x0, USBOTG1_IPS_BASE_ADDR + 0x140)
-
-/* Boot device type */
-#define BOOT_TYPE_SD		0x1
-#define BOOT_TYPE_MMC		0x2
-#define BOOT_TYPE_NAND		0x3
-#define BOOT_TYPE_QSPI		0x4
-#define BOOT_TYPE_WEIM		0x5
-#define BOOT_TYPE_SPINOR	0x6
 
 struct bootrom_sw_info {
 	u8 reserved_1;

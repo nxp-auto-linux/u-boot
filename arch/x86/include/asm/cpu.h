@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2014 The Chromium OS Authors.
  *
  * Part of this file is adapted from coreboot
  * src/arch/x86/include/arch/cpu.h and
  * src/arch/x86/lib/cpu.c
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ASM_CPU_H
@@ -43,6 +42,19 @@ enum {
 	GDT_BASE_LOW_MASK	= 0xffff,
 	GDT_BASE_HIGH_SHIFT	= 56,
 	GDT_BASE_HIGH_MASK	= 0xf,
+};
+
+/*
+ * System controllers in an x86 system. We mostly need to just find these and
+ * use them on PCI. At some point these might have their own uclass (e.g.
+ * UCLASS_VIDEO for the GMA device).
+ */
+enum {
+	X86_NONE,
+	X86_SYSCON_ME,		/* Intel Management Engine */
+	X86_SYSCON_PINCONF,	/* Intel x86 pin configuration */
+	X86_SYSCON_PMU,		/* Power Management Unit */
+	X86_SYSCON_SCU,		/* System Controller Unit */
 };
 
 struct cpuid_result {
@@ -148,6 +160,8 @@ static inline unsigned int cpuid_edx(unsigned int op)
 	return edx;
 }
 
+#if !CONFIG_IS_ENABLED(X86_64)
+
 /* Standard macro to see if a specific flag is changeable */
 static inline int flag_is_changeable_p(uint32_t flag)
 {
@@ -168,6 +182,7 @@ static inline int flag_is_changeable_p(uint32_t flag)
 		: "ir" (flag));
 	return ((f1^f2) & flag) != 0;
 }
+#endif
 
 static inline void mfence(void)
 {
@@ -248,5 +263,28 @@ void cpu_call32(ulong code_seg32, ulong target, ulong table);
  * @target:	Pointer to the start of the kernel image
  */
 int cpu_jump_to_64bit(ulong setup_base, ulong target);
+
+/**
+ * cpu_jump_to_64bit_uboot() - special function to jump from SPL to U-Boot
+ *
+ * This handles calling from 32-bit SPL to 64-bit U-Boot.
+ *
+ * @target:	Address of U-Boot in RAM
+ */
+int cpu_jump_to_64bit_uboot(ulong target);
+
+/**
+ * cpu_get_family_model() - Get the family and model for the CPU
+ *
+ * @return the CPU ID masked with 0x0fff0ff0
+ */
+u32 cpu_get_family_model(void);
+
+/**
+ * cpu_get_stepping() - Get the stepping value for the CPU
+ *
+ * @return the CPU ID masked with 0xf
+ */
+u32 cpu_get_stepping(void);
 
 #endif

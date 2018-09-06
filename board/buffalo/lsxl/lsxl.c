@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2012 Michael Walle
  * Michael Walle <michael@walle.cc>
  *
  * Based on sheevaplug/sheevaplug.c by
  *   Marvell Semiconductor <www.marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <environment.h>
 #include <net.h>
 #include <malloc.h>
 #include <netdev.h>
@@ -203,7 +203,7 @@ void check_enetaddr(void)
 {
 	uchar enetaddr[6];
 
-	if (!eth_getenv_enetaddr("ethaddr", enetaddr)) {
+	if (!eth_env_get_enetaddr("ethaddr", enetaddr)) {
 		/* signal unset/invalid ethaddr to user */
 		set_led(LED_INFO_BLINKING);
 	}
@@ -228,7 +228,7 @@ static void erase_environment(void)
 static void rescue_mode(void)
 {
 	printf("Entering rescue mode..\n");
-	setenv("bootsource", "rescue");
+	env_set("bootsource", "rescue");
 }
 
 static void check_push_button(void)

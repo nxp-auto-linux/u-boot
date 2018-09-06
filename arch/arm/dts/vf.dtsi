@@ -1,14 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+ OR X11
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:     GPL-2.0+ or X11
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
  */
 /include/ "skeleton.dtsi"
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	aliases {
@@ -17,8 +12,16 @@
 		gpio2 = &gpio2;
 		gpio3 = &gpio3;
 		gpio4 = &gpio4;
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		serial4 = &uart4;
+		serial5 = &uart5;
 		spi0 = &dspi0;
 		spi1 = &dspi1;
+		ehci0 = &ehci0;
+		ehci1 = &ehci1;
 	};
 
 	soc {
@@ -31,7 +34,32 @@
 			compatible = "fsl,aips-bus", "simple-bus";
 			#address-cells = <1>;
 			#size-cells = <1>;
+			reg = <0x40000000 0x00070000>;
 			ranges;
+
+			uart0: serial@40027000 {
+				compatible = "fsl,vf610-lpuart";
+				reg = <0x40027000 0x1000>;
+				status = "disabled";
+			};
+
+			uart1: serial@40028000 {
+				compatible = "fsl,vf610-lpuart";
+				reg = <0x40028000 0x1000>;
+				status = "disabled";
+			};
+
+			uart2: serial@40029000 {
+				compatible = "fsl,vf610-lpuart";
+				reg = <0x40029000 0x1000>;
+				status = "disabled";
+			};
+
+			uart3: serial@4002a000 {
+				compatible = "fsl,vf610-lpuart";
+				reg = <0x4002a000 0x1000>;
+				status = "disabled";
+			};
 
 			dspi0: dspi0@4002c000 {
 				#address-cells = <1>;
@@ -55,7 +83,9 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 				compatible = "fsl,vf610-qspi";
-				reg = <0x40044000 0x1000>;
+				reg = <0x40044000 0x1000>,
+					  <0x20000000 0x10000000>;
+				reg-names = "QuadSPI", "QuadSPI-memory";
 				status = "disabled";
 			};
 
@@ -88,13 +118,38 @@
 				reg = <0x400ff100 0x40>;
 				#gpio-cells = <2>;
 			};
+
+			ehci0: ehci@40034000 {
+				compatible = "fsl,vf610-usb";
+				reg = <0x40034000 0x800>;
+				status = "disabled";
+			};
 		};
 
 		aips1: aips-bus@40080000 {
 			compatible = "fsl,aips-bus", "simple-bus";
 			#address-cells = <1>;
 			#size-cells = <1>;
+			reg = <0x40080000 0x0007f000>;
 			ranges;
+
+			uart4: serial@400a9000 {
+				compatible = "fsl,vf610-lpuart";
+				reg = <0x400a9000 0x1000>;
+				status = "disabled";
+			};
+
+			uart5: serial@400aa000 {
+				compatible = "fsl,vf610-lpuart";
+				reg = <0x400aa000 0x1000>;
+				status = "disabled";
+			};
+
+			ehci1: ehci@400b4000 {
+				compatible = "fsl,vf610-usb";
+				reg = <0x400b4000 0x800>;
+				status = "disabled";
+			};
 		};
 	};
 };

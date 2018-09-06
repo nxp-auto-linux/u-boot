@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2003
  * Steven Scholz, imc Measurement & Control, steven.scholz@imc-berlin.de
  *
  * (C) Copyright 2002
  * Rich Ireland, Enterasys Networks, rireland@enterasys.com.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -36,6 +35,9 @@ static const struct altera_fpga {
 #if defined(CONFIG_FPGA_STRATIX_II)
 	{ Altera_StratixII, "StratixII", StratixII_load,
 	  StratixII_dump, StratixII_info },
+#endif
+#if defined(CONFIG_FPGA_STRATIX_V)
+	{ Altera_StratixV, "StratixV", stratixv_load, NULL, NULL },
 #endif
 #if defined(CONFIG_FPGA_SOCFPGA)
 	{ Altera_SoCFPGA, "SoC FPGA", socfpga_load, NULL, NULL },

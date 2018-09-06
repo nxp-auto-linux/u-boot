@@ -1,16 +1,18 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * NAND boot for Freescale Integrated Flash Controller, NAND FCM
  *
  * Copyright 2011 Freescale Semiconductor, Inc.
  * Author: Dipen Dudhat <dipen.dudhat@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
 #include <fsl_ifc.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
+#ifdef CONFIG_CHAIN_OF_TRUST
+#include <fsl_validate.h>
+#endif
 
 static inline int is_blank(uchar *addr, int page_size)
 {
@@ -236,7 +238,7 @@ int nand_spl_load_image(uint32_t offs, unsigned int uboot_size, void *vdst)
 
 /*
  * Main entrypoint for NAND Boot. It's necessary that SDRAM is already
- * configured and available since this code loads the main U-boot image
+ * configured and available since this code loads the main U-Boot image
  * from NAND into SDRAM and starts from there.
  */
 void nand_boot(void)
@@ -268,6 +270,27 @@ void nand_boot(void)
 	 */
 	flush_cache(CONFIG_SYS_NAND_U_BOOT_DST, CONFIG_SYS_NAND_U_BOOT_SIZE);
 #endif
+
+#ifdef CONFIG_CHAIN_OF_TRUST
+	/*
+	 * U-Boot header is appended at end of U-boot image, so
+	 * calculate U-boot header address using U-boot header size.
+	 */
+#define CONFIG_U_BOOT_HDR_ADDR \
+		((CONFIG_SYS_NAND_U_BOOT_START + \
+		  CONFIG_SYS_NAND_U_BOOT_SIZE) - \
+		 CONFIG_U_BOOT_HDR_SIZE)
+	spl_validate_uboot(CONFIG_U_BOOT_HDR_ADDR,
+			   CONFIG_SYS_NAND_U_BOOT_START);
+	/*
+	 * In case of failure in validation, spl_validate_uboot would
+	 * not return back in case of Production environment with ITS=1.
+	 * Thus U-Boot will not start.
+	 * In Development environment (ITS=0 and SB_EN=1), the function
+	 * may return back in case of non-fatal failures.
+	 */
+#endif
+
 	uboot = (void *)CONFIG_SYS_NAND_U_BOOT_START;
 	uboot();
 }

@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015  Thomas Chou <thomas@wytron.com.tw>
  * Copyright (C) 2011  Missing Link Electronics
  *                     Joachim Foerster <joachim@missinglinkelectronics.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <dm.h>
@@ -89,12 +88,12 @@ static int altera_pio_ofdata_to_platdata(struct udevice *dev)
 {
 	struct altera_pio_platdata *plat = dev_get_platdata(dev);
 
-	plat->regs = map_physmem(dev_get_addr(dev),
+	plat->regs = map_physmem(devfdt_get_addr(dev),
 				 sizeof(struct altera_pio_regs),
 				 MAP_NOCACHE);
-	plat->gpio_count = fdtdec_get_int(gd->fdt_blob, dev->of_offset,
+	plat->gpio_count = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 		"altr,gpio-bank-width", 32);
-	plat->bank_name = fdt_getprop(gd->fdt_blob, dev->of_offset,
+	plat->bank_name = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
 		"gpio-bank-name", NULL);
 
 	return 0;

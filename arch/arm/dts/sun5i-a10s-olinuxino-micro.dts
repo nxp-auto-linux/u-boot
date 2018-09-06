@@ -111,7 +111,7 @@
 	status = "okay";
 
 	at24@50 {
-		compatible = "at,24c16";
+		compatible = "atmel,24c16";
 		pagesize = <16>;
 		reg = <0x50>;
 		read-only;
@@ -245,6 +245,13 @@
 &reg_usb1_vbus {
 	pinctrl-0 = <&usb1_vbus_pin_olinuxino_m>;
 	gpio = <&pio 1 10 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&spi2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi2_pins_a>,
+		    <&spi2_cs0_pins_a>;
 	status = "okay";
 };
 

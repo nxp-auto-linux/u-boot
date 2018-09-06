@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,7 +10,7 @@
 #include <asm/immap_85xx.h>
 #include <asm/io.h>
 #include <miiphy.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
 #include <fsl_mdio.h>
 #include <tsec.h>
@@ -151,7 +150,7 @@ void dsp_ddr_configure(void)
 
 int board_early_init_r(void)
 {
-#ifndef CONFIG_SYS_NO_FLASH
+#ifdef CONFIG_MTD_NOR_FLASH
 	const unsigned int flashbase = CONFIG_SYS_FLASH_BASE;
 	int flash_esel = find_tlb_idx((void *)flashbase, 1);
 
@@ -227,9 +226,9 @@ int checkboard(void)
 	return 0;
 }
 
-#ifdef CONFIG_TSEC_ENET
 int board_eth_init(bd_t *bis)
 {
+#ifdef CONFIG_TSEC_ENET
 	struct fsl_pq_mdio_info mdio_info;
 	struct tsec_info_struct tsec_info[4];
 	int num = 0;
@@ -250,6 +249,7 @@ int board_eth_init(bd_t *bis)
 
 	fsl_pq_mdio_init(bis, &mdio_info);
 	tsec_eth_init(bis, tsec_info, num);
+#endif
 
 	#ifdef CONFIG_PCI
 	pci_eth_init(bis);
@@ -257,7 +257,6 @@ int board_eth_init(bd_t *bis)
 
 	return 0;
 }
-#endif
 
 #define USBMUX_SEL_MASK		0xc0
 #define USBMUX_SEL_UART2	0xc0
@@ -370,8 +369,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	ft_cpu_setup(blob, bd);
 
-	base = getenv_bootm_low();
-	size = getenv_bootm_size();
+	base = env_get_bootm_low();
+	size = env_get_bootm_size();
 
 	#if defined(CONFIG_PCI)
 	FT_FSL_PCI_SETUP;
@@ -394,7 +393,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 			/* remove dts usb node */
 			fdt_del_node_compat(blob, "fsl-usb2-dr");
 		} else {
-			fdt_fixup_dr_usb(blob, bd);
+			fsl_fdt_fixup_dr_usb(blob, bd);
 			fdt_del_node_and_alias(blob, "serial2");
 		}
 	}

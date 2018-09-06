@@ -1,25 +1,11 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2010-2013, NVIDIA CORPORATION.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _TEGRA114_COMMON_H_
 #define _TEGRA114_COMMON_H_
 #include "tegra-common.h"
-
-/* Cortex-A15 uses a cache line size of 64 bytes */
-#define CONFIG_SYS_CACHELINE_SIZE	64
 
 /*
  * NS16550 Configuration
@@ -34,7 +20,6 @@
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
-#define CONFIG_SYS_TEXT_BASE	0x80110000
 
 /*
  * Memory layout for where various images get loaded by boot scripts:
@@ -76,6 +61,5 @@
 /* For USB EHCI controller */
 #define CONFIG_EHCI_IS_TDI
 #define CONFIG_USB_EHCI_TXFIFO_THRESH	0x10
-#define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS 1
 
 #endif /* _TEGRA114_COMMON_H_ */

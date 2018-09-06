@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Copyright (C) 2012 Altera Corporation <www.altera.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -15,27 +14,37 @@
 #include <asm/arch/system_manager.h>
 #include <asm/arch/freeze_controller.h>
 #include <asm/arch/clock_manager.h>
+#include <asm/arch/misc.h>
 #include <asm/arch/scan_manager.h>
 #include <asm/arch/sdram.h>
 #include <asm/arch/scu.h>
 #include <asm/arch/nic301.h>
+#include <asm/sections.h>
+#include <fdtdec.h>
+#include <watchdog.h>
+#if defined(CONFIG_TARGET_SOCFPGA_ARRIA10)
+#include <asm/arch/pinmux.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if defined(CONFIG_TARGET_SOCFPGA_GEN5)
 static struct pl310_regs *const pl310 =
 	(struct pl310_regs *)CONFIG_SYS_PL310_BASE;
 static struct scu_registers *scu_regs =
 	(struct scu_registers *)SOCFPGA_MPUSCU_ADDRESS;
 static struct nic301_registers *nic301_regs =
 	(struct nic301_registers *)SOCFPGA_L3REGS_ADDRESS;
-static struct socfpga_system_manager *sysmgr_regs =
+#endif
+
+static const struct socfpga_system_manager *sysmgr_regs =
 	(struct socfpga_system_manager *)SOCFPGA_SYSMGR_ADDRESS;
 
 u32 spl_boot_device(void)
 {
 	const u32 bsel = readl(&sysmgr_regs->bootinfo);
 
-	switch (bsel & 0x7) {
+	switch (SYSMGR_GET_BOOTINFO_BSEL(bsel)) {
 	case 0x1:	/* FPGA (HPS2FPGA Bridge) */
 		return BOOT_DEVICE_RAM;
 	case 0x2:	/* NAND Flash (1.8V) */
@@ -57,17 +66,7 @@ u32 spl_boot_device(void)
 	}
 }
 
-#ifdef CONFIG_SPL_MMC_SUPPORT
-u32 spl_boot_mode(void)
-{
-#if defined(CONFIG_SPL_FAT_SUPPORT) || defined(CONFIG_SPL_EXT_SUPPORT)
-	return MMCSD_MODE_FS;
-#else
-	return MMCSD_MODE_RAW;
-#endif
-}
-#endif
-
+#if defined(CONFIG_TARGET_SOCFPGA_GEN5)
 static void socfpga_nic301_slave_ns(void)
 {
 	writel(0x1, &nic301_regs->lwhps2fpgaregs);
@@ -80,9 +79,7 @@ static void socfpga_nic301_slave_ns(void)
 
 void board_init_f(ulong dummy)
 {
-#ifndef CONFIG_SOCFPGA_VIRTUAL_TARGET
 	const struct cm_config *cm_default_cfg = cm_get_default_config();
-#endif
 	unsigned long sdram_size;
 	unsigned long reg;
 
@@ -109,7 +106,6 @@ void board_init_f(ulong dummy)
 	writel(0x1, &nic301_regs->remap);	/* remap.mpuzero */
 	writel(0x1, &pl310->pl310_addr_filter_start);
 
-#ifndef CONFIG_SOCFPGA_VIRTUAL_TARGET
 	debug("Freezing all I/O banks\n");
 	/* freeze all IO banks */
 	sys_mgr_frzctrl_freeze_req();
@@ -127,7 +123,8 @@ void board_init_f(ulong dummy)
 
 	debug("Reconfigure Clock Manager\n");
 	/* reconfigure the PLLs */
-	cm_basic_init(cm_default_cfg);
+	if (cm_basic_init(cm_default_cfg))
+		hang();
 
 	/* Enable bootrom to configure IOs. */
 	sysmgr_config_warmrstcfgio(1);
@@ -142,8 +139,6 @@ void board_init_f(ulong dummy)
 	sysmgr_config_warmrstcfgio(1);
 	sysmgr_pinmux_init();
 	sysmgr_config_warmrstcfgio(0);
-
-#endif /* CONFIG_SOCFPGA_VIRTUAL_TARGET */
 
 	/* De-assert reset for peripherals and bridges based on handoff */
 	reset_deassert_peripherals_handoff();
@@ -182,3 +177,47 @@ void board_init_f(ulong dummy)
 	/* Configure simple malloc base pointer into RAM. */
 	gd->malloc_base = CONFIG_SYS_TEXT_BASE + (1024 * 1024);
 }
+#elif defined(CONFIG_TARGET_SOCFPGA_ARRIA10)
+void spl_board_init(void)
+{
+	/* configuring the clock based on handoff */
+	cm_basic_init(gd->fdt_blob);
+	WATCHDOG_RESET();
+
+	config_dedicated_pins(gd->fdt_blob);
+	WATCHDOG_RESET();
+
+	/* Release UART from reset */
+	socfpga_reset_uart(0);
+
+	/* enable console uart printing */
+	preloader_console_init();
+
+	WATCHDOG_RESET();
+
+	/* Add device descriptor to FPGA device table */
+	socfpga_fpga_add();
+}
+
+void board_init_f(ulong dummy)
+{
+	/*
+	 * Configure Clock Manager to use intosc clock instead external osc to
+	 * ensure success watchdog operation. We do it as early as possible.
+	 */
+	cm_use_intosc();
+
+	socfpga_watchdog_disable();
+
+	arch_early_init_r();
+
+#ifdef CONFIG_HW_WATCHDOG
+	/* release osc1 watchdog timer 0 from reset */
+	socfpga_reset_deassert_osc1wd0();
+
+	/* reconfigure and enable the watchdog */
+	hw_watchdog_init();
+	WATCHDOG_RESET();
+#endif /* CONFIG_HW_WATCHDOG */
+}
+#endif

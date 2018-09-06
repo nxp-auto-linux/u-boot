@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  Copyright (C) 2014-2015 Samsung Electronics
  *  Przemyslaw Marczak <p.marczak@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _INCLUDE_REGULATOR_H_
@@ -54,7 +53,7 @@
  * which does the scan on the device node, for the 'regulator-name' constraint.
  * If the parent is not a PMIC device, and the child is not bind by function:
  * 'pmic_bind_childs()', then it's recommended to bind the device by call to
- * dm_scan_fdt_node() - this is usually done automatically for bus devices,
+ * dm_scan_fdt_dev() - this is usually done automatically for bus devices,
  * as a post bind method.
  *
  * Regulator get:
@@ -108,6 +107,7 @@ enum regulator_type {
 	REGULATOR_TYPE_BUCK,
 	REGULATOR_TYPE_DVS,
 	REGULATOR_TYPE_FIXED,
+	REGULATOR_TYPE_GPIO,
 	REGULATOR_TYPE_OTHER,
 };
 
@@ -152,6 +152,8 @@ enum regulator_flag {
  * TODO(sjg@chromium.org): Consider putting the above two into @flags
  * @flags:     - flags value (see REGULATOR_FLAG_...)
  * @name**     - fdt regulator name - should be taken from the device tree
+ * ctrl_reg:   - Control register offset used to enable/disable regulator
+ * volt_reg:   - register offset for writing voltage vsel values
  *
  * Note:
  * *  - set automatically on device probe by the uclass's '.pre_probe' method.
@@ -171,6 +173,8 @@ struct dm_regulator_uclass_platdata {
 	bool boot_on;
 	const char *name;
 	int flags;
+	u8 ctrl_reg;
+	u8 volt_reg;
 };
 
 /* Regulator device operations */
@@ -206,9 +210,9 @@ struct dm_regulator_ops {
 	 * @dev           - regulator device
 	 * Sets:
 	 * @enable         - set true - enable or false - disable
-	 * @return true/false for get; or 0 / -errno for set.
+	 * @return true/false for get or -errno if fail; 0 / -errno for set.
 	 */
-	bool (*get_enable)(struct udevice *dev);
+	int (*get_enable)(struct udevice *dev);
 	int (*set_enable)(struct udevice *dev, bool enable);
 
 	/**
@@ -256,6 +260,16 @@ int regulator_get_value(struct udevice *dev);
 int regulator_set_value(struct udevice *dev, int uV);
 
 /**
+ * regulator_set_value_force: set the microvoltage value of a given regulator
+ *			      without any min-,max condition check
+ *
+ * @dev    - pointer to the regulator device
+ * @uV     - the output value to set [micro Volts]
+ * @return - 0 on success or -errno val if fails
+ */
+int regulator_set_value_force(struct udevice *dev, int uV);
+
+/**
  * regulator_get_current: get microampere value of a given regulator
  *
  * @dev    - pointer to the regulator device
@@ -276,9 +290,9 @@ int regulator_set_current(struct udevice *dev, int uA);
  * regulator_get_enable: get regulator device enable state.
  *
  * @dev    - pointer to the regulator device
- * @return - true/false of enable state
+ * @return - true/false of enable state or -errno val if fails
  */
-bool regulator_get_enable(struct udevice *dev);
+int regulator_get_enable(struct udevice *dev);
 
 /**
  * regulator_set_enable: set regulator enable state

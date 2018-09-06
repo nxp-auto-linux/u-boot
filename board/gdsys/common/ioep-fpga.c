@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
- * Dirk Eibach,  Guntermann & Drunck GmbH, eibach@gdsys.de
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Dirk Eibach,  Guntermann & Drunck GmbH, dirk.eibach@gdsys.cc
  */
 
 #include <common.h>
@@ -25,8 +24,9 @@ enum {
 
 enum {
 	COMPRESSION_NONE = 0,
-	COMPRESSION_TYPE1_DELTA = 1,
-	COMPRESSION_TYPE1_TYPE2_DELTA = 3,
+	COMPRESSION_TYPE_1 = 1,
+	COMPRESSION_TYPE_1_2 = 3,
+	COMPRESSION_TYPE_1_2_3 = 7,
 };
 
 enum {
@@ -158,12 +158,16 @@ void ioep_fpga_print_info(unsigned int fpga)
 		printf(" no compression");
 		break;
 
-	case COMPRESSION_TYPE1_DELTA:
-		printf(" type1-deltacompression");
+	case COMPRESSION_TYPE_1:
+		printf(" compression type1(delta)");
 		break;
 
-	case COMPRESSION_TYPE1_TYPE2_DELTA:
-		printf(" type1-deltacompression, type2-inlinecompression");
+	case COMPRESSION_TYPE_1_2:
+		printf(" compression type1(delta), type2(inline)");
+		break;
+
+	case COMPRESSION_TYPE_1_2_3:
+		printf(" compression type1(delta), type2(inline), type3(intempo)");
 		break;
 
 	default:

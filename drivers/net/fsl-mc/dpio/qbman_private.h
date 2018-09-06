@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* Perform extra checking */
@@ -11,6 +10,7 @@
 #include <linux/types.h>
 #include <asm/atomic.h>
 #include <malloc.h>
+#include <asm/arch/soc.h>
 #include <fsl-mc/fsl_qbman_base.h>
 
 #define QBMAN_CHECKING
@@ -165,5 +165,23 @@ static inline void dcbz(void *ptr)
 }
 
 #define lwsync()
+
+void qbman_version(u32 *major, u32 *minor)
+{
+	u32 svr_dev_id;
+
+	/*
+	 * LS2080A SoC and its personalities has qbman cotroller version 4.0
+	 * New SoCs like LS2088A, LS1088A has qbman conroller version 4.1
+	 */
+	svr_dev_id = get_svr();
+	if (IS_SVR_DEV(svr_dev_id, SVR_DEV(SVR_LS2080A))) {
+		*major = 4;
+		*minor = 0;
+	} else {
+		*major = 4;
+		*minor = 1;
+	}
+}
 
 #include "qbman_sys.h"

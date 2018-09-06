@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
  * (C) Copyright 2008
  * Graeme Russ, graeme.russ@gmail.com.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -29,7 +28,7 @@ int arch_cpu_init(void)
 	return x86_cpu_init_f();
 }
 
-int board_early_init_f(void)
+int checkcpu(void)
 {
 	return 0;
 }
@@ -39,15 +38,7 @@ int print_cpuinfo(void)
 	return default_print_cpuinfo();
 }
 
-int last_stage_init(void)
-{
-	if (gd->flags & GD_FLG_COLD_BOOT)
-		timestamp_add_to_bootstage();
-
-	return 0;
-}
-
-void board_final_cleanup(void)
+static void board_final_cleanup(void)
 {
 	/*
 	 * Un-cache the ROM so the kernel has one
@@ -79,12 +70,17 @@ void board_final_cleanup(void)
 	}
 }
 
-int misc_init_r(void)
+int last_stage_init(void)
 {
+	if (gd->flags & GD_FLG_COLD_BOOT)
+		timestamp_add_to_bootstage();
+
+	board_final_cleanup();
+
 	return 0;
 }
 
-int arch_misc_init(void)
+int misc_init_r(void)
 {
 	return 0;
 }

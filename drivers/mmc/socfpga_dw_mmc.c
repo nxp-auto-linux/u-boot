@@ -1,18 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 Altera Corporation <www.altera.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/arch/clock_manager.h>
-#include <asm/arch/dwmmc.h>
 #include <asm/arch/system_manager.h>
 #include <dm.h>
 #include <dwmmc.h>
 #include <errno.h>
 #include <fdtdec.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <linux/err.h>
 #include <malloc.h>
 
@@ -22,6 +20,11 @@ static const struct socfpga_clock_manager *clock_manager_base =
 		(void *)SOCFPGA_CLKMGR_ADDRESS;
 static const struct socfpga_system_manager *system_manager_base =
 		(void *)SOCFPGA_SYSMGR_ADDRESS;
+
+struct socfpga_dwmci_plat {
+	struct mmc_config cfg;
+	struct mmc mmc;
+};
 
 /* socfpga implmentation specific driver private data */
 struct dwmci_socfpga_priv_data {
@@ -66,7 +69,7 @@ static int socfpga_dwmmc_ofdata_to_platdata(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	fifo_depth = fdtdec_get_int(gd->fdt_blob, dev->of_offset,
+	fifo_depth = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 				    "fifo-depth", 0);
 	if (fifo_depth < 0) {
 		printf("DWMMC: Can't get FIFO depth\n");
@@ -74,8 +77,8 @@ static int socfpga_dwmmc_ofdata_to_platdata(struct udevice *dev)
 	}
 
 	host->name = dev->name;
-	host->ioaddr = (void *)dev_get_addr(dev);
-	host->buswidth = fdtdec_get_int(gd->fdt_blob, dev->of_offset,
+	host->ioaddr = (void *)devfdt_get_addr(dev);
+	host->buswidth = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 					"bus-width", 4);
 	host->clksel = socfpga_dwmci_clksel;
 
@@ -88,9 +91,9 @@ static int socfpga_dwmmc_ofdata_to_platdata(struct udevice *dev)
 	host->bus_hz = clk;
 	host->fifoth_val = MSIZE(0x2) |
 		RX_WMARK(fifo_depth / 2 - 1) | TX_WMARK(fifo_depth / 2);
-	priv->drvsel = fdtdec_get_uint(gd->fdt_blob, dev->of_offset,
+	priv->drvsel = fdtdec_get_uint(gd->fdt_blob, dev_of_offset(dev),
 				       "drvsel", 3);
-	priv->smplsel = fdtdec_get_uint(gd->fdt_blob, dev->of_offset,
+	priv->smplsel = fdtdec_get_uint(gd->fdt_blob, dev_of_offset(dev),
 					"smplsel", 0);
 	host->priv = priv;
 
@@ -99,16 +102,40 @@ static int socfpga_dwmmc_ofdata_to_platdata(struct udevice *dev)
 
 static int socfpga_dwmmc_probe(struct udevice *dev)
 {
+#ifdef CONFIG_BLK
+	struct socfpga_dwmci_plat *plat = dev_get_platdata(dev);
+#endif
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct dwmci_socfpga_priv_data *priv = dev_get_priv(dev);
 	struct dwmci_host *host = &priv->host;
+
+#ifdef CONFIG_BLK
+	dwmci_setup_cfg(&plat->cfg, host, host->bus_hz, 400000);
+	host->mmc = &plat->mmc;
+#else
 	int ret;
 
 	ret = add_dwmci(host, host->bus_hz, 400000);
 	if (ret)
 		return ret;
-
+#endif
+	host->mmc->priv = &priv->host;
 	upriv->mmc = host->mmc;
+	host->mmc->dev = dev;
+
+	return dwmci_probe(dev);
+}
+
+static int socfpga_dwmmc_bind(struct udevice *dev)
+{
+#ifdef CONFIG_BLK
+	struct socfpga_dwmci_plat *plat = dev_get_platdata(dev);
+	int ret;
+
+	ret = dwmci_bind(dev, &plat->mmc, &plat->cfg);
+	if (ret)
+		return ret;
+#endif
 
 	return 0;
 }
@@ -123,6 +150,9 @@ U_BOOT_DRIVER(socfpga_dwmmc_drv) = {
 	.id		= UCLASS_MMC,
 	.of_match	= socfpga_dwmmc_ids,
 	.ofdata_to_platdata = socfpga_dwmmc_ofdata_to_platdata,
+	.ops		= &dm_dwmci_ops,
+	.bind		= socfpga_dwmmc_bind,
 	.probe		= socfpga_dwmmc_probe,
 	.priv_auto_alloc_size = sizeof(struct dwmci_socfpga_priv_data),
+	.platdata_auto_alloc_size = sizeof(struct socfpga_dwmci_plat),
 };

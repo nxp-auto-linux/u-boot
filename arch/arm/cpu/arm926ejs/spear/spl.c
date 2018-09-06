@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2011
  * Heiko Schocher, DENX Software Engineering, hs@denx.de.
  *
  * Copyright (C) 2012 Stefan Roese <sr@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -222,7 +221,7 @@ static void snor_init(void)
 
 u32 spl_boot_device(void)
 {
-	u32 mode;
+	u32 mode = 0;
 
 	/* Currently only SNOR is supported as the only */
 	if (snor_boot_selected()) {

@@ -1,26 +1,32 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2006-2009 Freescale Semiconductor, Inc.
  *
  * Dave Liu <daveliu@freescale.com>
  * based on source code of Shlomi Gridish
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#include "common.h"
+#include <common.h>
+#include <malloc.h>
 #include <command.h>
-#include "asm/errno.h"
-#include "asm/io.h"
-#include "linux/immap_qe.h"
-#include "qe.h"
-#ifdef CONFIG_LS102XA
+#include <linux/errno.h>
+#include <asm/io.h>
+#include <linux/immap_qe.h>
+#include <fsl_qe.h>
+#ifdef CONFIG_ARCH_LS1021A
 #include <asm/arch/immap_ls102xa.h>
+#endif
+
+#ifdef CONFIG_SYS_QE_FMAN_FW_IN_MMC
+#include <mmc.h>
 #endif
 
 #define MPC85xx_DEVDISR_QE_DISABLE	0x1
 
 qe_map_t		*qe_immr = NULL;
+#ifdef CONFIG_QE
 static qe_snum_t	snums[QE_NUM_OF_SNUM];
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -81,6 +87,7 @@ void *qe_muram_addr(uint offset)
 	return (void *)&qe_immr->muram[offset];
 }
 
+#ifdef CONFIG_QE
 static void qe_sdma_init(void)
 {
 	volatile sdma_t	*p;
@@ -184,15 +191,42 @@ void qe_init(uint qe_base)
 	qe_sdma_init();
 	qe_snums_init();
 }
+#endif
 
 #ifdef CONFIG_U_QE
 void u_qe_init(void)
 {
-	uint qe_base = CONFIG_SYS_IMMR + 0x01400000; /* QE immr base */
-	qe_immr = (qe_map_t *)qe_base;
+	qe_immr = (qe_map_t *)(CONFIG_SYS_IMMR + QE_IMMR_OFFSET);
 
-	u_qe_upload_firmware((const void *)CONFIG_SYS_QE_FW_ADDR);
-	out_be32(&qe_immr->iram.iready, QE_IRAM_READY);
+	void *addr = (void *)CONFIG_SYS_QE_FW_ADDR;
+#ifdef CONFIG_SYS_QE_FMAN_FW_IN_MMC
+	int dev = CONFIG_SYS_MMC_ENV_DEV;
+	u32 cnt = CONFIG_SYS_QE_FMAN_FW_LENGTH / 512;
+	u32 blk = CONFIG_SYS_QE_FW_ADDR / 512;
+
+	if (mmc_initialize(gd->bd)) {
+		printf("%s: mmc_initialize() failed\n", __func__);
+		return;
+	}
+	addr = malloc(CONFIG_SYS_QE_FMAN_FW_LENGTH);
+	struct mmc *mmc = find_mmc_device(CONFIG_SYS_MMC_ENV_DEV);
+
+	if (!mmc) {
+		free(addr);
+		printf("\nMMC cannot find device for ucode\n");
+	} else {
+		printf("\nMMC read: dev # %u, block # %u, count %u ...\n",
+		       dev, blk, cnt);
+		mmc_init(mmc);
+		(void)mmc->block_dev.block_read(&mmc->block_dev, blk, cnt,
+						addr);
+	}
+#endif
+	if (!u_qe_upload_firmware(addr))
+		out_be32(&qe_immr->iram.iready, QE_IRAM_READY);
+#ifdef CONFIG_SYS_QE_FMAN_FW_IN_MMC
+	free(addr);
+#endif
 }
 #endif
 
@@ -200,9 +234,8 @@ void u_qe_init(void)
 void u_qe_resume(void)
 {
 	qe_map_t *qe_immrr;
-	uint qe_base = CONFIG_SYS_IMMR + QE_IMMR_OFFSET; /* QE immr base */
-	qe_immrr = (qe_map_t *)qe_base;
 
+	qe_immrr = (qe_map_t *)(CONFIG_SYS_IMMR + QE_IMMR_OFFSET);
 	u_qe_firmware_resume((const void *)CONFIG_SYS_QE_FW_ADDR, qe_immrr);
 	out_be32(&qe_immrr->iram.iready, QE_IRAM_READY);
 }
@@ -214,6 +247,7 @@ void qe_reset(void)
 			 (u8) QE_CR_PROTOCOL_UNSPECIFIED, 0);
 }
 
+#ifdef CONFIG_QE
 void qe_assign_page(uint snum, uint para_ram_base)
 {
 	u32	cecr;
@@ -229,6 +263,7 @@ void qe_assign_page(uint snum, uint para_ram_base)
 
 	return;
 }
+#endif
 
 /*
  * brg: 0~15 as BRG1~BRG16
@@ -351,7 +386,7 @@ int qe_upload_firmware(const struct qe_firmware *firmware)
 	size_t length;
 	const struct qe_header *hdr;
 #ifdef CONFIG_DEEP_SLEEP
-#ifdef CONFIG_LS102XA
+#ifdef CONFIG_ARCH_LS1021A
 	struct ccsr_gur __iomem *gur = (void *)CONFIG_SYS_FSL_GUTS_ADDR;
 #else
 	ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
@@ -490,7 +525,7 @@ int u_qe_upload_firmware(const struct qe_firmware *firmware)
 	size_t length;
 	const struct qe_header *hdr;
 #ifdef CONFIG_DEEP_SLEEP
-#ifdef CONFIG_LS102XA
+#ifdef CONFIG_ARCH_LS1021A
 	struct ccsr_gur __iomem *gur = (void *)CONFIG_SYS_FSL_GUTS_ADDR;
 #else
 	ccsr_gur_t __iomem *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);

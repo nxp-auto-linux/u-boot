@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: Intel */
 /*
  * Copyright (C) 2013, Intel Corporation
  * Copyright (C) 2014, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	Intel
  */
 
 #ifndef __FSP_SUPPORT_H__
@@ -13,16 +12,11 @@
 #include "fsp_ffs.h"
 #include "fsp_api.h"
 #include "fsp_hob.h"
-#include "fsp_platform.h"
 #include "fsp_infoheader.h"
 #include "fsp_bootmode.h"
+#include "fsp_azalia.h"
 #include <asm/arch/fsp/fsp_vpd.h>
-
-struct shared_data {
-	struct fsp_header	*fsp_hdr;
-	u32			*stack_top;
-	struct upd_region	fsp_upd;
-};
+#include <asm/arch/fsp/fsp_configs.h>
 
 #define FSP_LOWMEM_BASE		0x100000UL
 #define FSP_HIGHMEM_BASE	0x100000000ULL
@@ -49,14 +43,12 @@ void fsp_init_done(void *hob_list);
 /**
  * FSP Continuation function
  *
- * @shared_data: Shared data base before stack migration
  * @status:      Always 0
  * @hob_list:    HOB list pointer
  *
  * @retval:      Never returns
  */
-void fsp_continue(struct shared_data *shared_data, u32 status,
-		  void *hob_list);
+void fsp_continue(u32 status, void *hob_list);
 
 /**
  * Find FSP header offset in FSP image
@@ -199,13 +191,27 @@ void *fsp_get_nvs_data(const void *hob_list, u32 *len);
 void *fsp_get_bootloader_tmp_mem(const void *hob_list, u32 *len);
 
 /**
- * This function overrides the default configurations in the UPD data region.
+ * This function retrieves graphics information.
  *
- * @fsp_upd: A pointer to the upd_region data strcture
+ * @hob_list:      A HOB list pointer.
+ * @len:           A pointer to the graphics info HOB length.
+ *                 If the HOB is located, the length will be updated.
+ *
+ * @retval NULL:   Failed to find the graphics info HOB.
+ * @retval others: A pointer to struct hob_graphics_info.
+ */
+void *fsp_get_graphics_info(const void *hob_list, u32 *len);
+
+/**
+ * This function overrides the default configurations of FSP.
+ *
+ * @config:  A pointer to the FSP configuration data structure
+ * @rt_buf:  A pointer to the FSP runtime buffer data structure
  *
  * @return:  None
  */
-void update_fsp_upd(struct upd_region *fsp_upd);
+void update_fsp_configs(struct fsp_config_data *config,
+			struct fspinit_rtbuf *rt_buf);
 
 /**
  * fsp_init_phase_pci() - Tell the FSP that we have completed PCI init

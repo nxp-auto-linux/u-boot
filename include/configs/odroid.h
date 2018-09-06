@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014 Samsung Electronics
  * Sanghee Kim <sh0130.kim@samsung.com>
@@ -5,8 +6,6 @@
  * Przemyslaw Marczak <p.marczak@samsung.com>
  *
  * Configuation settings for the Odroid-U3 (EXYNOS4412) board.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_ODROID_U3_H
@@ -34,31 +33,22 @@
 #define CONFIG_SYS_MEMTEST_START	CONFIG_SYS_SDRAM_BASE
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_SDRAM_BASE + 0x5E00000)
 #define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x3E00000)
-#define CONFIG_SYS_TEXT_BASE		0x43e00000
 
 #include <linux/sizes.h>
 
 /* select serial console configuration */
 #define CONFIG_SERIAL1
-#define CONFIG_BAUDRATE			115200
 
 /* Console configuration */
-#define CONFIG_SYS_CONSOLE_INFO_QUIET
-#define CONFIG_SYS_CONSOLE_IS_IN_ENV
 
-#define CONFIG_CMD_BOOTZ
-#define CONFIG_FIT
-#define CONFIG_FIT_VERBOSE
-#define CONFIG_BOOTARGS			"Please use defined boot"
 #define CONFIG_BOOTCOMMAND		"run autoboot"
-#define CONFIG_DEFAULT_CONSOLE		"console=ttySAC1,115200n8\0"
+#define CONFIG_DEFAULT_CONSOLE		"ttySAC1,115200n8"
 
 #define CONFIG_SYS_INIT_SP_ADDR	(CONFIG_SYS_LOAD_ADDR \
 					- GENERATED_GBL_DATA_SIZE)
 
 #define CONFIG_SYS_MONITOR_BASE	0x00000000
 
-#define CONFIG_ENV_IS_IN_MMC
 #define CONFIG_SYS_MMC_ENV_DEV		CONFIG_MMC_DEFAULT_DEV
 #define CONFIG_ENV_SIZE			4096
 #define CONFIG_ENV_OFFSET		(SZ_1K * 1280) /* 1.25 MiB offset */
@@ -166,7 +156,7 @@
 		"elif test -e mmc 0 uImage; then; " \
 			"run boot_uimg;" \
 		"fi;\0" \
-	"console=" CONFIG_DEFAULT_CONSOLE \
+	"console=" CONFIG_DEFAULT_CONSOLE "\0" \
 	"mmcbootdev=0\0" \
 	"mmcbootpart=1\0" \
 	"mmcrootdev=0\0" \
@@ -181,38 +171,19 @@
 	"scriptaddr=0x42000000\0" \
 	"fdtaddr=40800000\0"
 
-/* I2C */
-#define CONFIG_CMD_I2C
-#define CONFIG_SYS_I2C_S3C24X0
-#define CONFIG_SYS_I2C_S3C24X0_SPEED	100000
-#define CONFIG_SYS_I2C_S3C24X0_SLAVE	0
-
 /* GPT */
-#define CONFIG_RANDOM_UUID
 
 /* Security subsystem - enable hw_rand() */
 #define CONFIG_EXYNOS_ACE_SHA
-#define CONFIG_LIB_HW_RAND
-
 
 /* USB */
-#define CONFIG_CMD_USB
-#define CONFIG_USB_EHCI
 #define CONFIG_USB_EHCI_EXYNOS
-#define CONFIG_USB_STORAGE
-
-#define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	3
-#define CONFIG_CMD_PING
-#define CONFIG_CMD_DHCP
-#define CONFIG_USB_HOST_ETHER
-#define CONFIG_USB_ETHER_SMSC95XX
 
 /*
  * Supported Odroid boards: X3, U3
  * TODO: Add Odroid X support
  */
 #define CONFIG_MISC_COMMON
-#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 #define CONFIG_BOARD_TYPES
 #define CONFIG_MISC_INIT_R
 

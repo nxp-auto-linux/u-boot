@@ -1,13 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2012-2015 Masahiro Yamada <yamada.masahiro@socionext.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright (C) 2012-2015 Panasonic Corporation
+ * Copyright (C) 2015-2016 Socionext Inc.
+ *   Author: Masahiro Yamada <yamada.masahiro@socionext.com>
  */
 
 #include <common.h>
 #include <linux/ctype.h>
 #include <linux/io.h>
-#include <mach/micro-support-card.h>
+
+#include "micro-support-card.h"
 
 #define MICRO_SUPPORT_CARD_BASE		0x43f00000
 #define SMC911X_BASE			((MICRO_SUPPORT_CARD_BASE) + 0x00000)
@@ -22,14 +24,14 @@
  * bit[0]: LAN, I2C, LED
  * bit[1]: UART
  */
-void support_card_reset_deassert(void)
+static void support_card_reset_deassert(void)
 {
-	writel(0, MICRO_SUPPORT_CARD_RESET);
+	writel(0x00010000, MICRO_SUPPORT_CARD_RESET);
 }
 
-void support_card_reset(void)
+static void support_card_reset(void)
 {
-	writel(3, MICRO_SUPPORT_CARD_RESET);
+	writel(0x00020003, MICRO_SUPPORT_CARD_RESET);
 }
 
 static int support_card_show_revision(void)
@@ -37,25 +39,27 @@ static int support_card_show_revision(void)
 	u32 revision;
 
 	revision = readl(MICRO_SUPPORT_CARD_REVISION);
-	printf("(CPLD version %d.%d)\n", revision >> 4, revision & 0xf);
-	return 0;
-}
+	revision &= 0xff;
 
-int check_support_card(void)
-{
-	printf("SC:    Micro Support Card ");
-	return support_card_show_revision();
+	/* revision 3.6.x card changed the revision format */
+	printf("SC:    Micro Support Card (CPLD version %s%d.%d)\n",
+	       revision >> 4 == 6 ? "3." : "",
+	       revision >> 4, revision & 0xf);
+
+	return 0;
 }
 
 void support_card_init(void)
 {
+	support_card_reset();
 	/*
 	 * After power on, we need to keep the LAN controller in reset state
 	 * for a while. (200 usec)
-	 * Fortunately, enough wait time is already inserted in pll_init()
-	 * function. So we do not have to wait here.
 	 */
+	udelay(200);
 	support_card_reset_deassert();
+
+	support_card_show_revision();
 }
 
 #if defined(CONFIG_SMC911X)
@@ -67,10 +71,9 @@ int board_eth_init(bd_t *bis)
 }
 #endif
 
-#if !defined(CONFIG_SYS_NO_FLASH)
+#if defined(CONFIG_MTD_NOR_FLASH)
 
 #include <mtd/cfi_flash.h>
-#include <mach/sbc-regs.h>
 
 struct memory_bank {
 	phys_addr_t base;
@@ -142,18 +145,19 @@ static void detect_num_flash_banks(void)
 								memory_bank;
 
 			debug("flash bank found: base = 0x%lx, size = 0x%lx\n",
-			      memory_bank->base, memory_bank->size);
+			      (unsigned long)memory_bank->base,
+			      (unsigned long)memory_bank->size);
 			cfi_flash_num_flash_banks++;
 		}
 	}
 
 	debug("number of flash banks: %d\n", cfi_flash_num_flash_banks);
 }
-#else /* CONFIG_SYS_NO_FLASH */
-void detect_num_flash_banks(void)
+#else /* CONFIG_MTD_NOR_FLASH */
+static void detect_num_flash_banks(void)
 {
 };
-#endif /* CONFIG_SYS_NO_FLASH */
+#endif /* CONFIG_MTD_NOR_FLASH */
 
 void support_card_late_init(void)
 {

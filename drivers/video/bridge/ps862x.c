@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -86,7 +85,8 @@ static int ps8622_attach(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	params = fdt_getprop(gd->fdt_blob, dev->of_offset, "parade,regs", &len);
+	params = fdt_getprop(gd->fdt_blob, dev_of_offset(dev), "parade,regs",
+			     &len);
 	if (!params || len % 3) {
 		debug("%s: missing/invalid params=%p, len=%x\n", __func__,
 		      params, len);

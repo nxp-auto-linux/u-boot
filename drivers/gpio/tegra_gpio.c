@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * NVIDIA Tegra20 GPIO handling.
  *  (C) Copyright 2010-2012,2015
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -22,8 +21,6 @@
 #include <asm/gpio.h>
 #include <dm/device-internal.h>
 #include <dt-bindings/gpio/gpio.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 static const int CONFIG_SFIO = 0;
 static const int CONFIG_GPIO = 1;
@@ -177,7 +174,10 @@ static int tegra_gpio_get_value(struct udevice *dev, unsigned offset)
 	debug("%s: pin = %d (port %d:bit %d)\n", __func__,
 	      gpio, GPIO_FULLPORT(gpio), GPIO_BIT(gpio));
 
-	val = readl(&state->bank->gpio_in[GPIO_PORT(gpio)]);
+	if (get_direction(gpio) == DIRECTION_INPUT)
+		val = readl(&state->bank->gpio_in[GPIO_PORT(gpio)]);
+	else
+		val = readl(&state->bank->gpio_out[GPIO_PORT(gpio)]);
 
 	return (val >> GPIO_BIT(gpio)) & 1;
 }
@@ -233,7 +233,7 @@ static int tegra_gpio_get_function(struct udevice *dev, unsigned offset)
 }
 
 static int tegra_gpio_xlate(struct udevice *dev, struct gpio_desc *desc,
-			    struct fdtdec_phandle_args *args)
+			    struct ofnode_phandle_args *args)
 {
 	int gpio, port, ret;
 
@@ -334,10 +334,13 @@ static int gpio_tegra_bind(struct udevice *parent)
 	 * This driver does not make use of interrupts, other than to figure
 	 * out the number of GPIO banks
 	 */
-	if (!fdt_getprop(gd->fdt_blob, parent->of_offset, "interrupts", &len))
-		return -EINVAL;
+	len = dev_read_size(parent, "interrupts");
+	if (len < 0)
+		return len;
 	bank_count = len / 3 / sizeof(u32);
-	ctlr = (struct gpio_ctlr *)dev_get_addr(parent);
+	ctlr = (struct gpio_ctlr *)dev_read_addr(parent);
+	if ((ulong)ctlr == FDT_ADDR_T_NONE)
+		return -EINVAL;
 	}
 #endif
 	for (bank = 0; bank < bank_count; bank++) {
@@ -360,7 +363,7 @@ static int gpio_tegra_bind(struct udevice *parent)
 					  plat->port_name, plat, -1, &dev);
 			if (ret)
 				return ret;
-			dev->of_offset = parent->of_offset;
+			dev_set_of_offset(dev, dev_of_offset(parent));
 		}
 	}
 

@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2009-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FM_H__
@@ -88,7 +87,7 @@ struct fm_port_global_pram {
 #define PRAM_MODE_GLOBAL	0x20000000
 #define PRAM_MODE_GRACEFUL_STOP	0x00800000
 
-#if defined(CONFIG_P1017) || defined(CONFIG_P1023)
+#if defined(CONFIG_ARCH_P1023)
 #define FM_FREE_POOL_SIZE	0x2000 /* 8K bytes */
 #else
 #define FM_FREE_POOL_SIZE	0x20000 /* 128K bytes */

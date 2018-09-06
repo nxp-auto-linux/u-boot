@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,7 +9,6 @@
 #include <asm/arch/immap_ls102xa.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/fsl_serdes.h>
-#include <asm/arch/ls102xa_stream_id.h>
 #include <asm/arch/ls102xa_devdis.h>
 #include <asm/arch/ls102xa_soc.h>
 #include <asm/arch/ls102xa_sata.h>
@@ -28,8 +26,9 @@
 #include <spl.h>
 #include "../common/sleep.h"
 #ifdef CONFIG_U_QE
-#include "../../../drivers/qe/qe.h"
+#include <fsl_qe.h>
 #endif
+#include <fsl_validate.h>
 
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -92,9 +91,7 @@ struct cpld_data {
 };
 
 #if !defined(CONFIG_QSPI_BOOT) && !defined(CONFIG_SD_BOOT_QSPI)
-static void convert_serdes_mux(int type, int need_reset);
-
-void cpld_show(void)
+static void cpld_show(void)
 {
 	struct cpld_data *cpld_data = (void *)(CONFIG_SYS_CPLD_BASE);
 
@@ -142,7 +139,7 @@ int checkboard(void)
 void ddrmc_init(void)
 {
 	struct ccsr_ddr *ddr = (struct ccsr_ddr *)CONFIG_SYS_FSL_DDR_ADDR;
-	u32 temp_sdram_cfg;
+	u32 temp_sdram_cfg, tmp;
 
 	out_be32(&ddr->sdram_cfg, DDR_SDRAM_CFG);
 
@@ -189,6 +186,11 @@ void ddrmc_init(void)
 	out_be32(&ddr->ddr_zq_cntl, DDR_DDR_ZQ_CNTL);
 
 	out_be32(&ddr->cs0_config_2, DDR_CS0_CONFIG_2);
+
+	/* DDR erratum A-009942 */
+	tmp = in_be32(&ddr->debug[28]);
+	out_be32(&ddr->debug[28], tmp | 0x0070006f);
+
 	udelay(1);
 
 #ifdef CONFIG_DEEP_SLEEP
@@ -243,9 +245,9 @@ int board_mmc_init(bd_t *bis)
 }
 #endif
 
-#ifdef CONFIG_TSEC_ENET
 int board_eth_init(bd_t *bis)
 {
+#ifdef CONFIG_TSEC_ENET
 	struct fsl_pq_mdio_info mdio_info;
 	struct tsec_info_struct tsec_info[4];
 	int num = 0;
@@ -268,6 +270,7 @@ int board_eth_init(bd_t *bis)
 #endif
 #ifdef CONFIG_TSEC3
 	SET_STD_TSEC_INFO(tsec_info[num], 3);
+	tsec_info[num].interface = PHY_INTERFACE_MODE_RGMII_ID;
 	num++;
 #endif
 	if (!num) {
@@ -280,12 +283,53 @@ int board_eth_init(bd_t *bis)
 	fsl_pq_mdio_init(bis, &mdio_info);
 
 	tsec_eth_init(bis, tsec_info, num);
+#endif
 
 	return pci_eth_init(bis);
 }
-#endif
 
 #if !defined(CONFIG_QSPI_BOOT) && !defined(CONFIG_SD_BOOT_QSPI)
+static void convert_serdes_mux(int type, int need_reset)
+{
+	char current_serdes;
+	struct cpld_data *cpld_data = (void *)(CONFIG_SYS_CPLD_BASE);
+
+	current_serdes = cpld_data->serdes_mux;
+
+	switch (type) {
+	case LANEB_SATA:
+		current_serdes &= ~MASK_LANE_B;
+		break;
+	case LANEB_SGMII1:
+		current_serdes |= (MASK_LANE_B | MASK_SGMII | MASK_LANE_C);
+		break;
+	case LANEC_SGMII1:
+		current_serdes &= ~(MASK_LANE_B | MASK_SGMII | MASK_LANE_C);
+		break;
+	case LANED_SGMII2:
+		current_serdes |= MASK_LANE_D;
+		break;
+	case LANEC_PCIEX1:
+		current_serdes |= MASK_LANE_C;
+		break;
+	case (LANED_PCIEX2 | LANEC_PCIEX1):
+		current_serdes |= MASK_LANE_C;
+		current_serdes &= ~MASK_LANE_D;
+		break;
+	default:
+		printf("CPLD serdes MUX: unsupported MUX type 0x%x\n", type);
+		return;
+	}
+
+	cpld_data->soft_mux_on |= CPLD_SET_MUX_SERDES;
+	cpld_data->serdes_mux = current_serdes;
+
+	if (need_reset == 1) {
+		printf("Reset board to enable configuration\n");
+		cpld_data->system_rst = CONFIG_RESET;
+	}
+}
+
 int config_serdes_mux(void)
 {
 	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
@@ -429,7 +473,6 @@ void board_init_f(ulong dummy)
 	/* Allow OCRAM access permission as R/W */
 #ifdef CONFIG_LAYERSCAPE_NS_ACCESS
 	enable_layerscape_ns_access();
-	enable_layerscape_ns_access();
 #endif
 
 	/*
@@ -446,43 +489,6 @@ void board_init_f(ulong dummy)
 	board_init_r(NULL, 0);
 }
 #endif
-
-
-struct liodn_id_table sec_liodn_tbl[] = {
-	SET_SEC_JR_LIODN_ENTRY(0, 0x10, 0x10),
-	SET_SEC_JR_LIODN_ENTRY(1, 0x10, 0x10),
-	SET_SEC_JR_LIODN_ENTRY(2, 0x10, 0x10),
-	SET_SEC_JR_LIODN_ENTRY(3, 0x10, 0x10),
-	SET_SEC_RTIC_LIODN_ENTRY(a, 0x10),
-	SET_SEC_RTIC_LIODN_ENTRY(b, 0x10),
-	SET_SEC_RTIC_LIODN_ENTRY(c, 0x10),
-	SET_SEC_RTIC_LIODN_ENTRY(d, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(0, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(1, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(2, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(3, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(4, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(5, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(6, 0x10, 0x10),
-	SET_SEC_DECO_LIODN_ENTRY(7, 0x10, 0x10),
-};
-
-struct smmu_stream_id dev_stream_id[] = {
-	{ 0x100, 0x01, "ETSEC MAC1" },
-	{ 0x104, 0x02, "ETSEC MAC2" },
-	{ 0x108, 0x03, "ETSEC MAC3" },
-	{ 0x10c, 0x04, "PEX1" },
-	{ 0x110, 0x05, "PEX2" },
-	{ 0x114, 0x06, "qDMA" },
-	{ 0x118, 0x07, "SATA" },
-	{ 0x11c, 0x08, "USB3" },
-	{ 0x120, 0x09, "QE" },
-	{ 0x124, 0x0a, "eSDHC" },
-	{ 0x128, 0x0b, "eMA" },
-	{ 0x14c, 0x0c, "2D-ACE" },
-	{ 0x150, 0x0d, "USB2" },
-	{ 0x18c, 0x0e, "DEBUG" },
-};
 
 #ifdef CONFIG_DEEP_SLEEP
 /* program the regulator (MC34VR500) to support deep sleep */
@@ -517,6 +523,10 @@ void ls1twr_program_regulator(void)
 
 int board_init(void)
 {
+#ifdef CONFIG_SYS_FSL_ERRATUM_A010315
+	erratum_a010315();
+#endif
+
 #ifndef CONFIG_SYS_FSL_NO_SERDES
 	fsl_serdes_init();
 #if !defined(CONFIG_QSPI_BOOT) && !defined(CONFIG_SD_BOOT_QSPI)
@@ -524,14 +534,7 @@ int board_init(void)
 #endif
 #endif
 
-	ls1021x_config_caam_stream_id(sec_liodn_tbl,
-				      ARRAY_SIZE(sec_liodn_tbl));
-	ls102xa_config_smmu_stream_id(dev_stream_id,
-				      ARRAY_SIZE(dev_stream_id));
-
-#ifdef CONFIG_LAYERSCAPE_NS_ACCESS
-	enable_layerscape_ns_access();
-#endif
+	ls102xa_smmu_stream_id_init();
 
 #ifdef CONFIG_U_QE
 	u_qe_init();
@@ -543,11 +546,21 @@ int board_init(void)
 	return 0;
 }
 
+#if defined(CONFIG_SPL_BUILD)
+void spl_board_init(void)
+{
+	ls102xa_smmu_stream_id_init();
+}
+#endif
+
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
 #ifdef CONFIG_SCSI_AHCI_PLAT
 	ls1021a_sata_init();
+#endif
+#ifdef CONFIG_CHAIN_OF_TRUST
+	fsl_setenv_chain_of_trust();
 #endif
 
 	return 0;
@@ -609,7 +622,8 @@ u16 flash_read16(void *addr)
 	return (((val) >> 8) & 0x00ff) | (((val) << 8) & 0xff00);
 }
 
-#if !defined(CONFIG_QSPI_BOOT) && !defined(CONFIG_SD_BOOT_QSPI)
+#if !defined(CONFIG_QSPI_BOOT) && !defined(CONFIG_SD_BOOT_QSPI) \
+	&& !defined(CONFIG_SPL_BUILD)
 static void convert_flash_bank(char bank)
 {
 	struct cpld_data *cpld_data = (void *)(CONFIG_SYS_CPLD_BASE);
@@ -670,48 +684,7 @@ U_BOOT_CMD(
 
 );
 
-static void convert_serdes_mux(int type, int need_reset)
-{
-	char current_serdes;
-	struct cpld_data *cpld_data = (void *)(CONFIG_SYS_CPLD_BASE);
-
-	current_serdes = cpld_data->serdes_mux;
-
-	switch (type) {
-	case LANEB_SATA:
-		current_serdes &= ~MASK_LANE_B;
-		break;
-	case LANEB_SGMII1:
-		current_serdes |= (MASK_LANE_B | MASK_SGMII | MASK_LANE_C);
-		break;
-	case LANEC_SGMII1:
-		current_serdes &= ~(MASK_LANE_B | MASK_SGMII | MASK_LANE_C);
-		break;
-	case LANED_SGMII2:
-		current_serdes |= MASK_LANE_D;
-		break;
-	case LANEC_PCIEX1:
-		current_serdes |= MASK_LANE_C;
-		break;
-	case (LANED_PCIEX2 | LANEC_PCIEX1):
-		current_serdes |= MASK_LANE_C;
-		current_serdes &= ~MASK_LANE_D;
-		break;
-	default:
-		printf("CPLD serdes MUX: unsupported MUX type 0x%x\n", type);
-		return;
-	}
-
-	cpld_data->soft_mux_on |= CPLD_SET_MUX_SERDES;
-	cpld_data->serdes_mux = current_serdes;
-
-	if (need_reset == 1) {
-		printf("Reset board to enable configuration\n");
-		cpld_data->system_rst = CONFIG_RESET;
-	}
-}
-
-void print_serdes_mux(void)
+static void print_serdes_mux(void)
 {
 	char current_serdes;
 	struct cpld_data *cpld_data = (void *)(CONFIG_SYS_CPLD_BASE);

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000
  * Rob Taylor, Flying Pig Systems. robt@flyingpig.com.
@@ -5,8 +6,6 @@
  * (C) Copyright 2004
  * ARM Ltd.
  * Philippe Robin, <philippe.robin@arm.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* Simple U-Boot driver for the PrimeCell PL010/PL011 UARTs */
@@ -20,7 +19,6 @@
 #include <dm/platform_data/serial_pl01x.h>
 #include <linux/compiler.h>
 #include "serial_pl01x_internal.h"
-#include <fdtdec.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -117,7 +115,7 @@ static int pl01x_generic_setbrg(struct pl01x_regs *regs, enum pl01x_type type,
 			divisor = UART_PL010_BAUD_9600;
 			break;
 		case 19200:
-			divisor = UART_PL010_BAUD_9600;
+			divisor = UART_PL010_BAUD_19200;
 			break;
 		case 38400:
 			divisor = UART_PL010_BAUD_38400;
@@ -274,46 +272,47 @@ __weak struct serial_device *default_serial_console(void)
 
 #ifdef CONFIG_DM_SERIAL
 
-struct pl01x_priv {
-	struct pl01x_regs *regs;
-	enum pl01x_type type;
-};
-
-static int pl01x_serial_setbrg(struct udevice *dev, int baudrate)
+int pl01x_serial_setbrg(struct udevice *dev, int baudrate)
 {
 	struct pl01x_serial_platdata *plat = dev_get_platdata(dev);
 	struct pl01x_priv *priv = dev_get_priv(dev);
 
-	pl01x_generic_setbrg(priv->regs, priv->type, plat->clock, baudrate);
+	if (!plat->skip_init) {
+		pl01x_generic_setbrg(priv->regs, priv->type, plat->clock,
+				     baudrate);
+	}
 
 	return 0;
 }
 
-static int pl01x_serial_probe(struct udevice *dev)
+int pl01x_serial_probe(struct udevice *dev)
 {
 	struct pl01x_serial_platdata *plat = dev_get_platdata(dev);
 	struct pl01x_priv *priv = dev_get_priv(dev);
 
 	priv->regs = (struct pl01x_regs *)plat->base;
 	priv->type = plat->type;
-	return pl01x_generic_serial_init(priv->regs, priv->type);
+	if (!plat->skip_init)
+		return pl01x_generic_serial_init(priv->regs, priv->type);
+	else
+		return 0;
 }
 
-static int pl01x_serial_getc(struct udevice *dev)
+int pl01x_serial_getc(struct udevice *dev)
 {
 	struct pl01x_priv *priv = dev_get_priv(dev);
 
 	return pl01x_getc(priv->regs);
 }
 
-static int pl01x_serial_putc(struct udevice *dev, const char ch)
+int pl01x_serial_putc(struct udevice *dev, const char ch)
 {
 	struct pl01x_priv *priv = dev_get_priv(dev);
 
 	return pl01x_putc(priv->regs, ch);
 }
 
-static int pl01x_serial_pending(struct udevice *dev, bool input)
+int pl01x_serial_pending(struct udevice *dev, bool input)
 {
 	struct pl01x_priv *priv = dev_get_priv(dev);
 	unsigned int fr = readl(&priv->regs->fr);
@@ -338,18 +337,20 @@ static const struct udevice_id pl01x_serial_id[] ={
 	{}
 };
 
-static int pl01x_serial_ofdata_to_platdata(struct udevice *dev)
+int pl01x_serial_ofdata_to_platdata(struct udevice *dev)
 {
 	struct pl01x_serial_platdata *plat = dev_get_platdata(dev);
 	fdt_addr_t addr;
 
-	addr = dev_get_addr(dev);
+	addr = devfdt_get_addr(dev);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
 	plat->base = addr;
-	plat->clock = fdtdec_get_int(gd->fdt_blob, dev->of_offset, "clock", 1);
+	plat->clock = dev_read_u32_default(dev, "clock", 1);
 	plat->type = dev_get_driver_data(dev);
+	plat->skip_init = dev_read_bool(dev, "skip-init");
+
 	return 0;
 }
 #endif
@@ -365,5 +366,33 @@ U_BOOT_DRIVER(serial_pl01x) = {
 	.flags = DM_FLAG_PRE_RELOC,
 	.priv_auto_alloc_size = sizeof(struct pl01x_priv),
 };
+
+#endif
+
+#if defined(CONFIG_DEBUG_UART_PL010) || defined(CONFIG_DEBUG_UART_PL011)
+
+#include <debug_uart.h>
+
+static void _debug_uart_init(void)
+{
+#ifndef CONFIG_DEBUG_UART_SKIP_INIT
+	struct pl01x_regs *regs = (struct pl01x_regs *)CONFIG_DEBUG_UART_BASE;
+	enum pl01x_type type = CONFIG_IS_ENABLED(DEBUG_UART_PL011) ?
+				TYPE_PL011 : TYPE_PL010;
+
+	pl01x_generic_serial_init(regs, type);
+	pl01x_generic_setbrg(regs, type,
+			     CONFIG_DEBUG_UART_CLOCK, CONFIG_BAUDRATE);
+#endif
+}
+
+static inline void _debug_uart_putc(int ch)
+{
+	struct pl01x_regs *regs = (struct pl01x_regs *)CONFIG_DEBUG_UART_BASE;
+
+	pl01x_putc(regs, ch);
+}
+
+DEBUG_UART_FUNCS
 
 #endif

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * sun8i a83t clock register definitions
  *
@@ -7,7 +8,6 @@
  *
  * (C) Copyright 2015 Vishnu Patekar <vishnupatekar0510@gmail.com>
  * from sun6i.h
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _SUNXI_CLOCK_SUN8I_A83T_H
@@ -158,7 +158,7 @@ struct sunxi_ccm_reg {
 #define CPU_CLK_SRC_OSC24M		0
 #define CPU_CLK_SRC_PLL1		1
 
-#define CCM_PLL1_CTRL_N(n)		((((n) - 1) & 0xff) << 8)
+#define CCM_PLL1_CTRL_N(n)		(((n) & 0xff) << 8)
 #define CCM_PLL1_CTRL_P(n)		(((n) & 0x1) << 16)
 #define CCM_PLL1_CTRL_EN		(0x1 << 31)
 #define CMM_PLL1_CLOCK_TIME_2		(0x2 << 24)
@@ -220,18 +220,19 @@ struct sunxi_ccm_reg {
 #define CCM_MMC_CTRL_SCLK_DLY(x)	((x) << 20)
 #define CCM_MMC_CTRL_OSCM24		(0x0 << 24)
 #define CCM_MMC_CTRL_PLL6		(0x1 << 24)
+#define CCM_MMC_CTRL_MODE_SEL_NEW	(0x1 << 30)
 #define CCM_MMC_CTRL_ENABLE		(0x1 << 31)
 
 #define CCM_USB_CTRL_PHY0_RST (0x1 << 0)
 #define CCM_USB_CTRL_PHY1_RST (0x1 << 1)
-#define CCM_USB_CTRL_PHY2_RST (0x1 << 2)
+#define CCM_USB_CTRL_HSIC_RST (0x1 << 2)
 /* There is no global phy clk gate on sun6i, define as 0 */
 #define CCM_USB_CTRL_PHYGATE 0
 #define CCM_USB_CTRL_PHY0_CLK (0x1 << 8)
 #define CCM_USB_CTRL_PHY1_CLK (0x1 << 9)
-#define CCM_USB_CTRL_PHY2_CLK (0x1 << 10)
+#define CCM_USB_CTRL_HSIC_CLK (0x1 << 10)
+#define CCM_USB_CTRL_12M_CLK (0x1 << 11)
 #define CCM_USB_CTRL_OHCI0_CLK (0x1 << 16)
-#define CCM_USB_CTRL_OHCI1_CLK (0x1 << 17)
 
 #define CCM_GMAC_CTRL_TX_CLK_SRC_MII	0x0
 #define CCM_GMAC_CTRL_TX_CLK_SRC_EXT_RGMII 0x1

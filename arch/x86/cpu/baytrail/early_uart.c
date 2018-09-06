@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -59,11 +58,15 @@ static void x86_pci_write_config32(int dev, unsigned int where, u32 value)
 }
 
 /* This can be called after memory-mapped PCI is working */
-int setup_early_uart(void)
+int setup_internal_uart(int enable)
 {
-	/* Enable the legacy UART hardware. */
+	/* Enable or disable the legacy UART hardware */
 	x86_pci_write_config32(PCI_DEV_CONFIG(0, LPC_DEV, LPC_FUNC), UART_CONT,
-			       1);
+			       enable);
+
+	/* All done for the disable part, so just return */
+	if (!enable)
+		return 0;
 
 	/*
 	 * Set up the pads to the UART function. This allows the signals to
@@ -75,4 +78,9 @@ int setup_early_uart(void)
 	/* TODO(sjg@chromium.org): Call debug_uart_init() */
 
 	return 0;
+}
+
+void board_debug_uart_init(void)
+{
+	setup_internal_uart(1);
 }

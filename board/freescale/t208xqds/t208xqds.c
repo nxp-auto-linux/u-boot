@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2009-2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -14,7 +13,6 @@
 #include <asm/immap_85xx.h>
 #include <asm/fsl_law.h>
 #include <asm/fsl_serdes.h>
-#include <asm/fsl_portals.h>
 #include <asm/fsl_liodn.h>
 #include <fm_eth.h>
 
@@ -100,7 +98,7 @@ int brd_mux_lane_to_slot(void)
 	srds_prtcl_s1 = in_be32(&gur->rcwsr[4]) &
 				FSL_CORENET2_RCWSR4_SRDS1_PRTCL;
 	srds_prtcl_s1 >>= FSL_CORENET2_RCWSR4_SRDS1_PRTCL_SHIFT;
-#if defined(CONFIG_T2080QDS)
+#if defined(CONFIG_TARGET_T2080QDS)
 	u32 srds_prtcl_s2 = in_be32(&gur->rcwsr[4]) &
 				FSL_CORENET2_RCWSR4_SRDS2_PRTCL;
 	srds_prtcl_s2 >>= FSL_CORENET2_RCWSR4_SRDS2_PRTCL_SHIFT;
@@ -110,7 +108,7 @@ int brd_mux_lane_to_slot(void)
 	case 0:
 		/* SerDes1 is not enabled */
 		break;
-#if defined(CONFIG_T2080QDS)
+#if defined(CONFIG_TARGET_T2080QDS)
 	case 0x1b:
 	case 0x1c:
 	case 0xa2:
@@ -192,7 +190,7 @@ int brd_mux_lane_to_slot(void)
 		 */
 		 QIXIS_WRITE(brdcfg[12], 0x1a);
 		 break;
-#elif defined(CONFIG_T2081QDS)
+#elif defined(CONFIG_TARGET_T2081QDS)
 	case 0x50:
 	case 0x51:
 		/* SD1(A:D) => SLOT2 XAUI
@@ -269,7 +267,7 @@ int brd_mux_lane_to_slot(void)
 		return -1;
 	}
 
-#ifdef CONFIG_T2080QDS
+#ifdef CONFIG_TARGET_T2080QDS
 	switch (srds_prtcl_s2) {
 	case 0:
 		/* SerDes2 is not enabled */
@@ -355,11 +353,6 @@ int board_early_init_r(void)
 	set_tlb(1, flashbase, CONFIG_SYS_FLASH_BASE_PHYS,
 		MAS3_SX|MAS3_SW|MAS3_SR, MAS2_I|MAS2_G,
 		0, flash_esel, BOOKE_PAGESZ_256M, 1);
-
-	set_liodns();
-#ifdef CONFIG_SYS_DPAA_QBMAN
-	setup_portals();
-#endif
 
 	/* Disable remote I2C connection to qixis fpga */
 	QIXIS_WRITE(brdcfg[5], QIXIS_READ(brdcfg[5]) & ~BRDCFG5_IRE);
@@ -457,8 +450,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	ft_cpu_setup(blob, bd);
 
-	base = getenv_bootm_low();
-	size = getenv_bootm_size();
+	base = env_get_bootm_low();
+	size = env_get_bootm_size();
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 
@@ -467,7 +460,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 #endif
 
 	fdt_fixup_liodn(blob);
-	fdt_fixup_dr_usb(blob, bd);
+	fsl_fdt_fixup_dr_usb(blob, bd);
 
 #ifdef CONFIG_SYS_DPAA_FMAN
 	fdt_fixup_fman_ethernet(blob);

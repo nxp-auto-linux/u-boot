@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2012 Freescale Semiconductor, Inc.
  *	Roy Zang <tie-fei.zang@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <phy.h>
@@ -74,7 +73,7 @@ phy_interface_t fman_port_enet_if(enum fm_port port)
 	if ((port == FM1_DTSEC9 || port == FM1_DTSEC10) &&
 	    ((is_serdes_configured(XFI_FM1_MAC9)) ||
 	     (is_serdes_configured(XFI_FM1_MAC10))))
-		return PHY_INTERFACE_MODE_XGMII;
+		return PHY_INTERFACE_MODE_NONE;
 
 	if ((port == FM2_10GEC1 || port == FM2_10GEC2) &&
 	    ((is_serdes_configured(XAUI_FM2_MAC9))	||

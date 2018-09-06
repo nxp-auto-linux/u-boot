@@ -1,38 +1,18 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014, Barco (www.barco.com)
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __PLATINUM_CONFIG_H__
 #define __PLATINUM_CONFIG_H__
 
 /* SPL */
-#define CONFIG_SPL_NAND_SUPPORT
-#define CONFIG_SPL_MMC_SUPPORT
 
 /* Location in NAND to read U-Boot from */
 #define CONFIG_SYS_NAND_U_BOOT_OFFS     (14 * 1024 * 1024)
 
 #include "imx6_spl.h"                  /* common IMX6 SPL configuration */
 #include "mx6_common.h"
-
-/*
- * Console configuration
- */
-
-#define CONFIG_CMD_BMODE
-#define CONFIG_CMD_DHCP
-#define CONFIG_CMD_I2C
-#define CONFIG_CMD_MII
-#define CONFIG_CMD_MTDPARTS
-#define CONFIG_CMD_NAND
-#define CONFIG_CMD_NAND_TRIMFFS
-#define CONFIG_CMD_PING
-#define CONFIG_CMD_TIME
-#define CONFIG_CMD_UBI
-#define CONFIG_CMD_UBIFS
-#define CONFIG_CMD_USB
 
 /*
  * Hardware configuration
@@ -59,12 +39,7 @@
 #define CONFIG_MII
 #define IMX_FEC_BASE				ENET_BASE_ADDR
 
-#define CONFIG_PHYLIB
-
 /* USB config */
-#define CONFIG_USB_EHCI
-#define CONFIG_USB_EHCI_MX6
-#define CONFIG_USB_STORAGE
 #define CONFIG_MXC_USB_PORT			1
 #define CONFIG_MXC_USB_PORTSC			(PORT_PTS_UTMI | PORT_PTS_PTW)
 #define CONFIG_MXC_USB_FLAGS			0
@@ -90,7 +65,6 @@
 #ifdef CONFIG_CMD_NAND
 
 /* NAND config */
-#define CONFIG_NAND_MXS
 #ifndef CONFIG_SYS_NAND_MAX_CHIPS
 #define CONFIG_SYS_NAND_MAX_CHIPS		2
 #endif
@@ -100,12 +74,8 @@
 #define CONFIG_SYS_NAND_ONFI_DETECTION
 
 /* DMA config, needed for GPMI/MXS NAND support */
-#define CONFIG_APBH_DMA
-#define CONFIG_APBH_DMA_BURST
-#define CONFIG_APBH_DMA_BURST8
 
 /* Environment in NAND */
-#define CONFIG_ENV_IS_IN_NAND
 #define CONFIG_ENV_OFFSET		(16 << 20)
 #define CONFIG_ENV_SECT_SIZE		(128 << 10)
 #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
@@ -116,7 +86,6 @@
 
 /* Environment in MMC */
 #define CONFIG_ENV_SIZE			(8 << 10)
-#define CONFIG_ENV_IS_IN_MMC
 #define CONFIG_ENV_OFFSET		(6 * 64 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
 
@@ -127,7 +96,6 @@
  */
 
 /* Board startup config */
-#define CONFIG_BOARD_EARLY_INIT_F
 #define CONFIG_MISC_INIT_R
 
 #define CONFIG_SYS_MEMTEST_START		PHYS_SDRAM
@@ -139,27 +107,9 @@
 /* Miscellaneous configurable options */
 #define CONFIG_PREBOOT
 
-/* Print Buffer Size */
-#define CONFIG_SYS_PBSIZE			(CONFIG_SYS_CBSIZE + \
-						 sizeof(CONFIG_SYS_PROMPT) + 16)
-
 /* MTD/UBI/UBIFS config */
-#define CONFIG_LZO
 #define CONFIG_MTD_DEVICE
 #define CONFIG_MTD_PARTITIONS
-#define CONFIG_RBTREE
-
-#if (CONFIG_SYS_NAND_MAX_CHIPS == 1)
-#define MTDIDS_DEFAULT		"nand0=gpmi-nand"
-#define MTDPARTS_DEFAULT	"mtdparts=gpmi-nand:14M(spl),2M(uboot)," \
-				"512k(env1),512k(env2),-(ubi)"
-#elif (CONFIG_SYS_NAND_MAX_CHIPS == 2)
-#define MTDIDS_DEFAULT		"nand0=gpmi-nand"
-#define MTDPARTS_DEFAULT	"mtdparts=gpmi-nand:14M(spl),2M(uboot)," \
-				"512k(env1),512k(env2),495M(ubi0)," \
-				"14M(res0),2M(res1)," \
-				"512k(res2),512k(res3),-(ubi1)"
-#endif
 
 /*
  * Environment configuration
@@ -188,8 +138,8 @@
 	"baudrate=115200\0"						\
 	"boot_scr=boot.uboot\0"						\
 	"boot_vol=0\0"							\
-	"mtdids="MTDIDS_DEFAULT"\0"					\
-	"mtdparts="MTDPARTS_DEFAULT"\0"					\
+	"mtdids="CONFIG_MTDIDS_DEFAULT"\0"					\
+	"mtdparts="CONFIG_MTDPARTS_DEFAULT"\0"					\
 	"mmcfs=ext2\0"							\
 	"mmcrootpart=1\0"						\
 	\

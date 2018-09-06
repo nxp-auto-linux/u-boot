@@ -1,16 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2009-2011 Freescale Semiconductor, Inc.
  *	Dave Liu <daveliu@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <malloc.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 
 #include "fm.h"
-#include "../../qe/qe.h"		/* For struct qe_firmware */
+#include <fsl_qe.h>		/* For struct qe_firmware */
 
 #ifdef CONFIG_SYS_QE_FMAN_FW_IN_NAND
 #include <nand.h>
@@ -336,9 +335,6 @@ static int fm_init_bmi(int fm_idx, struct fm_bmi_common *bmi)
 
 static void fm_init_qmi(struct fm_qmi_common *qmi)
 {
-	/* disable enqueue and dequeue of QMI */
-	clrbits_be32(&qmi->fmqm_gc, FMQM_GC_ENQ_EN | FMQM_GC_DEQ_EN);
-
 	/* disable all error interrupts */
 	out_be32(&qmi->fmqm_eien, FMQM_EIEN_DISABLE_ALL);
 	/* clear all error events */
@@ -360,7 +356,8 @@ int fm_init_common(int index, struct ccsr_fman *reg)
 	size_t fw_length = CONFIG_SYS_QE_FMAN_FW_LENGTH;
 	void *addr = malloc(CONFIG_SYS_QE_FMAN_FW_LENGTH);
 
-	rc = nand_read(&nand_info[0], (loff_t)CONFIG_SYS_FMAN_FW_ADDR,
+	rc = nand_read(get_nand_dev_by_index(0),
+		       (loff_t)CONFIG_SYS_FMAN_FW_ADDR,
 		       &fw_length, (u_char *)addr);
 	if (rc == -EUCLEAN) {
 		printf("NAND read of FMAN firmware at offset 0x%x failed %d\n",
@@ -371,8 +368,18 @@ int fm_init_common(int index, struct ccsr_fman *reg)
 	void *addr = malloc(CONFIG_SYS_QE_FMAN_FW_LENGTH);
 	int ret = 0;
 
+#ifdef CONFIG_DM_SPI_FLASH
+	struct udevice *new;
+
+	/* speed and mode will be read from DT */
+	ret = spi_flash_probe_bus_cs(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
+				     0, 0, &new);
+
+	ucode_flash = dev_get_uclass_priv(new);
+#else
 	ucode_flash = spi_flash_probe(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
 			CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE);
+#endif
 	if (!ucode_flash)
 		printf("SF: probe for ucode failed\n");
 	else {
@@ -395,9 +402,8 @@ int fm_init_common(int index, struct ccsr_fman *reg)
 		printf("\nMMC read: dev # %u, block # %u, count %u ...\n",
 				dev, blk, cnt);
 		mmc_init(mmc);
-		(void)mmc->block_dev.block_read(dev, blk, cnt, addr);
-		/* flush cache after read */
-		flush_cache((ulong)addr, cnt * 512);
+		(void)mmc->block_dev.block_read(&mmc->block_dev, blk, cnt,
+						addr);
 	}
 #elif defined(CONFIG_SYS_QE_FMAN_FW_IN_REMOTE)
 	void *addr = (void *)CONFIG_SYS_FMAN_FW_ADDR;
@@ -409,7 +415,7 @@ int fm_init_common(int index, struct ccsr_fman *reg)
 	rc = fman_upload_firmware(index, &reg->fm_imem, addr);
 	if (rc)
 		return rc;
-	setenv_addr("fman_ucode", addr);
+	env_set_addr("fman_ucode", addr);
 
 	fm_init_muram(index, &reg->muram);
 	fm_init_qmi(&reg->fm_qmi_common);

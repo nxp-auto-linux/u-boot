@@ -1,12 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Xilinx ZC770 XM013 board DTS
  *
- * Copyright (C) 2013 Xilinx, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright (C) 2013-2018 Xilinx, Inc.
  */
 /dts-v1/;
 #include "zynq-7000.dtsi"
+
 / {
 	compatible = "xlnx,zynq-zc770-xm011", "xlnx,zynq-7000";
 	model = "Xilinx Zynq";
@@ -18,12 +18,11 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyPS0,115200 root=/dev/ram rw earlyprintk";
-		linux,stdout-path = &uart1;
-		stdout-path = &uart1;
+		bootargs = "";
+		stdout-path = "serial0:115200n8";
 	};
 
-	memory {
+	memory@0 {
 		device_type = "memory";
 		reg = <0x0 0x40000000>;
 	};
@@ -34,12 +33,6 @@
 	};
 };
 
-&spi0 {
-	status = "okay";
-	num-cs = <4>;
-	is-decoded-cs = <0>;
-};
-
 &can0 {
 	status = "okay";
 };
@@ -48,10 +41,16 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
-	m24c02_eeprom@52 {
-		compatible = "at,24c02";
+	eeprom: eeprom@52 {
+		compatible = "atmel,24c02";
 		reg = <0x52>;
 	};
+};
+
+&spi0 {
+	status = "okay";
+	num-cs = <4>;
+	is-decoded-cs = <0>;
 };
 
 &uart1 {

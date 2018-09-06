@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013 Gateworks Corporation
  *
  * Author: Tim Harvey <tharvey@gateworks.com>
- *
- * SPDX-License-Identifier: GPL-2.0+
  */
 
 #ifndef _GWVENTANA_COMMON_H_
@@ -13,8 +12,6 @@
 
 /* GPIO's common to all baseboards */
 #define GP_PHY_RST	IMX_GPIO_NR(1, 30)
-#define GP_USB_OTG_PWR	IMX_GPIO_NR(3, 22)
-#define GP_SD3_CD	IMX_GPIO_NR(7, 0)
 #define GP_RS232_EN	IMX_GPIO_NR(2, 11)
 #define GP_MSATA_SEL	IMX_GPIO_NR(2, 8)
 
@@ -47,8 +44,8 @@
 #define PC MUX_PAD_CTRL(I2C_PAD_CTRL)
 
 /*
- * each baseboard has 4 user configurable Digital IO lines which can
- * be pinmuxed as a GPIO or in some cases a PWM
+ * each baseboard has an optional set user configurable Digital IO lines which
+ * can be pinmuxed as a GPIO or in some cases a PWM
  */
 struct dio_cfg {
 	iomux_v3_cfg_t gpio_padmux[2];
@@ -62,8 +59,8 @@ struct ventana {
 	iomux_v3_cfg_t const *gpio_pads;
 	int num_pads;
 	/* DIO pinmux/val */
-	struct dio_cfg dio_cfg[4];
-	int num_gpios;
+	struct dio_cfg *dio_cfg;
+	int dio_num;
 	/* various gpios (0 if non-existent) */
 	int leds[3];
 	int pcie_rst;
@@ -76,6 +73,13 @@ struct ventana {
 	int pcie_sson;
 	int usb_sel;
 	int wdis;
+	int msata_en;
+	int rs232_en;
+	int otgpwr_en;
+	int vsel_pin;
+	int mmc_cd;
+	/* various features */
+	bool usd_vsel;
 };
 
 extern struct ventana gpio_cfg[GW_UNKNOWN];

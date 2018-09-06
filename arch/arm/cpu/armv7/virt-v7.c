@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013
  * Andre Przywara, Linaro <andre.przywara@linaro.org>
@@ -5,8 +6,6 @@
  * Routines to transition ARMv7 processors from secure into non-secure state
  * and from non-secure SVC into HYP mode
  * needed to enable ARMv7 virtualization for current hypervisors
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -54,10 +53,12 @@ static void relocate_secure_section(void)
 {
 #ifdef CONFIG_ARMV7_SECURE_BASE
 	size_t sz = __secure_end - __secure_start;
+	unsigned long szflush = ALIGN(sz + 1, CONFIG_SYS_CACHELINE_SIZE);
 
 	memcpy((void *)CONFIG_ARMV7_SECURE_BASE, __secure_start, sz);
+
 	flush_dcache_range(CONFIG_ARMV7_SECURE_BASE,
-			   CONFIG_ARMV7_SECURE_BASE + sz + 1);
+			   CONFIG_ARMV7_SECURE_BASE + szflush);
 	protect_secure_section();
 	invalidate_icache_all();
 #endif

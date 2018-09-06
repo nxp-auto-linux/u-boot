@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007-2011
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * Aaron <leafy.myeh@allwinnertech.com>
  *
  * MMC register definition for allwinner sunxi platform.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _SUNXI_MMC_H
@@ -35,16 +34,19 @@ struct sunxi_mmc {
 	u32 cbcr;		/* 0x48 CIU byte count */
 	u32 bbcr;		/* 0x4c BIU byte count */
 	u32 dbgc;		/* 0x50 debug enable */
-	u32 res0[11];
+	u32 res0;		/* 0x54 reserved */
+	u32 a12a;		/* 0x58 Auto command 12 argument */
+	u32 ntsr;		/* 0x5c	New timing set register */
+	u32 res1[8];
 	u32 dmac;		/* 0x80 internal DMA control */
 	u32 dlba;		/* 0x84 internal DMA descr list base address */
 	u32 idst;		/* 0x88 internal DMA status */
 	u32 idie;		/* 0x8c internal DMA interrupt enable */
 	u32 chda;		/* 0x90 */
 	u32 cbda;		/* 0x94 */
-	u32 res1[26];
+	u32 res2[26];
 #ifdef CONFIG_SUNXI_GEN_SUN6I
-	u32 res2[64];
+	u32 res3[64];
 #endif
 	u32 fifo;		/* 0x100 / 0x200 FIFO access address */
 };
@@ -116,6 +118,8 @@ struct sunxi_mmc {
 #define SUNXI_MMC_STATUS_CARD_DATA_BUSY		(0x1 << 9)
 #define SUNXI_MMC_STATUS_DATA_FSM_BUSY		(0x1 << 10)
 
+#define SUNXI_MMC_NTSR_MODE_SEL_NEW		(0x1 << 31)
+
 #define SUNXI_MMC_IDMAC_RESET		(0x1 << 0)
 #define SUNXI_MMC_IDMAC_FIXBURST	(0x1 << 1)
 #define SUNXI_MMC_IDMAC_ENABLE		(0x1 << 7)
@@ -127,5 +131,4 @@ struct sunxi_mmc {
 #define SUNXI_MMC_COMMON_RESET			(1 << 18)
 
 struct mmc *sunxi_mmc_init(int sdc_no);
-int sunxi_mmc_has_egon_boot_signature(struct mmc *mmc);
 #endif /* _SUNXI_MMC_H */

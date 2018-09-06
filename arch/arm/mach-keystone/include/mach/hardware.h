@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Keystone2: Common SoC definitions, structures etc.
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 #ifndef __ASM_ARCH_HARDWARE_H
 #define __ASM_ARCH_HARDWARE_H
@@ -52,6 +51,8 @@ typedef volatile unsigned int   *dv_reg_p;
 #define KS2_DDRPHY_ZQ2CR1_OFFSET        0x1A4
 #define KS2_DDRPHY_ZQ3CR1_OFFSET        0x1B4
 
+#define KS2_DDRPHY_DATX8_2_OFFSET       0x240
+#define KS2_DDRPHY_DATX8_3_OFFSET       0x280
 #define KS2_DDRPHY_DATX8_4_OFFSET       0x2C0
 #define KS2_DDRPHY_DATX8_5_OFFSET       0x300
 #define KS2_DDRPHY_DATX8_6_OFFSET       0x340
@@ -70,11 +71,13 @@ typedef volatile unsigned int   *dv_reg_p;
 #define PDQ_MASK                        0x00000070
 #define NOSRA_MASK                      0x08000000
 #define ECC_MASK                        0x00000001
+#define DXEN_MASK                       0x00000001
 
 /* DDR3 definitions */
 #define KS2_DDR3A_EMIF_CTRL_BASE	0x21010000
 #define KS2_DDR3A_EMIF_DATA_BASE	0x80000000
 #define KS2_DDR3A_DDRPHYC		0x02329000
+#define EMIF1_BASE			KS2_DDR3A_EMIF_CTRL_BASE
 
 #define KS2_DDR3_MIDR_OFFSET            0x00
 #define KS2_DDR3_STATUS_OFFSET          0x04
@@ -160,6 +163,7 @@ typedef volatile unsigned int   *dv_reg_p;
 #define KS2_LPSC_GEM_0			15
 #define KS2_LPSC_TETRIS			52
 #define KS2_TETRIS_PWR_DOMAIN		31
+#define KS2_GEM_0_PWR_DOMAIN		8
 
 /* Chip configuration unlock codes and registers */
 #define KS2_KICK0			(KS2_DEVICE_STATE_CTRL_BASE + 0x38)
@@ -214,16 +218,46 @@ typedef volatile unsigned int   *dv_reg_p;
 /* MSMC control */
 #define KS2_MSMC_CTRL_BASE		0x0bc00000
 #define KS2_MSMC_DATA_BASE		0x0c000000
-#ifndef CONFIG_SOC_K2G
-#define KS2_MSMC_SEGMENT_TETRIS		8
-#define KS2_MSMC_SEGMENT_NETCP		9
-#define KS2_MSMC_SEGMENT_QM_PDSP	10
-#define KS2_MSMC_SEGMENT_PCIE0		11
-#else
-#define KS2_MSMC_SEGMENT_TETRIS		1
-#define KS2_MSMC_SEGMENT_NETCP		4
-#define KS2_MSMC_SEGMENT_PCIE0		5
-#endif
+
+/* KS2 Generic Privilege ID Settings for MSMC2 */
+#define KS2_MSMC_SEGMENT_C6X_0		0
+#define KS2_MSMC_SEGMENT_C6X_1		1
+#define KS2_MSMC_SEGMENT_C6X_2		2
+#define KS2_MSMC_SEGMENT_C6X_3		3
+#define KS2_MSMC_SEGMENT_C6X_4		4
+#define KS2_MSMC_SEGMENT_C6X_5		5
+#define KS2_MSMC_SEGMENT_C6X_6		6
+#define KS2_MSMC_SEGMENT_C6X_7		7
+
+#define KS2_MSMC_SEGMENT_DEBUG		12
+
+/* KS2 HK/L/E MSMC PRIVIDs  for MSMC2 */
+#define K2HKLE_MSMC_SEGMENT_ARM		8
+#define K2HKLE_MSMC_SEGMENT_NETCP	9
+#define K2HKLE_MSMC_SEGMENT_QM_PDSP	10
+#define K2HKLE_MSMC_SEGMENT_PCIE0	11
+
+/* K2HK specific Privilege ID Settings */
+#define K2HKE_MSMC_SEGMENT_HYPERLINK	14
+
+/* K2L specific Privilege ID Settings */
+#define K2L_MSMC_SEGMENT_PCIE1		14
+
+/* K2E specific Privilege ID Settings */
+#define K2E_MSMC_SEGMENT_PCIE1		13
+#define K2E_MSMC_SEGMENT_TSIP		15
+
+/* K2G specific Privilege ID Settings */
+#define K2G_MSMC_SEGMENT_ARM		1
+#define K2G_MSMC_SEGMENT_ICSS0		2
+#define K2G_MSMC_SEGMENT_ICSS1		3
+#define K2G_MSMC_SEGMENT_NSS		4
+#define K2G_MSMC_SEGMENT_PCIE		5
+#define K2G_MSMC_SEGMENT_USB		6
+#define K2G_MSMC_SEGMENT_MLB		8
+#define K2G_MSMC_SEGMENT_PMMC		9
+#define K2G_MSMC_SEGMENT_DSS		10
+#define K2G_MSMC_SEGMENT_MMC		11
 
 /* MSMC segment size shift bits */
 #define KS2_MSMC_SEG_SIZE_SHIFT		12
@@ -291,6 +325,9 @@ typedef volatile unsigned int   *dv_reg_p;
 #define CPU_66AK2Ex	0xb9a6
 #define CPU_66AK2Lx	0xb9a7
 #define CPU_66AK2Gx	0xbb06
+
+/* Variant definitions */
+#define CPU_66AK2G1x	0x08
 
 /* DEVSPEED register */
 #define DEVSPEED_DEVSPEED_SHIFT	16

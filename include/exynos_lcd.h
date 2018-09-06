@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * exynos_lcd.h - Exynos LCD Controller structures
  *
  * (C) Copyright 2001
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _EXYNOS_LCD_H_
@@ -75,8 +74,8 @@ typedef struct vidinfo {
 	unsigned int sclk_div;
 
 	unsigned int dual_lcd_enabled;
+	struct exynos_fb *reg;
+	struct exynos_platform_mipi_dsim *dsim_platform_data_dt;
 } vidinfo_t;
-
-void init_panel_info(vidinfo_t *vid);
 
 #endif

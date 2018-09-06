@@ -1,22 +1,19 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013 Samsung Electronics
  *
  * Configuration settings for the SAMSUNG EXYNOS5420 SoC
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_EXYNOS5420_H
 #define __CONFIG_EXYNOS5420_H
 
 #define CONFIG_EXYNOS5420
-/* A variant of Exynos5420 (Exynos5 Family) */
-#define CONFIG_EXYNOS5800
 
 #define CONFIG_EXYNOS5_DT
 
-#define MACH_TYPE_SMDK5420	8002
-#define CONFIG_MACH_TYPE	MACH_TYPE_SMDK5420
+/* Provide the MACH_TYPE value that the vendor kernel requires. */
+#define CONFIG_MACH_TYPE		8002
 
 #define CONFIG_VAR_SIZE_SPL
 
@@ -43,12 +40,6 @@
 #define CONFIG_LOWPOWER_FLAG		0x02020028
 #define CONFIG_LOWPOWER_ADDR		0x0202002C
 
-/*
- * Number of CPUs available
- */
-#define CONFIG_CORE_COUNT		0x8
-
-#define CONFIG_USB_XHCI
 #define CONFIG_USB_XHCI_EXYNOS
 
 #endif	/* __CONFIG_EXYNOS5420_H */

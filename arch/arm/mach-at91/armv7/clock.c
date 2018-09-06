@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * [origin: Linux kernel linux/arch/arm/mach-at91/clock.c]
  *
@@ -6,12 +7,10 @@
  * Copyright (C) 2009 Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
  * Copyright (C) 2013 Bo Shen <voice.shen@atmel.com>
  * Copyright (C) 2015 Wenyou Yang <wenyou.yang@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/at91_pmc.h>
@@ -150,30 +149,46 @@ void at91_mck_init(u32 mckr)
 		;
 }
 
-void at91_periph_clk_enable(int id)
+/*
+ * For the Master Clock Controller Register(MCKR), while switching
+ * to a lower clock source, we must switch the clock source first
+ * instead of last. Otherwise, we could end up with too high frequency
+ * on the internal bus and peripherals.
+ */
+void at91_mck_init_down(u32 mckr)
 {
 	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
-	u32 regval;
+	u32 tmp;
 
-	if (id > AT91_PMC_PCR_PID_MASK)
-		return;
+	tmp = readl(&pmc->mckr);
+	tmp &= (~AT91_PMC_MCKR_CSS_MASK);
+	tmp |= (mckr & AT91_PMC_MCKR_CSS_MASK);
+	writel(tmp, &pmc->mckr);
 
-	regval = AT91_PMC_PCR_EN | AT91_PMC_PCR_CMD_WRITE | id;
+	while (!(readl(&pmc->sr) & AT91_PMC_MCKRDY))
+		;
 
-	writel(regval, &pmc->pcr);
-}
+#ifdef CPU_HAS_H32MXDIV
+	tmp = readl(&pmc->mckr);
+	tmp &= (~AT91_PMC_MCKR_H32MXDIV);
+	tmp |= (mckr & AT91_PMC_MCKR_H32MXDIV);
+	writel(tmp, &pmc->mckr);
+#endif
 
-void at91_periph_clk_disable(int id)
-{
-	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
-	u32 regval;
+	tmp = readl(&pmc->mckr);
+	tmp &= (~AT91_PMC_MCKR_PLLADIV_MASK);
+	tmp |= (mckr & AT91_PMC_MCKR_PLLADIV_MASK);
+	writel(tmp, &pmc->mckr);
 
-	if (id > AT91_PMC_PCR_PID_MASK)
-		return;
+	tmp = readl(&pmc->mckr);
+	tmp &= (~AT91_PMC_MCKR_MDIV_MASK);
+	tmp |= (mckr & AT91_PMC_MCKR_MDIV_MASK);
+	writel(tmp, &pmc->mckr);
 
-	regval = AT91_PMC_PCR_CMD_WRITE | id;
-
-	writel(regval, &pmc->pcr);
+	tmp = readl(&pmc->mckr);
+	tmp &= (~AT91_PMC_MCKR_PRES_MASK);
+	tmp |= (mckr & AT91_PMC_MCKR_PRES_MASK);
+	writel(tmp, &pmc->mckr);
 }
 
 int at91_enable_periph_generated_clk(u32 id, u32 clk_source, u32 div)
@@ -187,6 +202,11 @@ int at91_enable_periph_generated_clk(u32 id, u32 clk_source, u32 div)
 
 	if (div > 0xff)
 		return -EINVAL;
+
+	if (clk_source == GCK_CSS_UPLL_CLK) {
+		if (at91_upll_clk_enable())
+			return -ENODEV;
+	}
 
 	writel(id, &pmc->pcr);
 	regval = readl(&pmc->pcr);
@@ -256,6 +276,12 @@ u32 at91_get_periph_generated_clk(u32 id)
 		break;
 	case AT91_PMC_PCR_GCKCSS_PLLA_CLK:
 		freq = gd->arch.plla_rate_hz;
+		break;
+	case AT91_PMC_PCR_GCKCSS_UPLL_CLK:
+		freq = AT91_UTMI_PLL_CLK_FREQ;
+		break;
+	case AT91_PMC_PCR_GCKCSS_MCK_CLK:
+		freq = gd->arch.mck_rate_hz;
 		break;
 	default:
 		printf("Improper GCK clock source selection!\n");

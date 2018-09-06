@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /* linux/arch/arm/plat-s3c/include/plat/regs-otg.h
  *
  * Copyright (C) 2004 Herbert Poetzl <herbert@13thfloor.at>
  *
  * Registers remapping:
  * Lukasz Majewski <l.majewski@samsumg.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_REGS_USB_OTG_HS_H
@@ -130,9 +129,9 @@ struct dwc2_usbotg_reg {
 #define HIGH_SPEED_CONTROL_PKT_SIZE	64
 #define HIGH_SPEED_BULK_PKT_SIZE	512
 
-#define RX_FIFO_SIZE			(1024*4)
-#define NPTX_FIFO_SIZE			(1024*4)
-#define PTX_FIFO_SIZE			(1536*1)
+#define RX_FIFO_SIZE			(1024)
+#define NPTX_FIFO_SIZE			(1024)
+#define PTX_FIFO_SIZE			(384)
 
 #define DEPCTL_TXFNUM_0		(0x0<<22)
 #define DEPCTL_TXFNUM_1		(0x1<<22)

@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * keystone2: common clock header file
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_CLOCK_H
@@ -63,8 +62,12 @@
 #define CLOCK_INDEXES_LIST	CLK_LIST(GENERATE_INDX_STR)
 
 enum {
+	SPD200,
+	SPD400,
+	SPD600,
 	SPD800,
 	SPD850,
+	SPD900,
 	SPD1000,
 	SPD1200,
 	SPD1250,
@@ -113,7 +116,6 @@ struct pll_init_data {
 	int pll_od;		/* PLL output divider */
 };
 
-extern unsigned int external_clk[ext_clk_count];
 extern const struct keystone_pll_regs keystone_pll_regs[];
 extern s16 divn_val[];
 extern int speeds[];
@@ -121,12 +123,11 @@ extern int speeds[];
 void init_plls(void);
 void init_pll(const struct pll_init_data *data);
 struct pll_init_data *get_pll_init_data(int pll);
-unsigned long clk_get_rate(unsigned int clk);
-unsigned long clk_round_rate(unsigned int clk, unsigned long hz);
-int clk_set_rate(unsigned int clk, unsigned long hz);
-int get_max_dev_speed(void);
-int get_max_arm_speed(void);
+unsigned long ks_clk_get_rate(unsigned int clk);
+int get_max_dev_speed(int *spds);
+int get_max_arm_speed(int *spds);
 void pll_pa_clk_sel(void);
+unsigned int get_external_clk(u32 clk);
 
 #endif
 #endif

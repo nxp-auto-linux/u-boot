@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -34,12 +33,12 @@ static const struct board_specific_parameters udimm0[] = {
 	 *   num|  hi| rank|  clk| wrlvl |   wrlvl   |  wrlvl |
 	 * ranks| mhz| GB  |adjst| start |   ctl2    |  ctl3  |
 	 */
-	{2,  833,   0,  4,  6,  0x06060607,  0x08080807,},
-	{2,  1350,  0,  4,  7,  0x0708080A,  0x0A0B0C09,},
-	{2,  1666,  0,  4,  7,  0x0808090B,  0x0C0D0E0A,},
-	{1,  833,   0,  4,  6,  0x06060607,  0x08080807,},
-	{1,  1350,  0,  4,  7,  0x0708080A,  0x0A0B0C09,},
-	{1,  1666,  0,  4,  7,  0x0808090B,  0x0C0D0E0A,},
+	{2,  833,   0,  8,  6,  0x06060607,  0x08080807,},
+	{2,  1350,  0,  8,  7,  0x0708080A,  0x0A0B0C09,},
+	{2,  1666,  0,  8,  7,  0x0808090B,  0x0C0D0E0A,},
+	{1,  833,   0,  8,  6,  0x06060607,  0x08080807,},
+	{1,  1350,  0,  8,  7,  0x0708080A,  0x0A0B0C09,},
+	{1,  1666,  0,  8,  7,  0x0808090B,  0x0C0D0E0A,},
 	{}
 };
 
@@ -136,9 +135,13 @@ found:
 	popts->data_bus_width = DDR_DATA_BUS_WIDTH_32;
 #endif
 
-#ifdef CONFIG_T1023RDB
+#ifdef CONFIG_TARGET_T1023RDB
 	popts->wrlvl_ctl_2 = 0x07070606;
 	popts->half_strength_driver_enable = 1;
+	popts->cpo_sample = 0x43;
+#elif defined(CONFIG_TARGET_T1024RDB)
+	/* optimize cpo for erratum A-009942 */
+	popts->cpo_sample = 0x52;
 #endif
 }
 
@@ -225,7 +228,7 @@ void board_mem_sleep_setup(void)
 }
 #endif
 
-phys_size_t initdram(int board_type)
+int dram_init(void)
 {
 	phys_size_t dram_size;
 
@@ -234,16 +237,18 @@ phys_size_t initdram(int board_type)
 	puts("Initializing....using SPD\n");
 #endif
 	dram_size = fsl_ddr_sdram();
-	dram_size = setup_ddr_tlbs(dram_size / 0x100000);
-	dram_size *= 0x100000;
 #else
 	/* DDR has been initialised by first stage boot loader */
 	dram_size =  fsl_ddr_sdram_size();
 #endif
+	dram_size = setup_ddr_tlbs(dram_size / 0x100000);
+	dram_size *= 0x100000;
 
 #if defined(CONFIG_DEEP_SLEEP) && !defined(CONFIG_SPL_BUILD)
 	fsl_dp_resume();
 #endif
 
-	return dram_size;
+	gd->ram_size = dram_size;
+
+	return 0;
 }

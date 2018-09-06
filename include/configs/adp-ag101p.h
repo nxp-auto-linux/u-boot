@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2011 Andes Technology Corporation
  * Shawn Lin, Andes Technology Corporation <nobuhiro@andestech.com>
  * Macpaul Lin, Andes Technology Corporation <macpaul@andestech.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -14,33 +13,23 @@
 /*
  * CPU and Board Configuration Options
  */
-#define CONFIG_ADP_AG101P
-
 #define CONFIG_USE_INTERRUPT
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
-#define CONFIG_SYS_GENERIC_GLOBAL_DATA
+#define CONFIG_ARCH_MAP_SYSMEM
 
-/*
- * Definitions related to passing arguments to kernel.
- */
-#define CONFIG_CMDLINE_TAG			/* send commandline to Kernel */
-#define CONFIG_SETUP_MEMORY_TAGS	/* send memory definition to kernel */
-#define CONFIG_INITRD_TAG			/* send initrd params */
-#define CONFIG_NEEDS_MANUAL_RELOC
+#define CONFIG_BOOTP_SEND_HOSTNAME
+#define CONFIG_BOOTP_SERVERIP
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
 #define CONFIG_MEM_REMAP
 #endif
 
 #ifdef CONFIG_SKIP_LOWLEVEL_INIT
-#define CONFIG_SYS_TEXT_BASE	0x00500000
-#else
-#ifdef CONFIG_MEM_REMAP
-#define CONFIG_SYS_TEXT_BASE	0x80000000
-#else
-#define CONFIG_SYS_TEXT_BASE	0x00000000
+#ifdef CONFIG_OF_CONTROL
+#undef CONFIG_OF_SEPARATE
+#define CONFIG_OF_EMBED
 #endif
 #endif
 
@@ -85,55 +74,16 @@
  */
 
 /* FTUART is a high speed NS 16C550A compatible UART, addr: 0x99600000 */
-#define CONFIG_BAUDRATE			38400
-#define CONFIG_CONS_INDEX		1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_COM1		CONFIG_FTUART010_02_BASE
+#ifndef CONFIG_DM_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	-4
+#endif
 #define CONFIG_SYS_NS16550_CLK		((18432000 * 20) / 25)	/* AG101P */
-
-/*
- * Ethernet
- */
-#define CONFIG_FTMAC100
-
-#define CONFIG_BOOTDELAY	3
-
-/*
- * SD (MMC) controller
- */
-#define CONFIG_MMC
-#define CONFIG_CMD_MMC
-#define CONFIG_GENERIC_MMC
-#define CONFIG_DOS_PARTITION
-#define CONFIG_FTSDC010
-#define CONFIG_FTSDC010_NUMBER		1
-#define CONFIG_FTSDC010_SDIO
-#define CONFIG_CMD_FAT
-#define CONFIG_CMD_EXT2
-
-/*
- * Command line configuration.
- */
-#define CONFIG_CMD_CACHE
-#define CONFIG_CMD_DATE
-#define CONFIG_CMD_PING
 
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LONGHELP			/* undef to save memory */
-#define CONFIG_SYS_CBSIZE	256		/* Console I/O Buffer Size */
-
-/* Print Buffer Size */
-#define CONFIG_SYS_PBSIZE	\
-	(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
-
-/* max number of command args */
-#define CONFIG_SYS_MAXARGS	16
-
-/* Boot Argument Buffer Size */
-#define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE
 
 /*
  * Size of malloc() pool
@@ -271,7 +221,7 @@
 
 /*
  * Load address and memory test area should agree with
- * arch/nds32/config.mk. Be careful not to overwrite U-boot itself.
+ * arch/nds32/config.mk. Be careful not to overwrite U-Boot itself.
  */
 #define CONFIG_SYS_LOAD_ADDR		0x300000
 
@@ -364,7 +314,9 @@
  * There are 4 banks supported for this Controller,
  * but we have only 1 bank connected to flash on board
  */
+#ifndef CONFIG_SYS_MAX_FLASH_BANKS_DETECT
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
+#endif
 #define CONFIG_SYS_FLASH_BANKS_SIZES {0x4000000}
 
 /* max number of sectors on one chip */
@@ -373,9 +325,19 @@
 #define CONFIG_SYS_MAX_FLASH_SECT	512
 
 /* environments */
-#define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_ADDR			(CONFIG_SYS_MONITOR_BASE + 0x140000)
 #define CONFIG_ENV_SIZE			8192
 #define CONFIG_ENV_OVERWRITE
+
+/*
+ * For booting Linux, the board info and command line data
+ * have to be in the first 16 MB of memory, since this is
+ * the maximum mapped by the Linux kernel during initialization.
+ */
+
+/* Initial Memory map for Linux*/
+#define CONFIG_SYS_BOOTMAPSZ	(64 << 20)
+/* Increase max gunzip size */
+#define CONFIG_SYS_BOOTM_LEN	(64 << 20)
 
 #endif	/* __CONFIG_H */

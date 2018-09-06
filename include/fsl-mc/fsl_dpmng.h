@@ -1,6 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /* Copyright 2013-2015 Freescale Semiconductor Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef __FSL_DPMNG_H
 #define __FSL_DPMNG_H
@@ -14,7 +13,7 @@ struct fsl_mc_io;
 /**
  * Management Complex firmware version information
  */
-#define MC_VER_MAJOR 8
+#define MC_VER_MAJOR 9
 #define MC_VER_MINOR 0
 
 /**

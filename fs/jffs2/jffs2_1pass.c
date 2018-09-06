@@ -115,13 +115,14 @@
 #include <config.h>
 #include <malloc.h>
 #include <div64.h>
+#include <linux/compiler.h>
 #include <linux/stat.h>
 #include <linux/time.h>
 #include <watchdog.h>
 #include <jffs2/jffs2.h>
 #include <jffs2/jffs2_1pass.h>
 #include <linux/compat.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 
 #include "jffs2_private.h"
 
@@ -174,9 +175,14 @@ static u32 nand_cache_off = (u32)-1;
 static int read_nand_cached(u32 off, u32 size, u_char *buf)
 {
 	struct mtdids *id = current_part->dev->id;
+	struct mtd_info *mtd;
 	u32 bytes_read = 0;
 	size_t retlen;
 	int cpy_bytes;
+
+	mtd = get_nand_dev_by_index(id->num);
+	if (!mtd)
+		return -1;
 
 	while (bytes_read < size) {
 		if ((off + bytes_read < nand_cache_off) ||
@@ -194,8 +200,8 @@ static int read_nand_cached(u32 off, u32 size, u_char *buf)
 			}
 
 			retlen = NAND_CACHE_SIZE;
-			if (nand_read(&nand_info[id->num], nand_cache_off,
-						&retlen, nand_cache) != 0 ||
+			if (nand_read(mtd, nand_cache_off,
+				      &retlen, nand_cache) < 0 ||
 					retlen != NAND_CACHE_SIZE) {
 				printf("read_nand_cached: error reading nand off %#x size %d bytes\n",
 						nand_cache_off, NAND_CACHE_SIZE);
@@ -294,7 +300,7 @@ static int read_onenand_cached(u32 off, u32 size, u_char *buf)
 
 			retlen = ONENAND_CACHE_SIZE;
 			if (onenand_read(&onenand_mtd, onenand_cache_off, retlen,
-						&retlen, onenand_cache) != 0 ||
+						&retlen, onenand_cache) < 0 ||
 					retlen != ONENAND_CACHE_SIZE) {
 				printf("read_onenand_cached: error reading nand off %#x size %d bytes\n",
 					onenand_cache_off, ONENAND_CACHE_SIZE);
@@ -1328,7 +1334,7 @@ int jffs2_sum_scan_sumnode(struct part_info *part, uint32_t offset,
 			   struct b_lists *pL)
 {
 	struct jffs2_unknown_node crcnode;
-	int ret, ofs;
+	int ret, __maybe_unused ofs;
 	uint32_t crc;
 
 	ofs = part->sector_size - sumsize;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2004-2008
  * Texas Instruments, <www.ti.com>
@@ -11,14 +12,14 @@
  *	Richard Woodruff <r-woodruff2@ti.com>
  *	Syed Mohammed Khasim <khasim@ti.com>
  *
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <dm.h>
+#include <environment.h>
 #include <ns16550.h>
 #include <netdev.h>
 #include <twl4030.h>
+#include <linux/mtd/omap_gpmc.h>
 #include <asm/io.h>
 #include <asm/arch/mem.h>
 #include <asm/arch/mmc_host_def.h>
@@ -29,10 +30,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-/* gpmc_cfg is initialized by gpmc_init and we use it here */
-extern struct gpmc *gpmc_cfg;
-
-/* GPMC definitions for Ethenet Controller LAN9211 */
+/*
+ * gpmc_cfg is initialized by gpmc_init and we use it here.
+ * GPMC definitions for Ethenet Controller LAN9211
+ */
 static const u32 gpmc_lab_enet[] = {
 	ZOOM1_ENET_GPMC_CONF1,
 	ZOOM1_ENET_GPMC_CONF2,
@@ -44,9 +45,10 @@ static const u32 gpmc_lab_enet[] = {
 };
 
 static const struct ns16550_platdata zoom1_serial = {
-	OMAP34XX_UART3,
-	2,
-	V_NS16550_CLK
+	.base = OMAP34XX_UART3,
+	.reg_shift = 2,
+	.clock = V_NS16550_CLK,
+	.fcr = UART_FCR_DEFVAL,
 };
 
 U_BOOT_DEVICE(zoom1_uart) = {
@@ -104,7 +106,7 @@ void set_muxconf_regs(void)
 	MUX_ZOOM1_MDK();
 }
 
-#ifdef CONFIG_GENERIC_MMC
+#ifdef CONFIG_MMC
 int board_mmc_init(bd_t *bis)
 {
 	return omap_mmc_init(0, 0, 0, -1, -1);
@@ -128,10 +130,10 @@ int board_eth_init(bd_t *bis)
 	uchar eth_addr[6];
 
 	rc = smc911x_initialize(0, CONFIG_SMC911X_BASE);
-	if (!eth_getenv_enetaddr(STR_ENV_ETHADDR, eth_addr)) {
+	if (!eth_env_get_enetaddr(STR_ENV_ETHADDR, eth_addr)) {
 		dev = eth_get_dev_by_index(0);
 		if (dev) {
-			eth_setenv_enetaddr(STR_ENV_ETHADDR, dev->enetaddr);
+			eth_env_set_enetaddr(STR_ENV_ETHADDR, dev->enetaddr);
 		} else {
 			printf("zoom1: Couldn't get eth device\n");
 			rc = -1;

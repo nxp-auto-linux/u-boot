@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013-2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_FSL_LSCH2_IMMAP_H__
@@ -15,14 +14,16 @@
 #define CONFIG_SYS_DCSR_COP_CCP_ADDR	(CONFIG_SYS_DCSRBAR + 0x02008040)
 
 #define CONFIG_SYS_FSL_DDR_ADDR			(CONFIG_SYS_IMMR + 0x00080000)
-#define CONFIG_SYS_CCI400_ADDR			(CONFIG_SYS_IMMR + 0x00180000)
 #define CONFIG_SYS_GIC400_ADDR			(CONFIG_SYS_IMMR + 0x00400000)
 #define CONFIG_SYS_IFC_ADDR			(CONFIG_SYS_IMMR + 0x00530000)
+#define SYS_FSL_QSPI_ADDR			(CONFIG_SYS_IMMR + 0x00550000)
 #define CONFIG_SYS_FSL_ESDHC_ADDR		(CONFIG_SYS_IMMR + 0x00560000)
 #define CONFIG_SYS_FSL_CSU_ADDR			(CONFIG_SYS_IMMR + 0x00510000)
 #define CONFIG_SYS_FSL_GUTS_ADDR		(CONFIG_SYS_IMMR + 0x00ee0000)
 #define CONFIG_SYS_FSL_RST_ADDR			(CONFIG_SYS_IMMR + 0x00ee00b0)
 #define CONFIG_SYS_FSL_SCFG_ADDR		(CONFIG_SYS_IMMR + 0x00570000)
+#define CONFIG_SYS_FSL_BMAN_ADDR		(CONFIG_SYS_IMMR + 0x00890000)
+#define CONFIG_SYS_FSL_QMAN_ADDR		(CONFIG_SYS_IMMR + 0x00880000)
 #define CONFIG_SYS_FSL_FMAN_ADDR		(CONFIG_SYS_IMMR + 0x00a00000)
 #define CONFIG_SYS_FSL_SERDES_ADDR		(CONFIG_SYS_IMMR + 0x00ea0000)
 #define CONFIG_SYS_FSL_DCFG_ADDR		(CONFIG_SYS_IMMR + 0x00ee0000)
@@ -31,16 +32,42 @@
 #define CONFIG_SYS_NS16550_COM2			(CONFIG_SYS_IMMR + 0x011c0600)
 #define CONFIG_SYS_NS16550_COM3			(CONFIG_SYS_IMMR + 0x011d0500)
 #define CONFIG_SYS_NS16550_COM4			(CONFIG_SYS_IMMR + 0x011d0600)
-#define CONFIG_SYS_LS1043A_XHCI_USB1_ADDR	(CONFIG_SYS_IMMR + 0x01f00000)
-#define CONFIG_SYS_LS1043A_XHCI_USB2_ADDR	(CONFIG_SYS_IMMR + 0x02000000)
-#define CONFIG_SYS_LS1043A_XHCI_USB3_ADDR	(CONFIG_SYS_IMMR + 0x02100000)
+#define CONFIG_SYS_XHCI_USB1_ADDR		(CONFIG_SYS_IMMR + 0x01f00000)
+#define CONFIG_SYS_XHCI_USB2_ADDR		(CONFIG_SYS_IMMR + 0x02000000)
+#define CONFIG_SYS_XHCI_USB3_ADDR		(CONFIG_SYS_IMMR + 0x02100000)
+#define CONFIG_SYS_EHCI_USB1_ADDR		(CONFIG_SYS_IMMR + 0x07600000)
 #define CONFIG_SYS_PCIE1_ADDR			(CONFIG_SYS_IMMR + 0x2400000)
 #define CONFIG_SYS_PCIE2_ADDR			(CONFIG_SYS_IMMR + 0x2500000)
 #define CONFIG_SYS_PCIE3_ADDR			(CONFIG_SYS_IMMR + 0x2600000)
-#define CONFIG_SYS_FSL_SEC_ADDR			(CONFIG_SYS_IMMR + 0x700000)
-#define CONFIG_SYS_FSL_JR0_ADDR			(CONFIG_SYS_IMMR + 0x710000)
 #define CONFIG_SYS_SEC_MON_ADDR			(CONFIG_SYS_IMMR + 0xe90000)
 #define CONFIG_SYS_SFP_ADDR			(CONFIG_SYS_IMMR + 0xe80200)
+
+#define CONFIG_SYS_BMAN_NUM_PORTALS	10
+#define CONFIG_SYS_BMAN_MEM_BASE	0x508000000
+#define CONFIG_SYS_BMAN_MEM_PHYS	(0xf00000000ull + \
+						CONFIG_SYS_BMAN_MEM_BASE)
+#define CONFIG_SYS_BMAN_MEM_SIZE	0x08000000
+#define CONFIG_SYS_BMAN_SP_CENA_SIZE    0x10000
+#define CONFIG_SYS_BMAN_SP_CINH_SIZE    0x10000
+#define CONFIG_SYS_BMAN_CENA_BASE       CONFIG_SYS_BMAN_MEM_BASE
+#define CONFIG_SYS_BMAN_CENA_SIZE       (CONFIG_SYS_BMAN_MEM_SIZE >> 1)
+#define CONFIG_SYS_BMAN_CINH_BASE       (CONFIG_SYS_BMAN_MEM_BASE + \
+					CONFIG_SYS_BMAN_CENA_SIZE)
+#define CONFIG_SYS_BMAN_CINH_SIZE       (CONFIG_SYS_BMAN_MEM_SIZE >> 1)
+#define CONFIG_SYS_BMAN_SWP_ISDR_REG    0x3E80
+#define CONFIG_SYS_QMAN_NUM_PORTALS	10
+#define CONFIG_SYS_QMAN_MEM_BASE	0x500000000
+#define CONFIG_SYS_QMAN_MEM_PHYS	(0xf00000000ull + \
+						CONFIG_SYS_QMAN_MEM_BASE)
+#define CONFIG_SYS_QMAN_MEM_SIZE	0x08000000
+#define CONFIG_SYS_QMAN_SP_CENA_SIZE    0x10000
+#define CONFIG_SYS_QMAN_SP_CINH_SIZE    0x10000
+#define CONFIG_SYS_QMAN_CENA_BASE       CONFIG_SYS_QMAN_MEM_BASE
+#define CONFIG_SYS_QMAN_CENA_SIZE       (CONFIG_SYS_QMAN_MEM_SIZE >> 1)
+#define CONFIG_SYS_QMAN_CINH_BASE       (CONFIG_SYS_QMAN_MEM_BASE + \
+					CONFIG_SYS_QMAN_CENA_SIZE)
+#define CONFIG_SYS_QMAN_CINH_SIZE       (CONFIG_SYS_QMAN_MEM_SIZE >> 1)
+#define CONFIG_SYS_QMAN_SWP_ISDR_REG	0x3680
 
 #define CONFIG_SYS_FSL_TIMER_ADDR		0x02b00000
 
@@ -54,6 +81,11 @@
 #define QSPI0_BASE_ADDR				(CONFIG_SYS_IMMR + 0x00550000)
 #define DSPI1_BASE_ADDR				(CONFIG_SYS_IMMR + 0x01100000)
 
+#define GPIO1_BASE_ADDR				(CONFIG_SYS_IMMR + 0x1300000)
+#define GPIO2_BASE_ADDR				(CONFIG_SYS_IMMR + 0x1310000)
+#define GPIO3_BASE_ADDR				(CONFIG_SYS_IMMR + 0x1320000)
+#define GPIO4_BASE_ADDR				(CONFIG_SYS_IMMR + 0x1330000)
+
 #define LPUART_BASE				(CONFIG_SYS_IMMR + 0x01950000)
 
 #define AHCI_BASE_ADDR				(CONFIG_SYS_IMMR + 0x02200000)
@@ -62,7 +94,11 @@
 #define CONFIG_SYS_PCIE2_PHYS_ADDR		0x4800000000ULL
 #define CONFIG_SYS_PCIE3_PHYS_ADDR		0x5000000000ULL
 /* LUT registers */
+#ifdef CONFIG_ARCH_LS1012A
+#define PCIE_LUT_BASE				0xC0000
+#else
 #define PCIE_LUT_BASE				0x10000
+#endif
 #define PCIE_LUT_LCTRL0				0x7F8
 #define PCIE_LUT_DBG				0x7FC
 
@@ -92,6 +128,7 @@
 #define TY_ITYP_VER_A7          0x1
 #define TY_ITYP_VER_A53         0x2
 #define TY_ITYP_VER_A57         0x3
+#define TY_ITYP_VER_A72		0x4
 
 #define TP_CLUSTER_EOC		0xc0000000      /* end of clusters */
 #define TP_CLUSTER_INIT_MASK    0x0000003f      /* initiator mask */
@@ -117,7 +154,7 @@ CONFIG_SYS_CCSRBAR_PHYS_LOW and/or CONFIG_SYS_CCSRBAR_PHYS_HIGH instead."
 #endif
 
 #ifndef CONFIG_SYS_CCSRBAR
-#define CONFIG_SYS_CCSRBAR		CONFIG_SYS_CCSRBAR_DEFAULT
+#define CONFIG_SYS_CCSRBAR		0x01000000
 #endif
 
 #ifndef CONFIG_SYS_CCSRBAR_PHYS_HIGH
@@ -125,7 +162,7 @@ CONFIG_SYS_CCSRBAR_PHYS_LOW and/or CONFIG_SYS_CCSRBAR_PHYS_HIGH instead."
 #endif
 
 #ifndef CONFIG_SYS_CCSRBAR_PHYS_LOW
-#define CONFIG_SYS_CCSRBAR_PHYS_LOW	CONFIG_SYS_CCSRBAR_DEFAULT
+#define CONFIG_SYS_CCSRBAR_PHYS_LOW	0x01000000
 #endif
 
 #define CONFIG_SYS_CCSRBAR_PHYS ((CONFIG_SYS_CCSRBAR_PHYS_HIGH * 1ull) << 32 | \
@@ -133,6 +170,7 @@ CONFIG_SYS_CCSRBAR_PHYS_LOW and/or CONFIG_SYS_CCSRBAR_PHYS_HIGH instead."
 
 struct sys_info {
 	unsigned long freq_processor[CONFIG_MAX_CPUS];
+	/* frequency of platform PLL */
 	unsigned long freq_systembus;
 	unsigned long freq_ddrbus;
 	unsigned long freq_localbus;
@@ -157,7 +195,18 @@ struct sys_info {
 #define CONFIG_SYS_FSL_FM1_DTSEC1_ADDR		\
 		(CONFIG_SYS_IMMR + CONFIG_SYS_FSL_FM1_DTSEC1_OFFSET)
 
+#define CONFIG_SYS_FSL_SEC_OFFSET		0x700000ull
+#define CONFIG_SYS_FSL_JR0_OFFSET		0x710000ull
+#define CONFIG_SYS_FSL_SEC_ADDR \
+	(CONFIG_SYS_IMMR + CONFIG_SYS_FSL_SEC_OFFSET)
+#define CONFIG_SYS_FSL_JR0_ADDR \
+	(CONFIG_SYS_IMMR + CONFIG_SYS_FSL_JR0_OFFSET)
+
 /* Device Configuration and Pin Control */
+#define DCFG_DCSR_PORCR1		0x0
+#define DCFG_DCSR_ECCCR2		0x524
+#define DISABLE_PFE_ECC			BIT(13)
+
 struct ccsr_gur {
 	u32     porsr1;         /* POR status 1 */
 #define FSL_CHASSIS2_CCSR_PORSR1_RCW_MASK	0xFF800000
@@ -218,6 +267,11 @@ struct ccsr_gur {
 #define FSL_CHASSIS2_RCWSR0_MEM_PLL_RAT_MASK	0x3f
 #define FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_MASK	0xffff0000
 #define FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_SHIFT	16
+#define FSL_CHASSIS2_RCWSR4_SRDS2_PRTCL_MASK	0x0000ffff
+#define FSL_CHASSIS2_RCWSR4_SRDS2_PRTCL_SHIFT	0
+#define RCW_SB_EN_REG_INDEX	7
+#define RCW_SB_EN_MASK		0x00200000
+
 	u8      res_140[0x200-0x140];
 	u32     scratchrw[4];  /* Scratch Read/Write */
 	u8      res_210[0x300-0x210];
@@ -318,8 +372,52 @@ struct ccsr_gur {
 #define SCFG_USBPWRFAULT_USB2_SHIFT	2
 #define SCFG_USBPWRFAULT_USB1_SHIFT	0
 
+#define SCFG_BASE			0x01570000
+#define SCFG_USB3PRM1CR_USB1		0x070
+#define SCFG_USB3PRM2CR_USB1		0x074
+#define SCFG_USB3PRM1CR_USB2		0x07C
+#define SCFG_USB3PRM2CR_USB2		0x080
+#define SCFG_USB3PRM1CR_USB3		0x088
+#define SCFG_USB3PRM2CR_USB3		0x08c
+#define SCFG_USB_TXVREFTUNE			0x9
+#define SCFG_USB_SQRXTUNE_MASK		0x7
+#define SCFG_USB_PCSTXSWINGFULL		0x47
+#define SCFG_USB_PHY1			0x084F0000
+#define SCFG_USB_PHY2			0x08500000
+#define SCFG_USB_PHY3			0x08510000
+#define SCFG_USB_PHY_RX_OVRD_IN_HI		0x200c
+#define USB_PHY_RX_EQ_VAL_1		0x0000
+#define USB_PHY_RX_EQ_VAL_2		0x0080
+#define USB_PHY_RX_EQ_VAL_3		0x0380
+#define USB_PHY_RX_EQ_VAL_4		0x0b80
+
 #define SCFG_SNPCNFGCR_SECRDSNP		0x80000000
 #define SCFG_SNPCNFGCR_SECWRSNP		0x40000000
+#define SCFG_SNPCNFGCR_SATARDSNP	0x00800000
+#define SCFG_SNPCNFGCR_SATAWRSNP	0x00400000
+
+/* RGMIIPCR bit definitions*/
+#define SCFG_RGMIIPCR_EN_AUTO		BIT(3)
+#define SCFG_RGMIIPCR_SETSP_1000M	BIT(2)
+#define SCFG_RGMIIPCR_SETSP_100M	0
+#define SCFG_RGMIIPCR_SETSP_10M		BIT(1)
+#define SCFG_RGMIIPCR_SETFD		BIT(0)
+
+/* PFEASBCR bit definitions */
+#define SCFG_PFEASBCR_ARCACHE0		BIT(31)
+#define SCFG_PFEASBCR_AWCACHE0		BIT(30)
+#define SCFG_PFEASBCR_ARCACHE1		BIT(29)
+#define SCFG_PFEASBCR_AWCACHE1		BIT(28)
+#define SCFG_PFEASBCR_ARSNP		BIT(27)
+#define SCFG_PFEASBCR_AWSNP		BIT(26)
+
+/* WR_QoS1 PFE bit definitions */
+#define SCFG_WR_QOS1_PFE1_QOS		GENMASK(27, 24)
+#define SCFG_WR_QOS1_PFE2_QOS		GENMASK(23, 20)
+
+/* RD_QoS1 PFE bit definitions */
+#define SCFG_RD_QOS1_PFE1_QOS		GENMASK(27, 24)
+#define SCFG_RD_QOS1_PFE2_QOS		GENMASK(23, 20)
 
 /* Supplemental Configuration Unit */
 struct ccsr_scfg {
@@ -338,9 +436,15 @@ struct ccsr_scfg {
 	u8 res_140[0x158-0x140];
 	u32 altcbar;
 	u32 qspi_cfg;
-	u8 res_160[0x180-0x160];
+	u8 res_160[0x164 - 0x160];
+	u32 wr_qos1;
+	u32 wr_qos2;
+	u32 rd_qos1;
+	u32 rd_qos2;
+	u8 res_174[0x180 - 0x174];
 	u32 dmamcr;
-	u8 res_184[0x18c-0x184];
+	u8 res_184[0x188-0x184];
+	u32 gic_align;
 	u32 debug_icid;
 	u8 res_190[0x1a4-0x190];
 	u32 snpcnfgcr;
@@ -368,7 +472,21 @@ struct ccsr_scfg {
 	u32 usb_refclk_selcr1;
 	u32 usb_refclk_selcr2;
 	u32 usb_refclk_selcr3;
-	u8 res_424[0x600-0x424];
+	u8 res_424[0x434 - 0x424];
+	u32 rgmiipcr;
+	u32 res_438;
+	u32 rgmiipsr;
+	u32 pfepfcssr1;
+	u32 pfeintencr1;
+	u32 pfepfcssr2;
+	u32 pfeintencr2;
+	u32 pfeerrcr;
+	u32 pfeeerrintencr;
+	u32 pfeasbcr;
+	u32 pfebsbcr;
+	u8 res_460[0x484 - 0x460];
+	u32 mdioselcr;
+	u8 res_468[0x600 - 0x488];
 	u32 scratchrw[4];
 	u8 res_610[0x680-0x610];
 	u32 corebcr;
@@ -451,7 +569,8 @@ struct ccsr_serdes {
 		u32	res_0c;	/* 0x00c */
 		u32	pllcr3;
 		u32	pllcr4;
-		u8	res_18[0x20-0x18];
+		u32	pllcr5; /* 0x018 SerDes PLL1 Control 5 */
+		u8	res_1c[0x20-0x1c];
 	} bank[2];
 	u8	res_40[0x90-0x40];
 	u32	srdstcalcr;	/* 0x90 TX Calibration Control */
@@ -459,25 +578,25 @@ struct ccsr_serdes {
 	u32	srdsrcalcr;	/* 0xa0 RX Calibration Control */
 	u8	res_a4[0xb0-0xa4];
 	u32	srdsgr0;	/* 0xb0 General Register 0 */
-	u8	res_b4[0xe0-0xb4];
-	u32	srdspccr0;	/* 0xe0 Protocol Converter Config 0 */
-	u32	srdspccr1;	/* 0xe4 Protocol Converter Config 1 */
-	u32	srdspccr2;	/* 0xe8 Protocol Converter Config 2 */
-	u32	srdspccr3;	/* 0xec Protocol Converter Config 3 */
-	u32	srdspccr4;	/* 0xf0 Protocol Converter Config 4 */
-	u8	res_f4[0x100-0xf4];
+	u8	res_b4[0x100-0xb4];
 	struct {
-		u32	lnpssr;	/* 0x100, 0x120, ..., 0x1e0 */
+		u32	lnpssr0;	/* 0x100, 0x120, 0x140, 0x160 */
 		u8	res_104[0x120-0x104];
-	} srdslnpssr[4];
-	u8	res_180[0x300-0x180];
-	u32	srdspexeqcr;
-	u32	srdspexeqpcr[11];
-	u8	res_330[0x400-0x330];
-	u32	srdspexapcr;
-	u8	res_404[0x440-0x404];
-	u32	srdspexbpcr;
-	u8	res_444[0x800-0x444];
+	} lnpssr[4];	/* Lane A, B, C, D */
+	u8	res_180[0x200-0x180];
+	u32	srdspccr0;	/* 0x200 Protocol Configuration 0 */
+	u32	srdspccr1;	/* 0x204 Protocol Configuration 1 */
+	u32	srdspccr2;	/* 0x208 Protocol Configuration 2 */
+	u32	srdspccr3;	/* 0x20c Protocol Configuration 3 */
+	u32	srdspccr4;	/* 0x210 Protocol Configuration 4 */
+	u32	srdspccr5;	/* 0x214 Protocol Configuration 5 */
+	u32	srdspccr6;	/* 0x218 Protocol Configuration 6 */
+	u32	srdspccr7;	/* 0x21c Protocol Configuration 7 */
+	u32	srdspccr8;	/* 0x220 Protocol Configuration 8 */
+	u32	srdspccr9;	/* 0x224 Protocol Configuration 9 */
+	u32	srdspccra;	/* 0x228 Protocol Configuration A */
+	u32	srdspccrb;	/* 0x22c Protocol Configuration B */
+	u8	res_230[0x800-0x230];
 	struct {
 		u32	gcr0;	/* 0x800 General Control Register 0 */
 		u32	gcr1;	/* 0x804 General Control Register 1 */
@@ -490,56 +609,44 @@ struct ccsr_serdes {
 		u32	ttlcr0;	/* 0x820 Transition Tracking Loop Ctrl 0 */
 		u8	res_824[0x83c-0x824];
 		u32	tcsr3;
-	} lane[4];	/* Lane A, B, C, D, E, F, G, H */
-	u8	res_a00[0x1000-0xa00];	/* from 0xa00 to 0xfff */
+	} lane[4];	/* Lane A, B, C, D */
+	u8	res_900[0x1000-0x900];	/* from 0x900 to 0xfff */
+	struct {
+		u32	srdspexcr0;	/* 0x1000, 0x1040, 0x1080 */
+		u8	res_1004[0x1040-0x1004];
+	} pcie[3];
+	u8	res_10c0[0x1800-0x10c0];
+	struct {
+		u8	res_1800[0x1804-0x1800];
+		u32	srdssgmiicr1;	/* 0x1804 SGMII Protocol Control 1 */
+		u8	res_1808[0x180c-0x1808];
+		u32	srdssgmiicr3;	/* 0x180c SGMII Protocol Control 3 */
+	} sgmii[4];	/* Lane A, B, C, D */
+	u8	res_1840[0x1880-0x1840];
+	struct {
+		u8	res_1880[0x1884-0x1880];
+		u32	srdsqsgmiicr1;	/* 0x1884 QSGMII Protocol Control 1 */
+		u8	res_1888[0x188c-0x1888];
+		u32	srdsqsgmiicr3;	/* 0x188c QSGMII Protocol Control 3 */
+	} qsgmii[2];	/* Lane A, B */
+	u8	res_18a0[0x1980-0x18a0];
+	struct {
+		u8	res_1980[0x1984-0x1980];
+		u32	srdsxficr1;	/* 0x1984 XFI Protocol Control 1 */
+		u8	res_1988[0x198c-0x1988];
+		u32	srdsxficr3;	/* 0x198c XFI Protocol Control 3 */
+	} xfi[2];	/* Lane A, B */
+	u8	res_19a0[0x2000-0x19a0];	/* from 0x19a0 to 0x1fff */
 };
 
-#define CCI400_CTRLORD_TERM_BARRIER	0x00000008
-#define CCI400_CTRLORD_EN_BARRIER	0
-#define CCI400_SHAORD_NON_SHAREABLE	0x00000002
-#define CCI400_DVM_MESSAGE_REQ_EN	0x00000002
-#define CCI400_SNOOP_REQ_EN		0x00000001
-
-/* CCI-400 registers */
-struct ccsr_cci400 {
-	u32 ctrl_ord;			/* Control Override */
-	u32 spec_ctrl;			/* Speculation Control */
-	u32 secure_access;		/* Secure Access */
-	u32 status;			/* Status */
-	u32 impr_err;			/* Imprecise Error */
-	u8 res_14[0x100 - 0x14];
-	u32 pmcr;			/* Performance Monitor Control */
-	u8 res_104[0xfd0 - 0x104];
-	u32 pid[8];			/* Peripheral ID */
-	u32 cid[4];			/* Component ID */
-	struct {
-		u32 snoop_ctrl;		/* Snoop Control */
-		u32 sha_ord;		/* Shareable Override */
-		u8 res_1008[0x1100 - 0x1008];
-		u32 rc_qos_ord;		/* read channel QoS Value Override */
-		u32 wc_qos_ord;		/* read channel QoS Value Override */
-		u8 res_1108[0x110c - 0x1108];
-		u32 qos_ctrl;		/* QoS Control */
-		u32 max_ot;		/* Max OT */
-		u8 res_1114[0x1130 - 0x1114];
-		u32 target_lat;		/* Target Latency */
-		u32 latency_regu;	/* Latency Regulation */
-		u32 qos_range;		/* QoS Range */
-		u8 res_113c[0x2000 - 0x113c];
-	} slave[5];			/* Slave Interface */
-	u8 res_6000[0x9004 - 0x6000];
-	u32 cycle_counter;		/* Cycle counter */
-	u32 count_ctrl;			/* Count Control */
-	u32 overflow_status;		/* Overflow Flag Status */
-	u8 res_9010[0xa000 - 0x9010];
-	struct {
-		u32 event_select;	/* Event Select */
-		u32 event_count;	/* Event Count */
-		u32 counter_ctrl;	/* Counter Control */
-		u32 overflow_status;	/* Overflow Flag Status */
-		u8 res_a010[0xb000 - 0xa010];
-	} pcounter[4];			/* Performance Counter */
-	u8 res_e004[0x10000 - 0xe004];
+struct ccsr_gpio {
+	u32	gpdir;
+	u32	gpodr;
+	u32	gpdat;
+	u32	gpier;
+	u32	gpimr;
+	u32	gpicr;
+	u32	gpibe;
 };
 
 /* MMU 500 */
@@ -556,5 +663,7 @@ struct ccsr_cci400 {
 
 #define SCR0_CLIENTPD_MASK		0x00000001
 #define SCR0_USFCFG_MASK		0x00000400
+
+uint get_svr(void);
 
 #endif	/* __ARCH_FSL_LSCH2_IMMAP_H__*/

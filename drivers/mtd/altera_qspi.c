@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Thomas Chou <thomas@wytron.com.tw>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -349,7 +348,7 @@ static int altera_qspi_ofdata_to_platdata(struct udevice *dev)
 {
 	struct altera_qspi_platdata *pdata = dev_get_platdata(dev);
 	void *blob = (void *)gd->fdt_blob;
-	int node = dev->of_offset;
+	int node = dev_of_offset(dev);
 	const char *list, *end;
 	const fdt32_t *cell;
 	void *base;
@@ -362,7 +361,7 @@ static int altera_qspi_ofdata_to_platdata(struct udevice *dev)
 	 * match with reg-names.
 	 */
 	parent = fdt_parent_offset(blob, node);
-	of_bus_default_count_cells(blob, parent, &addrc, &sizec);
+	fdt_support_default_count_cells(blob, parent, &addrc, &sizec);
 	list = fdt_getprop(blob, node, "reg-names", &len);
 	if (!list)
 		return -ENOENT;

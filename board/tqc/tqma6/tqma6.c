@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Freescale Semiconductor, Inc.
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
  *
  * Copyright (C) 2013, 2014 TQ Systems (ported SabreSD to TQMa6x)
  * Author: Markus Niebel <markus.niebel@tq-group.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -13,14 +12,14 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
-#include <asm/imx-common/mxc_i2c.h>
-#include <asm/imx-common/spi.h>
+#include <asm/mach-imx/mxc_i2c.h>
+#include <asm/mach-imx/spi.h>
 #include <common.h>
 #include <fsl_esdhc.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <i2c.h>
 #include <mmc.h>
 #include <power/pfuze100_pmic.h>
@@ -47,7 +46,7 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_DSE_80ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
 
 #define I2C_PAD_CTRL	(PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
-	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
+	PAD_CTL_DSE_80ohm | PAD_CTL_HYS |			\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
 int dram_init(void)
@@ -77,7 +76,7 @@ static iomux_v3_cfg_t const tqma6_usdhc3_pads[] = {
 
 /*
  * According to board_mmc_init() the following map is done:
- * (U-boot device node)    (Physical Port)
+ * (U-Boot device node)    (Physical Port)
  * mmc0                    eMMC (SD3) on TQMa6
  * mmc1 .. n               optional slots used on baseboard
  */
@@ -232,24 +231,26 @@ static const char *tqma6_get_boardname(void)
 	};
 }
 
-int board_late_init(void)
+/* setup board specific PMIC */
+int power_init_board(void)
 {
 	struct pmic *p;
-	u32 reg;
+	u32 reg, rev;
 
-	setenv("board_name", tqma6_get_boardname());
-
-	/*
-	 * configure PFUZE100 PMIC:
-	 * TODO: should go to power_init_board if bus switching is
-	 * fixed in generic power code
-	 */
 	power_pfuze100_init(TQMA6_PFUZE100_I2C_BUS);
 	p = pmic_get("PFUZE100");
 	if (p && !pmic_probe(p)) {
 		pmic_reg_read(p, PFUZE100_DEVICEID, &reg);
-		printf("PMIC: PFUZE100 ID=0x%02x\n", reg);
+		pmic_reg_read(p, PFUZE100_REVID, &rev);
+		printf("PMIC: PFUZE100 ID=0x%02x REV=0x%02x\n", reg, rev);
 	}
+
+	return 0;
+}
+
+int board_late_init(void)
+{
+	env_set("board_name", tqma6_get_boardname());
 
 	tqma6_bb_board_late_init();
 
@@ -267,8 +268,15 @@ int checkboard(void)
  * Device Tree Support
  */
 #if defined(CONFIG_OF_BOARD_SETUP) && defined(CONFIG_OF_LIBFDT)
+#define MODELSTRLEN 32u
 int ft_board_setup(void *blob, bd_t *bd)
 {
+	char modelstr[MODELSTRLEN];
+
+	snprintf(modelstr, MODELSTRLEN, "TQ %s on %s", tqma6_get_boardname(),
+		 tqma6_bb_get_boardname());
+	do_fixup_by_path_string(blob, "/", "model", modelstr);
+	fdt_fixup_memory(blob, (u64)PHYS_SDRAM, (u64)gd->ram_size);
 	/* bring in eMMC dsr settings */
 	do_fixup_by_path_u32(blob,
 			     "/soc/aips-bus@02100000/usdhc@02198000",

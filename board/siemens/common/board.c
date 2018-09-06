@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Common board functions for siemens AM335X based boards
  * (C) Copyright 2013 Siemens Schweiz AG
@@ -6,8 +7,6 @@
  * Based on:
  * U-Boot file:/board/ti/am335x/board.c
  * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -28,6 +27,7 @@
 #include <miiphy.h>
 #include <cpsw.h>
 #include <watchdog.h>
+#include <asm/mach-types.h>
 #include "../common/factoryset.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -83,8 +83,12 @@ int board_init(void)
 #ifdef CONFIG_FACTORYSET
 	factoryset_read_eeprom(CONFIG_SYS_I2C_EEPROM_ADDR);
 #endif
+
 	gpmc_init();
 
+#ifdef CONFIG_NAND_CS_INIT
+	board_nand_cs_init();
+#endif
 #ifdef CONFIG_VIDEO
 	board_video_init();
 #endif
@@ -116,7 +120,7 @@ unsigned char get_button_state(char * const envname, unsigned char def)
 	char *ptr_env;
 
 	/* If button is not found we take default */
-	ptr_env = getenv(envname);
+	ptr_env = env_get(envname);
 	if (NULL == ptr_env) {
 		gpio = def;
 	} else {
@@ -194,7 +198,7 @@ void set_env_gpios(unsigned char state)
 		strcat(str_tmp, num);
 
 		/* If env var is not found we stop */
-		ptr_env = getenv(str_tmp);
+		ptr_env = env_get(str_tmp);
 		if (NULL == ptr_env)
 			break;
 

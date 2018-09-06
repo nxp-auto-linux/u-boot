@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  (C) Copyright 2010,2011
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -12,7 +11,6 @@
 
 /* LP0 suspend / resume */
 #define CONFIG_TEGRA_LP0
-#define CONFIG_AES
 #define CONFIG_TEGRA_PMU
 #define CONFIG_TPS6586X_POWER
 #define CONFIG_TEGRA_CLOCK_SCALING
@@ -30,51 +28,22 @@
 
 /* I2C */
 #define CONFIG_SYS_I2C_TEGRA
-#define CONFIG_CMD_I2C
-
-/* SD/MMC */
-#define CONFIG_MMC
-#define CONFIG_GENERIC_MMC
-#define CONFIG_TEGRA_MMC
-#define CONFIG_CMD_MMC
 
 /* Environment in eMMC, at the end of 2nd "boot sector" */
-#define CONFIG_ENV_IS_IN_MMC
 #define CONFIG_ENV_OFFSET (-CONFIG_ENV_SIZE)
 #define CONFIG_SYS_MMC_ENV_DEV 0
 #define CONFIG_SYS_MMC_ENV_PART 2
 
 /* USB Host support */
-#define CONFIG_USB_MAX_CONTROLLER_COUNT 3
-#define CONFIG_USB_EHCI
 #define CONFIG_USB_EHCI_TEGRA
-#define CONFIG_USB_STORAGE
-#define CONFIG_CMD_USB
 
 /* USB networking support */
-#define CONFIG_USB_HOST_ETHER
-#define CONFIG_USB_ETHER_ASIX
-
-/* General networking support */
-#define CONFIG_CMD_DHCP
 
 /* Enable keyboard */
 #define CONFIG_TEGRA_KEYBOARD
 #define CONFIG_KEYBOARD
 
-/* USB keyboard */
-#define CONFIG_USB_KEYBOARD
-
-/* LCD support */
-#define CONFIG_LCD
-#define CONFIG_PWM_TEGRA
-#define CONFIG_VIDEO_TEGRA
-#define LCD_BPP				LCD_COLOR16
-#define CONFIG_SYS_WHITE_ON_BLACK
-#define CONFIG_CONSOLE_SCROLL_LINES	10
-
 /* NAND support */
-#define CONFIG_CMD_NAND
 #define CONFIG_TEGRA_NAND
 
 /* Max number of NAND devices */

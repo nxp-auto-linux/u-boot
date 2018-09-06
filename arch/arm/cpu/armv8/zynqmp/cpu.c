@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014 - 2015 Xilinx, Inc.
  * Michal Simek <michal.simek@xilinx.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
+#include <asm/armv8/mmu.h>
 #include <asm/io.h>
 
 #define ZYNQ_SILICON_VER_MASK	0xF000
@@ -15,185 +15,250 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+/*
+ * Number of filled static entries and also the first empty
+ * slot in zynqmp_mem_map.
+ */
+#define ZYNQMP_MEM_MAP_USED	4
+
+#if !defined(CONFIG_ZYNQMP_NO_DDR)
+#define DRAM_BANKS CONFIG_NR_DRAM_BANKS
+#else
+#define DRAM_BANKS 0
+#endif
+
+#if defined(CONFIG_DEFINE_TCM_OCM_MMAP)
+#define TCM_MAP 1
+#else
+#define TCM_MAP 0
+#endif
+
+/* +1 is end of list which needs to be empty */
+#define ZYNQMP_MEM_MAP_MAX (ZYNQMP_MEM_MAP_USED + DRAM_BANKS + TCM_MAP + 1)
+
+static struct mm_region zynqmp_mem_map[ZYNQMP_MEM_MAP_MAX] = {
+	{
+		.virt = 0x80000000UL,
+		.phys = 0x80000000UL,
+		.size = 0x70000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			 PTE_BLOCK_NON_SHARE |
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
+		.virt = 0xf8000000UL,
+		.phys = 0xf8000000UL,
+		.size = 0x07e00000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			 PTE_BLOCK_NON_SHARE |
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
+		.virt = 0x400000000UL,
+		.phys = 0x400000000UL,
+		.size = 0x400000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			 PTE_BLOCK_NON_SHARE |
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
+		.virt = 0x1000000000UL,
+		.phys = 0x1000000000UL,
+		.size = 0xf000000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			 PTE_BLOCK_NON_SHARE |
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}
+};
+
+void mem_map_fill(void)
+{
+	int banks = ZYNQMP_MEM_MAP_USED;
+
+#if defined(CONFIG_DEFINE_TCM_OCM_MMAP)
+	zynqmp_mem_map[banks].virt = 0xffe00000UL;
+	zynqmp_mem_map[banks].phys = 0xffe00000UL;
+	zynqmp_mem_map[banks].size = 0x00200000UL;
+	zynqmp_mem_map[banks].attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+				      PTE_BLOCK_INNER_SHARE;
+	banks = banks + 1;
+#endif
+
+#if !defined(CONFIG_ZYNQMP_NO_DDR)
+	for (int i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+		/* Zero size means no more DDR that's this is end */
+		if (!gd->bd->bi_dram[i].size)
+			break;
+
+		zynqmp_mem_map[banks].virt = gd->bd->bi_dram[i].start;
+		zynqmp_mem_map[banks].phys = gd->bd->bi_dram[i].start;
+		zynqmp_mem_map[banks].size = gd->bd->bi_dram[i].size;
+		zynqmp_mem_map[banks].attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+					      PTE_BLOCK_INNER_SHARE;
+		banks = banks + 1;
+	}
+#endif
+}
+
+struct mm_region *mem_map = zynqmp_mem_map;
+
+u64 get_page_table_size(void)
+{
+	return 0x14000;
+}
+
+#ifdef CONFIG_SYS_MEM_RSVD_FOR_MMU
+int reserve_mmu(void)
+{
+	initialize_tcm(TCM_LOCK);
+	memset((void *)ZYNQMP_TCM_BASE_ADDR, 0, ZYNQMP_TCM_SIZE);
+	gd->arch.tlb_size = PGTABLE_SIZE;
+	gd->arch.tlb_addr = ZYNQMP_TCM_BASE_ADDR;
+
+	return 0;
+}
+#endif
+
+static unsigned int zynqmp_get_silicon_version_secure(void)
+{
+	u32 ver;
+
+	ver = readl(&csu_base->version);
+	ver &= ZYNQMP_SILICON_VER_MASK;
+	ver >>= ZYNQMP_SILICON_VER_SHIFT;
+
+	return ver;
+}
+
 unsigned int zynqmp_get_silicon_version(void)
 {
+	if (current_el() == 3)
+		return zynqmp_get_silicon_version_secure();
+
 	gd->cpu_clk = get_tbclk();
 
 	switch (gd->cpu_clk) {
-	case 0 ... 1000000:
-		return ZYNQMP_CSU_VERSION_VELOCE;
 	case 50000000:
 		return ZYNQMP_CSU_VERSION_QEMU;
 	}
 
-	return ZYNQMP_CSU_VERSION_EP108;
+	return ZYNQMP_CSU_VERSION_SILICON;
 }
 
-#ifndef CONFIG_SYS_DCACHE_OFF
-#include <asm/armv8/mmu.h>
+#define ZYNQMP_MMIO_READ	0xC2000014
+#define ZYNQMP_MMIO_WRITE	0xC2000013
 
-#define SECTION_SHIFT_L1	30UL
-#define SECTION_SHIFT_L2	21UL
-#define BLOCK_SIZE_L0		0x8000000000UL
-#define BLOCK_SIZE_L1		(1 << SECTION_SHIFT_L1)
-#define BLOCK_SIZE_L2		(1 << SECTION_SHIFT_L2)
-
-#define TCR_TG1_4K		(1 << 31)
-#define TCR_EPD1_DISABLE	(1 << 23)
-#define ZYNQMO_VA_BITS		40
-#define ZYNQMP_TCR		TCR_TG1_4K | \
-				TCR_EPD1_DISABLE | \
-				TCR_SHARED_OUTER | \
-				TCR_SHARED_INNER | \
-				TCR_IRGN_WBWA | \
-				TCR_ORGN_WBWA | \
-				TCR_T0SZ(ZYNQMO_VA_BITS)
-
-#define MEMORY_ATTR	PMD_SECT_AF | PMD_SECT_INNER_SHARE |	\
-			PMD_ATTRINDX(MT_NORMAL) |	\
-			PMD_TYPE_SECT
-#define DEVICE_ATTR	PMD_SECT_AF | PMD_SECT_PXN |	\
-			PMD_SECT_UXN | PMD_ATTRINDX(MT_DEVICE_NGNRNE) |	\
-			PMD_TYPE_SECT
-
-/* 4K size is required to place 512 entries in each level */
-#define TLB_TABLE_SIZE	0x1000
-
-struct attr_tbl {
-	u32 num;
-	u64 attr;
-};
-
-static struct attr_tbl attr_tbll1t0[4] = { {16, 0x0},
-					   {8, DEVICE_ATTR},
-					   {32, MEMORY_ATTR},
-					   {456, DEVICE_ATTR}
-					 };
-static struct attr_tbl attr_tbll2t3[4] = { {0x180, DEVICE_ATTR},
-					   {0x40, 0x0},
-					   {0x3F, DEVICE_ATTR},
-					   {0x1, MEMORY_ATTR}
-					 };
-
-/*
- * This mmu table looks as below
- * Level 0 table contains two entries to 512GB sizes. One is Level1 Table 0
- * and other Level1 Table1.
- * Level1 Table0 contains entries for each 1GB from 0 to 511GB.
- * Level1 Table1 contains entries for each 1GB from 512GB to 1TB.
- * Level2 Table0, Level2 Table1, Level2 Table2 and Level2 Table3 contains
- * entries for each 2MB starting from 0GB, 1GB, 2GB and 3GB respectively.
- */
-static void zynqmp_mmu_setup(void)
+int __maybe_unused invoke_smc(u32 pm_api_id, u32 arg0, u32 arg1, u32 arg2,
+			      u32 arg3, u32 *ret_payload)
 {
-	int el;
-	u32 index_attr;
-	u64 i, section_l1t0, section_l1t1;
-	u64 section_l2t0, section_l2t1, section_l2t2, section_l2t3;
-	u64 *level0_table = (u64 *)gd->arch.tlb_addr;
-	u64 *level1_table_0 = (u64 *)(gd->arch.tlb_addr + TLB_TABLE_SIZE);
-	u64 *level1_table_1 = (u64 *)(gd->arch.tlb_addr + (2 * TLB_TABLE_SIZE));
-	u64 *level2_table_0 = (u64 *)(gd->arch.tlb_addr + (3 * TLB_TABLE_SIZE));
-	u64 *level2_table_1 = (u64 *)(gd->arch.tlb_addr + (4 * TLB_TABLE_SIZE));
-	u64 *level2_table_2 = (u64 *)(gd->arch.tlb_addr + (5 * TLB_TABLE_SIZE));
-	u64 *level2_table_3 = (u64 *)(gd->arch.tlb_addr + (6 * TLB_TABLE_SIZE));
-
-	level0_table[0] =
-		(u64)level1_table_0 | PMD_TYPE_TABLE;
-	level0_table[1] =
-		(u64)level1_table_1 | PMD_TYPE_TABLE;
-
 	/*
-	 * set level 1 table 0, covering 0 to 512GB
-	 * set level 1 table 1, covering 512GB to 1TB
+	 * Added SIP service call Function Identifier
+	 * Make sure to stay in x0 register
 	 */
-	section_l1t0 = 0;
-	section_l1t1 = BLOCK_SIZE_L0;
+	struct pt_regs regs;
 
-	index_attr = 0;
-	for (i = 0; i < 512; i++) {
-		level1_table_0[i] = section_l1t0;
-		level1_table_0[i] |= attr_tbll1t0[index_attr].attr;
-		attr_tbll1t0[index_attr].num--;
-		if (attr_tbll1t0[index_attr].num == 0)
-			index_attr++;
-		level1_table_1[i] = section_l1t1;
-		level1_table_1[i] |= DEVICE_ATTR;
-		section_l1t0 += BLOCK_SIZE_L1;
-		section_l1t1 += BLOCK_SIZE_L1;
+	regs.regs[0] = pm_api_id;
+	regs.regs[1] = ((u64)arg1 << 32) | arg0;
+	regs.regs[2] = ((u64)arg3 << 32) | arg2;
+
+	smc_call(&regs);
+
+	if (ret_payload != NULL) {
+		ret_payload[0] = (u32)regs.regs[0];
+		ret_payload[1] = upper_32_bits(regs.regs[0]);
+		ret_payload[2] = (u32)regs.regs[1];
+		ret_payload[3] = upper_32_bits(regs.regs[1]);
+		ret_payload[4] = (u32)regs.regs[2];
 	}
 
-	level1_table_0[0] =
-		(u64)level2_table_0 | PMD_TYPE_TABLE;
-	level1_table_0[1] =
-		(u64)level2_table_1 | PMD_TYPE_TABLE;
-	level1_table_0[2] =
-		(u64)level2_table_2 | PMD_TYPE_TABLE;
-	level1_table_0[3] =
-		(u64)level2_table_3 | PMD_TYPE_TABLE;
-
-	section_l2t0 = 0;
-	section_l2t1 = section_l2t0 + BLOCK_SIZE_L1; /* 1GB */
-	section_l2t2 = section_l2t1 + BLOCK_SIZE_L1; /* 2GB */
-	section_l2t3 = section_l2t2 + BLOCK_SIZE_L1; /* 3GB */
-
-	index_attr = 0;
-
-	for (i = 0; i < 512; i++) {
-		level2_table_0[i] = section_l2t0 | MEMORY_ATTR;
-		level2_table_1[i] = section_l2t1 | MEMORY_ATTR;
-		level2_table_2[i] = section_l2t2 | DEVICE_ATTR;
-		level2_table_3[i] = section_l2t3 |
-				    attr_tbll2t3[index_attr].attr;
-		attr_tbll2t3[index_attr].num--;
-		if (attr_tbll2t3[index_attr].num == 0)
-			index_attr++;
-		section_l2t0 += BLOCK_SIZE_L2;
-		section_l2t1 += BLOCK_SIZE_L2;
-		section_l2t2 += BLOCK_SIZE_L2;
-		section_l2t3 += BLOCK_SIZE_L2;
-	}
-
-	/* flush new MMU table */
-	flush_dcache_range(gd->arch.tlb_addr,
-			   gd->arch.tlb_addr + gd->arch.tlb_size);
-
-	/* point TTBR to the new table */
-	el = current_el();
-	set_ttbr_tcr_mair(el, gd->arch.tlb_addr,
-			  ZYNQMP_TCR, MEMORY_ATTRIBUTES);
-
-	set_sctlr(get_sctlr() | CR_M);
+	return regs.regs[0];
 }
 
-int arch_cpu_init(void)
+#define ZYNQMP_SIP_SVC_GET_API_VERSION		0xC2000001
+
+#define ZYNQMP_PM_VERSION_MAJOR		1
+#define ZYNQMP_PM_VERSION_MINOR		0
+#define ZYNQMP_PM_VERSION_MAJOR_SHIFT	16
+#define ZYNQMP_PM_VERSION_MINOR_MASK	0xFFFF
+
+#define ZYNQMP_PM_VERSION	\
+	((ZYNQMP_PM_VERSION_MAJOR << ZYNQMP_PM_VERSION_MAJOR_SHIFT) | \
+				 ZYNQMP_PM_VERSION_MINOR)
+
+#if defined(CONFIG_CLK_ZYNQMP)
+void zynqmp_pmufw_version(void)
 {
-	icache_enable();
-	__asm_invalidate_dcache_all();
-	__asm_invalidate_tlb_all();
+	int ret;
+	u32 ret_payload[PAYLOAD_ARG_CNT];
+	u32 pm_api_version;
+
+	ret = invoke_smc(ZYNQMP_SIP_SVC_GET_API_VERSION, 0, 0, 0, 0,
+			 ret_payload);
+	pm_api_version = ret_payload[1];
+
+	if (ret)
+		panic("PMUFW is not found - Please load it!\n");
+
+	printf("PMUFW:\tv%d.%d\n",
+	       pm_api_version >> ZYNQMP_PM_VERSION_MAJOR_SHIFT,
+	       pm_api_version & ZYNQMP_PM_VERSION_MINOR_MASK);
+
+	if (pm_api_version < ZYNQMP_PM_VERSION)
+		panic("PMUFW version error. Expected: v%d.%d\n",
+		      ZYNQMP_PM_VERSION_MAJOR, ZYNQMP_PM_VERSION_MINOR);
+}
+#endif
+
+static int zynqmp_mmio_rawwrite(const u32 address,
+		      const u32 mask,
+		      const u32 value)
+{
+	u32 data;
+	u32 value_local = value;
+	int ret;
+
+	ret = zynqmp_mmio_read(address, &data);
+	if (ret)
+		return ret;
+
+	data &= ~mask;
+	value_local &= mask;
+	value_local |= data;
+	writel(value_local, (ulong)address);
 	return 0;
 }
 
-/*
- * This function is called from lib/board.c.
- * It recreates MMU table in main memory. MMU and d-cache are enabled earlier.
- * There is no need to disable d-cache for this operation.
- */
-void enable_caches(void)
+static int zynqmp_mmio_rawread(const u32 address, u32 *value)
 {
-	/* The data cache is not active unless the mmu is enabled */
-	if (!(get_sctlr() & CR_M)) {
-		invalidate_dcache_all();
-		__asm_invalidate_tlb_all();
-		zynqmp_mmu_setup();
+	*value = readl((ulong)address);
+	return 0;
+}
+
+int zynqmp_mmio_write(const u32 address,
+		      const u32 mask,
+		      const u32 value)
+{
+	if (IS_ENABLED(CONFIG_SPL_BUILD) || current_el() == 3)
+		return zynqmp_mmio_rawwrite(address, mask, value);
+	else
+		return invoke_smc(ZYNQMP_MMIO_WRITE, address, mask,
+				  value, 0, NULL);
+
+	return -EINVAL;
+}
+
+int zynqmp_mmio_read(const u32 address, u32 *value)
+{
+	u32 ret_payload[PAYLOAD_ARG_CNT];
+	u32 ret;
+
+	if (!value)
+		return -EINVAL;
+
+	if (IS_ENABLED(CONFIG_SPL_BUILD) || current_el() == 3) {
+		ret = zynqmp_mmio_rawread(address, value);
+	} else {
+		ret = invoke_smc(ZYNQMP_MMIO_READ, address, 0, 0,
+				 0, ret_payload);
+		*value = ret_payload[1];
 	}
-	puts("Enabling Caches...\n");
 
-	set_sctlr(get_sctlr() | CR_C);
+	return ret;
 }
-
-u64 *arch_get_page_table(void)
-{
-	return (u64 *)(gd->arch.tlb_addr + 0x3000);
-}
-#endif

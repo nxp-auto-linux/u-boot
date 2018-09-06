@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef __DDR3_AXP_CONFIG_H
@@ -44,9 +43,14 @@
  * DDR3_TRAINING_DEBUG - Debug prints of internal code
  */
 #define DDR_TARGET_FABRIC			5
+/* Only enable ECC if the board selects it */
+#ifdef CONFIG_BOARD_ECC_SUPPORT
 #define DRAM_ECC				1
+#else
+#define DRAM_ECC				0
+#endif
 
-#ifdef MV_DDR_32BIT
+#ifdef CONFIG_DDR_32BIT
 #define BUS_WIDTH                               32
 #else
 #define BUS_WIDTH				64

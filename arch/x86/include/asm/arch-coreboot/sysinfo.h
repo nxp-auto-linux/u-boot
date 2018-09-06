@@ -1,15 +1,14 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * This file is part of the libpayload project.
  *
  * Copyright (C) 2008 Advanced Micro Devices, Inc.
- *
- * SPDX-License-Identifier:	BSD-3-Clause
  */
 
 #ifndef _COREBOOT_SYSINFO_H
 #define _COREBOOT_SYSINFO_H
 
-#include <asm/arch/tables.h>
+#include <asm/coreboot_tables.h>
 
 /* Maximum number of memory range definitions */
 #define SYSINFO_MAX_MEM_RANGES	32
@@ -55,5 +54,7 @@ struct sysinfo_t {
 };
 
 extern struct sysinfo_t lib_sysinfo;
+
+int get_coreboot_info(struct sysinfo_t *info);
 
 #endif

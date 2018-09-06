@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * board/renesas/lager/qos.c
  *
  * Copyright (C) 2013,2014 Renesas Electronics Corporation
- *
- * SPDX-License-Identifier: GPL-2.0
  */
 
 #include <common.h>
@@ -13,7 +12,7 @@
 #include <asm/arch/rmobile.h>
 
 /* QoS version 0.955 for ES1 and version 0.973 for ES2 */
-#if defined(CONFIG_RMOBILE_EXTRAM_BOOT)
+#if defined(CONFIG_ARCH_RMOBILE_EXTRAM_BOOT)
 enum {
 	DBSC3_00, DBSC3_01, DBSC3_02, DBSC3_03, DBSC3_04,
 	DBSC3_05, DBSC3_06, DBSC3_07, DBSC3_08, DBSC3_09,
@@ -2426,8 +2425,8 @@ void qos_init(void)
 	else
 		qos_init_es1();
 }
-#else /* CONFIG_RMOBILE_EXTRAM_BOOT */
+#else /* CONFIG_ARCH_RMOBILE_EXTRAM_BOOT */
 void qos_init(void)
 {
 }
-#endif /* CONFIG_RMOBILE_EXTRAM_BOOT */
+#endif /* CONFIG_ARCH_RMOBILE_EXTRAM_BOOT */

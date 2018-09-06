@@ -1,21 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <fsl_validate.h>
 #include <fsl_secboot_err.h>
 #include <fsl_sfp.h>
 #include <fsl_sec.h>
 #include <command.h>
 #include <malloc.h>
-#include <dm/uclass.h>
 #include <u-boot/rsa-mod-exp.h>
 #include <hash.h>
 #include <fsl_secboot_err.h>
-#ifdef CONFIG_LS102XA
+#ifdef CONFIG_ARCH_LS1021A
 #include <asm/arch/immap_ls102xa.h>
 #endif
 
@@ -24,6 +23,14 @@
 #define SHA256_NIBBLES	(256/4)
 #define NUM_HEX_CHARS	(sizeof(ulong) * 2)
 
+#define CHECK_KEY_LEN(key_len)	(((key_len) == 2 * KEY_SIZE_BYTES / 4) || \
+				 ((key_len) == 2 * KEY_SIZE_BYTES / 2) || \
+				 ((key_len) == 2 * KEY_SIZE_BYTES))
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+/* Global data structure */
+static struct fsl_secboot_glb glb;
+#endif
+
 /* This array contains DER value for SHA-256 */
 static const u8 hash_identifier[] = { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60,
 		0x86, 0x48, 0x01, 0x65,	0x03, 0x04, 0x02, 0x01, 0x05, 0x00,
@@ -31,7 +38,13 @@ static const u8 hash_identifier[] = { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60,
 		};
 
 static u8 hash_val[SHA256_BYTES];
+
+#ifdef CONFIG_ESBC_HDR_LS
+/* New Barker Code for LS ESBC Header */
+static const u8 barker_code[ESBC_BARKER_LEN] = { 0x12, 0x19, 0x20, 0x01 };
+#else
 static const u8 barker_code[ESBC_BARKER_LEN] = { 0x68, 0x39, 0x27, 0x81 };
+#endif
 
 void branch_to_self(void) __attribute__ ((noreturn));
 
@@ -50,7 +63,7 @@ self:
 #if defined(CONFIG_FSL_ISBC_KEY_EXT)
 static u32 check_ie(struct fsl_secboot_img_priv *img)
 {
-	if (img->hdr.ie_flag)
+	if (img->hdr.ie_flag & IE_FLAG_MASK)
 		return 1;
 
 	return 0;
@@ -109,7 +122,21 @@ int get_csf_base_addr(u32 *csf_addr, u32 *flash_base_addr)
 }
 #endif
 
-static int get_ie_info_addr(u32 *ie_addr)
+#if defined(CONFIG_ESBC_HDR_LS)
+static int get_ie_info_addr(uintptr_t *ie_addr)
+{
+	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	/* For LS-CH3, the address of IE Table is
+	 * stated in Scratch13 and scratch14 of DCFG.
+	 * Bootrom validates this table while validating uboot.
+	 * DCFG is LE*/
+	*ie_addr = in_le32(&gur->scratchrw[SCRATCH_IE_HIGH_ADR - 1]);
+	*ie_addr = *ie_addr << 32;
+	*ie_addr |= in_le32(&gur->scratchrw[SCRATCH_IE_LOW_ADR - 1]);
+	return 0;
+}
+#else /* CONFIG_ESBC_HDR_LS */
+static int get_ie_info_addr(uintptr_t *ie_addr)
 {
 	struct fsl_secboot_img_hdr *hdr;
 	struct fsl_secboot_sg_table *sg_tbl;
@@ -137,26 +164,35 @@ static int get_ie_info_addr(u32 *ie_addr)
 
 	/* IE Key Table is the first entry in the SG Table */
 #if defined(CONFIG_MPC85xx)
-	*ie_addr = (sg_tbl->src_addr & ~(CONFIG_SYS_PBI_FLASH_BASE)) +
-		   flash_base_addr;
+	*ie_addr = (uintptr_t)((sg_tbl->src_addr &
+			~(CONFIG_SYS_PBI_FLASH_BASE)) +
+			flash_base_addr);
 #else
-	*ie_addr = sg_tbl->src_addr;
+	*ie_addr = (uintptr_t)sg_tbl->src_addr;
 #endif
 
-	debug("IE Table address is %x\n", *ie_addr);
+	debug("IE Table address is %lx\n", *ie_addr);
 	return 0;
 }
-
+#endif /* CONFIG_ESBC_HDR_LS */
 #endif
 
 #ifdef CONFIG_KEY_REVOCATION
 /* This function checks srk_table_flag in header and set/reset srk_flag.*/
 static u32 check_srk(struct fsl_secboot_img_priv *img)
 {
+#ifdef CONFIG_ESBC_HDR_LS
+	/* In LS, No SRK Flag as SRK is always present if IE not present*/
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+	return !check_ie(img);
+#endif
+	return 1;
+#else
 	if (img->hdr.len_kr.srk_table_flag & SRK_FLAG)
 		return 1;
 
 	return 0;
+#endif
 }
 
 /* This function returns ospr's key_revoc values.*/
@@ -179,19 +215,113 @@ static u32 is_key_revoked(u32 keynum, u32 rev_flag)
 	return 0;
 }
 
-/* It validates srk_table key lengths.*/
-static u32 validate_srk_tbl(struct srk_table *tbl, u32 num_entries)
+/* It read validates srk_table key lengths.*/
+static u32 read_validate_srk_tbl(struct fsl_secboot_img_priv *img)
 {
 	int i = 0;
-	for (i = 0; i < num_entries; i++) {
-		if (!((tbl[i].key_len == 2 * KEY_SIZE_BYTES/4) ||
-		      (tbl[i].key_len == 2 * KEY_SIZE_BYTES/2) ||
-		      (tbl[i].key_len == 2 * KEY_SIZE_BYTES)))
+	u32 ret, key_num, key_revoc_flag, size;
+	struct fsl_secboot_img_hdr *hdr = &img->hdr;
+	void *esbc = (u8 *)(uintptr_t)img->ehdrloc;
+
+	if ((hdr->len_kr.num_srk == 0) ||
+	    (hdr->len_kr.num_srk > MAX_KEY_ENTRIES))
+		return ERROR_ESBC_CLIENT_HEADER_INVALID_SRK_NUM_ENTRY;
+
+	key_num = hdr->len_kr.srk_sel;
+	if (key_num == 0 || key_num > hdr->len_kr.num_srk)
+		return ERROR_ESBC_CLIENT_HEADER_INVALID_KEY_NUM;
+
+	/* Get revoc key from sfp */
+	key_revoc_flag = get_key_revoc();
+	ret = is_key_revoked(key_num, key_revoc_flag);
+	if (ret)
+		return ERROR_ESBC_CLIENT_HEADER_KEY_REVOKED;
+
+	size = hdr->len_kr.num_srk * sizeof(struct srk_table);
+
+	memcpy(&img->srk_tbl, esbc + hdr->srk_tbl_off, size);
+
+	for (i = 0; i < hdr->len_kr.num_srk; i++) {
+		if (!CHECK_KEY_LEN(img->srk_tbl[i].key_len))
 			return ERROR_ESBC_CLIENT_HEADER_INV_SRK_ENTRY_KEYLEN;
 	}
+
+	img->key_len = img->srk_tbl[key_num - 1].key_len;
+
+	memcpy(&img->img_key, &(img->srk_tbl[key_num - 1].pkey),
+	       img->key_len);
+
 	return 0;
 }
 #endif
+
+#ifndef CONFIG_ESBC_HDR_LS
+static u32 read_validate_single_key(struct fsl_secboot_img_priv *img)
+{
+	struct fsl_secboot_img_hdr *hdr = &img->hdr;
+	void *esbc = (u8 *)(uintptr_t)img->ehdrloc;
+
+	/* check key length */
+	if (!CHECK_KEY_LEN(hdr->key_len))
+		return ERROR_ESBC_CLIENT_HEADER_KEY_LEN;
+
+	memcpy(&img->img_key, esbc + hdr->pkey, hdr->key_len);
+
+	img->key_len = hdr->key_len;
+
+	return 0;
+}
+#endif /* CONFIG_ESBC_HDR_LS */
+
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+
+static void install_ie_tbl(uintptr_t ie_tbl_addr,
+		struct fsl_secboot_img_priv *img)
+{
+	/* Copy IE tbl to Global Data */
+	memcpy(&glb.ie_tbl, (u8 *)ie_tbl_addr, sizeof(struct ie_key_info));
+	img->ie_addr = (uintptr_t)&glb.ie_tbl;
+	glb.ie_addr = img->ie_addr;
+}
+
+static u32 read_validate_ie_tbl(struct fsl_secboot_img_priv *img)
+{
+	struct fsl_secboot_img_hdr *hdr = &img->hdr;
+	u32 ie_key_len, ie_revoc_flag, ie_num;
+	struct ie_key_info *ie_info;
+
+	if (!img->ie_addr) {
+		if (get_ie_info_addr(&img->ie_addr))
+			return ERROR_IE_TABLE_NOT_FOUND;
+		else
+			install_ie_tbl(img->ie_addr, img);
+		}
+
+	ie_info = (struct ie_key_info *)(uintptr_t)img->ie_addr;
+	if (ie_info->num_keys == 0 || ie_info->num_keys > 32)
+		return ERROR_ESBC_CLIENT_HEADER_INVALID_IE_NUM_ENTRY;
+
+	ie_num = hdr->ie_key_sel;
+	if (ie_num == 0 || ie_num > ie_info->num_keys)
+		return ERROR_ESBC_CLIENT_HEADER_INVALID_IE_KEY_NUM;
+
+	ie_revoc_flag = ie_info->key_revok;
+	if ((u32)(1 << (ie_num - 1)) & ie_revoc_flag)
+		return ERROR_ESBC_CLIENT_HEADER_IE_KEY_REVOKED;
+
+	ie_key_len = ie_info->ie_key_tbl[ie_num - 1].key_len;
+
+	if (!CHECK_KEY_LEN(ie_key_len))
+		return ERROR_ESBC_CLIENT_HEADER_INV_IE_ENTRY_KEYLEN;
+
+	memcpy(&img->img_key, &(ie_info->ie_key_tbl[ie_num - 1].pkey),
+	       ie_key_len);
+
+	img->key_len = ie_key_len;
+	return 0;
+}
+#endif
+
 
 /* This function return length of public key.*/
 static inline u32 get_key_len(struct fsl_secboot_img_priv *img)
@@ -207,30 +337,20 @@ static inline u32 get_key_len(struct fsl_secboot_img_priv *img)
  */
 static void fsl_secboot_header_verification_failure(void)
 {
-	struct ccsr_sec_mon_regs *sec_mon_regs = (void *)
-						(CONFIG_SYS_SEC_MON_ADDR);
 	struct ccsr_sfp_regs *sfp_regs = (void *)(CONFIG_SYS_SFP_ADDR);
-	u32 sts = sec_mon_in32(&sec_mon_regs->hp_stat);
 
 	/* 29th bit of OSPR is ITS */
 	u32 its = sfp_in32(&sfp_regs->ospr) >> 2;
 
-	/*
-	 * Read the SEC_MON status register
-	 * Read SSM_ST field
-	 */
-	sts = sec_mon_in32(&sec_mon_regs->hp_stat);
-	if ((sts & HPSR_SSM_ST_MASK) == HPSR_SSM_ST_TRUST) {
-		if (its == 1)
-			change_sec_mon_state(HPSR_SSM_ST_TRUST,
-					     HPSR_SSM_ST_SOFT_FAIL);
-		else
-			change_sec_mon_state(HPSR_SSM_ST_TRUST,
-					     HPSR_SSM_ST_NON_SECURE);
-	}
+	if (its == 1)
+		set_sec_mon_state(HPSR_SSM_ST_SOFT_FAIL);
+	else
+		set_sec_mon_state(HPSR_SSM_ST_NON_SECURE);
 
 	printf("Generating reset request\n");
 	do_reset(NULL, 0, 0, NULL);
+	/* If reset doesn't coocur, halt execution */
+	do_esbc_halt(NULL, 0, 0, NULL);
 }
 
 /*
@@ -242,29 +362,20 @@ static void fsl_secboot_header_verification_failure(void)
  */
 static void fsl_secboot_image_verification_failure(void)
 {
-	struct ccsr_sec_mon_regs *sec_mon_regs = (void *)
-						(CONFIG_SYS_SEC_MON_ADDR);
 	struct ccsr_sfp_regs *sfp_regs = (void *)(CONFIG_SYS_SFP_ADDR);
-	u32 sts = sec_mon_in32(&sec_mon_regs->hp_stat);
 
 	u32 its = (sfp_in32(&sfp_regs->ospr) & ITS_MASK) >> ITS_BIT;
 
-	/*
-	 * Read the SEC_MON status register
-	 * Read SSM_ST field
-	 */
-	sts = sec_mon_in32(&sec_mon_regs->hp_stat);
-	if ((sts & HPSR_SSM_ST_MASK) == HPSR_SSM_ST_TRUST) {
-		if (its == 1) {
-			change_sec_mon_state(HPSR_SSM_ST_TRUST,
-					     HPSR_SSM_ST_SOFT_FAIL);
+	if (its == 1) {
+		set_sec_mon_state(HPSR_SSM_ST_SOFT_FAIL);
 
-			printf("Generating reset request\n");
-			do_reset(NULL, 0, 0, NULL);
-		} else {
-			change_sec_mon_state(HPSR_SSM_ST_TRUST,
-					     HPSR_SSM_ST_NON_SECURE);
-		}
+		printf("Generating reset request\n");
+		do_reset(NULL, 0, 0, NULL);
+		/* If reset doesn't coocur, halt execution */
+		do_esbc_halt(NULL, 0, 0, NULL);
+
+	} else {
+		set_sec_mon_state(HPSR_SSM_ST_NON_SECURE);
 	}
 }
 
@@ -281,6 +392,7 @@ static void fsl_secboot_bootscript_parse_failure(void)
  */
 void fsl_secboot_handle_error(int error)
 {
+#ifndef CONFIG_SPL_BUILD
 	const struct fsl_secboot_errcode *e;
 
 	for (e = fsl_secboot_errcodes; e->errcode != ERROR_ESBC_CLIENT_MAX;
@@ -288,6 +400,16 @@ void fsl_secboot_handle_error(int error)
 		if (e->errcode == error)
 			printf("ERROR :: %x :: %s\n", error, e->name);
 	}
+#else
+	printf("ERROR :: %x\n", error);
+#endif
+
+	/* If Boot Mode is secure, transition the SNVS state and issue
+	 * reset based on type of failure and ITS setting.
+	 * If Boot mode is non-secure, return from this function.
+	 */
+	if (fsl_check_boot_mode_secure() == 0)
+		return;
 
 	switch (error) {
 	case ERROR_ESBC_CLIENT_HEADER_BARKER:
@@ -300,6 +422,7 @@ void fsl_secboot_handle_error(int error)
 	case ERROR_ESBC_CLIENT_HEADER_SIG_KEY_MOD:
 	case ERROR_ESBC_CLIENT_HEADER_SG_ESBC_EP:
 	case ERROR_ESBC_CLIENT_HEADER_SG_ENTIRES_BAD:
+	case ERROR_KEY_TABLE_NOT_FOUND:
 #ifdef CONFIG_KEY_REVOCATION
 	case ERROR_ESBC_CLIENT_HEADER_KEY_REVOKED:
 	case ERROR_ESBC_CLIENT_HEADER_INVALID_SRK_NUM_ENTRY:
@@ -448,20 +571,22 @@ static int calc_esbchdr_esbc_hash(struct fsl_secboot_img_priv *img)
 	if (!key_hash && check_ie(img))
 		key_hash = 1;
 #endif
-	if (!key_hash)
+#ifndef CONFIG_ESBC_HDR_LS
+/* No single key support in LS ESBC header */
+	if (!key_hash) {
 		ret = algo->hash_update(algo, ctx,
 			img->img_key, img->hdr.key_len, 0);
+		key_hash = 1;
+	}
+#endif
 	if (ret)
 		return ret;
+	if (!key_hash)
+		return ERROR_KEY_TABLE_NOT_FOUND;
 
 	/* Update hash for actual Image */
-#ifdef CONFIG_ESBC_ADDR_64BIT
 	ret = algo->hash_update(algo, ctx,
-		(u8 *)(uintptr_t)img->hdr.pimg64, img->hdr.img_size, 1);
-#else
-	ret = algo->hash_update(algo, ctx,
-		(u8 *)(uintptr_t)img->hdr.pimg, img->hdr.img_size, 1);
-#endif
+		(u8 *)(*(img->img_addr_ptr)), img->img_size, 1);
 	if (ret)
 		return ret;
 
@@ -537,113 +662,62 @@ static void construct_img_encoded_hash_second(struct fsl_secboot_img_priv *img)
  */
 static int read_validate_esbc_client_header(struct fsl_secboot_img_priv *img)
 {
-	char buf[20];
 	struct fsl_secboot_img_hdr *hdr = &img->hdr;
 	void *esbc = (u8 *)(uintptr_t)img->ehdrloc;
 	u8 *k, *s;
-#ifdef CONFIG_KEY_REVOCATION
-	u32 ret;
-	u32 key_num, key_revoc_flag, size;
-#endif
-#if defined(CONFIG_FSL_ISBC_KEY_EXT)
-	struct ie_key_info *ie_info;
-	u32 ie_num, ie_revoc_flag, ie_key_len;
-#endif
+	u32 ret = 0;
+
 	int  key_found = 0;
 
 	/* check barker code */
 	if (memcmp(hdr->barker, barker_code, ESBC_BARKER_LEN))
 		return ERROR_ESBC_CLIENT_HEADER_BARKER;
 
-#ifdef CONFIG_ESBC_ADDR_64BIT
-	sprintf(buf, "%llx", hdr->pimg64);
-#else
-	sprintf(buf, "%x", hdr->pimg);
-#endif
-	setenv("img_addr", buf);
+	/* If Image Address is not passed as argument to function,
+	 * then Address and Size must be read from the Header.
+	 */
+	if (*(img->img_addr_ptr) == 0) {
+	#ifdef CONFIG_ESBC_ADDR_64BIT
+		*(img->img_addr_ptr) = hdr->pimg64;
+	#else
+		*(img->img_addr_ptr) = hdr->pimg;
+	#endif
+	}
 
 	if (!hdr->img_size)
 		return ERROR_ESBC_CLIENT_HEADER_IMG_SIZE;
 
+	img->img_size = hdr->img_size;
+
 	/* Key checking*/
 #ifdef CONFIG_KEY_REVOCATION
 	if (check_srk(img)) {
-		if ((hdr->len_kr.num_srk == 0) ||
-		    (hdr->len_kr.num_srk > MAX_KEY_ENTRIES))
-			return ERROR_ESBC_CLIENT_HEADER_INVALID_SRK_NUM_ENTRY;
-
-		key_num = hdr->len_kr.srk_sel;
-		if (key_num == 0 || key_num > hdr->len_kr.num_srk)
-			return ERROR_ESBC_CLIENT_HEADER_INVALID_KEY_NUM;
-
-		/* Get revoc key from sfp */
-		key_revoc_flag = get_key_revoc();
-		ret = is_key_revoked(key_num, key_revoc_flag);
-		if (ret)
-			return ERROR_ESBC_CLIENT_HEADER_KEY_REVOKED;
-
-		size = hdr->len_kr.num_srk * sizeof(struct srk_table);
-
-		memcpy(&img->srk_tbl, esbc + hdr->srk_tbl_off, size);
-
-		ret = validate_srk_tbl(img->srk_tbl, hdr->len_kr.num_srk);
-
+		ret = read_validate_srk_tbl(img);
 		if (ret != 0)
 			return ret;
-
-		img->key_len = img->srk_tbl[key_num - 1].key_len;
-
-		memcpy(&img->img_key, &(img->srk_tbl[key_num - 1].pkey),
-		       img->key_len);
-
 		key_found = 1;
 	}
 #endif
 
 #if defined(CONFIG_FSL_ISBC_KEY_EXT)
 	if (!key_found && check_ie(img)) {
-		if (get_ie_info_addr(&img->ie_addr))
-			return ERROR_IE_TABLE_NOT_FOUND;
-		ie_info = (struct ie_key_info *)(uintptr_t)img->ie_addr;
-		if (ie_info->num_keys == 0 || ie_info->num_keys > 32)
-			return ERROR_ESBC_CLIENT_HEADER_INVALID_IE_NUM_ENTRY;
-
-		ie_num = hdr->ie_key_sel;
-		if (ie_num == 0 || ie_num > ie_info->num_keys)
-			return ERROR_ESBC_CLIENT_HEADER_INVALID_IE_KEY_NUM;
-
-		ie_revoc_flag = ie_info->key_revok;
-		if ((u32)(1 << (ie_num - 1)) & ie_revoc_flag)
-			return ERROR_ESBC_CLIENT_HEADER_IE_KEY_REVOKED;
-
-		ie_key_len = ie_info->ie_key_tbl[ie_num - 1].key_len;
-
-		if (!((ie_key_len == 2 * KEY_SIZE_BYTES / 4) ||
-		      (ie_key_len == 2 * KEY_SIZE_BYTES / 2) ||
-		      (ie_key_len == 2 * KEY_SIZE_BYTES)))
-			return ERROR_ESBC_CLIENT_HEADER_INV_IE_ENTRY_KEYLEN;
-
-		memcpy(&img->img_key, &(ie_info->ie_key_tbl[ie_num - 1].pkey),
-		       ie_key_len);
-
-		img->key_len = ie_key_len;
+		ret = read_validate_ie_tbl(img);
+		if (ret != 0)
+			return ret;
 		key_found = 1;
 	}
 #endif
-
+#ifndef CONFIG_ESBC_HDR_LS
+/* Single Key Feature not available in LS ESBC Header */
 	if (key_found == 0) {
-		/* check key length */
-		if (!((hdr->key_len == 2 * KEY_SIZE_BYTES / 4) ||
-		      (hdr->key_len == 2 * KEY_SIZE_BYTES / 2) ||
-		      (hdr->key_len == 2 * KEY_SIZE_BYTES)))
-			return ERROR_ESBC_CLIENT_HEADER_KEY_LEN;
-
-		memcpy(&img->img_key, esbc + hdr->pkey, hdr->key_len);
-
-		img->key_len = hdr->key_len;
-
+		ret = read_validate_single_key(img);
+		if (ret != 0)
+			return ret;
 		key_found = 1;
 	}
+#endif
+	if (!key_found)
+		return ERROR_KEY_TABLE_NOT_FOUND;
 
 	/* check signaure */
 	if (get_key_len(img) == 2 * hdr->sign_len) {
@@ -657,10 +731,12 @@ static int read_validate_esbc_client_header(struct fsl_secboot_img_priv *img)
 	}
 
 	memcpy(&img->img_sign, esbc + hdr->psign, hdr->sign_len);
-
+/* No SG support in LS-CH3 */
+#ifndef CONFIG_ESBC_HDR_LS
 	/* No SG support */
 	if (hdr->sg_flag)
 		return ERROR_ESBC_CLIENT_HEADER_SG;
+#endif
 
 	/* modulus most significant bit should be set */
 	k = (u8 *)&img->img_key;
@@ -698,27 +774,101 @@ static inline int str2longbe(const char *p, ulong *num)
 
 	return *p != '\0' && *endptr == '\0';
 }
-
-int fsl_secboot_validate(cmd_tbl_t *cmdtp, int flag, int argc,
-		char * const argv[])
+/* Function to calculate the ESBC Image Hash
+ * and hash from Digital signature.
+ * The Two hash's are compared to yield the
+ * result of signature validation.
+ */
+static int calculate_cmp_img_sig(struct fsl_secboot_img_priv *img)
 {
-	struct ccsr_sfp_regs *sfp_regs = (void *)(CONFIG_SYS_SFP_ADDR);
-	ulong hash[SHA256_BYTES/sizeof(ulong)];
-	char hash_str[NUM_HEX_CHARS + 1];
-	ulong addr = simple_strtoul(argv[1], NULL, 16);
-	struct fsl_secboot_img_priv *img;
-	struct fsl_secboot_img_hdr *hdr;
-	void *esbc;
-	int ret, i, hash_cmd = 0;
-	u32 srk_hash[8];
+	int ret;
 	uint32_t key_len;
 	struct key_prop prop;
 #if !defined(USE_HOSTCC)
 	struct udevice *mod_exp_dev;
 #endif
+	ret = calc_esbchdr_esbc_hash(img);
+	if (ret)
+		return ret;
 
-	if (argc == 3) {
-		char *cp = argv[2];
+	/* Construct encoded hash EM' wrt PKCSv1.5 */
+	construct_img_encoded_hash_second(img);
+
+	/* Fill prop structure for public key */
+	memset(&prop, 0, sizeof(struct key_prop));
+	key_len = get_key_len(img) / 2;
+	prop.modulus = img->img_key;
+	prop.public_exponent = img->img_key + key_len;
+	prop.num_bits = key_len * 8;
+	prop.exp_len = key_len;
+
+	ret = uclass_get_device(UCLASS_MOD_EXP, 0, &mod_exp_dev);
+	if (ret) {
+		printf("RSA: Can't find Modular Exp implementation\n");
+		return -EINVAL;
+	}
+
+	ret = rsa_mod_exp(mod_exp_dev, img->img_sign, img->hdr.sign_len,
+			  &prop, img->img_encoded_hash);
+	if (ret)
+		return ret;
+
+	/*
+	 * compare the encoded messages EM' and EM wrt RSA PKCSv1.5
+	 * memcmp returns zero on success
+	 * memcmp returns non-zero on failure
+	 */
+	ret = memcmp(&img->img_encoded_hash_second, &img->img_encoded_hash,
+		img->hdr.sign_len);
+
+	if (ret)
+		return ERROR_ESBC_CLIENT_HASH_COMPARE_EM;
+
+	return 0;
+}
+/* Function to initialize img priv and global data structure
+ */
+static int secboot_init(struct fsl_secboot_img_priv **img_ptr)
+{
+	*img_ptr = malloc(sizeof(struct fsl_secboot_img_priv));
+
+	struct fsl_secboot_img_priv *img = *img_ptr;
+
+	if (!img)
+		return -ENOMEM;
+	memset(img, 0, sizeof(struct fsl_secboot_img_priv));
+
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+	if (glb.ie_addr)
+		img->ie_addr = glb.ie_addr;
+#endif
+	return 0;
+}
+
+
+/* haddr - Address of the header of image to be validated.
+ * arg_hash_str - Option hash string. If provided, this
+ * overrides the key hash in the SFP fuses.
+ * img_addr_ptr - Optional pointer to address of image to be validated.
+ * If non zero addr, this overrides the addr of image in header,
+ * otherwise updated to image addr in header.
+ * Acts as both input and output of function.
+ * This pointer shouldn't be NULL.
+ */
+int fsl_secboot_validate(uintptr_t haddr, char *arg_hash_str,
+			uintptr_t *img_addr_ptr)
+{
+	struct ccsr_sfp_regs *sfp_regs = (void *)(CONFIG_SYS_SFP_ADDR);
+	ulong hash[SHA256_BYTES/sizeof(ulong)];
+	char hash_str[NUM_HEX_CHARS + 1];
+	struct fsl_secboot_img_priv *img;
+	struct fsl_secboot_img_hdr *hdr;
+	void *esbc;
+	int ret, i, hash_cmd = 0;
+	u32 srk_hash[8];
+
+	if (arg_hash_str != NULL) {
+		const char *cp = arg_hash_str;
 		int i = 0;
 
 		if (*cp == '0' && *(cp + 1) == 'x')
@@ -731,7 +881,7 @@ int fsl_secboot_validate(cmd_tbl_t *cmdtp, int flag, int argc,
 		 */
 		if (strlen(cp) != SHA256_NIBBLES) {
 			printf("%s is not a 256 bits hex string as expected\n",
-			       argv[2]);
+			       arg_hash_str);
 			return -1;
 		}
 
@@ -741,7 +891,7 @@ int fsl_secboot_validate(cmd_tbl_t *cmdtp, int flag, int argc,
 			hash_str[NUM_HEX_CHARS] = '\0';
 			if (!str2longbe(hash_str, &hash[i])) {
 				printf("%s is not a 256 bits hex string ",
-				       argv[2]);
+				       arg_hash_str);
 				return -1;
 			}
 		}
@@ -749,16 +899,15 @@ int fsl_secboot_validate(cmd_tbl_t *cmdtp, int flag, int argc,
 		hash_cmd = 1;
 	}
 
-	img = malloc(sizeof(struct fsl_secboot_img_priv));
+	ret = secboot_init(&img);
+	if (ret)
+		goto exit;
 
-	if (!img)
-		return -1;
-
-	memset(img, 0, sizeof(struct fsl_secboot_img_priv));
-
+	/* Update the information in Private Struct */
 	hdr = &img->hdr;
-	img->ehdrloc = addr;
-	esbc = (u8 *)(uintptr_t)img->ehdrloc;
+	img->ehdrloc = haddr;
+	img->img_addr_ptr = img_addr_ptr;
+	esbc = (u8 *)img->ehdrloc;
 
 	memcpy(hdr, esbc, sizeof(struct fsl_secboot_img_hdr));
 
@@ -800,51 +949,14 @@ int fsl_secboot_validate(cmd_tbl_t *cmdtp, int flag, int argc,
 		goto exit;
 	}
 
-	ret = calc_esbchdr_esbc_hash(img);
+	ret = calculate_cmp_img_sig(img);
 	if (ret) {
-		fsl_secblk_handle_error(ret);
+		fsl_secboot_handle_error(ret);
 		goto exit;
 	}
-
-	/* Construct encoded hash EM' wrt PKCSv1.5 */
-	construct_img_encoded_hash_second(img);
-
-	/* Fill prop structure for public key */
-	memset(&prop, 0, sizeof(struct key_prop));
-	key_len = get_key_len(img) / 2;
-	prop.modulus = img->img_key;
-	prop.public_exponent = img->img_key + key_len;
-	prop.num_bits = key_len * 8;
-	prop.exp_len = key_len;
-
-	ret = uclass_get_device(UCLASS_MOD_EXP, 0, &mod_exp_dev);
-	if (ret) {
-		printf("RSA: Can't find Modular Exp implementation\n");
-		return -EINVAL;
-	}
-
-	ret = rsa_mod_exp(mod_exp_dev, img->img_sign, img->hdr.sign_len,
-			  &prop, img->img_encoded_hash);
-	if (ret) {
-		fsl_secblk_handle_error(ret);
-		goto exit;
-	}
-
-	/*
-	 * compare the encoded messages EM' and EM wrt RSA PKCSv1.5
-	 * memcmp returns zero on success
-	 * memcmp returns non-zero on failure
-	 */
-	ret = memcmp(&img->img_encoded_hash_second, &img->img_encoded_hash,
-		img->hdr.sign_len);
-
-	if (ret) {
-		fsl_secboot_handle_error(ERROR_ESBC_CLIENT_HASH_COMPARE_EM);
-		goto exit;
-	}
-
-	printf("esbc_validate command successful\n");
 
 exit:
-	return 0;
+	/* Free Img as it was malloc'ed*/
+	free(img);
+	return ret;
 }

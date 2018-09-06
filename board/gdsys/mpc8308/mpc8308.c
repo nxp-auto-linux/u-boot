@@ -1,15 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
- * Dirk Eibach,  Guntermann & Drunck GmbH, eibach@gdsys.de
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Dirk Eibach,  Guntermann & Drunck GmbH, dirk.eibach@gdsys.cc
  */
 
 #include <common.h>
 #include <command.h>
 #include <asm/processor.h>
 #include <asm/io.h>
-#include <asm/ppc4xx-gpio.h>
 #include <asm/global_data.h>
 
 #include "mpc8308.h"
@@ -29,14 +27,6 @@ DECLARE_GLOBAL_DATA_PTR;
 int get_fpga_state(unsigned dev)
 {
 	return gd->arch.fpga_state[dev];
-}
-
-void print_fpga_state(unsigned dev)
-{
-	if (gd->arch.fpga_state[dev] & FPGA_STATE_DONE_FAILED)
-		puts("       Waiting for FPGA-DONE timed out.\n");
-	if (gd->arch.fpga_state[dev] & FPGA_STATE_REFLECTION_FAILED)
-		puts("       FPGA reflection test failed.\n");
 }
 
 int board_early_init_f(void)

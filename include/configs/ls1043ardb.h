@@ -1,22 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1043ARDB_H__
 #define __LS1043ARDB_H__
 
 #include "ls1043a_common.h"
-
-#define CONFIG_DISPLAY_CPUINFO
-#define CONFIG_DISPLAY_BOARDINFO
-
-#if defined(CONFIG_NAND_BOOT) || defined(CONFIG_SD_BOOT)
-#define CONFIG_SYS_TEXT_BASE		0x82000000
-#else
-#define CONFIG_SYS_TEXT_BASE		0x60100000
-#endif
 
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
@@ -31,11 +21,13 @@
 
 #define CONFIG_SYS_SPD_BUS_NUM		0
 
-#define CONFIG_FSL_DDR_BIST
-#define CONFIG_FSL_DDR_INTERACTIVE	/* Interactive debugging */
+#ifndef CONFIG_SPL
 #define CONFIG_SYS_DDR_RAW_TIMING
+#define CONFIG_FSL_DDR_INTERACTIVE	/* Interactive debugging */
+#define CONFIG_FSL_DDR_BIST
 #define CONFIG_ECC_INIT_VIA_DDRCONTROLLER
 #define CONFIG_MEM_INIT_VALUE           0xdeadbeef
+#endif
 
 #ifdef CONFIG_RAMBOOT_PBL
 #define CONFIG_SYS_FSL_PBL_PBI board/freescale/ls1043ardb/ls1043ardb_pbi.cfg
@@ -47,6 +39,11 @@
 
 #ifdef CONFIG_SD_BOOT
 #define CONFIG_SYS_FSL_PBL_RCW board/freescale/ls1043ardb/ls1043ardb_rcw_sd.cfg
+#define CONFIG_CMD_SPL
+#define CONFIG_SYS_SPL_ARGS_ADDR	0x90000000
+#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0x10000
+#define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR	0x500
+#define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS	30
 #endif
 
 /*
@@ -91,7 +88,9 @@
 /*
  * NAND Flash Definitions
  */
+#ifndef SPL_NO_IFC
 #define CONFIG_NAND_FSL_IFC
+#endif
 
 #define CONFIG_SYS_NAND_BASE		0x7e800000
 #define CONFIG_SYS_NAND_BASE_PHYS	CONFIG_SYS_NAND_BASE
@@ -128,14 +127,13 @@
 #define CONFIG_SYS_NAND_BASE_LIST	{ CONFIG_SYS_NAND_BASE }
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_MTD_NAND_VERIFY_WRITE
-#define CONFIG_CMD_NAND
 
 #define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_SPL_PAD_TO		0x20000		/* block aligned */
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	CONFIG_SPL_PAD_TO
-#define CONFIG_SYS_NAND_U_BOOT_SIZE	(640 << 10)
+#define CONFIG_SYS_NAND_U_BOOT_SIZE	(1024 << 10)
 #endif
 
 /*
@@ -214,6 +212,7 @@
 #define CONFIG_SYS_CS2_FTIM3		CONFIG_SYS_CPLD_FTIM3
 
 /* EEPROM */
+#ifndef SPL_NO_EEPROM
 #define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM		0
@@ -221,48 +220,40 @@
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		1
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	3
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
-
-/* DSPI */
-#define CONFIG_FSL_DSPI
-#ifdef CONFIG_FSL_DSPI
-#define CONFIG_CMD_SF
-#define CONFIG_DM_SPI_FLASH
-#define CONFIG_SPI_FLASH_STMICRO
-#define CONFIG_SF_DEFAULT_BUS		1
-#define CONFIG_SF_DEFAULT_CS		0
 #endif
 
 /*
  * Environment
  */
+#ifndef SPL_NO_ENV
 #define CONFIG_ENV_OVERWRITE
+#endif
 
 #if defined(CONFIG_NAND_BOOT)
-#define CONFIG_ENV_IS_IN_NAND
 #define CONFIG_ENV_SIZE			0x2000
-#define CONFIG_ENV_OFFSET		(10 * CONFIG_SYS_NAND_BLOCK_SIZE)
+#define CONFIG_ENV_OFFSET		(24 * CONFIG_SYS_NAND_BLOCK_SIZE)
 #elif defined(CONFIG_SD_BOOT)
-#define CONFIG_ENV_OFFSET		(1024 * 1024)
-#define CONFIG_ENV_IS_IN_MMC
+#define CONFIG_ENV_OFFSET		(3 * 1024 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_ENV_SIZE			0x2000
 #else
-#define CONFIG_ENV_IS_IN_FLASH
-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x200000)
+#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x300000)
 #define CONFIG_ENV_SECT_SIZE		0x20000
 #define CONFIG_ENV_SIZE			0x20000
 #endif
 
 /* FMan */
-#ifdef CONFIG_SYS_DPAA_FMAN
-#define CONFIG_FMAN_ENET
-#define CONFIG_CMD_MII
-#define CONFIG_PHYLIB
-#define CONFIG_PHYLIB_10G
-#define CONFIG_PHY_GIGE		/* Include GbE speed/duplex detection */
+#ifndef SPL_NO_FMAN
+#define AQR105_IRQ_MASK			0x40000000
 
+#ifdef CONFIG_NET
 #define CONFIG_PHY_VITESSE
 #define CONFIG_PHY_REALTEK
+#endif
+
+#ifdef CONFIG_SYS_DPAA_FMAN
+#define CONFIG_FMAN_ENET
+#define CONFIG_PHYLIB_10G
 #define CONFIG_PHY_AQUANTIA
 
 #define RGMII_PHY1_ADDR			0x1
@@ -277,26 +268,27 @@
 
 #define CONFIG_ETHPRIME			"FM1@DTSEC3"
 #endif
-
-/* USB */
-#define CONFIG_HAS_FSL_XHCI_USB
-#ifdef CONFIG_HAS_FSL_XHCI_USB
-#define CONFIG_USB_XHCI
-#define CONFIG_USB_XHCI_FSL
-#define CONFIG_USB_XHCI_DWC3
-#define CONFIG_USB_MAX_CONTROLLER_COUNT		3
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS	2
-#define CONFIG_CMD_USB
-#define CONFIG_USB_STORAGE
-#define CONFIG_CMD_EXT2
 #endif
 
-#ifdef CONFIG_SECURE_BOOT
-#define CONFIG_CMD_HASH
-#define CONFIG_SHA_HW_ACCEL
-#define CONFIG_CMD_BLOB
-/* For LS1043 (ARMv8), ESBC image Address in Header is 64 bit */
-#define CONFIG_ESBC_ADDR_64BIT
+/* QE */
+#ifndef SPL_NO_QE
+#if !defined(CONFIG_NAND_BOOT) && !defined(CONFIG_QSPI_BOOT)
+#define CONFIG_U_QE
+#endif
+#endif
+
+/* SATA */
+#ifndef SPL_NO_SATA
+#ifndef CONFIG_CMD_EXT2
+#define CONFIG_CMD_EXT2
+#endif
+#define CONFIG_SYS_SCSI_MAX_SCSI_ID		2
+#define CONFIG_SYS_SCSI_MAX_LUN			2
+#define CONFIG_SYS_SCSI_MAX_DEVICE		(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
+						CONFIG_SYS_SCSI_MAX_LUN)
+#define SCSI_VEND_ID 0x1b4b
+#define SCSI_DEV_ID  0x9170
+#define CONFIG_SCSI_DEV_LIST {SCSI_VEND_ID, SCSI_DEV_ID}
 #endif
 
 #include <asm/fsl_secure_boot.h>

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013-2014 Freescale Semiconductor, Inc.
  *
  * Register definitions for Freescale QSPI
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _FSL_QSPI_H_
@@ -105,6 +104,10 @@ struct fsl_qspi_regs {
 #define QSPI_RBCT_RXBRD_SHIFT		8
 #define QSPI_RBCT_RXBRD_USEIPS		(1 << QSPI_RBCT_RXBRD_SHIFT)
 
+#define QSPI_SR_AHB_ACC_SHIFT		2
+#define QSPI_SR_AHB_ACC_MASK		(1 << QSPI_SR_AHB_ACC_SHIFT)
+#define QSPI_SR_IP_ACC_SHIFT		1
+#define QSPI_SR_IP_ACC_MASK		(1 << QSPI_SR_IP_ACC_SHIFT)
 #define QSPI_SR_BUSY_SHIFT		0
 #define QSPI_SR_BUSY_MASK		(1 << QSPI_SR_BUSY_SHIFT)
 

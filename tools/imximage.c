@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009
  * Stefano Babic, DENX Software Engineering, sbabic@denx.de.
@@ -5,8 +6,6 @@
  * (C) Copyright 2008
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Prafulla Wadaskar <prafulla@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "imagetool.h"
@@ -23,11 +22,12 @@ static table_entry_t imximage_cmds[] = {
 	{CMD_BOOT_OFFSET,       "BOOT_OFFSET",          "Boot offset",	  },
 	{CMD_WRITE_DATA,        "DATA",                 "Reg Write Data", },
 	{CMD_WRITE_CLR_BIT,     "CLR_BIT",              "Reg clear bit",  },
+	{CMD_WRITE_SET_BIT,     "SET_BIT",              "Reg set bit",  },
 	{CMD_CHECK_BITS_SET,    "CHECK_BITS_SET",   "Reg Check bits set", },
 	{CMD_CHECK_BITS_CLR,    "CHECK_BITS_CLR",   "Reg Check bits clr", },
 	{CMD_CSF,               "CSF",           "Command Sequence File", },
 	{CMD_IMAGE_VERSION,     "IMAGE_VERSION",        "image version",  },
-	{CMD_SECURE_CALLBACK,   "SECURE_CALLBACK",     "secure callback", },
+	{CMD_PLUGIN,            "PLUGIN",               "file plugin_addr",  },
 	{-1,                    "",                     "",	          },
 };
 
@@ -41,7 +41,6 @@ static table_entry_t imximage_boot_offset[] = {
 	{FLASH_OFFSET_NOR,	"nor",		"NOR Flash",	},
 	{FLASH_OFFSET_SATA,	"sata",		"SATA Disk",	},
 	{FLASH_OFFSET_SD,	"sd",		"SD Card",	},
-	{FLASH_OFFSET_STANDARD_V3,	"sd_v3",	"SD Card",	},
 	{FLASH_OFFSET_SPI,	"spi",		"SPI Flash",	},
 	{FLASH_OFFSET_QSPI,	"qspi",		"QSPI NOR Flash",},
 	{-1,			"",		"Invalid",	},
@@ -57,7 +56,6 @@ static table_entry_t imximage_boot_loadsize[] = {
 	{FLASH_LOADSIZE_NOR,		"nor",		"NOR Flash",	},
 	{FLASH_LOADSIZE_SATA,		"sata",		"SATA Disk",	},
 	{FLASH_LOADSIZE_SD,		"sd",		"SD Card",	},
-	{FLASH_LOADSIZE_STANDARD_V3,		"sd_v3",		"SD Card",	},
 	{FLASH_LOADSIZE_SPI,		"spi",		"SPI Flash",	},
 	{FLASH_LOADSIZE_QSPI,		"qspi",		"QSPI NOR Flash",},
 	{-1,				"",		"Invalid",	},
@@ -69,7 +67,6 @@ static table_entry_t imximage_boot_loadsize[] = {
 static table_entry_t imximage_versions[] = {
 	{IMXIMAGE_V1,	"",	" (i.MX25/35/51 compatible)", },
 	{IMXIMAGE_V2,	"",	" (i.MX53/6/7 compatible)",   },
-	{IMXIMAGE_V3,	"",	" (S32 compatible)",     },
 	{-1,            "",     " (Invalid)",                 },
 };
 
@@ -82,9 +79,11 @@ static uint32_t imximage_version;
  */
 static uint32_t imximage_ivt_offset = UNDEFINED;
 static uint32_t imximage_csf_size = UNDEFINED;
-static uint32_t imximage_scc_size = UNDEFINED;
 /* Initial Load Region Size */
 static uint32_t imximage_init_loadsize;
+static uint32_t imximage_iram_free_start;
+static uint32_t imximage_plugin_size;
+static uint32_t plugin_image;
 
 static set_dcd_val_t set_dcd_val;
 static set_dcd_param_t set_dcd_param;
@@ -93,8 +92,6 @@ static set_imx_hdr_t set_imx_hdr;
 static uint32_t max_dcd_entries;
 static uint32_t *header_size_ptr;
 static uint32_t *csf_ptr;
-static uint32_t *secure_callback_ptr;
-static uint32_t *auth_length_ptr;
 
 static uint32_t get_cfg_value(char *token, char *name,  int linenr)
 {
@@ -115,10 +112,8 @@ static uint32_t detect_imximage_version(struct imx_header *imx_hdr)
 {
 	imx_header_v1_t *hdr_v1 = &imx_hdr->header.hdr_v1;
 	imx_header_v2_t *hdr_v2 = &imx_hdr->header.hdr_v2;
-	imx_header_v3_t *hdr_v3 = &imx_hdr->header.hdr_v3;
 	flash_header_v1_t *fhdr_v1 = &hdr_v1->fhdr;
 	flash_header_v2_t *fhdr_v2 = &hdr_v2->fhdr;
-	flash_header_v3_t *fhdr_v3 = &hdr_v3->fhdr;
 
 	/* Try to detect V1 */
 	if ((fhdr_v1->app_code_barker == APP_CODE_BARKER) &&
@@ -127,14 +122,12 @@ static uint32_t detect_imximage_version(struct imx_header *imx_hdr)
 
 	/* Try to detect V2 */
 	if ((fhdr_v2->header.tag == IVT_HEADER_TAG) &&
-		(hdr_v2->dcd_table.header.tag == DCD_HEADER_TAG))
+		(hdr_v2->data.dcd_table.header.tag == DCD_HEADER_TAG))
 		return IMXIMAGE_V2;
 
-	/* Try to detect V3 */
-	if ((fhdr_v3->header.tag == IVT_HEADER_TAG) &&
-	   (fhdr_v3->header.version == IVT_VERSION_V3) &&
-		(hdr_v3->dcd_table.header.tag == DCD_HEADER_TAG))
-		return IMXIMAGE_V3;
+	if ((fhdr_v2->header.tag == IVT_HEADER_TAG) &&
+	    hdr_v2->boot_data.plugin)
+		return IMXIMAGE_V2;
 
 	return IMXIMAGE_VER_INVALID;
 }
@@ -176,25 +169,17 @@ static void set_dcd_val_v1(struct imx_header *imxhdr, char *name, int lineno,
 }
 
 static struct dcd_v2_cmd *gd_last_cmd;
-static void set_dcd_param_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
+
+static void set_dcd_param_v2(struct imx_header *imxhdr, uint32_t dcd_len,
 		int32_t cmd)
 {
-	dcd_v2_t *dcd = 0;
+	dcd_v2_t *dcd_v2 = &imxhdr->header.hdr_v2.data.dcd_table;
 	struct dcd_v2_cmd *d = gd_last_cmd;
 	struct dcd_v2_cmd *d2;
 	int len;
 
-	switch (imximage_version) {
-		case IMXIMAGE_V2:
-			dcd = &imxhdr->header.hdr_v2.dcd_table;
-			break;
-		case IMXIMAGE_V3:
-			dcd = &imxhdr->header.hdr_v3.dcd_table;
-			break;
-	}
-
 	if (!d)
-		d = &dcd->dcd_cmd;
+		d = &dcd_v2->dcd_cmd;
 	d2 = d;
 	len = be16_to_cpu(d->write_dcd_command.length);
 	if (len > 4)
@@ -219,6 +204,15 @@ static void set_dcd_param_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
 		d->write_dcd_command.length = cpu_to_be16(4);
 		d->write_dcd_command.param = DCD_WRITE_CLR_BIT_PARAM;
 		break;
+	case CMD_WRITE_SET_BIT:
+		if ((d->write_dcd_command.tag == DCD_WRITE_DATA_COMMAND_TAG) &&
+		    (d->write_dcd_command.param == DCD_WRITE_SET_BIT_PARAM))
+			break;
+		d = d2;
+		d->write_dcd_command.tag = DCD_WRITE_DATA_COMMAND_TAG;
+		d->write_dcd_command.length = cpu_to_be16(4);
+		d->write_dcd_command.param = DCD_WRITE_SET_BIT_PARAM;
+		break;
 	/*
 	 * Check data command only supports one entry,
 	 */
@@ -232,7 +226,7 @@ static void set_dcd_param_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
 		d = d2;
 		d->write_dcd_command.tag = DCD_CHECK_DATA_COMMAND_TAG;
 		d->write_dcd_command.length = cpu_to_be16(4);
-		d->write_dcd_command.param = DCD_CHECK_BITS_SET_PARAM;
+		d->write_dcd_command.param = DCD_CHECK_BITS_CLR_PARAM;
 		break;
 	default:
 		break;
@@ -240,7 +234,7 @@ static void set_dcd_param_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
 	gd_last_cmd = d;
 }
 
-static void set_dcd_val_v2_v3(struct imx_header *imxhdr, char *name, int lineno,
+static void set_dcd_val_v2(struct imx_header *imxhdr, char *name, int lineno,
 					int fld, uint32_t value, uint32_t off)
 {
 	struct dcd_v2_cmd *d = gd_last_cmd;
@@ -277,48 +271,29 @@ static void set_dcd_rst_v1(struct imx_header *imxhdr, uint32_t dcd_len,
 	dcd_v1->preamble.length = dcd_len * sizeof(dcd_type_addr_data_t);
 }
 
-
 /*
  * Complete setting up the reset field of DCD of V2
  * such as DCD tag, version, length, etc.
  */
-static void set_dcd_rst_v2_v3(struct imx_header *imxhdr, uint32_t dcd_len,
+static void set_dcd_rst_v2(struct imx_header *imxhdr, uint32_t dcd_len,
 						char *name, int lineno)
 {
+	if (!imxhdr->header.hdr_v2.boot_data.plugin) {
+		dcd_v2_t *dcd_v2 = &imxhdr->header.hdr_v2.data.dcd_table;
+		struct dcd_v2_cmd *d = gd_last_cmd;
+		int len;
 
-	dcd_v2_t *dcd = 0;
-	struct dcd_v2_cmd *d = gd_last_cmd;
-	int len;
+		if (!d)
+			d = &dcd_v2->dcd_cmd;
+		len = be16_to_cpu(d->write_dcd_command.length);
+		if (len > 4)
+			d = (struct dcd_v2_cmd *)(((char *)d) + len);
 
-	switch (imximage_version) {
-		case IMXIMAGE_V2:
-			dcd = &imxhdr->header.hdr_v2.dcd_table;
-			break;
-		case IMXIMAGE_V3:
-			dcd = &imxhdr->header.hdr_v3.dcd_table;
-			break;
+		len = (char *)d - (char *)&dcd_v2->header;
+		dcd_v2->header.tag = DCD_HEADER_TAG;
+		dcd_v2->header.length = cpu_to_be16(len);
+		dcd_v2->header.version = DCD_VERSION;
 	}
-
-	if (!d)
-		d = &dcd->dcd_cmd;
-	len = be16_to_cpu(d->write_dcd_command.length);
-	if (len > 4)
-		d = (struct dcd_v2_cmd *)(((char *)d) + len);
-
-	len = (char *)d - (char *)&dcd->header;
-
-	dcd->header.tag = DCD_HEADER_TAG;
-	dcd->header.length = cpu_to_be16(len);
-
-	switch (imximage_version) {
-		case IMXIMAGE_V2:
-			dcd->header.version = DCD_VERSION;
-			break;
-		case IMXIMAGE_V3:
-			dcd->header.version = DCD_VERSION_V3;
-			break;
-	}
-
 }
 
 static void set_imx_hdr_v1(struct imx_header *imxhdr, uint32_t dcd_len,
@@ -334,8 +309,7 @@ static void set_imx_hdr_v1(struct imx_header *imxhdr, uint32_t dcd_len,
 	/* Set magic number */
 	fhdr_v1->app_code_barker = APP_CODE_BARKER;
 
-	/* TODO: check i.MX image V1 handling, for now use 'old' style */
-	hdr_base = entry_point - 4096;
+	hdr_base = entry_point - imximage_init_loadsize + flash_offset;
 	fhdr_v1->app_dest_ptr = hdr_base - flash_offset;
 	fhdr_v1->app_code_jump_vector = entry_point;
 
@@ -360,62 +334,94 @@ static void set_imx_hdr_v2(struct imx_header *imxhdr, uint32_t dcd_len,
 	fhdr_v2->header.length = cpu_to_be16(sizeof(flash_header_v2_t));
 	fhdr_v2->header.version = IVT_VERSION; /* 0x40 */
 
-	fhdr_v2->entry = entry_point;
-	fhdr_v2->reserved1 = fhdr_v2->reserved2 = 0;
-	hdr_base = entry_point - imximage_init_loadsize +
-		flash_offset;
-	fhdr_v2->self = hdr_base;
-	if (dcd_len > 0)
-		fhdr_v2->dcd_ptr = hdr_base
-			+ offsetof(imx_header_v2_t, dcd_table);
-	else
+	if (!hdr_v2->boot_data.plugin) {
+		fhdr_v2->entry = entry_point;
+		fhdr_v2->reserved1 = 0;
+		fhdr_v2->reserved1 = 0;
+		hdr_base = entry_point - imximage_init_loadsize +
+			flash_offset;
+		fhdr_v2->self = hdr_base;
+		if (dcd_len > 0)
+			fhdr_v2->dcd_ptr = hdr_base +
+				offsetof(imx_header_v2_t, data);
+		else
+			fhdr_v2->dcd_ptr = 0;
+		fhdr_v2->boot_data_ptr = hdr_base
+				+ offsetof(imx_header_v2_t, boot_data);
+		hdr_v2->boot_data.start = entry_point - imximage_init_loadsize;
+
+		fhdr_v2->csf = 0;
+
+		header_size_ptr = &hdr_v2->boot_data.size;
+		csf_ptr = &fhdr_v2->csf;
+	} else {
+		imx_header_v2_t *next_hdr_v2;
+		flash_header_v2_t *next_fhdr_v2;
+
+		if (imximage_csf_size != 0) {
+			fprintf(stderr, "Error: Header v2: SECURE_BOOT is only supported in DCD mode!");
+			exit(EXIT_FAILURE);
+		}
+
+		fhdr_v2->entry = imximage_iram_free_start +
+			flash_offset + sizeof(flash_header_v2_t) +
+			sizeof(boot_data_t);
+
+		fhdr_v2->reserved1 = 0;
+		fhdr_v2->reserved2 = 0;
+		fhdr_v2->self = imximage_iram_free_start + flash_offset;
+
 		fhdr_v2->dcd_ptr = 0;
-	fhdr_v2->boot_data_ptr = hdr_base
-			+ offsetof(imx_header_v2_t, boot_data);
-	hdr_v2->boot_data.start = entry_point - imximage_init_loadsize;
 
-	fhdr_v2->csf = 0;
+		fhdr_v2->boot_data_ptr = fhdr_v2->self +
+				offsetof(imx_header_v2_t, boot_data);
 
-	header_size_ptr = &hdr_v2->boot_data.size;
-	csf_ptr = &fhdr_v2->csf;
-}
+		hdr_v2->boot_data.start = imximage_iram_free_start;
+		/*
+		 * The actural size of plugin image is "imximage_plugin_size +
+		 * sizeof(flash_header_v2_t) + sizeof(boot_data_t)", plus the
+		 * flash_offset space.The ROM code only need to copy this size
+		 * to run the plugin code. However, later when copy the whole
+		 * U-Boot image to DDR, the ROM code use memcpy to copy the
+		 * first part of the image, and use the storage read function
+		 * to get the remaining part. This requires the dividing point
+		 * must be multiple of storage sector size. Here we set the
+		 * first section to be MAX_PLUGIN_CODE_SIZE(64KB) for this
+		 * purpose.
+		 */
+		hdr_v2->boot_data.size = MAX_PLUGIN_CODE_SIZE;
 
-static void set_imx_hdr_v3(struct imx_header *imxhdr, uint32_t dcd_len,
-		uint32_t entry_point, uint32_t flash_offset)
-{
-	imx_header_v3_t *hdr_v3 = &imxhdr->header.hdr_v3;
-	flash_header_v3_t *fhdr_v3 = &hdr_v3->fhdr;
-	uint32_t hdr_base;
+		/* Security feature are not supported */
+		fhdr_v2->csf = 0;
 
-	/* Set magic number */
-	fhdr_v3->header.tag = IVT_HEADER_TAG; /* 0xD1 */
-	fhdr_v3->header.length = cpu_to_be16(sizeof(flash_header_v3_t));
-	fhdr_v3->header.version = IVT_VERSION_V3; /* 0x50 */
+		next_hdr_v2 = (imx_header_v2_t *)((char *)hdr_v2 +
+			       imximage_plugin_size);
 
-	fhdr_v3->entry = entry_point;
-	fhdr_v3->reserved1 = fhdr_v3->reserved2 = 0;
-	hdr_base = entry_point - imximage_init_loadsize + flash_offset;
-	fhdr_v3->self = hdr_base;
+		next_fhdr_v2 = &next_hdr_v2->fhdr;
 
-	if (dcd_len > 0)
-		fhdr_v3->dcd_ptr = hdr_base
-			+ offsetof(imx_header_v3_t, dcd_table);
-	else
-		fhdr_v3->dcd_ptr = 0;
-	fhdr_v3->boot_data_ptr = hdr_base
-			+ offsetof(imx_header_v3_t, boot_data);
-	hdr_v3->boot_data.start = entry_point - imximage_init_loadsize;
+		next_fhdr_v2->header.tag = IVT_HEADER_TAG; /* 0xD1 */
+		next_fhdr_v2->header.length =
+			cpu_to_be16(sizeof(flash_header_v2_t));
+		next_fhdr_v2->header.version = IVT_VERSION; /* 0x40 */
 
-	/*  For non strict sequential mode isn't necessary to set secure
-	 *  callback parameter
-	 *  TODO: update when secure boot feature will be implemented */
-	fhdr_v3->secure_callback = 0;
-	fhdr_v3->auth_length = 0;
-	fhdr_v3->self_test = 0;
+		next_fhdr_v2->entry = entry_point;
+		hdr_base = entry_point - sizeof(struct imx_header);
+		next_fhdr_v2->reserved1 = 0;
+		next_fhdr_v2->reserved2 = 0;
+		next_fhdr_v2->self = hdr_base + imximage_plugin_size;
 
-	header_size_ptr = &hdr_v3->boot_data.size;
-	auth_length_ptr = &fhdr_v3->auth_length;
-	secure_callback_ptr = &fhdr_v3->secure_callback;
+		next_fhdr_v2->dcd_ptr = 0;
+		next_fhdr_v2->boot_data_ptr = next_fhdr_v2->self +
+				offsetof(imx_header_v2_t, boot_data);
+
+		next_hdr_v2->boot_data.start = hdr_base - flash_offset;
+
+		header_size_ptr = &next_hdr_v2->boot_data.size;
+
+		next_hdr_v2->boot_data.plugin = 0;
+
+		next_fhdr_v2->csf = 0;
+	}
 }
 
 static void set_hdr_func(void)
@@ -430,19 +436,11 @@ static void set_hdr_func(void)
 		break;
 	case IMXIMAGE_V2:
 		gd_last_cmd = NULL;
-		set_dcd_val = set_dcd_val_v2_v3;
-		set_dcd_param = set_dcd_param_v2_v3;
-		set_dcd_rst = set_dcd_rst_v2_v3;
+		set_dcd_val = set_dcd_val_v2;
+		set_dcd_param = set_dcd_param_v2;
+		set_dcd_rst = set_dcd_rst_v2;
 		set_imx_hdr = set_imx_hdr_v2;
 		max_dcd_entries = MAX_HW_CFG_SIZE_V2;
-		break;
-	case IMXIMAGE_V3:
-		gd_last_cmd = NULL;
-		set_dcd_val = set_dcd_val_v2_v3;
-		set_dcd_param = set_dcd_param_v2_v3;
-		set_dcd_rst = set_dcd_rst_v2_v3;
-		set_imx_hdr = set_imx_hdr_v3;
-		max_dcd_entries = MAX_HW_CFG_SIZE_V3;
 		break;
 	default:
 		err_imximage_version(imximage_version);
@@ -482,16 +480,19 @@ static void print_hdr_v2(struct imx_header *imx_hdr)
 {
 	imx_header_v2_t *hdr_v2 = &imx_hdr->header.hdr_v2;
 	flash_header_v2_t *fhdr_v2 = &hdr_v2->fhdr;
-	dcd_v2_t *dcd_v2 = &hdr_v2->dcd_table;
-	uint32_t size, version;
+	dcd_v2_t *dcd_v2 = &hdr_v2->data.dcd_table;
+	uint32_t size, version, plugin;
 
-	size = be16_to_cpu(dcd_v2->header.length);
-	if (size > (MAX_HW_CFG_SIZE_V2 * sizeof(dcd_addr_data_t)) + 8) {
-		fprintf(stderr,
-			"Error: Image corrupt DCD size %d exceed maximum %d\n",
-			(uint32_t)(size / sizeof(dcd_addr_data_t)),
-			MAX_HW_CFG_SIZE_V2);
-		exit(EXIT_FAILURE);
+	plugin = hdr_v2->boot_data.plugin;
+	if (!plugin) {
+		size = be16_to_cpu(dcd_v2->header.length);
+		if (size > (MAX_HW_CFG_SIZE_V2 * sizeof(dcd_addr_data_t))) {
+			fprintf(stderr,
+				"Error: Image corrupt DCD size %d exceed maximum %d\n",
+				(uint32_t)(size / sizeof(dcd_addr_data_t)),
+				MAX_HW_CFG_SIZE_V2);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	version = detect_imximage_version(imx_hdr);
@@ -499,49 +500,95 @@ static void print_hdr_v2(struct imx_header *imx_hdr)
 	printf("Image Type:   Freescale IMX Boot Image\n");
 	printf("Image Ver:    %x", version);
 	printf("%s\n", get_table_entry_name(imximage_versions, NULL, version));
-	printf("Data Size:    ");
-	genimg_print_size(hdr_v2->boot_data.size);
-	printf("Load Address: %08x\n", (uint32_t)fhdr_v2->boot_data_ptr);
-	printf("Entry Point:  %08x\n", (uint32_t)fhdr_v2->entry);
-	if (fhdr_v2->csf && (imximage_ivt_offset != UNDEFINED) &&
-	    (imximage_csf_size != UNDEFINED)) {
-		printf("HAB Blocks:   %08x %08x %08x\n",
-		       (uint32_t)fhdr_v2->self, 0,
-		       hdr_v2->boot_data.size - imximage_ivt_offset -
-		       imximage_csf_size);
+	printf("Mode:         %s\n", plugin ? "PLUGIN" : "DCD");
+	if (!plugin) {
+		printf("Data Size:    ");
+		genimg_print_size(hdr_v2->boot_data.size);
+		printf("Load Address: %08x\n", (uint32_t)fhdr_v2->boot_data_ptr);
+		printf("Entry Point:  %08x\n", (uint32_t)fhdr_v2->entry);
+		if (fhdr_v2->csf && (imximage_ivt_offset != UNDEFINED) &&
+		    (imximage_csf_size != UNDEFINED)) {
+			uint16_t dcdlen;
+			int offs;
+
+			dcdlen = hdr_v2->data.dcd_table.header.length;
+			offs = (char *)&hdr_v2->data.dcd_table
+				- (char *)hdr_v2;
+
+			printf("HAB Blocks:   0x%08x 0x%08x 0x%08x\n",
+			       (uint32_t)fhdr_v2->self, 0,
+			       hdr_v2->boot_data.size - imximage_ivt_offset -
+			       imximage_csf_size);
+			printf("DCD Blocks:   0x00910000 0x%08x 0x%08x\n",
+			       offs, be16_to_cpu(dcdlen));
+		}
+	} else {
+		imx_header_v2_t *next_hdr_v2;
+		flash_header_v2_t *next_fhdr_v2;
+
+		/*First Header*/
+		printf("Plugin Data Size:     ");
+		genimg_print_size(hdr_v2->boot_data.size);
+		printf("Plugin Code Size:     ");
+		genimg_print_size(imximage_plugin_size);
+		printf("Plugin Load Address:  %08x\n", hdr_v2->boot_data.start);
+		printf("Plugin Entry Point:   %08x\n", (uint32_t)fhdr_v2->entry);
+
+		/*Second Header*/
+		next_hdr_v2 = (imx_header_v2_t *)((char *)hdr_v2 +
+				imximage_plugin_size);
+		next_fhdr_v2 = &next_hdr_v2->fhdr;
+		printf("U-Boot Data Size:     ");
+		genimg_print_size(next_hdr_v2->boot_data.size);
+		printf("U-Boot Load Address:  %08x\n",
+		       next_hdr_v2->boot_data.start);
+		printf("U-Boot Entry Point:   %08x\n",
+		       (uint32_t)next_fhdr_v2->entry);
 	}
 }
 
-static void print_hdr_v3(struct imx_header *imx_hdr)
+static void copy_plugin_code(struct imx_header *imxhdr, char *plugin_file)
 {
-	imx_header_v3_t *hdr_v3 = &imx_hdr->header.hdr_v3;
-	flash_header_v3_t *fhdr_v3 = &hdr_v3->fhdr;
-	dcd_v2_t *dcd_v3 = &hdr_v3->dcd_table;
-	uint32_t size, version;
+	int ifd;
+	struct stat sbuf;
+	char *plugin_buf = imxhdr->header.hdr_v2.data.plugin_code;
+	char *ptr;
 
-	size = be16_to_cpu(dcd_v3->header.length);
-	if (size > (MAX_HW_CFG_SIZE_V3 * sizeof(dcd_addr_data_t)) + 8) {
-		fprintf(stderr,
-			"Error: Image corrupt DCD size %d exceed maximum %d\n",
-			(uint32_t)(size / sizeof(dcd_addr_data_t)),
-			MAX_HW_CFG_SIZE_V3);
+	ifd = open(plugin_file, O_RDONLY|O_BINARY);
+	if (ifd < 0) {
+		fprintf(stderr, "Can't open %s: %s\n",
+			plugin_file,
+			strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	version = detect_imximage_version(imx_hdr);
-
-	printf("Image Type:   Freescale S32 Boot Image\n");
-	printf("Image Ver:    %x", version);
-	printf("%s\n", get_table_entry_name(imximage_versions, NULL, version));
-	printf("Data Size:    ");
-	genimg_print_size(hdr_v3->boot_data.size);
-	printf("Load Address: %08x\n", (uint32_t)fhdr_v3->boot_data_ptr);
-	printf("Entry Point:  %08x\n", (uint32_t)fhdr_v3->entry);
-	if (fhdr_v3->secure_callback && (imximage_scc_size != UNDEFINED)) {
-		printf("HAB Blocks:   %08x %08x %08x %08x\n",
-		       (uint32_t)fhdr_v3->self, 0,
-		       fhdr_v3->auth_length, fhdr_v3->secure_callback);
+	if (fstat(ifd, &sbuf) < 0) {
+		fprintf(stderr, "Can't stat %s: %s\n",
+			plugin_file,
+			strerror(errno));
+		exit(EXIT_FAILURE);
 	}
+
+	ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, ifd, 0);
+	if (ptr == MAP_FAILED) {
+		fprintf(stderr, "Can't read %s: %s\n",
+			plugin_file,
+			strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	if (sbuf.st_size > MAX_PLUGIN_CODE_SIZE) {
+		printf("plugin binary size too large\n");
+		exit(EXIT_FAILURE);
+	}
+
+	memcpy(plugin_buf, ptr, sbuf.st_size);
+	imximage_plugin_size = sbuf.st_size;
+
+	(void) munmap((void *)ptr, sbuf.st_size);
+	(void) close(ifd);
+
+	imxhdr->header.hdr_v2.boot_data.plugin = 1;
 }
 
 static void parse_cfg_cmd(struct imx_header *imxhdr, int32_t cmd, char *token,
@@ -598,6 +645,7 @@ static void parse_cfg_cmd(struct imx_header *imxhdr, int32_t cmd, char *token,
 		break;
 	case CMD_WRITE_DATA:
 	case CMD_WRITE_CLR_BIT:
+	case CMD_WRITE_SET_BIT:
 	case CMD_CHECK_BITS_SET:
 	case CMD_CHECK_BITS_CLR:
 		value = get_cfg_value(token, name, lineno);
@@ -618,16 +666,9 @@ static void parse_cfg_cmd(struct imx_header *imxhdr, int32_t cmd, char *token,
 		if (unlikely(cmd_ver_first != 1))
 			cmd_ver_first = 0;
 		break;
-	case CMD_SECURE_CALLBACK:
-		if (imximage_version != 3) {
-			fprintf(stderr,
-				"Error: %s[%d] - Secure Callback only supported for \
-				VERSION 3(%s)\n", name, lineno, token);
-			exit(EXIT_FAILURE);
-		}
-		imximage_scc_size = get_cfg_value(token, name, lineno);
-		if (unlikely(cmd_ver_first != 1))
-			cmd_ver_first = 0;
+	case CMD_PLUGIN:
+		plugin_image = 1;
+		copy_plugin_code(imxhdr, token);
 		break;
 	}
 }
@@ -655,6 +696,7 @@ static void parse_cfg_fld(struct imx_header *imxhdr, int32_t *cmd,
 		switch(*cmd) {
 		case CMD_WRITE_DATA:
 		case CMD_WRITE_CLR_BIT:
+		case CMD_WRITE_SET_BIT:
 		case CMD_CHECK_BITS_SET:
 		case CMD_CHECK_BITS_CLR:
 
@@ -673,6 +715,10 @@ static void parse_cfg_fld(struct imx_header *imxhdr, int32_t *cmd,
 					exit(EXIT_FAILURE);
 				}
 			}
+			break;
+		case CMD_PLUGIN:
+			value = get_cfg_value(token, name, lineno);
+			imximage_iram_free_start = value;
 			break;
 		default:
 			break;
@@ -770,9 +816,6 @@ static void imximage_print_header(const void *ptr)
 	case IMXIMAGE_V2:
 		print_hdr_v2(imx_hdr);
 		break;
-	case IMXIMAGE_V3:
-		print_hdr_v3(imx_hdr);
-		break;
 	default:
 		err_imximage_version(version);
 		break;
@@ -784,6 +827,7 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 {
 	struct imx_header *imxhdr = (struct imx_header *)ptr;
 	uint32_t dcd_len;
+	uint32_t header_size;
 
 	/*
 	 * In order to not change the old imx cfg file
@@ -794,25 +838,23 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 	/* Be able to detect if the cfg file has no BOOT_FROM tag */
 	imximage_ivt_offset = FLASH_OFFSET_UNDEFINED;
 	imximage_csf_size = 0;
-	imximage_scc_size = 0;
 	set_hdr_func();
 
 	/* Parse dcd configuration file */
 	dcd_len = parse_cfg_file(imxhdr, params->imagename);
 
-	if (imximage_version == IMXIMAGE_V2) {
-		if (imximage_init_loadsize < imximage_ivt_offset +
-			sizeof(imx_header_v2_t))
-				imximage_init_loadsize = imximage_ivt_offset +
-					sizeof(imx_header_v2_t);
+	if (imximage_version == IMXIMAGE_V1)
+		header_size = sizeof(flash_header_v1_t);
+	else {
+		header_size = sizeof(flash_header_v2_t) + sizeof(boot_data_t);
+		if (!plugin_image)
+			header_size += sizeof(dcd_v2_t);
+		else
+			header_size += MAX_PLUGIN_CODE_SIZE;
 	}
 
-	if (imximage_version == IMXIMAGE_V3) {
-		if (imximage_init_loadsize < imximage_ivt_offset +
-			sizeof(imx_header_v3_t))
-				imximage_init_loadsize = imximage_ivt_offset +
-					sizeof(imx_header_v3_t);
-	}
+	if (imximage_init_loadsize < imximage_ivt_offset + header_size)
+			imximage_init_loadsize = imximage_ivt_offset + header_size;
 
 	/* Set the imx header */
 	(*set_imx_hdr)(imxhdr, dcd_len, params->ep, imximage_ivt_offset);
@@ -826,29 +868,13 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 	 *
 	 * The remaining fraction of a block bytes would not be loaded!
 	 */
-	switch (imximage_version) {
-		case IMXIMAGE_V3: {
-			if (secure_callback_ptr && imximage_scc_size) {
-				imx_header_v3_t *hdr_v3 = &imxhdr->header.hdr_v3;
-				flash_header_v3_t *fhdr_v3 = &hdr_v3->fhdr;
-				*secure_callback_ptr = (uint32_t)fhdr_v3->self + sbuf->st_size;
-				*auth_length_ptr = sbuf->st_size;
-			}
-			*header_size_ptr = ROUND(sbuf->st_size, 4096) +
-					imximage_scc_size + imximage_init_loadsize;
-			break;
-		}
-		default:
-			*header_size_ptr = ROUND(sbuf->st_size, 4096);
-			break;
-	}
+	*header_size_ptr = ROUND((sbuf->st_size + imximage_ivt_offset), 4096);
 
 	if (csf_ptr && imximage_csf_size) {
 		*csf_ptr = params->ep - imximage_init_loadsize +
 			*header_size_ptr;
 		*header_size_ptr += imximage_csf_size;
 	}
-
 }
 
 int imximage_check_params(struct image_tool_params *params)
@@ -877,10 +903,10 @@ static int imximage_generate(struct image_tool_params *params,
 	struct image_type_params *tparams)
 {
 	struct imx_header *imxhdr;
-	size_t alloc_len = 0;
+	size_t alloc_len;
 	struct stat sbuf;
 	char *datafile = params->datafile;
-	uint32_t pad_len;
+	uint32_t pad_len, header_size;
 
 	memset(&imximage_header, 0, sizeof(imximage_header));
 
@@ -898,30 +924,22 @@ static int imximage_generate(struct image_tool_params *params,
 	/* Parse dcd configuration file */
 	parse_cfg_file(&imximage_header, params->imagename);
 
-	/* TODO: check i.MX image V1 handling, for now use 'old' style */
-	switch (imximage_version) {
-		case IMXIMAGE_V1:
-			alloc_len = 4096;
-			break;
-		case IMXIMAGE_V2:
-			if (imximage_init_loadsize < imximage_ivt_offset +
-					sizeof(imx_header_v2_t))
-				imximage_init_loadsize = imximage_ivt_offset +
-					sizeof(imx_header_v2_t);
-			alloc_len = imximage_init_loadsize - imximage_ivt_offset;
-			break;
-		case IMXIMAGE_V3:
-			if (imximage_init_loadsize < imximage_ivt_offset +
-					sizeof(imx_header_v3_t))
-				imximage_init_loadsize = imximage_ivt_offset +
-					sizeof(imx_header_v3_t);
-			alloc_len = imximage_init_loadsize - imximage_ivt_offset;
-			break;
-
+	if (imximage_version == IMXIMAGE_V1)
+		header_size = sizeof(imx_header_v1_t);
+	else {
+		header_size = sizeof(flash_header_v2_t) + sizeof(boot_data_t);
+		if (!plugin_image)
+			header_size += sizeof(dcd_v2_t);
+		else
+			header_size += MAX_PLUGIN_CODE_SIZE;
 	}
 
+	if (imximage_init_loadsize < imximage_ivt_offset + header_size)
+			imximage_init_loadsize = imximage_ivt_offset + header_size;
 
-	if (alloc_len < sizeof(struct imx_header)) {
+	alloc_len = imximage_init_loadsize - imximage_ivt_offset;
+
+	if (alloc_len < header_size) {
 		fprintf(stderr, "%s: header error\n",
 			params->cmdname);
 		exit(EXIT_FAILURE);
@@ -950,11 +968,7 @@ static int imximage_generate(struct image_tool_params *params,
 
 	pad_len = ROUND(sbuf.st_size, 4096) - sbuf.st_size;
 
-	/* TODO: check i.MX image V1 handling, for now use 'old' style */
-	if (imximage_version == IMXIMAGE_V1)
-		return 0;
-	else
-		return pad_len;
+	return pad_len;
 }
 
 

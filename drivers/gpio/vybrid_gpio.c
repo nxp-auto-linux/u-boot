@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015
  * Bhuvanchandra DV, Toradex, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,7 +9,7 @@
 #include <errno.h>
 #include <fdtdec.h>
 #include <asm/gpio.h>
-#include <asm/imx-common/iomux-v3.h>
+#include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
 #include <malloc.h>
 
@@ -105,53 +104,21 @@ static int vybrid_gpio_probe(struct udevice *dev)
 	return 0;
 }
 
-static int vybrid_gpio_bind(struct udevice *dev)
+static int vybrid_gpio_odata_to_platdata(struct udevice *dev)
 {
-	struct vybrid_gpio_platdata *plat = dev->platdata;
+	struct vybrid_gpio_platdata *plat = dev_get_platdata(dev);
 	fdt_addr_t base_addr;
 
-	if (plat)
-		return 0;
-
-	base_addr = dev_get_addr(dev);
+	base_addr = devfdt_get_addr(dev);
 	if (base_addr == FDT_ADDR_T_NONE)
-		return -ENODEV;
-
-	/*
-	* TODO:
-	* When every board is converted to driver model and DT is
-	* supported, this can be done by auto-alloc feature, but
-	* not using calloc to alloc memory for platdata.
-	*/
-	plat = calloc(1, sizeof(*plat));
-	if (!plat)
-		return -ENOMEM;
+		return -EINVAL;
 
 	plat->base = base_addr;
 	plat->chip = dev->req_seq;
-	plat->port_name = fdt_get_name(gd->fdt_blob, dev->of_offset, NULL);
-	dev->platdata = plat;
+	plat->port_name = fdt_get_name(gd->fdt_blob, dev_of_offset(dev), NULL);
 
 	return 0;
 }
-
-#if !CONFIG_IS_ENABLED(OF_CONTROL)
-static const struct vybrid_gpio_platdata vybrid_gpio[] = {
-	{0, GPIO0_BASE_ADDR, "GPIO0 "},
-	{1, GPIO1_BASE_ADDR, "GPIO1 "},
-	{2, GPIO2_BASE_ADDR, "GPIO2 "},
-	{3, GPIO3_BASE_ADDR, "GPIO3 "},
-	{4, GPIO4_BASE_ADDR, "GPIO4 "},
-};
-
-U_BOOT_DEVICES(vybrid_gpio) = {
-	{ "gpio_vybrid", &vybrid_gpio[0] },
-	{ "gpio_vybrid", &vybrid_gpio[1] },
-	{ "gpio_vybrid", &vybrid_gpio[2] },
-	{ "gpio_vybrid", &vybrid_gpio[3] },
-	{ "gpio_vybrid", &vybrid_gpio[4] },
-};
-#endif
 
 static const struct udevice_id vybrid_gpio_ids[] = {
 	{ .compatible = "fsl,vf610-gpio" },
@@ -162,8 +129,9 @@ U_BOOT_DRIVER(gpio_vybrid) = {
 	.name	= "gpio_vybrid",
 	.id	= UCLASS_GPIO,
 	.ops	= &gpio_vybrid_ops,
+	.of_match = vybrid_gpio_ids,
+	.ofdata_to_platdata = vybrid_gpio_odata_to_platdata,
 	.probe	= vybrid_gpio_probe,
 	.priv_auto_alloc_size = sizeof(struct vybrid_gpios),
-	.of_match = vybrid_gpio_ids,
-	.bind	= vybrid_gpio_bind,
+	.platdata_auto_alloc_size = sizeof(struct vybrid_gpio_platdata),
 };

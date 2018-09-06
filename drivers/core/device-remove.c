@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Device manager
  *
@@ -5,8 +6,6 @@
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -46,9 +45,10 @@ static int device_chld_unbind(struct udevice *dev)
 /**
  * device_chld_remove() - Stop all device's children
  * @dev:	The device whose children are to be removed
+ * @pre_os_remove: Flag, if this functions is called in the pre-OS stage
  * @return 0 on success, -ve on error
  */
-static int device_chld_remove(struct udevice *dev)
+static int device_chld_remove(struct udevice *dev, uint flags)
 {
 	struct udevice *pos, *n;
 	int ret;
@@ -56,7 +56,7 @@ static int device_chld_remove(struct udevice *dev)
 	assert(dev);
 
 	list_for_each_entry_safe(pos, n, &dev->child_head, sibling_node) {
-		ret = device_remove(pos);
+		ret = device_remove(pos, flags);
 		if (ret)
 			return ret;
 	}
@@ -112,6 +112,8 @@ int device_unbind(struct udevice *dev)
 
 	devres_release_all(dev);
 
+	if (dev->flags & DM_FLAG_NAME_ALLOCED)
+		free((char *)dev->name);
 	free(dev);
 
 	return 0;
@@ -149,7 +151,16 @@ void device_free(struct udevice *dev)
 	devres_release_probe(dev);
 }
 
-int device_remove(struct udevice *dev)
+static bool flags_remove(uint flags, uint drv_flags)
+{
+	if ((flags & DM_REMOVE_NORMAL) ||
+	    (flags & (drv_flags & (DM_FLAG_ACTIVE_DMA | DM_FLAG_OS_PREPARE))))
+		return true;
+
+	return false;
+}
+
+int device_remove(struct udevice *dev, uint flags)
 {
 	const struct driver *drv;
 	int ret;
@@ -167,11 +178,15 @@ int device_remove(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	ret = device_chld_remove(dev);
+	ret = device_chld_remove(dev, flags);
 	if (ret)
 		goto err;
 
-	if (drv->remove) {
+	/*
+	 * Remove the device if called with the "normal" remove flag set,
+	 * or if the remove flag matches any of the drivers remove flags
+	 */
+	if (drv->remove && flags_remove(flags, drv->flags)) {
 		ret = drv->remove(dev);
 		if (ret)
 			goto err_remove;
@@ -185,10 +200,12 @@ int device_remove(struct udevice *dev)
 		}
 	}
 
-	device_free(dev);
+	if (flags_remove(flags, drv->flags)) {
+		device_free(dev);
 
-	dev->seq = -1;
-	dev->flags &= ~DM_FLAG_ACTIVATED;
+		dev->seq = -1;
+		dev->flags &= ~DM_FLAG_ACTIVATED;
+	}
 
 	return ret;
 

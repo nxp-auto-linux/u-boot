@@ -1,16 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2006 Freescale Semiconductor, Inc.
  *
  * Dave Liu <daveliu@freescale.com>
  * based on source code of Shlomi Gridish
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#include "common.h"
-#include "asm/errno.h"
-#include "asm/io.h"
-#include "asm/immap_83xx.h"
+#include <common.h>
+#include <linux/errno.h>
+#include <asm/io.h>
+#include <asm/immap_83xx.h>
 
 #define	NUM_OF_PINS	32
 void qe_config_iopin(u8 port, u8 pin, int dir, int open_drain, int assign)

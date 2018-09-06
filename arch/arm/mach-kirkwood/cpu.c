@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Prafulla Wadaskar <prafulla@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -129,7 +128,7 @@ int kw_config_adr_windows(void)
 static void kw_sysrst_action(void)
 {
 	int ret;
-	char *s = getenv("sysrstcmd");
+	char *s = env_get("sysrstcmd");
 
 	if (!s) {
 		debug("Error.. %s failed, check sysrstcmd\n",
@@ -153,7 +152,7 @@ static void kw_sysrst_check(void)
 	/*
 	 * no action if sysrstdelay environment variable is not defined
 	 */
-	s = getenv("sysrstdelay");
+	s = env_get("sysrstdelay");
 	if (s == NULL)
 		return;
 

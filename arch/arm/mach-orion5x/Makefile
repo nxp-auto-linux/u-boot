@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright (C) 2010 Albert ARIBAUD <albert.u.boot@aribaud.net>
 #
@@ -5,9 +6,6 @@
 # (C) Copyright 2009
 # Marvell Semiconductor <www.marvell.com>
 # Written-by: Prafulla Wadaskar <prafulla@marvell.com>
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 obj-y	= cpu.o
 obj-y	+= dram.o
@@ -19,7 +17,7 @@ endif
 
 # some files can only build in ARM or THUMB2, not THUMB1
 
-ifdef CONFIG_SYS_THUMB_BUILD
+ifdef CONFIG_$(SPL_)SYS_THUMB_BUILD
 ifndef CONFIG_HAS_THUMB2
 
 CFLAGS_cpu.o := -marm

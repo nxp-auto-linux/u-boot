@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * SPI flash probing
  *
  * Copyright (C) 2008 Atmel Corporation
  * Copyright (C) 2010 Reinhard Meyer, EMK Elektronik
  * Copyright (C) 2013 Jagannadha Sutradharudu Teki, Xilinx Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -42,10 +41,8 @@ static int spi_flash_probe_slave(struct spi_flash *flash)
 	}
 
 	ret = spi_flash_scan(flash);
-	if (ret) {
-		ret = -EINVAL;
+	if (ret)
 		goto err_read_id;
-	}
 
 #ifdef CONFIG_SPI_FLASH_MTD
 	ret = spi_flash_mtd_register(flash);
@@ -57,9 +54,15 @@ err_read_id:
 }
 
 #ifndef CONFIG_DM_SPI_FLASH
-static struct spi_flash *spi_flash_probe_tail(struct spi_slave *bus)
+struct spi_flash *spi_flash_probe(unsigned int busnum, unsigned int cs,
+				  unsigned int max_hz, unsigned int spi_mode)
 {
+	struct spi_slave *bus;
 	struct spi_flash *flash;
+
+	bus = spi_setup_slave(busnum, cs, max_hz, spi_mode);
+	if (!bus)
+		return NULL;
 
 	/* Allocate space if needed (not used by sf-uclass */
 	flash = calloc(1, sizeof(*flash));
@@ -77,30 +80,6 @@ static struct spi_flash *spi_flash_probe_tail(struct spi_slave *bus)
 
 	return flash;
 }
-
-struct spi_flash *spi_flash_probe(unsigned int busnum, unsigned int cs,
-		unsigned int max_hz, unsigned int spi_mode)
-{
-	struct spi_slave *bus;
-
-	bus = spi_setup_slave(busnum, cs, max_hz, spi_mode);
-	if (!bus)
-		return NULL;
-	return spi_flash_probe_tail(bus);
-}
-
-#ifdef CONFIG_OF_SPI_FLASH
-struct spi_flash *spi_flash_probe_fdt(const void *blob, int slave_node,
-				      int spi_node)
-{
-	struct spi_slave *bus;
-
-	bus = spi_setup_slave_fdt(blob, slave_node, spi_node);
-	if (!bus)
-		return NULL;
-	return spi_flash_probe_tail(bus);
-}
-#endif
 
 void spi_flash_free(struct spi_flash *flash)
 {
@@ -122,13 +101,13 @@ static int spi_flash_std_read(struct udevice *dev, u32 offset, size_t len,
 }
 
 static int spi_flash_std_write(struct udevice *dev, u32 offset, size_t len,
-			const void *buf)
+			       const void *buf)
 {
 	struct spi_flash *flash = dev_get_uclass_priv(dev);
 
 #if defined(CONFIG_SPI_FLASH_SST)
 	if (flash->flags & SNOR_F_SST_WR) {
-		if (flash->spi->op_mode_tx & SPI_OPM_TX_BP)
+		if (flash->spi->mode & SPI_TX_BYTE)
 			return sst_write_bp(flash, offset, len, buf);
 		else
 			return sst_write_wp(flash, offset, len, buf);

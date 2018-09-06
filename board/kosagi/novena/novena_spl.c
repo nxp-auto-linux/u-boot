@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Novena SPL
  *
  * Copyright (C) 2014 Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -14,9 +13,9 @@
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/imx-common/boot_mode.h>
-#include <asm/imx-common/iomux-v3.h>
-#include <asm/imx-common/mxc_i2c.h>
+#include <asm/mach-imx/boot_mode.h>
+#include <asm/mach-imx/iomux-v3.h>
+#include <asm/mach-imx/mxc_i2c.h>
 #include <asm/arch/crm_regs.h>
 #include <i2c.h>
 #include <mmc.h>
@@ -26,8 +25,6 @@
 #include <asm/arch/mx6-ddr.h>
 
 #include "novena.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL						\
 	(PAD_CTL_PKE | PAD_CTL_PUE |				\
@@ -434,8 +431,8 @@ static struct mx6dq_iomux_ddr_regs novena_ddr_ioregs = {
 	.dram_ras		= 0x00000038,
 	.dram_reset		= 0x00000038,
 	/* SDCKE[0:1]: 100k pull-up */
-	.dram_sdcke0		= 0x00003000,
-	.dram_sdcke1		= 0x00003000,
+	.dram_sdcke0		= 0x00000038,
+	.dram_sdcke1		= 0x00000038,
 	/* SDBA2: pull-up disabled */
 	.dram_sdba2		= 0x00000000,
 	/* SDODT[0:1]: 100k pull-up, 40 ohm */
@@ -512,14 +509,16 @@ static struct mx6_ddr_sysinfo novena_ddr_info = {
 	/* Single chip select */
 	.ncs		= 1,
 	.cs1_mirror	= 0,
-	.rtt_wr		= 1,	/* RTT_Wr = RZQ/4 */
-	.rtt_nom	= 2,	/* RTT_Nom = RZQ/2 */
-	.walat		= 3,	/* Write additional latency */
-	.ralat		= 7,	/* Read additional latency */
+	.rtt_wr		= 0,	/* RTT_Wr = RZQ/4 */
+	.rtt_nom	= 1,	/* RTT_Nom = RZQ/2 */
+	.walat		= 0,	/* Write additional latency */
+	.ralat		= 5,	/* Read additional latency */
 	.mif3_mode	= 3,	/* Command prediction working mode */
 	.bi_on		= 1,	/* Bank interleaving enabled */
 	.sde_to_rst	= 0x10,	/* 14 cycles, 200us (JEDEC default) */
 	.rst_to_cke	= 0x23,	/* 33 cycles, 500us (JEDEC default) */
+	.refsel = 1,	/* Refresh cycles at 32KHz */
+	.refr = 7,	/* 8 refresh commands per refresh cycle */
 };
 
 static struct mx6_ddr3_cfg elpida_4gib_1600 = {
@@ -530,9 +529,9 @@ static struct mx6_ddr3_cfg elpida_4gib_1600 = {
 	.rowaddr	= 16,
 	.coladdr	= 10,
 	.pagesz		= 2,
-	.trcd		= 1300,
-	.trcmin		= 4900,
-	.trasmin	= 3590,
+	.trcd		= 1375,
+	.trcmin		= 4875,
+	.trasmin	= 3500,
 };
 
 static void ccgr_init(void)
@@ -546,17 +545,6 @@ static void ccgr_init(void)
 	writel(0xFFFFF300, &ccm->CCGR4);
 	writel(0x0F0000C3, &ccm->CCGR5);
 	writel(0x000003FF, &ccm->CCGR6);
-}
-
-static void gpr_init(void)
-{
-	struct iomuxc *iomux = (struct iomuxc *)IOMUXC_BASE_ADDR;
-
-	/* enable AXI cache for VDOA/VPU/IPU */
-	writel(0xF00000CF, &iomux->gpr[4]);
-	/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
-	writel(0x007F007F, &iomux->gpr[6]);
-	writel(0x007F007F, &iomux->gpr[7]);
 }
 
 /*
@@ -601,9 +589,8 @@ void board_init_f(ulong dummy)
 	mx6dq_dram_iocfg(64, &novena_ddr_ioregs, &novena_grp_ioregs);
 	mx6_dram_cfg(&novena_ddr_info, &novena_mmdc_calib, &elpida_4gib_1600);
 
-	/* Clear the BSS. */
-	memset(__bss_start, 0, __bss_end - __bss_start);
-
-	/* load/boot image from boot device */
-	board_init_r(NULL, 0);
+	/* Perform DDR DRAM calibration */
+	udelay(100);
+	mmdc_do_write_level_calibration(&novena_ddr_info);
+	mmdc_do_dqs_calibration(&novena_ddr_info);
 }

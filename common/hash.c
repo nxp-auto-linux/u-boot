@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2012 The Chromium OS Authors.
  *
@@ -6,8 +7,6 @@
  *
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef USE_HOSTCC
@@ -17,7 +16,7 @@
 #include <mapmem.h>
 #include <hw_sha.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #else
 #include "mkimage.h"
 #include <time.h>
@@ -30,7 +29,7 @@
 #include <u-boot/sha256.h>
 #include <u-boot/md5.h>
 
-#ifdef CONFIG_SHA1
+#if defined(CONFIG_SHA1) && !defined(CONFIG_SHA_PROG_HW_ACCEL)
 static int hash_init_sha1(struct hash_algo *algo, void **ctxp)
 {
 	sha1_context *ctx = malloc(sizeof(sha1_context));
@@ -58,7 +57,7 @@ static int hash_finish_sha1(struct hash_algo *algo, void *ctx, void *dest_buf,
 }
 #endif
 
-#ifdef CONFIG_SHA256
+#if defined(CONFIG_SHA256) && !defined(CONFIG_SHA_PROG_HW_ACCEL)
 static int hash_init_sha256(struct hash_algo *algo, void **ctxp)
 {
 	sha256_context *ctx = malloc(sizeof(sha256_context));
@@ -113,81 +112,67 @@ static int hash_finish_crc32(struct hash_algo *algo, void *ctx, void *dest_buf,
 }
 
 /*
- * These are the hash algorithms we support. Chips which support accelerated
- * crypto could perhaps add named version of these algorithms here. Note that
- * algorithm names must be in lower case.
+ * These are the hash algorithms we support.  If we have hardware acceleration
+ * is enable we will use that, otherwise a software version of the algorithm.
+ * Note that algorithm names must be in lower case.
  */
 static struct hash_algo hash_algo[] = {
-	/*
-	 * CONFIG_SHA_HW_ACCEL is defined if hardware acceleration is
-	 * available.
-	 */
-#ifdef CONFIG_SHA_HW_ACCEL
-	{
-		"sha1",
-		SHA1_SUM_LEN,
-		hw_sha1,
-		CHUNKSZ_SHA1,
-#ifdef CONFIG_SHA_PROG_HW_ACCEL
-		hw_sha_init,
-		hw_sha_update,
-		hw_sha_finish,
-#endif
-	}, {
-		"sha256",
-		SHA256_SUM_LEN,
-		hw_sha256,
-		CHUNKSZ_SHA256,
-#ifdef CONFIG_SHA_PROG_HW_ACCEL
-		hw_sha_init,
-		hw_sha_update,
-		hw_sha_finish,
-#endif
-	},
-#endif
 #ifdef CONFIG_SHA1
 	{
-		"sha1",
-		SHA1_SUM_LEN,
-		sha1_csum_wd,
-		CHUNKSZ_SHA1,
-		hash_init_sha1,
-		hash_update_sha1,
-		hash_finish_sha1,
+		.name 		= "sha1",
+		.digest_size	= SHA1_SUM_LEN,
+		.chunk_size	= CHUNKSZ_SHA1,
+#ifdef CONFIG_SHA_HW_ACCEL
+		.hash_func_ws	= hw_sha1,
+#else
+		.hash_func_ws	= sha1_csum_wd,
+#endif
+#ifdef CONFIG_SHA_PROG_HW_ACCEL
+		.hash_init	= hw_sha_init,
+		.hash_update	= hw_sha_update,
+		.hash_finish	= hw_sha_finish,
+#else
+		.hash_init	= hash_init_sha1,
+		.hash_update	= hash_update_sha1,
+		.hash_finish	= hash_finish_sha1,
+#endif
 	},
 #endif
 #ifdef CONFIG_SHA256
 	{
-		"sha256",
-		SHA256_SUM_LEN,
-		sha256_csum_wd,
-		CHUNKSZ_SHA256,
-		hash_init_sha256,
-		hash_update_sha256,
-		hash_finish_sha256,
+		.name		= "sha256",
+		.digest_size	= SHA256_SUM_LEN,
+		.chunk_size	= CHUNKSZ_SHA256,
+#ifdef CONFIG_SHA_HW_ACCEL
+		.hash_func_ws	= hw_sha256,
+#else
+		.hash_func_ws	= sha256_csum_wd,
+#endif
+#ifdef CONFIG_SHA_PROG_HW_ACCEL
+		.hash_init	= hw_sha_init,
+		.hash_update	= hw_sha_update,
+		.hash_finish	= hw_sha_finish,
+#else
+		.hash_init	= hash_init_sha256,
+		.hash_update	= hash_update_sha256,
+		.hash_finish	= hash_finish_sha256,
+#endif
 	},
 #endif
 	{
-		"crc32",
-		4,
-		crc32_wd_buf,
-		CHUNKSZ_CRC32,
-		hash_init_crc32,
-		hash_update_crc32,
-		hash_finish_crc32,
+		.name		= "crc32",
+		.digest_size	= 4,
+		.chunk_size	= CHUNKSZ_CRC32,
+		.hash_func_ws	= crc32_wd_buf,
+		.hash_init	= hash_init_crc32,
+		.hash_update	= hash_update_crc32,
+		.hash_finish	= hash_finish_crc32,
 	},
 };
 
-#if defined(CONFIG_SHA256) || defined(CONFIG_CMD_SHA1SUM)
-#define MULTI_HASH
-#endif
-
-#if defined(CONFIG_HASH_VERIFY) || defined(CONFIG_CMD_HASH)
-#define MULTI_HASH
-#endif
-
 /* Try to minimize code size for boards that don't want much hashing */
-#ifdef MULTI_HASH
+#if defined(CONFIG_SHA256) || defined(CONFIG_CMD_SHA1SUM) || \
+	defined(CONFIG_CRC32_VERIFY) || defined(CONFIG_CMD_HASH)
 #define multi_hash()	1
 #else
 #define multi_hash()	0
@@ -247,6 +232,29 @@ int hash_parse_string(const char *algo_name, const char *str, uint8_t *result)
 	return 0;
 }
 
+int hash_block(const char *algo_name, const void *data, unsigned int len,
+	       uint8_t *output, int *output_size)
+{
+	struct hash_algo *algo;
+	int ret;
+
+	ret = hash_lookup_algo(algo_name, &algo);
+	if (ret)
+		return ret;
+
+	if (output_size && *output_size < algo->digest_size) {
+		debug("Output buffer size %d too small (need %d bytes)",
+		      *output_size, algo->digest_size);
+		return -ENOSPC;
+	}
+	if (output_size)
+		*output_size = algo->digest_size;
+	algo->hash_func_ws(data, len, output, algo->chunk_size);
+
+	return 0;
+}
+
+#if defined(CONFIG_CMD_HASH) || defined(CONFIG_CMD_SHA1SUM) || defined(CONFIG_CMD_CRC32)
 /**
  * store_result: Store the resulting sum to an address or variable
  *
@@ -286,7 +294,7 @@ static void store_result(struct hash_algo *algo, const uint8_t *sum,
 			str_ptr += 2;
 		}
 		*str_ptr = '\0';
-		setenv(dest, str_output);
+		env_set(dest, str_output);
 	} else {
 		ulong addr;
 		void *buf;
@@ -346,7 +354,7 @@ static int parse_verify_sum(struct hash_algo *algo, char *verify_str,
 		if (strlen(verify_str) == digits)
 			vsum_str = verify_str;
 		else {
-			vsum_str = getenv(verify_str);
+			vsum_str = env_get(verify_str);
 			if (vsum_str == NULL || strlen(vsum_str) != digits) {
 				printf("Expected %d hex digits in env var\n",
 				       digits);
@@ -359,35 +367,13 @@ static int parse_verify_sum(struct hash_algo *algo, char *verify_str,
 	return 0;
 }
 
-void hash_show(struct hash_algo *algo, ulong addr, ulong len, uint8_t *output)
+static void hash_show(struct hash_algo *algo, ulong addr, ulong len, uint8_t *output)
 {
 	int i;
 
 	printf("%s for %08lx ... %08lx ==> ", algo->name, addr, addr + len - 1);
 	for (i = 0; i < algo->digest_size; i++)
 		printf("%02x", output[i]);
-}
-
-int hash_block(const char *algo_name, const void *data, unsigned int len,
-	       uint8_t *output, int *output_size)
-{
-	struct hash_algo *algo;
-	int ret;
-
-	ret = hash_lookup_algo(algo_name, &algo);
-	if (ret)
-		return ret;
-
-	if (output_size && *output_size < algo->digest_size) {
-		debug("Output buffer size %d too small (need %d bytes)",
-		      *output_size, algo->digest_size);
-		return -ENOSPC;
-	}
-	if (output_size)
-		*output_size = algo->digest_size;
-	algo->hash_func_ws(data, len, output, algo->chunk_size);
-
-	return 0;
 }
 
 int hash_command(const char *algo_name, int flags, cmd_tbl_t *cmdtp, int flag,
@@ -403,7 +389,7 @@ int hash_command(const char *algo_name, int flags, cmd_tbl_t *cmdtp, int flag,
 
 	if (multi_hash()) {
 		struct hash_algo *algo;
-		uint8_t output[HASH_MAX_DIGEST_SIZE];
+		u8 *output;
 		uint8_t vsum[HASH_MAX_DIGEST_SIZE];
 		void *buf;
 
@@ -418,12 +404,16 @@ int hash_command(const char *algo_name, int flags, cmd_tbl_t *cmdtp, int flag,
 			return 1;
 		}
 
+		output = memalign(ARCH_DMA_MINALIGN,
+				  sizeof(uint32_t) * HASH_MAX_DIGEST_SIZE);
+
 		buf = map_sysmem(addr, len);
 		algo->hash_func_ws(buf, len, output, algo->chunk_size);
 		unmap_sysmem(buf);
 
 		/* Try to avoid code bloat when verify is not needed */
-#ifdef CONFIG_HASH_VERIFY
+#if defined(CONFIG_CRC32_VERIFY) || defined(CONFIG_SHA1SUM_VERIFY) || \
+	defined(CONFIG_HASH_VERIFY)
 		if (flags & HASH_FLAG_VERIFY) {
 #else
 		if (0) {
@@ -452,6 +442,8 @@ int hash_command(const char *algo_name, int flags, cmd_tbl_t *cmdtp, int flag,
 				store_result(algo, output, *argv,
 					flags & HASH_FLAG_ENV);
 			}
+		unmap_sysmem(output);
+
 		}
 
 	/* Horrible code size hack for boards that just want crc32 */
@@ -472,4 +464,5 @@ int hash_command(const char *algo_name, int flags, cmd_tbl_t *cmdtp, int flag,
 
 	return 0;
 }
-#endif
+#endif /* CONFIG_CMD_HASH || CONFIG_CMD_SHA1SUM || CONFIG_CMD_CRC32) */
+#endif /* !USE_HOSTCC */

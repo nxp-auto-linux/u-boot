@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * URB OHCI HCD (Host Controller Driver) for USB on the AU1x00.
  *
  * (C) Copyright 2003
  * Gary Jennejohn, DENX Software Engineering <garyj@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  * Note: Part of this code has been derived from linux
  *
  */
@@ -23,7 +22,7 @@
 #include <common.h>
 #include <malloc.h>
 #include <asm/io.h>
-#include <asm/au1x00.h>
+#include <mach/au1x00.h>
 #include <usb.h>
 #include "au1x00_usb_ohci.h"
 
@@ -671,7 +670,8 @@ static void td_submit_job (struct usb_device *dev, unsigned long pipe, void *buf
 	__u32 info = 0;
 	unsigned int toggle = 0;
 
-	/* OHCI handles the DATA-toggles itself, we just use the USB-toggle bits for reseting */
+	/* OHCI handles the DATA-toggles itself, we just use the
+	   USB-toggle bits for resetting */
 	if(usb_gettoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe))) {
 		toggle = TD_T_TOGGLE;
 	} else {

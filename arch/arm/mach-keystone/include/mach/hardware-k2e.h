@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * K2E: SoC definitions
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_HARDWARE_K2E_H
@@ -33,9 +32,6 @@
 #define KS2_LPSC_EMIF4F_DDR3		23
 #define KS2_LPSC_PCIE_1			27
 #define KS2_LPSC_XGE			50
-
-/* MSMC */
-#define KS2_MSMC_SEGMENT_PCIE1		13
 
 /* Chip Interrupt Controller */
 #define KS2_CIC2_DDR3_ECC_IRQ_NUM	-1	/* not defined in K2E */

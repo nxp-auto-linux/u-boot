@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _FSL_VALIDATE_H_
@@ -21,14 +20,6 @@
 
 extern struct jobring jr;
 
-#ifdef CONFIG_KEY_REVOCATION
-/* Srk table and key revocation check */
-#define SRK_FLAG	0x01
-#define UNREVOCABLE_KEY	4
-#define ALIGN_REVOC_KEY 3
-#define MAX_KEY_ENTRIES 4
-#endif
-
 /* Barker code size in bytes */
 #define ESBC_BARKER_LEN	4	/* barker code length in ESBC uboot client */
 				/* header */
@@ -38,6 +29,52 @@ extern struct jobring jr;
 
 /* Maximum number of SG entries allowed */
 #define MAX_SG_ENTRIES	8
+
+/* Different Header Struct for LS-CH3 */
+#ifdef CONFIG_ESBC_HDR_LS
+struct fsl_secboot_img_hdr {
+	u8 barker[ESBC_BARKER_LEN];	/* barker code */
+	u32 srk_tbl_off;
+	struct {
+		u8 num_srk;
+		u8 srk_sel;
+		u8 reserve;
+	} len_kr;
+	u8 ie_flag;
+
+	u32 uid_flag;
+
+	u32 psign;		/* signature offset */
+	u32 sign_len;		/* length of the signature in bytes */
+
+	u64 pimg64;		/* 64 bit pointer to ESBC Image */
+	u32 img_size;		/* ESBC client image size in bytes */
+	u32 ie_key_sel;
+
+	u32 fsl_uid_0;
+	u32 fsl_uid_1;
+	u32 oem_uid_0;
+	u32 oem_uid_1;
+	u32 oem_uid_2;
+	u32 oem_uid_3;
+	u32 oem_uid_4;
+	u32 reserved1[3];
+};
+
+#ifdef CONFIG_KEY_REVOCATION
+/* Srk table and key revocation check */
+#define UNREVOCABLE_KEY	8
+#define ALIGN_REVOC_KEY 7
+#define MAX_KEY_ENTRIES 8
+#endif
+
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+#define IE_FLAG_MASK 0x1
+#define SCRATCH_IE_LOW_ADR 13
+#define SCRATCH_IE_HIGH_ADR 14
+#endif
+
+#else /* CONFIG_ESBC_HDR_LS */
 
 /*
  * ESBC uboot client header structure.
@@ -109,6 +146,21 @@ struct fsl_secboot_img_hdr {
 	u32 ie_key_sel;
 };
 
+#ifdef CONFIG_KEY_REVOCATION
+/* Srk table and key revocation check */
+#define SRK_FLAG	0x01
+#define UNREVOCABLE_KEY	4
+#define ALIGN_REVOC_KEY 3
+#define MAX_KEY_ENTRIES 4
+#endif
+
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+#define IE_FLAG_MASK 0xFFFFFFFF
+#endif
+
+#endif /* CONFIG_ESBC_HDR_LS */
+
+
 #if defined(CONFIG_FSL_ISBC_KEY_EXT)
 struct ie_key_table {
 	u32 key_len;
@@ -158,6 +210,17 @@ struct fsl_secboot_sg_table {
 };
 #endif
 
+/* ESBC global structure.
+ * Data to be used across verification of different images.
+ * Stores follwoing Data:
+ * IE Table
+ */
+struct fsl_secboot_glb {
+#if defined(CONFIG_FSL_ISBC_KEY_EXT)
+	uintptr_t ie_addr;
+	struct ie_key_info ie_tbl;
+#endif
+};
 /*
  * ESBC private structure.
  * Private structure used by ESBC to store following fields
@@ -169,7 +232,7 @@ struct fsl_secboot_sg_table {
  */
 struct fsl_secboot_img_priv {
 	uint32_t hdr_location;
-	u32 ie_addr;
+	uintptr_t ie_addr;
 	u32 key_len;
 	struct fsl_secboot_img_hdr hdr;
 
@@ -193,14 +256,28 @@ struct fsl_secboot_img_priv {
 						 */
 
 	struct fsl_secboot_sg_table sgtbl[MAX_SG_ENTRIES];	/* SG table */
-	u32 ehdrloc;		/* ESBC client location */
+	uintptr_t ehdrloc;	/* ESBC Header location */
+	uintptr_t *img_addr_ptr;	/* ESBC Image Location */
+	uint32_t img_size;	/* ESBC Image Size */
 };
 
-int fsl_secboot_validate(cmd_tbl_t *cmdtp, int flag, int argc,
-		char * const argv[]);
+int do_esbc_halt(cmd_tbl_t *cmdtp, int flag, int argc,
+				char * const argv[]);
+
+int fsl_secboot_validate(uintptr_t haddr, char *arg_hash_str,
+	uintptr_t *img_addr_ptr);
 int fsl_secboot_blob_encap(cmd_tbl_t *cmdtp, int flag, int argc,
 	char * const argv[]);
 int fsl_secboot_blob_decap(cmd_tbl_t *cmdtp, int flag, int argc,
 	char * const argv[]);
 
+int fsl_check_boot_mode_secure(void);
+int fsl_setenv_chain_of_trust(void);
+
+/*
+ * This function is used to validate the main U-boot binary from
+ * SPL just before passing control to it using QorIQ Trust
+ * Architecture header (appended to U-boot image).
+ */
+void spl_validate_uboot(uint32_t hdr_addr, uintptr_t img_addr);
 #endif

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * siemens pxm2
  * (C) Copyright 2013 Siemens Schweiz AG
@@ -7,20 +8,15 @@
  * U-Boot file:/include/configs/am335x_evm.h
  *
  * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_PXM2_H
 #define __CONFIG_PXM2_H
 
-#define CONFIG_SIEMENS_PXM2
-#define MACH_TYPE_PXM2			4309
 #define CONFIG_SIEMENS_MACH_TYPE	MACH_TYPE_PXM2
 
 #include "siemens-am33x-common.h"
 
-#define CONFIG_SYS_MPUCLK	720
 #define DDR_IOCTRL_VAL		0x18b
 #define DDR_PLL_FREQ		266
 
@@ -40,29 +36,18 @@
 #define CONFIG_SYS_I2C_SPEED		400000
 #define CONFIG_SYS_I2C_EEPROM_ADDR	0x50
 
-
-#define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x300
-
-#undef CONFIG_SPL_NET_SUPPORT
-#undef CONFIG_SPL_NET_VCI_STRING
-#undef CONFIG_SPL_ETH_SUPPORT
-
 #define CONFIG_PHY_ATHEROS
 
 #define CONFIG_FACTORYSET
 
-
-/* Watchdog */
-#define CONFIG_OMAP_WATCHDOG
-
 #ifndef CONFIG_SPL_BUILD
 
 /* Use common default */
-#define MTDPARTS_DEFAULT	MTDPARTS_DEFAULT_V1
 
 /* Default env settings */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"hostname=pxm2\0" \
+	"ubi_off=2048\0"\
 	"nand_img_size=0x500000\0" \
 	"optargs=\0" \
 	"preboot=draco_led 0\0" \
@@ -94,7 +79,6 @@
 
 #ifndef CONFIG_RESTORE_FLASH
 /* set to negative value for no autoboot */
-#define CONFIG_BOOTDELAY		3
 
 #define CONFIG_BOOTCOMMAND \
 	"if dfubutton; then " \
@@ -120,7 +104,6 @@
 	"reset;"
 
 #else
-#define CONFIG_BOOTDELAY		0
 
 #define CONFIG_BOOTCOMMAND			\
 	"setenv autoload no; "			\
@@ -131,26 +114,16 @@
 #endif
 #endif	/* CONFIG_SPL_BUILD */
 
-#define CONFIG_VIDEO
 #if defined(CONFIG_VIDEO)
 #define CONFIG_VIDEO_DA8XX
-#define CONFIG_CFB_CONSOLE
-#define CONFIG_VGA_AS_SINGLE_DEVICE
 #define CONFIG_SPLASH_SCREEN
 #define CONFIG_SPLASH_SCREEN_ALIGN
 #define CONFIG_VIDEO_LOGO
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_VIDEO_BMP_LOGO
-#define CONFIG_CMD_BMP
 #define DA8XX_LCD_CNTL_BASE	LCD_CNTL_BASE
 #define PWM_TICKS	0x1388
 #define PWM_DUTY	0x200
-#define CONFIG_SYS_CONSOLE_BG_COL	0xff
-#define CONFIG_SYS_CONSOLE_FG_COL	0x00
-#endif
-
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_FIT
 #endif
 
 #endif	/* ! __CONFIG_PXM2_H */

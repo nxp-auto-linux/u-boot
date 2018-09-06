@@ -1,9 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright 2008-2014 Freescale Semiconductor, Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * Version 2 as published by the Free Software Foundation.
+ * Copyright 2008-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017-2018 NXP Semiconductor
  */
 
 #ifndef FSL_DDR_MEMCTL_H
@@ -125,12 +123,14 @@ typedef struct ddr4_spd_eeprom_s generic_spd_eeprom_t;
 
 #define SDRAM_CFG2_FRC_SR		0x80000000
 #define SDRAM_CFG2_D_INIT		0x00000010
+#define SDRAM_CFG2_AP_EN		0x00000020
 #define SDRAM_CFG2_ODT_CFG_MASK		0x00600000
 #define SDRAM_CFG2_ODT_NEVER		0
 #define SDRAM_CFG2_ODT_ONLY_WRITE	1
 #define SDRAM_CFG2_ODT_ONLY_READ	2
 #define SDRAM_CFG2_ODT_ALWAYS		3
 
+#define SDRAM_INTERVAL_BSTOPRE	0x3FFF
 #define TIMING_CFG_2_CPO_MASK	0x0F800000
 
 #if defined(CONFIG_SYS_FSL_DDR_VER) && \
@@ -145,6 +145,10 @@ typedef struct ddr4_spd_eeprom_s generic_spd_eeprom_t;
 #define WR_DATA_DELAY_MASK	0x7
 #define WR_DATA_DELAY_SHIFT	10
 #endif
+
+/* DDR_EOR register */
+#define DDR_EOR_RD_REOD_DIS	0x07000000
+#define DDR_EOR_WD_REOD_DIS	0x00100000
 
 /* DDR_MD_CNTL */
 #define MD_CNTL_MD_EN		0x80000000
@@ -169,6 +173,7 @@ typedef struct ddr4_spd_eeprom_s generic_spd_eeprom_t;
 
 /* DDR_CDR1 */
 #define DDR_CDR1_DHC_EN	0x80000000
+#define DDR_CDR1_V0PT9_EN	0x40000000
 #define DDR_CDR1_ODT_SHIFT	17
 #define DDR_CDR1_ODT_MASK	0x6
 #define DDR_CDR2_ODT_MASK	0x1
@@ -177,6 +182,21 @@ typedef struct ddr4_spd_eeprom_s generic_spd_eeprom_t;
 #define DDR_CDR2_VREF_OVRD(x)	(0x00008080 | ((((x) - 37) & 0x3F) << 8))
 #define DDR_CDR2_VREF_TRAIN_EN	0x00000080
 #define DDR_CDR2_VREF_RANGE_2	0x00000040
+
+/* DDR ERR_DISABLE */
+#define DDR_ERR_DISABLE_APED	(1 << 8)  /* Address parity error disable */
+
+/* Mode Registers */
+#define DDR_MR5_CA_PARITY_LAT_4_CLK	0x1 /* for DDR4-1600/1866/2133 */
+#define DDR_MR5_CA_PARITY_LAT_5_CLK	0x2 /* for DDR4-2400 */
+
+/* DEBUG_26 register */
+#define DDR_CAS_TO_PRE_SUB_MASK  0x0000f000 /* CAS to preamble subtract value */
+#define DDR_CAS_TO_PRE_SUB_SHIFT 12
+
+/* DEBUG_29 register */
+#define DDR_TX_BD_DIS	(1 << 10) /* Transmit Bit Deskew Disable */
+
 
 #if (defined(CONFIG_SYS_FSL_DDR_VER) && \
 	(CONFIG_SYS_FSL_DDR_VER >= FSL_DDR_VER_4_7))
@@ -280,7 +300,7 @@ typedef struct fsl_ddr_cfg_regs_s {
 	unsigned int ddr_cdr2;
 	unsigned int err_disable;
 	unsigned int err_int_en;
-	unsigned int debug[32];
+	unsigned int debug[64];
 } fsl_ddr_cfg_regs_t;
 
 typedef struct memctl_options_partial_s {
@@ -344,8 +364,9 @@ typedef struct memctl_options_s {
 	/* mirrior DIMMs for DDR3 */
 	unsigned int mirrored_dimm;
 	unsigned int quad_rank_present;
-	unsigned int ap_en;	/* address parity enable for RDIMM */
+	unsigned int ap_en;	/* address parity enable for RDIMM/DDR4-UDIMM */
 	unsigned int x4_en;	/* enable x4 devices */
+	unsigned int package_3ds;
 
 	/* Global Timing Parameters */
 	unsigned int cas_latency_override;
@@ -355,7 +376,8 @@ typedef struct memctl_options_s {
 	unsigned int additive_latency_override_value;
 
 	unsigned int clk_adjust;		/* */
-	unsigned int cpo_override;
+	unsigned int cpo_override;		/* override timing_cfg_2[CPO]*/
+	unsigned int cpo_sample;		/* optimize debug_29[24:31] */
 	unsigned int write_data_delay;		/* DQS adjust */
 
 	unsigned int cswl_override;
@@ -387,6 +409,7 @@ typedef struct memctl_options_s {
 	unsigned int rcw_override;
 	unsigned int rcw_1;
 	unsigned int rcw_2;
+	unsigned int rcw_3;
 	/* control register 1 */
 	unsigned int ddr_cdr1;
 	unsigned int ddr_cdr2;
@@ -456,4 +479,12 @@ typedef struct fixed_ddr_parm{
 	int max_freq;
 	fsl_ddr_cfg_regs_t *ddr_settings;
 } fixed_ddr_parm_t;
+
+/**
+ * fsl_initdram() - Set up the SDRAM
+ *
+ * @return 0 if OK, -ve on error
+ */
+int fsl_initdram(void);
+
 #endif

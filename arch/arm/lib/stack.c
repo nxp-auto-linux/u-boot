@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (c) 2015 Andreas Bießmann <andreas.devel@googlemail.com>
+ * Copyright (c) 2015 Andreas Bießmann <andreas@biessmann.org>
  *
  * Copyright (c) 2011 The Chromium OS Authors.
  * (C) Copyright 2002-2006
@@ -8,8 +9,6 @@
  * (C) Copyright 2002
  * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
  * Marius Groeger <mgroeger@sysgo.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 
@@ -25,14 +24,6 @@ int arch_reserve_stacks(void)
 	gd->irq_sp = gd->start_addr_sp;
 
 # if !defined(CONFIG_ARM64)
-#  ifdef CONFIG_USE_IRQ
-	gd->start_addr_sp -= (CONFIG_STACKSIZE_IRQ + CONFIG_STACKSIZE_FIQ);
-	debug("Reserving %zu Bytes for IRQ stack at: %08lx\n",
-	      CONFIG_STACKSIZE_IRQ + CONFIG_STACKSIZE_FIQ, gd->start_addr_sp);
-
-	/* 8-byte alignment for ARM ABI compliance */
-	gd->start_addr_sp &= ~0x07;
-#  endif
 	/* leave 3 words for abort-stack, plus 1 for alignment */
 	gd->start_addr_sp -= 16;
 # endif

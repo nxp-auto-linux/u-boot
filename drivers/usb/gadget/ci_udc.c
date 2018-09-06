@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2011, Marvell Semiconductor Inc.
  * Lei Wen <leiwen@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Back ported to the 8xx platform (from the 8260 platform) by
  * Murray.Jensen@cmst.csiro.au, 27-Jan-01.
@@ -14,7 +13,7 @@
 #include <net.h>
 #include <malloc.h>
 #include <asm/byteorder.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/unaligned.h>
 #include <linux/types.h>
@@ -1018,18 +1017,10 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 		return ret;
 
 	ret = ci_udc_probe();
-#if defined(CONFIG_USB_EHCI_MX6) || defined(CONFIG_USB_EHCI_MXS)
-	/*
-	 * FIXME: usb_lowlevel_init()->ehci_hcd_init() should be doing all
-	 * HW-specific initialization, e.g. ULPI-vs-UTMI PHY selection
-	 */
-	if (!ret) {
-		struct ci_udc *udc = (struct ci_udc *)controller.ctrl->hcor;
-
-		/* select ULPI phy */
-		writel(PTS(PTS_ENABLE) | PFSC, &udc->portsc);
+	if (ret) {
+		DBG("udc probe failed, returned %d\n", ret);
+		return ret;
 	}
-#endif
 
 	ret = driver->bind(&controller.gadget);
 	if (ret) {

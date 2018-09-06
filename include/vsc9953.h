@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013, 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:      GPL-2.0+
  *
  * Driver for the Vitesse VSC9953 L2 Switch
  */
@@ -126,6 +125,7 @@
 #define VSC9953_PORT_CFG_LEARN_AUTO	0x00000100
 #define VSC9953_PORT_CFG_LEARN_CPU	0x00000200
 #define VSC9953_PORT_CFG_LEARN_DROP	0x00000400
+#define VSC9953_PORT_CFG_PORTID_MASK	0x0000003c
 
 /* Macros for vsc9953_qsys_sys.switch_port_mode register */
 #define VSC9953_PORT_ENA		0x00002000
@@ -135,6 +135,9 @@
 
 /* Macros for vsc9953_ana_ana.adv_learn register */
 #define VSC9953_VLAN_CHK		0x00000400
+
+/* Macros for vsc9953_ana_ana.auto_age register */
+#define VSC9953_AUTOAGE_PERIOD_MASK	0x001ffffe
 
 /* Macros for vsc9953_rew_port.port_tag_cfg register */
 #define VSC9953_TAG_CFG_MASK		0x00000180
@@ -153,6 +156,19 @@
 /* Macros for vsc9953_ana_ana_tables.mach_data register */
 #define VSC9953_MACHDATA_VID_MASK	0x1fff0000
 
+/* Macros for vsc9953_ana_common.aggr_cfg register */
+#define VSC9953_AC_RND_ENA		0x00000080
+#define VSC9953_AC_DMAC_ENA		0x00000040
+#define VSC9953_AC_SMAC_ENA		0x00000020
+#define VSC9953_AC_IP6_LBL_ENA		0x00000010
+#define VSC9953_AC_IP6_TCPUDP_ENA	0x00000008
+#define VSC9953_AC_IP4_SIPDIP_ENA	0x00000004
+#define VSC9953_AC_IP4_TCPUDP_ENA	0x00000002
+#define VSC9953_AC_MASK			0x000000fe
+
+/* Macros for vsc9953_ana_pgid.port_grp_id[] registers */
+#define VSC9953_PGID_PORT_MASK		0x000003ff
+
 #define VSC9953_MAX_PORTS		10
 #define VSC9953_PORT_CHECK(port)	\
 	(((port) < 0 || (port) >= VSC9953_MAX_PORTS) ? 0 : 1)
@@ -164,10 +180,81 @@
 #define VSC9953_MAX_VLAN		4096
 #define VSC9953_VLAN_CHECK(vid)	\
 	(((vid) < 0 || (vid) >= VSC9953_MAX_VLAN) ? 0 : 1)
+#define VSC9953_DEFAULT_AGE_TIME	300
 
 #define DEFAULT_VSC9953_MDIO_NAME	"VSC9953_MDIO0"
 
 #define MIIMIND_OPR_PEND		0x00000004
+
+#define VSC9953_BITMASK(offset)		((BIT(offset)) - 1)
+#define VSC9953_ENC_BITFIELD(target, offset, width) \
+	(((target) & VSC9953_BITMASK(width)) << (offset))
+
+#define VSC9953_IO_ADDR(target, offset)		((target) + (offset << 2))
+
+#define VSC9953_IO_REG(target, offset)	(VSC9953_IO_ADDR(target, offset))
+#define VSC9953_VCAP_CACHE_ENTRY_DAT(target, ri)  \
+	VSC9953_IO_REG(target, (0x2 + (ri)))
+
+#define VSC9953_VCAP_CACHE_MASK_DAT(target, ri) \
+	VSC9953_IO_REG(target, (0x42 + (ri)))
+
+#define VSC9953_VCAP_CACHE_TG_DAT(target)	VSC9953_IO_REG(target, 0xe2)
+#define VSC9953_VCAP_CFG_MV_CFG(target)	VSC9953_IO_REG(target, 0x1)
+#define VSC9953_VCAP_CFG_MV_CFG_SIZE(target) \
+	VSC9953_ENC_BITFIELD(target, 0, 16)
+
+#define VSC9953_VCAP_CFG_UPDATE_CTRL(target)	VSC9953_IO_REG(target, 0x0)
+#define VSC9953_VCAP_UPDATE_CTRL_UPDATE_CMD(target) \
+	VSC9953_ENC_BITFIELD(target, 22, 3)
+
+#define VSC9953_VCAP_UPDATE_CTRL_UPDATE_ADDR(target) \
+	VSC9953_ENC_BITFIELD(target, 3, 16)
+
+#define VSC9953_VCAP_UPDATE_CTRL_UPDATE_SHOT	BIT(2)
+#define VSC9953_VCAP_UPDATE_CTRL_UPDATE_ENTRY_DIS	BIT(21)
+#define VSC9953_VCAP_UPDATE_CTRL_UPDATE_ACTION_DIS	BIT(20)
+#define VSC9953_VCAP_UPDATE_CTRL_UPDATE_CNT_DIS		BIT(19)
+#define VSC9953_VCAP_CACHE_ACTION_DAT(target, ri) \
+	VSC9953_IO_REG(target, (0x82 + (ri)))
+
+#define VSC9953_VCAP_CACHE_CNT_DAT(target, ri)	\
+	VSC9953_IO_REG(target, (0xc2 + (ri)))
+
+#define VSC9953_PORT_OFFSET		1
+#define VSC9953_IS1_CNT			256
+#define VSC9953_IS2_CNT			1024
+#define VSC9953_ES0_CNT			1024
+
+#define BITS_TO_DWORD(in)		(1 + (((in) - 1) / 32))
+#define ENTRY_WORDS_ES0		BITS_TO_DWORD(29)
+#define ENTRY_WORDS_IS1		BITS_TO_DWORD(376)
+#define ENTRY_WORDS_IS2		BITS_TO_DWORD(376)
+#define ES0_ACT_WIDTH		BITS_TO_DWORD(91)
+#define ES0_CNT_WIDTH		BITS_TO_DWORD(1)
+#define IS1_ACT_WIDTH		BITS_TO_DWORD(320)
+#define IS1_CNT_WIDTH		BITS_TO_DWORD(4)
+#define IS2_ACT_WIDTH		BITS_TO_DWORD(103 - 2 * VSC9953_PORT_OFFSET)
+#define IS2_CNT_WIDTH		BITS_TO_DWORD(4 * 32)
+#define ES0_ACT_COUNT		(VSC9953_ES0_CNT + VSC9953_MAX_PORTS)
+#define IS1_ACT_COUNT		(VSC9953_IS1_CNT + 1)
+#define IS2_ACT_COUNT		(VSC9953_IS2_CNT + VSC9953_MAX_PORTS + 2)
+
+/* TCAM entries */
+enum tcam_sel {
+	TCAM_SEL_ENTRY   = BIT(0),
+	TCAM_SEL_ACTION  = BIT(1),
+	TCAM_SEL_COUNTER = BIT(2),
+	TCAM_SEL_ALL     = VSC9953_BITMASK(3),
+};
+
+enum tcam_cmd {
+	TCAM_CMD_WRITE      = 0,
+	TCAM_CMD_READ       = 1,
+	TCAM_CMD_MOVE_UP    = 2,
+	TCAM_CMD_MOVE_DOWN  = 3,
+	TCAM_CMD_INITIALIZE = 4,
+};
 
 struct vsc9953_mdio_info {
 	struct vsc9953_mii_mng	*regs;
@@ -235,6 +322,10 @@ struct vsc9953_ana_ana {
 	u32	port_mode[12];
 };
 
+#define PGID_DST_START		0
+#define PGID_AGGR_START		64
+#define PGID_SRC_START		80
+
 struct vsc9953_ana_pgid {
 	u32	port_grp_id[91];
 };
@@ -269,7 +360,7 @@ struct vsc9953_analyzer {
 	struct vsc9953_ana_ana_tables	ana_tables;
 	u32	reserved2[14];
 	struct vsc9953_ana_ana	ana;
-	u32	reserved3[22];
+	u32	reserved3[21];
 	struct vsc9953_ana_pgid	port_id_tbl;
 	u32	reserved4[549];
 	struct vsc9953_ana_pfc	pfc[10];

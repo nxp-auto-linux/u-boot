@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *
  * Read FactorySet information from EEPROM into global structure.
  * (C) Copyright 2013 Siemens Schweiz AG
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #if !defined(CONFIG_SPL_BUILD)
 
 #include <common.h>
+#include <environment.h>
 #include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/cpu.h>
@@ -144,9 +144,9 @@ int factoryset_read_eeprom(int i2c_addr)
 	unsigned char eeprom_buf[0x3c00], hdr[4], buf[MAX_STRING_LENGTH];
 	unsigned char *cp, *cp1;
 
-#if defined(CONFIG_USB_FUNCTION_DFU)
-	factory_dat.usb_vendor_id = CONFIG_G_DNL_VENDOR_NUM;
-	factory_dat.usb_product_id = CONFIG_G_DNL_PRODUCT_NUM;
+#if defined(CONFIG_DFU_OVER_USB)
+	factory_dat.usb_vendor_id = CONFIG_USB_GADGET_VENDOR_NUM;
+	factory_dat.usb_product_id = CONFIG_USB_GADGET_PRODUCT_NUM;
 #endif
 	if (i2c_probe(i2c_addr))
 		goto err;
@@ -202,7 +202,7 @@ int factoryset_read_eeprom(int i2c_addr)
 		cp1 += 3;
 	}
 
-#if defined(CONFIG_USB_FUNCTION_DFU)
+#if defined(CONFIG_DFU_OVER_USB)
 	/* read vid and pid for dfu mode */
 	if (0 <= get_factory_record_val(cp, size, (uchar *)"USBD1",
 					(uchar *)"vid", buf,
@@ -266,7 +266,7 @@ err:
 
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 
-static int factoryset_mac_setenv(void)
+static int factoryset_mac_env_set(void)
 {
 	uint8_t mac_addr[6];
 
@@ -292,15 +292,15 @@ static int factoryset_mac_setenv(void)
 		}
 	}
 
-	eth_setenv_enetaddr("ethaddr", mac_addr);
+	eth_env_set_enetaddr("ethaddr", mac_addr);
 	return 0;
 }
 
-int factoryset_setenv(void)
+int factoryset_env_set(void)
 {
 	int ret = 0;
 
-	if (factoryset_mac_setenv() < 0)
+	if (factoryset_mac_env_set() < 0)
 		ret = -1;
 
 	return ret;

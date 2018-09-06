@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007-2011
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * Tom Cubie <tangliang@allwinnertech.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _SUNXI_CPU_SUN4I_H
@@ -18,6 +17,12 @@
 #define SUNXI_SRAM_D_BASE		0x00010000	/* 4 kiB */
 #define SUNXI_SRAM_B_BASE		0x00020000	/* 64 kiB (secure) */
 
+#define SUNXI_DE2_BASE			0x01000000
+
+#ifdef CONFIG_MACH_SUN8I_A83T
+#define SUNXI_CPUCFG_BASE		0x01700000
+#endif
+
 #define SUNXI_SRAMC_BASE		0x01c00000
 #define SUNXI_DRAMC_BASE		0x01c01000
 #define SUNXI_DMA_BASE			0x01c02000
@@ -28,7 +33,9 @@
 #define SUNXI_MS_BASE			0x01c07000
 #define SUNXI_TVD_BASE			0x01c08000
 #define SUNXI_CSI0_BASE			0x01c09000
+#ifndef CONFIG_MACH_SUNXI_H3_H5
 #define SUNXI_TVE0_BASE			0x01c0a000
+#endif
 #define SUNXI_EMAC_BASE			0x01c0b000
 #define SUNXI_LCD0_BASE			0x01c0C000
 #define SUNXI_LCD1_BASE			0x01c0d000
@@ -42,7 +49,9 @@
 #define SUNXI_USB1_BASE			0x01c14000
 #endif
 #define SUNXI_SS_BASE			0x01c15000
+#if !defined(CONFIG_MACH_SUNXI_H3_H5) && !defined(CONFIG_MACH_SUN50I)
 #define SUNXI_HDMI_BASE			0x01c16000
+#endif
 #define SUNXI_SPI2_BASE			0x01c17000
 #define SUNXI_SATA_BASE			0x01c18000
 #ifdef CONFIG_SUNXI_GEN_SUN4I
@@ -52,9 +61,18 @@
 #define SUNXI_USB2_BASE			0x01c1c000
 #endif
 #ifdef CONFIG_SUNXI_GEN_SUN6I
+#if defined(CONFIG_MACH_SUNXI_H3_H5) || defined(CONFIG_MACH_SUN50I)
+#define SUNXI_USBPHY_BASE		0x01c19000
+#define SUNXI_USB0_BASE			SUNXI_USBPHY_BASE
+#define SUNXI_USB1_BASE			0x01c1a000
+#define SUNXI_USB2_BASE			0x01c1b000
+#define SUNXI_USB3_BASE			0x01c1c000
+#define SUNXI_USB4_BASE			0x01c1d000
+#else
 #define SUNXI_USB0_BASE			0x01c19000
 #define SUNXI_USB1_BASE			0x01c1a000
 #define SUNXI_USB2_BASE			0x01c1b000
+#endif
 #endif
 #define SUNXI_CSI1_BASE			0x01c1d000
 #define SUNXI_TZASC_BASE		0x01c1e000
@@ -64,8 +82,15 @@
 #define SUNXI_INTC_BASE			0x01c20400
 #define SUNXI_PIO_BASE			0x01c20800
 #define SUNXI_TIMER_BASE		0x01c20c00
+#ifndef CONFIG_SUNXI_GEN_SUN6I
+#define SUNXI_PWM_BASE			0x01c20e00
+#endif
 #define SUNXI_SPDIF_BASE		0x01c21000
+#ifdef CONFIG_SUNXI_GEN_SUN6I
+#define SUNXI_PWM_BASE			0x01c21400
+#else
 #define SUNXI_AC97_BASE			0x01c21400
+#endif
 #define SUNXI_IR0_BASE			0x01c21800
 #define SUNXI_IR1_BASE			0x01c21c00
 
@@ -74,12 +99,24 @@
 #define SUNXI_AD_DA_BASE		0x01c22c00
 #define SUNXI_KEYPAD_BASE		0x01c23000
 #define SUNXI_TZPC_BASE			0x01c23400
+
+#if defined(CONFIG_MACH_SUN8I_A83T) || defined(CONFIG_MACH_SUNXI_H3_H5) || \
+defined(CONFIG_MACH_SUN50I)
+/* SID address space starts at 0x01c1400, but e-fuse is at offset 0x200 */
+#define SUNXI_SIDC_BASE			0x01c14000
+#define SUNXI_SID_BASE			0x01c14200
+#else
 #define SUNXI_SID_BASE			0x01c23800
+#endif
+
 #define SUNXI_SJTAG_BASE		0x01c23c00
 
 #define SUNXI_TP_BASE			0x01c25000
 #define SUNXI_PMU_BASE			0x01c25400
-#define SUN7I_CPUCFG_BASE              0x01c25c00
+
+#if defined CONFIG_MACH_SUN7I || defined CONFIG_MACH_SUN8I_R40
+#define SUNXI_CPUCFG_BASE		0x01c25c00
+#endif
 
 #define SUNXI_UART0_BASE		0x01c28000
 #define SUNXI_UART1_BASE		0x01c28400
@@ -121,19 +158,40 @@
 #define SUNXI_DRAM_PHY0_BASE		0x01c65000
 #define SUNXI_DRAM_PHY1_BASE		0x01c66000
 
+#define SUNXI_GIC400_BASE		0x01c80000
+
 /* module sram */
 #define SUNXI_SRAM_C_BASE		0x01d00000
 
+#ifndef CONFIG_MACH_SUN8I_H3
 #define SUNXI_DE_FE0_BASE		0x01e00000
+#else
+#define SUNXI_TVE0_BASE			0x01e00000
+#endif
 #define SUNXI_DE_FE1_BASE		0x01e20000
 #define SUNXI_DE_BE0_BASE		0x01e60000
+#ifndef CONFIG_MACH_SUN50I_H5
 #define SUNXI_DE_BE1_BASE		0x01e40000
+#else
+#define SUNXI_TVE0_BASE			0x01e40000
+#endif
 #define SUNXI_MP_BASE			0x01e80000
 #define SUNXI_AVG_BASE			0x01ea0000
 
+#if defined(CONFIG_MACH_SUNXI_H3_H5) || defined(CONFIG_MACH_SUN50I)
+#define SUNXI_HDMI_BASE			0x01ee0000
+#endif
+
 #define SUNXI_RTC_BASE			0x01f00000
 #define SUNXI_PRCM_BASE			0x01f01400
-#define SUN6I_CPUCFG_BASE		0x01f01c00
+
+#if defined CONFIG_SUNXI_GEN_SUN6I && \
+    !defined CONFIG_MACH_SUN8I_A83T && \
+    !defined CONFIG_MACH_SUN8I_R40
+#define SUNXI_CPUCFG_BASE		0x01f01c00
+#endif
+
+#define SUNXI_R_TWI_BASE		0x01f02400
 #define SUNXI_R_UART_BASE		0x01f02800
 #define SUNXI_R_PIO_BASE		0x01f02c00
 #define SUN6I_P2WI_BASE			0x01f03400

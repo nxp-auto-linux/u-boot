@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009
  * Marvell Semiconductor <www.marvell.com>
@@ -8,16 +9,15 @@
  *
  * based on - Driver for MV64360X ethernet ports
  * Copyright (C) 2002 rabeeh@galileo.co.il
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <net.h>
 #include <malloc.h>
 #include <miiphy.h>
+#include <wait_bit.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/types.h>
 #include <asm/system.h>
 #include <asm/byteorder.h>
@@ -27,8 +27,6 @@
 #include <asm/arch/soc.h>
 #elif defined(CONFIG_ORION5X)
 #include <asm/arch/orion5x.h>
-#elif defined(CONFIG_DOVE)
-#include <asm/arch/dove.h>
 #endif
 
 #include "mvgbe.h"
@@ -43,14 +41,30 @@ DECLARE_GLOBAL_DATA_PTR;
 #define MVGBE_SMI_REG (((struct mvgbe_registers *)MVGBE0_BASE)->smi)
 
 #if defined(CONFIG_PHYLIB) || defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
+static int smi_wait_ready(struct mvgbe_device *dmvgbe)
+{
+	int ret;
+
+	ret = wait_for_bit_le32(&MVGBE_SMI_REG, MVGBE_PHY_SMI_BUSY_MASK, false,
+				MVGBE_PHY_SMI_TIMEOUT_MS, false);
+	if (ret) {
+		printf("Error: SMI busy timeout\n");
+		return ret;
+	}
+
+	return 0;
+}
+
 /*
  * smi_reg_read - miiphy_read callback function.
  *
- * Returns 16bit phy register value, or 0xffff on error
+ * Returns 16bit phy register value, or -EFAULT on error
  */
-static int smi_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 * data)
+static int smi_reg_read(struct mii_dev *bus, int phy_adr, int devad,
+			int reg_ofs)
 {
-	struct eth_device *dev = eth_get_dev_by_name(devname);
+	u16 data = 0;
+	struct eth_device *dev = eth_get_dev_by_name(bus->name);
 	struct mvgbe_device *dmvgbe = to_mvgbe(dev);
 	struct mvgbe_registers *regs = dmvgbe->regs;
 	u32 smi_reg;
@@ -60,8 +74,8 @@ static int smi_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 * data)
 	if (phy_adr == MV_PHY_ADR_REQUEST &&
 			reg_ofs == MV_PHY_ADR_REQUEST) {
 		/* */
-		*data = (u16) (MVGBE_REG_RD(regs->phyadr) & PHYADR_MASK);
-		return 0;
+		data = (u16) (MVGBE_REG_RD(regs->phyadr) & PHYADR_MASK);
+		return data;
 	}
 	/* check parameters */
 	if (phy_adr > PHYADR_MASK) {
@@ -75,16 +89,9 @@ static int smi_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 * data)
 		return -EFAULT;
 	}
 
-	timeout = MVGBE_PHY_SMI_TIMEOUT;
 	/* wait till the SMI is not busy */
-	do {
-		/* read smi register */
-		smi_reg = MVGBE_REG_RD(MVGBE_SMI_REG);
-		if (timeout-- == 0) {
-			printf("Err..(%s) SMI busy timeout\n", __func__);
-			return -EFAULT;
-		}
-	} while (smi_reg & MVGBE_PHY_SMI_BUSY_MASK);
+	if (smi_wait_ready(dmvgbe) < 0)
+		return -EFAULT;
 
 	/* fill the phy address and regiser offset and read opcode */
 	smi_reg = (phy_adr << MVGBE_PHY_SMI_DEV_ADDR_OFFS)
@@ -111,27 +118,26 @@ static int smi_reg_read(const char *devname, u8 phy_adr, u8 reg_ofs, u16 * data)
 	for (timeout = 0; timeout < MVGBE_PHY_SMI_TIMEOUT; timeout++)
 		;
 
-	*data = (u16) (MVGBE_REG_RD(MVGBE_SMI_REG) & MVGBE_PHY_SMI_DATA_MASK);
+	data = (u16) (MVGBE_REG_RD(MVGBE_SMI_REG) & MVGBE_PHY_SMI_DATA_MASK);
 
 	debug("%s:(adr %d, off %d) value= %04x\n", __func__, phy_adr, reg_ofs,
-	      *data);
+	      data);
 
-	return 0;
+	return data;
 }
 
 /*
- * smi_reg_write - imiiphy_write callback function.
+ * smi_reg_write - miiphy_write callback function.
  *
- * Returns 0 if write succeed, -EINVAL on bad parameters
- * -ETIME on timeout
+ * Returns 0 if write succeed, -EFAULT on error
  */
-static int smi_reg_write(const char *devname, u8 phy_adr, u8 reg_ofs, u16 data)
+static int smi_reg_write(struct mii_dev *bus, int phy_adr, int devad,
+			 int reg_ofs, u16 data)
 {
-	struct eth_device *dev = eth_get_dev_by_name(devname);
+	struct eth_device *dev = eth_get_dev_by_name(bus->name);
 	struct mvgbe_device *dmvgbe = to_mvgbe(dev);
 	struct mvgbe_registers *regs = dmvgbe->regs;
 	u32 smi_reg;
-	u32 timeout;
 
 	/* Phyadr write request*/
 	if (phy_adr == MV_PHY_ADR_REQUEST &&
@@ -147,19 +153,12 @@ static int smi_reg_write(const char *devname, u8 phy_adr, u8 reg_ofs, u16 data)
 	}
 	if (reg_ofs > PHYREG_MASK) {
 		printf("Err..(%s) Invalid register offset\n", __func__);
-		return -EINVAL;
+		return -EFAULT;
 	}
 
 	/* wait till the SMI is not busy */
-	timeout = MVGBE_PHY_SMI_TIMEOUT;
-	do {
-		/* read smi register */
-		smi_reg = MVGBE_REG_RD(MVGBE_SMI_REG);
-		if (timeout-- == 0) {
-			printf("Err..(%s) SMI busy timeout\n", __func__);
-			return -ETIME;
-		}
-	} while (smi_reg & MVGBE_PHY_SMI_BUSY_MASK);
+	if (smi_wait_ready(dmvgbe) < 0)
+		return -EFAULT;
 
 	/* fill the phy addr and reg offset and write opcode and data */
 	smi_reg = (data << MVGBE_PHY_SMI_DATA_OFFS);
@@ -171,25 +170,6 @@ static int smi_reg_write(const char *devname, u8 phy_adr, u8 reg_ofs, u16 data)
 	MVGBE_REG_WR(MVGBE_SMI_REG, smi_reg);
 
 	return 0;
-}
-#endif
-
-#if defined(CONFIG_PHYLIB)
-int mvgbe_phy_read(struct mii_dev *bus, int phy_addr, int dev_addr,
-		   int reg_addr)
-{
-	u16 data;
-	int ret;
-	ret = smi_reg_read(bus->name, phy_addr, reg_addr, &data);
-	if (ret)
-		return ret;
-	return data;
-}
-
-int mvgbe_phy_write(struct mii_dev *bus, int phy_addr, int dev_addr,
-		    int reg_addr, u16 data)
-{
-	return smi_reg_write(bus->name, phy_addr, reg_addr, data);
 }
 #endif
 
@@ -673,9 +653,9 @@ int mvgbe_phylib_init(struct eth_device *dev, int phyid)
 		printf("mdio_alloc failed\n");
 		return -ENOMEM;
 	}
-	bus->read = mvgbe_phy_read;
-	bus->write = mvgbe_phy_write;
-	sprintf(bus->name, dev->name);
+	bus->read = smi_reg_read;
+	bus->write = smi_reg_write;
+	strcpy(bus->name, dev->name);
 
 	ret = mdio_register(bus);
 	if (ret) {
@@ -685,7 +665,7 @@ int mvgbe_phylib_init(struct eth_device *dev, int phyid)
 	}
 
 	/* Set phy address of the port */
-	mvgbe_phy_write(bus, MV_PHY_ADR_REQUEST, 0, MV_PHY_ADR_REQUEST, phyid);
+	smi_reg_write(bus, MV_PHY_ADR_REQUEST, 0, MV_PHY_ADR_REQUEST, phyid);
 
 	phydev = phy_connect(bus, phyid, dev, PHY_INTERFACE_MODE_RGMII);
 	if (!phydev) {
@@ -785,7 +765,17 @@ error1:
 #if defined(CONFIG_PHYLIB)
 		mvgbe_phylib_init(dev, PHY_BASE_ADR + devnum);
 #elif defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
-		miiphy_register(dev->name, smi_reg_read, smi_reg_write);
+		int retval;
+		struct mii_dev *mdiodev = mdio_alloc();
+		if (!mdiodev)
+			return -ENOMEM;
+		strncpy(mdiodev->name, dev->name, MDIO_NAME_LEN);
+		mdiodev->read = smi_reg_read;
+		mdiodev->write = smi_reg_write;
+
+		retval = mdio_register(mdiodev);
+		if (retval < 0)
+			return retval;
 		/* Set phy address of the port */
 		miiphy_write(dev->name, MV_PHY_ADR_REQUEST,
 				MV_PHY_ADR_REQUEST, PHY_BASE_ADR + devnum);

@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2010 Samsung Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_GPIO_H
@@ -1349,7 +1348,7 @@ enum exynos5420_gpio_pin {
 };
 
 struct gpio_info {
-	unsigned int reg_addr;	/* Address of register for this part */
+	unsigned long reg_addr;	/* Address of register for this part */
 	unsigned int max_gpio;	/* Maximum GPIO in this part */
 };
 

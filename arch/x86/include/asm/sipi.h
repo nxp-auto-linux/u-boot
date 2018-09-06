@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2015 Gooogle, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ASM_SIPI_H
@@ -42,6 +41,7 @@ struct __packed sipi_params_16bit {
  * struct sipi_params - 32-bit SIP entry-point parameters
  *
  * These are used by the AP init code and must be set up before the APs start.
+ * The members must match with the sipi_params layout in sipi_vector.S.
  *
  * The stack area extends down from @stack_top, with @stack_size allocated
  * for each AP.

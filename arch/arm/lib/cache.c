@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2002
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* for now: just dummy functions to satisfy the linker */
@@ -44,6 +43,24 @@ __weak void invalidate_dcache_range(unsigned long start, unsigned long stop)
 __weak void flush_dcache_range(unsigned long start, unsigned long stop)
 {
 	/* An empty stub, real implementation should be in platform code */
+}
+
+int check_cache_range(unsigned long start, unsigned long stop)
+{
+	int ok = 1;
+
+	if (start & (CONFIG_SYS_CACHELINE_SIZE - 1))
+		ok = 0;
+
+	if (stop & (CONFIG_SYS_CACHELINE_SIZE - 1))
+		ok = 0;
+
+	if (!ok) {
+		warn_non_spl("CACHE: Misaligned operation at range [%08lx, %08lx]\n",
+			     start, stop);
+	}
+
+	return ok;
 }
 
 #ifdef CONFIG_SYS_NONCACHED_MEMORY
@@ -89,7 +106,7 @@ phys_addr_t noncached_alloc(size_t size, size_t align)
 }
 #endif /* CONFIG_SYS_NONCACHED_MEMORY */
 
-#if defined(CONFIG_SYS_THUMB_BUILD)
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD)
 void invalidate_l2_cache(void)
 {
 	unsigned int val = 0;

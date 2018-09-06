@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * LPC32xx SLC NAND flash controller driver
  *
@@ -8,14 +9,12 @@
  * Author: Kevin Wells
  *
  * Copyright (c) 2015 Tyco Fire Protection Products.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <nand.h>
 #include <linux/mtd/nand_ecc.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/arch/config.h>
 #include <asm/arch/clk.h>
@@ -291,7 +290,7 @@ static void lpc32xx_nand_dma_configure(struct nand_chip *chip,
 static void lpc32xx_nand_xfer(struct mtd_info *mtd, const u8 *buf,
 			      int len, int read)
 {
-	struct nand_chip *chip = mtd->priv;
+	struct nand_chip *chip = mtd_to_nand(mtd);
 	u32 config;
 	int ret;
 
@@ -486,7 +485,8 @@ static int lpc32xx_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 /* Reuse the logic from "nand_write_page_hwecc()" */
 static int lpc32xx_write_page_hwecc(struct mtd_info *mtd,
 				    struct nand_chip *chip,
-				    const uint8_t *buf, int oob_required)
+				    const uint8_t *buf, int oob_required,
+				    int page)
 {
 	int i;
 	uint8_t *ecc_calc = chip->buffers->ecccalc;
@@ -516,7 +516,7 @@ static int lpc32xx_write_page_hwecc(struct mtd_info *mtd,
 /*
  * LPC32xx has only one SLC NAND controller, don't utilize
  * CONFIG_SYS_NAND_SELF_INIT to be able to reuse this function
- * both in SPL NAND and U-boot images.
+ * both in SPL NAND and U-Boot images.
  */
 int board_nand_init(struct nand_chip *lpc32xx_chip)
 {

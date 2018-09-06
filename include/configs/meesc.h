@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007-2008
  * Stelian Pop <stelian@popies.net>
@@ -8,8 +9,6 @@
  * esd electronic system design gmbh <www.esd.eu>
  *
  * Configuation settings for the esd MEESC board.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -27,15 +26,6 @@
  * Since the linker has to swallow that define, we must use a pure
  * hex number here!
  */
-#define CONFIG_SYS_TEXT_BASE		0x21F00000
-
-/*
- * since a number of boards are not being listed in linux
- * arch/arm/tools/mach-types any more, the mach-types have to be
- * defined here
- */
-#define MACH_TYPE_MEESC			2165
-#define MACH_TYPE_ETHERCAN2		2407
 
 /* ARM asynchronous clock */
 #define CONFIG_SYS_AT91_SLOW_CLOCK	32768	/* 32.768 kHz crystal */
@@ -44,7 +34,6 @@
 /* Misc CPU related */
 #define CONFIG_SKIP_LOWLEVEL_INIT
 #define CONFIG_ARCH_CPU_INIT
-#define CONFIG_BOARD_EARLY_INIT_F		/* call board_early_init_f() */
 #define CONFIG_SETUP_MEMORY_TAGS
 #define CONFIG_INITRD_TAG
 #define CONFIG_SERIAL_TAG
@@ -52,54 +41,16 @@
 #define CONFIG_CMDLINE_TAG			/* enable passing of ATAGs */
 #define CONFIG_MISC_INIT_R			/* Call misc_init_r */
 
-#define CONFIG_DISPLAY_BOARDINFO		/* call checkboard() */
-#define CONFIG_DISPLAY_CPUINFO			/* display cpu info and speed */
 #define CONFIG_PREBOOT				/* enable preboot variable */
-
-#define CONFIG_CMD_BOOTZ
-#define CONFIG_OF_LIBFDT
 
 /*
  * Hardware drivers
  */
 
-/* general purpose I/O */
-#define CONFIG_AT91_GPIO
-
-/* Console output */
-#define CONFIG_ATMEL_USART
-#define CONFIG_USART_BASE		ATMEL_BASE_DBGU
-#define CONFIG_USART_ID			ATMEL_ID_SYS
-#define CONFIG_BAUDRATE			115200
-
-#define CONFIG_BOOTDELAY		3
-#define CONFIG_ZERO_BOOTDELAY_CHECK
-
 /*
  * BOOTP options
  */
 #define CONFIG_BOOTP_BOOTFILESIZE
-#define CONFIG_BOOTP_BOOTPATH
-#define CONFIG_BOOTP_GATEWAY
-#define CONFIG_BOOTP_HOSTNAME
-
-/*
- * Command line configuration.
- */
-#undef CONFIG_CMD_BDI
-#undef CONFIG_CMD_FPGA
-#undef CONFIG_CMD_LOADS
-#undef CONFIG_CMD_IMLS
-
-#define CONFIG_CMD_PING
-#define CONFIG_CMD_DHCP
-
-#ifdef CONFIG_SYS_USE_NANDFLASH
-#define CONFIG_CMD_NAND
-#endif
-
-/* LED */
-#define CONFIG_AT91_LED
 
 /*
  * SDRAM: 1 bank, min 32, max 128 MB
@@ -122,21 +73,7 @@
  * that address while providing maximum stack area below.
  */
 #define CONFIG_SYS_INIT_SP_ADDR \
-	(ATMEL_BASE_SRAM0 + 0x1000 - GENERATED_GBL_DATA_SIZE)
-
-/* DataFlash */
-#ifdef CONFIG_SYS_USE_DATAFLASH
-# define CONFIG_ATMEL_DATAFLASH_SPI
-# define CONFIG_HAS_DATAFLASH
-# define CONFIG_SYS_MAX_DATAFLASH_BANKS		1
-# define CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS0	0xC0000000	/* CS0 */
-# define AT91_SPI_CLK				15000000
-# define DATAFLASH_TCSS				(0x1a << 16)
-# define DATAFLASH_TCHS				(0x1 << 24)
-#endif
-
-/* NOR flash is not populated, disable it */
-#define CONFIG_SYS_NO_FLASH
+	(ATMEL_BASE_SRAM0 + 16 * 1024 - GENERATED_GBL_DATA_SIZE)
 
 /* NAND flash */
 #ifdef CONFIG_CMD_NAND
@@ -153,7 +90,6 @@
 /* Ethernet */
 #define CONFIG_MACB
 #define CONFIG_RMII
-#define CONFIG_FIT
 #define CONFIG_NET_RETRY_COUNT			20
 #undef CONFIG_RESET_PHY_R
 
@@ -163,31 +99,20 @@
 #ifdef CONFIG_SYS_USE_DATAFLASH
 
 /* bootstrap + u-boot + env in dataflash on CS0 */
-# define CONFIG_ENV_IS_IN_DATAFLASH
-# define CONFIG_SYS_MONITOR_BASE	(CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS0 + \
-					0x8400)
-# define CONFIG_ENV_OFFSET		0x4200
-# define CONFIG_ENV_ADDR		(CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS0 + \
-					CONFIG_ENV_OFFSET)
-# define CONFIG_ENV_SIZE		0x4200
+#define CONFIG_ENV_OFFSET	0x4200
+#define CONFIG_ENV_SIZE		0x4200
+#define CONFIG_ENV_SECT_SIZE	0x210
+#define CONFIG_ENV_SPI_MAX_HZ	15000000
 
 #elif CONFIG_SYS_USE_NANDFLASH
 
 /* bootstrap + u-boot + env + linux in nandflash */
-# define CONFIG_ENV_IS_IN_NAND		1
 # define CONFIG_ENV_OFFSET		0xC0000
 # define CONFIG_ENV_SIZE		0x20000
 
 #endif
 
 #define CONFIG_SYS_CBSIZE		512
-#define CONFIG_SYS_MAXARGS		16
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_LONGHELP
-#define CONFIG_CMDLINE_EDITING
-#define CONFIG_AUTO_COMPLETE
-#define CONFIG_SYS_HUSH_PARSER
 
 /*
  * Size of malloc() pool

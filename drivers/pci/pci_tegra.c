@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2010, CompuLab, Ltd.
  * Author: Mike Rapoport <mike@compulab.co.il>
@@ -6,31 +7,41 @@
  * Copyright (c) 2008-2009, NVIDIA Corporation.
  *
  * Copyright (c) 2013-2014, NVIDIA Corporation.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #define pr_fmt(fmt) "tegra-pcie: " fmt
 
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <errno.h>
-#include <fdtdec.h>
 #include <malloc.h>
 #include <pci.h>
+#include <pci_tegra.h>
+#include <power-domain.h>
+#include <reset.h>
 
 #include <asm/io.h>
 #include <asm/gpio.h>
 
+#include <linux/ioport.h>
+#include <linux/list.h>
+
+#ifndef CONFIG_TEGRA186
 #include <asm/arch/clock.h>
 #include <asm/arch/powergate.h>
 #include <asm/arch-tegra/xusb-padctl.h>
-
-#include <linux/list.h>
-
 #include <dt-bindings/pinctrl/pinctrl-tegra-xusb.h>
+#endif
 
-DECLARE_GLOBAL_DATA_PTR;
+/*
+ * FIXME: TODO: This driver contains a number of ifdef CONFIG_TEGRA186 that
+ * should not be present. These are needed because newer Tegra SoCs support
+ * only the standard clock/reset APIs, whereas older Tegra SoCs support only
+ * a custom Tegra-specific API. ASAP the older Tegra SoCs' code should be
+ * fixed to implement the standard APIs, and all drivers converted to solely
+ * use the new standard APIs, with no ifdefs.
+ */
 
 #define AFI_AXI_BAR0_SZ	0x00
 #define AFI_AXI_BAR1_SZ	0x04
@@ -103,6 +114,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #define  AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_222	(0x1 << 20)
 #define  AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_X4_X1	(0x1 << 20)
 #define  AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_411	(0x2 << 20)
+#define  AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_T186_401	(0x0 << 20)
+#define  AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_T186_211	(0x1 << 20)
+#define  AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_T186_111	(0x2 << 20)
 
 #define AFI_FUSE			0x104
 #define  AFI_FUSE_PCIE_T0_GEN2_DIS	(1 << 2)
@@ -110,6 +124,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define AFI_PEX0_CTRL			0x110
 #define AFI_PEX1_CTRL			0x118
 #define AFI_PEX2_CTRL			0x128
+#define AFI_PEX2_CTRL_T186		0x19c
 #define  AFI_PEX_CTRL_RST		(1 << 0)
 #define  AFI_PEX_CTRL_CLKREQ_EN		(1 << 1)
 #define  AFI_PEX_CTRL_REFCLK_EN		(1 << 3)
@@ -154,15 +169,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define PADS_REFCLK_CFG_PREDI_SHIFT		8  /* 11:8 */
 #define PADS_REFCLK_CFG_DRVI_SHIFT		12 /* 15:12 */
 
-/* Default value provided by HW engineering is 0xfa5c */
-#define PADS_REFCLK_CFG_VALUE \
-	( \
-		(0x17 << PADS_REFCLK_CFG_TERM_SHIFT)   | \
-		(0    << PADS_REFCLK_CFG_E_TERM_SHIFT) | \
-		(0xa  << PADS_REFCLK_CFG_PREDI_SHIFT)  | \
-		(0xf  << PADS_REFCLK_CFG_DRVI_SHIFT)     \
-	)
-
 #define RP_VEND_XP	0x00000F00
 #define  RP_VEND_XP_DL_UP	(1 << 30)
 
@@ -182,6 +188,7 @@ enum tegra_pci_id {
 	TEGRA30_PCIE,
 	TEGRA124_PCIE,
 	TEGRA210_PCIE,
+	TEGRA186_PCIE,
 };
 
 struct tegra_pcie_port {
@@ -198,6 +205,9 @@ struct tegra_pcie_soc {
 	unsigned int num_ports;
 	unsigned long pads_pll_ctl;
 	unsigned long tx_ref_sel;
+	unsigned long afi_pex2_ctrl;
+	u32 pads_refclk_cfg0;
+	u32 pads_refclk_cfg1;
 	bool has_pex_clkreq_en;
 	bool has_pex_bias_ctrl;
 	bool has_cml_clk;
@@ -206,17 +216,25 @@ struct tegra_pcie_soc {
 };
 
 struct tegra_pcie {
-	struct pci_controller hose;
-
-	struct fdt_resource pads;
-	struct fdt_resource afi;
-	struct fdt_resource cs;
+	struct resource pads;
+	struct resource afi;
+	struct resource cs;
 
 	struct list_head ports;
 	unsigned long xbar;
 
 	const struct tegra_pcie_soc *soc;
+
+#ifdef CONFIG_TEGRA186
+	struct clk clk_afi;
+	struct clk clk_pex;
+	struct reset_ctl reset_afi;
+	struct reset_ctl reset_pex;
+	struct reset_ctl reset_pcie_x;
+	struct power_domain pwrdom;
+#else
 	struct tegra_xusb_phy *phy;
+#endif
 };
 
 static void afi_writel(struct tegra_pcie *pcie, unsigned long value,
@@ -236,10 +254,12 @@ static void pads_writel(struct tegra_pcie *pcie, unsigned long value,
 	writel(value, pcie->pads.start + offset);
 }
 
+#ifndef CONFIG_TEGRA186
 static unsigned long pads_readl(struct tegra_pcie *pcie, unsigned long offset)
 {
 	return readl(pcie->pads.start + offset);
 }
+#endif
 
 static unsigned long rp_readl(struct tegra_pcie_port *port,
 			      unsigned long offset)
@@ -275,12 +295,17 @@ static int tegra_pcie_conf_address(struct tegra_pcie *pcie, pci_dev_t bdf,
 				return 0;
 			}
 		}
+		return -EFAULT;
 	} else {
+#ifdef CONFIG_TEGRA20
+		unsigned int dev = PCI_DEV(bdf);
+		if (dev != 0)
+			return -EFAULT;
+#endif
+
 		*address = pcie->cs.start + tegra_pcie_conf_offset(bdf, where);
 		return 0;
 	}
-
-	return -EFAULT;
 }
 
 static int pci_tegra_read_config(struct udevice *bus, pci_dev_t bdf,
@@ -299,13 +324,15 @@ static int pci_tegra_read_config(struct udevice *bus, pci_dev_t bdf,
 
 	value = readl(address);
 
+#ifdef CONFIG_TEGRA20
 	/* fixup root port class */
 	if (PCI_BUS(bdf) == 0) {
-		if (offset == PCI_CLASS_REVISION) {
+		if ((offset & ~3) == PCI_CLASS_REVISION) {
 			value &= ~0x00ff0000;
 			value |= PCI_CLASS_BRIDGE_PCI << 16;
 		}
 	}
+#endif
 
 done:
 	*valuep = pci_conv_32_to_size(value, offset, size);
@@ -333,15 +360,14 @@ static int pci_tegra_write_config(struct udevice *bus, pci_dev_t bdf,
 	return 0;
 }
 
-static int tegra_pcie_port_parse_dt(const void *fdt, int node,
-				    struct tegra_pcie_port *port)
+static int tegra_pcie_port_parse_dt(ofnode node, struct tegra_pcie_port *port)
 {
 	const u32 *addr;
 	int len;
 
-	addr = fdt_getprop(fdt, node, "assigned-addresses", &len);
+	addr = ofnode_get_property(node, "assigned-addresses", &len);
 	if (!addr) {
-		error("property \"assigned-addresses\" not found");
+		pr_err("property \"assigned-addresses\" not found");
 		return -FDT_ERR_NOTFOUND;
 	}
 
@@ -351,7 +377,7 @@ static int tegra_pcie_port_parse_dt(const void *fdt, int node,
 	return 0;
 }
 
-static int tegra_pcie_get_xbar_config(const void *fdt, int node, u32 lanes,
+static int tegra_pcie_get_xbar_config(ofnode node, u32 lanes,
 				      enum tegra_pci_id id, unsigned long *xbar)
 {
 	switch (id) {
@@ -400,6 +426,24 @@ static int tegra_pcie_get_xbar_config(const void *fdt, int node, u32 lanes,
 			return 0;
 		}
 		break;
+	case TEGRA186_PCIE:
+		switch (lanes) {
+		case 0x0010004:
+			debug("x4 x1 configuration\n");
+			*xbar = AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_T186_401;
+			return 0;
+
+		case 0x0010102:
+			debug("x2 x1 x1 configuration\n");
+			*xbar = AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_T186_211;
+			return 0;
+
+		case 0x0010101:
+			debug("x1 x1 x1 configuration\n");
+			*xbar = AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_T186_111;
+			return 0;
+		}
+		break;
 	default:
 		break;
 	}
@@ -407,24 +451,22 @@ static int tegra_pcie_get_xbar_config(const void *fdt, int node, u32 lanes,
 	return -FDT_ERR_NOTFOUND;
 }
 
-static int tegra_pcie_parse_port_info(const void *fdt, int node,
-				      unsigned int *index,
-				      unsigned int *lanes)
+static int tegra_pcie_parse_port_info(ofnode node, uint *index, uint *lanes)
 {
 	struct fdt_pci_addr addr;
 	int err;
 
-	err = fdtdec_get_int(fdt, node, "nvidia,num-lanes", 0);
+	err = ofnode_read_u32_default(node, "nvidia,num-lanes", -1);
 	if (err < 0) {
-		error("failed to parse \"nvidia,num-lanes\" property");
+		pr_err("failed to parse \"nvidia,num-lanes\" property");
 		return err;
 	}
 
 	*lanes = err;
 
-	err = fdtdec_get_pci_addr(fdt, node, 0, "reg", &addr);
+	err = ofnode_read_pci_addr(node, 0, "reg", &addr);
 	if (err < 0) {
-		error("failed to parse \"reg\" property");
+		pr_err("failed to parse \"reg\" property");
 		return err;
 	}
 
@@ -438,58 +480,61 @@ int __weak tegra_pcie_board_init(void)
 	return 0;
 }
 
-static int tegra_pcie_parse_dt(const void *fdt, int node, enum tegra_pci_id id,
+static int tegra_pcie_parse_dt(struct udevice *dev, enum tegra_pci_id id,
 			       struct tegra_pcie *pcie)
 {
-	int err, subnode;
+	ofnode subnode;
 	u32 lanes = 0;
+	int err;
 
-	err = fdt_get_named_resource(fdt, node, "reg", "reg-names", "pads",
-				     &pcie->pads);
+	err = dev_read_resource(dev, 0, &pcie->pads);
 	if (err < 0) {
-		error("resource \"pads\" not found");
+		pr_err("resource \"pads\" not found");
 		return err;
 	}
 
-	err = fdt_get_named_resource(fdt, node, "reg", "reg-names", "afi",
-				     &pcie->afi);
+	err = dev_read_resource(dev, 1, &pcie->afi);
 	if (err < 0) {
-		error("resource \"afi\" not found");
+		pr_err("resource \"afi\" not found");
 		return err;
 	}
 
-	err = fdt_get_named_resource(fdt, node, "reg", "reg-names", "cs",
-				     &pcie->cs);
+	err = dev_read_resource(dev, 2, &pcie->cs);
 	if (err < 0) {
-		error("resource \"cs\" not found");
+		pr_err("resource \"cs\" not found");
 		return err;
 	}
 
-	tegra_pcie_board_init();
+	err = tegra_pcie_board_init();
+	if (err < 0) {
+		pr_err("tegra_pcie_board_init() failed: err=%d", err);
+		return err;
+	}
 
+#ifndef CONFIG_TEGRA186
 	pcie->phy = tegra_xusb_phy_get(TEGRA_XUSB_PADCTL_PCIE);
 	if (pcie->phy) {
 		err = tegra_xusb_phy_prepare(pcie->phy);
 		if (err < 0) {
-			error("failed to prepare PHY: %d", err);
+			pr_err("failed to prepare PHY: %d", err);
 			return err;
 		}
 	}
+#endif
 
-	fdt_for_each_subnode(fdt, subnode, node) {
+	dev_for_each_subnode(subnode, dev) {
 		unsigned int index = 0, num_lanes = 0;
 		struct tegra_pcie_port *port;
 
-		err = tegra_pcie_parse_port_info(fdt, subnode, &index,
-						 &num_lanes);
+		err = tegra_pcie_parse_port_info(subnode, &index, &num_lanes);
 		if (err < 0) {
-			error("failed to obtain root port info");
+			pr_err("failed to obtain root port info");
 			continue;
 		}
 
 		lanes |= num_lanes << (index << 3);
 
-		if (!fdtdec_get_is_enabled(fdt, subnode))
+		if (!ofnode_is_available(subnode))
 			continue;
 
 		port = malloc(sizeof(*port));
@@ -500,7 +545,7 @@ static int tegra_pcie_parse_dt(const void *fdt, int node, enum tegra_pci_id id,
 		port->num_lanes = num_lanes;
 		port->index = index;
 
-		err = tegra_pcie_port_parse_dt(fdt, subnode, port);
+		err = tegra_pcie_port_parse_dt(subnode, port);
 		if (err < 0) {
 			free(port);
 			continue;
@@ -510,15 +555,54 @@ static int tegra_pcie_parse_dt(const void *fdt, int node, enum tegra_pci_id id,
 		port->pcie = pcie;
 	}
 
-	err = tegra_pcie_get_xbar_config(fdt, node, lanes, id, &pcie->xbar);
+	err = tegra_pcie_get_xbar_config(dev_ofnode(dev), lanes, id,
+					 &pcie->xbar);
 	if (err < 0) {
-		error("invalid lane configuration");
+		pr_err("invalid lane configuration");
 		return err;
 	}
 
 	return 0;
 }
 
+#ifdef CONFIG_TEGRA186
+static int tegra_pcie_power_on(struct tegra_pcie *pcie)
+{
+	int ret;
+
+	ret = power_domain_on(&pcie->pwrdom);
+	if (ret) {
+		pr_err("power_domain_on() failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = clk_enable(&pcie->clk_afi);
+	if (ret) {
+		pr_err("clk_enable(afi) failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = clk_enable(&pcie->clk_pex);
+	if (ret) {
+		pr_err("clk_enable(pex) failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = reset_deassert(&pcie->reset_afi);
+	if (ret) {
+		pr_err("reset_deassert(afi) failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = reset_deassert(&pcie->reset_pex);
+	if (ret) {
+		pr_err("reset_deassert(pex) failed: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+#else
 static int tegra_pcie_power_on(struct tegra_pcie *pcie)
 {
 	const struct tegra_pcie_soc *soc = pcie->soc;
@@ -532,14 +616,14 @@ static int tegra_pcie_power_on(struct tegra_pcie *pcie)
 
 	err = tegra_powergate_power_off(TEGRA_POWERGATE_PCIE);
 	if (err < 0) {
-		error("failed to power off PCIe partition: %d", err);
+		pr_err("failed to power off PCIe partition: %d", err);
 		return err;
 	}
 
 	err = tegra_powergate_sequence_power_up(TEGRA_POWERGATE_PCIE,
 						PERIPH_ID_PCIE);
 	if (err < 0) {
-		error("failed to power up PCIe partition: %d", err);
+		pr_err("failed to power up PCIe partition: %d", err);
 		return err;
 	}
 
@@ -559,7 +643,7 @@ static int tegra_pcie_power_on(struct tegra_pcie *pcie)
 
 	err = tegra_plle_enable();
 	if (err < 0) {
-		error("failed to enable PLLE: %d\n", err);
+		pr_err("failed to enable PLLE: %d\n", err);
 		return err;
 	}
 
@@ -616,17 +700,10 @@ static int tegra_pcie_phy_enable(struct tegra_pcie *pcie)
 	value |= PADS_PLL_CTL_RST_B4SM;
 	pads_writel(pcie, value, soc->pads_pll_ctl);
 
-	/* configure the reference clock driver */
-	value = PADS_REFCLK_CFG_VALUE | (PADS_REFCLK_CFG_VALUE << 16);
-	pads_writel(pcie, value, PADS_REFCLK_CFG0);
-
-	if (soc->num_ports > 2)
-		pads_writel(pcie, PADS_REFCLK_CFG_VALUE, PADS_REFCLK_CFG1);
-
 	/* wait for the PLL to lock */
 	err = tegra_pcie_pll_wait(pcie, 500);
 	if (err < 0) {
-		error("PLL failed to lock: %d", err);
+		pr_err("PLL failed to lock: %d", err);
 		return err;
 	}
 
@@ -642,6 +719,7 @@ static int tegra_pcie_phy_enable(struct tegra_pcie *pcie)
 
 	return 0;
 }
+#endif
 
 static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
 {
@@ -650,7 +728,11 @@ static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
 	u32 value;
 	int err;
 
+#ifdef CONFIG_TEGRA186
+	{
+#else
 	if (pcie->phy) {
+#endif
 		value = afi_readl(pcie, AFI_PLLE_CONTROL);
 		value &= ~AFI_PLLE_CONTROL_BYPASS_PADS2PLLE_CONTROL;
 		value |= AFI_PLLE_CONTROL_PADS2PLLE_CONTROL_EN;
@@ -678,18 +760,28 @@ static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
 
 	afi_writel(pcie, value, AFI_FUSE);
 
+#ifndef CONFIG_TEGRA186
 	if (pcie->phy)
 		err = tegra_xusb_phy_enable(pcie->phy);
 	else
 		err = tegra_pcie_phy_enable(pcie);
 
 	if (err < 0) {
-		error("failed to power on PHY: %d\n", err);
+		pr_err("failed to power on PHY: %d\n", err);
 		return err;
 	}
+#endif
 
 	/* take the PCIEXCLK logic out of reset */
+#ifdef CONFIG_TEGRA186
+	err = reset_deassert(&pcie->reset_pcie_x);
+	if (err) {
+		pr_err("reset_deassert(pcie_x) failed: %d\n", err);
+		return err;
+	}
+#else
 	reset_set_enable(PERIPH_ID_PCIEXCLK, 0);
+#endif
 
 	/* finally enable PCIe */
 	value = afi_readl(pcie, AFI_CONFIGURATION);
@@ -714,7 +806,7 @@ static int tegra_pcie_setup_translations(struct udevice *bus)
 
 	/* BAR 0: type 1 extended configuration space */
 	fpci = 0xfe100000;
-	size = fdt_resource_size(&pcie->cs);
+	size = resource_size(&pcie->cs);
 	axi = pcie->cs.start;
 
 	afi_writel(pcie, axi, AFI_AXI_BAR0_START);
@@ -790,14 +882,14 @@ static unsigned long tegra_pcie_port_get_pex_ctrl(struct tegra_pcie_port *port)
 		break;
 
 	case 2:
-		ret = AFI_PEX2_CTRL;
+		ret = port->pcie->soc->afi_pex2_ctrl;
 		break;
 	}
 
 	return ret;
 }
 
-static void tegra_pcie_port_reset(struct tegra_pcie_port *port)
+void tegra_pcie_port_reset(struct tegra_pcie_port *port)
 {
 	unsigned long ctrl = tegra_pcie_port_get_pex_ctrl(port);
 	unsigned long value;
@@ -814,30 +906,46 @@ static void tegra_pcie_port_reset(struct tegra_pcie_port *port)
 	afi_writel(port->pcie, value, ctrl);
 }
 
+int tegra_pcie_port_index_of_port(struct tegra_pcie_port *port)
+{
+	return port->index;
+}
+
+void __weak tegra_pcie_board_port_reset(struct tegra_pcie_port *port)
+{
+	tegra_pcie_port_reset(port);
+}
+
 static void tegra_pcie_port_enable(struct tegra_pcie_port *port)
 {
-	const struct tegra_pcie_soc *soc = port->pcie->soc;
+	struct tegra_pcie *pcie = port->pcie;
+	const struct tegra_pcie_soc *soc = pcie->soc;
 	unsigned long ctrl = tegra_pcie_port_get_pex_ctrl(port);
 	unsigned long value;
 
 	/* enable reference clock */
-	value = afi_readl(port->pcie, ctrl);
+	value = afi_readl(pcie, ctrl);
 	value |= AFI_PEX_CTRL_REFCLK_EN;
 
-	if (port->pcie->soc->has_pex_clkreq_en)
+	if (pcie->soc->has_pex_clkreq_en)
 		value |= AFI_PEX_CTRL_CLKREQ_EN;
 
 	value |= AFI_PEX_CTRL_OVERRIDE_EN;
 
-	afi_writel(port->pcie, value, ctrl);
+	afi_writel(pcie, value, ctrl);
 
-	tegra_pcie_port_reset(port);
+	tegra_pcie_board_port_reset(port);
 
 	if (soc->force_pca_enable) {
 		value = rp_readl(port, RP_VEND_CTL2);
 		value |= RP_VEND_CTL2_PCA_ENABLE;
 		rp_writel(port, value, RP_VEND_CTL2);
 	}
+
+	/* configure the reference clock driver */
+	pads_writel(pcie, soc->pads_refclk_cfg0, PADS_REFCLK_CFG0);
+	if (soc->num_ports > 2)
+		pads_writel(pcie, soc->pads_refclk_cfg1, PADS_REFCLK_CFG1);
 }
 
 static bool tegra_pcie_port_check_link(struct tegra_pcie_port *port)
@@ -877,7 +985,7 @@ static bool tegra_pcie_port_check_link(struct tegra_pcie_port *port)
 		} while (--timeout);
 
 retry:
-		tegra_pcie_port_reset(port);
+		tegra_pcie_board_port_reset(port);
 	} while (--retries);
 
 	return false;
@@ -932,6 +1040,7 @@ static const struct tegra_pcie_soc pci_tegra_soc[] = {
 		.num_ports = 2,
 		.pads_pll_ctl = PADS_PLL_CTL_TEGRA20,
 		.tx_ref_sel = PADS_PLL_CTL_TXCLKREF_DIV10,
+		.pads_refclk_cfg0 = 0xfa5cfa5c,
 		.has_pex_clkreq_en = false,
 		.has_pex_bias_ctrl = false,
 		.has_cml_clk = false,
@@ -941,6 +1050,9 @@ static const struct tegra_pcie_soc pci_tegra_soc[] = {
 		.num_ports = 3,
 		.pads_pll_ctl = PADS_PLL_CTL_TEGRA30,
 		.tx_ref_sel = PADS_PLL_CTL_TXCLKREF_BUF_EN,
+		.afi_pex2_ctrl = AFI_PEX2_CTRL,
+		.pads_refclk_cfg0 = 0xfa5cfa5c,
+		.pads_refclk_cfg1 = 0xfa5cfa5c,
 		.has_pex_clkreq_en = true,
 		.has_pex_bias_ctrl = true,
 		.has_cml_clk = true,
@@ -950,6 +1062,7 @@ static const struct tegra_pcie_soc pci_tegra_soc[] = {
 		.num_ports = 2,
 		.pads_pll_ctl = PADS_PLL_CTL_TEGRA30,
 		.tx_ref_sel = PADS_PLL_CTL_TXCLKREF_BUF_EN,
+		.pads_refclk_cfg0 = 0x44ac44ac,
 		.has_pex_clkreq_en = true,
 		.has_pex_bias_ctrl = true,
 		.has_cml_clk = true,
@@ -959,12 +1072,22 @@ static const struct tegra_pcie_soc pci_tegra_soc[] = {
 		.num_ports = 2,
 		.pads_pll_ctl = PADS_PLL_CTL_TEGRA30,
 		.tx_ref_sel = PADS_PLL_CTL_TXCLKREF_BUF_EN,
+		.pads_refclk_cfg0 = 0x90b890b8,
 		.has_pex_clkreq_en = true,
 		.has_pex_bias_ctrl = true,
 		.has_cml_clk = true,
 		.has_gen2 = true,
 		.force_pca_enable = true,
-	}
+	},
+	[TEGRA186_PCIE] = {
+		.num_ports = 3,
+		.afi_pex2_ctrl = AFI_PEX2_CTRL_T186,
+		.pads_refclk_cfg0 = 0x80b880b8,
+		.pads_refclk_cfg1 = 0x000480b8,
+		.has_pex_clkreq_en = true,
+		.has_pex_bias_ctrl = true,
+		.has_gen2 = true,
+	},
 };
 
 static int pci_tegra_ofdata_to_platdata(struct udevice *dev)
@@ -977,7 +1100,7 @@ static int pci_tegra_ofdata_to_platdata(struct udevice *dev)
 
 	INIT_LIST_HEAD(&pcie->ports);
 
-	if (tegra_pcie_parse_dt(gd->fdt_blob, dev->of_offset, id, pcie))
+	if (tegra_pcie_parse_dt(dev, id, pcie))
 		return -EINVAL;
 
 	return 0;
@@ -988,27 +1111,65 @@ static int pci_tegra_probe(struct udevice *dev)
 	struct tegra_pcie *pcie = dev_get_priv(dev);
 	int err;
 
+#ifdef CONFIG_TEGRA186
+	err = clk_get_by_name(dev, "afi", &pcie->clk_afi);
+	if (err) {
+		debug("clk_get_by_name(afi) failed: %d\n", err);
+		return err;
+	}
+
+	err = clk_get_by_name(dev, "pex", &pcie->clk_pex);
+	if (err) {
+		debug("clk_get_by_name(pex) failed: %d\n", err);
+		return err;
+	}
+
+	err = reset_get_by_name(dev, "afi", &pcie->reset_afi);
+	if (err) {
+		debug("reset_get_by_name(afi) failed: %d\n", err);
+		return err;
+	}
+
+	err = reset_get_by_name(dev, "pex", &pcie->reset_pex);
+	if (err) {
+		debug("reset_get_by_name(pex) failed: %d\n", err);
+		return err;
+	}
+
+	err = reset_get_by_name(dev, "pcie_x", &pcie->reset_pcie_x);
+	if (err) {
+		debug("reset_get_by_name(pcie_x) failed: %d\n", err);
+		return err;
+	}
+
+	err = power_domain_get(dev, &pcie->pwrdom);
+	if (err) {
+		debug("power_domain_get() failed: %d\n", err);
+		return err;
+	}
+#endif
+
 	err = tegra_pcie_power_on(pcie);
 	if (err < 0) {
-		error("failed to power on");
+		pr_err("failed to power on");
 		return err;
 	}
 
 	err = tegra_pcie_enable_controller(pcie);
 	if (err < 0) {
-		error("failed to enable controller");
+		pr_err("failed to enable controller");
 		return err;
 	}
 
 	err = tegra_pcie_setup_translations(dev);
 	if (err < 0) {
-		error("failed to decode ranges");
+		pr_err("failed to decode ranges");
 		return err;
 	}
 
 	err = tegra_pcie_enable(pcie);
 	if (err < 0) {
-		error("failed to enable PCIe");
+		pr_err("failed to enable PCIe");
 		return err;
 	}
 
@@ -1025,6 +1186,7 @@ static const struct udevice_id pci_tegra_ids[] = {
 	{ .compatible = "nvidia,tegra30-pcie", .data = TEGRA30_PCIE },
 	{ .compatible = "nvidia,tegra124-pcie", .data = TEGRA124_PCIE },
 	{ .compatible = "nvidia,tegra210-pcie", .data = TEGRA210_PCIE },
+	{ .compatible = "nvidia,tegra186-pcie", .data = TEGRA186_PCIE },
 	{ }
 };
 
@@ -1037,11 +1199,3 @@ U_BOOT_DRIVER(pci_tegra) = {
 	.probe	= pci_tegra_probe,
 	.priv_auto_alloc_size = sizeof(struct tegra_pcie),
 };
-
-int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
-{
-	if (PCI_BUS(dev) != 0 && PCI_DEV(dev) > 0)
-		return 1;
-
-	return 0;
-}

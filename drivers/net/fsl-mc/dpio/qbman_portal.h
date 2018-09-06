@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "qbman_private.h"
@@ -14,8 +13,8 @@
 /* Management command result codes */
 #define QBMAN_MC_RSLT_OK      0xf0
 
-/* TBD: as of QBMan 4.1, DQRR will be 8 rather than 4! */
-#define QBMAN_DQRR_SIZE 4
+#define QBMAN_VER_4_0_DQRR_SIZE 4
+#define QBMAN_VER_4_1_DQRR_SIZE 8
 
 
 /* --------------------- */
@@ -71,6 +70,7 @@ struct qbman_swp {
 	struct {
 		uint32_t next_idx;
 		uint32_t valid_bit;
+		uint8_t dqrr_size;
 	} dqrr;
 };
 

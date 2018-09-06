@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2004-2008
  * Texas Instruments, <www.ti.com>
  * Richard Woodruff <r-woodruff2@ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef _SYS_PROTO_H_
 #define _SYS_PROTO_H_
@@ -40,11 +39,12 @@ void sdrc_init(void);
 void do_sdrc_init(u32, u32);
 
 void get_board_mem_timings(struct board_sdrc_timings *timings);
-void identify_nand_chip(int *mfr, int *id);
+int identify_nand_chip(int *mfr, int *id);
 void emif4_init(void);
 void gpmc_init(void);
-void enable_gpmc_cs_config(const u32 *gpmc_config, struct gpmc_cs *cs, u32 base,
-			u32 size);
+void enable_gpmc_cs_config(const u32 *gpmc_config, const struct gpmc_cs *cs,
+				u32 base, u32 size);
+void set_gpmc_cs0(int flash_type);
 
 void watchdog_init(void);
 void set_muxconf_regs(void);
@@ -67,7 +67,7 @@ u32 wait_on_value(u32, u32, void *, u32);
 void cancel_out(u32 *num, u32 *den, u32 den_limit);
 void sdelay(unsigned long);
 void make_cs1_contiguous(void);
-void omap_nand_switch_ecc(uint32_t, uint32_t);
+int omap_nand_switch_ecc(uint32_t, uint32_t);
 void power_init_r(void);
 void do_omap3_emu_romcode_call(u32 service_id, u32 parameters);
 void omap3_set_aux_cr_secure(u32 acr);

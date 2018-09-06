@@ -1,21 +1,28 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Atmel Corporation
  *		      Wenyou Yang <wenyou.yang@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/at91_pmc.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/sama5d2.h>
 
-char *get_cpu_name()
+int cpu_is_sama5d2(void)
 {
+	unsigned int chip_id = get_chip_id();
+
+	return ((chip_id == ARCH_ID_SAMA5D2) ||
+		(chip_id == ARCH_ID_SAMA5D2_SIP)) ? 1 : 0;
+}
+
+char *get_cpu_name(void)
+{
+	unsigned int chip_id = get_chip_id();
 	unsigned int extension_id = get_extension_chip_id();
 
-	if (cpu_is_sama5d2()) {
+	if (chip_id == ARCH_ID_SAMA5D2) {
 		switch (extension_id) {
 		case ARCH_EXID_SAMA5D21CU:
 			return "SAMA5D21";
@@ -42,15 +49,26 @@ char *get_cpu_name()
 		}
 	}
 
+	if ((chip_id == ARCH_ID_SAMA5D2) || (chip_id == ARCH_ID_SAMA5D2_SIP)) {
+		switch (extension_id) {
+		case ARCH_EXID_SAMA5D225C_D1M:
+			return "SAMA5D225 128M bits DDR2 SDRAM";
+		case ARCH_EXID_SAMA5D27C_D5M:
+			return "SAMA5D27 512M bits DDR2 SDRAM";
+		case ARCH_EXID_SAMA5D27C_D1G:
+			return "SAMA5D27 1G bits DDR2 SDRAM";
+		case ARCH_EXID_SAMA5D28C_D1G:
+			return "SAMA5D28 1G bits DDR2 SDRAM";
+		}
+	}
+
 	return "Unknown CPU type";
 }
 
 #ifdef CONFIG_USB_GADGET_ATMEL_USBA
 void at91_udp_hw_init(void)
 {
-	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
-
-	writel(AT91_PMC_UPLLEN | AT91_PMC_BIASEN, &pmc->uckr);
+	at91_upll_clk_enable();
 
 	at91_periph_clk_enable(ATMEL_ID_UDPHS);
 }

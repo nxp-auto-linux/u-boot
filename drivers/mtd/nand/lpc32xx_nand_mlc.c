@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * LPC32xx MLC NAND flash controller driver
  *
  * (C) Copyright 2014 3ADEV <http://3adev.com>
  * Written by Albert ARIBAUD <albert.aribaud@3adev.fr>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * NOTE:
  *
@@ -22,7 +21,7 @@
 
 #include <common.h>
 #include <nand.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <nand.h>
 #include <asm/arch/clk.h>
@@ -378,7 +377,8 @@ static int lpc32xx_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
  */
 
 static int lpc32xx_write_page_hwecc(struct mtd_info *mtd,
-	struct nand_chip *chip, const uint8_t *buf, int oob_required)
+	struct nand_chip *chip, const uint8_t *buf, int oob_required,
+	int page)
 {
 	unsigned int i, status, timeout;
 	struct lpc32xx_oob *oob = (struct lpc32xx_oob *)chip->oob_poi;
@@ -435,7 +435,8 @@ static int lpc32xx_write_page_hwecc(struct mtd_info *mtd,
  */
 
 static int lpc32xx_write_page_raw(struct mtd_info *mtd,
-	struct nand_chip *chip, const uint8_t *buf, int oob_required)
+	struct nand_chip *chip, const uint8_t *buf, int oob_required,
+	int page)
 {
 	unsigned int i;
 	struct lpc32xx_oob *oob = (struct lpc32xx_oob *)chip->oob_poi;
@@ -539,11 +540,7 @@ static struct nand_chip lpc32xx_chip;
 
 void board_nand_init(void)
 {
-	/* we have only one device anyway */
-	struct mtd_info *mtd = &nand_info[0];
-	/* chip is struct nand_chip, and is now provided by the driver. */
-	mtd->priv = &lpc32xx_chip;
-	/* to store return status in case we need to print it */
+	struct mtd_info *mtd = nand_to_mtd(&lpc32xx_chip);
 	int ret;
 
 	/* Set all BOARDSPECIFIC (actually core-specific) fields  */
@@ -585,21 +582,21 @@ void board_nand_init(void)
 	/* identify chip */
 	ret = nand_scan_ident(mtd, CONFIG_SYS_MAX_NAND_CHIPS, NULL);
 	if (ret) {
-		error("nand_scan_ident returned %i", ret);
+		pr_err("nand_scan_ident returned %i", ret);
 		return;
 	}
 
 	/* finish scanning the chip */
 	ret = nand_scan_tail(mtd);
 	if (ret) {
-		error("nand_scan_tail returned %i", ret);
+		pr_err("nand_scan_tail returned %i", ret);
 		return;
 	}
 
 	/* chip is good, register it */
-	ret = nand_register(0);
+	ret = nand_register(0, mtd);
 	if (ret)
-		error("nand_register returned %i", ret);
+		pr_err("nand_register returned %i", ret);
 }
 
 #else /* defined(CONFIG_SPL_BUILD) */

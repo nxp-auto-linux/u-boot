@@ -1,6 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
+ * Copyright (C) 2017 Weidmüller Interface GmbH & Co. KG
+ * Stefan Herbrechtsmeier <stefan.herbrechtsmeier@weidmueller.com>
+ *
  * Copyright (C) 2012 Michal Simek <monstr@monstr.eu>
- * Copyright (C) 2011-2012 Xilinx, Inc. All rights reserved.
+ * Copyright (C) 2011-2017 Xilinx, Inc. All rights reserved.
  *
  * (C) Copyright 2008
  * Guennadi Liakhovetki, DENX Software Engineering, <lg@denx.de>
@@ -21,12 +25,12 @@
  * (C) Copyright 2002
  * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
  * Alex Zuepke <azu@sysgo.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
+#include <clk.h>
 #include <common.h>
 #include <div64.h>
+#include <dm.h>
 #include <asm/io.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/clk.h>
@@ -55,6 +59,24 @@ int timer_init(void)
 	const u32 emask = SCUTIMER_CONTROL_AUTO_RELOAD_MASK |
 			(TIMER_PRESCALE << SCUTIMER_CONTROL_PRESCALER_SHIFT) |
 			SCUTIMER_CONTROL_ENABLE_MASK;
+
+	struct udevice *dev;
+	struct clk clk;
+	int ret;
+
+	ret = uclass_get_device_by_driver(UCLASS_CLK,
+		DM_GET_DRIVER(zynq_clk), &dev);
+	if (ret)
+		return ret;
+
+	clk.id = cpu_6or4x_clk;
+	ret = clk_request(dev, &clk);
+	if (ret < 0)
+		return ret;
+
+	gd->cpu_clk = clk_get_rate(&clk);
+
+	clk_free(&clk);
 
 	gd->arch.timer_rate_hz = (gd->cpu_clk / 2) / (TIMER_PRESCALE + 1);
 

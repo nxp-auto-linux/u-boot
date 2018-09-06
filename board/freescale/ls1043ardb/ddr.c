@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,6 +10,7 @@
 #ifdef CONFIG_FSL_DEEP_SLEEP
 #include <fsl_sleep.h>
 #endif
+#include <asm/arch/clock.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -91,6 +91,9 @@ found:
 	/* Enable ZQ calibration */
 	popts->zq_en = 1;
 
+	/* optimize cpo for erratum A-009942 */
+	popts->cpo_sample = 0x46;
+
 	popts->ddr_cdr1 = DDR_CDR1_DHC_EN | DDR_CDR1_ODT(DDR_CDR_ODT_80ohm);
 	popts->ddr_cdr2 = DDR_CDR2_ODT(DDR_CDR_ODT_80ohm) |
 			  DDR_CDR2_VREF_OVRD(70);	/* Vref = 70% */
@@ -165,49 +168,71 @@ int fsl_ddr_get_dimm_params(dimm_params_t *pdimm,
 
 	return 0;
 }
+#else
+
+phys_size_t fixed_sdram(void)
+{
+	int i;
+	char buf[32];
+	fsl_ddr_cfg_regs_t ddr_cfg_regs;
+	phys_size_t ddr_size;
+	ulong ddr_freq, ddr_freq_mhz;
+
+	ddr_freq = get_ddr_freq(0);
+	ddr_freq_mhz = ddr_freq / 1000000;
+
+	printf("Configuring DDR for %s MT/s data rate\n",
+	       strmhz(buf, ddr_freq));
+
+	for (i = 0; fixed_ddr_parm_0[i].max_freq > 0; i++) {
+		if ((ddr_freq_mhz > fixed_ddr_parm_0[i].min_freq) &&
+		    (ddr_freq_mhz <= fixed_ddr_parm_0[i].max_freq)) {
+			memcpy(&ddr_cfg_regs,
+			       fixed_ddr_parm_0[i].ddr_settings,
+			       sizeof(ddr_cfg_regs));
+			break;
+		}
+	}
+
+	if (fixed_ddr_parm_0[i].max_freq == 0)
+		panic("Unsupported DDR data rate %s MT/s data rate\n",
+		      strmhz(buf, ddr_freq));
+
+	ddr_size = (phys_size_t)2048 * 1024 * 1024;
+	fsl_ddr_set_memctl_regs(&ddr_cfg_regs, 0, 0);
+
+	return ddr_size;
+}
 #endif
 
-phys_size_t initdram(int board_type)
+int fsl_initdram(void)
 {
 	phys_size_t dram_size;
 
+#ifdef CONFIG_SYS_DDR_RAW_TIMING
 #if defined(CONFIG_SPL_BUILD) || !defined(CONFIG_SPL)
 	puts("Initializing DDR....\n");
 	dram_size = fsl_ddr_sdram();
 #else
 	dram_size =  fsl_ddr_sdram_size();
 #endif
+#else
+#if defined(CONFIG_SPL_BUILD) || !defined(CONFIG_SPL)
+	puts("Initialzing DDR using fixed setting\n");
+	dram_size = fixed_sdram();
+#else
+	gd->ram_size = 0x80000000;
+
+	return 0;
+#endif
+#endif
+	erratum_a008850_post();
+
 #ifdef CONFIG_FSL_DEEP_SLEEP
 	fsl_dp_ddr_restore();
 #endif
 
-	return dram_size;
-}
+	gd->ram_size = dram_size;
 
-void dram_init_banksize(void)
-{
-	/*
-	 * gd->secure_ram tracks the location of secure memory.
-	 * It was set as if the memory starts from 0.
-	 * The address needs to add the offset of its bank.
-	 */
-	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
-	if (gd->ram_size > CONFIG_SYS_DDR_BLOCK1_SIZE) {
-		gd->bd->bi_dram[0].size = CONFIG_SYS_DDR_BLOCK1_SIZE;
-		gd->bd->bi_dram[1].start = CONFIG_SYS_DDR_BLOCK2_BASE;
-		gd->bd->bi_dram[1].size = gd->ram_size -
-					  CONFIG_SYS_DDR_BLOCK1_SIZE;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->secure_ram = gd->bd->bi_dram[1].start +
-				 gd->secure_ram -
-				 CONFIG_SYS_DDR_BLOCK1_SIZE;
-		gd->secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	} else {
-		gd->bd->bi_dram[0].size = gd->ram_size;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->secure_ram = gd->bd->bi_dram[0].start + gd->secure_ram;
-		gd->secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	}
+	return 0;
 }

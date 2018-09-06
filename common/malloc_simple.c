@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Simple malloc implementation
  *
  * Copyright (c) 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,12 +18,15 @@ void *malloc_simple(size_t bytes)
 	void *ptr;
 
 	new_ptr = gd->malloc_ptr + bytes;
-	debug("%s: size=%zx, ptr=%lx, limit=%lx\n", __func__, bytes, new_ptr,
+	debug("%s: size=%zx, ptr=%lx, limit=%lx: ", __func__, bytes, new_ptr,
 	      gd->malloc_limit);
-	if (new_ptr > gd->malloc_limit)
+	if (new_ptr > gd->malloc_limit) {
+		debug("space exhausted\n");
 		return NULL;
+	}
 	ptr = map_sysmem(gd->malloc_base + gd->malloc_ptr, bytes);
 	gd->malloc_ptr = ALIGN(new_ptr, sizeof(new_ptr));
+	debug("%lx\n", (ulong)ptr);
 
 	return ptr;
 }
@@ -36,10 +38,14 @@ void *memalign_simple(size_t align, size_t bytes)
 
 	addr = ALIGN(gd->malloc_base + gd->malloc_ptr, align);
 	new_ptr = addr + bytes - gd->malloc_base;
-	if (new_ptr > gd->malloc_limit)
+	if (new_ptr > gd->malloc_limit) {
+		debug("space exhausted\n");
 		return NULL;
+	}
+
 	ptr = map_sysmem(addr, bytes);
 	gd->malloc_ptr = ALIGN(new_ptr, sizeof(new_ptr));
+	debug("%lx\n", (ulong)ptr);
 
 	return ptr;
 }

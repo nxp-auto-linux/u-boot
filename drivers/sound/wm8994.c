@@ -1,14 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Samsung Electronics
  * R. Chandrasekar <rcsekar@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
+#include <common.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/cpu.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
-#include <common.h>
 #include <div64.h>
 #include <fdtdec.h>
 #include <i2c.h>

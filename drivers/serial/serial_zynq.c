@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Michal Simek <monstr@monstr.eu>
  * Copyright (C) 2011-2012 Xilinx, Inc. All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
+#include <clk.h>
 #include <common.h>
 #include <debug_uart.h>
 #include <dm.h>
@@ -14,19 +14,17 @@
 #include <asm/io.h>
 #include <linux/compiler.h>
 #include <serial.h>
-#include <asm/arch/clk.h>
-#include <asm/arch/hardware.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define ZYNQ_UART_SR_TXFULL	0x00000010 /* TX FIFO full */
-#define ZYNQ_UART_SR_TXACTIVE	(1 << 11)  /* TX active */
-#define ZYNQ_UART_SR_RXEMPTY	0x00000002 /* RX FIFO empty */
+#define ZYNQ_UART_SR_TXACTIVE	BIT(11) /* TX active */
+#define ZYNQ_UART_SR_TXFULL	BIT(4) /* TX FIFO full */
+#define ZYNQ_UART_SR_RXEMPTY	BIT(1) /* RX FIFO empty */
 
-#define ZYNQ_UART_CR_TX_EN	0x00000010 /* TX enabled */
-#define ZYNQ_UART_CR_RX_EN	0x00000004 /* RX enabled */
-#define ZYNQ_UART_CR_TXRST	0x00000002 /* TX logic reset */
-#define ZYNQ_UART_CR_RXRST	0x00000001 /* RX logic reset */
+#define ZYNQ_UART_CR_TX_EN	BIT(4) /* TX enabled */
+#define ZYNQ_UART_CR_RX_EN	BIT(2) /* RX enabled */
+#define ZYNQ_UART_CR_TXRST	BIT(1) /* TX logic reset */
+#define ZYNQ_UART_CR_RXRST	BIT(0) /* RX logic reset */
 
 #define ZYNQ_UART_MR_PARITY_NONE	0x00000020  /* No parity mode */
 
@@ -105,10 +103,32 @@ static int _uart_zynq_serial_putc(struct uart_zynq *regs, const char c)
 	return 0;
 }
 
-int zynq_serial_setbrg(struct udevice *dev, int baudrate)
+static int zynq_serial_setbrg(struct udevice *dev, int baudrate)
 {
 	struct zynq_uart_priv *priv = dev_get_priv(dev);
-	unsigned long clock = get_uart_clk(0);
+	unsigned long clock;
+
+	int ret;
+	struct clk clk;
+
+	ret = clk_get_by_index(dev, 0, &clk);
+	if (ret < 0) {
+		dev_err(dev, "failed to get clock\n");
+		return ret;
+	}
+
+	clock = clk_get_rate(&clk);
+	if (IS_ERR_VALUE(clock)) {
+		dev_err(dev, "failed to get rate\n");
+		return clock;
+	}
+	debug("%s: CLK %ld\n", __func__, clock);
+
+	ret = clk_enable(&clk);
+	if (ret && ret != -ENOSYS) {
+		dev_err(dev, "failed to enable clock\n");
+		return ret;
+	}
 
 	_uart_zynq_serial_setbrg(priv->regs, clock, baudrate);
 
@@ -118,6 +138,10 @@ int zynq_serial_setbrg(struct udevice *dev, int baudrate)
 static int zynq_serial_probe(struct udevice *dev)
 {
 	struct zynq_uart_priv *priv = dev_get_priv(dev);
+
+	/* No need to reinitialize the UART after relocation */
+	if (gd->flags & GD_FLG_RELOC)
+		return 0;
 
 	_uart_zynq_serial_init(priv->regs);
 
@@ -156,13 +180,10 @@ static int zynq_serial_pending(struct udevice *dev, bool input)
 static int zynq_serial_ofdata_to_platdata(struct udevice *dev)
 {
 	struct zynq_uart_priv *priv = dev_get_priv(dev);
-	fdt_addr_t addr;
 
-	addr = fdtdec_get_addr(gd->fdt_blob, dev->of_offset, "reg");
-	if (addr == FDT_ADDR_T_NONE)
-		return -EINVAL;
-
-	priv->regs = (struct uart_zynq *)addr;
+	priv->regs = (struct uart_zynq *)dev_read_addr(dev);
+	if (IS_ERR(priv->regs))
+		return PTR_ERR(priv->regs);
 
 	return 0;
 }
@@ -177,6 +198,7 @@ static const struct dm_serial_ops zynq_serial_ops = {
 static const struct udevice_id zynq_serial_ids[] = {
 	{ .compatible = "xlnx,xuartps" },
 	{ .compatible = "cdns,uart-r1p8" },
+	{ .compatible = "cdns,uart-r1p12" },
 	{ }
 };
 

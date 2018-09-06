@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2012
  * Ивайло Димитров <freemangordon@abv.bg>
@@ -18,8 +19,6 @@
  *
  *	Richard Woodruff <r-woodruff2@ti.com>
  *	Syed Mohammed Khasim <khasim@ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -234,18 +233,18 @@ void setup_board_tags(struct tag **in_params)
 	params->u.core.rootdev = 0x0;
 
 	/* append omap atag only if env setup_omap_atag is set to 1 */
-	str = getenv("setup_omap_atag");
+	str = env_get("setup_omap_atag");
 	if (!str || str[0] != '1')
 		return;
 
-	str = getenv("setup_console_atag");
+	str = env_get("setup_console_atag");
 	if (str && str[0] == '1')
 		setup_console_atag = 1;
 	else
 		setup_console_atag = 0;
 
-	setup_boot_reason_atag = getenv("setup_boot_reason_atag");
-	setup_boot_mode_atag = getenv("setup_boot_mode_atag");
+	setup_boot_reason_atag = env_get("setup_boot_reason_atag");
+	setup_boot_mode_atag = env_get("setup_boot_mode_atag");
 
 	params = *in_params;
 	t = (struct tag_omap *)&params->u;
@@ -413,7 +412,7 @@ int misc_init_r(void)
 
 	/* set env variable attkernaddr for relocated kernel */
 	sprintf(buf, "%#x", KERNEL_ADDRESS);
-	setenv("attkernaddr", buf);
+	env_set("attkernaddr", buf);
 
 	/* initialize omap tags */
 	init_omap_tags();

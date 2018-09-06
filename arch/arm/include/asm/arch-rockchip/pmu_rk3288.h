@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2015 Google, Inc
  *
  * Copyright 2014 Rockchip Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ASM_ARCH_PMU_RK3288_H
@@ -46,13 +45,17 @@ struct rk3288_pmu {
 	u32 gpio_op;
 
 	u32 gpio0_sel18;	/* 0x80 */
-	u32 gpio0a_iomux;
-	u32 gpio0b_iomux;
-	u32 gpio0c_iomux;
-	u32 gpio0d_iomux;
+	u32 gpio0_iomux[4];	/* a, b, c, d */
 	u32 sys_reg[4];
 };
 check_member(rk3288_pmu, sys_reg[3], 0x00a0);
+
+enum {
+	PMU_GPIO0_A	= 0,
+	PMU_GPIO0_B,
+	PMU_GPIO0_C,
+	PMU_GPIO0_D,
+};
 
 /* PMU_GPIO0_B_IOMUX */
 enum {

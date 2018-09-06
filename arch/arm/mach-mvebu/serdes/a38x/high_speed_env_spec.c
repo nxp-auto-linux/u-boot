@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -27,7 +26,7 @@
  */
 struct cfg_seq serdes_seq_db[SERDES_LAST_SEQ];
 
-#define	SERDES_VERION		"2.0"
+#define	SERDES_VERSION		"2.0"
 #define ENDED_OK		"High speed PHY - Ended Successfully\n"
 
 #define LINK_WAIT_CNTR		100
@@ -598,6 +597,8 @@ struct op_params pex_electrical_config_serdes_rev2_params[] = {
 	{LANE_CFG4_REG, 0x800, 0x8, {0x8}, 0, 0},
 	/* tximpcal_th and rximpcal_th */
 	{VTHIMPCAL_CTRL_REG, 0x800, 0xff00, {0x3000}, 0, 0},
+	/* Force receiver detected */
+	{LANE_CFG0_REG, 0x800, 0x8000, {0x8000}, 0, 0},
 };
 
 /* PEX - configuration seq for REF_CLOCK_25MHz */
@@ -835,25 +836,26 @@ u32 hws_serdes_topology_verify(enum serdes_type serdes_type, u32 serdes_id,
 		}
 	} else {
 		test_result = SERDES_ALREADY_IN_USE;
-		if (test_result == SERDES_ALREADY_IN_USE) {
-			printf("%s: Error: serdes lane %d is configured to type %s: type already in use\n",
-			       __func__, serdes_id,
-			       serdes_type_to_string[serdes_type]);
-			return MV_FAIL;
-		} else if (test_result == WRONG_NUMBER_OF_UNITS) {
-			printf("%s: Warning: serdes lane %d is set to type %s.\n",
-			       __func__, serdes_id,
-			       serdes_type_to_string[serdes_type]);
-			printf("%s: Maximum supported lanes are already set to this type (limit = %d)\n",
-			       __func__, serd_max_num);
-			return MV_FAIL;
-		} else if (test_result == UNIT_NUMBER_VIOLATION) {
-			printf("%s: Warning: serdes lane %d type is %s: current device support only %d units of this type.\n",
-			       __func__, serdes_id,
-			       serdes_type_to_string[serdes_type],
-			       serd_max_num);
-			return MV_FAIL;
-		}
+	}
+
+	if (test_result == SERDES_ALREADY_IN_USE) {
+		printf("%s: Error: serdes lane %d is configured to type %s: type already in use\n",
+		       __func__, serdes_id,
+		       serdes_type_to_string[serdes_type]);
+		return MV_FAIL;
+	} else if (test_result == WRONG_NUMBER_OF_UNITS) {
+		printf("%s: Warning: serdes lane %d is set to type %s.\n",
+		       __func__, serdes_id,
+		       serdes_type_to_string[serdes_type]);
+		printf("%s: Maximum supported lanes are already set to this type (limit = %d)\n",
+		       __func__, serd_max_num);
+		return MV_FAIL;
+	} else if (test_result == UNIT_NUMBER_VIOLATION) {
+		printf("%s: Warning: serdes lane %d type is %s: current device support only %d units of this type.\n",
+		       __func__, serdes_id,
+		       serdes_type_to_string[serdes_type],
+		       serd_max_num);
+		return MV_FAIL;
 	}
 
 	return MV_OK;
@@ -1415,7 +1417,7 @@ int serdes_phy_config(void)
 	DEBUG_INIT_FULL_S("\n### ctrl_high_speed_serdes_phy_config ###\n");
 
 	DEBUG_INIT_S("High speed PHY - Version: ");
-	DEBUG_INIT_S(SERDES_VERION);
+	DEBUG_INIT_S(SERDES_VERSION);
 	DEBUG_INIT_S("\n");
 
 	/* Init serdes sequences DB */

@@ -1,8 +1,8 @@
+SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2001
  * Dave Ellis, SIXNET, dge@sixnetio.com
  *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 Using autoboot configuration options
@@ -131,14 +131,6 @@ What they do
 	"bootdelaykey" and "bootstopkey". Setting this variable
 	provides an escape sequence from the limited "password"
 	strings.
-
-
-  CONFIG_ZERO_BOOTDELAY_CHECK
-
-	If this option is defined, you can stop the autoboot process
-	by hitting a key even in that case when "bootdelay" has been
-	set to 0. You can set "bootdelay" to a negative value to
-	prevent the check for console input.
 
   CONFIG_RESET_TO_RETRY
 

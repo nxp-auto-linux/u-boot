@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2011 Samsung Electronics
  *
  * Configuration settings for the SAMSUNG SMDKV310 (EXYNOS4210) board.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -12,23 +11,16 @@
 #include "exynos4-common.h"
 
 #undef CONFIG_BOARD_COMMON
-#undef CONFIG_USB_GADGET
-#undef CONFIG_USB_GADGET_DWC2_OTG
 #undef CONFIG_USB_GADGET_DWC2_OTG_PHY
-#undef CONFIG_CMD_USB_MASS_STORAGE
 #undef CONFIG_REVISION_TAG
-#undef CONFIG_CMD_THOR_DOWNLOAD
-#undef CONFIG_CMD_DFU
 
 /* High Level Configuration Options */
 #define CONFIG_EXYNOS4210		1	/* which is a EXYNOS4210 SoC */
-#define CONFIG_SMDKV310			1	/* working with SMDKV310*/
 
 /* Mach Type */
 #define CONFIG_MACH_TYPE		MACH_TYPE_SMDKV310
 
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
-#define CONFIG_SYS_TEXT_BASE		0x43E00000
 
 /* Handling Sleep Mode*/
 #define S5P_CHECK_SLEEP			0x00000BAD
@@ -41,9 +33,6 @@
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
-
-#define CONFIG_CMD_PING
-#define CONFIG_CMD_DHCP
 
 /* MMC SPL */
 #define CONFIG_SKIP_LOWLEVEL_INIT
@@ -73,35 +62,29 @@
 #define PHYS_SDRAM_4_SIZE	SDRAM_BANK_SIZE
 
 /* FLASH and environment organization */
-#define CONFIG_IDENT_STRING		" for SMDKC210/V310"
 
 #define CONFIG_CLK_1000_400_200
 
 /* MIU (Memory Interleaving Unit) */
 #define CONFIG_MIU_2BIT_INTERLEAVED
 
-#define CONFIG_ENV_IS_IN_MMC		1
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_ENV_SIZE			(16 << 10)	/* 16 KB */
 #define RESERVE_BLOCK_SIZE		(512)
 #define BL1_SIZE			(16 << 10) /*16 K reserved for BL1*/
 #define CONFIG_ENV_OFFSET		(RESERVE_BLOCK_SIZE + BL1_SIZE)
 
-#define CONFIG_SPL_LDSCRIPT	"board/samsung/common/exynos-uboot-spl.lds"
 #define CONFIG_SPL_MAX_FOOTPRINT	(14 * 1024)
 
 #define CONFIG_SYS_INIT_SP_ADDR		0x02040000
 
-/* U-boot copy size from boot Media to DRAM.*/
+/* U-Boot copy size from boot Media to DRAM.*/
 #define	COPY_BL2_SIZE		0x80000
 #define BL2_START_OFFSET	((CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)/512)
 #define BL2_SIZE_BLOC_COUNT	(COPY_BL2_SIZE/512)
 
 /* Ethernet Controllor Driver */
 #ifdef CONFIG_CMD_NET
-#define CONFIG_SMC911X
-#define CONFIG_SMC911X_BASE		0x5000000
-#define CONFIG_SMC911X_16_BIT
 #define CONFIG_ENV_SROM_BANK		1
 #endif /*CONFIG_CMD_NET*/
 

@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014 - 2015 Xilinx, Inc.
  * Michal Simek <michal.simek@xilinx.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -46,7 +45,7 @@ int is_core_valid(unsigned int core)
 	return 0;
 }
 
-int cpu_reset(int nr)
+int cpu_reset(u32 nr)
 {
 	puts("Feature is not implemented.\n");
 	return 0;
@@ -128,11 +127,11 @@ static void enable_clock_r5(void)
 	writel(tmp, &crlapb_base->cpu_r5_ctrl);
 
 	/* Give some delay for clock
-	 * to propogate */
+	 * to propagate */
 	udelay(0x500);
 }
 
-int cpu_disable(int nr)
+int cpu_disable(u32 nr)
 {
 	if (nr >= ZYNQMP_CORE_APU0 && nr <= ZYNQMP_CORE_APU3) {
 		u32 val = readl(&crfapb_base->rst_fpd_apu);
@@ -145,7 +144,7 @@ int cpu_disable(int nr)
 	return 0;
 }
 
-int cpu_status(int nr)
+int cpu_status(u32 nr)
 {
 	if (nr >= ZYNQMP_CORE_APU0 && nr <= ZYNQMP_CORE_APU3) {
 		u32 addr_low = readl(((u8 *)&apu_base->rvbar_addr0_l) + nr * 8);
@@ -206,7 +205,22 @@ static void write_tcm_boot_trampoline(u32 boot_addr)
 	}
 }
 
-int cpu_release(int nr, int argc, char * const argv[])
+void initialize_tcm(bool mode)
+{
+	if (!mode) {
+		set_r5_tcm_mode(LOCK);
+		set_r5_halt_mode(HALT, LOCK);
+		enable_clock_r5();
+		release_r5_reset(LOCK);
+	} else {
+		set_r5_tcm_mode(SPLIT);
+		set_r5_halt_mode(HALT, SPLIT);
+		enable_clock_r5();
+		release_r5_reset(SPLIT);
+	}
+}
+
+int cpu_release(u32 nr, int argc, char * const argv[])
 {
 	if (nr >= ZYNQMP_CORE_APU0 && nr <= ZYNQMP_CORE_APU3) {
 		u64 boot_addr = simple_strtoull(argv[0], NULL, 16);
@@ -242,22 +256,36 @@ int cpu_release(int nr, int argc, char * const argv[])
 			boot_addr = ZYNQMP_R5_LOVEC_ADDR;
 		}
 
+		/*
+		 * Since we don't know where the user may have loaded the image
+		 * for an R5 we have to flush all the data cache to ensure
+		 * the R5 sees it.
+		 */
+		flush_dcache_all();
+
 		if (!strncmp(argv[1], "lockstep", 8)) {
 			printf("R5 lockstep mode\n");
+			set_r5_reset(LOCK);
 			set_r5_tcm_mode(LOCK);
 			set_r5_halt_mode(HALT, LOCK);
 			set_r5_start(boot_addr);
 			enable_clock_r5();
 			release_r5_reset(LOCK);
+			dcache_disable();
 			write_tcm_boot_trampoline(boot_addr_uniq);
+			dcache_enable();
 			set_r5_halt_mode(RELEASE, LOCK);
 		} else if (!strncmp(argv[1], "split", 5)) {
 			printf("R5 split mode\n");
+			set_r5_reset(SPLIT);
 			set_r5_tcm_mode(SPLIT);
 			set_r5_halt_mode(HALT, SPLIT);
+			set_r5_start(boot_addr);
 			enable_clock_r5();
 			release_r5_reset(SPLIT);
+			dcache_disable();
 			write_tcm_boot_trampoline(boot_addr_uniq);
+			dcache_enable();
 			set_r5_halt_mode(RELEASE, SPLIT);
 		} else {
 			printf("Unsupported mode\n");

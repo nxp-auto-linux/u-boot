@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
  *
  * Adapted from coreboot src/arch/x86/boot/mpspec.c
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -25,10 +24,10 @@ static bool isa_irq_occupied[16];
 
 struct mp_config_table *mp_write_floating_table(struct mp_floating_table *mf)
 {
-	u32 mc;
+	ulong mc;
 
 	memcpy(mf->mpf_signature, MPF_SIGNATURE, 4);
-	mf->mpf_physptr = (u32)mf + sizeof(struct mp_floating_table);
+	mf->mpf_physptr = (ulong)mf + sizeof(struct mp_floating_table);
 	mf->mpf_length = 1;
 	mf->mpf_spec = MPSPEC_V14;
 	mf->mpf_checksum = 0;
@@ -41,7 +40,7 @@ struct mp_config_table *mp_write_floating_table(struct mp_floating_table *mf)
 	mf->mpf_feature5 = 0;
 	mf->mpf_checksum = table_compute_checksum(mf, mf->mpf_length * 16);
 
-	mc = (u32)mf + sizeof(struct mp_floating_table);
+	mc = (ulong)mf + sizeof(struct mp_floating_table);
 	return (struct mp_config_table *)mc;
 }
 
@@ -219,14 +218,14 @@ void mp_write_compat_address_space(struct mp_config_table *mc, int busid,
 
 u32 mptable_finalize(struct mp_config_table *mc)
 {
-	u32 end;
+	ulong end;
 
 	mc->mpe_checksum = table_compute_checksum((void *)mp_next_mpc_entry(mc),
 						  mc->mpe_length);
 	mc->mpc_checksum = table_compute_checksum(mc, mc->mpc_length);
 	end = mp_next_mpe_entry(mc);
 
-	debug("Write the MP table at: %x - %x\n", (u32)mc, end);
+	debug("Write the MP table at: %lx - %lx\n", (ulong)mc, end);
 
 	return end;
 }
@@ -292,19 +291,20 @@ static int mptable_add_intsrc(struct mp_config_table *mc,
 	struct mpc_config_intsrc *intsrc_base;
 	int intsrc_entries = 0;
 	const void *blob = gd->fdt_blob;
-	int node;
+	struct udevice *dev;
 	int len, count;
 	const u32 *cell;
-	int i;
+	int i, ret;
 
-	/* Get I/O interrupt information from device tree */
-	node = fdtdec_next_compatible(blob, 0, COMPAT_INTEL_IRQ_ROUTER);
-	if (node < 0) {
+	ret = uclass_first_device_err(UCLASS_IRQ, &dev);
+	if (ret && ret != -ENODEV) {
 		debug("%s: Cannot find irq router node\n", __func__);
-		return -ENOENT;
+		return ret;
 	}
 
-	cell = fdt_getprop(blob, node, "intel,pirq-routing", &len);
+	/* Get I/O interrupt information from device tree */
+	cell = fdt_getprop(blob, dev_of_offset(dev), "intel,pirq-routing",
+			   &len);
 	if (!cell)
 		return -ENOENT;
 
@@ -365,13 +365,13 @@ static void mptable_add_lintsrc(struct mp_config_table *mc, int bus_isa)
 			 bus_isa, 0, MP_APIC_ALL, 1);
 }
 
-u32 write_mp_table(u32 addr)
+ulong write_mp_table(ulong addr)
 {
 	struct mp_config_table *mc;
 	int ioapic_id, ioapic_ver;
 	int bus_isa = 0xff;
 	int ret;
-	u32 end;
+	ulong end;
 
 	/* 16 byte align the table address */
 	addr = ALIGN(addr, 16);

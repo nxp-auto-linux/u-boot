@@ -1,17 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2000-2006
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 extra-y        := hello_world
 extra-$(CONFIG_SMC91111)           += smc91111_eeprom
 extra-$(CONFIG_SMC911X)            += smc911x_eeprom
 extra-$(CONFIG_SPI_FLASH_ATMEL)    += atmel_df_pow2
-extra-$(CONFIG_MPC5xxx)            += interrupt
-extra-$(CONFIG_8xx)                += test_burst timer
-extra-$(CONFIG_MPC8260)            += mem_to_mem_idma2intr
 extra-$(CONFIG_PPC)                += sched
 
 #
@@ -29,7 +24,6 @@ COBJS	:= $(ELF:=.o)
 LIB	= $(obj)/libstubs.o
 
 LIBOBJS-$(CONFIG_PPC) += ppc_longjmp.o ppc_setjmp.o
-LIBOBJS-$(CONFIG_8xx) += test_burst_lib.o
 LIBOBJS-y += stubs.o
 
 .SECONDARY: $(call objectify,$(COBJS))

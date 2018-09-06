@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -151,7 +150,7 @@ static int shape_ofdata_to_platdata(struct udevice *dev)
 		return ret;
 
 	/* Parse the data that only we need */
-	pdata->default_char = fdtdec_get_int(gd->fdt_blob, dev->of_offset,
+	pdata->default_char = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 					     "character", '@');
 
 	return 0;

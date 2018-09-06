@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2002
  * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
@@ -13,17 +14,16 @@
  * (C) Copyright 2004
  * ARM Ltd.
  * Philippe Robin, <philippe.robin@arm.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <netdev.h>
 #include <asm/io.h>
-#include <dm/platdata.h>
 #include <dm/platform_data/serial_pl01x.h>
 #include "arm-ebi.h"
 #include "integrator-sc.h"
+#include <asm/mach-types.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -115,7 +115,7 @@ extern void cm_remap(void);
 
 int misc_init_r (void)
 {
-	setenv("verify", "n");
+	env_set("verify", "n");
 	return (0);
 }
 

@@ -1,13 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2011-2012 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __SANDBOX_STATE_H
 #define __SANDBOX_STATE_H
 
 #include <config.h>
-#include <reset.h>
+#include <sysreset.h>
 #include <stdbool.h>
 #include <linux/stringify.h>
 
@@ -39,6 +39,12 @@ struct sandbox_spi_info {
 	struct udevice *emul;
 };
 
+struct sandbox_wdt_info {
+	unsigned long long counter;
+	uint reset_count;
+	bool running;
+};
+
 /* The complete state of the test system */
 struct sandbox_state {
 	const char *cmd;		/* Command to execute */
@@ -60,8 +66,8 @@ struct sandbox_state {
 	bool write_state;		/* Write sandbox state on exit */
 	bool ignore_missing_state_on_read;	/* No error if state missing */
 	bool show_lcd;			/* Show LCD on start-up */
-	enum reset_t last_reset;	/* Last reset type */
-	bool reset_allowed[RESET_COUNT];	/* Allowed reset types */
+	enum sysreset_t last_sysreset;	/* Last system reset type */
+	bool sysreset_allowed[SYSRESET_COUNT];	/* Allowed system reset types */
 	enum state_terminal_raw term_raw;	/* Terminal raw/cooked */
 	bool skip_delays;		/* Ignore any time delays (for test) */
 	bool show_test_output;		/* Don't suppress stdout in tests */
@@ -69,6 +75,9 @@ struct sandbox_state {
 	/* Pointer to information for each SPI bus/cs */
 	struct sandbox_spi_info spi[CONFIG_SANDBOX_SPI_MAX_BUS]
 					[CONFIG_SANDBOX_SPI_MAX_CS];
+
+	/* Information about Watchdog */
+	struct sandbox_wdt_info wdt;
 };
 
 /* Minimum space we guarantee in the state FDT when calling read/write*/
@@ -203,6 +212,13 @@ void state_set_skip_delays(bool skip_delays);
  * @return true if delays should be skipped, false if they should be honoured
  */
 bool state_get_skip_delays(void);
+
+/**
+ * state_reset_for_test() - Reset ready to re-run tests
+ *
+ * This clears out any test state ready for another test run.
+ */
+void state_reset_for_test(struct sandbox_state *state);
 
 /**
  * Initialize the test system state

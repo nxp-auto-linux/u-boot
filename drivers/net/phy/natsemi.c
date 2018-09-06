@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * National Semiconductor PHY drivers
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Copyright 2010-2011 Freescale Semiconductor, Inc.
  * author Andy Fleming
@@ -93,10 +92,13 @@ static int dp83865_parse_status(struct phy_device *phydev)
 
 static int dp83865_startup(struct phy_device *phydev)
 {
-	genphy_update_link(phydev);
-	dp83865_parse_status(phydev);
+	int ret;
 
-	return 0;
+	ret = genphy_update_link(phydev);
+	if (ret)
+		return ret;
+
+	return dp83865_parse_status(phydev);
 }
 
 
@@ -134,10 +136,13 @@ static int dp83848_parse_status(struct phy_device *phydev)
 
 static int dp83848_startup(struct phy_device *phydev)
 {
-	genphy_update_link(phydev);
-	dp83848_parse_status(phydev);
+	int ret;
 
-	return 0;
+	ret = genphy_update_link(phydev);
+	if (ret)
+		return ret;
+
+	return dp83848_parse_status(phydev);
 }
 
 static struct phy_driver DP83848_driver = {

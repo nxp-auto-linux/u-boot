@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * EFI information obtained here:
  * http://wiki.phoenix.com/wiki/index.php/EFI_BOOT_SERVICES
@@ -48,7 +47,7 @@ static efi_status_t setup_memory(struct efi_priv *priv)
 		return ret;
 	memset(gd, '\0', sizeof(*gd));
 
-	gd->malloc_base = (ulong)efi_malloc(priv, CONFIG_SYS_MALLOC_F_LEN,
+	gd->malloc_base = (ulong)efi_malloc(priv, CONFIG_VAL(SYS_MALLOC_F_LEN),
 					    &ret);
 	if (!gd->malloc_base)
 		return ret;
@@ -97,7 +96,8 @@ static void free_memory(struct efi_priv *priv)
  * U-Boot. If it returns, EFI will continue. Another way to get back to EFI
  * is via reset_cpu().
  */
-efi_status_t efi_main(efi_handle_t image, struct efi_system_table *sys_table)
+efi_status_t EFIAPI efi_main(efi_handle_t image,
+			     struct efi_system_table *sys_table)
 {
 	struct efi_priv local_priv, *priv = &local_priv;
 	efi_status_t ret;

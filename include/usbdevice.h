@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2003
  * Gerry Hamel, geh@ti.com, Texas Instruments
@@ -11,8 +12,6 @@
  *	Stuart Lynne <sl@lineo.com>,
  *	Tom Rushworth <tbr@lineo.com>,
  *	Bruce Balden <balden@lineo.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __USBDCORE_H__
@@ -438,7 +437,7 @@ typedef enum usb_device_event {
 	DEVICE_HUB_RESET,	/* bi  - bus has been unplugged */
 	DEVICE_DESTROY,		/* bi  - device instance should be destroyed */
 
-	DEVICE_HOTPLUG,		/* bi  - a hotplug event has occured */
+	DEVICE_HOTPLUG,		/* bi  - a hotplug event has occurred */
 
 	DEVICE_FUNCTION_PRIVATE,	/* function - private */
 

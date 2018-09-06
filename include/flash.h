@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2000-2005
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _FLASH_H_
@@ -42,10 +41,15 @@ typedef struct {
 	ushort	cfi_offset;		/* offset for cfi query			*/
 	ulong   addr_unlock1;		/* unlock address 1 for AMD flash roms  */
 	ulong   addr_unlock2;		/* unlock address 2 for AMD flash roms  */
+	uchar   sr_supported;		/* status register supported            */
 	const char *name;		/* human-readable name	                */
 #endif
 #ifdef CONFIG_MTD
 	struct mtd_info *mtd;
+#endif
+#ifdef CONFIG_CFI_FLASH			/* DM-specific parts */
+	struct udevice *dev;
+	phys_addr_t base;
 #endif
 } flash_info_t;
 
@@ -67,8 +71,6 @@ typedef unsigned long flash_sect_t;
 #define FLASH_CFI_BY16		0x02
 #define FLASH_CFI_BY32		0x04
 #define FLASH_CFI_BY64		0x08
-/* convert between bit value and numeric value */
-#define CFI_FLASH_SHIFT_WIDTH	3
 /*
  * Values for the flash device interface
  */
@@ -83,7 +85,6 @@ typedef unsigned long flash_sect_t;
 /* Prototypes */
 
 extern unsigned long flash_init (void);
-extern void flash_protect_default(void);
 extern void flash_print_info (flash_info_t *);
 extern int flash_erase	(flash_info_t *, int, int);
 extern int flash_sect_erase (ulong addr_first, ulong addr_last);
@@ -116,15 +117,11 @@ extern int jedec_flash_match(flash_info_t *info, ulong base);
 #define CFI_CMDSET_AMD_LEGACY		0xFFF0
 #endif
 
-#if defined(CONFIG_SYS_FLASH_CFI)
-extern flash_info_t *flash_get_info(ulong base);
-#endif
-
 /*-----------------------------------------------------------------------
  * return codes from flash_write():
  */
 #define ERR_OK				0
-#define ERR_TIMOUT			1
+#define ERR_TIMEOUT			1
 #define ERR_NOT_ERASED			2
 #define ERR_PROTECTED			4
 #define ERR_INVAL			8
@@ -400,6 +397,9 @@ extern flash_info_t *flash_get_info(ulong base);
 #define FLASH_STM800DT	0x00D7		/* STM M29W800DT (1M = 64K x 16, top)	*/
 #define FLASH_STM800DB	0x005B		/* STM M29W800DB (1M = 64K x 16, bottom)*/
 
+#define FLASH_MCHP100T	0x0060		/* MCHP internal (1M = 64K x 16) */
+#define FLASH_MCHP100B	0x0061		/* MCHP internal (1M = 64K x 16) */
+
 #define FLASH_28F400_T	0x0062		/* MT  28F400B3 ID (  4M = 256K x 16 )	*/
 #define FLASH_28F400_B	0x0063		/* MT  28F400B3 ID (  4M = 256K x 16 )	*/
 
@@ -465,8 +465,7 @@ extern flash_info_t *flash_get_info(ulong base);
 #define FLASH_S29GL064M 0x00F0		/* Spansion S29GL064M-R6		*/
 #define FLASH_S29GL128N 0x00F1		/* Spansion S29GL128N			*/
 
-#define FLASH_STM32F4	0x00F2		/* STM32F4 Embedded Flash */
-#define FLASH_STM32F1	0x00F3		/* STM32F1 Embedded Flash */
+#define FLASH_STM32	0x00F2		/* STM32 Embedded Flash */
 
 #define FLASH_UNKNOWN	0xFFFF		/* unknown flash type			*/
 
@@ -486,7 +485,7 @@ extern flash_info_t *flash_get_info(ulong base);
 #define FLASH_MAN_SHARP 0x00500000
 #define FLASH_MAN_ATM	0x00600000
 #define FLASH_MAN_CFI	0x01000000
-
+#define FLASH_MAN_MCHP	0x02000000	/* Microchip Technology		*/
 
 #define FLASH_TYPEMASK	0x0000FFFF	/* extract FLASH type	information	*/
 #define FLASH_VENDMASK	0xFFFF0000	/* extract FLASH vendor information	*/

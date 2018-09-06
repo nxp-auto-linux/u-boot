@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2014 - Hans de Goede <hdegoede@redhat.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef _SUNXI_I2C_H_
 #define _SUNXI_I2C_H_
@@ -22,6 +21,9 @@
 #endif
 #ifdef CONFIG_I2C4_ENABLE
 #define CONFIG_I2C_MVTWSI_BASE4	SUNXI_TWI4_BASE
+#endif
+#ifdef CONFIG_R_I2C_ENABLE
+#define CONFIG_I2C_MVTWSI_BASE5 SUNXI_R_TWI_BASE
 #endif
 
 /* This is abp0-clk on sun4i/5i/7i / abp1-clk on sun6i/sun8i which is 24MHz */

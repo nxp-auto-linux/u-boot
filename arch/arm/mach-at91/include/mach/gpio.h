@@ -1,16 +1,15 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * [origin: Linux kernel include/asm-arm/arch-at91/gpio.h]
  *
  *  Copyright (C) 2005 HP Labs
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_AT91_GPIO_H
 #define __ASM_ARCH_AT91_GPIO_H
 
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/arch/at91_pio.h>
 #include <asm/arch/hardware.h>
 
@@ -219,18 +218,18 @@ static inline unsigned pin_to_mask(unsigned pin)
 	at91_set_a_periph((x - PIN_BASE) / 32,(x % 32), y)
 #define at91_set_B_periph(x, y) \
 	at91_set_b_periph((x - PIN_BASE) / 32,(x % 32), y)
+#define at91_set_gpio_deglitch(x, y) \
+	at91_set_pio_deglitch((x - PIN_BASE) / 32,(x % 32), y)
 #define at91_set_gpio_output(x, y) \
 	at91_set_pio_output((x - PIN_BASE) / 32,(x % 32), y)
 #define at91_set_gpio_input(x, y) \
 	at91_set_pio_input((x - PIN_BASE) / 32,(x % 32), y)
-#define at91_set_gpio_value(x, y) \
-	at91_set_pio_value((x - PIN_BASE) / 32,(x % 32), y)
-#define at91_get_gpio_value(x) \
-	at91_get_pio_value((x - PIN_BASE) / 32,(x % 32))
-#else
-#define at91_set_gpio_value(x, y)	at91_set_pio_value(x, y)
-#define at91_get_gpio_value(x)		at91_get_pio_value(x)
 #endif
+
+#define at91_set_gpio_value(x, y) \
+	at91_set_pio_value((x / 32), (x % 32), y)
+#define at91_get_gpio_value(x)	\
+	at91_get_pio_value((x / 32), (x % 32))
 
 #define GPIO_PIOA_BASE  (0)
 #define GPIO_PIOB_BASE  (GPIO_PIOA_BASE + 32)

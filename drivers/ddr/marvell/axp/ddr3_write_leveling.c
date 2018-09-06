@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -22,6 +21,8 @@
 	DEBUG_WL_FULL_S(s); DEBUG_WL_FULL_D(d, l); DEBUG_WL_FULL_S("\n")
 
 #ifdef MV_DEBUG_WL
+#define DEBUG_WL_S(s)			puts(s)
+#define DEBUG_WL_D(d, l)		printf("%x", d)
 #define DEBUG_RL_S(s) \
 	debug_cond(ddr3_get_log_level() >= MV_LOG_LEVEL_2, "%s", s)
 #define DEBUG_RL_D(d, l) \
@@ -1229,8 +1230,6 @@ static int ddr3_write_leveling_single_cs(u32 cs, u32 freq, int ratio_2to1,
 			DEBUG_WL_FULL_D((u32) phase, 1);
 			DEBUG_WL_FULL_S(", Delay = ");
 			DEBUG_WL_FULL_D((u32) delay, 1);
-			DEBUG_WL_FULL_S(", Counter = ");
-			DEBUG_WL_FULL_D((u32) i, 1);
 			DEBUG_WL_FULL_S("\n");
 
 			/* Drive DQS high for one cycle - All data PUPs */

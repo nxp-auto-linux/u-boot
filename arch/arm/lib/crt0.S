@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  crt0 - C-runtime startup Code for ARM U-Boot
  *
  *  Copyright (c) 2012  Albert ARIBAUD <albert.u.boot@aribaud.net>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -71,20 +70,17 @@ ENTRY(_main)
  */
 
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_STACK)
-	ldr	sp, =(CONFIG_SPL_STACK)
+	ldr	r0, =(CONFIG_SPL_STACK)
 #else
-	ldr	sp, =(CONFIG_SYS_INIT_SP_ADDR)
+	ldr	r0, =(CONFIG_SYS_INIT_SP_ADDR)
 #endif
-#if defined(CONFIG_CPU_V7M)	/* v7M forbids using SP as BIC destination */
-	mov	r3, sp
-	bic	r3, r3, #7
-	mov	sp, r3
-#else
-	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
-#endif
-	mov	r0, sp
-	bl	board_init_f_mem
+	bic	r0, r0, #7	/* 8-byte alignment for ABI compliance */
 	mov	sp, r0
+	bl	board_init_f_alloc_reserve
+	mov	sp, r0
+	/* set up gd here, outside any C code */
+	mov	r9, r0
+	bl	board_init_f_init_reserve
 
 	mov	r0, #0
 	bl	board_init_f
@@ -97,14 +93,9 @@ ENTRY(_main)
  * 'here' but relocated.
  */
 
-	ldr	sp, [r9, #GD_START_ADDR_SP]	/* sp = gd->start_addr_sp */
-#if defined(CONFIG_CPU_V7M)	/* v7M forbids using SP as BIC destination */
-	mov	r3, sp
-	bic	r3, r3, #7
-	mov	sp, r3
-#else
-	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
-#endif
+	ldr	r0, [r9, #GD_START_ADDR_SP]	/* sp = gd->start_addr_sp */
+	bic	r0, r0, #7	/* 8-byte alignment for ABI compliance */
+	mov	sp, r0
 	ldr	r9, [r9, #GD_BD]		/* r9 = gd->bd */
 	sub	r9, r9, #GD_SIZE		/* new GD is below bd */
 
@@ -133,6 +124,7 @@ here:
 	bl	spl_relocate_stack_gd
 	cmp	r0, #0
 	movne	sp, r0
+	movne	r9, r0
 # endif
 	ldr	r0, =__bss_start	/* this is auto-relocated! */
 
@@ -163,8 +155,12 @@ clbss_l:cmp	r0, r1			/* while not at end of BSS */
 	mov     r0, r9                  /* gd_t */
 	ldr	r1, [r9, #GD_RELOCADDR]	/* dest_addr */
 	/* call board_init_r */
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD)
+	ldr	lr, =board_init_r	/* this is auto-relocated! */
+	bx	lr
+#else
 	ldr	pc, =board_init_r	/* this is auto-relocated! */
-
+#endif
 	/* we should not return here. */
 #endif
 

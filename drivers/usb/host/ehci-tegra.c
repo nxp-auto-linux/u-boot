@@ -1,14 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
  * Copyright (c) 2009-2015 NVIDIA Corporation
  * Copyright (c) 2013 Lucas Stach
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/io.h>
 #include <asm-generic/gpio.h>
 #include <asm/arch/clock.h>
@@ -16,12 +15,9 @@
 #include <asm/arch-tegra/clk_rst.h>
 #include <usb.h>
 #include <usb/ulpi.h>
-#include <libfdt.h>
-#include <fdtdec.h>
+#include <linux/libfdt.h>
 
 #include "ehci.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #define USB1_ADDR_MASK	0xFFFF0000
 
@@ -600,9 +596,18 @@ static int init_ulpi_usb_controller(struct fdt_usb *config,
 
 	/* reset ULPI phy */
 	if (dm_gpio_is_valid(&config->phy_reset_gpio)) {
-		dm_gpio_set_value(&config->phy_reset_gpio, 0);
-		mdelay(5);
+		/*
+		 * This GPIO is typically active-low, and marked as such in
+		 * device tree. dm_gpio_set_value() takes this into account
+		 * and inverts the value we pass here if required. In other
+		 * words, this first call logically asserts the reset signal,
+		 * which typically results in driving the physical GPIO low,
+		 * and the second call logically de-asserts the reset signal,
+		 * which typically results in driver the GPIO high.
+		 */
 		dm_gpio_set_value(&config->phy_reset_gpio, 1);
+		mdelay(5);
+		dm_gpio_set_value(&config->phy_reset_gpio, 0);
 	}
 
 	/* Reset the usb controller */
@@ -686,12 +691,11 @@ static void config_clock(const u32 timing[])
 
 static int fdt_decode_usb(struct udevice *dev, struct fdt_usb *config)
 {
-	const void *blob = gd->fdt_blob;
-	int node = dev->of_offset;
 	const char *phy, *mode;
 
-	config->reg = (struct usb_ctlr *)dev_get_addr(dev);
-	mode = fdt_getprop(blob, node, "dr_mode", NULL);
+	config->reg = (struct usb_ctlr *)dev_read_addr(dev);
+	debug("reg=%p\n", config->reg);
+	mode = dev_read_string(dev, "dr_mode");
 	if (mode) {
 		if (0 == strcmp(mode, "host"))
 			config->dr_mode = DR_MODE_HOST;
@@ -708,27 +712,24 @@ static int fdt_decode_usb(struct udevice *dev, struct fdt_usb *config)
 		config->dr_mode = DR_MODE_HOST;
 	}
 
-	phy = fdt_getprop(blob, node, "phy_type", NULL);
+	phy = dev_read_string(dev, "phy_type");
 	config->utmi = phy && 0 == strcmp("utmi", phy);
 	config->ulpi = phy && 0 == strcmp("ulpi", phy);
-	config->enabled = fdtdec_get_is_enabled(blob, node);
-	config->has_legacy_mode = fdtdec_get_bool(blob, node,
-						  "nvidia,has-legacy-mode");
-	config->periph_id = clock_decode_periph_id(blob, node);
+	config->has_legacy_mode = dev_read_bool(dev, "nvidia,has-legacy-mode");
+	config->periph_id = clock_decode_periph_id(dev);
 	if (config->periph_id == PERIPH_ID_NONE) {
 		debug("%s: Missing/invalid peripheral ID\n", __func__);
 		return -EINVAL;
 	}
-	gpio_request_by_name_nodev(blob, node, "nvidia,vbus-gpio", 0,
-				   &config->vbus_gpio, GPIOD_IS_OUT);
-	gpio_request_by_name_nodev(blob, node, "nvidia,phy-reset-gpio", 0,
-				   &config->phy_reset_gpio, GPIOD_IS_OUT);
-	debug("enabled=%d, legacy_mode=%d, utmi=%d, ulpi=%d, periph_id=%d, "
-		"vbus=%d, phy_reset=%d, dr_mode=%d\n",
-		config->enabled, config->has_legacy_mode, config->utmi,
-		config->ulpi, config->periph_id,
-		gpio_get_number(&config->vbus_gpio),
-		gpio_get_number(&config->phy_reset_gpio), config->dr_mode);
+	gpio_request_by_name(dev, "nvidia,vbus-gpio", 0, &config->vbus_gpio,
+			     GPIOD_IS_OUT);
+	gpio_request_by_name(dev, "nvidia,phy-reset-gpio", 0,
+			     &config->phy_reset_gpio, GPIOD_IS_OUT);
+	debug("legacy_mode=%d, utmi=%d, ulpi=%d, periph_id=%d, vbus=%d, phy_reset=%d, dr_mode=%d, reg=%p\n",
+	      config->has_legacy_mode, config->utmi, config->ulpi,
+	      config->periph_id, gpio_get_number(&config->vbus_gpio),
+	      gpio_get_number(&config->phy_reset_gpio), config->dr_mode,
+	      config->reg);
 
 	return 0;
 }
@@ -846,17 +847,6 @@ static int ehci_usb_probe(struct udevice *dev)
 			     plat->init_type);
 }
 
-static int ehci_usb_remove(struct udevice *dev)
-{
-	int ret;
-
-	ret = ehci_deregister(dev);
-	if (ret)
-		return ret;
-
-	return 0;
-}
-
 static const struct udevice_id ehci_usb_ids[] = {
 	{ .compatible = "nvidia,tegra20-ehci", .data = USB_CTLR_T20 },
 	{ .compatible = "nvidia,tegra30-ehci", .data = USB_CTLR_T30 },
@@ -871,7 +861,7 @@ U_BOOT_DRIVER(usb_ehci) = {
 	.of_match = ehci_usb_ids,
 	.ofdata_to_platdata = ehci_usb_ofdata_to_platdata,
 	.probe = ehci_usb_probe,
-	.remove = ehci_usb_remove,
+	.remove = ehci_deregister,
 	.ops	= &ehci_usb_ops,
 	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
 	.priv_auto_alloc_size = sizeof(struct fdt_usb),

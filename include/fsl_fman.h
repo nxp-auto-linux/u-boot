@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * MPC85xx Internal Memory Map
  *
  * Copyright 2010-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FSL_FMAN_H__
@@ -460,4 +459,5 @@ typedef struct ccsr_fman {
 	u8			res5[4*1024];
 } ccsr_fman_t;
 
+void fdt_fixup_fman_firmware(void *blob);
 #endif /*__FSL_FMAN_H__*/

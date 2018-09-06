@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2003
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  *
  * Copyright (C) 2004-2007 Freescale Semiconductor, Inc.
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -31,7 +30,7 @@ typedef volatile unsigned short FLASH_PORT_WIDTHV;
 ulong flash_get_size(FPWV * addr, flash_info_t * info);
 int flash_get_offsets(ulong base, flash_info_t * info);
 int write_word(flash_info_t * info, FPWV * dest, u16 data);
-void inline spin_wheel(void);
+static inline void spin_wheel(void);
 
 flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];
 
@@ -439,7 +438,7 @@ int write_word(flash_info_t * info, FPWV * dest, u16 data)
 	return (res);
 }
 
-void inline spin_wheel(void)
+static inline void spin_wheel(void)
 {
 	static int p = 0;
 	static char w[] = "\\/-";

@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2010-2011 Freescale Semiconductor, Inc.
  * Author: Dipen Dudhat <dipen.dudhat@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FSL_IFC_H
@@ -11,6 +10,9 @@
 #ifdef CONFIG_FSL_IFC
 #include <config.h>
 #include <common.h>
+#ifdef CONFIG_ARM
+#include <asm/arch/soc.h>
+#endif
 
 #define FSL_IFC_V1_1_0	0x01010000
 #define FSL_IFC_V2_0_0	0x02000000
@@ -889,8 +891,8 @@ struct fsl_ifc_nand {
 	u32 nand_erattr1;
 	u32 res19[0x10];
 	u32 nand_fsr;
-	u32 res20[0x3];
-	u32 nand_eccstat[6];
+	u32 res20[0x1];
+	u32 nand_eccstat[8];
 	u32 res21[0x1c];
 	u32 nanndcr;
 	u32 res22[0x2];

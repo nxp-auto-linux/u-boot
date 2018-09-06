@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010
  * Reinhard Meyer, reinhard.meyer@emk-elektronik.de
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -23,7 +22,7 @@
 #include <command.h>
 #include <rtc.h>
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/at91_rtt.h>
 #include <asm/arch/at91_gpbr.h>
