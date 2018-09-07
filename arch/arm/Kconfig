@@ -723,11 +723,6 @@ config ARCH_RMOBILE
 	imply FAT_WRITE
 	imply SYS_THUMB_BUILD
 
-config TARGET_S32V234EVB
-	bool "Support s32v234evb"
-	select ARM64
-	select SYS_FSL_ERRATUM_ESDHC111
-
 config ARCH_SNAPDRAGON
 	bool "Qualcomm Snapdragon SoCs"
 	select ARM64
@@ -873,8 +868,6 @@ config ARCH_ZYNQMP
 
 config ARCH_S32
 	bool "Support S32 SOCs"
-	select ARM64
-	select CUSTOM_CMD_FLASH
 	select ARM64
 	select CUSTOM_CMD_FLASH
 
@@ -1450,7 +1443,6 @@ source "board/freescale/mx53smd/Kconfig"
 source "board/freescale/sac58r/Kconfig"
 source "board/freescale/sac58rfvb/Kconfig"
 source "board/freescale/vf610twr/Kconfig"
-source "board/freescale/s32v234evb/Kconfig"
 source "board/gdsys/a38x/Kconfig"
 source "board/grinn/chiliboard/Kconfig"
 source "board/gumstix/pepper/Kconfig"
