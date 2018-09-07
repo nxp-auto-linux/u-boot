@@ -611,6 +611,7 @@ config FSL_LINFLEXUART
 config FSL_LINFLEX_MODULE
 	int "LINFLEX Active Module"
 	depends on FSL_LINFLEXUART
+	default 0
 	help
 	  Select the LINFLEX Module used as serial
 
