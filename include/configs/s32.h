@@ -41,9 +41,6 @@
 
 #define CONFIG_LOADADDR		LOADADDR
 
-#define CONFIG_DISPLAY_CPUINFO
-#define CONFIG_DISPLAY_BOARDINFO
-
 /* Init CSE3 from u-boot */
 #ifdef CONFIG_FSL_CSE3
 
@@ -83,7 +80,6 @@
 
 /* SMP Spin Table Definitions */
 #define CONFIG_MP
-#define CONFIG_OF_LIBFDT
 
 /* Ramdisk name */
 #define RAMDISK_NAME		rootfs.uimg
@@ -173,7 +169,6 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
 
-#define CONFIG_BOARD_EARLY_INIT_F
 #define CONFIG_ARCH_EARLY_INIT_R
 
 /* Allow to overwrite serial and ethaddr */
@@ -188,19 +183,12 @@
 #define CONFIG_SD_BOOT
 #endif
 
-#define CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_NUM	1
-
-#define CONFIG_SYS_FSL_ERRATUM_ESDHC111
 
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
-#define CONFIG_CMD_FAT  /* FAT support */
-#define CONFIG_DOS_PARTITION
 
 /* Ethernet config */
-#define CONFIG_CMD_MII
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
 
@@ -222,25 +210,23 @@
 
 #endif /* #ifndef VIRTUAL_PLATFORM */
 
+#undef CONFIG_BOOTDELAY
 #define CONFIG_BOOTDELAY	3
 
 #ifdef VIRTUAL_PLATFORM
-#define CONFIG_LOGLEVEL " loglevel=4 "
+#define CONFIG_BOOTARGS_LOGLEVEL " loglevel=4 "
 #else
-#define CONFIG_LOGLEVEL ""
+#define CONFIG_BOOTARGS_LOGLEVEL ""
 #endif
 
+#undef CONFIG_BOOTARGS
 #define CONFIG_BOOTARGS		\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) \
-	" root=/dev/ram rw" CONFIG_LOGLEVEL
+	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL
 
 #define CONFIG_CMD_ENV
 
 #define CONFIG_HWCONFIG
-
-#define CONFIG_OF_LIBFDT
-#define CONFIG_CMD_BOOTI
-#define CONFIG_CMD_BOOTZ
 
 #ifdef CONFIG_CMD_BOOTI
 
@@ -380,7 +366,7 @@
 			"${boot_mtd}; " \
 		"fi;\0" \
 	"flashbootargs=setenv bootargs console=${console}" \
-		CONFIG_LOGLEVEL "root=/dev/ram rw;" \
+		CONFIG_BOOTARGS_LOGLEVEL "root=/dev/ram rw;" \
 		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
@@ -397,6 +383,7 @@
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0"
 
+#undef CONFIG_BOOTCOMMAND
 #ifdef VIRTUAL_PLATFORM
 #define CONFIG_BOOTCOMMAND \
 		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
@@ -416,19 +403,15 @@
 #endif
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_LONGHELP		/* undef to save memory */
 #define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_PROMPT		"=> "
-#define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE		\
 			(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_MAXARGS		16	/* max number of command args */
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
-#define CONFIG_CMDLINE_EDITING
 
-#define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	(DDR_BASE_ADDR)
 #define CONFIG_SYS_MEMTEST_END		(DDR_BASE_ADDR + (CONFIG_SYS_DDR_SIZE - 1))
 
@@ -448,7 +431,6 @@
 #if 0
 /* Configure PXE */
 #define CONFIG_CMD_PXE
-#define CONFIG_BOOTP_PXE
 #define CONFIG_BOOTP_PXE_CLIENTARCH	0x100
 #endif
 
@@ -496,9 +478,6 @@
 #endif
 
 #define CONFIG_BOOTP_BOOTFILESIZE
-#define CONFIG_BOOTP_BOOTPATH
-#define CONFIG_BOOTP_GATEWAY
-#define CONFIG_BOOTP_HOSTNAME
 
 #ifdef CONFIG_CMD_PCI
 #define CONFIG_PCIE_S32V234
