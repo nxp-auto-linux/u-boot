@@ -34,14 +34,6 @@
 #define SPI_FMSZ_16	BIT(15)
 #define SPI_FMSZ_32	BIT(16)
 
-/* SPI transfer flags */
-#define SPI_XFER_BEGIN		0x01	/* Assert CS before transfer */
-#define SPI_XFER_END		0x02	/* Deassert CS after transfer */
-#define SPI_XFER_MMAP		0x08	/* Memory Mapped start */
-#define SPI_XFER_MMAP_END	0x10	/* Memory Mapped End */
-#define SPI_XFER_ONCE		(SPI_XFER_BEGIN | SPI_XFER_END)
-#define SPI_XFER_U_PAGE	(1 << 5)
-
 /* SPI TX operation modes */
 #define SPI_OPM_TX_QPP		(1 << 0)
 #define SPI_OPM_TX_BP		(1 << 1)
@@ -145,6 +137,7 @@ struct spi_slave {
 #define SPI_XFER_ONCE		(SPI_XFER_BEGIN | SPI_XFER_END)
 #define SPI_XFER_MMAP		BIT(2)	/* Memory Mapped start */
 #define SPI_XFER_MMAP_END	BIT(3)	/* Memory Mapped End */
+#define SPI_XFER_U_PAGE		BIT(4)
 };
 
 /**
