@@ -81,10 +81,10 @@ static int find_table(const struct sys_mmu_table *list,
 			temp_base += block_size;
 		}
 		temp_base -= block_size;
-		if ((level_table[index - 1] & PMD_TYPE_MASK) ==
-		    PMD_TYPE_TABLE) {
+		if ((level_table[index - 1] & PTE_TYPE_MASK) ==
+		    PTE_TYPE_TABLE) {
 			level_table = (u64 *)(level_table[index - 1] &
-				~PMD_TYPE_MASK);
+				~PTE_TYPE_MASK);
 			level++;
 			continue;
 		} else {
