@@ -1,137 +1,106 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2013-2015, Freescale Semiconductor, Inc.
+ * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * (C) Copyright 2016-2018 NXP
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/siul.h>
-#include <asm/arch/lpddr2.h>
-#include <asm/arch/clock.h>
-#include <mmc.h>
-#include <fsl_esdhc.h>
+#include <asm/arch/soc.h>
+#include <fdt_support.h>
+#include <libfdt.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
 
+#ifdef CONFIG_PHY_MICREL
+#include <micrel.h>
+#endif
+
+#ifdef CONFIG_SJA1105
+#include "sja1105.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
-void setup_iomux_ddr(void)
+#ifdef CONFIG_FSL_DSPI
+static void setup_iomux_dspi(void)
 {
-	lpddr2_config_iomux(DDR0);
-	lpddr2_config_iomux(DDR1);
+	/* Muxing for DSPI0 */
 
+	/* Configure Chip Select Pins */
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS0_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB8));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS4_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC0));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS5_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC1));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS6_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC2));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS7_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC3));
+
+	/* MSCR */
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SOUT_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB6));
+
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SCK_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB5));
+
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SIN_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB7));
+
+	/* IMCR */
+	writel(SIUL2_PAD_CTRL_DSPI0_IMCR_SIN_IN,
+	       SIUL2_IMCRn(SIUL2_PB7_IMCR_SPI0_SIN));
 }
-
-void ddr_phy_init(void)
-{
-}
-
-void ddr_ctrl_init(void)
-{
-	config_mmdc(0);
-	config_mmdc(1);
-}
-
-int dram_init(void)
-{
-	setup_iomux_ddr();
-
-	ddr_ctrl_init();
-
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
-
-	return 0;
-}
+#endif
 
 static void setup_iomux_uart(void)
 {
-	/* Muxing for linflex */
-	/* Replace the magic values after bringup */
+	/* Muxing for linflex0 and linflex1 */
 
-	/* set TXD - MSCR[12] PA12 */
-	writel(SIUL2_UART_TXD, SIUL2_MSCRn(SIUL2_UART0_TXD_PAD));
+	/* set PA12 - MSCR[12] - for UART0 TXD */
+	writel(SIUL2_MSCR_PORT_CTRL_UART_TXD, SIUL2_MSCRn(SIUL2_MSCR_PA12));
 
-	/* set RXD - MSCR[11] - PA11 */
-	writel(SIUL2_UART_MSCR_RXD, SIUL2_MSCRn(SIUL2_UART0_MSCR_RXD_PAD));
+	/* set PA11 - MSCR[11] - for UART0 RXD */
+	writel(SIUL2_MSCR_PORT_CTRL_UART_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA11));
+	/* set UART0 RXD - IMCR[200] - to link to PA11 */
+	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART0_RXD));
 
-	/* set RXD - IMCR[200] - 200 */
-	writel(SIUL2_UART_IMCR_RXD, SIUL2_IMCRn(SIUL2_UART0_IMCR_RXD_PAD));
-}
+	/* set PA14 - MSCR[14] - for UART1 TXD*/
+	writel(SIUL2_MSCR_PORT_CTRL_UART_TXD, SIUL2_MSCRn(SIUL2_MSCR_PA14));
 
-static void setup_iomux_enet(void)
-{
+	/* set PA13 - MSCR[13] - for UART1 RXD */
+	writel(SIUL2_MSCR_PORT_CTRL_UART_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA13));
+	/* set UART1 RXD - IMCR[202] - to link to PA13 */
+	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART1_RXD));
 }
 
 static void setup_iomux_i2c(void)
 {
+	/* I2C0 - Serial Data Input */
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA, SIUL2_MSCRn(99));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA, SIUL2_IMCRn(269));
+
+	/* I2C0 - Serial Clock Input */
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK, SIUL2_MSCRn(100));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK, SIUL2_IMCRn(268));
+
+	/* I2C1 - Serial Data Input */
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA, SIUL2_MSCRn(101));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA, SIUL2_IMCRn(271));
+
+	/* I2C1 - Serial Clock Input */
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK, SIUL2_MSCRn(102));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK, SIUL2_IMCRn(270));
+
+	/* I2C2 - Serial Data Input */
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA, SIUL2_MSCRn(19));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SDA, SIUL2_IMCRn(273));
+
+	/* I2C2 - Serial Clock Input */
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK, SIUL2_MSCRn(20));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK, SIUL2_IMCRn(272));
 }
 
 #ifdef CONFIG_SYS_USE_NAND
 void setup_iomux_nfc(void)
 {
-}
-#endif
-
-#ifdef CONFIG_FSL_ESDHC
-struct fsl_esdhc_cfg esdhc_cfg[1] = {
-	{USDHC_BASE_ADDR},
-};
-
-int board_mmc_getcd(struct mmc *mmc)
-{
-	/* eSDHC1 is always present */
-	return 1;
-}
-
-int board_mmc_init(bd_t * bis)
-{
-	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_USDHC_CLK);
-
-	/* Set iomux PADS for USDHC */
-
-	/* PK6 pad: uSDHC clk */
-	writel(SIUL2_USDHC_PAD_CTRL_CLK, SIUL2_MSCRn(150));
-	writel(0x3, SIUL2_MSCRn(902));
-
-	/* PK7 pad: uSDHC CMD */
-	writel(SIUL2_USDHC_PAD_CTRL_CMD, SIUL2_MSCRn(151));
-	writel(0x3, SIUL2_MSCRn(901));
-
-	/* PK8 pad: uSDHC DAT0 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(152));
-	writel(0x3, SIUL2_MSCRn(903));
-
-	/* PK9 pad: uSDHC DAT1 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(153));
-	writel(0x3, SIUL2_MSCRn(904));
-
-	/* PK10 pad: uSDHC DAT2 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(154));
-	writel(0x3, SIUL2_MSCRn(905));
-
-	/* PK11 pad: uSDHC DAT3 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT0_3, SIUL2_MSCRn(155));
-	writel(0x3, SIUL2_MSCRn(906));
-
-	/* PK15 pad: uSDHC DAT4 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(159));
-	writel(0x3, SIUL2_MSCRn(907));
-
-	/* PL0 pad: uSDHC DAT5 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(160));
-	writel(0x3, SIUL2_MSCRn(908));
-
-	/* PL1 pad: uSDHC DAT6 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(161));
-	writel(0x3, SIUL2_MSCRn(909));
-
-	/* PL2 pad: uSDHC DAT7 */
-	writel(SIUL2_USDHC_PAD_CTRL_DAT4_7, SIUL2_MSCRn(162));
-	writel(0x3, SIUL2_MSCRn(910));
-
-	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
+	/*TODO: Implement nfc iomux when it is activated.*/
 }
 #endif
 
@@ -146,11 +115,107 @@ static void mscm_init(void)
 
 int board_phy_config(struct phy_device *phydev)
 {
+#ifdef CONFIG_PHY_MICREL
+	/* Enable all AutoNeg capabilities */
+	ksz9031_phy_extended_write(phydev, 0x02,
+				   MII_KSZ9031_EXT_OP_MODE_STRAP_OVRD,
+				   MII_KSZ9031_MOD_DATA_NO_POST_INC,
+				   MII_KSZ9031_EXT_OMSO_RGMII_ALL_CAP_OVRD);
+
+	/* Reset the PHY so that the previous changes take effect */
+	phy_write(phydev, CONFIG_FEC_MXC_PHYADDR, MII_BMCR, BMCR_RESET);
+#endif
+
 	if (phydev->drv->config)
 		phydev->drv->config(phydev);
 
 	return 0;
 }
+
+void setup_xrdc(void)
+{
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_16);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_16);
+	writel(XRDC_VALID, XRDC_MRGD_W3_16);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_17);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_17);
+	writel(XRDC_VALID, XRDC_MRGD_W3_17);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_18);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_18);
+	writel(XRDC_VALID, XRDC_MRGD_W3_18);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_19);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_19);
+	writel(XRDC_VALID, XRDC_MRGD_W3_19);
+}
+
+#ifdef CONFIG_DCU_QOS_FIX
+int board_dcu_qos(void)
+{
+#if defined(CONFIG_S32V234EVB_29288)
+	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+
+	writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
+	       &src_regs->gpr8);
+#endif
+
+	/* m_fastdma1_ib */
+	writel(0x0, 0x40012380);
+	writel(0x0, 0x40012384);
+
+	/* m_gpu0 */
+	writel(0x0, 0x40012480);
+	writel(0x0, 0x40012484);
+
+	/* m_h264dec */
+	writel(0x0, 0x40012580);
+	writel(0x0, 0x40012584);
+
+	/* m_gpu1 */
+	writel(0x0, 0x40012680);
+	writel(0x0, 0x40012684);
+
+	/* m_cores_cci1_ib */
+	writel(0x0, 0x40012780);
+	writel(0x0, 0x40012784);
+
+	/* m_cores_cci1_ib */
+	writel(0x0, 0x40012880);
+	writel(0x0, 0x40012884);
+
+	/* m_apex0_blkdm a */
+	writel(0x0, 0x40012980);
+	writel(0x0, 0x40012984);
+
+	/* m_apex1_dma */
+	writel(0x0, 0x40012A80);
+	writel(0x0, 0x40012A84);
+
+	/* m_apex1_blkdma */
+	writel(0x0, 0x40012B80);
+	writel(0x0, 0x40012B84);
+
+	/* m_pcie */
+	writel(0x0, 0x40012C80);
+	writel(0x0, 0x40012C84);
+
+	/* m_enet0 */
+	writel(0x0, 0x40012D80);
+	writel(0x0, 0x40012D84);
+
+	/* m_enet1 */
+	writel(0x0, 0x40012E80);
+	writel(0x0, 0x40012E84);
+
+	/* m_cores_cci0 */
+	writel(0x0, 0x40012F80);
+	writel(0x0, 0x40012F84);
+
+	return 0;
+}
+#endif
 
 int board_early_init_f(void)
 {
@@ -160,9 +225,19 @@ int board_early_init_f(void)
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
+#ifdef CONFIG_FSL_DSPI
+	setup_iomux_dspi();
+#endif
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
+	setup_iomux_dcu();
+
+#ifdef CONFIG_DCU_QOS_FIX
+	board_dcu_qos();
+#endif
+
+	setup_xrdc();
 	return 0;
 }
 
@@ -176,7 +251,30 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: s32v234evb\n");
+	printf("Board: %s\n", CONFIG_SYS_CONFIG_NAME);
 
 	return 0;
 }
+
+void board_net_init(void)
+{
+#ifdef CONFIG_SJA1105
+	/* Only probe the switch if we are going to use networking.
+	 * The probe has a self check so it will quietly exit if we call it
+	 * twice.
+	 */
+	sja1105_probe(SJA_1_CS, SJA_1_BUS);
+	/* The SJA switch can have its ports RX lines go out of sync. They need
+	 * to be reseted in order to allow network traffic.
+	 */
+	sja1105_reset_ports(SJA_1_CS, SJA_1_BUS);
+#endif
+}
+
+#if defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP)
+int ft_board_setup(void *blob, bd_t *bd)
+{
+	ft_cpu_setup(blob, bd);
+	return 0;
+}
+#endif /* defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP) */
