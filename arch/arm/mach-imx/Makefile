@@ -17,6 +17,10 @@ obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
 obj-y += cpu.o
 endif
 
+ifeq ($(SOC),$(filter $(SOC), s32v234 s32v344 s32r45 s32g275))
+obj-$(CONFIG_SYS_I2C_MXC) += i2c-mxv7.o
+endif
+
 ifeq ($(SOC),$(filter $(SOC),mx5 mx6))
 obj-y	+= cpu.o speed.o
 obj-$(CONFIG_GPT_TIMER) += timer.o
@@ -89,6 +93,14 @@ MKIMAGEFLAGS_u-boot.imx = -n $(filter-out $(PLUGIN).bin $< $(PHONY),$^) -T imxim
 u-boot.imx: MKIMAGEOUTPUT = u-boot.imx.log
 
 u-boot.imx: u-boot.bin u-boot.cfgout $(PLUGIN).bin FORCE
+	$(call if_changed,mkimage)
+
+
+MKIMAGEFLAGS_u-boot.s32 = -n $(filter-out $< $(PHONY),$^) -T imximage \
+	-e $(CONFIG_SYS_TEXT_BASE)
+u-boot.s32: MKIMAGEOUTPUT = u-boot.s32.log
+
+u-boot.s32: u-boot.bin u-boot.cfgout FORCE
 	$(call if_changed,mkimage)
 
 ifeq ($(CONFIG_OF_SEPARATE),y)

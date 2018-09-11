@@ -727,7 +727,7 @@ libs-$(CONFIG_UT_ENV) += test/env/
 libs-$(CONFIG_UT_OVERLAY) += test/overlay/
 
 ifneq (,$(filter $(SOC), mx25 mx27 mx5 mx6 mx31 mx35 mxs vf610 sac58r mac57d5xh))
-libs-y += arch/$(ARCH)/imx-common/
+libs-y += arch/$(ARCH)/mach-imx/
 endif
 
 ifneq (,$(filter $(SOC), armada-xp kirkwood))
@@ -967,7 +967,7 @@ endif
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
 %.s32: %.bin
-	$(Q)$(MAKE) $(build)=arch/arm/imx-common $@
+	$(MAKE) $(build)=arch/arm/mach-imx $@
 
 quiet_cmd_copy = COPY    $@
       cmd_copy = cp $< $@
