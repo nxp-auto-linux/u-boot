@@ -510,7 +510,10 @@ static int s32v234_pcie_regions_setup(const int ep_mode)
 			S32V234_DBI_ADDR + PCI_SUBSYSTEM_VENDOR_ID);
 	#endif
 
-	ignoreERR009852 = getenv("ignoreERR009852") != NULL;
+	if (env_get("ignoreERR009852"))
+		ignoreERR009852 = true;
+	else
+		ignoreERR009852 = false;
 
 	set_non_sticky_config_regs();
 

@@ -467,13 +467,13 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 #else
 	const char *mac_str = "00:1b:c3:12:34:22";
 
-	if ((!getenv("ethaddr")) ||
-	    (0 == strncasecmp(mac_str, getenv("ethaddr"), 17))) {
+	if ((!env_get("ethaddr")) ||
+	    (strncasecmp(mac_str, env_get("ethaddr"), 17) == 0)) {
 		printf("\nWarning: System is using default MAC address. ");
 		printf("Please set a new value\n");
 		eth_parse_enetaddr(mac_str, mac);
 	} else {
-		eth_parse_enetaddr(getenv("ethdaddr"), mac);
+		eth_parse_enetaddr(env_get("ethdaddr"), mac);
 	}
 #endif
 }
