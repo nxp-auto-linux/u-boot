@@ -17,7 +17,36 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+static struct mm_region s32_mem_map[] = {
+	{
+		/* List terminator */
+		0,
+	}
+};
+
+struct mm_region *mem_map = s32_mem_map;
+
 #ifndef CONFIG_SYS_DCACHE_OFF
+
+static void set_pgtable_section(u64 *page_table, u64 index, u64 section,
+				u64 memory_type, u64 attribute)
+{
+	u64 value;
+
+	value = section | PTE_TYPE_BLOCK | PTE_BLOCK_AF;
+	value |= PMD_ATTRINDX(memory_type);
+	value |= attribute;
+	page_table[index] = value;
+}
+
+static void set_pgtable_table(u64 *page_table, u64 index, u64 *table_addr)
+{
+	u64 value;
+
+	value = (u64)table_addr | PTE_TYPE_TABLE;
+	page_table[index] = value;
+}
+
 /*
  * Set the block entries according to the information of the table.
  */
