@@ -15,7 +15,7 @@
 #include <asm/arch/xrdc.h>
 #include <asm/arch/cse.h>
 #include <fdt_support.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <net.h>

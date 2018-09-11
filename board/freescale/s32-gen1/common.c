@@ -10,7 +10,7 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/soc.h>
 #include <fdt_support.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <miiphy.h>
 #include <netdev.h>
 

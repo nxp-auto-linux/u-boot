@@ -9,7 +9,7 @@
 #include <asm/io.h>
 #include <asm/arch/soc.h>
 #include <fdt_support.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <miiphy.h>

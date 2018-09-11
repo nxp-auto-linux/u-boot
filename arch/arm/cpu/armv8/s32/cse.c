@@ -9,7 +9,7 @@
 #include <asm/arch/cse.h>
 #include <common.h>
 #include <malloc.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fs.h>
 #include <errno.h>
 

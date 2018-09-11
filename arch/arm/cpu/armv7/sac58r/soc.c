@@ -12,7 +12,7 @@
 #include <asm/pl310.h> 
 #include <asm/errno.h> 
 #include <asm/io.h> 
-#include <libfdt.h> 
+#include <linux/libfdt.h>
 #include <stdbool.h> 
 
 #if defined(CONFIG_SECURE_BOOT) 
