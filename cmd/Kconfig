@@ -665,7 +665,12 @@ config CMD_FDC
 	help
 	  The 'fdtboot' command allows booting an image from a floppy disk.
 
+config CUSTOM_CMD_FLASH
+	bool
+	default n
+
 config CMD_FLASH
+	depends on !CUSTOM_CMD_FLASH
 	bool "flinfo, erase, protect"
 	default y
 	help
