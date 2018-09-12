@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
+#include <environment.h>
 
 #define MHZ	1000000
 
