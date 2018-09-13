@@ -37,7 +37,6 @@
 #define CONFIG_OF_BOARD_SETUP
 
 /* System Timer */
-#define CONFIG_SYS_GENERIC_TIMER
 /* #define CONFIG_SYS_PIT_TIMER */
 
 #define CONFIG_LOADADDR		LOADADDR
@@ -148,7 +147,7 @@
 #define RAMDISK_FLASH_MAXSIZE		0x2000000
 
 /* Generic Timer Definitions */
-#if defined(CONFIG_SYS_GENERIC_TIMER)
+#if defined(CONFIG_SYS_ARCH_TIMER)
 /* COUNTER_FREQUENCY value will be used at startup but will be replaced
  * if an older chip version is determined at runtime.
  */

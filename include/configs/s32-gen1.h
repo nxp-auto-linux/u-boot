@@ -37,7 +37,6 @@
 #define CONFIG_OF_BOARD_SETUP
 
 /* System Timer */
-#define CONFIG_SYS_GENERIC_TIMER
 /* #define CONFIG_SYS_PIT_TIMER */
 
 #define CONFIG_FSL_USDHC
