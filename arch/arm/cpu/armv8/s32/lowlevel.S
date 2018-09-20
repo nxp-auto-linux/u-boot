@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2014 Freescale Semiconductor
  * (C) Copyright 2017-2018 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Extracted from armv8/start.S
  */

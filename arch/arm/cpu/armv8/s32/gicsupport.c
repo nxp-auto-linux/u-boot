@@ -1,8 +1,7 @@
+// SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2016
  * Heinz Wrobel <Heinz.Wrobel@nxp.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Basic GIC support to permit dealing with interrupt handlers in ARMv8.
  * This code is currently only tested on S32V234, but should be generic

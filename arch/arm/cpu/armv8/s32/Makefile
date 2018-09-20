@@ -1,8 +1,7 @@
+# SPDX-License-Identifier:	GPL-2.0+
 #
 # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
 # (C) Copyright 2016-2018 NXP
-#
-# SPDX-License-Identifier:	GPL-2.0+
 #
 
 obj-$(CONFIG_S32V234)		+= s32v234/clock.o

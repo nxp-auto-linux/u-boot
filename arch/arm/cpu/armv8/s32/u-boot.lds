@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2013
  * David Feng <fenghua@phytium.com.cn>
@@ -9,8 +10,6 @@
  * u-boot version v2016.01 and modified for alignment required by s32 platforms
  *
  * Copyright 2018 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 OUTPUT_FORMAT("elf64-littleaarch64", "elf64-littleaarch64", "elf64-littleaarch64")

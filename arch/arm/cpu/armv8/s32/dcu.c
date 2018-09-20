@@ -1,9 +1,8 @@
+// SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2017-2018 NXP
  *
  * FSL DCU Framebuffer driver
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
