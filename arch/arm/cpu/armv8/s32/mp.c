@@ -13,8 +13,6 @@
 #include <asm/arch/mc_rgm_regs.h>
 #include "mp.h"
 
-DECLARE_GLOBAL_DATA_PTR;
-
 void *get_spin_tbl_addr(void)
 {
 	void *ptr = (void *)SECONDARY_CPU_BOOT_PAGE;

@@ -19,8 +19,6 @@
 #include <asm/gic.h>
 #include <asm/proc-armv/system.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 #define ENTRIES(x) (sizeof(x)/sizeof(x[0]))
 
 /* A performance implementation would use an indexed table.

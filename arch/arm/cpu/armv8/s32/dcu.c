@@ -12,8 +12,6 @@
 #include "../../../../../board/freescale/common/dcu_sii9022a.h"
 #include "div64.h"
 
-DECLARE_GLOBAL_DATA_PTR;
-
 struct fb_videomode fsl_dcu_mode_1920_1080 = {
 	.name = "1920x1080-60",
 	.refresh = 60,
