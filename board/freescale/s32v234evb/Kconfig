@@ -19,7 +19,7 @@ config SYS_CONFIG_NAME
 # both DDR slots.
 
 config SYS_DDR_SIZE
-	int
+	hex
 	default 0x80000000 if S32_DDR3
 	default 0x10000000 if S32_LPDDR2
 

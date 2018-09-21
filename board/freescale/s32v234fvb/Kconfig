@@ -14,9 +14,9 @@ config SYS_CONFIG_NAME
 # DDR0(256MB) and DDR1(256MB).
 # U-boot uses only one DDR slot.
 config SYS_DDR_SIZE
-	int
-	default 1073741824 if S32_DDR3
-	default 268435456  if S32_LPDDR2
+	hex
+	default 0x40000000 if S32_DDR3
+	default 0x10000000 if S32_LPDDR2
 
 config S32V234_FAST_BOOT
 	bool "Configure DCD and RUNMODE for a fast-boot efused board"
