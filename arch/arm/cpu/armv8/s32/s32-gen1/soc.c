@@ -202,7 +202,7 @@ static u32 get_xbar_clk(void)
 		freq = FIRC_CLK_FREQ;
 		break;
 	case MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 10);
+		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 8);
 		break;
 	default:
 		printf("unsupported system clock select\n");
