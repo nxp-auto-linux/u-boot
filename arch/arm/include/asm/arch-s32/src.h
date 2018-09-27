@@ -74,15 +74,6 @@
 #define SRC_GPR6_PCIE_PCS_TX_SWING_LOW_MASK				(0x7f << 25)
 #define SRC_GPR6_PCIE_PCS_TX_SWING_LOW_OFFSET			25
 
-#if defined(CONFIG_S32V234EVB_29288) || defined(CONFIG_MPXS32V234_R1) || \
-	defined(CONFIG_MPXS32V234_R2)
-/*
- * SRC_GPR8 bit fields
- */
-#define SRC_GPR8_2D_ACE_QOS_OFFSET				0
-#define MIN_DCU_QOS_PRIORITY					0xD
-#endif
-
 /* SRC_DDR_SELF_REF_CTRL bit fields */
 #define SRC_DDR_EN_SELF_REF_CTRL_DDR0_EN_SLF_REF_RST		(1 << 2)
 #define SRC_DDR_EN_SELF_REF_CTRL_DDR1_EN_SLF_REF_RST		(1 << 3)
@@ -106,15 +97,15 @@ struct src {
 	u32 gpr4;
 	u32 gpr5;
 	u32 gpr6;
-#if defined(CONFIG_S32V234EVB_29288) || defined(CONFIG_MPXS32V234_R1) || \
-	defined(CONFIG_MPXS32V234_R2)
-	u32 reserved_0x114[1];
-	u32 gpr8;
+	union {
+		u32 gpr7;				/* TR1 specific */
+		u32 reserved_0x118[1];	/* TR2 specific */
+	};
+	union {
+		u32 gpr8;				/* TR2 specific */
+		u32 reserved_0x11C[1];	/* TR1 specific */
+	};
 	u32 reserved_0x120[1];
-#else
-	u32 gpr7;
-	u32 reserved_0x11C[2];
-#endif
 	u32 gpr10;
 	u32 gpr11;
 	u32 gpr12;
