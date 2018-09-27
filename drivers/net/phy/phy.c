@@ -521,6 +521,9 @@ int phy_init(void)
 #ifdef CONFIG_PHY_VITESSE
 	phy_vitesse_init();
 #endif
+#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
+	phy_fixed_init();
+#endif
 #ifdef CONFIG_PHY_XILINX
 	phy_xilinx_init();
 #endif
@@ -778,6 +781,7 @@ static struct phy_device *get_phy_device(struct mii_dev *bus, int addr,
 
 int phy_reset(struct phy_device *phydev)
 {
+#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 	int reg;
 	int timeout = 500;
 	int devad = MDIO_DEVAD_NONE;
@@ -823,6 +827,7 @@ int phy_reset(struct phy_device *phydev)
 		puts("PHY reset timed out\n");
 		return -1;
 	}
+#endif
 
 	return 0;
 }
