@@ -455,7 +455,6 @@
 #endif
 
 #if defined(CONFIG_FLASH_BOOT)
-#define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
 #define CONFIG_ENV_SIZE 			(0x2000) /* 8 KB */
 #define CONFIG_ENV_SECT_SIZE		(FLASH_SECTOR_SIZE) /* 256 KB */
@@ -463,7 +462,6 @@
 #define CONFIG_ENV_OFFSET			2 * CONFIG_ENV_SECT_SIZE
 
 #elif defined(CONFIG_SD_BOOT)
-#define CONFIG_ENV_IS_IN_MMC
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
 #define CONFIG_ENV_OFFSET		(0xC0000) /* 12 * 64 * 1024 */
