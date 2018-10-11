@@ -25,8 +25,6 @@
 
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 
-#define CONFIG_CMD_EXT2 /* EXT2 Support */
-
 #define CONFIG_FEC_XCV_TYPE     RMII
 #define CONFIG_FEC_MXC_PHYADDR  1
 #define CONFIG_PHYLIB
