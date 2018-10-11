@@ -29,7 +29,6 @@
 /* Ethernet config */
 
 #define CONFIG_FEC_XCV_TYPE     RGMII
-#define CONFIG_PHYLIB
 
 /* CONFIG_PHY_RGMII_DIRECT_CONNECTED should be enabled when
  * BCM switch is configured.
@@ -38,7 +37,6 @@
 #define CONFIG_BCM_SPEED	SPEED_1000
 #else
 #define CONFIG_FEC_MXC_PHYADDR  7
-#define CONFIG_PHY_MICREL
 #define CONFIG_PHY_MICREL_KSZ9031
 #endif
 
