@@ -6,7 +6,7 @@
 
 #include "s32v_ocotp.h"
 #include <asm/io.h>
-#include <asm/errno.h>
+#include <linux/errno.h>
 
 #define OCOTP_TIMEOUT 100000
 

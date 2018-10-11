@@ -328,10 +328,10 @@ int board_eth_init(bd_t *bis)
 		board_get_mac(dev, mac);
 
 		if (!is_zero_ethaddr(mac)) {
-			if (!getenv("ethaddr")) {
+			if (!env_get("ethaddr")) {
 				char buf[20];
 				sprintf(buf, "%pM", mac);
-				setenv("ethaddr", buf);
+				env_set("ethaddr", buf);
 			}
 		} else {
 			printf("Note: no MAC for %s in SROM programmed!\n"

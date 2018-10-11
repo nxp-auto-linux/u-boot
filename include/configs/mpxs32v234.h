@@ -23,9 +23,6 @@
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 
-#define CONFIG_CMD_EXT2
-#define CONFIG_CMD_EXT4
-
 #define CONFIG_CMD_DATE
 
 /* Config DCU */
@@ -45,10 +42,8 @@
 /* Ethernet config */
 
 #define CONFIG_FEC_XCV_TYPE     RGMII
-#define CONFIG_PHYLIB
 
 #define CONFIG_FEC_MXC_PHYADDR  1
-#define CONFIG_PHY_MICREL
 #define CONFIG_PHY_MICREL_KSZ9031
 
 #define	FDT_FILE s32v234sbc.dtb
