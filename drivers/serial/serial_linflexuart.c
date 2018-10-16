@@ -14,30 +14,26 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 
-#define US1_TDRE            BIT(7)
-#define US1_RDRF            BIT(5)
-#define UC2_TE              BIT(3)
-#define LINCR1_INIT         BIT(0)
-#define LINCR1_MME          BIT(4)
-#define LINCR1_BF           BIT(7)
-#define LINSR_LINS_INITMODE (0x00001000)
-#define LINSR_LINS_MASK     (0x0000F000)
-#define UARTCR_UART         BIT(0)
-#define UARTCR_WL0          BIT(1)
-#define UARTCR_PCE          BIT(2)
-#define UARTCR_PC0          BIT(3)
-#define UARTCR_TXEN         BIT(4)
-#define UARTCR_RXEN         BIT(5)
-#define UARTCR_PC1          BIT(6)
-#define UARTCR_TFBM         BIT(8)
-#define UARTCR_RFBM         BIT(9)
-#define UARTSR_DTF          BIT(1)
-#define UARTSR_DRF          BIT(2)
-#define UARTSR_RFE          BIT(2)
-#define UARTSR_RFNE         BIT(4)
-#define UARTSR_RMB          BIT(9)
-
-#define LINFLEXD_UARTCR_OSR_MASK	(0xF << 24)
+#define LINCR1_INIT			BIT(0)
+#define LINCR1_MME			BIT(4)
+/* This bit is marked as Reserved on S32G275 */
+#ifndef CONFIG_S32G275
+#define LINCR1_BF			BIT(7)
+#endif
+#define LINSR_LINS_INITMODE		(0x00001000)
+#define LINSR_LINS_MASK			(0x0000F000)
+#define UARTCR_UART			BIT(0)
+#define UARTCR_WL0			BIT(1)
+#define UARTCR_PC0			BIT(3)
+#define UARTCR_TXEN			BIT(4)
+#define UARTCR_RXEN			BIT(5)
+#define UARTCR_PC1			BIT(6)
+#define UARTCR_TFBM			BIT(8)
+#define UARTCR_RFBM			BIT(9)
+#define UARTSR_DTF			BIT(1)
+#define UARTSR_RFE			BIT(2)
+#define UARTSR_RMB			BIT(9)
+#define LINFLEXD_UARTCR_OSR_MASK	(0xF<<24)
 #define LINFLEXD_UARTCR_OSR(uartcr)	(((uartcr) \
 					& LINFLEXD_UARTCR_OSR_MASK) >> 24)
 
@@ -102,12 +98,12 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 {
 	volatile u32 ctrl;
 
-	/* set the Linflex in master mode amd activate by-pass filter */
-	ctrl = LINCR1_BF | LINCR1_MME;
-	__raw_writel(ctrl, &base->lincr1);
-
-	/* init mode */
-	ctrl |= LINCR1_INIT;
+	/* set the Linflex in master|init mode and activate by-pass filter
+	 * (where supported) */
+	ctrl = LINCR1_MME | LINCR1_INIT;
+#ifndef CONFIG_S32G275
+	ctrl |= LINCR1_BF;
+#endif
 	__raw_writel(ctrl, &base->lincr1);
 
 	/* waiting for init mode entry - TODO: add a timeout */
@@ -176,7 +172,7 @@ static int linflex_serial_pending(struct udevice *dev, bool input)
 	uint32_t uartsr = __raw_readl(&priv->lfuart->uartsr);
 
 	if (input)
-		return ((uartsr & UARTSR_DRF) && (uartsr & UARTSR_RMB)) ? 1 : 0;
+		return ((uartsr & UARTSR_RFE) && (uartsr & UARTSR_RMB)) ? 1 : 0;
 	else
 		return uartsr & UARTSR_DTF ? 0 : 1;
 }
