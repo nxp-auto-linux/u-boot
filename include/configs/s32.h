@@ -13,7 +13,7 @@
 
 #define CONFIG_S32
 
-#include <asm/arch/imx-regs.h>
+#include <asm/arch-s32/imx-regs.h>
 #include <generated/autoconf.h>
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
