@@ -50,61 +50,6 @@ static void setup_iomux_uart(void)
 	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART1_RXD));
 }
 
-void setup_iomux_enet(void)
-{
-#ifndef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	/* MDC - PC13 */
-	writel(0x0020c701, SIUL2_MSCRn(45));
-	/* MDIO - PC14 */
-	writel(0x0028c701, SIUL2_MSCRn(46));
-	writel(0x2, SIUL2_MSCRn(981));
-#endif
-
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	/* TX_CLK - PC15 */
-	writel(0x0020c701, SIUL2_MSCRn(47));
-#else
-	/* TX_CLK - PC15 */
-	writel(0x00203701, SIUL2_MSCRn(47));
-#endif
-	writel(0x2, SIUL2_MSCRn(978));
-
-	/* RX_CLK - PD0 */
-	writel(0x0008c700, SIUL2_MSCRn(48));
-	writel(0x2, SIUL2_MSCRn(979));
-
-	/* RX_D0 - PD1 */
-	writel(0x0008c700, SIUL2_MSCRn(49));
-	writel(0x2, SIUL2_MSCRn(974));
-
-	/* RX_D1 - PD2 */
-	writel(0x0008c700, SIUL2_MSCRn(50));
-	writel(0x2, SIUL2_MSCRn(975));
-
-	/* RX_D2 - PD3 */
-	writel(0x0008c700, SIUL2_MSCRn(51));
-	writel(0x2, SIUL2_MSCRn(976));
-
-	/* RX_D3 - PD4 */
-	writel(0x0008c700, SIUL2_MSCRn(52));
-	writel(0x2, SIUL2_MSCRn(977));
-
-	/* RX_DV - PD5 */
-	writel(0x0008c700, SIUL2_MSCRn(53));
-	writel(0x2, SIUL2_MSCRn(973));
-
-	/* TX_D0 - PD7 */
-	writel(0x0020c701, SIUL2_MSCRn(55));
-	/* TX_D1 - PD8 */
-	writel(0x0020c701, SIUL2_MSCRn(56));
-	/* TX_D2 - PD9 */
-	writel(0x0020c701, SIUL2_MSCRn(57));
-	/* TX_D3 - PD10 */
-	writel(0x0020c701, SIUL2_MSCRn(58));
-	/* TX_EN - PD11 */
-	writel(0x0020c701, SIUL2_MSCRn(59));
-}
-
 static void setup_iomux_i2c(void)
 {
 #ifdef	CONFIG_MPXS32V234_R1
