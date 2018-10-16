@@ -151,72 +151,6 @@ void setup_xrdc(void)
 	writel(XRDC_VALID, XRDC_MRGD_W3_19);
 }
 
-#ifdef CONFIG_DCU_QOS_FIX
-int board_dcu_qos(void)
-{
-#if defined(CONFIG_S32V234EVB_29288)
-	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
-
-	writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
-	       &src_regs->gpr8);
-#endif
-
-	/* m_fastdma1_ib */
-	writel(0x0, 0x40012380);
-	writel(0x0, 0x40012384);
-
-	/* m_gpu0 */
-	writel(0x0, 0x40012480);
-	writel(0x0, 0x40012484);
-
-	/* m_h264dec */
-	writel(0x0, 0x40012580);
-	writel(0x0, 0x40012584);
-
-	/* m_gpu1 */
-	writel(0x0, 0x40012680);
-	writel(0x0, 0x40012684);
-
-	/* m_cores_cci1_ib */
-	writel(0x0, 0x40012780);
-	writel(0x0, 0x40012784);
-
-	/* m_cores_cci1_ib */
-	writel(0x0, 0x40012880);
-	writel(0x0, 0x40012884);
-
-	/* m_apex0_blkdm a */
-	writel(0x0, 0x40012980);
-	writel(0x0, 0x40012984);
-
-	/* m_apex1_dma */
-	writel(0x0, 0x40012A80);
-	writel(0x0, 0x40012A84);
-
-	/* m_apex1_blkdma */
-	writel(0x0, 0x40012B80);
-	writel(0x0, 0x40012B84);
-
-	/* m_pcie */
-	writel(0x0, 0x40012C80);
-	writel(0x0, 0x40012C84);
-
-	/* m_enet0 */
-	writel(0x0, 0x40012D80);
-	writel(0x0, 0x40012D84);
-
-	/* m_enet1 */
-	writel(0x0, 0x40012E80);
-	writel(0x0, 0x40012E84);
-
-	/* m_cores_cci0 */
-	writel(0x0, 0x40012F80);
-	writel(0x0, 0x40012F84);
-
-	return 0;
-}
-#endif
-
 int board_early_init_f(void)
 {
 	clock_init();
@@ -232,12 +166,9 @@ int board_early_init_f(void)
 	setup_iomux_nfc();
 #endif
 	setup_iomux_dcu();
-
-#ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
-#endif
-
 	setup_xrdc();
+
 	return 0;
 }
 

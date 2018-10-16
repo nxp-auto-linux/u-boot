@@ -31,6 +31,8 @@
 #define SIUL2_MIDR1_MAJOR_SHIFT		(4)
 #define SIUL2_MIDR1_MAJOR_MASK		(0xF << SIUL2_MIDR1_MAJOR_SHIFT)
 
+#define TREERUNNER_GENERATION_2_MAJOR	1
+
 #if defined(CONFIG_S32V234)
 #include "siul-s32v234.h"
 #elif defined(CONFIG_S32_GEN1)

@@ -733,6 +733,104 @@ __weak void setup_iomux_dcu(void)
 
 #endif
 
+#ifdef CONFIG_DCU_QOS_FIX
+
+/* SRC_GPR8 bit fields */
+#define SRC_GPR8_2D_ACE_QOS_OFFSET				0
+#define MIN_DCU_QOS_PRIORITY					0xD
+
+int board_dcu_qos(void)
+{
+	/*
+	 * SRC_GPR8.2D_ACE_QOS was introduced in TR2.0 and is used to set
+	 * the minimum QOS value for DCU DMA master. Depending on the pixel
+	 * output rate of the display, the real time requirements of the 2D-ACE
+	 * have to be ensured to avoid underruns of its local buffers. This
+	 * requires that other masters of the device interconnect should receive
+	 * a lower QoS than programmed by SRC_GPR8.
+	 */
+	if (get_siul2_midr1_major() == TREERUNNER_GENERATION_2_MAJOR) {
+		struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+		writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
+		       &src_regs->gpr8);
+	}
+
+	/* m_fastdma1_ib */
+	writel(0x0, 0x40012380);
+	writel(0x0, 0x40012384);
+
+	/* m_gpu0 */
+	writel(0x0, 0x40012480);
+	writel(0x0, 0x40012484);
+
+	/* m_h264dec */
+	writel(0x0, 0x40012580);
+	writel(0x0, 0x40012584);
+
+	/* m_gpu1 */
+	writel(0x0, 0x40012680);
+	writel(0x0, 0x40012684);
+
+	/* m_cores_cci1_ib */
+	writel(0x0, 0x40012780);
+	writel(0x0, 0x40012784);
+
+	/* m_apex0_dma */
+	writel(0x0, 0x40012880);
+	writel(0x0, 0x40012884);
+
+	/* m_apex0_blkdm a */
+	writel(0x0, 0x40012980);
+	writel(0x0, 0x40012984);
+
+	/* m_apex1_dma */
+	writel(0x0, 0x40012A80);
+	writel(0x0, 0x40012A84);
+
+	/* m_apex1_blkdma */
+	writel(0x0, 0x40012B80);
+	writel(0x0, 0x40012B84);
+
+	/* m_pcie */
+	writel(0x0, 0x40012C80);
+	writel(0x0, 0x40012C84);
+
+	/* m_enet0 */
+	writel(0x0, 0x40012D80);
+	writel(0x0, 0x40012D84);
+
+	/* m_enet1 */
+	writel(0x0, 0x40012E80);
+	writel(0x0, 0x40012E84);
+
+	/* m_cores_cci0 */
+	writel(0x0, 0x40012F80);
+	writel(0x0, 0x40012F84);
+
+	/* m_axbs */
+	writel(0x0, 0x40013080);
+	writel(0x0, 0x40013084);
+
+	/* m_pdi0 */
+	writel(0x0, 0x40013180);
+	writel(0x0, 0x40013184);
+
+	/* m_pdi1 */
+	writel(0x0, 0x40013280);
+	writel(0x0, 0x40013284);
+
+	/* m_axbs_ram */
+	writel(0x0, 0x40013380);
+	writel(0x0, 0x40013384);
+
+	/* m_fastdma0 */
+	writel(0x0, 0x40013480);
+	writel(0x0, 0x40013484);
+
+	return 0;
+}
+#endif
+
 __weak void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */
