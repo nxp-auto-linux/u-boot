@@ -90,7 +90,8 @@ void fsl_s32_wake_seconday_core(int prtn, int core)
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
 
 	/* Wait until hardware process to enable core is completed. */
-	while (readl(MC_ME_PRTN_N_CORE_M_PUPD(prtn, core)))
+	while (readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, core)) !=
+	       MC_ME_PRTN_N_CORE_M_PCONF_CCE)
 		;
 }
 
@@ -107,6 +108,14 @@ int fsl_s32_wake_seconday_cores(void)
 	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
 	flush_dcache_range((unsigned long)boot_loc,
 			   (unsigned long)boot_loc + *boot_page_size);
+
+	/* Enable partition clock */
+	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(MC_ME_CORES_PRTN));
+	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PUPD(MC_ME_CORES_PRTN));
+
+	/* Write valid key sequence to trigger the update. */
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
 
 	/* Cluster 0, core 0 is already enabled by BootROM.
 	 * We should enable core 1 from partion 0 and
