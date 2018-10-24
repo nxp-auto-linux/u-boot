@@ -24,6 +24,15 @@
 #define MC_ME_MODE_STAT			((MC_ME_BASE_ADDR) + 0x0000000C)
 #define MC_ME_MODE_STAT_PREVMODE	(0x1 << 0)
 
+/* MC_ME partition definitions */
+#define MC_ME_PRTN_N(n)			(MC_ME_BASE_ADDR + 0x100 + (n) * 0x200)
+#define MC_ME_PRTN_N_PCONF(n)		(MC_ME_PRTN_N(n))
+#define MC_ME_PRTN_N_PUPD(n)		(MC_ME_PRTN_N(n) + 0x4)
+#define MC_ME_PRTN_N_STAT(n)		(MC_ME_PRTN_N(n) + 0x8)
+
+/* MC_ME_PRTN_N_* register fields */
+#define MC_ME_PRTN_N_PCE		(1 << 0)
+#define MC_ME_PRTN_N_OSSE		(1 << 2)
 
 /* MC_ME partition 1 m M definitions. */
 #define MC_ME_PRTN_N_CORE_M(n, m)	(MC_ME_BASE_ADDR + 0x140 + \
@@ -37,6 +46,8 @@
 /* MC_ME_PRTN_N_CORE_M_* registers fields. */
 #define MC_ME_PRTN_N_CORE_M_PCONF_CCE		(1 << 0)
 #define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		(1 << 0)
+
+#define MC_ME_CORES_PRTN		1
 
 #endif
 
