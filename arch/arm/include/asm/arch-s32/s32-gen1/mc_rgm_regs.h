@@ -14,10 +14,10 @@
 #define RGM_FES				(MC_RGM_BASE_ADDR + 0x8)
 #define RGM_FES_EXT			(0x00000001)
 
-#define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x30 + (per) * 0x8)
-#define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x130 + (per) * 0x8)
+#define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x40 + (per) * 0x8)
+#define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x140 + (per) * 0x8)
 
-#define RGM_CORES_RESET_GROUP		3
+#define RGM_CORES_RESET_GROUP		1
 
 #endif /* __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__ */
 
