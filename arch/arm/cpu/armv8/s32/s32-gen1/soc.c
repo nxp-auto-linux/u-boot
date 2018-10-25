@@ -24,7 +24,7 @@ u32 cpu_mask(void)
 	/* Bit 0 corresponds to cluster reset and is 0 if any
 	 * of the other bits 1-4 are 0.
 	 */
-	return (~(readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)))) >> 1;
+	return ((~(readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)))) >> 1) & 0xf;
 }
 
 /*
