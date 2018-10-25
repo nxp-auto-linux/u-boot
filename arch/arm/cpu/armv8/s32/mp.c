@@ -34,7 +34,7 @@ phys_addr_t determine_mp_bootpg(void)
 }
 
 #ifdef CONFIG_S32V234
-int fsl_s32_wake_seconday_cores(void)
+int fsl_s32_wake_secondary_cores(void)
 {
 	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
 	size_t *boot_page_size = &(__secondary_boot_page_size);
@@ -95,7 +95,7 @@ void fsl_s32_wake_seconday_core(int prtn, int core)
 		;
 }
 
-int fsl_s32_wake_seconday_cores(void)
+int fsl_s32_wake_secondary_cores(void)
 {
 	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
 	size_t *boot_page_size = &(__secondary_boot_page_size);
