@@ -97,4 +97,5 @@
 	EXPORT_FUNC(gic_register_handler, int, gic_register_handler, int,
 		    void (*handler)(struct pt_regs *, unsigned int),
 		    int, const char *)
+	EXPORT_FUNC(gic_deregister_handler, int, gic_deregister_handler, int)
 #endif
