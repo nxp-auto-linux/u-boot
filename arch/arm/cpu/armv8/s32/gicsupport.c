@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * (C) Copyright 2016
+ * Copyright 2016,2018 NXP
  * Heinz Wrobel <Heinz.Wrobel@nxp.com>
  *
  * Basic GIC support to permit dealing with interrupt handlers in ARMv8.
@@ -134,6 +134,28 @@ int gic_register_handler(int irq, void (*handler)(struct pt_regs *pt_regs, unsig
 				gic_set_type(irq, type);
 				gic_unmask_irq(irq);
 			}
+			break;
+		}
+	}
+
+	return i >= ENTRIES(inthandlers) ? 0 : 1;
+}
+
+int gic_deregister_handler(int irq)
+{
+	int i;
+
+	if (fullinitdone)
+		gic_mask_irq(irq);
+
+	for (i = 0; i < ENTRIES(inthandlers); i++) {
+		if (inthandlers[i].irq == irq) {
+			inthandlers[i].handler = NULL;
+			inthandlers[i].name = NULL;
+			inthandlers[i].type = 0;
+
+			/* Done last to avoid race condition */
+			inthandlers[i].irq = -1;
 			break;
 		}
 	}

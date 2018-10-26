@@ -19,6 +19,7 @@ struct spi_slave;
 #if defined(CONFIG_GICSUPPORT)
 int gic_register_handler(int, void (*handler)(struct pt_regs *, unsigned int),
 			 int type, const char *name);
+int gic_deregister_handler(int irq);
 #endif
 unsigned long get_version(void);
 int  getc(void);
