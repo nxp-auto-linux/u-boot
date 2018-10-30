@@ -113,9 +113,6 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 	/* set UART bit to allow writing other bits */
 	__raw_writel(UARTCR_UART, &base->uartcr);
 
-	/* provide data bits, parity, stop bit, etc */
-	serial_setbrg();
-
 #ifdef VIRTUAL_PLATFORM
 	/* Set preset timeout register value. Otherwise, print is very slow. */
 	__raw_writel(0xf, &base->uartpto);
@@ -125,6 +122,9 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 	__raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
 		     | UARTCR_WL0 | UARTCR_UART | UARTCR_RFBM | UARTCR_TFBM,
 		     &base->uartcr);
+
+	/* provide data bits, parity, stop bit, etc */
+	serial_setbrg();
 
 	ctrl = __raw_readl(&base->lincr1);
 	ctrl &= ~LINCR1_INIT;
