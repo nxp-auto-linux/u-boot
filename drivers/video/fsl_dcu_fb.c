@@ -369,7 +369,7 @@ void *video_hw_init(void)
 			      options + 8, fsl_dcu_mode_db) < 0)
 		return NULL;
 
-	ctfb.frameAdrs = (unsigned int)info.screen_base;
+	ctfb.frameAdrs = (unsigned int)(uintptr_t)info.screen_base;
 	ctfb.plnSizeX = ctfb.winSizeX;
 	ctfb.plnSizeY = ctfb.winSizeY;
 
