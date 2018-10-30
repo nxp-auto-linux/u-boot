@@ -2081,7 +2081,7 @@ static int video_init(void)
 	if (pGD == NULL)
 		return -1;
 
-	video_fb_address = (void *) VIDEO_FB_ADRS;
+	video_fb_address = (void *)(uintptr_t)VIDEO_FB_ADRS;
 #ifdef CONFIG_VIDEO_HW_CURSOR
 	video_init_hw_cursor(VIDEO_FONT_WIDTH, VIDEO_FONT_HEIGHT);
 #endif
