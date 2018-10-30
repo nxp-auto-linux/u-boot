@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
+ * (C) Copyright 2018 NXP
  * (C) Copyright 2009 Ilya Yanok, Emcraft Systems Ltd <yanok@emcraft.com>
  * (C) Copyright 2008,2009 Eric Jarrige <eric.jarrige@armadeus.org>
  * (C) Copyright 2008 Armadeus Systems nc
@@ -1060,8 +1061,8 @@ static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 	struct fec_priv *fec;
 #ifndef CONFIG_TARGET_MPXS32V234
 	unsigned char ethaddr[6];
-#endif
 	char mac[16];
+#endif
 	uint32_t start;
 	int ret = 0;
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * FSL DCU Framebuffer driver
  */
@@ -266,7 +266,8 @@ static int layer_ctrldesc_init(int index, u32 pixel_format)
 		    DCU_CTRLDESCLN_2_POSY(0) |
 		    DCU_CTRLDESCLN_2_POSX(0));
 
-	dcu_write32(&regs->ctrldescl[index][2], (unsigned int)info.screen_base);
+	dcu_write32(&regs->ctrldescl[index][2],
+		    (unsigned int)(uintptr_t)info.screen_base);
 
 	switch (pixel_format) {
 	case 16:

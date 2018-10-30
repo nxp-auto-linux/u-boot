@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
+ * (C) Copyright 2018 NXP
  * (C) Copyright 2002 ELTEC Elektronik AG
  * Frank Gottschling <fgottschling@eltec.de>
  */
@@ -2019,7 +2020,7 @@ static int cfg_video_init(void)
 	if (pGD == NULL)
 		return -1;
 
-	video_fb_address = (void *) VIDEO_FB_ADRS;
+	video_fb_address = (void *)(uintptr_t)VIDEO_FB_ADRS;
 
 	cfb_do_flush_cache = cfb_fb_is_in_dram() && dcache_status();
 
