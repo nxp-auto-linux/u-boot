@@ -1009,7 +1009,9 @@ int board_dcu_qos(void)
 	 */
 	if (get_siul2_midr1_major() == TREERUNNER_GENERATION_2_MAJOR) {
 		struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
-		writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
+		u32 val = readl(&src_regs->gpr8);
+
+		writel(val | MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
 		       &src_regs->gpr8);
 	}
 
