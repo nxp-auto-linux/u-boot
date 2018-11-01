@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * (C) Copyright 2018 NXP
+ * (C) Copyright 2018-2019 NXP
  */
 
 #include <asm/io.h>
@@ -220,7 +220,7 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
 }
 
-void setup_fxosc(void)
+static void setup_fxosc(void)
 {
 	/* According to "20.4 Initialization information" from
 	 * S32S247RM_Rev1D.pdf, "Once FXOSC is turned ON, DO NOT change the
