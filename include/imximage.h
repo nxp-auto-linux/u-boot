@@ -203,7 +203,9 @@ struct flash_header_v3 {
 struct imx_header_v3 {
 	struct flash_header_v3 fhdr;
 	boot_data_t boot_data;
-	dcd_v2_t dcd_table;
+
+	/* BootROM assumes that the DCD table address is 8-byte aligned */
+	dcd_v2_t dcd_table __attribute__((aligned(8)));
 };
 
 /* The header must be aligned to 4k on MX53 for NAND boot */
