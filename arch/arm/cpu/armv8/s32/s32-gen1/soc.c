@@ -116,19 +116,19 @@ static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
 	return freq  < 0 ? 0 : freq;
 }
 
-static u32 get_sel(u8 mux)
+static u32 get_sel(u64 cgm, u8 mux)
 {
 	u32 css_sel;
 
-	css_sel = readl(CGM_MUXn_CSS(MC_CGM0_BASE_ADDR, mux));
+	css_sel = readl(CGM_MUXn_CSS(cgm, mux));
 	return MC_CGM_MUXn_CSS_SELSTAT(css_sel);
 }
 
-static u32 get_div(u8 mux)
+static u32 get_div(u64 cgm, u8 mux)
 {
 	u32 div, dc;
 
-	dc = readl(CGM_MUXn_DCm(MC_CGM0_BASE_ADDR, mux, 0));
+	dc = readl(CGM_MUXn_DCm(cgm, mux, 0));
 	/* If div is enabled. */
 	if (dc & MC_CGM_MUXn_DCm_DE) {
 		div = (dc & MC_CGM_MUXn_DCm_DIV_MASK) >>
@@ -141,13 +141,12 @@ static u32 get_div(u8 mux)
 	return div;
 }
 
-
 static u32 get_uart_clk(void)
 {
 	u32 div, css_sel, freq = 0;
 
-	css_sel = get_sel(8);
-	div = get_div(8);
+	css_sel = get_sel(MC_CGM0_BASE_ADDR, 8);
+	div = get_div(MC_CGM0_BASE_ADDR, 8);
 
 	switch (css_sel) {
 	case MC_CGM_MUXn_CSC_SEL_FIRC:
@@ -172,8 +171,8 @@ static u32 get_usdhc_clk(void)
 	u32 div, css_sel;
 	u32 freq = 0;
 
-	css_sel = get_sel(14);
-	div = get_div(14);
+	css_sel = get_sel(MC_CGM0_BASE_ADDR, 14);
+	div = get_div(MC_CGM0_BASE_ADDR, 14);
 
 	switch (css_sel) {
 	case MC_CGM_MUXn_CSC_SEL_FIRC:
@@ -195,15 +194,15 @@ static u32 get_xbar_clk(void)
 	u32 div, css_sel;
 	u32 freq = 0;
 
-	css_sel = get_sel(0);
-	div = get_div(0);
+	css_sel = get_sel(MC_CGM0_BASE_ADDR, 0);
+	div = get_div(MC_CGM0_BASE_ADDR, 0);
 
 	switch (css_sel) {
 	case MC_CGM_MUXn_CSC_SEL_FIRC:
 		freq = FIRC_CLK_FREQ;
 		break;
 	case MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 10);
+		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 8);
 		break;
 	default:
 		printf("unsupported system clock select\n");
@@ -217,8 +216,8 @@ static u32 get_dspi_clk(void)
 {
 	u32 div, css_sel, freq = 0;
 
-	css_sel = get_sel(16);
-	div = get_div(16);
+	css_sel = get_sel(MC_CGM0_BASE_ADDR, 16);
+	div = get_div(MC_CGM0_BASE_ADDR, 16);
 
 	switch (css_sel) {
 	case MC_CGM_MUXn_CSC_SEL_FIRC:
@@ -239,8 +238,8 @@ static u32 get_qspi_clk(void)
 {
 	u32 div, css_sel, freq = 0;
 
-	css_sel = get_sel(12);
-	div = get_div(12);
+	css_sel = get_sel(MC_CGM0_BASE_ADDR, 12);
+	div = get_div(MC_CGM0_BASE_ADDR, 12);
 
 	switch (css_sel) {
 	case MC_CGM_MUXn_CSC_SEL_FIRC:
@@ -248,6 +247,28 @@ static u32 get_qspi_clk(void)
 		break;
 	case MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1:
 		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 8);
+		break;
+	default:
+		printf("unsupported system clock select\n");
+		freq = 0;
+	}
+
+	return freq/div;
+}
+
+static u32 get_ddr_clk(void)
+{
+	u32 div, css_sel, freq = 0;
+
+	css_sel = get_sel(MC_CGM5_BASE_ADDR, 0);
+	div = get_div(MC_CGM5_BASE_ADDR, 0);
+
+	switch (css_sel) {
+	case MC_CGM_MUXn_CSC_SEL_FIRC:
+		freq = FIRC_CLK_FREQ;
+		break;
+	case MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0:
+		freq = decode_pll(DDR_PLL, XOSC_CLK_FREQ, 0);
 		break;
 	default:
 		printf("unsupported system clock select\n");
@@ -271,6 +292,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return get_dspi_clk();
 	case MXC_XBAR_CLK:
 		return get_xbar_clk();
+	case MXC_DDR_CLK:
+		return get_ddr_clk();
 	default:
 		break;
 	}
@@ -293,6 +316,8 @@ int do_s32_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	       mxc_get_clock(MXC_QSPI_CLK) / 1000000);
 	printf("XBAR clock:     %5d MHz\n",
 	       mxc_get_clock(MXC_XBAR_CLK) / 1000000);
+	printf("DDR  clock:     %5d MHz\n",
+	       mxc_get_clock(MXC_DDR_CLK) / 1000000);
 
 	return 0;
 }
