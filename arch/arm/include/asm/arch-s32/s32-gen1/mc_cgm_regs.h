@@ -280,14 +280,6 @@
 #define ACCEL_PLL_PLLDV_MFI		(60)
 #define ACCEL_PLL_PLLDV_MFN		(0)
 
-#define AURORA_PLL_PHI0_FREQ		(5000000000)
-#define AURORA_PLL_PHI_Nr		(1)
-#define AURORA_PLL_DFS_Nr		(0)
-#define AURORA_PLL_PLLDV_RDIV		(1)
-#define AURORA_PLL_PLLDV_MFI		(125)
-#define AURORA_PLL_PLLDV_MFN		(0)
-
-
 /* Clock source mapping on MC_CGM clock selectors. */
 /* Clock source / Clock selector index */
 #define MC_CGM_MUXn_CSC_SEL_FIRC			0
