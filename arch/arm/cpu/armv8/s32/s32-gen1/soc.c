@@ -103,7 +103,7 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
  *   the selected output is a DFS if supported or error
  * - > PHI_MAXNUMBER + DFS_MAXNUMBER - error
  */
-/* Implemented for ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL, AURORA_PLL. */
+/* Implemented for ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL. */
 static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
 		u32 selected_output)
 {

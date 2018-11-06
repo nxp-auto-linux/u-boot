@@ -40,7 +40,6 @@ enum pll_type {
 	PERIPH_PLL,
 	ACCEL_PLL,
 	DDR_PLL,
-	AURORA_PLL,
 };
 #endif
 

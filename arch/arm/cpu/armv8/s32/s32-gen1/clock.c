@@ -12,7 +12,7 @@
 
 /*
  * Select the clock reference for required pll.
- * pll - ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL, AURORA_PLL.
+ * pll - ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL.
  * refclk_freq - input referece clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
  */
 static int select_pll_source_clk(enum pll_type pll, u32 refclk_freq)
@@ -38,7 +38,7 @@ static int select_pll_source_clk(enum pll_type pll, u32 refclk_freq)
 
 /*
  * Program the pll according to the input parameters.
- * pll - ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL, AURORA_PLL.
+ * pll - ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL.
  * refclk_freq - input reference clock frequency (FXOSC - 40 MHZ, FIRC - 48 MHZ)
  * phi_nr - number of PHIn
  * freq - array of PHY frequencies
@@ -286,8 +286,6 @@ void clock_init(void)
 	u64 accel_phi[ACCEL_PLL_PHI_Nr] = {
 				ACCEL_PLL_PHI0_FREQ, ACCEL_PLL_PHI1_FREQ
 				};
-	u64 aurora_phi[AURORA_PLL_PHI_Nr] = { AURORA_PLL_PHI0_FREQ };
-
 	setup_fxosc();
 
 	program_pll(
@@ -316,13 +314,6 @@ void clock_init(void)
 				DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI_Nr, ddr_phi,
 				DDR_PLL_DFS_Nr, NULL, DDR_PLL_PLLDV_RDIV,
 				DDR_PLL_PLLDV_MFI, DDR_PLL_PLLDV_MFN
-				);
-
-	program_pll(
-				AURORA_PLL, XOSC_CLK_FREQ, AURORA_PLL_PHI_Nr,
-				aurora_phi, AURORA_PLL_DFS_Nr, NULL,
-				AURORA_PLL_PLLDV_RDIV, AURORA_PLL_PLLDV_MFI,
-				AURORA_PLL_PLLDV_MFN
 				);
 
 	setup_mux_clocks();
