@@ -494,11 +494,17 @@ unsigned long flash_init(){
 	return flash_info[0].size;
 }
 
-int write_buff(flash_info_t* info,uchar* data,
-	ulong flash_addr ,ulong bytes){
-
+int flash_write(char *data, ulong flash_addr, ulong bytes)
+{
 	quadspi_program_hyp((unsigned int)flash_addr, (uintptr_t)data, (unsigned int)bytes);
 	return 0;
 }
+
+/* The flash_perror() function is only called with return codes from
+ * flash_write(). Since we have a custom implementation for the later
+ * which always returns 0, there is nothing to be done in flash_perror().
+ */
+
+void flash_perror(int rc) {}
 
 #endif
