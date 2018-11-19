@@ -1,6 +1,6 @@
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2018 NXP
  *
  * FSL DCU Framebuffer driver
  *

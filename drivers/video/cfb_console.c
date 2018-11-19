@@ -1,4 +1,5 @@
 /*
+ * (C) Copyright 2018 NXP
  * (C) Copyright 2002 ELTEC Elektronik AG
  * Frank Gottschling <fgottschling@eltec.de>
  *
