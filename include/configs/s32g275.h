@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2018 NXP
+ * (C) Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -14,5 +14,9 @@
 #define CONFIG_S32G275
 
 #include <configs/s32-gen1.h>
+
+#ifndef CONFIG_PRAM
+#define CONFIG_PRAM	2048	/* 2MB */
+#endif
 
 #endif
