@@ -218,8 +218,10 @@ int board_init(void)
 	 * Enable HDMI output
 	 */
 
-	i2c_set_bus_num(2);
-	i2c_reg_write(0x3f, 0x8, 0x35);
+	i2c_set_bus_num(CONFIG_SYS_HDMI_BUS_NUM);
+	i2c_reg_write(CONFIG_SYS_I2C_HDMI_ADDR, CONFIG_SYS_HDMI_REG_CTL_1_MODE,
+		TFP410P_CTL_1_MODE_VEN | TFP410P_CTL_1_MODE_HEN |
+		TFP410P_CTL_1_MODE_BSEL | TFP410P_CTL_1_MODE_PD);
 
 	return 0;
 }

@@ -28,6 +28,20 @@
 /* Config DCU */
 #define CONFIG_FSL_DCU_FB
 
+/* HDMI TFP410P configuration */
+#define CONFIG_SYS_HDMI_BUS_NUM		2
+#define CONFIG_SYS_I2C_HDMI_ADDR	0x3F
+#define CONFIG_SYS_HDMI_REG_CTL_1_MODE	0x8
+
+#define TFP410P_CTL_1_MODE_RSVD		(1 << 7)
+#define TFP410P_CTL_1_MODE_TDIS		(1 << 6)
+#define TFP410P_CTL_1_MODE_VEN		(1 << 5)
+#define TFP410P_CTL_1_MODE_HEN		(1 << 4)
+#define TFP410P_CTL_1_MODE_DSEL		(1 << 3)
+#define TFP410P_CTL_1_MODE_BSEL		(1 << 2)
+#define TFP410P_CTL_1_MODE_EDGE		(1 << 1)
+#define TFP410P_CTL_1_MODE_PD		(1 << 0)
+
 /*
  * RTC configuration
  */
