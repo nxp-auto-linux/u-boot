@@ -14,6 +14,10 @@ choice
 	help
 	  S32 Target Board Selection
 
+config TARGET_S32V234CCPB
+	bool "Support s32v234ccpb"
+	select S32V234CCPB
+
 config TARGET_S32V234EVB
 	bool "Support s32v234evb"
 	select SYS_FSL_ERRATUM_ESDHC111

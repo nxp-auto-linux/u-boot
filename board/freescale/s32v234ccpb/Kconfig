@@ -1,0 +1,38 @@
+if TARGET_S32V234CCPB
+
+config SYS_BOARD
+	string
+	default "s32v234ccpb"
+
+config SYS_CONFIG_NAME
+	string
+	default "s32v234ccpb"
+
+# S32V234CCPB rev. A board with DDR3 has 4x512 MB DDR chips
+# DDR0(1024MB) and DDR1(1024MB).
+# S32V234CCPB rev. D board with LPDDR2 has 2x256 MB DDR chips
+# DDR0(256MB) and DDR1(256MB).
+# U-boot uses only one DDR slot for the boards which don't have
+# the DDR slots mapped as contiguous memory, otherwise uses
+# both DDR slots.
+
+config SYS_DDR_SIZE
+	hex
+	default 0x80000000 if S32_DDR3
+	default 0x10000000 if S32_LPDDR2
+
+config PHY_RGMII_DIRECT_CONNECTED
+	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
+	default n
+	help
+	  Adds the platform "fixed" MDIO Bus to cover the boards that
+	  use PHYs that are not connected to the real MDIO bus.
+
+config S32V234_FAST_BOOT
+	bool "Configure DCD and RUNMODE for a fast-boot efused board"
+	default n
+	help
+	  Configure DCD and RUNMODE for a board that has been efused such that
+	  OCOTP_CFG6:[19]FAST_BOOT_ENABLE = 0 and OCOTP_CFG6:[18]NO_PLL = 1.
+
+endif
