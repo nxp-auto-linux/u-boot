@@ -2,6 +2,7 @@ if TARGET_S32V234EVB ||		\
    TARGET_S32V234FVB ||		\
    TARGET_S32V234PCIE ||	\
    TARGET_S32V234TMDP ||	\
+   TARGET_S32V234CCPB ||	\
    TARGET_S32V344 ||		\
    TARGET_S32G275 ||		\
    TARGET_S32R45X
@@ -13,6 +14,8 @@ source "board/freescale/s32v234fvb/Kconfig"
 source "board/freescale/s32v234pcie/Kconfig"
 
 source "board/freescale/s32v234tmdp/Kconfig"
+
+source "board/freescale/s32v234ccpb/Kconfig"
 
 source "board/freescale/s32-gen1/Kconfig"
 

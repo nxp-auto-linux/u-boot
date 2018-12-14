@@ -1,0 +1,6 @@
+S32V234 Common Chassis Platform Board X-S32GRV-PLAT using the X-S32V234TPROC board as processor board.
+M:	-
+S:	Maintained
+F:	board/freescale/s32v234ccpb/
+F:	include/configs/s32v234ccpb.h
+F:	configs/s32v234ccpb_defconfig
