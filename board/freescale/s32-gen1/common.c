@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -51,13 +51,6 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
-void setup_xrdc(void)
-{
-	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_16);
-	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_16);
-	writel(XRDC_VALID, XRDC_MRGD_W3_16);
-}
-
 int board_early_init_f(void)
 {
 	mscm_init();
@@ -70,7 +63,6 @@ int board_early_init_f(void)
 #ifdef CONFIG_FSL_DSPI
 	setup_iomux_dspi();
 #endif
-	setup_xrdc();
 	return 0;
 }
 
