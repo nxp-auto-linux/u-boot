@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2018 NXP
+ * (C) Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -101,10 +101,17 @@
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 
+#if defined(CONFIG_S32G275) && defined(CONFIG_RUN_AT_EL3)
+/* In secure boot scenarios such as on S32G275, the Trusted Firmware runs at
+ * EL3, while U-Boot runs at EL2. This produces errors while U-Boot attempts to
+ * configure the secure GIC registers. As a result, GICv3 initialization on S32G
+ * is done by the Trusted Firmware - or we keep running U-Boot at EL3.
+ */
 #define CONFIG_GICV3
-#define GIC_BASE		0x50800000
-#define GICD_BASE		GIC_BASE
-#define GICR_BASE		(GIC_BASE + 0x80000)
+#define GIC_BASE	0x50800000
+#define GICD_BASE	GIC_BASE
+#define GICR_BASE	(GIC_BASE + 0x80000)
+#endif
 
 #ifdef VIRTUAL_PLATFORM
 #ifdef CONFIG_SYS_FSL_ERRATUM_A008585

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2014 Freescale Semiconductor
- * (C) Copyright 2017-2018 NXP
+ * (C) Copyright 2017-2019 NXP
  *
  * Extracted from armv8/start.S
  */
@@ -113,7 +113,9 @@ ENTRY(lowlevel_init)
 
 	mov	x29, lr			/* Save LR */
 
+#if defined(CONFIG_GICV2) || defined(CONFIG_GICV3)
 	branch_if_slave x0, 1f
+#endif
 
 watchdog_cortexm_disable:
 	/* disable SWT4 watchdog*/
@@ -163,10 +165,12 @@ start_slave_cores:
 #endif
 #endif
 
+#if defined(CONFIG_GICV2) || defined(CONFIG_GICV3)
 	mrs	x0, S3_1_c15_c2_1
 	orr	x0, x0, #(1 << 6)
 	msr	S3_1_c15_c2_1, x0
 	isb
+#endif
 	branch_if_master x0, x1, 2f
 
 	/*

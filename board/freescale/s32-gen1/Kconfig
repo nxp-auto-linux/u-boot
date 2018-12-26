@@ -24,4 +24,26 @@ config PHY_RGMII_DIRECT_CONNECTED
 	  Adds the platform "fixed" MDIO Bus to cover the boards that
 	  use PHYs that are not connected to the real MDIO bus.
 
+if TARGET_S32G275
+choice
+	prompt "Select U-Boot's execution level"
+	default RUN_AT_EL3
+	help
+	  In secure boot scenarios, there would be a Trusted Firmware running at
+	  EL3 just before U-Boot, while the latter runs at EL2. Running at EL2
+	  prevents U-Boot from configuring certain registers, in particular
+	  secure GICv3 registers.
+	  While the secure boot feature and the Trusted Firmware are still in
+	  development, this choice will enable the U-Boot and firmware developer
+	  switch between EL3 and EL2 execution levels. The default is EL3, to
+	  allow for backward compatibility with existing, stable configurations.
+
+	config RUN_AT_EL3
+		bool "U-Boot runs at EL3 (no TF-A)"
+
+	config RUN_AT_EL2
+		bool "U-Boot runs at EL2 (with TF-A)"
+endchoice
+endif
+
 endif
