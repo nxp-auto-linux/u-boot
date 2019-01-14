@@ -72,12 +72,12 @@ static void setup_iomux_uart(void)
 static void setup_iomux_i2c(void)
 {
 	/* I2C0 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA, SIUL2_MSCRn(99));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA, SIUL2_IMCRn(269));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15, SIUL2_MSCRn(99));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15, SIUL2_IMCRn(269));
 
 	/* I2C0 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK, SIUL2_MSCRn(100));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK, SIUL2_IMCRn(268));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_AE15, SIUL2_MSCRn(100));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15, SIUL2_IMCRn(268));
 
 	/* I2C1 - Serial Data Input */
 	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA, SIUL2_MSCRn(101));
