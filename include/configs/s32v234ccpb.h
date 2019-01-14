@@ -28,8 +28,8 @@
 
 /* HDMI configs */
 #define CONFIG_FSL_DCU_SII9022A
-#define CONFIG_SYS_I2C_MXC_I2C2         /* enable I2C bus 2 */
-#define CONFIG_SYS_I2C_DVI_BUS_NUM      1
+#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
+#define CONFIG_SYS_I2C_DVI_BUS_NUM      0
 #define CONFIG_SYS_I2C_DVI_ADDR         0x39
 
 /* Ethernet config */
