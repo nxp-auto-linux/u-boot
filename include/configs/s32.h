@@ -76,7 +76,9 @@
 #define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
 #define CPU_RELEASE_ADDR		SECONDARY_CPU_BOOT_PAGE
 #define CONFIG_FSL_SMP_RELEASE_ALL
+#ifndef CONFIG_XEN_SUPPORT
 #define CONFIG_ARMV8_SWITCH_TO_EL1
+#endif
 
 /* SMP Spin Table Definitions */
 #define CONFIG_MP
@@ -268,9 +270,28 @@
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 #endif
 
+#ifdef CONFIG_XEN_SUPPORT
+#define XEN_EXTRA_ENV_SETTINGS \
+	"dom0_addr=0xbe800000\0" \
+	"xen_bootargs=dom0_mem=384M\0" \
+	"loadxenfiles=fatload mmc 0 ${fdt_addr} ${fdt_file}; " \
+		"fatload mmc 0 ${loadaddr} xen; " \
+		"fatload mmc 0 ${dom0_addr} Image \0" \
+	"updatexenfdt=fdt addr ${fdt_addr} 0x40000; fdt resize; fdt chosen; " \
+		"fdt set /chosen \\\\\#address-cells <1>; " \
+		"fdt set /chosen \\\\\#size-cells <1>; " \
+		"fdt mknod /chosen module@0; " \
+		"fdt set /chosen/module@0 compatible \"xen,linux-zimage\" \"xen,multiboot-module\"; " \
+		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
+		"fdt set /chosen/module@0 xen_bootargs \"console=ttyLF0,115200 root=/dev/mmcblk0p2 rootwait rw\" \0" \
+	"bootcmd=run loadxenfiles; run updatexenfdt; booti ${loadaddr} - ${fdt_addr}\0"
+#else
+#define XEN_EXTRA_ENV_SETTINGS  ""
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
-	CONFIG_DCU_EXTRA_ENV_SETTINGS	\
+	CONFIG_DCU_EXTRA_ENV_SETTINGS \
 	"ipaddr=10.0.0.100\0" \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
@@ -383,7 +404,8 @@
 		"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
 		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
-		"${fdt_addr};\0"
+		"${fdt_addr};\0" \
+	XEN_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
 #ifdef VIRTUAL_PLATFORM

@@ -37,4 +37,13 @@ config S32V234_FAST_BOOT
 	  Configure DCD and RUNMODE for a board that has been efused such that
 	  OCOTP_CFG6:[19]FAST_BOOT_ENABLE = 0 and OCOTP_CFG6:[18]NO_PLL = 1.
 
+config XEN_SUPPORT
+	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
+	default n
+	help
+	  Skip the enablement of CONFIG_ARMV8_SWITCH_TO_EL1 and set Xen Image,
+	  fdts load addresses and u-boot environment variables in order for u-boot
+	  to directly load the Xen Image which will use a given Kernel Image as 
+	  Dom0.
+
 endif
