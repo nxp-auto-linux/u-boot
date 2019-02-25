@@ -101,7 +101,7 @@
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 
-#if defined(CONFIG_S32G275) && defined(CONFIG_RUN_AT_EL3)
+#if defined(CONFIG_RUN_AT_EL3)
 /* In secure boot scenarios such as on S32G275, the Trusted Firmware runs at
  * EL3, while U-Boot runs at EL2. This produces errors while U-Boot attempts to
  * configure the secure GIC registers. As a result, GICv3 initialization on S32G

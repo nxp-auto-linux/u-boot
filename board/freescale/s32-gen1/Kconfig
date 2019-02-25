@@ -24,7 +24,6 @@ config PHY_RGMII_DIRECT_CONNECTED
 	  Adds the platform "fixed" MDIO Bus to cover the boards that
 	  use PHYs that are not connected to the real MDIO bus.
 
-if TARGET_S32G275
 choice
 	prompt "Select U-Boot's execution level"
 	default RUN_AT_EL3
@@ -44,6 +43,5 @@ choice
 	config RUN_AT_EL2
 		bool "U-Boot runs at EL2 (with TF-A)"
 endchoice
-endif
 
 endif
