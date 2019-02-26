@@ -273,7 +273,7 @@
 #ifdef CONFIG_XEN_SUPPORT
 #define XEN_EXTRA_ENV_SETTINGS \
 	"dom0_addr=0xbe800000\0" \
-	"xen_bootargs=dom0_mem=384M\0" \
+	"bootargs=dom0_mem=384M\0" \
 	"loadxenfiles=fatload mmc 0 ${fdt_addr} ${fdt_file}; " \
 		"fatload mmc 0 ${loadaddr} xen; " \
 		"fatload mmc 0 ${dom0_addr} Image \0" \
@@ -283,7 +283,7 @@
 		"fdt mknod /chosen module@0; " \
 		"fdt set /chosen/module@0 compatible \"xen,linux-zimage\" \"xen,multiboot-module\"; " \
 		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
-		"fdt set /chosen/module@0 xen_bootargs \"console=ttyLF0,115200 root=/dev/mmcblk0p2 rootwait rw\" \0" \
+		"fdt set /chosen/module@0 bootargs \"console=ttyLF0,115200 root=/dev/mmcblk0p2 rootwait rw\" \0" \
 	"bootcmd=run loadxenfiles; run updatexenfdt; booti ${loadaddr} - ${fdt_addr}\0"
 #else
 #define XEN_EXTRA_ENV_SETTINGS  ""
