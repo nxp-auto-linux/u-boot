@@ -159,7 +159,7 @@ else
 ifeq ($(CONFIG_OF_SEPARATE),y)
 ALL-y += u-boot-dtb.imx
 else
-ifneq ($(CONFIG_S32V234),)
+ifneq ($(CONFIG_ARCH_S32),)
 ALL-y += u-boot.s32
 else
 ALL-y += u-boot.imx
