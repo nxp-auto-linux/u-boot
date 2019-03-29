@@ -117,6 +117,7 @@ ENTRY(lowlevel_init)
 	branch_if_slave x0, 1f
 #endif
 
+#if defined(CONFIG_S32V234)
 watchdog_cortexm_disable:
 	/* disable SWT4 watchdog*/
 	ldr x0, =SWT_SR(SWT4_BASE_ADDR)
@@ -131,6 +132,7 @@ watchdog_cortexm_disable:
 	ldr x1, [x0]
 	orr x1, x1, 0x40
 	str x1, [x0]
+#endif
 
 sram_init:
 	/* Size of the SRAM memory to init */
