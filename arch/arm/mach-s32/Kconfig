@@ -1,2 +1,11 @@
 config IMX_CONFIG
 	string
+
+config MKIMAGE_T
+	string
+	default "imximage" if TARGET_S32V234EVB
+	default "imximage" if TARGET_S32V234PCIE
+	default "imximage" if TARGET_MPXS32V234
+	default "imximage" if TARGET_S32V234CCPB
+	default "s32g2xximage" if TARGET_S32G275
+	depends on ARCH_S32
