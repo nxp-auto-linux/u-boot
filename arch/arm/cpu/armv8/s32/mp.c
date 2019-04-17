@@ -66,7 +66,7 @@ int fsl_s32_wake_secondary_cores(void)
 	return 0;
 }
 #elif defined(CONFIG_S32_GEN1)
-void fsl_s32_wake_seconday_core(int prtn, int core)
+static void fsl_s32_wake_secondary_core(int prtn, int core)
 {
 	/* Set core clock enable bit. */
 	writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE,
@@ -120,9 +120,9 @@ int fsl_s32_wake_secondary_cores(void)
 	 * The procedure can be found in
 	 * "MC_ME application core enable", S32R RM Rev1 DraftC.
 	 */
-	fsl_s32_wake_seconday_core(0, 1);
-	fsl_s32_wake_seconday_core(1, 0);
-	fsl_s32_wake_seconday_core(1, 1);
+	fsl_s32_wake_secondary_core(0, 1);
+	fsl_s32_wake_secondary_core(1, 0);
+	fsl_s32_wake_secondary_core(1, 1);
 
 	/* Releasing reset of A53 cores(1,2,3) using peripherals
 	 * reset in RGM.
