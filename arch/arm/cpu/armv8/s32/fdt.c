@@ -53,6 +53,7 @@ void ft_fixup_cpu(void *blob)
 }
 #endif
 
+#ifdef CONFIG_S32V234
 void ft_fixup_soc_revision(void *blob)
 {
 	const u32 socmask_info = readl(SIUL2_MIDR1) &
@@ -87,6 +88,7 @@ void ft_fixup_clock_frequency(void *blob)
 		printf("WARNING: Could not fix up the S32V234 device-tree clock frequency, err=%s\n",
 			fdt_strerror(ret));
 }
+#endif
 
 /* Fixup the DDR node in order to reserve "pram" amount of KB at the top of
  * available physical memory. This would typically be used by TF-A as a secure
