@@ -24,6 +24,15 @@ config PHY_RGMII_DIRECT_CONNECTED
 	  Adds the platform "fixed" MDIO Bus to cover the boards that
 	  use PHYs that are not connected to the real MDIO bus.
 
+config XEN_SUPPORT
+	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
+	default n
+	help
+	  Skip the enablement of CONFIG_ARMV8_SWITCH_TO_EL1 and set Xen Image,
+	  fdts load addresses and u-boot environment variables in order for u-boot
+	  to directly load the Xen Image which will use a given Kernel Image as
+	  Dom0.
+
 choice
 	prompt "Select U-Boot's execution level"
 	default RUN_AT_EL3

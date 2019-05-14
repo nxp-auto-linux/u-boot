@@ -276,12 +276,17 @@
 #endif
 
 #ifdef CONFIG_XEN_SUPPORT
+#ifdef VIRTUAL_PLATFORM
+#define XEN_LOAD_FILES "setenv filesize a00000; "
+#else
+#define XEN_LOAD_FILES \
+	"fatload mmc 0 ${fdt_addr} ${fdt_file}; " \
+	"fatload mmc 0 ${loadaddr} xen; " \
+	"fatload mmc 0 ${dom0_addr} Image; "
+#endif
 #define XEN_EXTRA_ENV_SETTINGS \
 	"dom0_addr=0xbe800000\0" \
 	"bootargs=dom0_mem=384M\0" \
-	"loadxenfiles=fatload mmc 0 ${fdt_addr} ${fdt_file}; " \
-		"fatload mmc 0 ${loadaddr} xen; " \
-		"fatload mmc 0 ${dom0_addr} Image \0" \
 	"updatexenfdt=fdt addr ${fdt_addr} 0x40000; fdt resize; fdt chosen; " \
 		"fdt set /chosen \\\\\#address-cells <1>; " \
 		"fdt set /chosen \\\\\#size-cells <1>; " \
@@ -289,7 +294,8 @@
 		"fdt set /chosen/module@0 compatible \"xen,linux-zimage\" \"xen,multiboot-module\"; " \
 		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
 		"fdt set /chosen/module@0 bootargs \"console=ttyLF0,115200 root=/dev/mmcblk0p2 rootwait rw\" \0" \
-	"bootcmd=run loadxenfiles; run updatexenfdt; booti ${loadaddr} - ${fdt_addr}\0"
+	"bootcmd=" XEN_LOAD_FILES "run updatexenfdt; " \
+		"booti ${loadaddr} - ${fdt_addr}\0"
 #else
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
