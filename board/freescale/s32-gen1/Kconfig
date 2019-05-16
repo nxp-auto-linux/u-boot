@@ -15,7 +15,7 @@ config SYS_CONFIG_NAME
 
 config SYS_DDR_SIZE
 	hex
-	default 0x10000000 if S32_LPDDR4
+	default 0x80000000 if S32_LPDDR4
 
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
