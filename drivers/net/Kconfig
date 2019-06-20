@@ -79,16 +79,33 @@ config BCM_SF2_ETH_GMAC
 	  by the BCM_SF2_ETH driver.
 	  Say Y to any bcmcygnus based platforms.
 
-config DWC_ETH_QOS
-	bool "Synopsys DWC Ethernet QOS device support"
+menuconfig DWC_ETH_QOS_DEVICES
+	bool "Synopsys Designware EQoS device support"
+	depends on NET && DM_ETH
+	help
+	  You must select Y to enable support for Synopsys Designware
+	  Ethernet QOS (Quality Of Service) IP block on various
+	  vendor SoCs.
+
+	  If unsure, say N
+
+if DWC_ETH_QOS_DEVICES
+
+config DWC_ETH_QOS_TEGRA
+	bool "Synopsys DWC EQoS device support on NVIDIA Tegra"
 	depends on DM_ETH
 	select PHYLIB
 	help
-	  This driver supports the Synopsys Designware Ethernet QOS (Quality
-	  Of Service) IP block. The IP supports many options for bus type,
-	  clocking/reset structure, and feature list. This driver currently
-	  supports the specific configuration used in NVIDIA's Tegra186 chip,
-	  but should be extensible to other combinations quite easily.
+	  This driver supports NVIDIA's Tegra186 chip.
+
+config DWC_ETH_QOS_STM32
+	bool "Synopsys DWC EQoS device support on STM"
+	depends on DM_ETH
+	select PHYLIB
+	help
+	  This driver supports ST-Micro stm32mp157c.
+
+endif # DWC_ETH_QOS_DEVICES
 
 config E1000
 	bool "Intel PRO/1000 Gigabit Ethernet support"
