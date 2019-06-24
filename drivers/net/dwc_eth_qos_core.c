@@ -38,6 +38,8 @@
 #endif
 #include <asm/io.h>
 
+#include <dm/platform_data/dwc_eth_qos_dm.h>
+
 #include "dwc_eth_qos.h"
 
 /*
@@ -929,21 +931,50 @@ __weak int board_interface_eth_init(int interface_type, bool eth_clk_sel_reg,
 	return 0;
 }
 
+#if CONFIG_IS_ENABLED(OF_CONTROL)
+static int eqos_ofdata_to_platdata(struct udevice *dev)
+{
+	struct eqos_pdata *pdata = dev_get_platdata(dev);
+
+	if (!pdata) {
+		pr_err("no platform data");
+		return -ENOMEM;
+	}
+
+	pdata->eth.iobase = devfdt_get_addr(dev);
+	if (pdata->eth.iobase == FDT_ADDR_T_NONE) {
+		pr_err("devfdt_get_addr() failed");
+		return -ENODEV;
+	}
+
+	pdata->config = (void *)dev_get_driver_data(dev);
+
+	return 0;
+}
+#endif /* OF_CONTROL */
+
 static int eqos_probe(struct udevice *dev)
 {
+	struct eqos_pdata *pdata = dev_get_platdata(dev);
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	int ret;
 
 	debug("%s(dev=%p):\n", __func__, dev);
 
 	eqos->dev = dev;
-	eqos->config = (void *)dev_get_driver_data(dev);
 
-	eqos->regs = devfdt_get_addr(dev);
-	if (eqos->regs == FDT_ADDR_T_NONE) {
-		pr_err("devfdt_get_addr() failed");
+	eqos->config = pdata->config;
+	if (!eqos->config) {
+		pr_err("invalid config!\n");
 		return -ENODEV;
 	}
+
+	eqos->regs = pdata->eth.iobase;
+	if (!eqos->regs) {
+		pr_err("iobase not retrieved");
+		return -ENODEV;
+	}
+
 	eqos->mac_regs = (void *)(eqos->regs + EQOS_MAC_REGS_BASE);
 	eqos->mtl_regs = (void *)(eqos->regs + EQOS_MTL_REGS_BASE);
 	eqos->dma_regs = (void *)(eqos->regs + EQOS_DMA_REGS_BASE);
@@ -1017,39 +1048,13 @@ static const struct eth_ops eqos_ops = {
 	.write_hwaddr = eqos_write_hwaddr,
 };
 
-/* Supported implementations */
-
-#if CONFIG_IS_ENABLED(OF_CONTROL)
-static const struct udevice_id eqos_ids[] = {
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_TEGRA)
-	{
-		.compatible = "nvidia,tegra186-eqos",
-		.data = (ulong)&eqos_tegra186_config
-	},
-#endif /* CONFIG_DWC_ETH_QOS_TEGRA */
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_STM32)
-	{
-		.compatible = "snps,dwmac-4.20a",
-		.data = (ulong)&eqos_stm32_config
-	},
-#endif /* CONFIG_DWC_ETH_QOS_STM32 */
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-	{
-		.compatible = "fsl,s32cc-dwmac",
-		.data = (ulong)&eqos_s32cc_config
-	},
-#endif /* CONFIG_DWC_ETH_QOS_S32CC */
-
-	{ }
-};
-#endif /* CONFIG_IS_ENABLED(OF_CONTROL) */
-
 /* Driver declaration */
 
 U_BOOT_DRIVER(eth_eqos) = {
 	.name = "eth_eqos",
 	.id = UCLASS_ETH,
 	.of_match = of_match_ptr(eqos_ids),
+	.ofdata_to_platdata = of_match_ptr(eqos_ofdata_to_platdata),
 	.probe = eqos_probe,
 	.remove = eqos_remove,
 	.ops = &eqos_ops,

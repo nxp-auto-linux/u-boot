@@ -277,16 +277,4 @@ void eqos_flush_desc_generic(void *desc);
 void eqos_inval_buffer_generic(void *buf, size_t size);
 void eqos_flush_buffer_generic(void *buf, size_t size);
 
-/* Vendor specific driver configs */
-
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_TEGRA)
-extern struct eqos_config eqos_tegra186_config;
-#endif
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_STM32)
-extern struct eqos_config eqos_stm32_config;
-#endif
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-extern struct eqos_config eqos_s32cc_config;
-#endif
-
 #endif /* DWC_ETH_QOS_H */
