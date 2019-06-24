@@ -246,13 +246,17 @@ struct eqos_priv {
 	struct eqos_dma_regs *dma_regs;
 	struct eqos_tegra186_regs *tegra186_regs;
 	struct reset_ctl reset_ctl;
+#if CONFIG_IS_ENABLED(DM_GPIO)
 	struct gpio_desc phy_reset_gpio;
+#endif
+#if CONFIG_IS_ENABLED(CLK)
 	struct clk clk_master_bus;
 	struct clk clk_rx;
 	struct clk clk_ptp_ref;
 	struct clk clk_tx;
 	struct clk clk_ck;
 	struct clk clk_slave_bus;
+#endif
 	struct mii_dev *mii;
 	struct phy_device *phy;
 	void *descs;
@@ -281,6 +285,8 @@ extern struct eqos_config eqos_tegra186_config;
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_STM32)
 extern struct eqos_config eqos_stm32_config;
 #endif
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+extern struct eqos_config eqos_s32cc_config;
 #endif
 
 #endif /* DWC_ETH_QOS_H */

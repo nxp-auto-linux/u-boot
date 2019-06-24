@@ -33,7 +33,9 @@
 #include <phy.h>
 #include <reset.h>
 #include <wait_bit.h>
+#if CONFIG_IS_ENABLED(DM_GPIO)
 #include <asm/gpio.h>
+#endif
 #include <asm/io.h>
 
 #include "dwc_eth_qos.h"
@@ -1017,6 +1019,7 @@ static const struct eth_ops eqos_ops = {
 
 /* Supported implementations */
 
+#if CONFIG_IS_ENABLED(OF_CONTROL)
 static const struct udevice_id eqos_ids[] = {
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_TEGRA)
 	{
@@ -1030,16 +1033,23 @@ static const struct udevice_id eqos_ids[] = {
 		.data = (ulong)&eqos_stm32_config
 	},
 #endif /* CONFIG_DWC_ETH_QOS_STM32 */
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	{
+		.compatible = "fsl,s32cc-dwmac",
+		.data = (ulong)&eqos_s32cc_config
+	},
+#endif /* CONFIG_DWC_ETH_QOS_S32CC */
 
 	{ }
 };
+#endif /* CONFIG_IS_ENABLED(OF_CONTROL) */
 
 /* Driver declaration */
 
 U_BOOT_DRIVER(eth_eqos) = {
 	.name = "eth_eqos",
 	.id = UCLASS_ETH,
-	.of_match = eqos_ids,
+	.of_match = of_match_ptr(eqos_ids),
 	.probe = eqos_probe,
 	.remove = eqos_remove,
 	.ops = &eqos_ops,

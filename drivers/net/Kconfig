@@ -105,6 +105,13 @@ config DWC_ETH_QOS_STM32
 	help
 	  This driver supports ST-Micro stm32mp157c.
 
+config DWC_ETH_QOS_S32CC
+	bool "Synopsys DWC EQoS device support on NXP S32"
+	depends on DM_ETH
+	select PHYLIB
+	help
+	  This driver supports NXP S32G/R/V automotive chips.
+
 endif # DWC_ETH_QOS_DEVICES
 
 config E1000

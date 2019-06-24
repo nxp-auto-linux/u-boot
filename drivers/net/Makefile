@@ -70,5 +70,6 @@ obj-$(CONFIG_VSC9953) += vsc9953.o
 obj-$(CONFIG_PIC32_ETH) += pic32_mdio.o pic32_eth.o
 obj-$(CONFIG_DWC_ETH_QOS_TEGRA) += dwc_eth_qos_core.o dwc_eth_qos_tegra.o
 obj-$(CONFIG_DWC_ETH_QOS_STM32) += dwc_eth_qos_core.o dwc_eth_qos_stm32.o
+obj-$(CONFIG_DWC_ETH_QOS_S32CC) += dwc_eth_qos_core.o dwc_eth_qos_s32cc.o
 obj-$(CONFIG_FSL_PFE) += pfe_eth/
 obj-$(CONFIG_SNI_AVE) += sni_ave.o
