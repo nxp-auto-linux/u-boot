@@ -976,6 +976,7 @@ static int eqos_probe(struct udevice *dev)
 	}
 
 	eqos->mac_regs = (void *)(eqos->regs + EQOS_MAC_REGS_BASE);
+	eqos->mmc_regs = (void *)(eqos->regs + EQOS_MMC_REGS_BASE);
 	eqos->mtl_regs = (void *)(eqos->regs + EQOS_MTL_REGS_BASE);
 	eqos->dma_regs = (void *)(eqos->regs + EQOS_DMA_REGS_BASE);
 	eqos->tegra186_regs = (void *)(eqos->regs + EQOS_TEGRA186_REGS_BASE);
@@ -1047,6 +1048,128 @@ static const struct eth_ops eqos_ops = {
 	.free_pkt = eqos_free_pkt,
 	.write_hwaddr = eqos_write_hwaddr,
 };
+
+/* command interface */
+
+static const char *get_state(u32 enabled)
+{
+	if (enabled)
+		return "enabled";
+
+	return "disabled";
+}
+
+static const char *get_state_safety(u32 mode)
+{
+	const char * const safety_names[] = {"NONE", "ECC_ONLY", "NPPE", "PPE"};
+
+	if (mode > (ARRAY_SIZE(safety_names) - 1))
+		return "<invalid>";
+
+	return safety_names[mode];
+}
+
+static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
+		       int argc, char * const argv[])
+{
+	unsigned char *mac = NULL;
+	struct eqos_pdata *pdata;
+	struct udevice *dev;
+	struct eqos_priv *eqos;
+	int ret;
+	u32 version;
+	u32 reg;
+
+	ret = uclass_get_device_by_name(UCLASS_ETH, "eth_eqos", &dev);
+	if (ret) {
+		printf("eqos: ERROR: device eth_eqos was not found\n");
+		return 1;
+	}
+
+	pdata = dev_get_platdata(dev);
+	if (!pdata) {
+		pr_err("eqos: ERROR: no platform data");
+		return 1;
+	}
+
+	eqos = dev_get_priv(dev);
+	if (!eqos) {
+		pr_err("eqos: ERROR: no driver data");
+		return 1;
+	}
+
+	mac = &pdata->eth.enetaddr[0];
+	if (!mac) {
+		printf("eqos: ERROR: No ethernet address\n");
+		return 1;
+	}
+
+	/* process command */
+	if (!strcmp(argv[1], "info")) {
+		u32 val;
+
+		reg = readl(&eqos->mac_regs->version);
+		version = reg & 0xff;
+
+		printf("IP version %x.%x ulevel %x\n", (reg >> 4) & 0xf,
+		       reg & 0xf, (reg >> 8) & 0xff);
+
+		/* features */
+		printf("features:\n");
+		reg = readl(&eqos->mac_regs->hw_feature0);
+		val = (reg >> EQOS_MAC_HW_FEATURE0_MMCSEL_SHIFT) & 0x1;
+		printf("  RMON module        : %s\n", get_state(val));
+		val = (reg >> EQOS_MAC_HW_FEATURE0_GMIISEL_SHIFT) & 0x1;
+		printf("  1 Gbps support     : %s\n", get_state(val));
+		val = (reg >> EQOS_MAC_HW_FEATURE0_MIISEL_SHIFT) & 0x1;
+		printf("  10/100 Mbps support: %s\n", get_state(val));
+		val = (reg >> EQOS_MAC_HW_FEATURE0_HDSEL_SHIFT) & 0x1;
+		printf("  Half-duplex support: %s\n", get_state(val));
+
+		if (version >= EQOS_IP_VERSION_5_0) {
+			reg = readl(&eqos->mac_regs->hw_feature3);
+			val = (reg >> EQOS_MAC_HW_FEATURE3_ASP_SHIFT) &
+				   EQOS_MAC_HW_FEATURE3_ASP_MASK;
+			printf("  Auto safety support: %s\n",
+			       get_state_safety(val));
+		}
+		return 0;
+	} else if (!strcmp(argv[1], "ethaddr")) {
+		printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+		return 0;
+	} else if (!strcmp(argv[1], "counters")) {
+		u32 reg2;
+
+		reg = readl(&eqos->mmc_regs->tx_packet_count_good_bad);
+		reg2 = readl(&eqos->mmc_regs->rx_packets_count_good_bad);
+		printf("RX packets: %u TX packets: %u\n", reg2, reg);
+		return 0;
+	} else if (!strcmp(argv[1], "reg")) {
+		u32 offs = 0;
+
+		if (argc != 3)
+			return CMD_RET_USAGE;
+
+		offs = simple_strtoul(argv[2], NULL, 16);
+		reg = readl(((void *)(eqos->regs + EQOS_MAC_REGS_BASE)) + offs);
+		printf("reg 0x%x at 0x%p: %08x\n", offs,
+		       ((void *)(eqos->regs + EQOS_MAC_REGS_BASE)) + offs,
+		       reg);
+		return 0;
+	}
+
+	return CMD_RET_USAGE;
+}
+
+U_BOOT_CMD(
+	   eqos, 7, 0, do_eqos_cmd,
+	   "Synopsys Ethernet DW EQoS controller info",
+	   /* */"info         - important hw info\n"
+	   "eqos ethaddr      - ethernet address\n"
+	   "eqos counters     - live i/o info\n"
+	   "eqos reg <offset> - read register"
+);
 
 /* Driver declaration */
 

@@ -8,6 +8,8 @@
 #ifndef DWC_ETH_QOS_H
 #define DWC_ETH_QOS_H
 
+#define EQOS_IP_VERSION_5_0 0x50
+
 /* Core registers */
 
 #define EQOS_MAC_REGS_BASE 0x000
@@ -25,11 +27,14 @@ struct eqos_mac_regs {
 	u32 rxq_ctrl2;				/* 0x0a8 */
 	u32 unused_0ac[(0x0dc - 0x0ac) / 4];	/* 0x0ac */
 	u32 us_tic_counter;			/* 0x0dc */
-	u32 unused_0e0[(0x11c - 0x0e0) / 4];	/* 0x0e0 */
+	u32 unused_0e0[(0x110 - 0x0e0) / 4];	/* 0x0e0 */
+	u32 version;				/* 0x110 */
+	u32 unused_114[(0x11c - 0x114) / 4];	/* 0x114 */
 	u32 hw_feature0;				/* 0x11c */
 	u32 hw_feature1;				/* 0x120 */
 	u32 hw_feature2;				/* 0x124 */
-	u32 unused_128[(0x200 - 0x128) / 4];	/* 0x128 */
+	u32 hw_feature3;				/* 0x128 */
+	u32 unused_12c[(0x200 - 0x12c) / 4];	/* 0x12c */
 	u32 mdio_address;				/* 0x200 */
 	u32 mdio_data;				/* 0x204 */
 	u32 unused_208[(0x300 - 0x208) / 4];	/* 0x208 */
@@ -67,10 +72,18 @@ struct eqos_mac_regs {
 #define EQOS_MAC_RXQ_CTRL2_PSRQ0_SHIFT			0
 #define EQOS_MAC_RXQ_CTRL2_PSRQ0_MASK			0xff
 
+#define EQOS_MAC_HW_FEATURE0_MMCSEL_SHIFT		8
+#define EQOS_MAC_HW_FEATURE0_HDSEL_SHIFT		2
+#define EQOS_MAC_HW_FEATURE0_GMIISEL_SHIFT		1
+#define EQOS_MAC_HW_FEATURE0_MIISEL_SHIFT		0
+
 #define EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT		6
 #define EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK		0x1f
 #define EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT		0
 #define EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK		0x1f
+
+#define EQOS_MAC_HW_FEATURE3_ASP_SHIFT			28
+#define EQOS_MAC_HW_FEATURE3_ASP_MASK			0x3
 
 #define EQOS_MAC_MDIO_ADDRESS_PA_SHIFT			21
 #define EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT			16
@@ -85,6 +98,16 @@ struct eqos_mac_regs {
 #define EQOS_MAC_MDIO_ADDRESS_GB			BIT(0)
 
 #define EQOS_MAC_MDIO_DATA_GD_MASK			0xffff
+
+#define EQOS_MMC_REGS_BASE				0x0700
+struct eqos_mmc_regs {
+	u32 control;				/* 0x700 */
+	u32 unused_704[(0x714 - 0x704) / 4];	/* 0x704 */
+	u32 tx_octet_good_bad;			/* 0x714 */
+	u32 tx_packet_count_good_bad;		/* 0x718 */
+	u32 unused_71c[(0x780 - 0x71c) / 4];	/* 0x71c */
+	u32 rx_packets_count_good_bad;		/* 0x780 */
+};
 
 #define EQOS_MTL_REGS_BASE 0xd00
 struct eqos_mtl_regs {
@@ -242,6 +265,7 @@ struct eqos_priv {
 	const struct eqos_config *config;
 	fdt_addr_t regs;
 	struct eqos_mac_regs *mac_regs;
+	struct eqos_mmc_regs *mmc_regs;
 	struct eqos_mtl_regs *mtl_regs;
 	struct eqos_dma_regs *dma_regs;
 	struct eqos_tegra186_regs *tegra186_regs;
