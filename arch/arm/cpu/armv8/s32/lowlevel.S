@@ -36,7 +36,7 @@ ENTRY(dma_mem_clr)
 
 	/* DMA_TCDn_SADDR */
 	ldr x9, =DMA_TCD_N_SADDR(DMA_CHANNEL_1)
-	ldr w10, =initvar
+	ldr x10, =initvar
 	/* Point DMA source address to initialization data block */
 	str w10, [x9]
 
