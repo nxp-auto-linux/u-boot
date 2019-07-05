@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2018 NXP
+ * (C) Copyright 2018-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -14,7 +14,7 @@
 #define __CONFIG_H
 
 
-#define	FDT_FILE s32v234-ccpb.dtb
+#define	FDT_FILE fsl-s32v234-ccpb.dtb
 
 #define CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
 

@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2017 NXP
+ * (C) Copyright 2016-2017,2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -16,7 +16,7 @@
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32v234evb_2016q4.h */
 
-#define	FDT_FILE s32v234-evb.dtb
+#define	FDT_FILE fsl-s32v234-evb.dtb
 
 /* #define CONFIG_CMD_PCI */
 

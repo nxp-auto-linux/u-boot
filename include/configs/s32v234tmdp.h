@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2018 NXP
+ * Copyright 2018-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -36,7 +36,7 @@
  */
 #define CONFIG_BCM_SPEED	SPEED_100
 
-#define FDT_FILE		s32v234-tmdp.dtb
+#define FDT_FILE		fsl-s32v234-tmdp.dtb
 
 
 #define CONFIG_SYS_INIT_SP_OFFSET \

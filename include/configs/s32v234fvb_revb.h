@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2018 NXP
+ * Copyright 2018-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -35,7 +35,7 @@
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
 
-#define FDT_FILE		s32v234-fvb.dtb
+#define FDT_FILE		fsl-s32v234-fvb.dtb
 
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
