@@ -15,34 +15,139 @@
 #include "mp.h"
 
 #ifdef CONFIG_MP
+
+#if CONFIG_RUN_AT_EL2
+/* U-Boot at EL2, presumably because of a Trusted Firmware running at EL3 */
+static void ft_fixup_enable_method(void *blob, int off, u64 __always_unused reg)
+{
+	const char *prop = fdt_getprop(blob, off, "enable-method", NULL);
+	bool ovr = (prop == NULL);
+
+	if (prop && strcmp(prop, "psci")) {
+		printf("enable-method found: %s, overwriting with psci\n",
+		       prop);
+		ovr = true;
+	}
+	if (ovr)
+		fdt_setprop_string(blob, off, "enable-method", "psci");
+}
+#else
+/* Standalone U-Boot, no TF-A; default cpu enable method will be spin-table */
+static void ft_fixup_enable_method(void *blob, int off, u64 reg)
+{
+	__maybe_unused u64 spin_tbl_addr = (u64)get_spin_tbl_addr();
+	u64 val = spin_tbl_addr;
+	const char *prop_method;
+	const u64 *prop_addr;
+	bool ovr;
+
+#ifndef CONFIG_FSL_SMP_RELEASE_ALL
+	val += id_to_core(fdt64_to_cpu(reg)) * SIZE_BOOT_ENTRY;
+#endif
+	val = cpu_to_fdt64(val);
+
+	prop_method = fdt_getprop(blob, off, "enable-method", NULL);
+	ovr = (prop_method == NULL);
+	if (prop_method && strcmp(prop_method, "spin-table")) {
+		printf("enable-method found: %s, overwriting with spin-table\n",
+		       prop_method);
+		ovr = true;
+	}
+	if (ovr)
+		fdt_setprop_string(blob, off, "enable-method", "spin-table");
+
+	prop_addr = fdt_getprop(blob, off, "cpu-release-addr", NULL);
+	ovr = (prop_addr == NULL);
+	if (prop_addr && (*prop_addr != val)) {
+		ovr = true;
+		printf("cpu-release-addr found: %llx, "
+		       "overwriting with %llx\n",
+		       fdt64_to_cpu(*prop_addr), fdt64_to_cpu(val));
+	}
+	if (ovr)
+		fdt_setprop(blob, off, "cpu-release-addr", &val, sizeof(val));
+}
+#endif
+
+#if CONFIG_RUN_AT_EL2
+/* Add a "psci" node at the top-level of the devide-tree,
+ * if it does not already exist
+ */
+static void ft_fixup_psci_node(void *blob)
+{
+	int off;
+	const char *prop;
+	const char *exp_compatible = "arm,psci-1.0";
+	const char *exp_method = "smc";
+	bool ovr;
+
+	off = fdt_path_offset(blob, "/psci");
+	if (off >= 0) {
+		/* Node exists, but we'll want to check it has
+		 * the correct properties
+		 */
+		goto set_psci_prop;
+	}
+	if (off != -FDT_ERR_NOTFOUND)
+		goto fdt_error;
+
+	/* psci node did not exist, create one now */
+	off = fdt_add_subnode(blob, 0, "psci");
+	if (off < 0)
+		goto fdt_error;
+
+set_psci_prop:
+	prop = fdt_getprop(blob, off, "compatible", NULL);
+	ovr = (prop == NULL);
+	if (prop && strcmp(prop, exp_compatible)) {
+		printf("psci/compatible prop found: %s; replacing with %s\n",
+		       prop, exp_compatible);
+		ovr = true;
+	}
+	if (ovr)
+		fdt_setprop_string(blob, off, "compatible", exp_compatible);
+
+	prop = fdt_getprop(blob, off, "method", NULL);
+	ovr = (prop == NULL);
+	if (prop && strcmp(prop, exp_method)) {
+		printf("psci/method prop found: %s; replacing with %s\n",
+		       prop, exp_method);
+		ovr = true;
+	}
+	if (ovr)
+		fdt_setprop_string(blob, off, "method", exp_method);
+
+	return;
+
+fdt_error:
+	printf("%s: error at \"psci\" node: %s\n", __func__, fdt_strerror(off));
+}
+#endif
+
 void ft_fixup_cpu(void *blob)
 {
 	int off;
-	__maybe_unused u64 spin_tbl_addr = (u64)get_spin_tbl_addr();
 	u64 *reg;
-	u64 val;
 
 	off = fdt_node_offset_by_prop_value(blob, -1, "device_type", "cpu", 4);
 	while (off != -FDT_ERR_NOTFOUND) {
 		reg = (u64 *)fdt_getprop(blob, off, "reg", 0);
-		if (reg) {
-			val = spin_tbl_addr;
-#ifndef CONFIG_FSL_SMP_RELEASE_ALL
-			val += id_to_core(fdt64_to_cpu(*reg)) * SIZE_BOOT_ENTRY;
-#endif
-			val = cpu_to_fdt64(val);
-			fdt_setprop_string(blob, off, "enable-method",
-					   "spin-table");
-			fdt_setprop(blob, off, "cpu-release-addr",
-				    &val, sizeof(val));
-		} else {
+		if (!reg) {
 			puts("cpu NULL\n");
+			continue;
 		}
+		ft_fixup_enable_method(blob, off, *reg);
 		off = fdt_node_offset_by_prop_value(blob, off, "device_type",
 						    "cpu", 4);
 	}
+
+#if CONFIG_RUN_AT_EL2
+	/* Check if a "psci" node should be added */
+	ft_fixup_psci_node(blob);
+#endif
+
 	/*
-	 * Boot page and spin table can be reserved here if not done staticlly
+	 * Boot page and spin table can be reserved here if not done statically
 	 * in device tree.
 	 *
 	 * fdt_add_mem_rsv(blob, bootpg,
@@ -51,7 +156,7 @@ void ft_fixup_cpu(void *blob)
 	 * also be reserved.
 	 */
 }
-#endif
+#endif /* CONFIG_MP */
 
 #ifdef CONFIG_S32V234
 void ft_fixup_soc_revision(void *blob)

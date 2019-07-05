@@ -19,5 +19,7 @@
 
 #define RGM_CORES_RESET_GROUP		1
 
+#define RGM_CORE_RST(num)               (0x1 << ((num) + 1))
+
 #endif /* __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__ */
 

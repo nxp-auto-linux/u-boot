@@ -25,6 +25,11 @@
 
 #define id_to_core(x)	((x & 3) | (x >> 8))
 
+#if defined (CONFIG_S32_GEN1)
+#define S32_A53_GPR_BASE_ADDR	0x4007c400ul
+#define S32_A53_GP06_OFF	0x18
+#endif
+
 #ifndef __ASSEMBLY__
 extern u64 __spin_table[];
 extern u64 __real_cntfrq;

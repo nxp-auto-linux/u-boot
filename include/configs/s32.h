@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -220,14 +220,10 @@
 #endif
 
 #undef CONFIG_BOOTARGS
-#if defined(CONFIG_S32G275) && defined(CONFIG_RUN_AT_EL2)
-#define S32G_BOOTARGS_MAXCPUS " maxcpus=1 "
-#else
-#define S32G_BOOTARGS_MAXCPUS ""
-#endif
 #define CONFIG_BOOTARGS		\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) \
-	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL S32G_BOOTARGS_MAXCPUS
+	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL
+
 #define CONFIG_CMD_ENV
 
 #define CONFIG_HWCONFIG
