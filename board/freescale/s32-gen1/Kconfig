@@ -35,7 +35,7 @@ config XEN_SUPPORT
 
 choice
 	prompt "Select U-Boot's execution level"
-	default RUN_AT_EL3
+	default S32_RUN_AT_EL3
 	help
 	  In secure boot scenarios, there would be a Trusted Firmware running at
 	  EL3 just before U-Boot, while the latter runs at EL2. Running at EL2
@@ -46,11 +46,18 @@ choice
 	  switch between EL3 and EL2 execution levels. The default is EL3, to
 	  allow for backward compatibility with existing, stable configurations.
 
-	config RUN_AT_EL3
+	config S32_RUN_AT_EL3
 		bool "U-Boot runs at EL3 (no TF-A)"
+		help
+		  U-Boot runs at EL3 as the first component in the boot flow.
+		  This boot flow does not accommodate an ARM Trusted Firmware
+		  (TF-A) for this platform.
 
-	config RUN_AT_EL2
+	config S32_RUN_AT_EL2
 		bool "U-Boot runs at EL2 (with TF-A)"
+		help
+		  U-Boot runs at EL2 and is started by the ARM Trusted Firmware
+		  (TF-A) for this platform.
 endchoice
 
 endif
