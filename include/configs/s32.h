@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -222,7 +222,7 @@
 #undef CONFIG_BOOTARGS
 #define CONFIG_BOOTARGS		\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) \
-	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL
+	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL " earlycon"
 
 #define CONFIG_CMD_ENV
 
@@ -305,7 +305,8 @@
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs rw " \
 		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
-		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp \0" \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp " \
+		"earlycon \0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
@@ -343,7 +344,8 @@
 			"fi; "	\
 		"fi\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate} " \
-		"root=${mmcroot}\0" \
+		"root=${mmcroot} " \
+		"earlycon\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
@@ -373,8 +375,9 @@
 		"fi;\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
-	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-		"netboot=echo Booting from net ...; " \
+		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
+		"earlycon\0" \
+	"netboot=echo Booting from net ...; " \
 		"run netargs; " \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \
@@ -396,7 +399,7 @@
 			"${boot_mtd}; " \
 		"fi;\0" \
 	"flashbootargs=setenv bootargs console=${console}" \
-		CONFIG_BOOTARGS_LOGLEVEL "root=/dev/ram rw;" \
+		CONFIG_BOOTARGS_LOGLEVEL " root=/dev/ram rw earlycon;" \
 		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
