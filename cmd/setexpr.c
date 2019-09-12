@@ -162,13 +162,11 @@ static char *substitute(char *string, int *slen, int ssize,
 
 	/* move tail if needed */
 	if (olen != nlen) {
-		int tail, len;
+		size_t tail;
 
-		len = (olen > nlen) ? olen : nlen;
+		tail = strlen(p + olen) + 1;
 
-		tail = ssize - (p + len - string);
-
-		debug("## tail len %d\n", tail);
+		debug("## tail len %lu\n", tail);
 
 		memmove(p + nlen, p + olen, tail);
 	}
