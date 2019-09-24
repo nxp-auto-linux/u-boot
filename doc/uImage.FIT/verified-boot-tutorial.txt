@@ -1,0 +1,239 @@
+Step-by-step tutorial for authenticating a kernel + dtb FIT image from u-boot.
+
+NOTE: RSA key length is recommended to be at least 2048 bits.
+
+1. Clone the linux and u-boot repositories
+==========================================
+
+2. Create a folder in which to store the generated private key and certificate
+==============================================================================
+
+	mkdir keys
+
+Working directory should contain the linux, u-boot and keys folders.
+
+3. Generate RSA key pair
+========================
+
+	openssl genrsa -out keys/boot_key.key 2048
+	openssl req -batch -new -x509 -key keys/boot_key.key -out keys/boot_key.crt
+
+4. Create an its file for Linux
+===============================
+
+The its file will be used to create a FIT image, which will contain the
+kernel and dtb (optionally, the rootfs). An example its file, for signing
+kernel and dtb configurations:
+
+	/dts-v1/;
+	/ {
+		description = "kernel+dtb/fdt fit image";
+		#address-cells = <1>;
+		images {
+			kernel@1 {
+				description = "kernel image";
+				data = /incbin/("<kernel-image-name>");
+				type = "kernel";
+				arch = "arm64";
+				os = "linux";
+				compression = "none";
+				load = <0x80080000>;
+				entry = <0x80080000>;
+				kernel-version = <1>;
+				hash@1 {
+					algo = "sha1";
+				};
+			};
+			fdt@1 {
+				description = "dtb blob";
+				data = /incbin/("<dtb-name>.dtb");
+				type = "flat_dt";
+				arch = "arm64";
+				compression = "none";
+				fdt-version = <1>;
+				hash@1 {
+					algo = "sha1";
+				};
+			};
+		};
+		configurations {
+			default = "conf@1";
+			conf@1 {
+				kernel = "kernel@1";
+				fdt = "fdt@1";
+				signature@1 {
+					algo = "sha1,rsa2048";
+					key-name-hint = "boot_key";
+					sign-images = "kernel", "fdt";
+				};
+			};
+		};
+	};
+
+This its defines a configuration (kernel and dtb combination), which will be
+hashed and signed using the private key. Alternatively, the kernel image and
+dtb can be signed, by moving the signature block from the configuration to
+both the kernel image and fdt blocks, replacing the hash blocks. For an example
+of this, please see "sign-images.its".
+
+The its file should be placed in the linux folder.
+
+5. Create a dts file for u-boot
+===============================
+
+The dts file will be compiled into an external dtb for u-boot, and will
+store the key used for authentication. An example dts file:
+
+	/dts-v1/;
+	/ {
+		model = "keys";
+		compatible = "vendor,board";
+		signature {
+			key-boot_key {
+				required = "conf";
+				algo = "sha1,rsa2048";
+				key-name-hint = "boot_key";
+			};
+		};
+	};
+
+This dts can be used to sign configurations. To sign the images that are part
+of the configuration (i.e. kernel, dtb), replace "conf" with "image".
+
+The dts file should be placed in the u-boot/arch/arm/dts folder.
+
+6. Compile the dts into a dtb
+=============================
+
+Before compiling, make sure the CROSS_COMPILE environment variable is set
+correctly. There are 2 methods to use the dts/dtb file: embedded into
+the u-boot binary, or compiled separately and embedded by the user.
+
+If using the embedded option (chosen by CONFIG_OF_EMBED), from the u-boot
+folder, run the following:
+
+	make <board>_defconfig
+	make menuconfig
+
+In the menuconfig, make sure the following options are set to y:
+
+	CONFIG_OF_CONTROL=y
+	CONFIG_DM=y
+	CONFIG_FIT=y
+	CONFIG_FIT_SIGNATURE=y
+	CONFIG_OF_EMBED=y
+	CONFIG_DEFAULT_DEVICE_TREE=<dts-filename>
+
+The CONFIG_DEFAULT_DEVICE_TREE option does not need to contain the file
+extension.
+
+After saving the configuration, from the root of the u-boot folder, run:
+
+	make dtbs
+
+The dtb file will be compiled and placed next to the dts in arch/arm/dts.
+
+If compiling with the CONFIG_OF_SEPARATE option, the CONFIG_OF_SEPARATE option
+must be set, and the CONFIG_DEFAULT_DEVICE_TREE option left empty. With the
+dts file in the root of the u-boot folder, run:
+
+	dtc <dts-filename>.dts -O dtb -o <dtb-filename>.dtb
+
+7. Compile the u-boot tools
+===========================
+
+From the u-boot root folder, run:
+
+	make tools
+
+8. Compile the Linux kernel
+===========================
+
+From the linux folder:
+
+	make <board>_defconfig
+	(optionally, make menuconfig)
+	make
+
+9. Sign the kernel image and pack it into a FIT image
+=====================================================
+
+After the Linux kernel has been compiled, if compiling with CONFIG_OF_EMBED,
+from the u-boot folder, run:
+
+	tools/mkimage -f ../linux/<its-filename>.its
+		      -K arch/arm/dts/<dtb-filename>.dtb
+		      -k ../keys
+		      -r <itb-filename>.itb
+
+If compiling with CONFIG_OF_SEPARATE, and having the dts file in the root u-boot
+folder, run:
+
+	tools/mkimage -f ../linux/<its-filename>.its
+		      -K <dtb-filename>.dtb
+		      -k ../keys
+		      -r <itb-filename>.itb
+
+The output of the mkimage command should display the parts of the FIT image:
+the kernel, dtb and configuration. The kernel and dtb will have a hash value,
+while the configuration will have a signed hash, if using the configuration
+signing method. Otherwise, the kernel and fdt will have a signed hash.
+
+The options for mkimage specify:
+
+	-f	image tree source file describing the contents and structure
+	-K	public key destination; specify the dtb in which to write the
+		public key/certificate, used for authentication
+	-k	private key source; specify directory where the keys are stored;
+		private key is used for signing
+	-r	required; specify that keys are required, cannot boot if
+		signature cannot be verified
+
+10. Compile u-boot with an external dtb
+=======================================
+	
+If compiling with CONFIG_OF_EMBED, from the u-boot folder:
+
+	make EXT_DTB=arch/arm/dts/<dtb-filename>.dtb
+
+The dtb will be embedded automatically in the u-boot binary file.
+
+If compiling with the CONFIG_OF_SEPARATE option, having the dtb file in the root
+u-boot folder, run:
+
+	make EXT_DTB=<dtb-filename>.dtb
+
+The dtb will NOT be automatically embedded into the u-boot binary. Instead, it
+will be compiled and named u-boot.dtb. Afterwards, to concatenate the two, the
+user can, for instance, run:
+
+	cat u-boot.bin u-boot.dtb > u-boot.img
+
+11. Boot up your board and stop in u-boot
+=========================================
+
+Make sure that u-boot is using the bootm command to boot, not booti. Trying to boot
+using booti will display the "Bad Linux ARM64 Image magic!" error, since the header
+for the FIT image is not recognized by booti.
+
+	bootm <load-address>
+
+This will boot using the default configuration. If there are multiple
+configurations in the its/itb, and you don't want to use the default one:
+
+	bootm <load-address>#conf@<conf_number>
+
+If you want to check if the FIT image you have loaded on the board is correct,
+you can run:
+
+	iminfo <load-address>
+
+The command will check the hashes of the image, dtb, and configuration, but
+will not check if the FIT image is properly signed.
+
+References
+==========
+
+For a more in-depth look at the u-boot mechanisms for secure boot, and how
+signing is done, please read verified-boot.txt and signature.txt
+in doc/uImage.FIT.

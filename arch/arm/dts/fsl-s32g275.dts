@@ -1,0 +1,13 @@
+/dts-v1/;
+/ {
+	model = "S32xx public key";
+	compatible = "fsl,s32gen1";
+	signature {
+		key-boot_key {
+			required = "conf";
+			algo = "sha1,rsa2048";
+			key-name-hint = "boot_key";
+		};
+	};
+};
+
