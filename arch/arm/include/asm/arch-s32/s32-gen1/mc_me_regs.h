@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2018 NXP
+ * (C) Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -29,10 +29,15 @@
 #define MC_ME_PRTN_N_PCONF(n)		(MC_ME_PRTN_N(n))
 #define MC_ME_PRTN_N_PUPD(n)		(MC_ME_PRTN_N(n) + 0x4)
 #define MC_ME_PRTN_N_STAT(n)		(MC_ME_PRTN_N(n) + 0x8)
+#define MC_ME_PRTN_N_COFB0_STAT(n)	(MC_ME_PRTN_N(n) + 0x10)
+#define MC_ME_PRTN_N_COFB0_CLKEN(n)	(MC_ME_PRTN_N(n) + 0x30)
 
 /* MC_ME_PRTN_N_* register fields */
 #define MC_ME_PRTN_N_PCE		(1 << 0)
+#define MC_ME_PRTN_N_PCUD		BIT(0)
 #define MC_ME_PRTN_N_OSSE		(1 << 2)
+#define MC_ME_PRTN_N_BLOCK(n)		BIT(n)
+#define MC_ME_PRTN_N_REQ(n)		BIT(n)
 
 /* MC_ME partition 1 m M definitions. */
 #define MC_ME_PRTN_N_CORE_M(n, m)	(MC_ME_BASE_ADDR + 0x140 + \
@@ -47,7 +52,13 @@
 #define MC_ME_PRTN_N_CORE_M_PCONF_CCE		(1 << 0)
 #define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		(1 << 0)
 
-#define MC_ME_CORES_PRTN		1
+/* MC_ME partition mapping */
+#define MC_ME_CORES_PRTN	(1)
+#define MC_ME_USDHC_PRTN	(0)
+#define MC_ME_DDR_0_PRTN	(0)
+
+#define MC_ME_USDHC_REQ		(0)
+#define MC_ME_DDR_0_REQ		(1)
 
 #endif
 

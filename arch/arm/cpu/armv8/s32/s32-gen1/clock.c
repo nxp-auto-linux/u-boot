@@ -10,6 +10,19 @@
 #include <asm/arch/mc_rgm_regs.h>
 #include <asm/arch/clock.h>
 
+static void enable_partition_block(u32 partition_n, u32 block_n)
+{
+	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(partition_n));
+	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(partition_n)) | MC_ME_PRTN_N_REQ(block_n),
+	       MC_ME_PRTN_N_COFB0_CLKEN(partition_n));
+	writel(MC_ME_PRTN_N_PCUD, MC_ME_PRTN_N_PUPD(partition_n));
+	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
+
+	while (!(readl(MC_ME_PRTN_N_COFB0_STAT(partition_n)) & MC_ME_PRTN_N_BLOCK(block_n)))
+		;
+}
+
 /*
  * Select the clock reference for required pll.
  * pll - ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL.
@@ -52,8 +65,8 @@ static int select_pll_source_clk(enum pll_type pll, u32 refclk_freq)
  *)
  */
 static int program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
-		u64 freq[], u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr],
-		u32 plldv_rdiv, u32 plldv_mfi, u32 pllfd_mfn)
+		       u64 freq[], u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr],
+		       u32 plldv_rdiv, u32 plldv_mfi, u32 pllfd_mfn)
 {
 	u32 i, dfs_on = 0, fvco;
 
@@ -85,7 +98,7 @@ static int program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
 
 	writel(PLLDIG_PLLDV_RDIV_SET(plldv_rdiv) | PLLDIG_PLLDV_MFI(plldv_mfi),
 	       PLLDIG_PLLDV(pll));
-	writel(readl(PLLDIG_PLLFD(pll)) | PLLDIG_PLLFD_MFN_SET(pllfd_mfn) |
+	writel(PLLDIG_PLLFD_MFN_SET(pllfd_mfn) |
 	       PLLDIG_PLLFD_SMDEN, PLLDIG_PLLFD(pll));
 
 	/* Calculate Output Frequency Divider for required PHIn outputs. */
@@ -128,6 +141,7 @@ static int program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
 		while ((readl(DFS_PORTSR(pll)) & dfs_on) != dfs_on)
 			;
 	}
+
 	return 0;
 }
 
@@ -214,10 +228,12 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
 
-	/* setup the mux clock divider for DDR_CLK (800 MHz),
-	 */
+	/* setup the mux clock divider for DDR_CLK (800 MHz) */
 	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
 			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
+
+	mux_source_clk_config(MC_CGM1_BASE_ADDR, 0,
+			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI0);
 }
 
 static void setup_fxosc(void)
@@ -235,9 +251,10 @@ static void setup_fxosc(void)
 	if (readl(FXOSC_CTRL) & FXOSC_CTRL_OSCON)
 		return;
 
-	/* TODO Write GM_SEL value according to crystal specification. */
-	ctrl = readl(FXOSC_CTRL) | FXOSC_CTRL_COMP_EN;
+	ctrl = FXOSC_CTRL_COMP_EN;
 	ctrl &= ~FXOSC_CTRL_OSC_BYP;
+	ctrl |= FXOSC_CTRL_EOCV(0x1);
+	ctrl |= FXOSC_CTRL_GM_SEL(0x7);
 	writel(ctrl, FXOSC_CTRL);
 
 	/* Switch ON the crystal oscillator. */
@@ -287,6 +304,8 @@ void clock_init(void)
 				ACCEL_PLL_PHI0_FREQ, ACCEL_PLL_PHI1_FREQ
 				};
 	setup_fxosc();
+	enable_partition_block(MC_ME_USDHC_PRTN, MC_ME_USDHC_REQ);
+	enable_partition_block(MC_ME_DDR_0_PRTN, MC_ME_DDR_0_REQ);
 
 	program_pll(
 				ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
