@@ -430,22 +430,22 @@
 	XEN_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
-#define CONFIG_BOOTCOMMAND \
+
+#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR) || \
+	defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
+#  define CONFIG_BOOTCOMMAND \
 		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
-#else
-#if defined(CONFIG_FLASH_BOOT)
-#define CONFIG_BOOTCOMMAND \
-	   PFE_INIT_CMD "run flashboot"
+#elif defined(CONFIG_FLASH_BOOT)
+#  define CONFIG_BOOTCOMMAND \
+	PFE_INIT_CMD "run flashboot"
 #elif defined(CONFIG_SD_BOOT)
-#define CONFIG_BOOTCOMMAND \
-	   PFE_INIT_CMD "mmc dev ${mmcdev}; if mmc rescan; then " \
+#  define CONFIG_BOOTCOMMAND \
+	PFE_INIT_CMD "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadimage; then " \
 			   "run mmcboot; " \
 		   "else run netboot; " \
 		   "fi; " \
 	   "else run netboot; fi"
-#endif
 #endif
 
 /* Miscellaneous configurable options */
