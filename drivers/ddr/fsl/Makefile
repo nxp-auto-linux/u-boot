@@ -32,3 +32,4 @@ obj-$(CONFIG_SYS_FSL_DDRC_86XX_GEN2)	+= mpc86xx_ddr.o
 obj-$(CONFIG_SYS_FSL_DDRC_ARM_GEN3)	+= arm_ddr_gen3.o
 obj-$(CONFIG_SYS_FSL_DDRC_GEN4) += fsl_ddr_gen4.o
 obj-$(CONFIG_SYS_FSL_MMDC) += fsl_mmdc.o
+obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss.o

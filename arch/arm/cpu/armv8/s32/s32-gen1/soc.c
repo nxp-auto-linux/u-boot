@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * (C) Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  */
 
 #include <common.h>
@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
+#include <asm/arch/s32-gen1/ddrss.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -562,8 +563,17 @@ __weak void setup_iomux_sdhc(void)
 	writel(0x2, SIUL2_MSCRn(518));
 }
 
+
+#ifdef CONFIG_SYS_FSL_DDRSS
+extern struct ddrss_conf ddrss_conf;
+extern struct ddrss_firmware ddrss_firmware;
+#endif
+
 __weak int dram_init(void)
 {
+#ifdef CONFIG_SYS_FSL_DDRSS
+	ddrss_init(&ddrss_conf, &ddrss_firmware);
+#endif
 	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
 
 	return 0;
