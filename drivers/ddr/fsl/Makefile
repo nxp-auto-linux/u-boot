@@ -32,4 +32,9 @@ obj-$(CONFIG_SYS_FSL_DDRC_86XX_GEN2)	+= mpc86xx_ddr.o
 obj-$(CONFIG_SYS_FSL_DDRC_ARM_GEN3)	+= arm_ddr_gen3.o
 obj-$(CONFIG_SYS_FSL_DDRC_GEN4) += fsl_ddr_gen4.o
 obj-$(CONFIG_SYS_FSL_MMDC) += fsl_mmdc.o
+
+ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_emu.o
+else
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss.o
+endif

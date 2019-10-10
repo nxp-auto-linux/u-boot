@@ -80,8 +80,20 @@
 #define SWSTAT				(UMCTL2_REGS + 0x324)
 #define SW_DONE_ACK_MASK		BIT(0)
 #define ADDRMAP0			(UMCTL2_REGS + 0x200)
+#define ADDRMAP_CS_BIT0_MASK		(0x1f)
+#define ADDRMAP_CS_BIT0_OFFSET		(0)
 #define ADDRMAP6			(UMCTL2_REGS + 0x218)
+#define ADDRMAP_ROW_B12_MASK		(0xf)
+#define ADDRMAP_ROW_B12_OFFSET		(0)
+#define ADDRMAP_ROW_B13_MASK		(0xf)
+#define ADDRMAP_ROW_B13_OFFSET		(8)
+#define ADDRMAP_ROW_B14_MASK		(0xf)
+#define ADDRMAP_ROW_B14_OFFSET		(16)
+#define ADDRMAP_ROW_B15_MASK		(0xf)
+#define ADDRMAP_ROW_B15_OFFSET		(24)
 #define ADDRMAP7			(UMCTL2_REGS + 0x21c)
+#define ADDRMAP_ROW_B16_MASK		(0xf)
+#define ADDRMAP_ROW_B16_OFFSET		(0)
 
 #define UMCTL2_MP			(DDRSS_BASE_ADDR + 0x403f8)
 #define PCTRL_0				(UMCTL2_MP + 0x98)
@@ -111,7 +123,7 @@ struct ddrss_conf {
 	size_t pie_length;
 	struct regconf *message_block_1d;
 	size_t message_block_1d_length;
-#ifdef CONFIG_TARGET_TYPE_EMULATOR
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	struct regconf *skiptrain;
 	size_t skiptrain_length;
 #endif
