@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -98,6 +98,8 @@ struct linflex_fsl {
 	u32 bidr;
 	u32 bdrl;
 	u32 bdrm;
+#if !defined(CONFIG_S32_GEN1) || defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
+/* The following regs are in SIUL2_0 according to s32g manual draft M */
 	u32 ifer;
 	u32 ifmi;
 	u32 ifmr;
@@ -118,6 +120,9 @@ struct linflex_fsl {
 	u32 ifcr13;
 	u32 ifcr14;
 	u32 ifcr15;
+#endif
+#else
+	u32 reserved[3];
 #endif
 	u32 gcr;
 	u32 uartpto;

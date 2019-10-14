@@ -1,14 +1,11 @@
 /*
- * (C) Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_S32_GEN1_REGS_H__
 #define __ASM_ARCH_S32_GEN1_REGS_H__
-
-#define IRAM_BASE_ADDR		0x38000000  /* internal ram */
-#define IRAM_SIZE		0x00400000  /* 4MB */
 
 #if !defined(__ASSEMBLER__)
 #define PER_GROUP0_BASE				(0x40000000UL)
@@ -53,7 +50,10 @@
 #define MC_ME_BASE_ADDR				(PER_GROUP0_BASE + 0x0088000)
 #define PMC_BASE_ADDR				(PER_GROUP0_BASE + 0x008C000)
 #define WKPU_BASE_ADDR				(PER_GROUP0_BASE + 0x0090000)
-#define SIUL2_BASE_ADDR				(PER_GROUP0_BASE + 0x009C000)
+#define SIUL2_0_BASE_ADDR			(PER_GROUP0_BASE + 0x009C000)
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
+#define SIUL2_BASE_ADDR				SIUL2_0_BASE_ADDR
+#endif
 #define TMU_BASE_ADDR				(PER_GROUP0_BASE + 0x00A8000)
 
 /* Peripheral group 1 */
@@ -189,6 +189,7 @@
 #define PCIE_APB_BASE_ADDR			(PER_GROUP3_BASE + 0x00040000)
 
 /* Peripheral group 8 */
+#define SIUL2_1_BASE_ADDR			(PER_GROUP8_BASE + 0x00010000)
 #define MC_CGM2_BASE_ADDR			(PER_GROUP8_BASE + 0x00018000)
 
 /* MSCM interrupt router */
