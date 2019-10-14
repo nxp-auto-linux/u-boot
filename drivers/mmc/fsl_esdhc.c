@@ -24,14 +24,18 @@
 #include <asm-generic/gpio.h>
 #include <dm/pinctrl.h>
 
+#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
+#define SDHC_REDUCED_MAP
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define SDHCI_IRQ_EN_BITS		(IRQSTATEN_CC | IRQSTATEN_TC | \
-				IRQSTATEN_CINT | \
-				IRQSTATEN_CTOE | IRQSTATEN_CCE | IRQSTATEN_CEBE | \
-				IRQSTATEN_CIE | IRQSTATEN_DTOE | IRQSTATEN_DCE | \
-				IRQSTATEN_DEBE | IRQSTATEN_BRR | IRQSTATEN_BWR | \
-				IRQSTATEN_DINT)
+		IRQSTATEN_CINT | \
+		IRQSTATEN_CTOE | IRQSTATEN_CCE | IRQSTATEN_CEBE | \
+		IRQSTATEN_CIE | IRQSTATEN_DTOE | IRQSTATEN_DCE | \
+		IRQSTATEN_DEBE | IRQSTATEN_BRR | IRQSTATEN_BWR | \
+		IRQSTATEN_DINT)
 #define MAX_TUNING_LOOP 40
 
 struct fsl_esdhc {
@@ -70,6 +74,7 @@ struct fsl_esdhc {
 	uint    mmcboot;
 	uint    vendorspec2;
 	uint    tuning_ctrl;	/* on i.MX6/7/8 */
+#ifndef SDHC_REDUCED_MAP
 	char	reserved5[44];
 	uint    hostver;	/* Host controller version register */
 	char    reserved6[4];	/* reserved */
@@ -84,6 +89,7 @@ struct fsl_esdhc {
 	uint    sddirctl;	/* SD direction control register */
 	char    reserved11[712];/* reserved */
 	uint    scr;		/* eSDHC control register */
+#endif
 };
 
 struct fsl_esdhc_plat {
@@ -133,10 +139,12 @@ struct fsl_esdhc_priv {
 	int vs18_enable;
 	u32 flags;
 	u32 caps;
+#if !defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 	u32 tuning_step;
 	u32 tuning_start_tap;
 	u32 strobe_dll_delay_target;
 	u32 signal_voltage;
+#endif
 #if IS_ENABLED(CONFIG_DM_REGULATOR)
 	struct udevice *vqmmc_dev;
 	struct udevice *vmmc_dev;
@@ -261,7 +269,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 #endif
 	uint wml_value;
 
-	wml_value = data->blocksize/4;
+	wml_value = data->blocksize / 4;
 
 	if (data->flags & MMC_DATA_READ) {
 		if (wml_value > WML_RD_WML_MAX)
@@ -282,7 +290,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	} else {
 #ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
 		flush_dcache_range((ulong)data->src,
-				   (ulong)data->src+data->blocks
+				   (ulong)data->src + data->blocks
 					 *data->blocksize);
 #endif
 		if (wml_value > WML_WR_WML_MAX)
@@ -296,7 +304,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		}
 
 		esdhc_clrsetbits32(&regs->wml, WML_WR_WML_MASK,
-					wml_value << 16);
+						   wml_value << 16);
 #ifndef CONFIG_SYS_FSL_ESDHC_USE_PIO
 #ifdef CORE_64BIT_PERIPHERALS_32BIT
 		addr = virt_to_phys((void *)(data->src));
@@ -334,7 +342,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	 * So, we use
 	 * => timeout + 13 = fls(mmc->clock/2)
 	 */
-	timeout = fls(mmc->clock/2);
+	timeout = fls(mmc->clock / 2);
 	timeout -= 13;
 
 	if (timeout > 14)
@@ -344,7 +352,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		timeout = 0;
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_ESDHC_A001
-	if ((timeout == 4) || (timeout == 8) || (timeout == 12))
+	if (timeout == 4 || timeout == 8 || timeout == 12)
 		timeout++;
 #endif
 
@@ -359,10 +367,10 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 static void check_and_invalidate_dcache_range
 	(struct mmc_cmd *cmd,
 	 struct mmc_data *data) {
-	unsigned start = 0;
-	unsigned end = 0;
-	unsigned size = roundup(ARCH_DMA_MINALIGN,
-				data->blocks*data->blocksize);
+	unsigned int start = 0;
+	unsigned int end = 0;
+	unsigned int size = roundup(ARCH_DMA_MINALIGN,
+				data->blocks * data->blocksize);
 #ifdef CORE_64BIT_PERIPHERALS_32BIT
 	dma_addr_t addr;
 
@@ -372,7 +380,7 @@ static void check_and_invalidate_dcache_range
 	else
 		start = lower_32_bits(addr);
 #else
-	start = (unsigned)data->dest;
+	start = (unsigned int)data->dest;
 #endif
 	end = start + size;
 	invalidate_dcache_range(start, end);
@@ -382,8 +390,9 @@ static void check_and_invalidate_dcache_range
  * Sends a command out on the bus.  Takes the mmc pointer,
  * a command pointer, and an optional data pointer.
  */
-static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
-				 struct mmc_cmd *cmd, struct mmc_data *data)
+static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv,
+				 struct mmc *mmc, struct mmc_cmd *cmd,
+				 struct mmc_data *data)
 {
 	int	err = 0;
 	uint	xfertyp;
@@ -413,12 +422,16 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	 * Note: This is way more than 8 cycles, but 1ms seems to
 	 * resolve timing issues with some cards
 	 */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(1);
+#else
 	udelay(1000);
+#endif
 
 	/* Set up for a data transfer if we have one */
 	if (data) {
 		err = esdhc_setup_data(priv, mmc, data);
-		if(err)
+		if (err)
 			return err;
 
 		if (data->flags & MMC_DATA_READ)
@@ -468,7 +481,11 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 
 		printf("Run CMD11 1.8V switch\n");
 		/* Sleep for 5 ms - max time for card to switch to 1.8V */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(5);
+#else
 		udelay(5000);
+#endif
 	}
 
 	/* Workaround for ESDHC errata ENGcm03648 */
@@ -501,8 +518,9 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		cmd->response[1] = (cmdrsp2 << 8) | (cmdrsp1 >> 24);
 		cmd->response[2] = (cmdrsp1 << 8) | (cmdrsp0 >> 24);
 		cmd->response[3] = (cmdrsp0 << 8);
-	} else
+	} else {
 		cmd->response[0] = esdhc_read32(&regs->cmdrsp0);
+	}
 
 	/* Wait until all of the blocks are transferred */
 	if (data) {
@@ -612,7 +630,11 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 
 	esdhc_clrsetbits32(&regs->sysctl, SYSCTL_CLOCK_MASK, clk);
 
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(10);
+#else
 	udelay(10000);
+#endif
 
 #ifdef CONFIG_FSL_USDHC
 	esdhc_setbits32(&regs->vendorspec, VENDORSPEC_PEREN | VENDORSPEC_CKEN);
@@ -647,7 +669,11 @@ static void esdhc_clock_control(struct fsl_esdhc_priv *priv, bool enable)
 			break;
 		}
 		time_out--;
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		mdelay(1);
+#endif
 	}
 }
 #endif
@@ -750,7 +776,11 @@ static int esdhc_set_voltage(struct mmc *mmc)
 				return -EIO;
 			}
 			/* Wait for 5ms */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+			udelay(5);
+#else
 			mdelay(5);
+#endif
 		}
 #endif
 
@@ -863,13 +893,21 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 			 * response to any command when the card still out
 			 * put the tuning data.
 			 */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+			udelay(1);
+#else
 			mdelay(1);
+#endif
 			ret = 0;
 			break;
 		}
 
 		/* Add 1ms delay for SD and eMMC */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		mdelay(1);
+#endif
 	}
 
 	writel(irqstaten, &regs->irqstaten);
@@ -940,20 +978,31 @@ static int esdhc_set_ios_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	return 0;
 }
 
+static int esdhc_reset(struct fsl_esdhc *regs)
+{
+	ulong start;
+
+	/* reset the controller */
+	esdhc_setbits32(&regs->sysctl, SYSCTL_RSTA);
+
+	/* hardware clears the bit when it is done */
+	start = get_timer(0);
+	while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTA)) {
+		if (get_timer(start) > 1000) {
+			printf("MMC/SD: Reset never completed.\n");
+			return -ETIMEDOUT;
+		}
+	}
+
+	return 0;
+}
+
 static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 {
 	struct fsl_esdhc *regs = priv->esdhc_regs;
-	ulong start;
 
 	/* Reset the entire host controller */
-	esdhc_setbits32(&regs->sysctl, SYSCTL_RSTA);
-
-	/* Wait until the controller is available */
-	start = get_timer(0);
-	while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTA)) {
-		if (get_timer(start) > 1000)
-			return -ETIMEDOUT;
-	}
+	esdhc_reset(regs);
 
 #if defined(CONFIG_FSL_USDHC)
 	/* RSTA doesn't reset MMC_BOOT register, so manually reset it */
@@ -996,7 +1045,7 @@ static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	/* Put the PROCTL reg back to the default */
 	esdhc_write32(&regs->proctl, PROCTL_INIT);
 
-	/* Set timout to the maximum value */
+	/* Set timeout to the maximum value */
 	esdhc_clrsetbits32(&regs->sysctl, SYSCTL_TIMEOUT_MASK, 14 << 16);
 
 	return 0;
@@ -1022,28 +1071,13 @@ static int esdhc_getcd_common(struct fsl_esdhc_priv *priv)
 #endif
 
 	while (!(esdhc_read32(&regs->prsstat) & PRSSTAT_CINS) && --timeout)
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		udelay(1000);
+#endif
 
 	return timeout > 0;
-}
-
-static int esdhc_reset(struct fsl_esdhc *regs)
-{
-	ulong start;
-
-	/* reset the controller */
-	esdhc_setbits32(&regs->sysctl, SYSCTL_RSTA);
-
-	/* hardware clears the bit when it is done */
-	start = get_timer(0);
-	while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTA)) {
-		if (get_timer(start) > 100) {
-			printf("MMC/SD: Reset never completed.\n");
-			return -ETIMEDOUT;
-		}
-	}
-
-	return 0;
 }
 
 #if !CONFIG_IS_ENABLED(DM_MMC)
@@ -1118,6 +1152,7 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 		esdhc_setbits32(&regs->vendorspec, ESDHC_VENDORSPEC_VSELECT);
 
 	writel(SDHCI_IRQ_EN_BITS, &regs->irqstaten);
+
 	cfg = &plat->cfg;
 #ifndef CONFIG_DM_MMC
 	memset(cfg, '\0', sizeof(*cfg));
@@ -1185,11 +1220,13 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->host_caps |= priv->caps;
 
 	cfg->f_min = 400000;
-	cfg->f_max = min(priv->sdhc_clk, (u32)200000000);
+	priv->sdhc_clk = min(priv->sdhc_clk, (u32)200000000);
+	cfg->f_max = priv->sdhc_clk;
 
 	cfg->b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
 
 	writel(0, &regs->dllctrl);
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	if (priv->flags & ESDHC_FLAG_USDHC) {
 		if (priv->flags & ESDHC_FLAG_STD_TUNING) {
 			u32 val = readl(&regs->tuning_ctrl);
@@ -1202,7 +1239,7 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 			writel(val, &regs->tuning_ctrl);
 		}
 	}
-
+#endif
 	return 0;
 }
 
@@ -1273,8 +1310,10 @@ int fsl_esdhc_mmc_init(bd_t *bis)
 	cfg = calloc(sizeof(struct fsl_esdhc_cfg), 1);
 	cfg->esdhc_base = CONFIG_SYS_FSL_ESDHC_ADDR;
 	cfg->sdhc_clk = gd->arch.sdhc_clk;
+
 	return fsl_esdhc_initialize(bis, cfg);
 }
+
 #endif
 
 #ifdef CONFIG_FSL_ESDHC_ADAPTER_IDENT
@@ -1404,7 +1443,7 @@ static int fsl_esdhc_probe(struct udevice *dev)
 
 	if (dev_read_bool(dev, "non-removable")) {
 		priv->non_removable = 1;
-	 } else {
+	} else {
 		priv->non_removable = 0;
 #ifdef CONFIG_DM_GPIO
 		gpio_request_by_name(dev, "cd-gpios", 0, &priv->cd_gpio,

@@ -235,7 +235,11 @@ int mmc_send_status(struct mmc *mmc, int timeout)
 		if (timeout-- <= 0)
 			break;
 
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		udelay(1000);
+#endif
 	}
 
 	mmc_trace_state(mmc, &cmd);
@@ -410,6 +414,7 @@ ulong mmc_bread(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt,
 		return 0;
 
 	struct mmc *mmc = find_mmc_device(dev_num);
+
 	if (!mmc)
 		return 0;
 
@@ -454,7 +459,11 @@ static int mmc_go_idle(struct mmc *mmc)
 	struct mmc_cmd cmd;
 	int err;
 
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(1);
+#else
 	udelay(1000);
+#endif
 
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
@@ -465,7 +474,11 @@ static int mmc_go_idle(struct mmc *mmc)
 	if (err)
 		return err;
 
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(2);
+#else
 	udelay(2000);
+#endif
 
 	return 0;
 }
@@ -515,7 +528,11 @@ static int mmc_switch_voltage(struct mmc *mmc, int signal_voltage)
 		return err;
 
 	/* Keep clock gated for at least 10 ms, though spec only says 5 ms */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(10);
+#else
 	mdelay(10);
+#endif
 	mmc_set_clock(mmc, mmc->clock, MMC_CLK_ENABLE);
 
 	/*
@@ -524,7 +541,11 @@ static int mmc_switch_voltage(struct mmc *mmc, int signal_voltage)
 	 */
 	err = mmc_wait_dat0(mmc, 1, 1000);
 	if (err == -ENOSYS)
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		udelay(1000);
+#endif
 	else if (err)
 		return -ETIMEDOUT;
 
@@ -578,7 +599,11 @@ static int sd_send_op_cond(struct mmc *mmc, bool uhs_en)
 		if (timeout-- <= 0)
 			return -EOPNOTSUPP;
 
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		udelay(1000);
+#endif
 	}
 
 	if (mmc->version != SD_VERSION_2)
@@ -640,7 +665,7 @@ static int mmc_send_op_cond(struct mmc *mmc)
 	/* Some cards seem to need this */
 	mmc_go_idle(mmc);
 
- 	/* Asking to the card its capabilities */
+	/* Asking to the card its capabilities */
 	for (i = 0; i < 2; i++) {
 		err = mmc_send_op_cond_iter(mmc, i != 0);
 		if (err)
@@ -700,7 +725,6 @@ static int mmc_complete_op_cond(struct mmc *mmc)
 	return 0;
 }
 
-
 static int mmc_send_ext_csd(struct mmc *mmc, u8 *ext_csd)
 {
 	struct mmc_cmd cmd;
@@ -748,7 +772,6 @@ int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 	}
 
 	return ret;
-
 }
 
 #if !CONFIG_IS_ENABLED(MMC_TINY)
@@ -756,7 +779,6 @@ static int mmc_set_card_speed(struct mmc *mmc, enum bus_mode mode)
 {
 	int err;
 	int speed_bits;
-
 	ALLOC_CACHE_ALIGN_BUFFER(u8, test_csd, MMC_MAX_BLOCK_LEN);
 
 	switch (mode) {
@@ -964,11 +986,10 @@ int mmc_hwpart_config(struct mmc *mmc,
 		}
 		part_attrs |= EXT_CSD_ENH_USR;
 		enh_size_mult = conf->user.enh_size / mmc->hc_wp_grp_size;
-		if (mmc->high_capacity) {
+		if (mmc->high_capacity)
 			enh_start_addr = conf->user.enh_start;
-		} else {
+		else
 			enh_start_addr = (conf->user.enh_start << 9);
-		}
 	} else {
 		enh_size_mult = 0;
 		enh_start_addr = 0;
@@ -978,7 +999,7 @@ int mmc_hwpart_config(struct mmc *mmc,
 	for (pidx = 0; pidx < 4; pidx++) {
 		if (conf->gp_part[pidx].size % mmc->hc_wp_grp_size) {
 			pr_err("GP%i partition not HC WP group size "
-			       "aligned\n", pidx+1);
+			       "aligned\n", pidx + 1);
 			return -EINVAL;
 		}
 		gp_size_mult[pidx] = conf->gp_part[pidx].size / mmc->hc_wp_grp_size;
@@ -988,7 +1009,7 @@ int mmc_hwpart_config(struct mmc *mmc,
 		}
 	}
 
-	if (part_attrs && ! (mmc->part_support & ENHNCD_SUPPORT)) {
+	if (part_attrs && !(mmc->part_support & ENHNCD_SUPPORT)) {
 		pr_err("Card does not support enhanced attribute\n");
 		return -EMEDIUMTYPE;
 	}
@@ -998,8 +1019,8 @@ int mmc_hwpart_config(struct mmc *mmc,
 		return err;
 
 	max_enh_size_mult =
-		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT+2] << 16) +
-		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT+1] << 8) +
+		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT + 2] << 16) +
+		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT + 1] << 8) +
 		ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT];
 	if (tot_enh_size_mult > max_enh_size_mult) {
 		pr_err("Total enhanced size exceeds maximum (%u > %u)\n",
@@ -1056,29 +1077,28 @@ int mmc_hwpart_config(struct mmc *mmc,
 		/* update erase group size to be high-capacity */
 		mmc->erase_grp_size =
 			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] * 1024;
-
 	}
 
 	/* all OK, write the configuration */
 	for (i = 0; i < 4; i++) {
 		err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
-				 EXT_CSD_ENH_START_ADDR+i,
-				 (enh_start_addr >> (i*8)) & 0xFF);
+				 EXT_CSD_ENH_START_ADDR + i,
+				 (enh_start_addr >> (i * 8)) & 0xFF);
 		if (err)
 			return err;
 	}
 	for (i = 0; i < 3; i++) {
 		err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
-				 EXT_CSD_ENH_SIZE_MULT+i,
-				 (enh_size_mult >> (i*8)) & 0xFF);
+				 EXT_CSD_ENH_SIZE_MULT + i,
+				 (enh_size_mult >> (i * 8)) & 0xFF);
 		if (err)
 			return err;
 	}
 	for (pidx = 0; pidx < 4; pidx++) {
 		for (i = 0; i < 3; i++) {
 			err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
-					 EXT_CSD_GP_SIZE_MULT+pidx*3+i,
-					 (gp_size_mult[pidx] >> (i*8)) & 0xFF);
+					 EXT_CSD_GP_SIZE_MULT+pidx * 3 + i,
+					 (gp_size_mult[pidx] >> (i * 8)) & 0xFF);
 			if (err)
 				return err;
 		}
@@ -1272,7 +1292,6 @@ retry_scr:
 static int sd_set_card_speed(struct mmc *mmc, enum bus_mode mode)
 {
 	int err;
-
 	ALLOC_CACHE_ALIGN_BUFFER(uint, switch_status, 16);
 	int speed;
 
@@ -1907,7 +1926,7 @@ static int mmc_select_mode_and_width(struct mmc *mmc, uint card_caps)
 				return 0;
 error:
 			mmc_set_signal_voltage(mmc, old_voltage);
-			/* if an error occured, revert to a safer bus mode */
+			/* if an error occurred, revert to a safer bus mode */
 			mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
 				   EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_1);
 			mmc_select_mode(mmc, MMC_LEGACY);
@@ -2487,7 +2506,11 @@ static int mmc_power_cycle(struct mmc *mmc)
 	 * SD spec recommends at least 1ms of delay. Let's wait for 2ms
 	 * to be on the safer side.
 	 */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(2);
+#else
 	udelay(2000);
+#endif
 	return mmc_power_on(mmc);
 }
 
@@ -2639,6 +2662,7 @@ int mmc_init(struct mmc *mmc)
 
 	if (!err)
 		err = mmc_complete_init(mmc);
+
 	if (err)
 		pr_info("%s: %d, time %lu\n", __func__, err, get_timer(start));
 
