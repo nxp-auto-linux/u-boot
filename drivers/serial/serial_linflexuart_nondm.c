@@ -34,16 +34,27 @@
 #define UARTSR_RFE			BIT(2)
 #define UARTSR_RFNE			BIT(4)
 #define UARTSR_RMB			BIT(9)
-#define LINFLEXD_UARTCR_OSR_MASK	(0xF << 24)
-#define LINFLEXD_UARTCR_OSR(uartcr)	(((uartcr) \
-					 & LINFLEXD_UARTCR_OSR_MASK) >> 24)
 
-#define LINFLEXD_UARTCR_ROSE		BIT(23)
+#define UARTCR_OSR_MASK		(0xF << 24)
+#define UARTCR_OSR_GET(uartcr)	(((uartcr) \
+					 & UARTCR_OSR_MASK) >> 24)
+#define UARTCR_OSR(val)	((val << 24) & UARTCR_OSR_MASK)
+
+#define UARTCR_CSP_MASK		(0x7 << 28)
+#define UARTCR_CSP_GET(uartcr)	(((uartcr) \
+					 & UARTCR_CSP_MASK) >> 28)
+#define UARTCR_CSP(val)		((val << 28) & UARTCR_CSP_MASK)
+
+#define UARTCR_ROSE			BIT(23)
 #define LINFLEX_LDIV_MULTIPLIER		(16)
 
 DECLARE_GLOBAL_DATA_PTR;
 
 struct linflex_fsl *base = (struct linflex_fsl *)LINFLEXUART_BASE;
+
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+#define LIN_CLK			133000	// LIN CLK in Khz
+#endif
 
 static u32 linflex_ldiv_multiplier(void)
 {
@@ -52,16 +63,23 @@ static u32 linflex_ldiv_multiplier(void)
 
 	cr = __raw_readl(&base->uartcr);
 
-	if (cr & LINFLEXD_UARTCR_ROSE)
-		mul = LINFLEXD_UARTCR_OSR(cr);
+	if (cr & UARTCR_ROSE)
+		mul = UARTCR_OSR_GET(cr);
 
 	return mul;
 }
 
 static void linflex_serial_setbrg(void)
 {
-	u32 clk = mxc_get_clock(MXC_UART_CLK);
+	/* using crt code/settings, we get ibr = 26 and fbr = 0 */
+	u32 clk;
 	u32 ibr, fbr, divisr, dividr;
+
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	clk = LIN_CLK;
+#else
+	clk = mxc_get_clock(MXC_UART_CLK);
+#endif
 
 	if (!gd->baudrate)
 		gd->baudrate = CONFIG_BAUDRATE;
@@ -78,22 +96,57 @@ static void linflex_serial_setbrg(void)
 
 static int linflex_serial_getc(void)
 {
-	while ((__raw_readl(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
-		;
+	u32 fifo_mode = __raw_readl(&base->uartcr) & UARTCR_RFBM;
+	u32 status;
 
+	/* Protect ourselves from configuration errors and
+	 * handle both Buffer and Queue modes
+	 */
+	if (fifo_mode) {
+		/* FIFO mode: Busy waiting while FIFO is empty */
+		while ((__raw_readl(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
+			;
+	} else {
+		/* Buffer mode: wait until the bytes programmed
+		 * in RDFL are received */
+		while ((__raw_readl(&base->uartsr) & UARTSR_RFE) != UARTSR_RFE)
+			;
+	}
+
+	status = __raw_readl(&base->uartsr) | UARTSR_RFE;
+	__raw_writel(status, &base->uartsr);
 	return __raw_readb(&base->bdrm);
 }
 
 static void linflex_serial_putc(const char c)
 {
+	volatile u32 status;
+	u32 fifo_mode = 0;
+
+	status = __raw_readl(&base->uartcr);
+	fifo_mode = status & UARTCR_TFBM;
+
 	if (c == '\n')
 		serial_putc('\r');
 
-	/* wait for Tx FIFO not full */
-	while ((__raw_readb(&base->uartsr) & UARTSR_DTF))
-		;
+	/* Protect ourselves from configuration errors and
+	 * handle both Buffer and Queue modes
+	 */
+	if (fifo_mode) {
+		/* wait for Tx FIFO not full */
+		while ((__raw_readl(&base->uartsr) & UARTSR_DTF))
+			;
+	}
 
 	__raw_writeb(c, &base->bdrl);
+
+	if (!fifo_mode) {
+		/* wait for Tx done */
+		while ((__raw_readl(&base->uartsr) & UARTSR_DTF) == 0)
+			;
+		status = __raw_readl(&base->uartsr) | UARTSR_DTF;
+		__raw_writel(status, &base->uartsr);  // clear the DTF bit
+	}
 }
 
 /*
@@ -101,8 +154,15 @@ static void linflex_serial_putc(const char c)
  */
 static int linflex_serial_tstc(void)
 {
-	if ((__raw_readb(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
-		return 0;
+	u32 fifo_mode = __raw_readl(&base->uartcr) & UARTCR_RFBM;
+
+	if (fifo_mode) {
+		if ((__raw_readb(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
+			return 0;
+	} else {
+		if ((__raw_readl(&base->uartsr) & UARTSR_RFE) != UARTSR_RFE)
+			return 0;
+	}
 
 	return 1;
 }
@@ -113,9 +173,9 @@ static int linflex_serial_tstc(void)
  */
 static int linflex_serial_init(void)
 {
-	u32 ctrl;
+	volatile u32 ctrl;
 
-	/* set the Linflex in master mode amd activate by-pass filter */
+	/* set the Linflex in master mode and activate by-pass filter */
 	ctrl = LINCR1_BF | LINCR1_MME;
 	__raw_writel(ctrl, &base->lincr1);
 
@@ -130,10 +190,11 @@ static int linflex_serial_init(void)
 
 	/* set UART bit to allow writing other bits */
 	__raw_writel(UARTCR_UART, &base->uartcr);
+
 	/* provide data bits, parity, stop bit, etc */
 	serial_setbrg();
 
-#ifdef VIRTUAL_PLATFORM
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 	/* Set preset timeout register value. Otherwise, print is very slow. */
 	__raw_writel(0xf, &base->uartpto);
 #endif
