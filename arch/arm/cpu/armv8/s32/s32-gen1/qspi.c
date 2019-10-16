@@ -10,6 +10,12 @@
 
 void qspi_iomux(void)
 {
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
+	/* TODO (ZeBu): check pinmuxing connections
+	 * replace SIUL2_MSCRn with SIUL2_0_MSCRn (MSCR 0-101)
+	 * or SIUL2_1_MSCRn (MSCR 112-190)
+	 */
+	
 	/* QSPI0_A_CS0 */
 	writel(SIUL2_MSCR_S32_G1_QSPI_A_CS0_MUX |
 	       SIUL2_MSCR_S32_G1_QSPI_CLK_BASE,
@@ -60,6 +66,7 @@ void qspi_iomux(void)
 	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PF12__QSPI_A_DATA7_OUT));
 	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
 	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PF12__QSPI_A_DATA7_IN));
+#endif
 }
 
 #ifndef CONFIG_S32_FLASH
