@@ -13,6 +13,7 @@
 #include <linux/libfdt.h>
 #include <miiphy.h>
 #include <netdev.h>
+#include <asm/arch/s32-gen1/ncore.h>
 
 #include "board_common.h"
 
@@ -55,6 +56,9 @@ int board_early_init_f(void)
 {
 	mscm_init();
 	clock_init();
+
+	/* Configure NCore for CPU0 */
+	ncore_init(0x1);
 
 	setup_iomux_enet();
 	setup_iomux_i2c();

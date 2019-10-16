@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  */
 
 #include <common.h>
@@ -13,6 +13,7 @@
 #include <asm/arch/siul.h>
 #include "mp.h"
 #include <asm/arch/soc.h>
+#include <asm/arch/s32-gen1/ncore.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -322,6 +323,11 @@ int arch_early_init_r(void)
 
 	if (rv)
 		printf("Did not wake secondary cores\n");
+
+#ifdef CONFIG_S32_GEN1
+	/* Reconfigure Concerto before actually waking the cores */
+	ncore_init(0xf);
+#endif
 
 	asm volatile("sev");
 
