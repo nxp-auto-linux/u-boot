@@ -149,20 +149,23 @@
 /* COUNTER_FREQUENCY value will be used at startup but will be replaced
  * if an older chip version is determined at runtime.
  */
-#ifdef VIRTUAL_PLATFORM
-#define COUNTER_FREQUENCY               (250000)
-#else
+#if defined(CONFIG_S32_GEN1)
+/* FXOSC_CLK; this will be further divided by "GPR00[26:24] + 1"
+ * Note: CONFIG_TARGET_S32G275 is a per-board configuration, as the value of
+ * FXOSC_CLK itself is board-specific.
+ */
+#define COUNTER_FREQUENCY		(40 * 1000 * 1000)
+#elif defined(CONFIG_S32V234)
 #define COUNTER_FREQUENCY               (10000000)     /* 10MHz*/
 #define COUNTER_FREQUENCY_CUT1          (12000000)     /* 12MHz*/
+#elif defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
+#define COUNTER_FREQUENCY				(1000)		    /* 1Khz */
 #endif
-
 #elif defined(CONFIG_SYS_PIT_TIMER)
 #define COUNTER_FREQUENCY               (133056128)     /* 133MHz */
 #else
 #error "Unknown System Timer"
 #endif
-
-#define CONFIG_SYS_FSL_ERRATUM_A008585
 
 /* Size of malloc() pool */
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
@@ -177,8 +180,12 @@
 
 #undef CONFIG_CMD_IMLS
 
-#ifndef VIRTUAL_PLATFORM
-
+/* Regarding S32G, some of these are already controlled (read: duplicated)
+ * in the defconfig; others are unused throughout the arch, board or
+ * platform code; others yet are still unnecessary because we only plan to
+ * enable them later (e.g CONFIG_FEC_MXC/MII or CONFIG_CMD_I2C)
+ */
+#ifndef CONFIG_S32_GEN1
 #ifndef CONFIG_FLASH_BOOT
 #define CONFIG_SD_BOOT
 #endif
@@ -208,22 +215,22 @@
 #define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
 
-#endif /* #ifndef VIRTUAL_PLATFORM */
+#endif
+
+#ifndef CONFIG_EXTRA_KERNEL_BOOT_ARGS
+#define CONFIG_EXTRA_KERNEL_BOOT_ARGS ""
+#endif
 
 #undef CONFIG_BOOTDELAY
+
 #define CONFIG_BOOTDELAY	3
 
-#ifdef VIRTUAL_PLATFORM
-#define CONFIG_BOOTARGS_LOGLEVEL " loglevel=4 "
-#else
 #define CONFIG_BOOTARGS_LOGLEVEL ""
-#endif
 
 #undef CONFIG_BOOTARGS
 #define CONFIG_BOOTARGS		\
-	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) \
-	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL " earlycon"
-
+	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "," __stringify(CONFIG_BAUDRATE) \
+	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL " " CONFIG_EXTRA_KERNEL_BOOT_ARGS
 #define CONFIG_CMD_ENV
 
 #define CONFIG_HWCONFIG
@@ -265,14 +272,10 @@
 #define NFSRAMFS_TFTP_CMD ""
 #endif
 
-#ifdef VIRTUAL_PLATFORM
-#define CONFIG_FLASHBOOT_RAMDISK " - "
-#else
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
-#endif
 
 #ifdef CONFIG_XEN_SUPPORT
-#ifdef VIRTUAL_PLATFORM
+#ifdef CONFIG_S32_GEN1
 #define XEN_LOAD_FILES "setenv filesize a00000; "
 #else
 #define XEN_LOAD_FILES \
@@ -343,9 +346,8 @@
 				"mmc write ${loadaddr} 0x8 ${fw_sz}; " \
 			"fi; "	\
 		"fi\0" \
-	"mmcargs=setenv bootargs console=${console},${baudrate} " \
-		"root=${mmcroot} " \
-		"earlycon\0" \
+	"mmcargs=setenv bootargs console=${console},${baudrate} " CONFIG_BOOTARGS_LOGLEVEL \
+		" root=${mmcroot} " CONFIG_EXTRA_KERNEL_BOOT_ARGS "\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
@@ -360,18 +362,10 @@
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
-		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-			"if run loadfdt; then " \
-				"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
-			"else " \
-				"if test ${boot_fdt} = try; then " \
-					"${boot_mtd}; " \
-				"else " \
-					"echo WARN: Cannot load the DT; " \
-				"fi; " \
-			"fi; " \
+		"run loadimage; if run loadfdt; then " \
+			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 		"else " \
-			"${boot_mtd}; " \
+			"echo WARN: Cannot load the DT; " \
 		"fi;\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
@@ -418,7 +412,7 @@
 	XEN_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
-#ifdef VIRTUAL_PLATFORM
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 #define CONFIG_BOOTCOMMAND \
 		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
 #else
@@ -480,10 +474,6 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
-#ifdef VIRTUAL_PLATFORM
-#define CONFIG_SYS_NO_FLASH
-#endif
-
 #if (defined(CONFIG_FLASH_BOOT) && defined(CONFIG_SD_BOOT))
 #error "CONFIG_FLASH_BOOT and CONFIG_SD_BOOT both defined"
 #endif
@@ -496,7 +486,6 @@
 #define CONFIG_ENV_OFFSET			2 * CONFIG_ENV_SECT_SIZE
 
 #elif defined(CONFIG_SD_BOOT)
-#define CONFIG_SYS_NO_FLASH
 #define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
 #define CONFIG_ENV_OFFSET		(0xC0000) /* 12 * 64 * 1024 */
 #define CONFIG_SYS_MMC_ENV_DEV		0

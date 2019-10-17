@@ -1,5 +1,11 @@
 if TARGET_S32V344 || TARGET_S32G275 || TARGET_S32R45X
 
+config S32_GEN1
+	bool "S32 GEN1 Common Chassis"
+	default y
+	help
+	  Platform Selection
+
 config SYS_BOARD
 	string
 	default "s32-gen1"
@@ -10,12 +16,43 @@ config SYS_CONFIG_NAME
 	default "s32g275" if TARGET_S32G275
 	default "s32r45x" if TARGET_S32R45X
 
+choice
+	prompt "Virtual Platform Type"
+	optional
+	help
+	  Target Type Emulator/Simulator
+
+	config TARGET_TYPE_S32GEN1_EMULATOR
+		bool "Emulator"
+		help
+		  Target Type Emulator
+
+	config TARGET_TYPE_S32GEN1_SIMULATOR
+		bool "Simulator"
+		help
+		  Target Type Simulator
+endchoice
+
 # DDR0(256MB) and DDR1(256MB).
 # U-boot uses only one DDR slot.
 
 config SYS_DDR_SIZE
-	hex
-	default 0x80000000 if S32_LPDDR4
+	hex "DDR Size"
+	default 0x10000000
+
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0x34000000
+	help
+	  U-boot data base address (normally SRAM base address)
+
+config EXTRA_KERNEL_BOOT_ARGS
+	string "Additional boot arguments for Linux kernel"
+	default ""
+
+config EARLY_CONSOLE
+	bool "Initialize Linflex console early in u-boot startup"
+	default n
 
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"

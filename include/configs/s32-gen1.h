@@ -18,9 +18,6 @@
 /* Init CSE3 from u-boot */
 /* #define CONFIG_CSE3		1 */
 
-#define VIRTUAL_PLATFORM
-#define CONFIG_S32_GEN1
-
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
 /* u-boot uses just DDR0 */
@@ -48,11 +45,6 @@
 
 #define CONFIG_FEC_XCV_TYPE     RGMII
 
-#ifdef VIRTUAL_PLATFORM
-/* The Phy is emulated */
-#define CONFIG_PHY_RGMII_DIRECT_CONNECTED
-#endif
-
 /* CONFIG_PHY_RGMII_DIRECT_CONNECTED should be enabled when
  * BCM switch is configured.
  */
@@ -62,14 +54,13 @@
 #define CONFIG_FEC_MXC_PHYADDR  7
 #endif
 
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-	#define FDT_FILE fsl-s32v234-evbbcm.dtb
-#else
-	#define	FDT_FILE fsl-s32v234-evb.dtb
+#if defined(CONFIG_TARGET_S32G275)
+#define FDT_FILE fsl-s32g274a-evb.dtb
+#elif defined(CONFIG_TARGET_S32R45X)
+#define FDT_FILE fsl-s32r45x.dtb
 #endif
 
 #define CONFIG_LOADADDR		LOADADDR
-
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
@@ -113,19 +104,28 @@
 #define GICR_BASE	(GIC_BASE + 0x80000)
 #endif
 
-#ifdef VIRTUAL_PLATFORM
-#ifdef CONFIG_SYS_FSL_ERRATUM_A008585
-#undef CONFIG_SYS_FSL_ERRATUM_A008585
-#endif
-#endif
-
 #ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR		0x80000000
 #else
 #define DDR_BASE_ADDR		0xA0000000
 #endif
 
-#define CONFIG_SYS_TEXT_BASE        0x38020000 /* SDRAM */
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
+
+#define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
+
+#if defined(CONFIG_TARGET_S32G275) || defined(CONFIG_TARGET_S32R45X)
+#define IRAM_SIZE		0x00800000  /* 8MB */
+#else
+#error "Platform not supported"
+#endif
+
+#ifndef CONFIG_SYS_DDR_SIZE
+#define CONFIG_SYS_DDR_SIZE 0x20000000
+#endif
+
+#define IS_ADDR_IN_DDR(addr) \
+	((addr) >= (DDR_BASE_ADDR) && \
+	(addr) <= (DDR_BASE_ADDR) + (CONFIG_SYS_DDR_SIZE))
 
 #endif

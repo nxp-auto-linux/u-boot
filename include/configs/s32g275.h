@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2019 NXP
+ * Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -18,5 +18,7 @@
 #ifndef CONFIG_PRAM
 #define CONFIG_PRAM	2048	/* 2MB */
 #endif
+
+#define MMAP_DSPI	SPI5_BASE_ADDR
 
 #endif
