@@ -16,6 +16,7 @@ M:	-
 S:	Maintained
 F:	configs/s32g275_defconfig
 F:	include/configs/s32g275.h
+F:	drivers/ddr/fsl/ddrss.c
 
 S32R45X BOARD
 M:	-
