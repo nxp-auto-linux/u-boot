@@ -98,8 +98,7 @@ struct linflex_fsl {
 	u32 bidr;
 	u32 bdrl;
 	u32 bdrm;
-#if !defined(CONFIG_S32_GEN1) || defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
-/* The following regs are in SIUL2_0 according to s32g manual draft M */
+#if !defined(CONFIG_S32_GEN1)
 	u32 ifer;
 	u32 ifmi;
 	u32 ifmr;
