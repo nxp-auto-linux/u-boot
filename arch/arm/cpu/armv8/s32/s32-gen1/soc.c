@@ -394,6 +394,7 @@ int print_cpuinfo(void)
 
 __weak void setup_iomux_enet(void)
 {
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 	/* set PE2 - MSCR[66] - for TX CLK */
 	writel(SIUL2_MSCR_S32_G1_ENET_TX_CLK,
 	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE2));
@@ -455,6 +456,7 @@ __weak void setup_iomux_enet(void)
 	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE13));
 	writel(SIUL2_MSCR_S32_G1_ENET_RX_D3_IN,
 	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PE13_IN));
+#endif
 }
 
 #ifdef CONFIG_FSL_DCU_FB
@@ -525,6 +527,7 @@ __weak void setup_iomux_dcu(void)
 
 __weak void setup_iomux_sdhc(void)
 {
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 	/* Set iomux PADS for USDHC */
 
 	/* PC14 pad: uSDHC clk */
@@ -565,6 +568,7 @@ __weak void setup_iomux_sdhc(void)
 	/* PD07 pad: uSDHC DAT7 */
 	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_DATA, SIUL2_MSCRn(55));
 	writel(0x2, SIUL2_MSCRn(518));
+#endif
 }
 
 
