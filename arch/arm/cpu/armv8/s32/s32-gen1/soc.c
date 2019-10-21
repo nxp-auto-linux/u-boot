@@ -127,7 +127,11 @@ static u32 get_sel(u64 cgm, u8 mux)
 
 static u32 get_div(u64 cgm, u8 mux)
 {
-	u32 div, dc;
+	u32 div = 1, dc;
+
+	/* MC_CGM MUXes below don't have a divider register */
+	if ((mux == 7) || (mux == 8) || (mux == 11) || (mux == 13) || (mux == 16))
+		return div;
 
 	dc = readl(CGM_MUXn_DCm(cgm, mux, 0));
 	/* If div is enabled. */
