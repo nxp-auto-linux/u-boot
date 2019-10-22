@@ -13,6 +13,7 @@
 #include <asm/arch/siul.h>
 #include "mp.h"
 #include <asm/arch/soc.h>
+#include "s32-gen1/mem_map/mem_map_a53.h"
 #include <asm/arch/s32-gen1/ncore.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -129,7 +130,7 @@ static int find_table(const struct sys_mmu_table *list,
 			* aligned with the block size.
 			*/
 			if (((list->phys_addr & (block_size - 1)) != 0) ||
-			((list->size & (block_size - 1)) != 0))
+				((list->size & (block_size - 1)) != 0))
 				return -1;
 			table->ptr = level_table;
 			table->table_base = temp_base -
@@ -184,7 +185,6 @@ static inline void early_mmu_setup(void)
 	set_pgtable_table(level1_table0,
 			  CONFIG_SYS_FSL_PERIPH_BASE >> SECTION_SHIFT_L1,
 			  level2_table1);
-
 	set_pgtable_table(level1_table0,
 			  CONFIG_SYS_FSL_DRAM_BASE2 >> SECTION_SHIFT_L1,
 			  level2_table2);
@@ -194,14 +194,14 @@ static inline void early_mmu_setup(void)
 		if (find_table(&s32_early_mmu_table[i],
 			&table, level0_table) == 0) {
 			/*
-			* If find_table() returns error, it cannot be dealt
-			* with here. Breakpoint can be added for debugging.
-			*/
+			 * If find_table() returns error, it cannot be dealt
+			 * with here. Breakpoint can be added for debugging.
+			 */
 			set_block_entry(&s32_early_mmu_table[i], &table);
 			/*
-			* If set_block_entry() returns error, it cannot be
-			* dealt with here too.
-			*/
+			 * If set_block_entry() returns error, it cannot be
+			 * dealt with here too.
+			 */
 		}
 	}
 #ifdef CONFIG_S32V234
@@ -280,6 +280,12 @@ static inline void final_mmu_setup(void)
 	flush_dcache_range(gd->arch.tlb_addr,
 			   gd->arch.tlb_addr +  gd->arch.tlb_size);
 
+#ifdef CONFIG_S32_GEN1
+	/* Disable cache and MMU */
+	dcache_disable();   /* TLBs are invalidated */
+	invalidate_icache_all();
+#endif
+
 	/* point TTBR to the new table */
 	el = current_el();
 	set_ttbr_tcr_mair(el, (u64)level0_table, S32V_TCR_FINAL, MEMORY_ATTRIBUTES);
@@ -289,6 +295,9 @@ static inline void final_mmu_setup(void)
 	 * MMU somehow walks through the new table before invalidation TLB,
 	 * it still works. So we don't need to turn off MMU here.
 	 */
+#ifdef CONFIG_S32_GEN1
+	set_sctlr(get_sctlr() | CR_M);
+#endif
 }
 
 int arch_cpu_init(void)
@@ -310,6 +319,9 @@ void enable_caches(void)
 {
 	final_mmu_setup();
 	__asm_invalidate_tlb_all();
+#ifdef CONFIG_S32_GEN1
+	dcache_enable();
+#endif
 }
 
 #endif
@@ -351,6 +363,27 @@ int timer_init(void)
 
 	/* Update made for main core. */
 	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
+	return 0;
+}
+#elif defined(CONFIG_S32_GEN1)
+/* The base counter frequency (FXOSC on the S32G)
+ * is actually board-dependent
+ */
+int timer_init(void)
+{
+	u32 clk_div;
+
+	clk_div = readl(A53_CLUSTER_GPR00) >> CA53_GPR00_CLK_DIV_VAL_SHIFT;
+	clk_div = (clk_div & CA53_GPR00_CLK_DIV_VAL_MASK) + 1;
+
+	__real_cntfrq = COUNTER_FREQUENCY / clk_div;
+	flush_dcache_range((unsigned long)&__real_cntfrq,
+			   (unsigned long)&__real_cntfrq +
+			   sizeof(__real_cntfrq));
+
+	/* Primary core updated here, secondaries in start_slave_cores */
+	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
+
 	return 0;
 }
 #endif
