@@ -66,6 +66,14 @@
 #define MC_CGM_MUXn_CSC_SEL_MASK	(0x0F000000)
 #define MC_CGM_MUXn_CSC_SEL_OFFSET	(24)
 
+/* DIV_UPD_STAT */
+#define CGM_MUXn_DIV_UPD_STAT(cgm_addr, mux)	(((cgm_addr) + 0x33C + (mux) \
+						  * 0x40))
+#define MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT(css)	((MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_MASK \
+						  & (css)) \
+						  >> MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_OFFSET)
+#define MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_MASK	(0x00000001)
+#define MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_OFFSET	(0)
 
 
 #define pll_addr(pll)			(ARM_PLL_BASE_ADDR + (pll) * 0x4000)

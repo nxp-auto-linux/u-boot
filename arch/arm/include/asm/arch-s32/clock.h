@@ -47,6 +47,10 @@ unsigned int mxc_get_clock(enum mxc_clock clk);
 void clock_init(void);
 void entry_to_target_mode( u32 mode );
 
+int mux_source_clk_config(uintptr_t cgm_addr, u8 mux, u8 source);
+void mux_div_clk_config(uintptr_t cgm_addr, u8 mux, u8 dc, u8 divider);
+u32 get_xbar_clk(void);
+
 #define imx_get_fecclk() mxc_get_clock(MXC_FEC_CLK)
 
 #endif /* __ASM_ARCH_CLOCK_H */

@@ -27,7 +27,9 @@ struct eqos_mac_regs {
 	u32 rxq_ctrl2;				/* 0x0a8 */
 	u32 unused_0ac[(0x0dc - 0x0ac) / 4];	/* 0x0ac */
 	u32 us_tic_counter;			/* 0x0dc */
-	u32 unused_0e0[(0x110 - 0x0e0) / 4];	/* 0x0e0 */
+	u32 unused_0e0[(0x0f8 - 0x0e0) / 4];	/* 0x0e0 */
+	u32 phy_if_ctrl_status;			/* 0x0f8 */
+	u32 unused_0fc[(0x110 - 0x0fc) / 4];	/* 0x0fc */
 	u32 version;				/* 0x110 */
 	u32 unused_114[(0x11c - 0x114) / 4];	/* 0x114 */
 	u32 hw_feature0;				/* 0x11c */
@@ -71,6 +73,9 @@ struct eqos_mac_regs {
 
 #define EQOS_MAC_RXQ_CTRL2_PSRQ0_SHIFT			0
 #define EQOS_MAC_RXQ_CTRL2_PSRQ0_MASK			0xff
+
+#define EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_SHIFT		17
+#define EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_MASK		0x3
 
 #define EQOS_MAC_HW_FEATURE0_MMCSEL_SHIFT		8
 #define EQOS_MAC_HW_FEATURE0_HDSEL_SHIFT		2

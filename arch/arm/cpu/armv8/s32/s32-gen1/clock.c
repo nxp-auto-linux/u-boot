@@ -145,7 +145,7 @@ static int program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
 	return 0;
 }
 
-static int mux_source_clk_config(uintptr_t cgm_addr, u8 mux, u8 source)
+int mux_source_clk_config(uintptr_t cgm_addr, u8 mux, u8 source)
 {
 	u32 css, csc;
 	/* Ongoing clock switch? */
@@ -177,11 +177,15 @@ static int mux_source_clk_config(uintptr_t cgm_addr, u8 mux, u8 source)
 	return -1;
 }
 
-static void mux_div_clk_config(uintptr_t cgm_addr, u8 mux, u8 dc, u8 divider)
+void mux_div_clk_config(uintptr_t cgm_addr, u8 mux, u8 dc, u8 divider)
 {
 	/* set the divider */
 	writel(MC_CGM_MUXn_DCm_DE | MC_CGM_MUXn_DCm_DIV(divider),
 	       CGM_MUXn_DCm(cgm_addr, mux, dc));
+
+	/* Wait for divider gets updated */
+	while (MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT(readl(CGM_MUXn_DIV_UPD_STAT(cgm_addr, mux))))
+		;
 }
 
 static void setup_sys_clocks(void)
@@ -336,4 +340,5 @@ void clock_init(void)
 				);
 
 	setup_mux_clocks();
+
 }
