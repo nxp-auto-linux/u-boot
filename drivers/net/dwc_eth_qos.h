@@ -239,6 +239,7 @@ struct eqos_config {
 	int swr_wait;
 	int config_mac;
 	int config_mac_mdio;
+	u32 config_phy_addr;
 	phy_interface_t (*interface)(struct udevice *dev);
 	struct eqos_ops *ops;
 };
@@ -283,6 +284,7 @@ struct eqos_priv {
 #endif
 	struct mii_dev *mii;
 	struct phy_device *phy;
+	u32 phy_addr;
 	void *descs;
 	struct eqos_desc *tx_descs;
 	struct eqos_desc *rx_descs;

@@ -411,6 +411,9 @@ static int eqos_start(struct udevice *dev)
 	eqos->tx_desc_idx = 0;
 	eqos->rx_desc_idx = 0;
 
+	if (!eqos->phy_addr)
+		eqos->phy_addr = eqos->config->config_phy_addr;
+
 	ret = eqos->config->ops->eqos_start_clks(dev);
 	if (ret < 0) {
 		pr_err("eqos_start_clks() failed: %d", ret);
@@ -450,8 +453,8 @@ static int eqos_start(struct udevice *dev)
 	 * don't need to reconnect/reconfigure again
 	 */
 	if (!eqos->phy) {
-		eqos->phy = phy_connect(eqos->mii, 0, dev,
-					eqos->config->interface(dev));
+		eqos->phy = phy_connect(eqos->mii, eqos->phy_addr,
+					dev, eqos->config->interface(dev));
 		if (!eqos->phy) {
 			pr_err("phy_connect() failed");
 			goto err_stop_resets;
@@ -1150,6 +1153,27 @@ static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
 		reg2 = readl(&eqos->mmc_regs->rx_packets_count_good_bad);
 		printf("RX packets: %u TX packets: %u\n", reg2, reg);
 		return 0;
+	} else if (!strcmp(argv[1], "physelect")) {
+		u32 phy = 0;
+
+		if (argc > 3)
+			return CMD_RET_USAGE;
+
+		if (argc < 3) {
+			printf("phy address: 0x%x\n", eqos->phy_addr);
+		} else {
+			phy = simple_strtoul(argv[2], NULL, 16);
+			if (phy) {
+				if (eqos->phy)
+					phy_shutdown(eqos->phy);
+				eqos->phy = NULL;
+				eqos->phy_addr = phy;
+				printf("set eqos phy address to 0x%x\n", phy);
+			} else {
+				printf("phy address is invalid\n");
+			}
+		}
+		return 0;
 	} else if (!strcmp(argv[1], "reg")) {
 		u32 offs = 0;
 
@@ -1170,10 +1194,11 @@ static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
 U_BOOT_CMD(
 	   eqos, 7, 0, do_eqos_cmd,
 	   "Synopsys Ethernet DW EQoS controller info",
-	   /* */"info         - important hw info\n"
-	   "eqos ethaddr      - ethernet address\n"
-	   "eqos counters     - live i/o info\n"
-	   "eqos reg <offset> - read register"
+	   /* */"info                 - important hw info\n"
+	   "eqos ethaddr              - show ethernet address\n"
+	   "eqos physelect [<addr>]   - show or set phy address\n"
+	   "eqos counters             - live i/o info\n"
+	   "eqos reg <offset>         - read register"
 );
 
 /* Driver declaration */
