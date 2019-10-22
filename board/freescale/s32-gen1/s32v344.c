@@ -9,6 +9,8 @@
 
 #include "board_common.h"
 
+void setup_iomux_uart(void) {}
+
 void setup_iomux_i2c(void)
 {
 	/* I2C0 - Serial Data Input */
