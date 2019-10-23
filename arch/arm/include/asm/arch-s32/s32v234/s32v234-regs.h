@@ -8,8 +8,8 @@
 #ifndef __ASM_ARCH_S32V234_REGS_H__
 #define __ASM_ARCH_S32V234_REGS_H__
 
-#define IRAM_BASE_ADDR		0x3E800000  /* internal ram */
-#define IRAM_SIZE		0x00400000  /* 4MB */
+#define IRAM_BASE_ADDR		CONFIG_SYS_DATA_BASE
+#define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
 
 #if !defined(__ASSEMBLER__)
 #define AIPS0_BASE_ADDR		(0x40000000UL)

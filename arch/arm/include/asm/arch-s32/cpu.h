@@ -44,11 +44,7 @@
 
 #define CONFIG_SYS_FSL_IRAM_BASE        (IRAM_BASE_ADDR)
 
-#if defined(CONFIG_S32V234)
-#define CONFIG_SYS_FSL_IRAM_SIZE        (0x800000) /* 8M */
-#elif defined(CONFIG_S32_GEN1)
-#define CONFIG_SYS_FSL_IRAM_SIZE        (0x800000) /* 8M */
-#endif
+#define CONFIG_SYS_FSL_IRAM_SIZE        (CONFIG_SYS_MEM_SIZE)
 
 #define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
 #define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000

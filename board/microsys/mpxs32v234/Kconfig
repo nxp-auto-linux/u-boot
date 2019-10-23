@@ -25,4 +25,16 @@ config SYS_DDR_SIZE
 	default 0x80000000 if S32_DDR3
 	default 0x10000000 if S32_LPDDR2
 
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0x3E800000
+	help
+	  U-boot data base address (normally SRAM base address)
+
+config SYS_MEM_SIZE
+	hex "RAM Memory Size"
+	default 0x00400000
+	help
+	  U-boot SRAM size (4 MB for S32V234)
+
 endif

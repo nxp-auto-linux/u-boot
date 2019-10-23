@@ -113,12 +113,7 @@
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
 #define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
-
-#if defined(CONFIG_S32_GEN1)
-#define IRAM_SIZE		0x00800000  /* 8MB */
-#else
-#error "Platform not supported"
-#endif
+#define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
 
 #ifndef CONFIG_SYS_DDR_SIZE
 #define CONFIG_SYS_DDR_SIZE 0x20000000

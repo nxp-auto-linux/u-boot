@@ -23,4 +23,20 @@ config SYS_VENDOR
 	string
 	default "freescale"
 
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0x3E800000 if TARGET_S32V234EVB || TARGET_S32V234FVB ||	TARGET_S32V234PCIE || \
+	                      TARGET_S32V234TMDP ||	TARGET_S32V234CCPB
+	default 0x34000000 if TARGET_S32V344 ||	TARGET_S32G275 || TARGET_S32R45X
+	help
+	  U-boot data base address (normally SRAM base address)
+
+config SYS_MEM_SIZE
+	hex "RAM Memory Size"
+	default 0x00400000 if TARGET_S32V234EVB || TARGET_S32V234FVB ||	TARGET_S32V234PCIE || \
+	                      TARGET_S32V234TMDP ||	TARGET_S32V234CCPB
+	default 0x00800000 if TARGET_S32V344 ||	TARGET_S32G275 || TARGET_S32R45X
+	help
+	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
+
 endif
