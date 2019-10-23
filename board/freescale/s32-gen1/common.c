@@ -55,10 +55,6 @@ int board_phy_config(struct phy_device *phydev)
 int board_early_init_f(void)
 {
 	mscm_init();
-	clock_init();
-
-	/* Configure NCore for CPU0 */
-	ncore_init(0x1);
 
 	setup_iomux_enet();
 	setup_iomux_i2c();

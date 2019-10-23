@@ -302,6 +302,14 @@ static inline void final_mmu_setup(void)
 
 int arch_cpu_init(void)
 {
+#ifdef CONFIG_S32_GEN1
+	/* Platforms with Concerto/Ncore have to explicitly initialize
+	 * the interconnect before any cache operations are performed.
+	 * Also, ensure that clocks are initialized before the interconnect.
+	 */
+	clock_init();
+	ncore_init(0x1);
+#endif
 	icache_enable();
 	__asm_invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
