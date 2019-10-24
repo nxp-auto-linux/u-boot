@@ -16,7 +16,6 @@
 
 /* Instance SIUL */
 
-/* bhamciu1: bringup: add DTS node */
 /* SIUL2_0, aka SIUL_CC */
 #define SIUL_BASEADDRESS               0x4009C000          
 /* SIUL2_1, aka SIUL_OFFCC */
@@ -134,12 +133,10 @@
 
 /* MSCRn - Multiplexed Single Configuration Reg */
 #define SIUL_MSCR(x)         (((SIUL_BASEADDRESS+0x00000240) +((x)*0x4)))
-/* bhamciu1: bringup: was SIUL_MSCR(x) redefined */
 /* IMCRn - Input Multiplexed Signal Configuration Reg */
 #define SIUL_IMCR(x)         (((SIUL_BASEADDRESS+0x00000A40) +((x)*0x4)))
 
 /* MSCRn - Multiplexed Single Configuration Reg */
-/* bhamciu1: bringup: TODO: give up all the static definitions and keep only the parametrized macros */
 #define SIUL_MSCR0                     (SIUL_BASEADDRESS+0x00000240) 
 #define SIUL_X_MSCR0(x)                ((SIUL_BASEADDRESS + 0x00000240 + ((x)*0x8000)))
 

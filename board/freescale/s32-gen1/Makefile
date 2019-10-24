@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
+ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
 obj-y := common.o
 
 ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
