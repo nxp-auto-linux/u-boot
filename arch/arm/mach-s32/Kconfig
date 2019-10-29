@@ -7,5 +7,5 @@ config MKIMAGE_T
 	default "imximage" if TARGET_S32V234PCIE
 	default "imximage" if TARGET_MPXS32V234
 	default "imximage" if TARGET_S32V234CCPB
-	default "s32g2xximage" if TARGET_S32G275
+	default "s32g2xximage" if TARGET_S32G275 || TARGET_S32R45X || TARGET_S32V344
 	depends on ARCH_S32

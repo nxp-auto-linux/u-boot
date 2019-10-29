@@ -114,7 +114,7 @@
 
 #define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
 
-#if defined(CONFIG_TARGET_S32G275) || defined(CONFIG_TARGET_S32R45X)
+#if defined(CONFIG_S32_GEN1)
 #define IRAM_SIZE		0x00800000  /* 8MB */
 #else
 #error "Platform not supported"
