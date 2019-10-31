@@ -114,7 +114,7 @@
 /* UART IMCR mux modes */
 #define SIUL2_IMCR_S32_G1_UART_RXD_to_pad	0
 
-/* S32G2XX */
+/* S32GEN1 */
 #define SIUL2_MSCR_S32G_G1_PORT_CTRL_UART0_TXD	 \
 	(SIUL2_MSCR_S32_G1_SRC_100MHz |		 \
 	 SIUL2_MSCR_S32_G1_OBE_EN |		 \
@@ -168,7 +168,7 @@
 	 SIUL2_MSCR_MUX_MODE_ALT1)
 
 /* I2C settings */
-/* S32G2XX */
+/* S32GEN1 */
 #define SIUL2_MSCR_S32G_PB_00	16
 #define SIUL2_MSCR_S32G_PB_01	17
 #define SIUL2_MSCR_S32G_PB_03	19
@@ -638,7 +638,7 @@
 #define SIUL2_MSCR_S32_G1_PG2__QSPI_CK2           98
 
 /* DSPI Configuration */
-/* S32G2XX */
+/* S32GEN1 */
 
 #define SIUL2_MSCR_S32G_PA_09	9
 #define SIUL2_MSCR_S32G_PA_10	10

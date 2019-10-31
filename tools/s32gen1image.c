@@ -21,7 +21,7 @@ static table_entry_t dcd_commands[] = {
 	{INVALID,			"",				"",},
 };
 
-static void s32g2xx_add_dcd_command_header(__u8 tag, __u8 params)
+static void s32gen1_add_dcd_command_header(__u8 tag, __u8 params)
 {
 	size_t length = be16_to_cpu(last_command->length);
 
@@ -37,7 +37,7 @@ static void s32g2xx_add_dcd_command_header(__u8 tag, __u8 params)
 	last_command->params = params;
 }
 
-static void s32g2xx_add_dcd_command(int command_type, int access_width,
+static void s32gen1_add_dcd_command(int command_type, int access_width,
 				    int register_address, int register_data,
 				    int count,
 				    struct program_image *program_image)
@@ -89,7 +89,7 @@ static void s32g2xx_add_dcd_command(int command_type, int access_width,
 		break;
 	}
 
-	s32g2xx_add_dcd_command_header(tag, params);
+	s32gen1_add_dcd_command_header(tag, params);
 
 	switch (tag) {
 	case DCD_WRITE_COMMAND_TAG:
@@ -132,7 +132,7 @@ static void s32g2xx_add_dcd_command(int command_type, int access_width,
 	program_image->dcd.length = cpu_to_be16(dcd_length);
 }
 
-static void s32g2xx_parse_configuration_file(const char *filename,
+static void s32gen1_parse_configuration_file(const char *filename,
 					     struct program_image *program_image)
 {
 	FILE *f = NULL;
@@ -183,7 +183,7 @@ static void s32g2xx_parse_configuration_file(const char *filename,
 
 
 		if (command_type != INVALID)
-			s32g2xx_add_dcd_command(command_type,
+			s32gen1_add_dcd_command(command_type,
 						access_width,
 						register_address,
 						register_data,
@@ -194,7 +194,7 @@ static void s32g2xx_parse_configuration_file(const char *filename,
 	fclose(f);
 }
 
-static void s32g2xx_print_header(const void *header)
+static void s32gen1_print_header(const void *header)
 {
 	return;
 }
@@ -215,7 +215,7 @@ static void enforce_reserved_range(void *image_start, int image_length,
 }
 #endif
 
-static void s32g2xx_set_header(void *header, struct stat *sbuf, int unused,
+static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
 	struct program_image *program_image = (struct program_image*)header;
@@ -227,7 +227,7 @@ static void s32g2xx_set_header(void *header, struct stat *sbuf, int unused,
 	}
 
 	last_command = (struct dcd_command*)&program_image->dcd.commands[0];
-	s32g2xx_parse_configuration_file(tool_params->imagename,
+	s32gen1_parse_configuration_file(tool_params->imagename,
 					 program_image);
 
 	program_image->ivt.tag = IVT_TAG;
@@ -278,15 +278,15 @@ static void s32g2xx_set_header(void *header, struct stat *sbuf, int unused,
 	return;
 }
 
-static int s32g2xx_check_image_type(uint8_t type)
+static int s32gen1_check_image_type(uint8_t type)
 {
-	if (type == IH_TYPE_S32G2XXIMAGE)
+	if (type == IH_TYPE_S32GEN1IMAGE)
 		return EXIT_SUCCESS;
 	else
 		return EXIT_FAILURE;
 }
 
-static int s32g2xx_vrec_header(struct image_tool_params *tool_params,
+static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 			       struct image_type_params *type_params)
 {
 	struct program_image *program_image;
@@ -305,16 +305,16 @@ static int s32g2xx_vrec_header(struct image_tool_params *tool_params,
 }
 
 U_BOOT_IMAGE_TYPE(
-	s32g2xx_image,
-	"NXP S32G2XX Boot Image",
+	s32gen1_image,
+	"NXP S32GEN1 Boot Image",
 	0,
 	NULL,
 	NULL,
 	NULL,
-	s32g2xx_print_header,
-	s32g2xx_set_header,
+	s32gen1_print_header,
+	s32gen1_set_header,
 	NULL,
-	s32g2xx_check_image_type,
+	s32gen1_check_image_type,
 	NULL,
-	s32g2xx_vrec_header
+	s32gen1_vrec_header
 );
