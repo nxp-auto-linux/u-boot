@@ -503,13 +503,18 @@ static int eqos_start(struct udevice *dev)
 	rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
 		EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
 
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	/* Workaround for MTL ECC error experienced on S32CC platform */
+	tqs = 0x4f;
+	rqs = 0x4f;
+#else
 	/*
 	 * r/tx_fifo_sz is encoded as log2(n / 128). Undo that by shifting.
 	 * r/tqs is encoded as (n / 256) - 1.
 	 */
 	tqs = (128 << tx_fifo_sz) / 256 - 1;
 	rqs = (128 << rx_fifo_sz) / 256 - 1;
-
+#endif
 	clrsetbits_le32(&eqos->mtl_regs->txq0_operation_mode,
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_MASK <<
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_SHIFT,
