@@ -245,6 +245,7 @@ struct eqos_config {
 };
 
 struct eqos_ops {
+	int (*eqos_pre_init)(struct udevice *dev);
 	void (*eqos_inval_desc)(void *desc);
 	void (*eqos_flush_desc)(void *desc);
 	void (*eqos_inval_buffer)(void *buf, size_t size);

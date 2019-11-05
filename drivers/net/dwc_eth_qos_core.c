@@ -983,6 +983,12 @@ static int eqos_probe(struct udevice *dev)
 		return -ENODEV;
 	}
 
+	ret = eqos->config->ops->eqos_pre_init(dev);
+	if (ret < 0) {
+		pr_err("eqos_pre_init() failed: %d", ret);
+		goto err_remove_resources_core;
+	}
+
 	eqos->mac_regs = (void *)(eqos->regs + EQOS_MAC_REGS_BASE);
 	eqos->mmc_regs = (void *)(eqos->regs + EQOS_MMC_REGS_BASE);
 	eqos->mtl_regs = (void *)(eqos->regs + EQOS_MTL_REGS_BASE);

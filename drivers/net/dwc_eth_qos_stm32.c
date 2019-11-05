@@ -220,7 +220,13 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
 	return 0;
 }
 
+static int eqos_pre_init_stm32(struct udevice *dev)
+{
+	return 0;
+}
+
 static struct eqos_ops eqos_stm32_ops = {
+	.eqos_pre_init = eqos_pre_init_stm32,
 	.eqos_inval_desc = eqos_inval_desc_generic,
 	.eqos_flush_desc = eqos_flush_desc_generic,
 	.eqos_inval_buffer = eqos_inval_buffer_generic,
