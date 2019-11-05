@@ -1,8 +1,8 @@
 /* Copyright 2019 NXP */
 /* SPDX-License-Identifier: GPL-2.0+ */
 
-#ifndef _S32G2XXIMAGE_H_
-#define _S32G2XXIMAGE_H_
+#ifndef S32GEN1IMAGE_H
+#define S32GEN1IMAGE_H
 
 #include <asm/types.h>
 #include <generated/autoconf.h>
@@ -117,4 +117,4 @@ struct program_image {
 	struct application_boot_code application_boot_code;
 };
 
-#endif /* _S32G2XXIMAGE_H_ */
+#endif /* S32GEN1IMAGE_H */
