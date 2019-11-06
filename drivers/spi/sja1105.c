@@ -235,17 +235,26 @@ static bool sja1105_check_device_status(struct sja_parms *sjap,
 	u32 status;
 	u32 expected_val = expected_status ? SJA1105_BIT_STATUS_CONFIG_DONE : 0;
 	bool ret = true;
+	u32 error;
 
 	status = sja1105_read_reg32(sjap, SJA1105_REG_STATUS);
 
-	*pstatus = (expected_val == (status & SJA1105_BIT_STATUS_CONFIG_DONE));
-
-	if (expected_status && !*pstatus) {
+	/* Check status is valid: check if any error bit is set */
+	error = SJA1105_BIT_STATUS_CRCCHKL |
+		 SJA1105_BIT_STATUS_DEVID_MATCH |
+		 SJA1105_BIT_STATUS_CRCCHKG;
+	if (status & error) {
 		sja_debug("Error: SJA1105_REG_STATUS=0x%08x - LocalCRCfail=%d - DevID unmatched=%d, GlobalCRCfail=%d\n",
 			  status,
 			  (int)(status & SJA1105_BIT_STATUS_CRCCHKL),
 			  (int)(status & SJA1105_BIT_STATUS_DEVID_MATCH),
 			  (int)(status & SJA1105_BIT_STATUS_CRCCHKG));
+		return false;
+	}
+
+	*pstatus = (expected_val == (status & SJA1105_BIT_STATUS_CONFIG_DONE));
+
+	if (expected_status && !*pstatus) {
 		ret = false;
 	}
 
@@ -451,8 +460,10 @@ int sja1105_probe(u32 cs, u32 bus)
 	ret = sja1105_get_cfg(sjap.devid, sjap.cs, &sjap.bin_len,
 		&sjap.cfg_bin);
 
-	if (ret)
+	if (ret) {
+		printf("Error SJA1105 configuration not completed\n");
 		return -EINVAL;
+	}
 
 	return sja1105_configuration_load(&sjap);
 }
