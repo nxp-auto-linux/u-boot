@@ -60,7 +60,15 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: s32x simulator\n");
+#if defined(CONFIG_TARGET_S32G275)
+	puts("Board:\tNXP S32G274A-PROCEVB\n");
+#elif defined(CONFIG_TARGET_S32R45X)
+	puts("Board:\tNXP S32R45X-xxxxxxx\n");
+#elif defined(CONFIG_TARGET_S32V344)
+	puts("Board:\tNXP S32V344-xxxxxxx\n");
+#else
+	puts("Board:\tNXP S32-gen1-xxxxxxx\n");
+#endif
 
 	return 0;
 }
