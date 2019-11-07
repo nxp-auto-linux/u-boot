@@ -235,17 +235,26 @@ static bool sja1105_check_device_status(struct sja_parms *sjap,
 	u32 status;
 	u32 expected_val = expected_status ? SJA1105_BIT_STATUS_CONFIG_DONE : 0;
 	bool ret = true;
+	u32 error;
 
 	status = sja1105_read_reg32(sjap, SJA1105_REG_STATUS);
 
-	*pstatus = (expected_val == (status & SJA1105_BIT_STATUS_CONFIG_DONE));
-
-	if (expected_status && !*pstatus) {
+	/* Check status is valid: check if any error bit is set */
+	error = SJA1105_BIT_STATUS_CRCCHKL |
+		 SJA1105_BIT_STATUS_DEVID_MATCH |
+		 SJA1105_BIT_STATUS_CRCCHKG;
+	if (status & error) {
 		sja_debug("Error: SJA1105_REG_STATUS=0x%08x - LocalCRCfail=%d - DevID unmatched=%d, GlobalCRCfail=%d\n",
 			  status,
 			  (int)(status & SJA1105_BIT_STATUS_CRCCHKL),
 			  (int)(status & SJA1105_BIT_STATUS_DEVID_MATCH),
 			  (int)(status & SJA1105_BIT_STATUS_CRCCHKG));
+		return false;
+	}
+
+	*pstatus = (expected_val == (status & SJA1105_BIT_STATUS_CONFIG_DONE));
+
+	if (expected_status && !*pstatus) {
 		ret = false;
 	}
 
@@ -451,8 +460,10 @@ int sja1105_probe(u32 cs, u32 bus)
 	ret = sja1105_get_cfg(sjap.devid, sjap.cs, &sjap.bin_len,
 		&sjap.cfg_bin);
 
-	if (ret)
+	if (ret) {
+		printf("Error SJA1105 configuration not completed\n");
 		return -EINVAL;
+	}
 
 	return sja1105_configuration_load(&sjap);
 }
@@ -531,9 +542,40 @@ int do_sja_regs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 
 
+int do_sja_probe(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char  *cp = 0;
+	struct sja_parms sjap;
+
+	sjap.cs = 0;
+	sjap.bus = CONFIG_DEFAULT_SPI_BUS;
+
+	if (argc == 2) {
+		sjap.bus = simple_strtoul(argv[1], &cp, 10);
+		if (*cp == ':') {
+			sjap.cs = simple_strtoul(cp+1, &cp, 10);
+		} else {
+			sjap.cs = sjap.bus;
+			sjap.bus = CONFIG_DEFAULT_SPI_BUS;
+		}
+	}
+	printf("Probe SJA1105 \n");
+	/* For debug purposes force SJA1105 initialization*/
+	sja1105_probe(sjap.cs, sjap.bus);
+	sja1105_reset_ports(sjap.cs, sjap.bus);
+	/* end of force SJA1105 initialization*/
+
+	return 0;
+}
+
 U_BOOT_CMD(
 	sja,	2,	1,	do_sja_regs,
 	"SJA1105 register dump",
 	"[<bus>:]<cs> - View registers for SJA\n"
 );
 
+U_BOOT_CMD(
+	sja_probe,	2,	1,	do_sja_probe,
+	"SJA1105 probe device",
+	"[<bus>:]<cs> - Probe SJA and load configuration\n"
+);

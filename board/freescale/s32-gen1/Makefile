@@ -21,6 +21,7 @@ ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf.o ddrss_firmware.o
+obj-$(CONFIG_SJA1105) += sja1105_cfg.o
 endif
 
 #########################################################################
