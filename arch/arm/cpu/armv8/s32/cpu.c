@@ -13,7 +13,7 @@
 #include <asm/arch/siul.h>
 #include "mp.h"
 #include <asm/arch/soc.h>
-#include "s32-gen1/mem_map/mem_map_a53.h"
+#include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -381,8 +381,8 @@ int timer_init(void)
 {
 	u32 clk_div;
 
-	clk_div = readl(A53_CLUSTER_GPR00) >> CA53_GPR00_CLK_DIV_VAL_SHIFT;
-	clk_div = (clk_div & CA53_GPR00_CLK_DIV_VAL_MASK) + 1;
+	clk_div = readl(A53_CLUSTER_GPR_GPR(0)) & GPR00_CA53_COUNTER_CLK_DIV_VAL_MASK;
+	clk_div = (clk_div >> GPR00_CA53_COUNTER_CLK_DIV_VAL_SHIFT) + 1;
 
 	__real_cntfrq = COUNTER_FREQUENCY / clk_div;
 	flush_dcache_range((unsigned long)&__real_cntfrq,

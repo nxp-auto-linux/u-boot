@@ -8,7 +8,6 @@
 #include <asm/arch/soc.h>
 
 #include "board_common.h"
-#include "s32-gen1/mem_map/mem_map_siul.h"
 
 void setup_iomux_uart(void)
 {
