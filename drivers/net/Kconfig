@@ -30,6 +30,14 @@ menuconfig NETDEVICES
 
 if NETDEVICES
 
+config FSL_PFE_NG
+	bool "Enable PFEng on S32G support"
+	depends on NET && DM_ETH && S32_GEN1
+	help
+	  Enables support for PFEng on S32G.
+
+	  If unsure, say N
+
 config PHY_GIGE
 	bool "Enable GbE PHY status parsing and configuration"
 	help

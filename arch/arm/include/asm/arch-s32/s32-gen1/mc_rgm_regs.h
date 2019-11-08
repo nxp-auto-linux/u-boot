@@ -17,7 +17,9 @@
 #define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x40 + (per) * 0x8)
 #define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x140 + (per) * 0x8)
 
+#define RGM_PERI_RESET_GROUP		0
 #define RGM_CORES_RESET_GROUP		1
+#define RGM_PFE_RESET_GROUP		2
 
 #define RGM_CORE_RST(num)               (0x1 << ((num) + 1))
 
