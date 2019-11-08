@@ -24,6 +24,9 @@ enum mxc_clock {
 	MXC_DSPI_CLK,
 	MXC_XBAR_CLK,
 	MXC_DDR_CLK,
+#if CONFIG_IS_ENABLED(FSL_PFE_NG)
+	MXC_PFE_CLK,
+#endif
 };
 
 #if defined(CONFIG_S32V234)

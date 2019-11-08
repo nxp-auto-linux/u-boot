@@ -41,6 +41,10 @@
 #define S32CC_GMAC_0_CTRL_STS		0x4007C004
 #define GMAC_MAC_PHYIF_CTRL_STAT	0x4033C0F8
 
+#if CONFIG_IS_ENABLED(FSL_PFE_NG)
+u32 pfeng_cfg_emac_get_interface(u32 idx);
+#endif
+
 enum {
 	S32CCGMAC_MODE_DISABLE = 0,
 	S32CCGMAC_MODE_ENABLE,
@@ -113,7 +117,12 @@ static const char *s32ccgmac_cfg_get_interface_mode_str(void)
 
 static bool s32ccgmac_set_interface(u32 mode)
 {
-	/* TODO: check for clashing with PFE later on */
+#if CONFIG_IS_ENABLED(FSL_PFE_NG)
+		if (pfeng_cfg_emac_get_interface(1) != PHY_INTERFACE_MODE_NONE &&
+		    pfeng_cfg_emac_get_interface(1) == mac_intf) {
+			pr_info("warning: the interface is already used by PFE1");
+		}
+#endif
 
 	setup_iomux_enet_gmac(mode);
 	setup_clocks_enet_gmac(mode);

@@ -36,6 +36,7 @@
 #define MC_ME_PRTN_N_PCE		(1 << 0)
 #define MC_ME_PRTN_N_PCUD		BIT(0)
 #define MC_ME_PRTN_N_OSSE		(1 << 2)
+#define MC_ME_PRTN_N_OSSUD		BIT(2)
 #define MC_ME_PRTN_N_BLOCK(n)		BIT(n)
 #define MC_ME_PRTN_N_REQ(n)		BIT(n)
 
@@ -56,9 +57,23 @@
 #define MC_ME_CORES_PRTN	(1)
 #define MC_ME_USDHC_PRTN	(0)
 #define MC_ME_DDR_0_PRTN	(0)
+#define MC_ME_PFE_PRTN		(2)
 
 #define MC_ME_USDHC_REQ		(0)
 #define MC_ME_DDR_0_REQ		(1)
+#define MC_ME_PFE_EMAC0_REQ	(1 << 0)
+#define MC_ME_PFE_EMAC1_REQ	(1 << 1)
+#define MC_ME_PFE_EMAC2_REQ	(1 << 2)
+#define MC_ME_PFE_TS_REQ	(1 << 3)
+#define MC_ME_PFE_REQ_GROUP	(MC_ME_PFE_EMAC0_REQ | MC_ME_PFE_EMAC1_REQ | \
+				 MC_ME_PFE_EMAC2_REQ | MC_ME_PFE_TS_REQ)
+
+/* Reset domain definitions */
+
+#define RDC_RD_2_CTRL		(RDC_BASE_ADDR + 0x8)
+#define RDC_RD_2_STAT		(RDC_BASE_ADDR + 0x88)
+#define RDC_RD_CTRL_UNLOCK	(1 << 31)
+#define RDC_RD_INTERCONNECT_DISABLE (1 << 3)
 
 #endif
 
