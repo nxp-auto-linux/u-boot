@@ -272,6 +272,12 @@
 #define NFSRAMFS_TFTP_CMD ""
 #endif
 
+#ifdef CONFIG_FSL_PFE_NG
+#define PFE_INIT_CMD "pfeng emacs none,rgmii; pfeng enable; "
+#else
+#define PFE_INIT_CMD ""
+#endif
+
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 
 #ifdef CONFIG_XEN_SUPPORT
@@ -418,10 +424,10 @@
 #else
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_BOOTCOMMAND \
-	   "run flashboot"
+	   PFE_INIT_CMD "run flashboot"
 #elif defined(CONFIG_SD_BOOT)
 #define CONFIG_BOOTCOMMAND \
-	   "mmc dev ${mmcdev}; if mmc rescan; then " \
+	   PFE_INIT_CMD "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadimage; then " \
 			   "run mmcboot; " \
 		   "else run netboot; " \
