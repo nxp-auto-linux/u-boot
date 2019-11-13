@@ -129,9 +129,14 @@ static u32 get_div(u64 cgm, u8 mux)
 {
 	u32 div = 1, dc;
 
-	/* MC_CGM MUXes below don't have a divider register */
-	if ((mux == 7) || (mux == 8) || (mux == 11) || (mux == 13) || (mux == 16))
-		return div;
+	/* MC_CGM_0/5 MUXes below don't have a divider register */
+	if (cgm == MC_CGM0_BASE_ADDR) {
+		if ((mux == 7) || (mux == 8) || (mux == 11) || (mux == 16))
+			return div;
+	} else if (cgm == MC_CGM5_BASE_ADDR) {
+		if (mux == 0)
+			return div;
+	}
 
 	dc = readl(CGM_MUXn_DCm(cgm, mux, 0));
 	/* If div is enabled. */
