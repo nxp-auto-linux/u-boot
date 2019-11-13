@@ -7,6 +7,10 @@
 
 #define UNSPECIFIED	-1
 
+#ifdef CONFIG_FLASH_BOOT
+#define S32G2XX_COMMAND_SEQ_FILL_OFF 20
+#endif
+
 static struct dcd_command *last_command;
 
 static table_entry_t dcd_commands[] = {
@@ -213,6 +217,48 @@ static void enforce_reserved_range(void *image_start, int image_length,
 		exit(EXIT_FAILURE);
 	}
 }
+
+#else
+static struct qspi_params s32g2xx_qspi_conf = {
+	.header   = 0x5a5a5a5a,
+	.mcr      = 0x010f004c,
+	.flshcr   = 0x00000303,
+	.bufgencr = 0x00000000,
+	.dllcr    = 0x01200006,
+	.paritycr = 0x00000000,
+	.sfacr    = 0x00000800,
+	.smpr     = 0x00000020,
+	.dlcr     = 0x40ff40ff,
+	.sflash_1_size = 0x20000000,
+	.sflash_2_size = 0x20000000,
+	.dlpr = 0xaa553443,
+	.sfar = 0x00000000,
+	.ipcr = 0x00000000,
+	.tbdr = 0x00000000,
+	.dll_bypass_en   = 0x01,
+	.dll_slv_upd_en  = 0x00,
+	.dll_auto_upd_en = 0x00,
+	.ipcr_trigger_en = 0x00,
+	.sflash_clk_freq = 0x85,
+	.reserved = {0x00, 0x00, 0x00},
+	.command_seq = {0xec, 0x07, 0x13, 0x07,
+			0x20, 0x0b, 0x14, 0x0f,
+			0x01, 0x1f, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00},
+	.flash_write_data = {0x06, 0x00, 0x00, 0x00,
+			     0x00, 0x00, 0x00, 0x00,
+			     0x00, 0x00, 0x00, 0x00,
+			     0x72, 0x00, 0x80, 0x81,
+			     0x00, 0x00, 0x00, 0x00,
+			     0x01, 0x00, 0x00, 0x00,}
+};
+
+static void s32g2xx_set_qspi_params(struct qspi_params *qspi_params)
+{
+	memcpy(qspi_params, &s32g2xx_qspi_conf, sizeof(*qspi_params));
+	memset(&qspi_params->command_seq[S32G2XX_COMMAND_SEQ_FILL_OFF], 0xff,
+	       sizeof(qspi_params->command_seq) - S32G2XX_COMMAND_SEQ_FILL_OFF);
+}
 #endif
 
 static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
@@ -273,6 +319,8 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       program_image->application_boot_code.code_length,
 			       (void*)SRAM_RESERVED_1_START,
 			       (void*)SRAM_RESERVED_1_END);
+#else
+	s32g2xx_set_qspi_params(&program_image->qspi_params);
 #endif
 
 	return;
