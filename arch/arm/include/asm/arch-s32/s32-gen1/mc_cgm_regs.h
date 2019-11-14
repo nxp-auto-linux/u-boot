@@ -278,7 +278,7 @@
 #define DDR_PLL_DFS_Nr			(0)
 #define DDR_PLL_PLLDV_RDIV		(1)
 #define DDR_PLL_PLLDV_MFI		(40)
-#define DDR_PLL_PLLDV_MFN		(1)
+#define DDR_PLL_PLLDV_MFN		(0)
 
 #define ACCEL_PLL_PHI0_FREQ		(600000000)
 #define ACCEL_PLL_PHI1_FREQ		(600000000)

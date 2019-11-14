@@ -232,7 +232,7 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
 
-	/* setup the mux clock divider for DDR_CLK (800 MHz) */
+	/* setup the mux clock divider for DDR_CLK (400 MHz) */
 	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
 			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
 
