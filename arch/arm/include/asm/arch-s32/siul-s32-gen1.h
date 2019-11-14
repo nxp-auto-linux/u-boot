@@ -16,9 +16,6 @@
 /* MSCR 112-190 */
 #define SIUL2_1_MSCRn(i)			(SIUL2_1_MSCR_BASE + 4 * (i - 112))
 
-#define SIUL2_X_MSCRn(n)			((n < 631) ? SIUL2_0_MSCRn(n) : \
-						 SIUL2_1_MSCRn(n))
-
 #define SIUL2_0_IMCR_BASE			(SIUL2_0_BASE_ADDR + 0x00000A40)
 #define SIUL2_1_IMCR_BASE			(SIUL2_1_BASE_ADDR + 0x00000C1C)
 /* IMCR 0-83 */
