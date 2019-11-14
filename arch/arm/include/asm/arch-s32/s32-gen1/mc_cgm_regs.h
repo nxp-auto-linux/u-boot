@@ -231,7 +231,7 @@
 #define ARM_PLL_DFS_Nr			(6)
 #define ARM_PLL_PLLDV_RDIV		(1)
 #define ARM_PLL_PLLDV_MFI		(50)
-#define ARM_PLL_PLLDV_MFN		(1)
+#define ARM_PLL_PLLDV_MFN		(0)
 
 #define PERIPH_PLL_PHI0_FREQ		(100000000)
 #define PERIPH_PLL_PHI1_FREQ		(80000000)
