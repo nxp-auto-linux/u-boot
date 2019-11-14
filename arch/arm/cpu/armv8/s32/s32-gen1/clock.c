@@ -204,8 +204,8 @@ static void setup_mux_clocks(void)
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 7,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI2);
 
-	/* setup the mux clock divider for LIN_CLK (66,5 MHz),
-	 * LIN_BAUD_CLK (133 MHz)
+	/* setup the mux clock divider for LIN_CLK (62,5 MHz),
+	 * LIN_BAUD_CLK (125 MHz)
 	 */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 8,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI3);
@@ -227,7 +227,7 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 12, 0, 1);
 
-	/* setup the mux clock divider for SDHC_CLK (208 MHz) */
+	/* setup the mux clock divider for SDHC_CLK (200 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 14,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
