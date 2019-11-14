@@ -7,3 +7,4 @@ obj-y					+= clock.o
 obj-y					+= ncore.o
 obj-y					+= soc.o
 obj-$(CONFIG_S32_GEN_1_USES_FLASH)	+= qspi.o
+ccflags-y				+= -I./board/freescale/s32-gen1/
