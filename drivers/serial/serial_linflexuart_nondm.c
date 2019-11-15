@@ -175,8 +175,8 @@ static int linflex_serial_init(void)
 {
 	volatile u32 ctrl;
 
-	/* set the Linflex in master mode and activate by-pass filter */
-	ctrl = LINCR1_BF | LINCR1_MME;
+	/* set the Linflex in master mode */
+	ctrl = LINCR1_MME;
 	__raw_writel(ctrl, &base->lincr1);
 
 	/* init mode */
