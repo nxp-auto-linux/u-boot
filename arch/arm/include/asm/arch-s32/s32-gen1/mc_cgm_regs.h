@@ -231,12 +231,12 @@
 #define ARM_PLL_DFS_Nr			(6)
 #define ARM_PLL_PLLDV_RDIV		(1)
 #define ARM_PLL_PLLDV_MFI		(50)
-#define ARM_PLL_PLLDV_MFN		(1)
+#define ARM_PLL_PLLFD_MFN		(0)
 
 #define PERIPH_PLL_PHI0_FREQ		(100000000)
 #define PERIPH_PLL_PHI1_FREQ		(80000000)
 #define PERIPH_PLL_PHI2_FREQ		(80000000)
-#define PERIPH_PLL_PHI3_FREQ		(133000000)
+#define PERIPH_PLL_PHI3_FREQ		(125000000)
 #define PERIPH_PLL_PHI4_FREQ		(200000000)
 #define PERIPH_PLL_PHI5_FREQ		(125000000)
 #define PERIPH_PLL_PHI6_FREQ		(100000000)
@@ -271,14 +271,14 @@
 #define PERIPH_PLL_DFS_Nr		(6)
 #define PERIPH_PLL_PLLDV_RDIV		(1)
 #define PERIPH_PLL_PLLDV_MFI		(50)
-#define PERIPH_PLL_PLLDV_MFN		(1)
+#define PERIPH_PLL_PLLFD_MFN		(0)
 
 #define DDR_PLL_PHI0_FREQ		(400000000)
 #define DDR_PLL_PHI_Nr			(1)
 #define DDR_PLL_DFS_Nr			(0)
 #define DDR_PLL_PLLDV_RDIV		(1)
 #define DDR_PLL_PLLDV_MFI		(40)
-#define DDR_PLL_PLLDV_MFN		(1)
+#define DDR_PLL_PLLFD_MFN		(0)
 
 #define ACCEL_PLL_PHI0_FREQ		(600000000)
 #define ACCEL_PLL_PHI1_FREQ		(600000000)
@@ -286,7 +286,7 @@
 #define ACCEL_PLL_DFS_Nr		(0)
 #define ACCEL_PLL_PLLDV_RDIV		(1)
 #define ACCEL_PLL_PLLDV_MFI		(60)
-#define ACCEL_PLL_PLLDV_MFN		(1)
+#define ACCEL_PLL_PLLFD_MFN		(1)
 
 /* Clock source mapping on MC_CGM clock selectors. */
 /* Clock source / Clock selector index */

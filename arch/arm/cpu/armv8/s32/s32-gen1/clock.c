@@ -204,8 +204,8 @@ static void setup_mux_clocks(void)
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 7,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI2);
 
-	/* setup the mux clock divider for LIN_CLK (66,5 MHz),
-	 * LIN_BAUD_CLK (133 MHz)
+	/* setup the mux clock divider for LIN_CLK (62,5 MHz),
+	 * LIN_BAUD_CLK (125 MHz)
 	 */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 8,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI3);
@@ -227,12 +227,12 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 12, 0, 1);
 
-	/* setup the mux clock divider for SDHC_CLK (208 MHz) */
+	/* setup the mux clock divider for SDHC_CLK (200 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 14,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
 
-	/* setup the mux clock divider for DDR_CLK (800 MHz) */
+	/* setup the mux clock divider for DDR_CLK (400 MHz) */
 	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
 			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
 
@@ -314,7 +314,7 @@ void clock_init(void)
 	program_pll(
 				ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
 				ARM_PLL_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_RDIV,
-				ARM_PLL_PLLDV_MFI, ARM_PLL_PLLDV_MFN
+				ARM_PLL_PLLDV_MFI, ARM_PLL_PLLFD_MFN
 				);
 
 	setup_sys_clocks();
@@ -323,20 +323,20 @@ void clock_init(void)
 				PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI_Nr,
 				periph_phi, PERIPH_PLL_DFS_Nr, periph_dfs,
 				PERIPH_PLL_PLLDV_RDIV, PERIPH_PLL_PLLDV_MFI,
-				PERIPH_PLL_PLLDV_MFN
+				PERIPH_PLL_PLLFD_MFN
 				);
 
 	program_pll(
 				ACCEL_PLL, XOSC_CLK_FREQ, ACCEL_PLL_PHI_Nr,
 				accel_phi, ACCEL_PLL_DFS_Nr, NULL,
 				ACCEL_PLL_PLLDV_RDIV, ACCEL_PLL_PLLDV_MFI,
-				ACCEL_PLL_PLLDV_MFN
+				ACCEL_PLL_PLLFD_MFN
 				);
 
 	program_pll(
 				DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI_Nr, ddr_phi,
 				DDR_PLL_DFS_Nr, NULL, DDR_PLL_PLLDV_RDIV,
-				DDR_PLL_PLLDV_MFI, DDR_PLL_PLLDV_MFN
+				DDR_PLL_PLLDV_MFI, DDR_PLL_PLLFD_MFN
 				);
 
 	setup_mux_clocks();
