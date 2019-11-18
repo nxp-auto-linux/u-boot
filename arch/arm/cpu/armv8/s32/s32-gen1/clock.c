@@ -19,7 +19,7 @@ static void enable_partition_block(u32 partition_n, u32 block_n)
 	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
 
-	while (!(readl(MC_ME_PRTN_N_COFB0_STAT(partition_n)) & MC_ME_PRTN_N_BLOCK(block_n)))
+	while (readl(MC_ME_PRTN_N_PUPD(partition_n)) & MC_ME_PRTN_N_PCUD)
 		;
 }
 
