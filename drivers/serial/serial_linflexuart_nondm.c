@@ -175,8 +175,8 @@ static int linflex_serial_init(void)
 {
 	volatile u32 ctrl;
 
-	/* set the Linflex in master mode and activate by-pass filter */
-	ctrl = LINCR1_BF | LINCR1_MME;
+	/* set the Linflex in master mode */
+	ctrl = LINCR1_MME;
 	__raw_writel(ctrl, &base->lincr1);
 
 	/* init mode */
@@ -194,10 +194,8 @@ static int linflex_serial_init(void)
 	/* provide data bits, parity, stop bit, etc */
 	serial_setbrg();
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
-	/* Set preset timeout register value. Otherwise, print is very slow. */
+	/* Set preset timeout register value. */
 	__raw_writel(0xf, &base->uartpto);
-#endif
 
 	/* 8 bit data, no parity, Tx and Rx enabled, UART mode */
 	__raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
