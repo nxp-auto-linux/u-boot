@@ -132,7 +132,7 @@ static void disable_partition_2(void)
 		       MC_ME_PRTN_N_PCUD, MC_ME_PRTN_N_PUPD(PART_PFE_NO));
 		writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 		writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-		while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_PCE)
+		while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_PCS)
 			;
 	}
 
@@ -142,7 +142,8 @@ static void disable_partition_2(void)
 	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
 	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) & ~MC_ME_PRTN_N_OSSE)
+	//while (readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) & ~MC_ME_PRTN_N_OSSE)
+	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS)
 		;
 
 	/* Lift partition reset for PFE */
@@ -153,21 +154,28 @@ static void disable_partition_2(void)
 
 static void enable_partition_2(void)
 {
+	/* Enabling PFE clocks (EMACs + TS) in partition 2 */
+	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO)) |
+	       MC_ME_PFE_REQ_GROUP, MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO));
+	writel(readl(MC_ME_MODE_UPD) | MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD);
+	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
+
 	/* Enabling MC_ME partition 2 clock */
-	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) | 0x1,
+	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) | MC_ME_PRTN_N_PCE,
 	       MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | 0x1,
+	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | MC_ME_PRTN_N_PCUD,
 	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
 	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & 0x1)
+	while (!(readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_PCS))
 		;
 
 	/* Unlocking the RDC register */
 	writel(readl(RDC_RD_2_CTRL) | RDC_RD_CTRL_UNLOCK, RDC_RD_2_CTRL);
 	writel(readl(RDC_RD_2_CTRL) & ~RDC_RD_INTERCONNECT_DISABLE,
 	       RDC_RD_2_CTRL);
-	while ((readl(RDC_RD_2_STAT) & 0x00000010))
+	while ((readl(RDC_RD_2_STAT) & RDC_RD_INTERCONNECT_DISABLE_STAT))
 		;
 
 	/* Releasing partition reset for PFE */
@@ -183,60 +191,14 @@ static void enable_partition_2(void)
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
 	while (readl(RGM_PSTAT(PART_PFE_NO)) & 0x1)
 		;
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & 0x4)
+	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSE)
 		;
-
-	/* Unlocking the RDC register */
-	writel(readl(RDC_RD_2_CTRL) | RDC_RD_CTRL_UNLOCK, RDC_RD_2_CTRL);
 }
 
 static void reset_partition_2(void)
 {
 	disable_partition_2();
 	enable_partition_2();
-}
-
-static void enable_partition_2_block(void)
-{
-	/* Enabling PFE clocks (EMACs + TS) in partition 2 */
-	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO)) |
-	       MC_ME_PFE_REQ_GROUP, MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO));
-	writel(readl(MC_ME_MODE_UPD) | 0x1, MC_ME_MODE_UPD);
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-
-	/* Enabling MC_ME partition 2 clock */
-	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) | 0x1,
-	       MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | 0x1,
-	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & 0x1)
-		;
-
-	/* Unlocking the RDC register */
-	writel(readl(RDC_RD_2_CTRL) | RDC_RD_CTRL_UNLOCK, RDC_RD_2_CTRL);
-	writel(readl(RDC_RD_2_CTRL) & ~RDC_RD_INTERCONNECT_DISABLE,
-	       RDC_RD_2_CTRL);
-	while ((readl(RDC_RD_2_STAT) & 0x00000010))
-		;
-
-	/* Releasing partition reset for PFE */
-	writel(readl(RGM_PRST(PART_PFE_NO)) & 0xFFFFFFFE,
-	       RGM_PRST(PART_PFE_NO));
-
-	/* Disabling OSSE */
-	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) & ~MC_ME_PRTN_N_OSSE,
-	       MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | MC_ME_PRTN_N_OSSUD,
-	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (readl(RGM_PSTAT(PART_PFE_NO)) & 0x1)
-		;
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & 0x4)
-		;
 }
 
 static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
@@ -579,7 +541,7 @@ bool pfeng_cfg_set_mode(u32 mode)
 		memcpy(emac_intf, new_intf, sizeof(emac_intf));
 
 		/* enable partition 2 */
-		enable_partition_2_block();
+		enable_partition_2();
 		setup_iomux_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
 		setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
 
