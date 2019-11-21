@@ -484,6 +484,9 @@
 #error "CONFIG_FLASH_BOOT and CONFIG_SD_BOOT both defined"
 #endif
 
+#define CONFIG_SYS_MMC_ENV_DEV		0
+#define CONFIG_MMC_PART			1
+
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
 #define CONFIG_ENV_SIZE 			(0x2000) /* 8 KB */
@@ -494,8 +497,6 @@
 #elif defined(CONFIG_SD_BOOT)
 #define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
 #define CONFIG_ENV_OFFSET		(0xC0000) /* 12 * 64 * 1024 */
-#define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_MMC_PART			1
 
 #elif defined(CONFIG_ENV_IS_NOWHERE)
 #define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */

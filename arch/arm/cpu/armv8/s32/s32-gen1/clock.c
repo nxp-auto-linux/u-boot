@@ -220,12 +220,12 @@ static void setup_mux_clocks(void)
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 16,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI7);
 
-	/* setup the mux clock divider for QSPI_2X_CLK (400 MHz),
-	 * QSPI_1X_CLK (200 MHz)
+	/* setup the mux clock divider for QSPI_2X_CLK (266 MHz),
+	 * QSPI_1X_CLK (133 MHz)
 	 */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 12,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1);
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 12, 0, 1);
+	mux_div_clk_config(MC_CGM0_BASE_ADDR, 12, 0, 2);
 
 	/* setup the mux clock divider for SDHC_CLK (200 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 14,

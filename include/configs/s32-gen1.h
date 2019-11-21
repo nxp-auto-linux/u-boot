@@ -83,7 +83,7 @@
 /* memory mapped external flash */
 #define CONFIG_SYS_FSL_FLASH0_BASE      0x0
 #define CONFIG_SYS_FSL_FLASH0_SIZE      0x20000000
-#define QSPI_BASE_ADDR		        0x4032D000
+#define QSPI_BASE_ADDR		        0x40134000
 /* Flash related definitions */
 #define CONFIG_S32_GEN_1_USES_FLASH
 

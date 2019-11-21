@@ -106,12 +106,40 @@ struct application_boot_code {
 	__u8		code[0];
 } __attribute__((packed, aligned(512)));
 
+#ifdef CONFIG_FLASH_BOOT
+struct qspi_params {
+	__u32 header;
+	__u32 mcr;
+	__u32 flshcr;
+	__u32 bufgencr;
+	__u32 dllcr;
+	__u32 paritycr;
+	__u32 sfacr;
+	__u32 smpr;
+	__u32 dlcr;
+	__u32 sflash_1_size;
+	__u32 sflash_2_size;
+	__u32 dlpr;
+	__u32 sfar;
+	__u32 ipcr;
+	__u32 tbdr;
+	__u8 dll_bypass_en;
+	__u8 dll_slv_upd_en;
+	__u8 dll_auto_upd_en;
+	__u8 ipcr_trigger_en;
+	__u8 sflash_clk_freq;
+	__u8 reserved[3];
+	__u8 command_seq[320];
+	__u8 flash_write_data[120];
+};
+#endif
+
 struct program_image {
 	struct ivt ivt;
 	/* padding required for not overelapping with the MBR */
 	__u8 padding[512 - sizeof(struct ivt)];
 #ifdef CONFIG_FLASH_BOOT
-	__u8 qspi_params[512];
+	struct qspi_params qspi_params;
 #endif
 	struct dcd dcd;
 	struct application_boot_code application_boot_code;
