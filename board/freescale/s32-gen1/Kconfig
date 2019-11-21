@@ -40,12 +40,6 @@ config SYS_DDR_SIZE
 	hex "DDR Size"
 	default 0x10000000
 
-config SYS_DATA_BASE
-	hex "Data Base"
-	default 0x34000000
-	help
-	  U-boot data base address (normally SRAM base address)
-
 config EXTRA_KERNEL_BOOT_ARGS
 	string "Additional boot arguments for Linux kernel"
 	default ""
