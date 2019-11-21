@@ -19,6 +19,13 @@
 #define CONFIG_PRAM	2048	/* 2MB */
 #endif
 
-#define MMAP_DSPI	SPI5_BASE_ADDR
+#define MMAP_DSPIn(n) \
+	((n) == 0 ? SPI0_BASE_ADDR : \
+	 (n) == 1 ? SPI1_BASE_ADDR : \
+	 (n) == 2 ? SPI2_BASE_ADDR : \
+	 (n) == 3 ? SPI3_BASE_ADDR : \
+	 (n) == 4 ? SPI4_BASE_ADDR : \
+	 (n) == 5 ? SPI5_BASE_ADDR : \
+	 SPI_INVALID_BASE_ADDR)
 
 #endif

@@ -7,7 +7,7 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
- * Copyright 2017 NXP
+ * Copyright 2017, 2019 NXP
  */
 
 #include <common.h>
@@ -481,8 +481,19 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 				  unsigned int max_hz, unsigned int mode)
 {
 	struct fsl_dspi *dspi;
+	struct dspi *regs;
 	uint mcr_cfg_val;
 	int i;
+
+#ifdef CONFIG_ARCH_S32
+	regs = (struct dspi *)MMAP_DSPIn(bus);
+	if (regs == SPI_INVALID_BASE_ADDR) {
+		debug("Invalid SPI bus!\n");
+		return NULL;
+	}
+#else
+	regs = (struct dspi *)MMAP_DSPI;
+#endif
 
 	dspi = spi_alloc_slave(struct fsl_dspi, bus, cs);
 	if (!dspi)
@@ -494,7 +505,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	dspi->priv.flags |= DSPI_FLAG_REGMAP_ENDIAN_BIG;
 #endif
 
-	dspi->priv.regs = (struct dspi *)MMAP_DSPI;
+	dspi->priv.regs = regs;
 
 #ifdef CONFIG_M68K
 	dspi->priv.bus_clk = gd->bus_clk;

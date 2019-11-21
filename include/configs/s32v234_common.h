@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2018 NXP
+ * Copyright 2016-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -58,7 +58,11 @@
 
 #define IMX_FEC_BASE            ENET_BASE_ADDR
 
-#define MMAP_DSPI                       SPI0_BASE_ADDR
-
+#define MMAP_DSPIn(n) \
+	((n) == 0 ? SPI0_BASE_ADDR : \
+	 (n) == 1 ? SPI1_BASE_ADDR : \
+	 (n) == 2 ? SPI2_BASE_ADDR : \
+	 (n) == 3 ? SPI3_BASE_ADDR : \
+	 SPI_INVALID_BASE_ADDR)
 
 #endif

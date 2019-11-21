@@ -514,4 +514,6 @@
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
 
+#define SPI_INVALID_BASE_ADDR		0x0
+
 #endif /* __S32_H */
