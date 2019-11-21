@@ -128,6 +128,26 @@ void setup_iomux_i2c(void)
 #ifdef CONFIG_FSL_DSPI
 void setup_iomux_dspi(void)
 {
+	/* Muxing for DSPI1 */
+
+	/* Configure Chip Select Pins */
+	writel(SUIL2_MSCR_S32G_PAD_CTL_SPI1_CS0,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_07));
+
+	/* MSCR */
+	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI1_SOUT,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_06));
+
+	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI1_SIN,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PF_15));
+
+	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI1_SCK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_08));
+
+	/* IMCR */
+	writel(SIUL2_IMCR_S32G_PAD_CTL_SPI1_SIN,
+	       SIUL2_1_IMCRn(SIUL2_PF_15_IMCR_S32G_SPI1_SIN));
+
 	/* Muxing for DSPI5 */
 
 	/* Configure Chip Select Pins */
