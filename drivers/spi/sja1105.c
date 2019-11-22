@@ -359,6 +359,82 @@ void sja1105_port_cfg(struct sja_parms *sjap)
 	}
 }
 
+static void sja1105_set_speed_reg(struct sja_parms *sjap, int port, int speed)
+{
+	u32 reg_val, mode;
+
+	/* Get port type / speed */
+	mode = sja1105_read_reg32(sjap,
+				  SJA1105_PORT_STATUS_MII_PORT(port));
+
+	switch (mode & SJA1105_PORT_STATUS_MII_MODE) {
+	case e_mii_mode_rgmii:
+		/* Swap to configuration for required port*/
+		sja1105_write_reg32(sjap, SJA1105_REG_MAC_RECONF0,
+				    SJA1105_BIT_MAC_RECONF0_PORT(port) |
+				    SJA1105_BIT_MAC_RECONF0_VALID);
+
+		/* Read current content of register and update speed */
+		reg_val = sja1105_read_reg32(sjap, SJA1105_REG_MAC_RECONF5);
+		reg_val &= ~SJA1105_REG_MAC_SPEED_MASK;
+		reg_val |= SJA1105_REG_MAC_RECONF5_SPEED(speed);
+		sja1105_write_reg32(sjap, SJA1105_REG_MAC_RECONF5, reg_val);
+
+		/* Write configuration back */
+		sja1105_write_reg32(sjap,
+				    SJA1105_REG_MAC_RECONF0,
+				    SJA1105_BIT_MAC_RECONF0_WRITE |
+				    SJA1105_BIT_MAC_RECONF0_PORT(port) |
+				    SJA1105_BIT_MAC_RECONF0_VALID);
+
+		/* Check error */
+		reg_val = sja1105_read_reg32(sjap, SJA1105_REG_MAC_RECONF0);
+		if (reg_val & SJA1105_BIT_MAC_RECONF0_ERR) {
+			pr_err("speed on port %d could't be updated", port);
+			return;
+		}
+
+		/* Update Clock Generation Unit registers */
+		sja1105_set_rgmii_clock(sjap, port, speed);
+		break;
+	default:
+		pr_err("only RGMII is supported");
+		break;
+	}
+}
+
+static u32 sja1105_get_speed_reg(struct sja_parms *sjap, int port)
+{
+	u32 reg_val;
+	/* Swap to configuration for required port*/
+	sja1105_write_reg32(sjap, SJA1105_REG_MAC_RECONF0,
+			    SJA1105_BIT_MAC_RECONF0_PORT(port) |
+			    SJA1105_BIT_MAC_RECONF0_VALID);
+
+	/* Read current content of register and update speed */
+	reg_val = sja1105_read_reg32(sjap, SJA1105_REG_MAC_RECONF5);
+
+	return ((SJA1105_REG_MAC_SPEED_MASK & reg_val) >>
+		SJA1105_REG_MAC_SPEED_SHIFT);
+}
+
+static bool sja1105_parse_speed(char *str, u32 *speed)
+{
+	if (!strcmp(str, "10M"))
+		*speed = SJA1105_REG_MAC_SPEED_10M;
+	else if (!strcmp(str, "100M"))
+		*speed = SJA1105_REG_MAC_SPEED_100M;
+	else if (!strcmp(str, "1G"))
+		*speed = SJA1105_REG_MAC_SPEED_1G;
+	else if (!strcmp(str, "disable"))
+		*speed = SJA1105_REG_MAC_SPEED_DISABLED;
+	else if (!strcmp(str, "-"))
+		*speed = -1;
+	else
+		return false;
+	return true;
+}
+
 static int sja1105_configuration_load(struct sja_parms *sjap)
 {
 	int remaining_words;
@@ -444,6 +520,56 @@ static int sja1105_configuration_load(struct sja_parms *sjap)
 	sja1105_port_cfg(sjap);
 
 	return 0;
+}
+
+static bool sja1105_speed_control(struct sja_parms *sjap, char *options)
+{
+	int port;
+	u32 speed[SJA1105_PORT_NB] = {-1, -1, -1, -1, -1};
+	char *tok;
+	static const char * const speed_str[] = {"Disabled",
+						 "1G",
+						 "100M",
+						 "10M"};
+
+	switch (sja1105_check_device_id(sjap)) {
+	case SJA1105_DEV_COMPATIBLE_PRx:
+	case SJA1105_DEV_COMPATIBLE_QSx:
+		break;
+	default:
+		pr_err("command not supported on this device");
+		return false;
+	}
+
+	if (options) {
+		/* Additional parameter to set speed */
+		tok = strtok(options, ",");
+		for (port = 0; port < SJA1105_PORT_NB; ++port) {
+			if (!tok)
+				break;
+
+			if (!sja1105_parse_speed(tok, &speed[port])) {
+				pr_err("invalid speed on port %d", port);
+				return false;
+			}
+
+			tok = strtok(NULL, ",");
+		}
+
+		/* Update registers */
+		for (port = 0; port < SJA1105_PORT_NB; ++port)
+			if (-1 != speed[port])
+				sja1105_set_speed_reg(sjap, port, speed[port]);
+	}
+
+	for (port = 0; port < SJA1105_PORT_NB; ++port)
+		speed[port] = sja1105_get_speed_reg(sjap, port);
+
+	printf("port0:%s port1:%s port2:%s port3:%s port4:%s\n",
+	       speed_str[speed[0]], speed_str[speed[1]], speed_str[speed[2]],
+	       speed_str[speed[3]], speed_str[speed[4]]);
+
+	return true;
 }
 
 void sja1105_reset_ports(u32 cs, u32 bus)
@@ -571,7 +697,7 @@ static int sja1105_print_regs(struct sja_parms *sjap)
 
 static int do_sja_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char  *cp = 0;
+	char  *cp = NULL, *options = NULL;
 	struct sja_parms sjap;
 
 	/* Parse SPI data */
@@ -582,8 +708,9 @@ static int do_sja_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return CMD_RET_USAGE;
 	}
 
-	if (argc == 3) {
-		sjap.bus = simple_strtoul(argv[2], &cp, 10);
+	/* Check if last argument is spi:cs */
+	if (argc > 2 && !strchr(argv[argc - 1], ',')) {
+		sjap.bus = simple_strtoul(argv[argc - 1], &cp, 10);
 		if (*cp == ':') {
 			sjap.cs = simple_strtoul(cp+1, &cp, 10);
 		} else {
@@ -600,6 +727,11 @@ static int do_sja_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		/* end of force SJA1105 initialization*/
 	} else if (!strcmp(argv[1], "info")) {
 		sja1105_print_regs(&sjap);
+	} else if (!strcmp(argv[1], "speed")) {
+		if (argc >= 3 && !strchr(argv[2], ':'))
+			options = argv[2];
+		if (!sja1105_speed_control(&sjap, options))
+			return CMD_RET_USAGE;
 	} else {
 		return CMD_RET_USAGE;
 	}
@@ -608,8 +740,12 @@ static int do_sja_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 
 U_BOOT_CMD(
-	sja,	3,	1,	do_sja_cmd,
+	sja,	4,	1,	do_sja_cmd,
 	"SJA1105 control",
 	"sja probe [<bus>:]<cs> - Probe SJA and load configuration\n"
 	"sja info [<bus>:]<cs> - View registers for SJA\n"
+	"sja speed [<bus>:]<cs> - Read configured speed on all ports\n"
+	"sja speed [p0speed,p1speed,p2speed,p3speed,p3speed] [<bus>:]<cs> - Set speed\n"
+	"          for ports, speed options [-|disable|10M|100M|1G] when \"-\" is set\n"
+	"          given port is not updated\n"
 );
