@@ -281,6 +281,60 @@ bool sja1105_post_cfg_load_check(struct sja_parms *sjap)
 	return status;
 }
 
+static void sja1105_set_rgmii_clock(struct sja_parms *sjap, int port, int speed)
+{
+	u32 divisor = 0U;
+
+	/* Set slew rate of TX Pins to high speed */
+	sja1105_write_reg32(sjap,
+			    SJA1105_CFG_PAD_MIIX_TX_PORT(port),
+			    SJA1105_CFG_PAD_MIIX_TX_SLEW_RGMII);
+
+	/* Set IDIV divisor (IDIV = divisor + 1) */
+	if (speed == SJA1105_REG_MAC_SPEED_10M)
+		divisor = 9U;
+	else if (speed == SJA1105_REG_MAC_SPEED_100M)
+		divisor = 0U;
+
+	switch (speed) {
+	case SJA1105_REG_MAC_SPEED_1G:
+	case SJA1105_REG_MAC_SPEED_DISABLED:
+		/* Set Clock delay */
+		sja1105_write_reg32(sjap,
+				    SJA1105_CFG_PAD_MIIX_ID_PORT(port),
+				    SJA1105_CFG_PAD_MIIX_ID_RGMII_FAST);
+
+		/* Disable IDIV */
+		sja1105_write_reg32(sjap, SJA1105_CGU_IDIV_PORT(port),
+				    SJA1105_CGU_IDIV_DISABLE);
+
+		/* Set Clock source to PLL0 125MHz */
+		sja1105_write_reg32(sjap,
+				    SJA1105_CGU_MII_TX_CLK_PORT(port),
+				    SJA1105_CGU_MII_CLK_SRC_PLL0);
+		break;
+	case SJA1105_REG_MAC_SPEED_100M:
+	case SJA1105_REG_MAC_SPEED_10M:
+		/* Set Clock delay */
+		sja1105_write_reg32(sjap,
+				    SJA1105_CFG_PAD_MIIX_ID_PORT(port),
+				    SJA1105_CFG_PAD_MIIX_ID_RGMII_SLOW);
+
+		/* Enable IDIV with divisor */
+		sja1105_write_reg32(sjap, SJA1105_CGU_IDIV_PORT(port),
+				    SJA1105_CGU_IDIV_ENABLE |
+				    ENCODE_REG_IDIV_IDIV(divisor));
+
+		/* Set Clock source to IDIV (25Mhz XTAL / (divisor + 1))*/
+		sja1105_write_reg32(sjap,
+				    SJA1105_CGU_MII_TX_CLK_PORT(port),
+				    SJA1105_CGU_MII_SRC_IDIV(port));
+		break;
+	default:
+		pr_err("speed not supported");
+	}
+}
+
 void sja1105_port_cfg(struct sja_parms *sjap)
 {
 	u32 i;
@@ -294,24 +348,9 @@ void sja1105_port_cfg(struct sja_parms *sjap)
 
 		switch (port_status & SJA1105_PORT_STATUS_MII_MODE) {
 		case e_mii_mode_rgmii:
-			/* Set slew rate of TX Pins to high speed */
-			sja1105_write_reg32(sjap,
-					    SJA1105_CFG_PAD_MIIX_TX_PORT(i),
-					    SJA1105_CFG_PAD_MIIX_TX_SLEW_RGMII);
-
-			/* Set Clock delay */
-			sja1105_write_reg32(sjap,
-					    SJA1105_CFG_PAD_MIIX_ID_PORT(i),
-					    SJA1105_CFG_PAD_MIIX_ID_RGMII);
-
-			/* Disable IDIV */
-			sja1105_write_reg32(sjap, SJA1105_CGU_IDIV_PORT(i),
-					    SJA1105_CGU_IDIV_DISABLE);
-
-			/* Set Clock source to PLL0 */
-			sja1105_write_reg32(sjap,
-					    SJA1105_CGU_MII_TX_CLK_PORT(i),
-					    SJA1105_CGU_MII_CLK_SRC_PLL0);
+			/* 1G sets the port to default configuration */
+			sja1105_set_rgmii_clock(sjap, i,
+						SJA1105_REG_MAC_SPEED_1G);
 			break;
 
 		default:

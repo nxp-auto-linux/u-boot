@@ -152,6 +152,12 @@
 /* SJA1105 register address at which DeviceId must be read */
 #define SJA1105_REG_DEVICEID                    0x00000000UL
 
+/* SJA1105 dynamic reconfiguration */
+#define SJA1105_REG_MAC_SPEED_DISABLED          0
+#define SJA1105_REG_MAC_SPEED_10M               3
+#define SJA1105_REG_MAC_SPEED_100M              2
+#define SJA1105_REG_MAC_SPEED_1G                1
+
 /* SJA1105 register address at which Status must be read */
 #define SJA1105_REG_STATUS                      0x00000001UL
 #define SJA1105_BIT_STATUS_CONFIG_DONE          (1UL<<31)
@@ -187,8 +193,14 @@
 						 port * 6)
 
 #define SJA1105_CGU_IDIV_DISABLE		0x0A00001
+#define SJA1105_CGU_IDIV_ENABLE			0x0A00000
 
 #define SJA1105_CGU_MII_CLK_SRC_PLL0		0XB000800
+#define SJA1105_CGU_MII_CLK_SRC_IDIV0		0x11
+
+#define SJA1105_CGU_MII_SRC_IDIV(_port_)   \
+	(ENCODE_REG_IDIV_CLK_SRC((_port_) +\
+				 SJA1105_CGU_MII_CLK_SRC_IDIV0))
 
 /* Configuration registers */
 
@@ -230,9 +242,14 @@
 
 #define SJA1105_DELAY_81DEG			8
 
-#define SJA1105_CFG_PAD_MIIX_ID_RGMII	( \
+#define SJA1105_CFG_PAD_MIIX_ID_RGMII_FAST	( \
 	SJA1105_CFG_PAD_MIIX_ID_RXC_DELAY(SJA1105_DELAY_81DEG) \
 	| SJA1105_CFG_PAD_MIIX_ID_TXC_DELAY(SJA1105_DELAY_81DEG))
+
+#define SJA1105_CFG_PAD_MIIX_ID_RGMII_SLOW	( \
+	SJA1105_CFG_PAD_MIIX_ID_RXC_PD |\
+	SJA1105_CFG_PAD_MIIX_ID_RXC_BYPASS |\
+	SJA1105_CFG_PAD_MIIX_ID_TXC_DELAY(SJA1105_DELAY_81DEG))
 
 #define SJA1105_PORT_STATUS_MII_MODE		(0x00000003)
 
