@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 NXP
+ * Copyright 2018-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -10,6 +10,8 @@
 #include "board_common.h"
 
 void setup_iomux_uart(void) {}
+
+void setup_iomux_sdhc(void) {}
 
 void setup_iomux_i2c(void)
 {
