@@ -36,6 +36,14 @@
 
 #define DCD_MAXIMUM_SIZE		8192
 
+#define S32GEN1_QSPI_PARAMS_SIZE	0x200
+
+#ifdef CONFIG_TARGET_S32R45X
+
+#define S32R45X_IVT_OFFSET		0x1000
+
+#endif /* CONFIG_TARGET_S32R45X */
+
 enum dcd_command_type {
 	INVALID = -1,
 	WRITE_DATA,
