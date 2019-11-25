@@ -23,3 +23,13 @@ u-boot.s32: MKIMAGEOUTPUT = u-boot.s32.log
 
 u-boot.s32: u-boot.bin u-boot.cfgout FORCE
 	$(call if_changed,mkimage)
+
+ifeq ($(CONFIG_OF_SEPARATE),y)
+MKIMAGEFLAGS_u-boot-dtb.s32 = -n $(filter-out $< $(PHONY),$^) \
+	-T $(CONFIG_MKIMAGE_T) \
+	-e $(CONFIG_SYS_TEXT_BASE)
+u-boot-dtb.s32: MKIMAGEOUTPUT = u-boot-dtb.s32.log
+
+u-boot-dtb.s32: u-boot-dtb.bin u-boot-dtb.cfgout FORCE
+	$(call if_changed,mkimage)
+endif

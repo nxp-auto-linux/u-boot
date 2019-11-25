@@ -71,6 +71,10 @@ SECTIONS
 
 	. = ALIGN(32);
 
+#ifdef CONFIG_OF_SEPARATE
+	. = . + 0x400;
+#endif
+
 	.bss_start : {
 		KEEP(*(.__bss_start));
 	}

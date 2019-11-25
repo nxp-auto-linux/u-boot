@@ -157,7 +157,11 @@ ALL-y += SPL
 endif
 else
 ifeq ($(CONFIG_OF_SEPARATE),y)
+ifneq ($(CONFIG_ARCH_S32),)
+ALL-y += u-boot-dtb.s32
+else
 ALL-y += u-boot-dtb.imx
+endif
 else
 ifneq ($(CONFIG_ARCH_S32),)
 ALL-y += u-boot.s32
