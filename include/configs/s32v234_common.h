@@ -58,11 +58,4 @@
 
 #define IMX_FEC_BASE            ENET_BASE_ADDR
 
-#define MMAP_DSPIn(n) \
-	((n) == 0 ? SPI0_BASE_ADDR : \
-	 (n) == 1 ? SPI1_BASE_ADDR : \
-	 (n) == 2 ? SPI2_BASE_ADDR : \
-	 (n) == 3 ? SPI3_BASE_ADDR : \
-	 SPI_INVALID_BASE_ADDR)
-
 #endif

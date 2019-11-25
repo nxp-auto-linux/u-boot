@@ -486,8 +486,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	int i;
 
 #ifdef CONFIG_ARCH_S32
-	regs = (struct dspi *)MMAP_DSPIn(bus);
-	if (regs == SPI_INVALID_BASE_ADDR) {
+	if (mmap_dspi(bus, &regs) < 0) {
 		debug("Invalid SPI bus!\n");
 		return NULL;
 	}

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2018 NXP
+ * Copyright 2016-2019 NXP
  */
 
 #include <common.h>
@@ -1088,6 +1088,33 @@ int arch_misc_init(void)
 	if (ret && ret != -ENODEV)
 		printf("Failed to initialize CSE3 security engine\n");
 #endif
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_FSL_DSPI
+int mmap_dspi(unsigned short bus, struct dspi **base_addr)
+{
+	unsigned long addr;
+
+	switch (bus) {
+	case 0:
+		addr = SPI0_BASE_ADDR;
+		break;
+	case 1:
+		addr = SPI1_BASE_ADDR;
+		break;
+	case 2:
+		addr = SPI2_BASE_ADDR;
+		break;
+	case 3:
+		addr = SPI3_BASE_ADDR;
+		break;
+	default:
+		return -ENODEV;
+	}
+
+	*base_addr = (struct dspi *)addr;
 	return 0;
 }
 #endif

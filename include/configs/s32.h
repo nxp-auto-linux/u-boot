@@ -15,6 +15,9 @@
 
 #include <asm/arch-s32/imx-regs.h>
 #include <generated/autoconf.h>
+#if !defined __ASSEMBLY__ && defined CONFIG_FSL_DSPI
+#include <fsl_dspi.h>
+#endif
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
@@ -517,6 +520,8 @@
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
 
-#define SPI_INVALID_BASE_ADDR		0x0
+#if !defined __ASSEMBLY__ && defined CONFIG_FSL_DSPI
+int mmap_dspi(unsigned short bus, struct dspi **base_addr);
+#endif
 
 #endif /* __S32_H */
