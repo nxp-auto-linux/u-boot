@@ -35,8 +35,10 @@
 /* MC_ME_PRTN_N_* register fields */
 #define MC_ME_PRTN_N_PCE		(1 << 0)
 #define MC_ME_PRTN_N_PCUD		BIT(0)
+#define MC_ME_PRTN_N_PCS		BIT(0)
 #define MC_ME_PRTN_N_OSSE		(1 << 2)
 #define MC_ME_PRTN_N_OSSUD		BIT(2)
+#define MC_ME_PRTN_N_OSSS		BIT(2)
 #define MC_ME_PRTN_N_BLOCK(n)		BIT(n)
 #define MC_ME_PRTN_N_REQ(n)		BIT(n)
 
@@ -74,6 +76,8 @@
 #define RDC_RD_2_STAT		(RDC_BASE_ADDR + 0x88)
 #define RDC_RD_CTRL_UNLOCK	(1 << 31)
 #define RDC_RD_INTERCONNECT_DISABLE (1 << 3)
+#define RDC_RD_INTERCONNECT_DISABLE_REQ_STAT (1 << 3)
+#define RDC_RD_INTERCONNECT_DISABLE_STAT (1 << 4)
 
 #endif
 
