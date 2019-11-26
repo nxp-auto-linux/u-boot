@@ -37,4 +37,8 @@ config SYS_MEM_SIZE
 	help
 	  U-boot SRAM size (4 MB for S32V234)
 
+config EXTRA_KERNEL_BOOT_ARGS
+	string "Additional boot arguments for Linux kernel"
+	default ""
+
 endif

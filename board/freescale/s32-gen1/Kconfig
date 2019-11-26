@@ -40,10 +40,6 @@ config SYS_DDR_SIZE
 	hex "DDR Size"
 	default 0x10000000
 
-config EXTRA_KERNEL_BOOT_ARGS
-	string "Additional boot arguments for Linux kernel"
-	default ""
-
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
 	default n
