@@ -147,7 +147,7 @@ void ncore_init(u32 cpumask)
 	for (i = 0; i < csuid_numcaius; i++) {
 		regdata = readl(CAIUID(i)) & CAIUID_TYPE_MASK >> CAIUID_TYPE_OFFSET;
 		if (regdata < 2)
-			csadse[i / 32] = BIT(i % 32);
+			csadse[i / 32] += BIT(i % 32);
 	}
 
 	for (i=0; i<csuid_numncbus; i++) {
