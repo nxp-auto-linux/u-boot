@@ -1048,7 +1048,7 @@ static int eqos_remove(struct udevice *dev)
 	mdio_free(eqos->mii);
 	eqos->config->ops->eqos_remove_resources(dev);
 
-	eqos_probe_resources_core(dev);
+	eqos_remove_resources_core(dev);
 
 	debug("%s: OK\n", __func__);
 	return 0;
