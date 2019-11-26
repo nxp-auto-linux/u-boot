@@ -281,7 +281,7 @@
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 
 #ifdef CONFIG_XEN_SUPPORT
-#ifdef CONFIG_S32_GEN1
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 #define XEN_LOAD_FILES "setenv filesize a00000; "
 #else
 #define XEN_LOAD_FILES \
@@ -299,7 +299,7 @@
 		"fdt set /chosen/module@0 compatible \"xen,linux-zimage\" \"xen,multiboot-module\"; " \
 		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
 		"fdt set /chosen/module@0 bootargs \"console=ttyLF0,115200 root=/dev/mmcblk0p2 rootwait rw\" \0" \
-	"bootcmd=" XEN_LOAD_FILES "run updatexenfdt; " \
+	"bootcmd=" XEN_LOAD_FILES "run updatexenfdt; fdt rm /chosen stdout-path; " \
 		"booti ${loadaddr} - ${fdt_addr}\0"
 #else
 #define XEN_EXTRA_ENV_SETTINGS  ""
