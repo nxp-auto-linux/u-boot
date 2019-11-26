@@ -305,9 +305,18 @@
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
+#ifdef CONFIG_S32_GEN1
+#define LIMIT_DDR " run limit_ddr; "
+#define LIMIT_DDR_CMD "limit_ddr=fdt addr ${fdt_addr} && fdt set /memory_DDR1 reg <0 0xc0000000 0 0x20000000>;\0"
+#else
+#define LIMIT_DDR ""
+#define LIMIT_DDR_CMD ""
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
+	LIMIT_DDR_CMD \
 	"ipaddr=10.0.0.100\0" \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
@@ -318,7 +327,7 @@
 		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS "\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
-	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; " NFSRAMFS_TFTP_CMD "run loadtftpfdt;"\
@@ -361,7 +370,7 @@
 		"source\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
 	"jtagboot=echo Booting using jtag...; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
@@ -414,6 +423,7 @@
 		"run flashbootargs;"\
 		"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
 		"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
+		LIMIT_DDR\
 		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
