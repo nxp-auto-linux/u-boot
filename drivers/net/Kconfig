@@ -30,7 +30,7 @@ menuconfig NETDEVICES
 
 if NETDEVICES
 
-config FSL_PFE_NG
+config FSL_PFENG
 	bool "Enable PFEng on S32G support"
 	depends on NET && DM_ETH && S32_GEN1
 	default n
@@ -38,6 +38,29 @@ config FSL_PFE_NG
 	  Enables support for PFEng on S32G.
 
 	  If unsure, say N
+
+config FSL_PFENG_FW_NAME
+	string "PFEng firmware filename"
+	depends on FSL_PFENG
+	default "pfe-s32g-class.fw"
+	help
+	  The PFEng network controller firmware filename.
+
+config FSL_PFENG_FW_PART
+	string "PFEng firmware partition"
+	depends on FSL_PFENG
+	default "0:1"
+	help
+	  Partition containing the firmware file.
+	  Usually on first device's first (boot) partition, so "0:1".
+
+config FSL_PFENG_FW_LOC
+	string "PFEng firmware location"
+	depends on FSL_PFENG
+	default "mmc"
+	help
+	  The location of the partition containing the firmware file.
+	  Usually "mmc" for sdcard location.
 
 config PHY_GIGE
 	bool "Enable GbE PHY status parsing and configuration"

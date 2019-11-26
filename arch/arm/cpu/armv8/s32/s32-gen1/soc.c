@@ -290,7 +290,7 @@ static u32 get_ddr_clk(void)
 	return freq / div;
 }
 
-#if CONFIG_IS_ENABLED(FSL_PFE_NG)
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 static u32 get_pfe_clk(void)
 {
 	u32 div, css_sel, freq = 0;
@@ -328,7 +328,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return get_dspi_clk();
 	case MXC_XBAR_CLK:
 		return get_xbar_clk();
-#if CONFIG_IS_ENABLED(FSL_PFE_NG)
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 	case MXC_PFE_CLK:
 		return get_pfe_clk();
 #endif
@@ -357,7 +357,7 @@ int do_s32_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	       mxc_get_clock(MXC_QSPI_CLK) / 1000000);
 	printf("XBAR clock:     %5d MHz\n",
 	       mxc_get_clock(MXC_XBAR_CLK) / 1000000);
-#if CONFIG_IS_ENABLED(FSL_PFE_NG)
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 	printf("PFE  clock:     %5d MHz\n",
 	       mxc_get_clock(MXC_PFE_CLK) / 1000000);
 #endif

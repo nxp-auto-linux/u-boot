@@ -15,8 +15,14 @@
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 #endif
+#if CONFIG_IS_ENABLED(FSL_PFENG)
+#include <dm/platform_data/pfeng_dm_eth.h>
+#endif
 
-/* GMAC driver for common chassis */
+/*
+ * GMAC driver for common chassis
+ *
+ */
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 
 /* driver platform data (TODO: remove when switching to DT) */
@@ -191,4 +197,33 @@ void setup_clocks_enet_gmac(int intf)
 	}
 }
 
-#endif
+#endif /* CONFIG_DWC_ETH_QOS_S32CC */
+
+/*
+ * PFEng driver for S32G only
+ *
+ */
+#if CONFIG_IS_ENABLED(FSL_PFENG)
+
+/* driver platform data (TODO: remove when switching to DT) */
+static struct pfeng_pdata pfeng_platdata = {
+	.eth = {
+		/* registers base address */
+		.iobase = (phys_addr_t)ETHERNET_0_BASE_ADDR,
+		/* default phy mode */
+		.phy_interface = PHY_INTERFACE_MODE_RGMII,
+		/* generic fake HW addr to let uboot happy */
+		.enetaddr = { 0x00, 0x01, 0xBE, 0xEF, 0x10, 0xAD },
+	},
+	/* vendor specific driver config */
+	.config = &pfeng_s32g274a_config,
+};
+
+U_BOOT_DEVICE(pfeng) = {
+	.name = "eth_pfeng",
+	.platdata = &pfeng_platdata,
+};
+
+
+
+#endif /* CONFIG_FSL_PFENG */

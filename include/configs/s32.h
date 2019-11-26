@@ -277,9 +277,16 @@
 #define NFSRAMFS_TFTP_CMD ""
 #endif
 
-#ifdef CONFIG_FSL_PFE_NG
-#define PFE_INIT_CMD "pfeng emacs none,rgmii; pfeng enable; "
+#ifdef CONFIG_FSL_PFENG
+#define PFE_EXTRA_ENV_SETTINGS \
+	"pfe0addr=00:01:be:be:ef:11\0" \
+	"pfe1addr=00:01:be:be:ef:22\0" \
+	"pfe2addr=00:01:be:be:ef:33\0" \
+	"ethact=eth_pfeng\0" \
+	"pfengemac=1\0"
+#define PFE_INIT_CMD "pfeng emacs rgmii,rgmii; pfeng enable; "
 #else
+#define PFE_EXTRA_ENV_SETTINGS ""
 #define PFE_INIT_CMD ""
 #endif
 
@@ -432,7 +439,8 @@
 		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
-	XEN_EXTRA_ENV_SETTINGS
+	XEN_EXTRA_ENV_SETTINGS \
+	PFE_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
 

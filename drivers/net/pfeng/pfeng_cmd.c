@@ -37,14 +37,14 @@ enum {
 };
 
 static u32 emac_intf[PFENG_EMACS_COUNT] = {
-	PHY_INTERFACE_MODE_NONE,
-	PHY_INTERFACE_MODE_NONE,
+	PHY_INTERFACE_MODE_RGMII,
+	PHY_INTERFACE_MODE_RGMII,
 	PHY_INTERFACE_MODE_NONE
 };
 
 static u32 new_intf[PFENG_EMACS_COUNT] = {
-	PHY_INTERFACE_MODE_NONE,
-	PHY_INTERFACE_MODE_NONE,
+	PHY_INTERFACE_MODE_RGMII,
+	PHY_INTERFACE_MODE_RGMII,
 	PHY_INTERFACE_MODE_NONE
 };
 
@@ -55,6 +55,7 @@ static inline bool pfeng_emac_type_is_valid(u32 idx, u32 mode);
 static void print_emacs_mode(char *label);
 
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+u32 s32ccgmac_cfg_get_mode(void);
 u32 s32ccgmac_cfg_get_interface_mode(void);
 #endif
 
@@ -92,7 +93,8 @@ static bool pfeng_cfg_emac_set_interface(u32 idx, u32 mode)
 
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 	if (idx == 1) {
-		if (s32ccgmac_cfg_get_interface_mode() != PHY_INTERFACE_MODE_NONE &&
+		if (s32ccgmac_cfg_get_mode() &&
+		    s32ccgmac_cfg_get_interface_mode() != PHY_INTERFACE_MODE_NONE &&
 		    s32ccgmac_cfg_get_interface_mode() == emac_intf[1]) {
 			pr_err("pfe: invalid config: MAC1 uses the same interface as s32ccgmac/eqos");
 			return false;
@@ -720,6 +722,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 				pfeng_cfg_get_mode() == PFENG_MODE_DISABLE ?
 				"disabled" : "enabled");
 		print_emacs_mode("  ");
+		printf("  fw: '%s' on partition '%s'\n", CONFIG_FSL_PFENG_FW_NAME, CONFIG_FSL_PFENG_FW_PART);
 		return 0;
 	} else if (!strcmp(argv[1], "disable")) {
 		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
@@ -749,6 +752,20 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		       ((void *)(S32G_PFE_REGS_BASE)) + offs,
 		       reg);
 		return 0;
+	/* for development only */
+	} else if (!strcmp(argv[1], "debug")) {
+		if (!strcmp(argv[2], "emac")) {
+			u32 i = 0;
+			if (argc > 2)
+				i = simple_strtoul(argv[3], NULL, 10);
+			pfeng_debug_emac(i);
+		} else if (!strcmp(argv[2], "class")) {
+			pfeng_debug_class();
+		} else if (!strcmp(argv[2], "hif")) {
+			pfeng_debug_hif();
+		} else
+			return CMD_RET_USAGE;
+		return 0;
 	}
 
 	return CMD_RET_USAGE;
@@ -762,5 +779,3 @@ U_BOOT_CMD(
 	   "pfeng emacs [<inf0-mode>,<intf1-mode>,<intf2-mode>] - read or set EMAC0-2 interface mode\n"
 	   "pfeng reg <offset>                      - read register"
 );
-
-
