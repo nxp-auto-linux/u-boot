@@ -16,18 +16,12 @@
 struct spi_slave;
 
 /* These are declarations of exported functions available in C code */
-#if defined(CONFIG_GICSUPPORT)
-int gic_register_handler(int, void (*handler)(struct pt_regs *, unsigned int),
-			 int type, const char *name);
-int gic_deregister_handler(int irq);
-#endif
 unsigned long get_version(void);
 int  getc(void);
 int  tstc(void);
 void putc(const char);
 void puts(const char*);
 int printf(const char* fmt, ...);
-int fprintf(int stream, const char *fmt, ...);
 void install_hdlr(int, interrupt_handler_t, void*);
 void free_hdlr(int);
 void *malloc(size_t);
@@ -56,6 +50,12 @@ struct phy_device *phy_find_by_mask(struct mii_dev *bus, unsigned phy_mask,
 		phy_interface_t interface);
 struct phy_device *mdio_phydev_for_ethname(const char *ethname);
 int miiphy_set_current_dev(const char *devname);
+#endif
+int fprintf(int stream, const char *fmt, ...);
+#if defined(CONFIG_GICSUPPORT)
+int gic_register_handler(int, void (*handler)(struct pt_regs *, unsigned int),
+			 int type, const char *name);
+int gic_deregister_handler(int irq);
 #endif
 
 void app_startup(char * const *);
