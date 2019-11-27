@@ -106,11 +106,9 @@ The dts file should be placed in the u-boot/arch/arm/dts folder.
 =============================
 
 Before compiling, make sure the CROSS_COMPILE environment variable is set
-correctly. There are 2 methods to use the dts/dtb file: embedded into
-the u-boot binary, or compiled separately and embedded by the user.
+correctly.
 
-If using the embedded option (chosen by CONFIG_OF_EMBED), from the u-boot
-folder, run the following:
+From the u-boot folder, run the following:
 
 	make <board>_defconfig
 	make menuconfig
@@ -121,7 +119,7 @@ In the menuconfig, make sure the following options are set to y:
 	CONFIG_DM=y
 	CONFIG_FIT=y
 	CONFIG_FIT_SIGNATURE=y
-	CONFIG_OF_EMBED=y
+	CONFIG_OF_SEPARATE=y
 	CONFIG_DEFAULT_DEVICE_TREE=<dts-filename>
 
 The CONFIG_DEFAULT_DEVICE_TREE option does not need to contain the file
@@ -132,12 +130,6 @@ After saving the configuration, from the root of the u-boot folder, run:
 	make dtbs
 
 The dtb file will be compiled and placed next to the dts in arch/arm/dts.
-
-If compiling with the CONFIG_OF_SEPARATE option, the CONFIG_OF_SEPARATE option
-must be set, and the CONFIG_DEFAULT_DEVICE_TREE option left empty. With the
-dts file in the root of the u-boot folder, run:
-
-	dtc <dts-filename>.dts -O dtb -o <dtb-filename>.dtb
 
 7. Compile the u-boot tools
 ===========================
@@ -158,19 +150,10 @@ From the linux folder:
 9. Sign the kernel image and pack it into a FIT image
 =====================================================
 
-After the Linux kernel has been compiled, if compiling with CONFIG_OF_EMBED,
-from the u-boot folder, run:
+After the Linux kernel has been compiled, from the u-boot folder, run:
 
 	tools/mkimage -f ../linux/<its-filename>.its
-		      -K arch/arm/dts/<dtb-filename>.dtb
-		      -k ../keys
-		      -r <itb-filename>.itb
-
-If compiling with CONFIG_OF_SEPARATE, and having the dts file in the root u-boot
-folder, run:
-
-	tools/mkimage -f ../linux/<its-filename>.its
-		      -K <dtb-filename>.dtb
+		      -K <dtb-path>/<dtb-filename>.dtb
 		      -k ../keys
 		      -r <itb-filename>.itb
 
@@ -192,20 +175,13 @@ The options for mkimage specify:
 10. Compile u-boot with an external dtb
 =======================================
 	
-If compiling with CONFIG_OF_EMBED, from the u-boot folder:
-
-	make EXT_DTB=arch/arm/dts/<dtb-filename>.dtb
-
-The dtb will be embedded automatically in the u-boot binary file.
-
-If compiling with the CONFIG_OF_SEPARATE option, having the dtb file in the root
-u-boot folder, run:
+To compile with external signed dtb, from the u-boot folder, run:
 
 	make EXT_DTB=<dtb-filename>.dtb
 
-The dtb will NOT be automatically embedded into the u-boot binary. Instead, it
-will be compiled and named u-boot.dtb. Afterwards, to concatenate the two, the
-user can, for instance, run:
+The resulting u-boot image will contain the dtb at the end of its code
+section. Howver, the user can also manually add the dtb (u-boot.dtb) to
+the u-boot binary by running:
 
 	cat u-boot.bin u-boot.dtb > u-boot.img
 
