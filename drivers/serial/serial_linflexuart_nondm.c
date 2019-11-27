@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017, 2019 NXP
  */
 
 #include <common.h>
@@ -53,11 +53,14 @@ DECLARE_GLOBAL_DATA_PTR;
 struct linflex_fsl *base = (struct linflex_fsl *)LINFLEXUART_BASE;
 
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-#define LIN_CLK			133000	// LIN CLK in Khz
+#define LIN_CLK			133000	// LIN_CLK in Hz
 #endif
 
 static u32 linflex_ldiv_multiplier(void)
 {
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	return 1;
+#else
 	u32 mul = LINFLEX_LDIV_MULTIPLIER;
 	u32 cr;
 
@@ -67,6 +70,7 @@ static u32 linflex_ldiv_multiplier(void)
 		mul = UARTCR_OSR_GET(cr);
 
 	return mul;
+#endif
 }
 
 static void linflex_serial_setbrg(void)
