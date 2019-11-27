@@ -13,6 +13,8 @@
 #include <errno.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
+#include <asm/arch/s32-gen1/mc_me_regs.h>
+#include <asm/arch/s32-gen1/mc_rgm_regs.h>
 #include <asm/arch/s32-gen1/ddrss.h>
 #include <board_common.h>
 
@@ -525,10 +527,9 @@ __weak int dram_init(void)
 	return 0;
 }
 
-/* start M7 core */
-static int do_start_m7(cmd_tbl_t *cmdtp, int flag,
-		int argc, char * const argv[])
+static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+	u32 coreid = 0;
 	unsigned long addr;
 	char *ep;
 
@@ -540,20 +541,49 @@ static int do_start_m7(cmd_tbl_t *cmdtp, int flag,
 		return CMD_RET_USAGE;
 
 	if (!IS_ADDR_IN_IRAM(addr)) {
-		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n",
+		printf("ERROR: Address 0x%08lX is not in internal SRAM ...\n",
 		       addr);
 		return CMD_RET_USAGE;
 	}
 
-	printf("Starting core M7 at SRAM address 0x%08lX ...\n", addr);
-	printf("Current functionality isn't supported.\n");
+	printf("Starting CM7_%d core at SRAM address 0x%08lX ... ",
+	       coreid, addr);
+
+	writel(readl(RGM_PRST(MC_RGM_PRST_CM7)) | PRST_PERIPH_CM7n_RST(coreid),
+	       RGM_PRST(MC_RGM_PRST_CM7));
+	while (!(readl(RGM_PSTAT(MC_RGM_PSTAT_CM7)) &
+		 PSTAT_PERIPH_CM7n_STAT(coreid)))
+		;
+
+	/* Run in Thumb mode by setting BIT(0) of the address*/
+	writel(addr | BIT(0), MC_ME_PRTN_N_CORE_M_ADDR(MC_ME_CM7_PRTN, coreid));
+
+	writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE,
+	       MC_ME_PRTN_N_CORE_M_PCONF(MC_ME_CM7_PRTN, coreid));
+	writel(MC_ME_PRTN_N_CORE_M_PUPD_CCUPD,
+	       MC_ME_PRTN_N_CORE_M_PUPD(MC_ME_CM7_PRTN, coreid));
+	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
+	while (!(readl(MC_ME_PRTN_N_CORE_M_STAT(MC_ME_CM7_PRTN, coreid)) &
+		 MC_ME_PRTN_N_CORE_M_STAT_CCS))
+		;
+
+	writel(readl(RGM_PRST(MC_RGM_PRST_CM7)) &
+	       (~PRST_PERIPH_CM7n_RST(coreid)),
+	       RGM_PRST(MC_RGM_PRST_CM7));
+	while (readl(RGM_PSTAT(MC_RGM_PSTAT_CM7)) &
+	       PSTAT_PERIPH_CM7n_STAT(coreid))
+		;
+
+	printf("done.\n");
+
 	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
-		startm7,	2,	1,	do_start_m7,
-		"start M7 core from SRAM address",
-		"startAddress"
+		startm7,	2,	1,	do_startm7,
+		"start CM7_0 core from SRAM address",
+		"<start_address>"
 	  );
 
 #ifdef CONFIG_ARCH_MISC_INIT

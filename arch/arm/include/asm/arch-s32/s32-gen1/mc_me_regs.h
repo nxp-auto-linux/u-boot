@@ -50,16 +50,17 @@
 #define MC_ME_PRTN_N_CORE_M_STAT(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) + 0x8)
 #define MC_ME_PRTN_N_CORE_M_ADDR(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) + 0xC)
 
-
 /* MC_ME_PRTN_N_CORE_M_* registers fields. */
 #define MC_ME_PRTN_N_CORE_M_PCONF_CCE		(1 << 0)
 #define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		(1 << 0)
+#define MC_ME_PRTN_N_CORE_M_STAT_CCS		BIT(0)
 
 /* MC_ME partition mapping */
 #define MC_ME_CORES_PRTN	(1)
 #define MC_ME_USDHC_PRTN	(0)
 #define MC_ME_DDR_0_PRTN	(0)
 #define MC_ME_PFE_PRTN		(2)
+#define MC_ME_CM7_PRTN		(0)
 
 #define MC_ME_USDHC_REQ		(0)
 #define MC_ME_DDR_0_REQ		(1)
