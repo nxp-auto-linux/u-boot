@@ -3,8 +3,14 @@
  * Copyright 2019 NXP
  */
 
-#include <compiler.h>
+#ifndef DDRSS_H
+#define DDRSS_H
+
+#include <asm/arch/s32-gen1/mc_rgm_regs.h>
+#include <asm/io.h>
 #include <asm/sections.h>
+#include <common.h>
+#include <compiler.h>
 #include <linux/kernel.h>
 
 #define DDRSS_BASE_ADDR			0x40380000
@@ -58,6 +64,14 @@
 #define STAT				(UMCTL2_REGS + 0x4)
 #define OPERATING_MODE_MASK		(BIT(0) | BIT(1) | BIT(2))
 #define OPERATING_MODE_NORMAL		(0x1)
+#define MRCTRL0				(UMCTL2_REGS + 0x10)
+#define PBA_MODE			BIT(30)
+#define MR_ADDR_MR6			(6U << 12U)
+#define MR_RANK_01			(3U << 4U)
+#define SW_INIT_INT			BIT(3)
+#define MRCTRL1				(UMCTL2_REGS + 0x14)
+#define MRSTAT				(UMCTL2_REGS + 0x18)
+#define MR_WR_BUSY			BIT(0)
 #define PWRCTL				(UMCTL2_REGS + 0x30)
 #define SELFREF_EN_MASK			BIT(0)
 #define POWERDOWN_EN_MASK		BIT(1)
@@ -123,10 +137,6 @@ struct ddrss_conf {
 	size_t pie_length;
 	struct regconf *message_block_1d;
 	size_t message_block_1d_length;
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	struct regconf *skiptrain;
-	size_t skiptrain_length;
-#endif
 };
 
 struct ddrss_firmware {
@@ -136,5 +146,34 @@ struct ddrss_firmware {
 	size_t dmem_1d_length;
 };
 
+static inline void deassert_ddr_reset(void)
+{
+	u32 rgm_prst_0;
+
+	rgm_prst_0 = readl(RGM_PRST(0));
+	rgm_prst_0 &= ~(BIT(3) | BIT(0));
+	writel(rgm_prst_0, RGM_PRST(0));
+	while (readl(RGM_PSTAT(0)) != rgm_prst_0)
+		;
+}
+
+static inline void write_regconf_16(struct regconf *rc, size_t length)
+{
+	size_t i;
+
+	for (i = 0; i < length; i++)
+		writew(rc[i].data, (uintptr_t)(DDRSS_BASE_ADDR + rc[i].addr));
+}
+
+static inline void write_regconf_32(struct regconf *rc, size_t length)
+{
+	size_t i;
+
+	for (i = 0; i < length; i++)
+		writel(rc[i].data, (uintptr_t)(DDRSS_BASE_ADDR + rc[i].addr));
+}
+
 void ddrss_init(struct ddrss_conf *ddrss_conf,
 		struct ddrss_firmware *ddrss_firmware);
+
+#endif

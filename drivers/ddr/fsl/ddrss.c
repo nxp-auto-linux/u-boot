@@ -2,23 +2,8 @@
 /* Copyright 2019 NXP */
 
 #include <asm/arch/s32-gen1/ddrss.h>
-#include <asm/arch/s32-gen1/mc_rgm_regs.h>
-
-#include <common.h>
 #include <linux/kernel.h>
 #include <linux/printk.h>
-#include <asm/io.h>
-
-static void deassert_ddr_reset(void)
-{
-	u32 rgm_prst_0;
-
-	rgm_prst_0 = readl(RGM_PRST(0));
-	rgm_prst_0 &= ~(BIT(3) | BIT(0));
-	writel(rgm_prst_0, RGM_PRST(0));
-	while (readl(RGM_PSTAT(0)) != rgm_prst_0)
-		;
-}
 
 static u16 mailbox_read_mail(void)
 {
@@ -44,22 +29,6 @@ static int run_firmware(void)
 	writew(0, MICRORESET);
 
 	return (mailbox_read_mail() == MAIL_TRAINING_SUCCESS);
-}
-
-static void write_regconf_16(struct regconf *rc, size_t length)
-{
-	size_t i;
-
-	for (i = 0; i < length; i++)
-		writew(rc[i].data, (uintptr_t)(DDRSS_BASE_ADDR + rc[i].addr));
-}
-
-static void write_regconf_32(struct regconf *rc, size_t length)
-{
-	size_t i;
-
-	for (i = 0; i < length; i++)
-		writel(rc[i].data, (uintptr_t)(DDRSS_BASE_ADDR + rc[i].addr));
 }
 
 void ddrss_init(struct ddrss_conf *ddrss_conf,
