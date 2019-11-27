@@ -135,14 +135,15 @@ watchdog_cortexm_disable:
 #endif
 
 sram_init:
-	/* Size of the SRAM memory to init */
-	ldr x0,  =__bss_start
-	ldr x1, =IRAM_BASE_ADDR
-	add x1, x1, IRAM_SIZE
-	sub x1, x1, x0
-
 	/* Start address of the SRAM memory to init */
-	ldr x0, =__bss_start
+	ldr x0,  =__bss_start
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	ldr x1, =__bss_end
+#else
+	ldr x1, = IRAM_BASE_ADDR
+	add x1, x1, IRAM_SIZE
+#endif
+	sub x1, x1, x0
 
 	bl dma_mem_clr
 
