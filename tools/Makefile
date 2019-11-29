@@ -60,6 +60,8 @@ hostprogs-$(CONFIG_CMD_BOOTEFI_SELFTEST) += file2include
 
 FIT_SIG_OBJS-$(CONFIG_FIT_SIGNATURE) := common/image-sig.o
 
+S32_GEN1_IMAGE-$(CONFIG_S32_GEN1) := s32gen1image.o
+
 # The following files are synced with upstream DTC.
 # Use synced versions from scripts/dtc/libfdt/.
 LIBFDT_SRCS_SYNCED := fdt.c fdt_wip.c fdt_sw.c fdt_rw.c \
@@ -93,7 +95,7 @@ dumpimage-mkimage-objs := aisimage.o \
 			common/image.o \
 			imagetool.o \
 			imximage.o \
-			s32gen1image.o \
+			$(S32_GEN1_IMAGE-y) \
 			kwbimage.o \
 			lib/md5.o \
 			lpc32xximage.o \
