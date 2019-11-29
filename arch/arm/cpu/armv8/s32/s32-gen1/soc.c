@@ -8,7 +8,6 @@
 #include <asm/arch/soc.h>
 #include <fsl_esdhc.h>
 #include <mmc.h>
-#include <netdev.h>
 #include <div64.h>
 #include <errno.h>
 #include <asm/arch/cse.h>
