@@ -8,8 +8,47 @@
 #define UNSPECIFIED	-1
 
 #ifdef CONFIG_FLASH_BOOT
-#define S32G2XX_COMMAND_SEQ_FILL_OFF 20
+#  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
 #endif
+
+#define S32GEN1_AUTO_OFFSET ((size_t)(-1))
+
+#ifdef CONFIG_FLASH_BOOT
+#  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
+#endif
+
+#if defined(CONFIG_TARGET_S32R45X) || defined(CONFIG_TARGET_S32V344)
+#  ifdef CONFIG_FLASH_BOOT
+#    define S32GEN1_IVT_OFFSET	0x0U
+#  else
+#    define S32GEN1_IVT_OFFSET	0x1000U
+#  endif
+#elif defined(CONFIG_TARGET_S32G275)
+#  define S32GEN1_IVT_OFFSET	0x0U
+#endif
+
+static struct program_image image_layout = {
+	.ivt = {
+		.offset = S32GEN1_IVT_OFFSET,
+		.size = sizeof(struct ivt),
+	},
+#ifdef CONFIG_FLASH_BOOT
+	.qspi_params = {
+		.offset = S32GEN1_QSPI_PARAMS_OFFSET,
+		.size = S32GEN1_QSPI_PARAMS_SIZE,
+	},
+#endif
+	.dcd = {
+		.offset = S32GEN1_AUTO_OFFSET,
+		.alignment = 0x200U,
+		.size = sizeof(struct dcd),
+	},
+	.app_code = {
+		.offset = S32GEN1_AUTO_OFFSET,
+		.alignment = 0x200U,
+		.size = sizeof(struct application_boot_code),
+	},
+};
 
 static struct dcd_command *last_command;
 
@@ -25,6 +64,21 @@ static table_entry_t dcd_commands[] = {
 	{INVALID,			"",				"",},
 };
 
+static struct ivt *get_ivt(struct program_image *image)
+{
+	return (struct ivt *)image->ivt.data;
+}
+
+static struct dcd *get_dcd(struct program_image *image)
+{
+	return (struct dcd *)image->dcd.data;
+}
+
+static struct application_boot_code *get_app_code(struct program_image *image)
+{
+	return (struct application_boot_code *)image->app_code.data;
+}
+
 static void s32gen1_add_dcd_command_header(__u8 tag, __u8 params)
 {
 	size_t length = be16_to_cpu(last_command->length);
@@ -34,7 +88,7 @@ static void s32gen1_add_dcd_command_header(__u8 tag, __u8 params)
 	    last_command->params == params)
 		return;
 
-	last_command = (struct dcd_command*)((__u8*)last_command + length);
+	last_command = (struct dcd_command *)((__u8 *)last_command + length);
 
 	last_command->tag = tag;
 	last_command->length = cpu_to_be16(4);
@@ -48,6 +102,7 @@ static void s32gen1_add_dcd_command(int command_type, int access_width,
 {
 	size_t length = 0;
 	unsigned int offset;
+	struct dcd *dcd;
 	__u8 tag = 0;
 	__u8 params = 0;
 	size_t dcd_length;
@@ -123,9 +178,10 @@ static void s32gen1_add_dcd_command(int command_type, int access_width,
 		break;
 	}
 
-	dcd_length = (__u8*)last_command +
+	dcd = get_dcd(program_image);
+	dcd_length = (__u8 *)last_command +
 		     be16_to_cpu(last_command->length) -
-		     (__u8*)&program_image->dcd;
+		     (__u8 *)dcd;
 
 	if (dcd_length > DCD_MAXIMUM_SIZE) {
 		fprintf(stderr, "DCD length of %zu exceeds the maximum of %d\n",
@@ -133,7 +189,7 @@ static void s32gen1_add_dcd_command(int command_type, int access_width,
 		exit(EXIT_FAILURE);
 	}
 
-	program_image->dcd.length = cpu_to_be16(dcd_length);
+	dcd->length = cpu_to_be16(dcd_length);
 }
 
 static void s32gen1_parse_configuration_file(const char *filename,
@@ -219,6 +275,7 @@ static void enforce_reserved_range(void *image_start, int image_length,
 }
 
 #else
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 static struct qspi_params s32g2xx_qspi_conf = {
 	.header   = 0x5a5a5a5a,
 	.mcr      = 0x010f004c,
@@ -253,74 +310,92 @@ static struct qspi_params s32g2xx_qspi_conf = {
 			     0x01, 0x00, 0x00, 0x00,}
 };
 
-static void s32g2xx_set_qspi_params(struct qspi_params *qspi_params)
+static struct qspi_params *get_qspi_params(struct program_image *image)
+{
+	return (struct qspi_params *)image->qspi_params.data;
+}
+
+static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 {
 	memcpy(qspi_params, &s32g2xx_qspi_conf, sizeof(*qspi_params));
 	memset(&qspi_params->command_seq[S32G2XX_COMMAND_SEQ_FILL_OFF], 0xff,
 	       sizeof(qspi_params->command_seq) - S32G2XX_COMMAND_SEQ_FILL_OFF);
 }
+#endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 #endif
+
+static void set_data_pointers(struct program_image *layout, void *header)
+{
+	uint8_t *data = (uint8_t *)header;
+
+	layout->ivt.data = data + layout->ivt.offset;
+#ifdef CONFIG_FLASH_BOOT
+	layout->qspi_params.data = data + layout->qspi_params.offset;
+#endif
+	layout->dcd.data = data + layout->dcd.offset;
+	layout->app_code.data = data + layout->app_code.offset;
+}
 
 static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
-	struct program_image *program_image = (struct program_image*)header;
 	size_t code_length;
+	struct dcd *dcd;
+	struct ivt *ivt;
+	struct application_boot_code *app_code;
 
-	if (!program_image) {
-		fprintf(stderr, "Pointer to 'struct program_image' is NULL!\n");
-		exit(EXIT_FAILURE);
-	}
+	set_data_pointers(&image_layout, header);
 
-	last_command = (struct dcd_command*)&program_image->dcd.commands[0];
+	dcd = get_dcd(&image_layout);
+	ivt = get_ivt(&image_layout);
+	app_code = get_app_code(&image_layout);
+
+	last_command = (struct dcd_command *)&dcd->commands[0];
 	s32gen1_parse_configuration_file(tool_params->imagename,
-					 program_image);
+					 &image_layout);
 
-	program_image->ivt.tag = IVT_TAG;
-	program_image->ivt.length = cpu_to_be16(sizeof(struct ivt));
-	program_image->ivt.version = IVT_VERSION;
+	ivt->tag = IVT_TAG;
+	ivt->length = cpu_to_be16(sizeof(struct ivt));
+	ivt->version = IVT_VERSION;
 
-	program_image->ivt.dcd_pointer = offsetof(struct program_image, dcd);
-	program_image->ivt.boot_configuration_word = BCW_BOOT_TARGET_A53_0;
-	program_image->ivt.application_boot_code_pointer =
-						offsetof(struct program_image,
-							 application_boot_code);
+	ivt->dcd_pointer = image_layout.dcd.offset;
+	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
+	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
-	program_image->dcd.tag = DCD_TAG;
-	program_image->dcd.version = DCD_VERSION;
+	dcd->tag = DCD_TAG;
+	dcd->version = DCD_VERSION;
 
-	program_image->application_boot_code.tag = APPLICATION_BOOT_CODE_TAG;
-	program_image->application_boot_code.version =
-						APPLICATION_BOOT_CODE_VERSION;
-	program_image->application_boot_code.ram_start_pointer =
-						CONFIG_SYS_TEXT_BASE;
-	program_image->application_boot_code.ram_entry_pointer =
-						CONFIG_SYS_TEXT_BASE;
+	app_code->tag = APPLICATION_BOOT_CODE_TAG;
+	app_code->version = APPLICATION_BOOT_CODE_VERSION;
+	app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE;
+	app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
 
 	code_length = sbuf->st_size
-			- offsetof(struct program_image, application_boot_code)
+			- image_layout.app_code.offset
 			- offsetof(struct application_boot_code, code);
 
 	if (code_length % 0x40) {
 		code_length &= ~0x3f;
 		code_length += 0x40;
 	}
-	program_image->application_boot_code.code_length = code_length;
+	app_code->code_length = code_length;
 
 #ifndef CONFIG_FLASH_BOOT
 	enforce_reserved_range((void*)(__u64)
-			       program_image->application_boot_code.ram_start_pointer,
-			       program_image->application_boot_code.code_length,
+			       app_code->ram_start_pointer,
+			       app_code->code_length,
 			       (void*)SRAM_RESERVED_0_START,
 			       (void*)SRAM_RESERVED_0_END);
 
 	enforce_reserved_range((void*)(__u64)
-			       program_image->application_boot_code.ram_start_pointer,
-			       program_image->application_boot_code.code_length,
+			       app_code->ram_start_pointer,
+			       app_code->code_length,
 			       (void*)SRAM_RESERVED_1_START,
 			       (void*)SRAM_RESERVED_1_END);
 #else
-	s32g2xx_set_qspi_params(&program_image->qspi_params);
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	s32gen1_set_qspi_params(get_qspi_params(&image_layout));
+#endif
 #endif
 
 	return;
@@ -334,20 +409,107 @@ static int s32gen1_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
+static int image_parts_comp(const void *p1, const void *p2)
+{
+	const struct image_comp **part1 = (typeof(part1))p1;
+	const struct image_comp **part2 = (typeof(part2))p2;
+
+	if ((*part2)->offset > (*part1)->offset)
+		return -1;
+
+	if ((*part2)->offset < (*part1)->offset)
+		return 1;
+
+	return 0;
+}
+
+static void check_overlap(struct image_comp *comp1,
+			  struct image_comp *comp2)
+{
+	size_t end1 = comp1->offset + comp1->size;
+	size_t end2 = comp2->offset + comp2->size;
+
+	if (end1 > comp2->offset && end2 > comp1->offset) {
+		fprintf(stderr, "Detected overlap between 0x%zx@0x%zx and "
+				"0x%zx@0x%zx\n",
+				comp1->size, comp1->offset,
+				comp2->size, comp2->offset);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void s32g2xx_compute_dyn_offsets(struct image_comp **parts,
+					size_t n_parts)
+{
+	size_t i;
+	size_t align_mask;
+	size_t rem;
+
+	for (i = 0U; i < n_parts; i++) {
+		if (parts[i]->offset == S32GEN1_AUTO_OFFSET) {
+			if (i == 0) {
+				parts[i]->offset = 0U;
+				continue;
+			}
+
+			parts[i]->offset = parts[i - 1]->offset +
+			    parts[i - 1]->size;
+		}
+
+		/* Apply alignment constraints */
+		if (parts[i]->alignment != 0U) {
+			align_mask = (parts[i]->alignment << 1U) - 1U;
+			rem = parts[i]->offset & align_mask;
+			if (rem != 0U) {
+				parts[i]->offset -= rem;
+				parts[i]->offset += parts[i]->alignment;
+			}
+		}
+
+		if (i != 0)
+			check_overlap(parts[i - 1], parts[i]);
+	}
+}
+
+static int s32g2xx_build_layout(struct program_image *program_image,
+				size_t *header_size, void **image)
+{
+	uint8_t *image_layout;
+	struct image_comp *parts[] = {&program_image->ivt,
+		&program_image->dcd,
+#ifdef CONFIG_FLASH_BOOT
+		&program_image->qspi_params,
+#endif
+		&program_image->app_code,
+	};
+	size_t last_comp = ARRAY_SIZE(parts) - 1;
+
+	qsort(&parts[0], ARRAY_SIZE(parts), sizeof(parts[0]), image_parts_comp);
+
+	/* Compute auto-offsets */
+	s32g2xx_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
+
+	*header_size = parts[last_comp]->offset + parts[last_comp]->size;
+
+	image_layout = calloc(*header_size, sizeof(*image_layout));
+	if (!image_layout) {
+		perror("Call to calloc() failed");
+		return -ENOMEM;
+	}
+
+	*image = image_layout;
+	return 0;
+}
+
 static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 			       struct image_type_params *type_params)
 {
-	struct program_image *program_image;
+	size_t header_size;
+	void *image = NULL;
 
-	program_image = malloc(sizeof(struct program_image));
-	if (program_image == NULL) {
-		perror("Call to malloc() failed");
-		exit(EXIT_FAILURE);
-	}
-
-	type_params->header_size = sizeof(struct program_image) -
-			(512 - offsetof(struct application_boot_code, code));
-	type_params->hdr = (void*)program_image;
+	s32g2xx_build_layout(&image_layout, &header_size, &image);
+	type_params->header_size = header_size;
+	type_params->hdr = image;
 
 	return 0;
 }

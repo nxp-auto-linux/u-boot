@@ -38,12 +38,6 @@
 
 #define S32GEN1_QSPI_PARAMS_SIZE	0x200
 
-#ifdef CONFIG_TARGET_S32R45X
-
-#define S32R45X_IVT_OFFSET		0x1000
-
-#endif /* CONFIG_TARGET_S32R45X */
-
 enum dcd_command_type {
 	INVALID = -1,
 	WRITE_DATA,
@@ -79,7 +73,7 @@ struct dcd {
 	__u8	version;
 	__u8	commands[DCD_MAXIMUM_SIZE - 4 - 16];
 	__u8	gmac[16];
-} __attribute__((packed, aligned(512)));
+} __attribute__((packed));
 
 struct ivt {
 	__u8		tag;
@@ -112,7 +106,14 @@ struct application_boot_code {
 	__u32		auth_mode;
 	__u8		reserved2[44];
 	__u8		code[0];
-} __attribute__((packed, aligned(512)));
+} __attribute__((packed));
+
+struct image_comp {
+	size_t offset;
+	size_t size;
+	size_t alignment;
+	uint8_t *data;
+};
 
 #ifdef CONFIG_FLASH_BOOT
 struct qspi_params {
@@ -143,14 +144,13 @@ struct qspi_params {
 #endif
 
 struct program_image {
-	struct ivt ivt;
-	/* padding required for not overelapping with the MBR */
-	__u8 padding[512 - sizeof(struct ivt)];
+	struct image_comp ivt;
 #ifdef CONFIG_FLASH_BOOT
-	struct qspi_params qspi_params;
+	struct image_comp qspi_params;
 #endif
-	struct dcd dcd;
-	struct application_boot_code application_boot_code;
+	struct image_comp dcd;
+	struct image_comp app_code;
+	__u8 *header;
 };
 
 #endif /* S32GEN1IMAGE_H */
