@@ -89,27 +89,32 @@
 /* Ramdisk name */
 #define RAMDISK_NAME		rootfs.uimg
 
-/* Increase image size */                                                                                     
+/* Increase image size */
 #define CONFIG_SYS_BOOTM_LEN    (64 << 20)
 
 #ifdef CONFIG_RUN_FROM_DDR0
+
 /* Flat device tree definitions */
-#define FDT_ADDR		0x83E00000
+#  ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
+#      define FDT_ADDR		0x82000000
+#   else
+#      define FDT_ADDR		0x83E00000
+#endif
 
 /*Kernel image load address */
-#define LOADADDR		0x80080000
+#  define LOADADDR		0x80080000
 
 /* Ramdisk load address */
-#define RAMDISK_ADDR		0x84000000
+#  define RAMDISK_ADDR		0x84000000
 #else
 /* Flat device tree definitions */
-#define FDT_ADDR		0xC3E00000
+#  define FDT_ADDR		0xC3E00000
 
 /*Kernel image load address */
-#define LOADADDR		0xC007FFC0
+#  define LOADADDR		0xC007FFC0
 
 /* Ramdisk load address */
-#define RAMDISK_ADDR		0xC4000000
+#  define RAMDISK_ADDR		0xC4000000
 #endif
 
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
