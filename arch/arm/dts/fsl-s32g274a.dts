@@ -46,8 +46,12 @@
 
 &pcie0 {
 	status = "okay";
+
+	link-speed = <3>; /* Gen3 */
 };
 
 &pcie1 {
 	status = "okay";
+
+	link-speed = <2>; /* Gen2 */
 };

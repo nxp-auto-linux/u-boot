@@ -314,7 +314,7 @@ void pciinfo_header(int busnum, bool short_listing)
  *
  * @dev: PCI device to show
  */
-static void pci_header_show_brief(struct udevice *dev)
+void pci_header_show_brief(struct udevice *dev)
 {
 	ulong vendor, device;
 	ulong class, subclass;
