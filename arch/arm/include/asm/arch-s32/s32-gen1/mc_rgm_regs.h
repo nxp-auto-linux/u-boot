@@ -30,7 +30,8 @@
 #define RGM_CORES_RESET_GROUP		1
 #define RGM_PFE_RESET_GROUP		2
 
-#define RGM_CORE_RST(num)               (0x1 << ((num) + 1))
+#define RGM_CORE_RST(num)		BIT((num) + 1)
+#define RGM_PERIPH_RST(num)		BIT(num)
 
 #endif /* __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__ */
 
