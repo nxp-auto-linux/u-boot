@@ -10,7 +10,7 @@
 #include <asm/arch/mc_rgm_regs.h>
 #include <asm/arch/clock.h>
 
-static void enable_partition_block(u32 partition_n, u32 block_n)
+void s32gen1_enable_partition_block(u32 partition_n, u32 block_n)
 {
 	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(partition_n));
 	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(partition_n)) | MC_ME_PRTN_N_REQ(block_n),
@@ -64,7 +64,7 @@ static int select_pll_source_clk(enum pll_type pll, u32 refclk_freq)
  * before to use this function.
  *)
  */
-static int program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
+int s32gen1_program_pll(enum pll_type pll, u32 refclk_freq, u32 phi_nr,
 		       u64 freq[], u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr],
 		       u32 plldv_rdiv, u32 plldv_mfi, u32 pllfd_mfn)
 {
@@ -188,59 +188,7 @@ void mux_div_clk_config(uintptr_t cgm_addr, u8 mux, u8 dc, u8 divider)
 		;
 }
 
-static void setup_sys_clocks(void)
-{
-	return;
-}
-
-static void setup_mux_clocks(void)
-{
-	/* setup the mux clock divider for PER_CLK (80 MHz) */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 3,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI1);
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 3, 0, 0);
-
-	/* setup the mux clock divider for CAN_CLK (80 MHz) */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 7,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI2);
-
-	/* setup the mux clock divider for LIN_CLK (62,5 MHz),
-	 * LIN_BAUD_CLK (125 MHz)
-	 */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 8,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI3);
-
-	/* setup the mux clock divider for XBAR_CLK (400 MHz),
-	 * XBAR_DIV2_CLK (200 MHz), IPS_CLK (133 MHz), SbSW_CLK (66.5 MHz) */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 0,
-			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1);
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 0, 0, 1);
-
-	/* setup the mux clock divider for DSPI_CLK (100 MHz) */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 16,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI7);
-
-	/* setup the mux clock divider for QSPI_2X_CLK (266 MHz),
-	 * QSPI_1X_CLK (133 MHz)
-	 */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 12,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1);
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 12, 0, 2);
-
-	/* setup the mux clock divider for SDHC_CLK (200 MHz) */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 14,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
-
-	/* setup the mux clock divider for DDR_CLK (400 MHz) */
-	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
-			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
-
-	mux_source_clk_config(MC_CGM1_BASE_ADDR, 0,
-			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI0);
-}
-
-static void setup_fxosc(void)
+void s32gen1_setup_fxosc(void)
 {
 	/* According to "20.4 Initialization information" from
 	 * S32S247RM_Rev1D.pdf, "Once FXOSC is turned ON, DO NOT change the
@@ -269,76 +217,4 @@ static void setup_fxosc(void)
 		;
 }
 
-void clock_init(void)
-{
-	u32 arm_dfs[ARM_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ ARM_PLL_DFS1_EN, ARM_PLL_DFS1_MFN, ARM_PLL_DFS1_MFI },
-			{ ARM_PLL_DFS2_EN, ARM_PLL_DFS2_MFN, ARM_PLL_DFS2_MFI },
-			{ ARM_PLL_DFS3_EN, ARM_PLL_DFS3_MFN, ARM_PLL_DFS3_MFI },
-			{ ARM_PLL_DFS4_EN, ARM_PLL_DFS4_MFN, ARM_PLL_DFS4_MFI },
-			{ ARM_PLL_DFS5_EN, ARM_PLL_DFS5_MFN, ARM_PLL_DFS5_MFI },
-			{ ARM_PLL_DFS6_EN, ARM_PLL_DFS6_MFN, ARM_PLL_DFS6_MFI }
-		};
-	u64 arm_phi[ARM_PLL_PHI_Nr] = {
-			ARM_PLL_PHI0_FREQ, ARM_PLL_PHI1_FREQ};
 
-	u32 periph_dfs[PERIPH_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ PERIPH_PLL_DFS1_EN, PERIPH_PLL_DFS1_MFN,
-				PERIPH_PLL_DFS1_MFI },
-			{ PERIPH_PLL_DFS2_EN, PERIPH_PLL_DFS2_MFN,
-				PERIPH_PLL_DFS2_MFI },
-			{ PERIPH_PLL_DFS3_EN, PERIPH_PLL_DFS3_MFN,
-				PERIPH_PLL_DFS3_MFI },
-			{ PERIPH_PLL_DFS4_EN, PERIPH_PLL_DFS4_MFN,
-				PERIPH_PLL_DFS4_MFI },
-			{ PERIPH_PLL_DFS5_EN, PERIPH_PLL_DFS5_MFN,
-				PERIPH_PLL_DFS5_MFI },
-			{ PERIPH_PLL_DFS6_EN, PERIPH_PLL_DFS6_MFN,
-				PERIPH_PLL_DFS6_MFI }
-		};
-	u64 periph_phi[PERIPH_PLL_PHI_Nr] = {
-			PERIPH_PLL_PHI0_FREQ, PERIPH_PLL_PHI1_FREQ,
-			PERIPH_PLL_PHI2_FREQ, PERIPH_PLL_PHI3_FREQ,
-			PERIPH_PLL_PHI4_FREQ, PERIPH_PLL_PHI5_FREQ,
-			PERIPH_PLL_PHI6_FREQ, PERIPH_PLL_PHI7_FREQ,
-		};
-
-	u64 ddr_phi[DDR_PLL_PHI_Nr] = { DDR_PLL_PHI0_FREQ };
-	u64 accel_phi[ACCEL_PLL_PHI_Nr] = {
-				ACCEL_PLL_PHI0_FREQ, ACCEL_PLL_PHI1_FREQ
-				};
-	setup_fxosc();
-	enable_partition_block(MC_ME_USDHC_PRTN, MC_ME_USDHC_REQ);
-	enable_partition_block(MC_ME_DDR_0_PRTN, MC_ME_DDR_0_REQ);
-
-	program_pll(
-				ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
-				ARM_PLL_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_RDIV,
-				ARM_PLL_PLLDV_MFI, ARM_PLL_PLLFD_MFN
-				);
-
-	setup_sys_clocks();
-
-	program_pll(
-				PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI_Nr,
-				periph_phi, PERIPH_PLL_DFS_Nr, periph_dfs,
-				PERIPH_PLL_PLLDV_RDIV, PERIPH_PLL_PLLDV_MFI,
-				PERIPH_PLL_PLLFD_MFN
-				);
-
-	program_pll(
-				ACCEL_PLL, XOSC_CLK_FREQ, ACCEL_PLL_PHI_Nr,
-				accel_phi, ACCEL_PLL_DFS_Nr, NULL,
-				ACCEL_PLL_PLLDV_RDIV, ACCEL_PLL_PLLDV_MFI,
-				ACCEL_PLL_PLLFD_MFN
-				);
-
-	program_pll(
-				DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI_Nr, ddr_phi,
-				DDR_PLL_DFS_Nr, NULL, DDR_PLL_PLLDV_RDIV,
-				DDR_PLL_PLLDV_MFI, DDR_PLL_PLLFD_MFN
-				);
-
-	setup_mux_clocks();
-
-}
