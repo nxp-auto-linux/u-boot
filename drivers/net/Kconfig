@@ -39,28 +39,44 @@ config FSL_PFENG
 
 	  If unsure, say N
 
-config FSL_PFENG_FW_NAME
-	string "PFEng firmware filename"
+if FSL_PFENG
+
+choice
+	prompt "PFE firmare location"
+	default FSL_PFENG_FW_LOC_SDCARD if SD_BOOT
+	default FSL_PFENG_FW_LOC_QSPI
+
+config FSL_PFENG_FW_LOC_SDCARD
+	bool "SD card"
 	depends on FSL_PFENG
+	help
+	  The firmware file is located on sdcard.
+
+config FSL_PFENG_FW_LOC_QSPI
+	bool "QSPI flash"
+	depends on FSL_PFENG
+	help
+	  The firmware is on the QSPI memory.
+
+endchoice
+
+config FSL_PFENG_FW_NAME
+	string "PFE firmware filename"
+	depends on FSL_PFENG_FW_LOC_SDCARD
 	default "pfe-s32g-class.fw"
 	help
 	  The PFEng network controller firmware filename.
 
 config FSL_PFENG_FW_PART
-	string "PFEng firmware partition"
-	depends on FSL_PFENG
-	default "0:1"
+	string "PFE firmware partition"
+	default "0:1" if FSL_PFENG_FW_LOC_SDCARD
+	default "0x00800000"
 	help
 	  Partition containing the firmware file.
-	  Usually on first device's first (boot) partition, so "0:1".
+	  For "sdcard", it is usually the first device's first (boot) partition, so "0:1".
+	  For "qspi" it is the addrees of reserved memory partition.
 
-config FSL_PFENG_FW_LOC
-	string "PFEng firmware location"
-	depends on FSL_PFENG
-	default "mmc"
-	help
-	  The location of the partition containing the firmware file.
-	  Usually "mmc" for sdcard location.
+endif # FSL_PFENG
 
 config PHY_GIGE
 	bool "Enable GbE PHY status parsing and configuration"

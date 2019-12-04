@@ -11,6 +11,7 @@
 #include <phy.h>
 #include <miiphy.h>
 #include <net.h>
+#include <elf.h>
 
 #include "oal.h"
 #include "pfe_platform.h"
@@ -20,9 +21,6 @@
 
 #include "pfeng.h"
 
-#define PFENG_ENV_VAR_EMAC	"pfengemac"
-#define PFENG_ENV_VAR_FW_SOURCE	"pfengfw"
-
 bool pfeng_cfg_set_mode(u32 mode);
 
 #define HIF_QUEUE_ID 0
@@ -30,11 +28,9 @@ bool pfeng_cfg_set_mode(u32 mode);
 
 static struct pfeng_priv *pfeng_drv_priv = NULL;
 
-#define PFENG_FW_DYNLOAD
-
 /* firmware */
 
-#ifdef PFENG_FW_DYNLOAD
+#if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
 static int pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
 			 struct pfeng_priv *priv)
 {
@@ -86,29 +82,36 @@ err:
 	priv->fw.class_size = 0;
 	return ret;
 }
-#else /* PFENG_FW_DYNLOAD */
-#include "fw-s32g-class.h"
+#endif /* FSL_PFENG_FW_LOC_SDCARD */
+
+#if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_QSPI)
 static int pfeng_fw_load(char *fname, char *iface, const char *part, int ftype,
 			 struct pfeng_priv *priv)
 {
 	int ret = 0;
 
 	/* point to the embedded fw array */
-	priv->fw.class_data = __fw_class_s32g_elf_bin;
-	priv->fw.class_size = __fw_class_s32g_elf_len;
-
-	if (!__fw_class_s32g_elf_len) {
-		ret = -EINVAL;
-		priv->fw.class_data = NULL;
-		priv->fw.class_size = 0;
-		dev_err(dev, "Embedded PFEng firmware not found.\n");
-	} else {
-		debug("Used embedded PFEng firmware.\n");
+	priv->fw.class_data = (void *)simple_strtoul(part, NULL, 16);
+	if (priv->fw.class_data) {
+		if (!valid_elf_image((addr_t)priv->fw.class_data)) {
+			dev_err(dev, "PFEng firmware is not valid at qspi@%p\n",
+				priv->fw.class_data);
+			return -EINVAL;
+		} else
+			priv->fw.class_size = 0x200000; //FIXME: parse elf for size
 	}
+
+	if (!priv->fw.class_data) {
+		dev_err(dev, "PFEng firmware not found at qspi@%p\n",
+			priv->fw.class_data);
+		return -EINVAL;
+	}
+
+	debug("Found PFEng firmware: qspi@%p\n", priv->fw.class_data);
 
 	return ret;
 }
-#endif /* PFENG_FW_DYNLOAD */
+#endif /* FSL_PFENG_FW_LOC_QSPI */
 
 /* debug (sysfs-like) */
 
@@ -282,26 +285,33 @@ static int pfeng_init(struct pfeng_priv *priv)
 			fw_int = env_fw;
 			*p = '\0';
 			env_fw = ++p;
-		} else {
-			fw_int = CONFIG_FSL_PFENG_FW_LOC;
 		}
+
 		/* check for dev:part:fwname */
 		if ((p = strrchr(env_fw, ':'))) {
 			*p = '\0';
 			fw_part = env_fw;
 			fw_name = ++p;
 		} else {
-			fw_name = NULL; /* to signal incorrect content */
+#if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_QSPI)
+			fw_part = env_fw;
+#endif
 		}
 	}
 
-	if (!fw_name) {
+	if (!fw_name & !fw_part) {
 		/* use the default config variant */
-		fw_int = CONFIG_FSL_PFENG_FW_LOC;
+#if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
 		fw_name = CONFIG_FSL_PFENG_FW_NAME;
+#endif
 		fw_part = CONFIG_FSL_PFENG_FW_PART;
 		fw_type = FS_TYPE_FAT;
 	}
+
+#if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
+	if (!fw_int)
+		fw_int = "mmc";
+#endif
 
 	/* FW load */
 	ret = pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);

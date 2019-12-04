@@ -45,6 +45,21 @@ struct pfeng_priv {
 	void *last_tx;
 };
 
+
+/*
+ * pfeng_mode environment variable syntax:
+ * <state>[,<emac0_interface_type>[,<emac1_intf_type>[,<emac2_intf_type>]]]
+ *
+ * where:
+ * 	state			: enable/disable
+ * 	emac_interface_type	: none/sgmii/rgmii/rmii/mii(+)
+ * 				  (+) some might be unsupported on your board
+ */
+#define PFENG_ENV_VAR_MODE_NAME "pfeng_mode"
+
+#define PFENG_ENV_VAR_EMAC	"pfengemac"
+#define PFENG_ENV_VAR_FW_SOURCE	"pfengfw"
+
 /* cmd debug calls */
 int pfeng_debug_emac(u32 idx);
 int pfeng_debug_hif(void);

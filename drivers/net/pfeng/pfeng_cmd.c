@@ -20,17 +20,6 @@
 
 #include "pfeng.h"
 
-#define PFENG_ENV_VAR_MODE_NAME "pfeng_mode"
-/*
- * pfeng_mode environment variable syntax:
- * <state>[,<emac0_interface_type>[,<emac1_intf_type>[,<emac2_intf_type>]]]
- *
- * where:
- * 	state			: enable/disable
- * 	emac_interface_type	: none/sgmii/rgmii/rmii/mii(+)
- * 				  (+) some might be unsupported on your board
- */
-
 enum {
 	PFENG_MODE_DISABLE = 0,
 	PFENG_MODE_ENABLE,
@@ -718,11 +707,23 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 
 	/* process command */
 	if (!strcmp(argv[1], "info")) {
+		char *env_fw = env_get(PFENG_ENV_VAR_FW_SOURCE);
+
 		printf("PFE mode: %s\n",
 				pfeng_cfg_get_mode() == PFENG_MODE_DISABLE ?
 				"disabled" : "enabled");
 		print_emacs_mode("  ");
-		printf("  fw: '%s' on partition '%s'\n", CONFIG_FSL_PFENG_FW_NAME, CONFIG_FSL_PFENG_FW_PART);
+		if (env_fw)
+			printf("  fw: '%s' (from env)\n", env_fw);
+		else
+#if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
+			printf("  fw: '%s' on partition mmc@%s\n",
+			       CONFIG_FSL_PFENG_FW_NAME,
+			       CONFIG_FSL_PFENG_FW_PART);
+#else
+			printf("  fw: on partition qspi@%s\n",
+			       CONFIG_FSL_PFENG_FW_PART);
+#endif
 		return 0;
 	} else if (!strcmp(argv[1], "disable")) {
 		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
