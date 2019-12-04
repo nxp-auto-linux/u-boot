@@ -19,7 +19,6 @@
 	EXPORT_FUNC(putc, void, putc, const char)
 	EXPORT_FUNC(puts, void, puts, const char *)
 	EXPORT_FUNC(printf, int, printf, const char*, ...)
-	EXPORT_FUNC(fprintf, int, fprintf, int, const char*, ...)
 #if (defined(CONFIG_X86) && !defined(CONFIG_X86_64)) || defined(CONFIG_PPC)
 	EXPORT_FUNC(irq_install_handler, void, install_hdlr,
 		    int, interrupt_handler_t, void*)
@@ -94,6 +93,7 @@
 	EXPORT_FUNC(miiphy_set_current_dev, int, miiphy_set_current_dev,
 		    const char *devname)
 #endif
+	EXPORT_FUNC(fprintf, int, fprintf, int, const char*, ...)
 #if defined(CONFIG_GICSUPPORT)
 	EXPORT_FUNC(gic_register_handler, int, gic_register_handler, int,
 		    void (*handler)(struct pt_regs *, unsigned int),
