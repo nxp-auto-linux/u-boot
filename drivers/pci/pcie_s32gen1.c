@@ -13,7 +13,8 @@
 #include <asm/arch/clock.h>
 #include <linux/sizes.h>
 #include <dm/device-internal.h>
-#include "hwconfig.h"
+#include <asm/arch-s32/siul.h>
+#include <hwconfig.h>
 
 /* CFG1 is used in linux when finding devices on the bus.
  * It is actually the upper half of the config space
@@ -47,6 +48,11 @@
 #define PCIE_TABLE_HEADER \
 "BusDevFun           VendorId   DeviceId   Device Class       Sub-Class\n" \
 "______________________________________________________________________\n"
+
+/* First SOC revision with functional PCIe: rev 1.0.1, which means
+ * major 0, minor 0, subminor 1
+ */
+#define PCIE_MIN_SOC_REV_SUPPORTED 0x1
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -177,7 +183,7 @@ static void s32_pcie_cfg0_set_busdev(struct s32_pcie *pcie, u32 busdev)
 #ifdef PCIE_USE_CFG1
 static void s32_pcie_cfg1_set_busdev(struct s32_pcie *pcie, u32 busdev)
 {
-	W32(PCIE_IATU_LWR_TARGET_ADDR_OFF_OUTBOUND_1, busdev);
+	W32(PCIE_IATU_LWR_TARGET_ADDR_OFF_OUTBOUND_0 + 0x200, busdev);
 }
 #endif
 #endif
@@ -915,6 +921,19 @@ static int s32_pcie_probe(struct udevice *dev)
 	struct uclass *uc = dev->uclass;
 	u16 link_sta, link_cap;
 	int ret = 0;
+	uint32_t raw_rev = 0;
+
+	/* construct a revision number based on major, minor and subminor,
+	 * each part using one hex digit
+	 */
+	raw_rev = (get_siul2_midr1_major() << 8) |
+		(get_siul2_midr1_minor() << 4) |
+		(get_siul2_midr2_subminor());
+
+	if (raw_rev < PCIE_MIN_SOC_REV_SUPPORTED) {
+		printf("PCIe not supported\n");
+		return -ENXIO;
+	}
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
@@ -945,7 +964,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	deassert_pcie_reset(pcie);
 
 	if (pcie->clk_int) {
-		debug("Set intenal clock\n");
+		debug("Set internal clock\n");
 		BCLR32(PCIE_SS_PCIE_PHY_GEN_CTRL, PCIE_SS_REF_USE_PAD);
 		BSET32(PCIE_SS_SS_RW_REG_0, 1 << 23);
 	} else {
@@ -986,10 +1005,9 @@ static int s32_pcie_probe(struct udevice *dev)
 	debug("%s: max x%d gen%d\n", dev->name, PCIE_BIT_VALUE(link_cap,
 			PCIE_MAX_LINK_WIDTH),
 			PCIE_BIT_VALUE(link_cap, PCIE_MAX_LINK_SPEED));
+
 	link_sta = readw(pcie->dbi + PCIE_LINK_STATUS);
-
-
-	/* update link width based on negociated link status */
+	/* update link width based on negotiated link status */
 	pcie->linkwidth = PCIE_BIT_VALUE(link_sta, PCIE_LINK_WIDTH);
 	printf("%s: running x%d, Gen%d\n", dev->name, pcie->linkwidth,
 		       PCIE_BIT_VALUE(link_sta, PCIE_LINK_SPEED));
@@ -1056,6 +1074,7 @@ int pci_get_depth(struct udevice *dev)
 int initr_pci(void)
 {
 	struct udevice *bus;
+	bool show_header = true;
 
 	debug("%s\n", __func__);
 
@@ -1069,16 +1088,21 @@ int initr_pci(void)
 	pci_init();
 
 	/* now show the devices */
-	printf(PCIE_TABLE_HEADER);
+
 	for (uclass_find_first_device(UCLASS_PCI, &bus);
 		     bus;
 		     uclass_find_next_device(&bus)) {
 		struct udevice *dev;
 		struct s32_pcie *pcie = dev_get_priv(bus);
 
-		if (pcie)
+		if (pcie && pcie->enabled) {
+			if (show_header) {
+				printf(PCIE_TABLE_HEADER);
+				show_header = false;
+			}
 			printf("%s %s\n", bus->name,
 				PCIE_EP_RC_MODE(pcie->ep_mode));
+		}
 		for (device_find_first_child(bus, &dev);
 			    dev;
 			    device_find_next_child(&dev)) {
