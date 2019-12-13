@@ -15,6 +15,9 @@
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
 #include <environment.h>
+#ifdef CONFIG_FSL_DSPI
+#include <fsl_dspi.h>
+#endif
 
 #define MHZ	1000000
 

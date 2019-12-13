@@ -16,6 +16,9 @@
 #include <asm/arch/s32-gen1/mc_rgm_regs.h>
 #include <asm/arch/s32-gen1/ddrss.h>
 #include <board_common.h>
+#ifdef CONFIG_FSL_DSPI
+#include <fsl_dspi.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 

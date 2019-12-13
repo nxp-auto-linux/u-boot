@@ -6,7 +6,7 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freesacle.com)
  * Haikun Wang (B53464@freescale.com)
- * (C) Copyright 2017 NXP
+ * Copyright 2017, 2019 NXP
  */
 
 #ifndef _FSL_DSPI_H_
@@ -148,5 +148,10 @@ struct dspi {
 
 /* Bit definitions and macros for DRFDR group */
 #define DSPI_RFDR_RXDATA(x)		((x) & 0x0000FFFF)
+
+/* Return in base_addr the base address of any given DSPI instance */
+#ifdef CONFIG_ARCH_S32
+int mmap_dspi(unsigned short bus, struct dspi **base_addr);
+#endif
 
 #endif				/* _FSL_DSPI_H_ */
