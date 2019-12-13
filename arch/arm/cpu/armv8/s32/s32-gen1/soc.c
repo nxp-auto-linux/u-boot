@@ -428,11 +428,11 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-#ifdef CONFIG_TARGET_S32G275
+#ifdef CONFIG_S32G275
 	printf("CPU:\tNXP S32G274A\n");
-#elif CONFIG_TARGET_S32R45X
+#elif defined(CONFIG_S32R45X)
 	printf("CPU:\tNXP S32R45X\n");
-#elif CONFIG_TARGET_S32V344
+#elif defined(CONFIG_S32V344)
 	printf("CPU:\tNXP S32V344\n");
 #endif
 	printf("Reset cause: %s\n", get_reset_cause());

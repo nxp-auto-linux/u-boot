@@ -2,6 +2,8 @@
 /* Copyright 2019 NXP */
 
 #include <image.h>
+#include <generated/autoconf.h>
+#include <config.h>
 #include "imagetool.h"
 #include "s32gen1image.h"
 
@@ -17,13 +19,13 @@
 #  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
 #endif
 
-#if defined(CONFIG_TARGET_S32R45X) || defined(CONFIG_TARGET_S32V344)
+#if defined(CONFIG_S32R45X) || defined(CONFIG_S32V344)
 #  ifdef CONFIG_FLASH_BOOT
 #    define S32GEN1_IVT_OFFSET	0x0U
 #  else
 #    define S32GEN1_IVT_OFFSET	0x1000U
 #  endif
-#elif defined(CONFIG_TARGET_S32G275)
+#elif defined(CONFIG_S32G275)
 #  define S32GEN1_IVT_OFFSET	0x0U
 #endif
 
