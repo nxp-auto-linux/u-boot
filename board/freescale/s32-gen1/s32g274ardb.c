@@ -18,17 +18,17 @@ void setup_iomux_uart(void)
 #elif (CONFIG_FSL_LINFLEX_MODULE == 1)
 	/* Muxing for linflex1 */
 
-	/* set PC08 - MSCR[40] - for UART1 TXD */
+	/* set PA13 - MSCR[13] - for UART1 TXD */
 	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART1_TXD,
-	       SIUL2_0_MSCRn(SIUL2_PC08_MSCR_S32_G1_UART1));
+	       SIUL2_0_MSCRn(SIUL2_PA13_MSCR_S32_G1_UART1));
 
-	/* set PC04 - MSCR[36] - for UART1 RXD */
+	/* set PB00 - MSCR[16] - for UART1 RXD */
 	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART_RXD,
-	       SIUL2_0_MSCRn(SIUL2_PC04_MSCR_S32_G1_UART1));
+	       SIUL2_0_MSCRn(SIUL2_PB00_MSCR_S32_G1_UART1));
 
-	/* set PC04 - MSCR[736]/IMCR[224] - for UART1 RXD */
+	/* set PB00 - MSCR[736]/IMCR[224] - for UART1 RXD */
 	writel(SIUL2_IMCR_S32G_G1_UART1_RXD_to_pad,
-	       SIUL2_1_IMCRn(SIUL2_PC04_IMCR_S32_G1_UART1));
+	       SIUL2_1_IMCRn(SIUL2_PB00_IMCR_S32_G1_UART1));
 #else
 #error "Unsupported UART pinmuxing configuration"
 #endif
