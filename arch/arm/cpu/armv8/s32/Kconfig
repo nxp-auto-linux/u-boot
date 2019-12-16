@@ -31,6 +31,10 @@ config TARGET_S32V234PCIE
 config TARGET_S32V234TMDP
 	bool "Support s32v234tmdp"
 
+config TARGET_MPXS32V234
+	bool "Support s32v234sbc"
+	select S32V234EVB_29288
+
 config TARGET_S32V344
 	bool "Support s32v344"
 
@@ -54,10 +58,6 @@ config TARGET_S32G275SIM
 
 config TARGET_S32G275EMU
 	bool "Support s32g275 ZeBu"
-
-config TARGET_MPXS32V234
-	bool "Support s32v234sbc"
-	select S32V234EVB_29288
 
 endchoice
 
