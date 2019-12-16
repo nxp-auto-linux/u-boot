@@ -25,7 +25,7 @@
 #  else
 #    define S32GEN1_IVT_OFFSET	0x1000U
 #  endif
-#elif defined(CONFIG_S32G275)
+#elif defined(CONFIG_S32G274A)
 #  define S32GEN1_IVT_OFFSET	0x0U
 #endif
 

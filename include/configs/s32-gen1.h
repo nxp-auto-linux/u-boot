@@ -54,7 +54,7 @@
 #define CONFIG_FEC_MXC_PHYADDR  7
 #endif
 
-#if defined(CONFIG_TARGET_S32G275)
+#if defined(CONFIG_TARGET_S32G274A)
 #define FDT_FILE fsl-s32g274a-evb.dtb
 #elif defined(CONFIG_TARGET_S32R45X)
 #define FDT_FILE fsl-s32r45x.dtb
@@ -93,7 +93,7 @@
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 
 #if defined(CONFIG_S32_RUN_AT_EL3)
-/* In secure boot scenarios such as on S32G275, the Trusted Firmware runs at
+/* In secure boot scenarios such as on S32G274A, the Trusted Firmware runs at
  * EL3, while U-Boot runs at EL2. This produces errors while U-Boot attempts to
  * configure the secure GIC registers. As a result, GICv3 initialization on S32G
  * is done by the Trusted Firmware - or we keep running U-Boot at EL3.

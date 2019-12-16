@@ -50,14 +50,14 @@ config TARGET_S32R45XSIM
 config TARGET_S32R45XEMU
 	bool "Support s32r45x ZeBu"
 
-config TARGET_S32G275
-	bool "Support s32g275"
+config TARGET_S32G274A
+	bool "Support s32g274a"
 
-config TARGET_S32G275SIM
-	bool "Support s32g275 VDK"
+config TARGET_S32G274ASIM
+	bool "Support s32g274a VDK"
 
-config TARGET_S32G275EMU
-	bool "Support s32g275 ZeBu"
+config TARGET_S32G274AEMU
+	bool "Support s32g274a ZeBu"
 
 endchoice
 

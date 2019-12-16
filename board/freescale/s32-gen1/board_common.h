@@ -17,11 +17,11 @@ void setup_iomux_uart(void);
 	void setup_iomux_dspi(void);
 #endif
 
-#if defined(CONFIG_S32G275) || defined(CONFIG_S32R45X)
+#if defined(CONFIG_S32G274A) || defined(CONFIG_S32R45X)
 void setup_iomux_uart0_pc09_pc10(void);
 #endif
 
-#if defined(CONFIG_TARGET_S32G275SIM) || defined(CONFIG_TARGET_S32G275EMU)
+#if defined(CONFIG_TARGET_S32G274ASIM) || defined(CONFIG_TARGET_S32G274AEMU)
 void setup_iomux_uart1_pb09_pb10(void);
 #endif
 

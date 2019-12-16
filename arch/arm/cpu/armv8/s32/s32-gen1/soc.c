@@ -428,7 +428,7 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-#ifdef CONFIG_S32G275
+#ifdef CONFIG_S32G274A
 	printf("CPU:\tNXP S32G274A\n");
 #elif defined(CONFIG_S32R45X)
 	printf("CPU:\tNXP S32R45X\n");

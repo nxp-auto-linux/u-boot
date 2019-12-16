@@ -156,7 +156,7 @@
  */
 #if defined(CONFIG_S32_GEN1)
 /* FXOSC_CLK; this will be further divided by "GPR00[26:24] + 1"
- * Note: CONFIG_TARGET_S32G275 is a per-board configuration, as the value of
+ * Note: CONFIG_TARGET_S32G274A is a per-board configuration, as the value of
  * FXOSC_CLK itself is board-specific.
  */
 #define COUNTER_FREQUENCY		(40 * 1000 * 1000)

@@ -202,7 +202,7 @@ void ft_fixup_clock_frequency(void *blob)
  * The point is, u-boot may not be able to probe the whole DRAM (and may not
  * care about all of it anyway), so using "mem=" bootargs would not be enough.
  */
-#if defined(CONFIG_S32G275) && defined(CONFIG_PRAM)
+#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
 static void ft_fixup_ddr_pram(void *blob)
 {
 	int off, maxoff = -1;
@@ -283,7 +283,7 @@ static void ft_fixup_ddr_pram(void *blob)
 	/* It's safe to free the buffer now that it's been copied to the blob */
 	free(newval);
 }
-#endif /* CONFIG_S32G275 && CONFIG_PRAM */
+#endif /* CONFIG_S32G274A && CONFIG_PRAM */
 
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
@@ -296,7 +296,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	ft_fixup_clock_frequency(blob);
 #endif
 
-#if defined(CONFIG_S32G275) && defined(CONFIG_PRAM)
+#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
 	ft_fixup_ddr_pram(blob);
 #endif
 }
