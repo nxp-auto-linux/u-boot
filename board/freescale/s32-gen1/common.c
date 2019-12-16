@@ -13,6 +13,7 @@
 #include <linux/libfdt.h>
 #include <miiphy.h>
 #include <asm/arch/s32-gen1/ncore.h>
+#include <asm/arch/siul-s32r45.h>
 
 #include "board_common.h"
 
@@ -59,11 +60,21 @@ int board_init(void)
 int checkboard(void)
 {
 #if defined(CONFIG_TARGET_S32G275)
-	puts("Board:\tNXP S32G274A-PROCEVB\n");
+	puts("Board:\tNXP S32G274A-EVB\n");
+#elif defined(CONFIG_TARGET_S32G275SIM)
+	puts("Board:\tVDK for NXP S32G274A VP\n");
+#elif defined(CONFIG_TARGET_S32G275EMU)
+	puts("Board:\tZeBu model for NXP S32G274A\n");
 #elif defined(CONFIG_TARGET_S32R45X)
-	puts("Board:\tNXP S32R45X-xxxxxxx\n");
+	puts("Board:\tNXP S32R45X-EVB\n");
+#elif defined(CONFIG_TARGET_S32R45XSIM)
+	puts("Board:\tVDK for NXP S32R45 VP\n");
+#elif defined(CONFIG_TARGET_S32R45XEMU)
+	puts("Board:\tZeBu model for NXP S32R45\n");
 #elif defined(CONFIG_TARGET_S32V344)
-	puts("Board:\tNXP S32V344-xxxxxxx\n");
+	puts("Board:\tNXP S32V344-EVB\n");
+#elif defined(CONFIG_TARGET_S32V344SIM)
+	puts("Board:\tVDK for NXP S32V344 VP\n");
 #else
 	puts("Board:\tNXP S32-gen1-xxxxxxx\n");
 #endif
@@ -79,3 +90,89 @@ int ft_board_setup(void *blob, bd_t *bd)
 	return 0;
 }
 #endif /* defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP) */
+
+/* Pinmuxing code which is common between at least two boards */
+
+#ifdef CONFIG_S32G275
+void setup_iomux_uart0_pc09_pc10(void)
+{
+	/* Muxing for linflex0 */
+
+	/* set PC09 - MSCR[41] - for UART0 TXD */
+	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART0_TXD,
+	       SIUL2_0_MSCRn(SIUL2_PC09_MSCR_S32_G1_UART0));
+
+	/* set PC10 - MSCR[42] - for UART0 RXD */
+	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART_RXD,
+	       SIUL2_0_MSCRn(SIUL2_PC10_MSCR_S32_G1_UART0));
+
+	/* set PC10 - MSCR[512]/IMCR[0] - for UART0 RXD */
+	writel(SIUL2_IMCR_S32G_G1_UART0_RXD_to_pad,
+	       SIUL2_0_IMCRn(SIUL2_PC10_IMCR_S32_G1_UART0));
+}
+#elif defined(CONFIG_S32R45X)
+void setup_iomux_uart0_pc09_pc10(void)
+{
+	/* Muxing for linflex0 */
+
+	/* Set PC_10 - MSCR[42] - for LIN0_RX */
+	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART_RXD,
+	       SIUL2_0_MSCRn(SIUL2_PC10_MSCR_S32R45_UART0));
+
+	/* Set LIN0_RX - IMCR[512] - to link to PC_10 */
+	writel(SIUL2_IMCR_S32R45_UART_RXD_to_pad,
+	       SIUL2_0_IMCRn(SIUL2_PC10_IMCR_S32R45_UART0));
+
+	/* Set PC_09 - MSCR[41] - for LIN0_TX */
+	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART0_TXD,
+	       SIUL2_0_MSCRn(SIUL2_PC09_MSCR_S32R45_UART0));
+}
+#endif
+
+#if defined(CONFIG_TARGET_S32G275SIM) || defined(CONFIG_TARGET_S32G275EMU)
+void setup_iomux_uart1_pb09_pb10(void)
+{
+	/* Muxing for linflex1 */
+
+	/* set PB09 - MSCR[25] - for UART1 TXD */
+	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART1_TXD,
+	       SIUL2_0_MSCRn(SIUL2_PB09_MSCR_S32_G1_UART1));
+
+	/* set PB10 - MSCR[26] - for UART1 RXD */
+	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART_RXD,
+	       SIUL2_0_MSCRn(SIUL2_PB10_MSCR_S32_G1_UART1));
+
+	/* set PB10 - MSCR[736]/IMCR[224] - for UART1 RXD */
+	writel(SIUL2_IMCR_S32G_G1_UART1_RXD_to_pad,
+	       SIUL2_1_IMCRn(SIUL2_PB10_IMCR_S32_G1_UART1));
+}
+#endif
+
+#if defined(CONFIG_TARGET_S32R45X) || defined(CONFIG_TARGET_S32R45XSIM)
+void setup_iomux_i2c(void)
+{
+	/* I2C0 - Serial Data Input */
+	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C0_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PB_00));
+	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C0_SDA,
+	       SIUL2_IMCRn(SIUL2_PB_00_IMCR_S32R45_I2C0_SDA));
+
+	/* I2C0 - Serial Clock Input */
+	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C0_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PB_01));
+	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C0_SCLK,
+	       SIUL2_IMCRn(SIUL2_PB_01_IMCR_S32R45_I2C0_SCLK));
+
+	/* I2C1 - Serial Data Input */
+	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C1_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PA_15));
+	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C1_SDA,
+	       SIUL2_IMCRn(SIUL2_PA_15_IMCR_S32R45_I2C1_SDA));
+
+	/* I2C1 - Serial Clock Input */
+	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C1_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PA_14));
+	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C1_SCLK,
+	       SIUL2_IMCRn(SIUL2_PA_14_IMCR_S32R45_I2C1_SCLK));
+}
+#endif

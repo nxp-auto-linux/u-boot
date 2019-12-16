@@ -13,69 +13,15 @@ void setup_iomux_uart(void)
 {
 #if (CONFIG_FSL_LINFLEX_MODULE == 0)
 
-	/* Set PC_10 - MSCR[42] - for LIN0_RX */
-	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART_RXD,
-	       SIUL2_0_MSCRn(SIUL2_PC10_MSCR_S32R45_UART0));
+	/* Muxing for linflex0 */
+	setup_iomux_uart0_pc09_pc10();
 
-	/* Set LIN0_RX - IMCR[512] - to link to PC_10 */
-	writel(SIUL2_IMCR_S32R45_UART_RXD_to_pad,
-	       SIUL2_0_IMCRn(SIUL2_PC10_IMCR_S32R45_UART0));
-
-	/* Set PC_09 - MSCR[41] - for LIN0_TX */
-	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART0_TXD,
-	       SIUL2_0_MSCRn(SIUL2_PC09_MSCR_S32R45_UART0));
-
-#elif (CONFIG_FSL_LINFLEX_MODULE == 1)
-#	ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	/* Set PA_11 - MSCR[11] - for LIN1_RX */
-	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART_RXD,
-	       SIUL2_0_MSCRn(SIUL2_PA11_MSCR_S32R45_UART1));
-
-	/* Set PA_11 - IMCR[674] - for LIN1_RX */
-	writel(SIUL2_IMCR_S32R45_UART_RXD_to_pad,
-	       SIUL2_1_IMCRn(SIUL2_PA11_IMCR_S32R45_UART1));
-
-	/* Set PA_12 - MSCR[12] - for LIN1_TX */
-	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART1_TXD,
-	       SIUL2_0_MSCRn(SIUL2_PA12_MSCR_S32R45_UART1));
-#	else
-	#error Please add pinmuxing for UART1
-#	endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 #else
-#error "Invalid UART pinmuxing configuration"
+#error "Unsupported UART pinmuxing configuration"
 #endif
 }
 
 void setup_iomux_sdhc(void) {}
-
-void setup_iomux_i2c(void)
-{
-#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	/* I2C0 - Serial Data Input */
-	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C0_SDA,
-	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PB_00));
-	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C0_SDA,
-	       SIUL2_IMCRn(SIUL2_PB_00_IMCR_S32R45_I2C0_SDA));
-
-	/* I2C0 - Serial Clock Input */
-	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C0_SCLK,
-	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PB_01));
-	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C0_SCLK,
-	       SIUL2_IMCRn(SIUL2_PB_01_IMCR_S32R45_I2C0_SCLK));
-
-	/* I2C1 - Serial Data Input */
-	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C1_SDA,
-	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PA_15));
-	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C1_SDA,
-	       SIUL2_IMCRn(SIUL2_PA_15_IMCR_S32R45_I2C1_SDA));
-
-	/* I2C1 - Serial Clock Input */
-	writel(SIUL2_MSCR_S32R45_PAD_CTRL_I2C1_SCLK,
-	       SIUL2_MSCRn(SIUL2_MSCR_S32R45_PA_14));
-	writel(SIUL2_IMCR_S32R45_PAD_CTRL_I2C1_SCLK,
-	       SIUL2_IMCRn(SIUL2_PA_14_IMCR_S32R45_I2C1_SCLK));
-#endif
-}
 
 #ifdef CONFIG_FSL_DSPI
 void setup_iomux_dspi(void)

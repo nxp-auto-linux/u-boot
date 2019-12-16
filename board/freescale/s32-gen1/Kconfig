@@ -1,4 +1,25 @@
-if TARGET_S32V344 || TARGET_S32G275 || TARGET_S32R45X
+if TARGET_S32G275EMU || TARGET_S32R45XEMU
+
+config TARGET_TYPE_S32GEN1_EMULATOR
+	bool
+	default y
+	help
+	  Target Type S32 Gen1 Emulator
+
+endif
+
+if TARGET_S32V344SIM || TARGET_S32G275SIM || TARGET_S32R45XSIM
+
+config TARGET_TYPE_S32GEN1_SIMULATOR
+	bool
+	default y
+	help
+	  Target Type S32 Gen1 Simulator
+
+endif
+
+if TARGET_S32V344 || TARGET_S32G275 || TARGET_S32R45X || \
+	TARGET_TYPE_S32GEN1_EMULATOR || TARGET_TYPE_S32GEN1_SIMULATOR
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
@@ -12,26 +33,11 @@ config SYS_BOARD
 
 config SYS_CONFIG_NAME
 	string
-	default "s32v344" if TARGET_S32V344
-	default "s32g275" if TARGET_S32G275
-	default "s32r45x" if TARGET_S32R45X
-
-choice
-	prompt "Virtual Platform Type"
-	optional
-	help
-	  Target Type Emulator/Simulator
-
-	config TARGET_TYPE_S32GEN1_EMULATOR
-		bool "Emulator"
-		help
-		  Target Type Emulator
-
-	config TARGET_TYPE_S32GEN1_SIMULATOR
-		bool "Simulator"
-		help
-		  Target Type Simulator
-endchoice
+	default "s32v344" if TARGET_S32V344 || TARGET_S32V344SIM
+	default "s32g275" if TARGET_S32G275 || TARGET_S32G275SIM || \
+			  TARGET_S32G275EMU
+	default "s32r45x" if TARGET_S32R45X || TARGET_S32R45XSIM || \
+			  TARGET_S32R45XEMU
 
 # DDR0(256MB) and DDR1(256MB).
 # U-boot uses only one DDR slot.

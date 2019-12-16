@@ -5,7 +5,7 @@
  */
 
 /*
- * Configuration settings for the Freescale S32R45X board.
+ * Configuration settings for all the Freescale S32R45X boards.
  */
 
 #ifndef __S32R45X_H

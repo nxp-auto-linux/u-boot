@@ -5,7 +5,7 @@
  */
 
 /*
- * Configuration settings for the Freescale S32G275 board.
+ * Configuration settings for all the Freescale S32G275 boards.
  */
 
 #ifndef __S32G275_H

@@ -1,11 +1,11 @@
 /*
- * (C) Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
- * Configuration settings for the Freescale S32V344 board.
+ * Configuration settings for all the Freescale S32V344 boards.
  */
 
 #ifndef __S32V344_H
