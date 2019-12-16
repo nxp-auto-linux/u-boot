@@ -35,14 +35,14 @@ config TARGET_MPXS32V234
 	bool "Support s32v234sbc"
 	select S32V234EVB_29288
 
-config TARGET_S32V344
-	bool "Support s32v344"
+config TARGET_S32V344EVB
+	bool "Support s32v344evb"
 
 config TARGET_S32V344SIM
 	bool "Support s32v344 VDK"
 
-config TARGET_S32R45X
-	bool "Support s32r45x"
+config TARGET_S32R45XEVB
+	bool "Support s32r45xevb"
 
 config TARGET_S32R45XSIM
 	bool "Support s32r45x VDK"
@@ -50,8 +50,8 @@ config TARGET_S32R45XSIM
 config TARGET_S32R45XEMU
 	bool "Support s32r45x ZeBu"
 
-config TARGET_S32G274A
-	bool "Support s32g274a"
+config TARGET_S32G274AEVB
+	bool "Support s32g274aevb"
 
 config TARGET_S32G274ASIM
 	bool "Support s32g274a VDK"

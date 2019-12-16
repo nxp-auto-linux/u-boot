@@ -59,19 +59,19 @@ int board_init(void)
 
 int checkboard(void)
 {
-#if defined(CONFIG_TARGET_S32G274A)
+#if defined(CONFIG_TARGET_S32G274AEVB)
 	puts("Board:\tNXP S32G274A-EVB\n");
 #elif defined(CONFIG_TARGET_S32G274ASIM)
 	puts("Board:\tVDK for NXP S32G274A VP\n");
 #elif defined(CONFIG_TARGET_S32G274AEMU)
 	puts("Board:\tZeBu model for NXP S32G274A\n");
-#elif defined(CONFIG_TARGET_S32R45X)
+#elif defined(CONFIG_TARGET_S32R45XEVB)
 	puts("Board:\tNXP S32R45X-EVB\n");
 #elif defined(CONFIG_TARGET_S32R45XSIM)
 	puts("Board:\tVDK for NXP S32R45 VP\n");
 #elif defined(CONFIG_TARGET_S32R45XEMU)
 	puts("Board:\tZeBu model for NXP S32R45\n");
-#elif defined(CONFIG_TARGET_S32V344)
+#elif defined(CONFIG_TARGET_S32V344EVB)
 	puts("Board:\tNXP S32V344-EVB\n");
 #elif defined(CONFIG_TARGET_S32V344SIM)
 	puts("Board:\tVDK for NXP S32V344 VP\n");
@@ -148,7 +148,7 @@ void setup_iomux_uart1_pb09_pb10(void)
 }
 #endif
 
-#if defined(CONFIG_TARGET_S32R45X) || defined(CONFIG_TARGET_S32R45XSIM)
+#if defined(CONFIG_TARGET_S32R45XEVB) || defined(CONFIG_TARGET_S32R45XSIM)
 void setup_iomux_i2c(void)
 {
 	/* I2C0 - Serial Data Input */

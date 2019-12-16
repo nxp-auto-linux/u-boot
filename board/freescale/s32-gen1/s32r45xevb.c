@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright 2018-2019 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "asm/arch-s32/siul-s32r45.h"
@@ -94,7 +93,6 @@ void setup_iomux_dspi(void)
 
 	writel(SIUL2_MSCR_S32R45_PAD_CTL_DSPI3_PCS0,
 	       SIUL2_0_MSCRn(SIUL2_PC07_MSCR_S32R45_DSPI3_PCS0));
-
 
 	/* DSPI 5 */
 	writel(SIUL2_MSCR_S32R45_PAD_CTL_DSPI5_SCK,

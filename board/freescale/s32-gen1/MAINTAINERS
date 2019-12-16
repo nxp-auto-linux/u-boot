@@ -11,10 +11,10 @@ S:	Maintained
 F:	configs/s32v344_defconfig
 F:	include/configs/s32v344.h
 
-S32G274A BOARD
+S32G274A-EVB BOARD
 M:	-
 S:	Maintained
-F:	configs/s32g274a_defconfig
+F:	configs/s32g274aevb_defconfig
 F:	include/configs/s32g274a.h
 F:	drivers/ddr/fsl/ddrss.c
 

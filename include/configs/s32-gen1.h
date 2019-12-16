@@ -54,9 +54,9 @@
 #define CONFIG_FEC_MXC_PHYADDR  7
 #endif
 
-#if defined(CONFIG_TARGET_S32G274A)
+#if defined(CONFIG_TARGET_S32G274AEVB)
 #define FDT_FILE fsl-s32g274a-evb.dtb
-#elif defined(CONFIG_TARGET_S32R45X)
+#elif defined(CONFIG_TARGET_S32R45XEVB)
 #define FDT_FILE fsl-s32r45x.dtb
 #endif
 
