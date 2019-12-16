@@ -40,9 +40,11 @@ int board_early_init_f(void)
 {
 	mscm_init();
 
+#ifdef CONFIG_S32_RUN_AT_EL3
+	/* Do these only if TF-A hasn't already. */
 	setup_iomux_i2c();
-	//setup_iomux_nfc();
 	setup_iomux_uart();
+#endif
 #ifdef CONFIG_FSL_DSPI
 	setup_iomux_dspi();
 #endif
