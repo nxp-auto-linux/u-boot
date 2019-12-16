@@ -242,6 +242,8 @@ struct eqos_config {
 	bool reg_access_always_ok;
 	int mdio_wait;
 	int swr_wait;
+	u32 tx_fifo_size;
+	u32 rx_fifo_size;
 	int config_mac;
 	int config_mac_mdio;
 	u32 config_phy_addr;

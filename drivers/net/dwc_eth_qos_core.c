@@ -499,25 +499,33 @@ static int eqos_start(struct udevice *dev)
 	setbits_le32(&eqos->mtl_regs->rxq0_operation_mode,
 		     EQOS_MTL_RXQ0_OPERATION_MODE_RSF);
 
-	/* Transmit/Receive queue fifo size; use all RAM for 1 queue */
-	val = readl(&eqos->mac_regs->hw_feature1);
-	tx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT) &
-		EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK;
-	rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
-		EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
+	/* Get the RX fifo size - use preconfigured value if defined */
+	if (eqos->config->rx_fifo_size) {
+		rx_fifo_sz = eqos->config->rx_fifo_size;
+	} else {
+		val = readl(&eqos->mac_regs->hw_feature1);
+		rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
+			EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
+		/* r/tx_fifo_sz is encoded as log2(n / 128). */
+		rx_fifo_sz = (128 << rx_fifo_sz);
+	}
 
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-	/* Workaround for MTL ECC error experienced on S32CC platform */
-	tqs = 0x4f;
-	rqs = 0x4f;
-#else
-	/*
-	 * r/tx_fifo_sz is encoded as log2(n / 128). Undo that by shifting.
-	 * r/tqs is encoded as (n / 256) - 1.
-	 */
-	tqs = (128 << tx_fifo_sz) / 256 - 1;
-	rqs = (128 << rx_fifo_sz) / 256 - 1;
-#endif
+	/* Get the TX fifo size - use preconfigured value if defined */
+	if (eqos->config->tx_fifo_size) {
+		tx_fifo_sz = eqos->config->tx_fifo_size;
+	} else {
+		val = readl(&eqos->mac_regs->hw_feature1);
+		tx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT) &
+			EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK;
+		/* r/tx_fifo_sz is encoded as log2(n / 128). */
+		tx_fifo_sz = (128 << tx_fifo_sz);
+	}
+
+	/* Transmit/Receive queue fifo size; use all RAM for 1 queue */
+	/* r/tqs is encoded as (n / 256) - 1 */
+	tqs = (tx_fifo_sz / 256) - 1;
+	rqs = (rx_fifo_sz / 256) - 1;
+
 	clrsetbits_le32(&eqos->mtl_regs->txq0_operation_mode,
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_MASK <<
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_SHIFT,
