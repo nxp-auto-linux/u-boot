@@ -387,7 +387,7 @@ static int s32_gentimer_init(void)
 	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
 	return 0;
 }
-#elif defined(CONFIG_S32_GEN1)
+#elif defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_RUN_AT_EL3)
 /* The base counter frequency (FXOSC on the S32G) is actually board-dependent.
  * Moreoever, only software running at the highest implemented Exception level
  * can write to CNTFRQ_EL0, so we won't even define this function if we are
