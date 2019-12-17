@@ -8,6 +8,9 @@
 ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
 obj-y := common.o
 
+obj-$(CONFIG_S32G274A) += s32g274a.o
+obj-$(CONFIG_S32R45X) += s32r45x.o
+
 ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
 	obj-y	+= ../../../tools/lib/fdtdec.o ../../../drivers/core/ofnode.o
 endif
