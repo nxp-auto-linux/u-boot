@@ -13,7 +13,7 @@ obj-$(CONFIG_S32G274A) += s32g274a.o
 obj-$(CONFIG_S32R45X) += s32r45x.o
 
 ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
-	obj-y	+= ../../../tools/lib/fdtdec.o ../../../drivers/core/ofnode.o
+	obj-y	+= ../../../drivers/core/ofnode.o
 endif
 
 obj-$(CONFIG_NETDEVICES) += eth.o
