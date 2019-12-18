@@ -998,6 +998,7 @@ ifeq ($(CONFIG_OF_EMBED),y)
 	@echo >&2 "See doc/README.fdt-control for more info."
 	@echo >&2 "===================================================="
 endif
+ifeq (,$(CONFIG_S32))
 ifeq ($(CONFIG_SPI),y)
 ifneq ($(CONFIG_DM_SPI)$(CONFIG_OF_CONTROL),yy)
 	@echo >&2 "===================== WARNING ======================"
@@ -1007,6 +1008,7 @@ ifneq ($(CONFIG_DM_SPI)$(CONFIG_OF_CONTROL),yy)
 	@echo >&2 "Failure to update can lead to driver/board removal"
 	@echo >&2 "See doc/driver-model/MIGRATION.txt for more info."
 	@echo >&2 "===================================================="
+endif
 endif
 endif
 ifeq ($(CONFIG_SPI_FLASH),y)
