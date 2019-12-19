@@ -4,6 +4,7 @@
  * Copyright (C) 2013 Jagannadha Sutradharudu Teki, Xilinx Inc.
  * Copyright (C) 2016 Jagan Teki <jagan@openedev.com>
  * Copyright (C) 2018 Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright 2017-2020 NXP
  */
 
 #include <common.h>
@@ -175,6 +176,7 @@ const struct flash_info spi_nor_ids[] = {
 	{ INFO("s25fl512s_256k",  0x010220, 0x4d00, 256 * 1024, 256, SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ | USE_CLSR) },
 	{ INFO("s25fl512s_64k",  0x010220, 0x4d01, 64 * 1024, 1024, SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ | USE_CLSR) },
 	{ INFO("s25fl512s_512k", 0x010220, 0x4f00, 256 * 1024, 256, SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ | USE_CLSR) },
+	{ INFO("s70fl01gs_1g", 0x010221, 0x4d00, 256 * 1024,   256, RD_NORM) },
 	{ INFO("s25sl12800", 0x012018, 0x0300, 256 * 1024,  64, 0) },
 	{ INFO("s25sl12801", 0x012018, 0x0301,  64 * 1024, 256, 0) },
 	{ INFO6("s25fl128s",  0x012018, 0x4d0180, 64 * 1024, 256, SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ | USE_CLSR) },
