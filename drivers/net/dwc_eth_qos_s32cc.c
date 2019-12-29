@@ -41,11 +41,6 @@
 #define S32CC_GMAC_0_CTRL_STS		0x4007C004
 #define GMAC_MAC_PHYIF_CTRL_STAT	0x4033C0F8
 
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-u32 pfeng_cfg_get_mode(void);
-u32 pfeng_cfg_emac_get_interface(u32 idx);
-#endif
-
 enum {
 	S32CCGMAC_MODE_DISABLE = 0,
 	S32CCGMAC_MODE_ENABLE,
@@ -60,12 +55,12 @@ int set_tx_clk_enet_gmac(int idx);
 
 static bool s32ccgmac_set_interface(u32 mode);
 
-u32 s32ccgmac_cfg_get_mode(void)
+static u32 s32ccgmac_cfg_get_mode(void)
 {
 	return s32ccgmac_mode;
 }
 
-bool s32ccgmac_cfg_set_mode(u32 mode)
+static bool s32ccgmac_cfg_set_mode(u32 mode)
 {
 	if (s32ccgmac_mode == mode)
 		/* already in the same mode */
@@ -86,7 +81,7 @@ bool s32ccgmac_cfg_set_mode(u32 mode)
 	return true;
 }
 
-bool s32ccgmac_cfg_set_interface(u32 mode)
+static bool s32ccgmac_cfg_set_interface(u32 mode)
 {
 	if (mode != PHY_INTERFACE_MODE_NONE &&
 	    mode != PHY_INTERFACE_MODE_SGMII &&
@@ -105,11 +100,6 @@ bool s32ccgmac_cfg_set_interface(u32 mode)
 	return true;
 }
 
-u32 s32ccgmac_cfg_get_interface_mode(void)
-{
-	return mac_intf;
-}
-
 static const char *s32ccgmac_cfg_get_interface_mode_str(void)
 {
 	return strlen(phy_string_for_interface(mac_intf)) ?
@@ -118,14 +108,6 @@ static const char *s32ccgmac_cfg_get_interface_mode_str(void)
 
 static bool s32ccgmac_set_interface(u32 mode)
 {
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-		if (pfeng_cfg_get_mode() &&
-		    pfeng_cfg_emac_get_interface(1) != PHY_INTERFACE_MODE_NONE &&
-		    pfeng_cfg_emac_get_interface(1) == mac_intf) {
-			pr_info("warning: the interface is already used by PFE1");
-		}
-#endif
-
 	setup_iomux_enet_gmac(mode);
 	setup_clocks_enet_gmac(mode);
 

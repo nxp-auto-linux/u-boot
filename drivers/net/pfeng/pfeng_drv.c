@@ -21,8 +21,6 @@
 
 #include "pfeng.h"
 
-bool pfeng_cfg_set_mode(u32 mode);
-
 #define HIF_QUEUE_ID 0
 #define HIF_HEADER_SIZE sizeof(pfe_ct_hif_rx_hdr_t)
 
@@ -264,16 +262,38 @@ static int pfeng_write_hwaddr(struct udevice *dev)
 	return -EINVAL;
 }
 
-static int pfeng_init(struct pfeng_priv *priv)
+static int pfeng_check_env(void)
+{
+	char *env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
+	char *tok, *loc_mode;
+
+	if (!env_mode || !strlen(env_mode)) {
+		/* return default mode */
+		return PFENG_MODE_DEFAULT;
+	}
+	loc_mode = strdup(env_mode);
+
+	tok = strchr(loc_mode, ',');
+	if (tok)
+		*tok = '\0';
+	if (!strcmp("disable", loc_mode)) {
+		return PFENG_MODE_DISABLE;
+	} else {
+		if (strcmp("enable", loc_mode)) {
+			/* not "disable" nor "enable" so do default */
+			return PFENG_MODE_DEFAULT;
+		}
+	}
+
+	return PFENG_MODE_ENABLE;
+}
+
+static int pfeng_set_fw_from_env(struct pfeng_priv *priv)
 {
 	char *env_fw;
 	char *fw_int = NULL, *fw_name = NULL, *fw_part = NULL;
 	int fw_type = FS_TYPE_ANY;
-	int ret = 0;
 	char *p;
-
-	/* enable PFE IP support */
-	pfeng_cfg_set_mode(1);
 
 	/* Parse fw destination from environment */
 	env_fw = env_get(PFENG_ENV_VAR_FW_SOURCE);
@@ -314,9 +334,13 @@ static int pfeng_init(struct pfeng_priv *priv)
 #endif
 
 	/* FW load */
-	ret = pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);
-	if (ret)
-		return ret;
+	return pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);
+}
+
+
+static int pfeng_driver_init(struct pfeng_priv *priv)
+{
+	int ret;
 
 	/* CFG setup */
 	priv->pfe_cfg.common_irq_mode = FALSE; /* don't use common irq mode */
@@ -587,8 +611,15 @@ static int pfeng_probe(struct udevice *dev)
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
 	int ret, i;
+	char *env_mode;
 
 	debug("%s(dev=%p):\n", __func__, dev);
+
+	/* check environment vars */
+	if (pfeng_check_env() == PFENG_MODE_DISABLE) {
+		dev_warn(dev, "pfeng: driver disabled by environment (pfeng_mode)\n");
+		return -ENODEV;
+	}
 
 	pfeng_drv_priv = priv;
 	priv->dev = dev;
@@ -602,10 +633,25 @@ static int pfeng_probe(struct udevice *dev)
 		return -ENODEV;
 	}
 
-	ret = pfeng_init(priv);
+	/* retrieve emacs mode from env */
+	env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
+	if (env_mode && ((env_mode = strchr(env_mode, ','))) && *env_mode)
+		pfeng_set_emacs_from_env(++env_mode);
+
+	/* enable PFE IP support */
+	pfeng_cfg_set_mode(PFENG_MODE_RUN);
+
+	/* fw: parse location and load it */
+	ret = pfeng_set_fw_from_env(priv);
 	if (ret)
 		return ret;
 
+	/* init pfe platform driver */
+	ret = pfeng_driver_init(priv);
+	if (ret)
+		return ret;
+
+	/* register mdios */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++)
 		if (priv->config->config_mac_mask & (1 << i))
 			pfeng_mdio_register(priv, i);
@@ -620,8 +666,6 @@ static int pfeng_remove(struct udevice *dev)
 	struct pfeng_priv *priv = dev_get_priv(dev);
 
 	debug("%s(dev=%p):\n", __func__, dev);
-
-	printf("\n-----> [%s] ...\n", __func__);
 
 	/* free all registered MDIO buses */
 	pfeng_mdio_unregister_all(priv);

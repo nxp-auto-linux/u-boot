@@ -20,11 +20,6 @@
 
 #include "pfeng.h"
 
-enum {
-	PFENG_MODE_DISABLE = 0,
-	PFENG_MODE_ENABLE,
-};
-
 static u32 emac_intf[PFENG_EMACS_COUNT] = {
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB)
 	PHY_INTERFACE_MODE_SGMII, /* ARQ107 on PROC board */
@@ -38,29 +33,11 @@ static u32 emac_intf[PFENG_EMACS_COUNT] = {
 #endif
 };
 
-static u32 new_intf[PFENG_EMACS_COUNT] = {
-#if CONFIG_IS_ENABLED(TARGET_S32G274AEVB)
-	PHY_INTERFACE_MODE_SGMII,
-	PHY_INTERFACE_MODE_SGMII,
-	PHY_INTERFACE_MODE_RGMII
-#endif
-#if CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
-	PHY_INTERFACE_MODE_SGMII,
-	PHY_INTERFACE_MODE_NONE,
-	PHY_INTERFACE_MODE_RGMII
-#endif
-};
-
 static u32 pfeng_mode = PFENG_MODE_DISABLE;
 
 static u32 pfeng_intf_to_s32g(u32 intf);
 static inline bool pfeng_emac_type_is_valid(u32 idx, u32 mode);
 static void print_emacs_mode(char *label);
-
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-u32 s32ccgmac_cfg_get_mode(void);
-u32 s32ccgmac_cfg_get_interface_mode(void);
-#endif
 
 /* pfeng cfg api */
 
@@ -94,20 +71,7 @@ static bool pfeng_cfg_emac_set_interface(u32 idx, u32 mode)
 		return false;
 	}
 
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-	if (idx == 1) {
-		if (s32ccgmac_cfg_get_mode() &&
-		    s32ccgmac_cfg_get_interface_mode() != PHY_INTERFACE_MODE_NONE &&
-		    s32ccgmac_cfg_get_interface_mode() == emac_intf[1]) {
-			pr_err("pfe: invalid config: MAC1 uses the same interface as s32ccgmac/eqos");
-			return false;
-		}
-	}
-#endif
-
-	new_intf[idx] = mode;
-
-	printf("pfe: warning: emac%i configuration has changed. You have to disable and enable PFE to get it ready\n", idx);
+	emac_intf[idx] = mode;
 
 	return true;
 }
@@ -200,12 +164,6 @@ static void enable_partition_2(void)
 		;
 }
 
-static void reset_partition_2(void)
-{
-	disable_partition_2();
-	enable_partition_2();
-}
-
 static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
 {
 	/* PFE MC_CGM clock MUX*/
@@ -246,10 +204,6 @@ static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
 		break;
 
 	case PHY_INTERFACE_MODE_SGMII:
-		/* TODO */
-		break;
-
-	case PHY_INTERFACE_MODE_GMII:
 		/* TODO */
 		break;
 
@@ -641,50 +595,99 @@ static void setup_iomux_pfe(int intf0, int intf1, int intf2)
 	}
 }
 
+/* disable power for EMACs */
+void pfeng_cfg_emacs_disable_all(void)
+{
+	writel(GPR_PFE_EMACn_PWR_DWN(0) |
+	       GPR_PFE_EMACn_PWR_DWN(1) |
+	       GPR_PFE_EMACn_PWR_DWN(2),
+	       (addr_t)S32G_PFE_PRW_CTRL);
+}
+
+/* enable power for EMACs */
+void pfeng_cfg_emacs_enable_all(void)
+{
+	int i;
+
+	pfeng_cfg_emacs_disable_all();
+
+	writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
+		(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
+		(pfeng_intf_to_s32g(emac_intf[0])),
+		(addr_t)S32G_PFE_EMACS_INTF_SEL);
+	udelay(100);
+	writel(0, (addr_t)S32G_PFE_PRW_CTRL);
+
+	/* reset all EMACs */
+	for (i = 0; i < PFENG_EMACS_COUNT; i++) {
+		writel(readl((addr_t)S32G_PFE_EMACn_MODE(i))
+		       | EMAC_MODE_SWR_MASK, (addr_t)S32G_PFE_EMACn_MODE(i));
+		udelay(10);
+		while (readl((addr_t)S32G_PFE_EMACn_MODE(i))
+		       & EMAC_MODE_SWR_MASK)
+			udelay(10);
+	}
+}
+
+static int pfeng_cfg_mode_disable(void)
+{
+	/* disable all EMACs to allow interface change */
+	pfeng_cfg_emacs_disable_all();
+
+	/* disable partition 2 */
+	disable_partition_2();
+
+	return 0;
+}
+
+static int pfeng_cfg_mode_enable(void)
+{
+	/* enable partition 2 */
+	enable_partition_2();
+	setup_iomux_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
+	setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
+
+	return 0;
+}
+
+static int pfeng_cfg_mode_run(void)
+{
+	/* reset PFE IP */
+	pfeng_cfg_mode_disable();
+	/* enable pin/clock muxing */
+	pfeng_cfg_mode_enable();
+
+	return 0;
+}
+
 bool pfeng_cfg_set_mode(u32 mode)
 {
+	int ret = EINVAL;
+
 	if (pfeng_mode == mode)
 		/* already in the same mode */
 		return true;
 
-	if (mode == PFENG_MODE_DISABLE) {
-		/* power down all 3 macs */
-		/* TODO */
-
-		/* disable partition 2 */
-		disable_partition_2();
-
-	} else {
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-		if (s32ccgmac_cfg_get_interface_mode() != PHY_INTERFACE_MODE_NONE &&
-		    s32ccgmac_cfg_get_interface_mode() == emac_intf[1]) {
-			pr_info("pfe: warning: MAC1 uses the same interface as s32ccgmac/eqos");
-		}
-#endif
-		/* all checks passed, so copy new_intf[] to emac_intf[] */
-		memcpy(emac_intf, new_intf, sizeof(emac_intf));
-
-		/* enable partition 2 */
-		enable_partition_2();
-		setup_iomux_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
-		setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
-
-		/* INTF_SEL */
-		writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
-			(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
-			(pfeng_intf_to_s32g(emac_intf[0])),
-			(u32 *)S32G_PFE_EMACS_INTF_SEL);
-		reset_partition_2();
-
-		/* power up all 3 macs */
-		/* TODO */
-
-		print_emacs_mode("PFE: ");
+	switch (mode) {
+	case PFENG_MODE_DISABLE:
+		ret = pfeng_cfg_mode_disable();
+		break;
+	case PFENG_MODE_ENABLE:
+		ret = pfeng_cfg_mode_enable();
+		break;
+	case PFENG_MODE_RUN:
+		if (pfeng_mode == PFENG_MODE_DISABLE)
+			pfeng_cfg_mode_enable();
+		ret = pfeng_cfg_mode_run();
+		break;
 	}
 
-	pfeng_mode = mode;
+	if (!ret) {
+		pfeng_mode = mode;
+		print_emacs_mode(" PFE: ");
+	}
 
-	return true;
+	return !ret;
 }
 
 static bool parse_interface_name(char *modestr, int *intf)
@@ -695,8 +698,6 @@ static bool parse_interface_name(char *modestr, int *intf)
 		*intf = PHY_INTERFACE_MODE_RMII;
 	else if (!strcmp(modestr, "rgmii"))
 		*intf = PHY_INTERFACE_MODE_RGMII;
-	else if (!strcmp(modestr, "gmii"))
-		*intf = PHY_INTERFACE_MODE_GMII;
 	else if (!strcmp(modestr, "sgmii"))
 		*intf = PHY_INTERFACE_MODE_SGMII;
 	else if (!strcmp(modestr, "none"))
@@ -706,12 +707,13 @@ static bool parse_interface_name(char *modestr, int *intf)
 	return true;
 }
 
-static int pfeng_set_emacs_from_env(char *env_mode)
+int pfeng_set_emacs_from_env(char *env_mode)
 {
-	char *tok;
+	char *tok, *loc_mode;
 	int i, intf[PFENG_EMACS_COUNT] = { -1, -1, -1 };
 
-	tok = strtok(env_mode, ",");
+	loc_mode = strdup(env_mode);
+	tok = strtok(loc_mode, ",");
 	for (i = 0; i < PFENG_EMACS_COUNT; i++) {
 		if (!tok)
 			break;
@@ -725,44 +727,26 @@ static int pfeng_set_emacs_from_env(char *env_mode)
 	for (i = 0; i < PFENG_EMACS_COUNT; i++)
 		if (intf[i] > -1)
 			pfeng_cfg_emac_set_interface(i, intf[i]);
-	return 0;
-}
 
-void pfeng_init_s32g(void)
-{
-	char *env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
-	char *tok;
+	/* set INTF_SEL */
+	writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
+		(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
+		(pfeng_intf_to_s32g(emac_intf[0])),
+		(addr_t)S32G_PFE_EMACS_INTF_SEL);
 
-	if (!env_mode || !strlen(env_mode)) {
-		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
-		return;
-	}
-
-	tok = strchr(env_mode, ',');
-	if (tok)
-		*tok = '\0';
-	if (!strcmp("disable", env_mode)) {
-		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
-		return;
-	} else {
-		if (strcmp("enable", env_mode)) {
-			/* not "disable" nor "enable" so do default */
-			pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
-			return;
-		}
-	}
-
-	/* jump to emacs part */
-	tok++;
-	if (strlen(tok)) {
-		if(!pfeng_set_emacs_from_env(tok)) {
-			pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
-			return;
-		}
-	}
-
-	/* default */
+#if 0
+#if 1
+	pfeng_cfg_emacs_disable_all();
+	pfeng_cfg_emacs_enable_all();
+#else
+	/* stop IP fully, to get intf_sel re-read on start */
+	save_mode = pfeng_mode;
 	pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
+	pfeng_cfg_set_mode(save_mode);
+#endif
+#endif
+
+	return 0;
 }
 
 /* command interface */
@@ -770,10 +754,9 @@ void pfeng_init_s32g(void)
 static inline bool pfeng_emac_type_is_valid(u32 idx, u32 mode)
 {
 	return (mode == PHY_INTERFACE_MODE_NONE ||
-		mode == PHY_INTERFACE_MODE_GMII ||
 		mode == PHY_INTERFACE_MODE_SGMII ||
 		mode == PHY_INTERFACE_MODE_RGMII ||
-		mode == PHY_INTERFACE_MODE_GMII ||
+		mode == PHY_INTERFACE_MODE_RMII ||
 		mode == PHY_INTERFACE_MODE_MII);
 }
 
@@ -781,13 +764,13 @@ static u32 pfeng_intf_to_s32g(u32 intf)
 {
 	switch (intf) {
 	case PHY_INTERFACE_MODE_MII:
-		return 0x1;
+		return GPR_PFE_EMAC_IF_MII;
 	case PHY_INTERFACE_MODE_RMII:
-		return 0x9;
+		return GPR_PFE_EMAC_IF_RMII;
 	case PHY_INTERFACE_MODE_RGMII:
-		return 0x2;
+		return GPR_PFE_EMAC_IF_RGMII;
 	default:
-		return 0x0; /* SGMII mode by default */
+		return GPR_PFE_EMAC_IF_SGMII; /* SGMII mode by default */
 	}
 }
 
@@ -804,17 +787,10 @@ static const char *pfeng_emac_get_interface_type_str(u32 idx)
 
 static void print_emacs_mode(char *label)
 {
-	bool flg;
-
-	flg = emac_intf[0] != new_intf[0] || emac_intf[1] != new_intf[1] ||
-	      emac_intf[2] != new_intf[2];
-	printf("%semac0: %s emac1: %s emac2: %s %s\n", label,
-			pfeng_emac_get_interface_type_str(0),
-			pfeng_emac_get_interface_type_str(1),
-			pfeng_emac_get_interface_type_str(2),
-			(flg && (pfeng_cfg_get_mode() != PFENG_MODE_DISABLE))
-			? "note: cycle disable/enable to get new config ready"
-			  : "");
+	printf("%semac0: %s emac1: %s emac2: %s\n", label,
+	       pfeng_emac_get_interface_type_str(0),
+	       pfeng_emac_get_interface_type_str(1),
+	       pfeng_emac_get_interface_type_str(2));
 }
 
 static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
@@ -824,7 +800,9 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 
 	if (!env_mode) {
 		/* set the default mode */
-		env_set(PFENG_ENV_VAR_MODE_NAME, "disable");
+		env_set(PFENG_ENV_VAR_MODE_NAME,
+			PFENG_MODE_DEFAULT == PFENG_MODE_ENABLE ?
+			"enable" : "disable");
 	}
 
 	/* process command */
@@ -839,11 +817,11 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 			printf("  fw: '%s' (from env)\n", env_fw);
 		else
 #if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
-			printf("  fw: '%s' on partition mmc@%s\n",
+			printf("  fw: '%s' on mmc@%s\n",
 			       CONFIG_FSL_PFENG_FW_NAME,
 			       CONFIG_FSL_PFENG_FW_PART);
 #else
-			printf("  fw: on partition qspi@%s\n",
+			printf("  fw: on qspi@%s\n",
 			       CONFIG_FSL_PFENG_FW_PART);
 #endif
 		return 0;
@@ -851,6 +829,10 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
 		return 0;
 	} else if (!strcmp(argv[1], "enable")) {
+		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+		return 0;
+	} else if (!strcmp(argv[1], "stop")) {
+		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
 		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
 		return 0;
 	} else if (!strcmp(argv[1], "emacs")) {
@@ -889,6 +871,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		} else
 			return CMD_RET_USAGE;
 		return 0;
+	} else if (!strcmp(argv[1], "help")) {
 	}
 
 	return CMD_RET_USAGE;
@@ -899,6 +882,7 @@ U_BOOT_CMD(
 	   "PFE controller info",
 	   /*  */"info                              - important hw info\n"
 	   "pfeng [disable|enable]                  - disable/enable full PFE/EMACs subsystem\n"
+	   "pfeng stop                              - stop the driver but don't disable PFE/EMACs\n"
 	   "pfeng emacs [<inf0-mode>,<intf1-mode>,<intf2-mode>] - read or set EMAC0-2 interface mode\n"
 	   "pfeng reg <offset>                      - read register"
 );

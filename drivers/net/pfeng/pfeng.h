@@ -11,11 +11,33 @@
 #include "pfe_platform.h"
 #include "pfe_hif_drv.h"
 
-#define S32G_PFE_REGS_BASE 0x46000000
-#define S32G_PFE_EMACS_INTF_SEL 0x4007CA04
-#define S32G_PFE_PRW_CTRL 0x4007CA20
+#define S32G_PFE_REGS_BASE		0x46000000
+#define S32G_PFE_EMACn_MODE(n)		(S32G_PFE_REGS_BASE + 0xA0000 + \
+					 (0x4000 * n) + 0x1000)
+#define S32G_PFE_EMACS_INTF_SEL		0x4007CA04
+#define S32G_PFE_PRW_CTRL		0x4007CA20
+
+#define GPR_PFE_EMACn_PWR_ACK(n)	(1 << (9 + n)) /* RD Only */
+#define GPR_PFE_EMACn_PWR_ISO(n)	(1 << (6 + n))
+#define GPR_PFE_EMACn_PWR_DWN(n)	(1 << (3 + n))
+#define GPR_PFE_EMACn_PWR_CLAMP(n)	(1 << (0 + n))
+#define GPR_PFE_EMAC_IF_MII		(1)
+#define GPR_PFE_EMAC_IF_RMII		(9)
+#define GPR_PFE_EMAC_IF_RGMII		(2)
+#define GPR_PFE_EMAC_IF_SGMII		(0)
+#define EMAC_MODE_SWR_MASK		(1)
 
 #define PFENG_EMACS_COUNT 3
+
+enum {
+	PFENG_MODE_DISABLE = 0,		/* PFE not accessible */
+	PFENG_MODE_ENABLE,		/* PFE/EMACs out of reset,
+					 * pin/clocks muxing enabled
+					 */
+	PFENG_MODE_RUN,			/* PFE fully functional */
+};
+
+#define PFENG_MODE_DEFAULT PFENG_MODE_ENABLE
 
 struct pfeng_config {
 	u32 config_mac_mask;
@@ -45,20 +67,37 @@ struct pfeng_priv {
 	void *last_tx;
 };
 
-
 /*
  * pfeng_mode environment variable syntax:
  * <state>[,<emac0_interface_type>[,<emac1_intf_type>[,<emac2_intf_type>]]]
  *
  * where:
- * 	state			: enable/disable
- * 	emac_interface_type	: none/sgmii/rgmii/rmii/mii(+)
- * 				  (+) some might be unsupported on your board
+ *	<state>			: enable/disable
+ *	<emac_interface_type>	: none/sgmii/rgmii/rmii/mii(+)
+ *				  (+) some might be unsupported on particular
+ *				  boards
  */
 #define PFENG_ENV_VAR_MODE_NAME "pfeng_mode"
 
+/* pfengemac:
+ * the emac used for communication: 0, 1 or 2
+ */
 #define PFENG_ENV_VAR_EMAC	"pfengemac"
+
+/* pfengfw environment variable syntax:
+ * <interface>@<dev>:<part>:<fw_name>
+ *
+ * where
+ *	<interface>		: mmc
+ *	<dev>			: device id (in case of sdcard it is 0)
+ *	<part>			: partition id
+ */
 #define PFENG_ENV_VAR_FW_SOURCE	"pfengfw"
+
+bool pfeng_cfg_set_mode(u32 mode);
+int pfeng_set_emacs_from_env(char *env_mode);
+void pfeng_cfg_emacs_enable_all(void);
+void pfeng_cfg_emacs_disable_all(void);
 
 /* cmd debug calls */
 int pfeng_debug_emac(u32 idx);
