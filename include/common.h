@@ -263,13 +263,7 @@ void	jumptable_init(void);
 const char *symbol_lookup(unsigned long addr, unsigned long *caddr);
 
 /* common/memsize.c */
-#if RAM_CELL_SIZE == 32
-typedef  uint32_t	ramcell;
-#else
-typedef  long		ramcell;
-#endif
-
-long	get_ram_size  (ramcell *, long);
+long	get_ram_size  (long *, long);
 phys_size_t get_effective_memsize(void);
 
 /* $(BOARD)/$(BOARD).c */
