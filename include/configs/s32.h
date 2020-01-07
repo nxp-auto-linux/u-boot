@@ -524,7 +524,6 @@
 #endif
 
 /* Physical memory map */
-#define CONFIG_NR_DRAM_BANKS	1
 #define PHYS_SDRAM			(DDR_BASE_ADDR)
 #define PHYS_SDRAM_SIZE			(CONFIG_SYS_DDR_SIZE)
 
