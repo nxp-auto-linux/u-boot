@@ -27,7 +27,6 @@ void board_net_init(void);
 
 /* Driver initialization prototypes */
 int at91emac_register(bd_t *bis, unsigned long iobase);
-int au1x00_enet_initialize(bd_t*);
 int ax88180_initialize(bd_t *bis);
 int bcm_sf2_eth_register(bd_t *bis, u8 dev_num);
 int bfin_EMAC_initialize(bd_t *bis);
@@ -46,7 +45,6 @@ int ethoc_initialize(u8 dev_num, int base_addr);
 int fec_initialize (bd_t *bis);
 int fecmxc_initialize(bd_t *bis);
 int fecmxc_initialize_multi(bd_t *bis, int dev_id, int phy_id, uint32_t addr);
-int ftgmac100_initialize(bd_t *bits);
 int ftmac100_initialize(bd_t *bits);
 int ftmac110_initialize(bd_t *bits);
 void gt6426x_eth_initialize(bd_t *bis);

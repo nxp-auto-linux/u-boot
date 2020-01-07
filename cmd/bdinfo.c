@@ -16,7 +16,7 @@ DECLARE_GLOBAL_DATA_PTR;
 __maybe_unused
 static void print_num(const char *name, ulong value)
 {
-	printf("%-12s= 0x%08lX\n", name, value);
+	printf("%-12s= 0x%0*lx\n", name, 2 * (int)sizeof(value), value);
 }
 
 __maybe_unused
@@ -348,7 +348,7 @@ static int do_bdinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 	       CONFIG_VAL(SYS_MALLOC_F_LEN));
 #endif
 	if (gd->fdt_blob)
-		printf("fdt_blob = %p\n", gd->fdt_blob);
+		print_num("fdt_blob", (ulong)gd->fdt_blob);
 
 	return 0;
 }
@@ -424,9 +424,10 @@ int do_bdinfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	bd_t *bd = gd->bd;
 
-	print_num("arch_number", bd->bi_arch_number);
 	print_bi_boot_params(bd);
 	print_bi_dram(bd);
+	print_num("relocaddr", gd->relocaddr);
+	print_num("reloc off", gd->reloc_off);
 	print_eth_ip_addr();
 	print_baudrate();
 

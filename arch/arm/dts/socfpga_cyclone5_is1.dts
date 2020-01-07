@@ -11,6 +11,7 @@
 
 	chosen {
 		bootargs = "console=ttyS0,115200";
+		stdout-path = "serial0:115200n8";
 	};
 
 	memory {
@@ -52,6 +53,10 @@
 
 &gpio1 {
 	status = "okay";
+};
+
+&porta {
+	bank-name = "porta";
 };
 
 &i2c0 {
@@ -101,4 +106,12 @@
 
 &usb1 {
 	status = "okay";
+};
+
+&uart0 {
+	u-boot,dm-pre-reloc;
+};
+
+&watchdog0 {
+	status = "disabled";
 };

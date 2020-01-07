@@ -6,13 +6,13 @@
 #include <common.h>
 #include <fsl_immap.h>
 #include <fsl_ifc.h>
-#include <ahci.h>
-#include <scsi.h>
 #include <asm/arch/fsl_serdes.h>
 #include <asm/arch/soc.h>
 #include <asm/io.h>
 #include <asm/global_data.h>
 #include <asm/arch-fsl-layerscape/config.h>
+#include <asm/arch-fsl-layerscape/ns_access.h>
+#include <asm/arch-fsl-layerscape/fsl_icid.h>
 #ifdef CONFIG_LAYERSCAPE_NS_ACCESS
 #include <fsl_csu.h>
 #endif
@@ -24,6 +24,10 @@
 #include <fsl_validate.h>
 #endif
 #include <fsl_immap.h>
+#ifdef CONFIG_TFABOOT
+#include <environment.h>
+DECLARE_GLOBAL_DATA_PTR;
+#endif
 
 bool soc_has_dp_ddr(void)
 {
@@ -330,36 +334,6 @@ void fsl_lsch3_early_init_f(void)
 #endif
 }
 
-#ifdef CONFIG_SCSI_AHCI_PLAT
-int sata_init(void)
-{
-	struct ccsr_ahci __iomem *ccsr_ahci;
-
-#ifdef CONFIG_SYS_SATA2
-	ccsr_ahci  = (void *)CONFIG_SYS_SATA2;
-	out_le32(&ccsr_ahci->ppcfg, AHCI_PORT_PHY_1_CFG);
-	out_le32(&ccsr_ahci->pp2c, AHCI_PORT_PHY2_CFG);
-	out_le32(&ccsr_ahci->pp3c, AHCI_PORT_PHY3_CFG);
-	out_le32(&ccsr_ahci->ptc, AHCI_PORT_TRANS_CFG);
-	out_le32(&ccsr_ahci->axicc, AHCI_PORT_AXICC_CFG);
-#endif
-
-#ifdef CONFIG_SYS_SATA1
-	ccsr_ahci  = (void *)CONFIG_SYS_SATA1;
-	out_le32(&ccsr_ahci->ppcfg, AHCI_PORT_PHY_1_CFG);
-	out_le32(&ccsr_ahci->pp2c, AHCI_PORT_PHY2_CFG);
-	out_le32(&ccsr_ahci->pp3c, AHCI_PORT_PHY3_CFG);
-	out_le32(&ccsr_ahci->ptc, AHCI_PORT_TRANS_CFG);
-	out_le32(&ccsr_ahci->axicc, AHCI_PORT_AXICC_CFG);
-
-	ahci_init((void __iomem *)CONFIG_SYS_SATA1);
-	scsi_scan(false);
-#endif
-
-	return 0;
-}
-#endif
-
 /* Get VDD in the unit mV from voltage ID */
 int get_core_volt_from_fuse(void)
 {
@@ -400,25 +374,6 @@ int get_core_volt_from_fuse(void)
 }
 
 #elif defined(CONFIG_FSL_LSCH2)
-#ifdef CONFIG_SCSI_AHCI_PLAT
-int sata_init(void)
-{
-	struct ccsr_ahci __iomem *ccsr_ahci = (void *)CONFIG_SYS_SATA;
-
-	/* Disable SATA ECC */
-	out_le32((void *)CONFIG_SYS_DCSR_DCFG_ADDR + 0x520, 0x80000000);
-	out_le32(&ccsr_ahci->ppcfg, AHCI_PORT_PHY_1_CFG);
-	out_le32(&ccsr_ahci->pp2c, AHCI_PORT_PHY2_CFG);
-	out_le32(&ccsr_ahci->pp3c, AHCI_PORT_PHY3_CFG);
-	out_le32(&ccsr_ahci->ptc, AHCI_PORT_TRANS_CFG);
-	out_le32(&ccsr_ahci->axicc, AHCI_PORT_AXICC_CFG);
-
-	ahci_init((void __iomem *)CONFIG_SYS_SATA);
-	scsi_scan(false);
-
-	return 0;
-}
-#endif
 
 static void erratum_a009929(void)
 {
@@ -665,6 +620,14 @@ void fsl_lsch2_early_init_f(void)
 			 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
 	}
 
+	/*
+	 * Program Central Security Unit (CSU) to grant access
+	 * permission for USB 2.0 controller
+	 */
+#if defined(CONFIG_ARCH_LS1012A) && defined(CONFIG_USB_EHCI_FSL)
+	if (current_el() == 3)
+		set_devices_ns_access(CSU_CSLX_USB_2, CSU_ALL_RW);
+#endif
 	/* Erratum */
 	erratum_a008850_early(); /* part 1 of 2 */
 	erratum_a009929();
@@ -674,6 +637,10 @@ void fsl_lsch2_early_init_f(void)
 	erratum_a009798();
 	erratum_a008997();
 	erratum_a009007();
+
+#if defined(CONFIG_ARCH_LS1043A) || defined(CONFIG_ARCH_LS1046A)
+	set_icids();
+#endif
 }
 #endif
 
@@ -716,14 +683,146 @@ int qspi_ahb_init(void)
 }
 #endif
 
+#ifdef CONFIG_TFABOOT
+#define MAX_BOOTCMD_SIZE	512
+
+int fsl_setenv_bootcmd(void)
+{
+	int ret;
+	enum boot_src src = get_boot_src();
+	char bootcmd_str[MAX_BOOTCMD_SIZE];
+
+	switch (src) {
+#ifdef IFC_NOR_BOOTCOMMAND
+	case BOOT_SOURCE_IFC_NOR:
+		sprintf(bootcmd_str, IFC_NOR_BOOTCOMMAND);
+		break;
+#endif
+#ifdef QSPI_NOR_BOOTCOMMAND
+	case BOOT_SOURCE_QSPI_NOR:
+		sprintf(bootcmd_str, QSPI_NOR_BOOTCOMMAND);
+		break;
+#endif
+#ifdef XSPI_NOR_BOOTCOMMAND
+	case BOOT_SOURCE_XSPI_NOR:
+		sprintf(bootcmd_str, XSPI_NOR_BOOTCOMMAND);
+		break;
+#endif
+#ifdef IFC_NAND_BOOTCOMMAND
+	case BOOT_SOURCE_IFC_NAND:
+		sprintf(bootcmd_str, IFC_NAND_BOOTCOMMAND);
+		break;
+#endif
+#ifdef QSPI_NAND_BOOTCOMMAND
+	case BOOT_SOURCE_QSPI_NAND:
+		sprintf(bootcmd_str, QSPI_NAND_BOOTCOMMAND);
+		break;
+#endif
+#ifdef XSPI_NAND_BOOTCOMMAND
+	case BOOT_SOURCE_XSPI_NAND:
+		sprintf(bootcmd_str, XSPI_NAND_BOOTCOMMAND);
+		break;
+#endif
+#ifdef SD_BOOTCOMMAND
+	case BOOT_SOURCE_SD_MMC:
+		sprintf(bootcmd_str, SD_BOOTCOMMAND);
+		break;
+#endif
+#ifdef SD2_BOOTCOMMAND
+	case BOOT_SOURCE_SD_MMC2:
+		sprintf(bootcmd_str, SD2_BOOTCOMMAND);
+		break;
+#endif
+	default:
+#ifdef QSPI_NOR_BOOTCOMMAND
+		sprintf(bootcmd_str, QSPI_NOR_BOOTCOMMAND);
+#endif
+		break;
+	}
+
+	ret = env_set("bootcmd", bootcmd_str);
+	if (ret) {
+		printf("Failed to set bootcmd: ret = %d\n", ret);
+		return ret;
+	}
+	return 0;
+}
+
+int fsl_setenv_mcinitcmd(void)
+{
+	int ret = 0;
+	enum boot_src src = get_boot_src();
+
+	switch (src) {
+#ifdef IFC_MC_INIT_CMD
+	case BOOT_SOURCE_IFC_NAND:
+	case BOOT_SOURCE_IFC_NOR:
+	ret = env_set("mcinitcmd", IFC_MC_INIT_CMD);
+		break;
+#endif
+#ifdef QSPI_MC_INIT_CMD
+	case BOOT_SOURCE_QSPI_NAND:
+	case BOOT_SOURCE_QSPI_NOR:
+	ret = env_set("mcinitcmd", QSPI_MC_INIT_CMD);
+		break;
+#endif
+#ifdef XSPI_MC_INIT_CMD
+	case BOOT_SOURCE_XSPI_NAND:
+	case BOOT_SOURCE_XSPI_NOR:
+	ret = env_set("mcinitcmd", XSPI_MC_INIT_CMD);
+		break;
+#endif
+#ifdef SD_MC_INIT_CMD
+	case BOOT_SOURCE_SD_MMC:
+	ret = env_set("mcinitcmd", SD_MC_INIT_CMD);
+		break;
+#endif
+#ifdef SD2_MC_INIT_CMD
+	case BOOT_SOURCE_SD_MMC2:
+	ret = env_set("mcinitcmd", SD2_MC_INIT_CMD);
+		break;
+#endif
+	default:
+#ifdef QSPI_MC_INIT_CMD
+	ret = env_set("mcinitcmd", QSPI_MC_INIT_CMD);
+#endif
+		break;
+	}
+
+	if (ret) {
+		printf("Failed to set mcinitcmd: ret = %d\n", ret);
+		return ret;
+	}
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
-#ifdef CONFIG_SCSI_AHCI_PLAT
-	sata_init();
-#endif
 #ifdef CONFIG_CHAIN_OF_TRUST
 	fsl_setenv_chain_of_trust();
+#endif
+#ifdef CONFIG_TFABOOT
+	/*
+	 * check if gd->env_addr is default_environment; then setenv bootcmd
+	 * and mcinitcmd.
+	 */
+	if (gd->env_addr + gd->reloc_off == (ulong)&default_environment[0]) {
+		fsl_setenv_bootcmd();
+		fsl_setenv_mcinitcmd();
+	}
+
+	/*
+	 * If the boot mode is secure, default environment is not present then
+	 * setenv command needs to be run by default
+	 */
+#ifdef CONFIG_CHAIN_OF_TRUST
+	if ((fsl_check_boot_mode_secure() == 1)) {
+		fsl_setenv_bootcmd();
+		fsl_setenv_mcinitcmd();
+	}
+#endif
 #endif
 #ifdef CONFIG_QSPI_AHB_INIT
 	qspi_ahb_init();

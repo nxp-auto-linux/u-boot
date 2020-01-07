@@ -21,7 +21,7 @@
  *
  * A driver that implements UCLASS_CLOCK is a clock provider. A provider will
  * often implement multiple separate clocks, since the hardware it manages
- * often has this capability. clock_uclass.h describes the interface which
+ * often has this capability. clk-uclass.h describes the interface which
  * clock providers must implement.
  *
  * Clock consumers/clients are the HW modules driven by the clock signals. This
@@ -40,10 +40,12 @@ struct udevice;
  *
  * @dev: The device which implements the clock signal.
  * @id: The clock signal ID within the provider.
+ * @data: An optional data field for scenarios where a single integer ID is not
+ *	  sufficient. If used, it can be populated through an .of_xlate op and
+ *	  processed during the various clock ops.
  *
- * Currently, the clock API assumes that a single integer ID is enough to
- * identify and configure any clock signal for any clock provider. If this
- * assumption becomes invalid in the future, the struct could be expanded to
+ * Should additional information to identify and configure any clock signal
+ * for any provider be required in the future, the struct could be expanded to
  * either (a) add more fields to allow clock providers to store additional
  * information, or (b) replace the id field with an opaque pointer, which the
  * provider would dynamically allocated during its .of_xlate op, and process
@@ -53,10 +55,10 @@ struct udevice;
 struct clk {
 	struct udevice *dev;
 	/*
-	 * Written by of_xlate. We assume a single id is enough for now. In the
-	 * future, we might add more fields here.
+	 * Written by of_xlate. In the future, we might add more fields here.
 	 */
 	unsigned long id;
+	unsigned long data;
 };
 
 /**
@@ -294,4 +296,14 @@ int clk_disable_bulk(struct clk_bulk *bulk);
 
 int soc_clk_dump(void);
 
+/**
+ * clk_valid() - check if clk is valid
+ *
+ * @clk:	the clock to check
+ * @return true if valid, or false
+ */
+static inline bool clk_valid(struct clk *clk)
+{
+	return !!clk->dev;
+}
 #endif

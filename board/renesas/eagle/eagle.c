@@ -50,16 +50,11 @@ void s_init(void)
 	clrsetbits_le32(PLL0CR, PLL0_STC_MASK, stc);
 }
 
-#define TMU0_MSTP125		BIT(25)	/* secure */
-
 int board_early_init_f(void)
 {
 	/* Unlock CPG access */
 	writel(0xA5A5FFFF, CPGWPR);
 	writel(0x5A5A0000, CPGWPCR);
-
-	/* TMU0 */
-	mstp_clrbits_le32(MSTPSR1, SMSTPCR1, TMU0_MSTP125);
 
 	return 0;
 }
@@ -74,7 +69,7 @@ int board_init(void)
 
 int dram_init(void)
 {
-	if (fdtdec_setup_memory_size() != 0)
+	if (fdtdec_setup_mem_size_base() != 0)
 		return -EINVAL;
 
 	return 0;

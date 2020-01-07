@@ -36,9 +36,7 @@
  */
 
 #ifndef CONFIG_SPL_BUILD
-#define CONFIG_MTD_DEVICE
 #define CONFIG_SPI_FLASH_MTD
-#define CONFIG_MTD_PARTITIONS
 #endif
 
 /* Below values are "dummy" - only to avoid build break */
@@ -56,18 +54,11 @@
 
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(16 * 1024 * 1024)
-#define CONFIG_MISC_INIT_R
 
 /*#define CONFIG_MXC_UART*/
 #define CONFIG_MXC_UART_BASE		UART5_BASE
 
 /* SPI NOR Flash */
-#ifdef CONFIG_CMD_SF
-#define CONFIG_SF_DEFAULT_BUS		1
-#define CONFIG_SF_DEFAULT_CS		(0 | (IMX_GPIO_NR(5, 29) << 8))
-#define CONFIG_SF_DEFAULT_SPEED		50000000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
-#endif
 
 /* I2C Configs */
 #define CONFIG_SYS_I2C
@@ -86,7 +77,6 @@
 #define CONFIG_FEC_XCV_TYPE		RGMII
 #define CONFIG_ETHPRIME			"FEC"
 #define CONFIG_FEC_MXC_PHYADDR		0
-#define CONFIG_MII
 #endif
 
 /* MMC Configs */
@@ -119,27 +109,6 @@
 	"name=rootfs2,size=512M,uuid=${uuid_gpt_rootfs2};" \
 	"name=data,size=-,uuid=${uuid_gpt_data}\0"
 
-#define FACTORY_PROCEDURE \
-	"echo '#######################';" \
-	"echo '# Factory Boot        #';" \
-	"echo '#######################';" \
-	"env default -a;" \
-	"saveenv;" \
-	"gpt write mmc ${mmcdev} ${partitions};" \
-	"run tftp_sf_SPL;" \
-	"run tftp_sf_uboot;" \
-	TFTP_UPDATE_KERNEL \
-	"run tftp_sf_fitImg_SWU;" \
-	"run tftp_sf_initramfs_SWU;" \
-	TFTP_UPDATE_ROOTFS \
-	"echo '#######################';" \
-	"echo '# END - OK            #';" \
-	"echo '#######################';" \
-	"setenv bootcmd 'env default -a; saveenv; run falcon_setup; reset';" \
-	"setenv boot_os 'n';" \
-	"saveenv;" \
-	"reset;"
-
 #define SWUPDATE_RECOVERY_PROCEDURE \
 	"echo '#######################';" \
 	"echo '# RECOVERY SWUupdate  #';" \
@@ -170,7 +139,7 @@
 		      "rootwait rootfstype=ext4 rw; " \
 	"run set_kernel_part;" \
 	"part start mmc ${mmcdev} ${kernel_part} lba_start; " \
-	"mmc read ${loadaddr} ${lba_start} 0x2000; " \
+	"mmc read ${loadaddr} ${lba_start} ${fitImg_fw_sz}; " \
 	"setenv fdt_conf imx6q-${board}-${display}.dtb; "
 
 /* All the numbers are in LBAs */
@@ -265,8 +234,6 @@
 	"bootdelay=1\0" \
 	"baudrate=115200\0" \
 	"bootcmd=" CONFIG_BOOTCOMMAND "\0" \
-	"factory=" FACTORY_PROCEDURE "\0" \
-	"bootlimit=3\0" \
 	"ethact=FEC\0" \
 	"netdev=eth0\0" \
 	"boot_os=y\0" \
@@ -278,6 +245,7 @@
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
 	"kernel_file=fitImage\0" \
+	"fitImg_fw_sz=0x2200\0" \
 	"up=run tftp_sf_SPL; run tftp_sf_uboot\0" \
 	"download_kernel=" \
 		"tftpboot ${loadaddr} ${kernel_file};\0" \
@@ -380,7 +348,6 @@
 #define CONFIG_SYS_HZ			1000
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
 
@@ -393,12 +360,8 @@
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
 /* Commands */
-#define CONFIG_MTD_PARTITIONS
-#define CONFIG_MTD_DEVICE
 
 /* Watchdog */
-#define CONFIG_HW_WATCHDOG
-#define CONFIG_IMX_WATCHDOG
 #define CONFIG_WATCHDOG_TIMEOUT_MSECS   15000
 
 /* ENV config */
@@ -411,11 +374,6 @@
 #define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + \
 						CONFIG_ENV_SECT_SIZE)
 #define CONFIG_ENV_SIZE_REDUND		CONFIG_ENV_SIZE
-
-#define CONFIG_ENV_SPI_BUS		CONFIG_SF_DEFAULT_BUS
-#define CONFIG_ENV_SPI_CS		CONFIG_SF_DEFAULT_CS
-#define CONFIG_ENV_SPI_MODE		CONFIG_SF_DEFAULT_MODE
-#define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
 #endif
 
 #define CONFIG_MXC_USB_PORTSC           (PORT_PTS_UTMI | PORT_PTS_PTW)

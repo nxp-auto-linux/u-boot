@@ -205,11 +205,16 @@ int fdt_increase_size(void *fdt, int add_len);
 
 int fdt_fixup_nor_flash_size(void *blob);
 
+struct node_info;
 #if defined(CONFIG_FDT_FIXUP_PARTITIONS)
-void fdt_fixup_mtdparts(void *fdt, void *node_info, int node_info_size);
+void fdt_fixup_mtdparts(void *fdt, const struct node_info *node_info,
+			int node_info_size);
 #else
-static inline void fdt_fixup_mtdparts(void *fdt, void *node_info,
-					int node_info_size) {}
+static inline void fdt_fixup_mtdparts(void *fdt,
+				      const struct node_info *node_info,
+				      int node_info_size)
+{
+}
 #endif
 
 void fdt_del_node_and_alias(void *blob, const char *alias);
@@ -282,6 +287,16 @@ int fdt_setup_simplefb_node(void *fdt, int node, u64 base_address, u32 width,
 			    u32 height, u32 stride, const char *format);
 
 int fdt_overlay_apply_verbose(void *fdt, void *fdto);
+
+/**
+ * fdt_get_cells_len() - Get the length of a type of cell in top-level nodes
+ *
+ * Returns the length of the cell type in bytes (4 or 8).
+ *
+ * @blob: Pointer to device tree blob
+ * @nr_cells_name: Name to lookup, e.g. "#address-cells"
+ */
+int fdt_get_cells_len(const void *blob, char *nr_cells_name);
 
 #endif /* ifdef CONFIG_OF_LIBFDT */
 

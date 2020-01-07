@@ -16,7 +16,6 @@
  */
 #define CONFIG_SHOW_BOOT_PROGRESS
 #define CONFIG_PHYSMEM
-#define CONFIG_NR_DRAM_BANKS		8
 
 #define CONFIG_LMB
 
@@ -29,10 +28,6 @@
 #define CONFIG_LBA48
 #define CONFIG_SYS_64BIT_LBA
 
-#define CONFIG_SYS_SCSI_MAX_SCSI_ID	2
-#define CONFIG_SYS_SCSI_MAX_LUN		1
-#define CONFIG_SYS_SCSI_MAX_DEVICE	(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
-					 CONFIG_SYS_SCSI_MAX_LUN)
 #endif
 
 /* Generic TPM interfaced through LPC bus */
@@ -48,8 +43,6 @@
 /*-----------------------------------------------------------------------
  * Serial Configuration
  */
-#define CONFIG_SYS_BAUDRATE_TABLE	{300, 600, 1200, 2400, 4800, \
-					 9600, 19200, 38400, 115200}
 #define CONFIG_SYS_NS16550_PORT_MAPPED
 
 /*-----------------------------------------------------------------------
@@ -108,7 +101,7 @@
 #define CONFIG_BOOTFILE		"bzImage"
 #define CONFIG_LOADADDR		0x1000000
 #define CONFIG_RAMDISK_ADDR	0x4000000
-#ifdef CONFIG_GENERATE_ACPI_TABLE
+#if defined(CONFIG_GENERATE_ACPI_TABLE) || defined(CONFIG_EFI_STUB)
 #define CONFIG_OTHBOOTARGS	"othbootargs=\0"
 #else
 #define CONFIG_OTHBOOTARGS	"othbootargs=acpi=off\0"

@@ -36,6 +36,7 @@
 	chosen {
 		bootargs = "earlycon";
 		stdout-path = "serial0:115200n8";
+		xlnx,eeprom = &eeprom;
 	};
 
 	memory@0 {
@@ -360,7 +361,6 @@
 				status = "disabled"; /* unreachable */
 				reg = <0x20>;
 			};
-
 			max20751@72 { /* u95 */
 				compatible = "maxim,max20751";
 				reg = <0x72>;
@@ -422,6 +422,7 @@
 				temperature-stability = <50>;
 				factory-fout = <300000000>;
 				clock-frequency = <300000000>;
+				clock-output-names = "si570_user";
 			};
 		};
 		i2c@3 {
@@ -435,6 +436,7 @@
 				temperature-stability = <50>; /* copy from zc702 */
 				factory-fout = <156250000>;
 				clock-frequency = <148500000>;
+				clock-output-names = "si570_mgt";
 			};
 		};
 		i2c@4 {
@@ -483,21 +485,6 @@
 			#size-cells = <0>;
 			reg = <3>;
 			/* DDR4 SODIMM */
-			dev@19 {
-				reg = <0x19>;
-			};
-			dev@30 {
-				reg = <0x30>;
-			};
-			dev@35 {
-				reg = <0x35>;
-			};
-			dev@36 {
-				reg = <0x36>;
-			};
-			dev@51 {
-				reg = <0x51>;
-			};
 		};
 		i2c@4 {
 			#address-cells = <1>;
@@ -534,7 +521,7 @@
 	status = "okay";
 	is-dual = <1>;
 	flash@0 {
-		compatible = "m25p80"; /* 32MB */
+		compatible = "m25p80", "spi-flash"; /* 32MB */
 		#address-cells = <1>;
 		#size-cells = <1>;
 		reg = <0x0>;

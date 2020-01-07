@@ -167,18 +167,23 @@ config USB_EHCI_MSM
 	bool "Support for Qualcomm on-chip EHCI USB controller"
 	depends on DM_USB
 	select USB_ULPI_VIEWPORT
+	select MSM8916_USB_PHY
 	default n
 	---help---
 	  Enables support for the on-chip EHCI controller on Qualcomm
 	  Snapdragon SoCs.
-	  This driver supports combination of Chipidea USB controller
-	  and Synapsys USB PHY in host mode only.
 
 config USB_EHCI_PCI
 	bool "Support for PCI-based EHCI USB controller"
 	default y if X86
 	help
 	  Enables support for the PCI-based EHCI controller.
+
+config USB_EHCI_TEGRA
+	bool "Support for NVIDIA Tegra on-chip EHCI USB controller"
+	depends on TEGRA
+	---help---
+	  Enable support for Tegra on-chip EHCI USB controller
 
 config USB_EHCI_ZYNQ
 	bool "Support for Xilinx Zynq on-chip EHCI USB controller"
@@ -191,6 +196,7 @@ config USB_EHCI_GENERIC
 	bool "Support for generic EHCI USB controller"
 	depends on OF_CONTROL
 	depends on DM_USB
+	default ARCH_SUNXI
 	default n
 	---help---
 	  Enables support for generic EHCI controller.
@@ -221,6 +227,7 @@ config USB_OHCI_GENERIC
 	bool "Support for generic OHCI USB controller"
 	depends on OF_CONTROL
 	depends on DM_USB
+	default ARCH_SUNXI
 	select USB_HOST
 	---help---
 	  Enables support for generic OHCI controller.

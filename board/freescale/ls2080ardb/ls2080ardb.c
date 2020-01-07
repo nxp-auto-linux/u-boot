@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2017 NXP Semiconductors
  * Copyright 2015 Freescale Semiconductor
+ * Copyright 2017 NXP
  */
 #include <common.h>
 #include <malloc.h>
@@ -330,7 +330,8 @@ void fdt_fixup_board_enet(void *fdt)
 		return;
 	}
 
-	if ((get_mc_boot_status() == 0) && (get_dpl_apply_status() == 0))
+	if (get_mc_boot_status() == 0 &&
+	    (is_lazy_dpl_addr_valid() || get_dpl_apply_status() == 0))
 		fdt_status_okay(fdt, offset);
 	else
 		fdt_status_fail(fdt, offset);
@@ -346,12 +347,47 @@ void board_quiesce_devices(void)
 void fsl_fdt_fixup_flash(void *fdt)
 {
 	int offset;
+#ifdef CONFIG_TFABOOT
+	u32 __iomem *dcfg_ccsr = (u32 __iomem *)DCFG_BASE;
+	u32 val;
+#endif
 
 /*
  * IFC and QSPI are muxed on board.
  * So disable IFC node in dts if QSPI is enabled or
  * disable QSPI node in dts in case QSPI is not enabled.
  */
+#ifdef CONFIG_TFABOOT
+	enum boot_src src = get_boot_src();
+	bool disable_ifc = false;
+
+	switch (src) {
+	case BOOT_SOURCE_IFC_NOR:
+		disable_ifc = false;
+		break;
+	case BOOT_SOURCE_QSPI_NOR:
+		disable_ifc = true;
+		break;
+	default:
+		val = in_le32(dcfg_ccsr + DCFG_RCWSR15 / 4);
+		if (DCFG_RCWSR15_IFCGRPABASE_QSPI == (val & (u32)0x3))
+			disable_ifc = true;
+		break;
+	}
+
+	if (disable_ifc) {
+		offset = fdt_path_offset(fdt, "/soc/ifc");
+
+		if (offset < 0)
+			offset = fdt_path_offset(fdt, "/ifc");
+	} else {
+		offset = fdt_path_offset(fdt, "/soc/quadspi");
+
+		if (offset < 0)
+			offset = fdt_path_offset(fdt, "/quadspi");
+	}
+
+#else
 #ifdef CONFIG_FSL_QSPI
 	offset = fdt_path_offset(fdt, "/soc/ifc");
 
@@ -363,6 +399,8 @@ void fsl_fdt_fixup_flash(void *fdt)
 	if (offset < 0)
 		offset = fdt_path_offset(fdt, "/quadspi");
 #endif
+#endif
+
 	if (offset < 0)
 		return;
 
@@ -393,6 +431,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 #endif
 
 	fdt_fixup_memory_banks(blob, base, size, 2);
+
+	fdt_fsl_mc_fixup_iommu_map_entry(blob);
 
 	fsl_fdt_fixup_dr_usb(blob, bd);
 

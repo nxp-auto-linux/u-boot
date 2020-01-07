@@ -132,10 +132,6 @@ struct in_addr net_dns_server;
 struct in_addr net_dns_server2;
 #endif
 
-#ifdef CONFIG_MCAST_TFTP	/* Multicast TFTP */
-struct in_addr net_mcast_addr;
-#endif
-
 /** END OF BOOTP EXTENTIONS **/
 
 /* Our ethernet address */
@@ -216,26 +212,6 @@ static int net_try_count;
 int __maybe_unused net_busy_flag;
 
 /**********************************************************************/
-
-static int on_bootfile(const char *name, const char *value, enum env_op op,
-	int flags)
-{
-	if (flags & H_PROGRAMMATIC)
-		return 0;
-
-	switch (op) {
-	case env_op_create:
-	case env_op_overwrite:
-		copy_filename(net_boot_file_name, value,
-			      sizeof(net_boot_file_name));
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-U_BOOT_ENV_CALLBACK(bootfile, on_bootfile);
 
 static int on_ipaddr(const char *name, const char *value, enum env_op op,
 	int flags)
@@ -333,6 +309,16 @@ void net_auto_load(void)
 	const char *s = env_get("autoload");
 
 	if (s != NULL && strcmp(s, "NFS") == 0) {
+		if (net_check_prereq(NFS)) {
+/* We aren't expecting to get a serverip, so just accept the assigned IP */
+#ifdef CONFIG_BOOTP_SERVERIP
+			net_set_state(NETLOOP_SUCCESS);
+#else
+			printf("Cannot autoload with NFS\n");
+			net_set_state(NETLOOP_FAIL);
+#endif
+			return;
+		}
 		/*
 		 * Use NFS to load the bootfile.
 		 */
@@ -346,6 +332,16 @@ void net_auto_load(void)
 		 * Do not use TFTP to load the bootfile.
 		 */
 		net_set_state(NETLOOP_SUCCESS);
+		return;
+	}
+	if (net_check_prereq(TFTPGET)) {
+/* We aren't expecting to get a serverip, so just accept the assigned IP */
+#ifdef CONFIG_BOOTP_SERVERIP
+		net_set_state(NETLOOP_SUCCESS);
+#else
+		printf("Cannot autoload with TFTPGET\n");
+		net_set_state(NETLOOP_FAIL);
+#endif
 		return;
 	}
 	tftp_start(TFTPGET);
@@ -670,6 +666,7 @@ restart:
 			/* Invalidate the last protocol */
 			eth_set_last_protocol(BOOTP);
 			debug_cond(DEBUG_INT_STATE, "--- net_loop Fail!\n");
+			ret = -ENONET;
 			goto done;
 
 		case NETLOOP_CONTINUE:
@@ -812,8 +809,24 @@ void net_set_timeout_handler(ulong iv, thand_f *f)
 	}
 }
 
+uchar *net_get_async_tx_pkt_buf(void)
+{
+	if (arp_is_waiting())
+		return arp_tx_packet; /* If we are waiting, we already sent */
+	else
+		return net_tx_packet;
+}
+
 int net_send_udp_packet(uchar *ether, struct in_addr dest, int dport, int sport,
 		int payload_len)
+{
+	return net_send_ip_packet(ether, dest, dport, sport, payload_len,
+				  IPPROTO_UDP, 0, 0, 0);
+}
+
+int net_send_ip_packet(uchar *ether, struct in_addr dest, int dport, int sport,
+		       int payload_len, int proto, u8 action, u32 tcp_seq_num,
+		       u32 tcp_ack_num)
 {
 	uchar *pkt;
 	int eth_hdr_size;
@@ -835,9 +848,16 @@ int net_send_udp_packet(uchar *ether, struct in_addr dest, int dport, int sport,
 	pkt = (uchar *)net_tx_packet;
 
 	eth_hdr_size = net_set_ether(pkt, ether, PROT_IP);
-	pkt += eth_hdr_size;
-	net_set_udp_header(pkt, dest, dport, sport, payload_len);
-	pkt_hdr_size = eth_hdr_size + IP_UDP_HDR_SIZE;
+
+	switch (proto) {
+	case IPPROTO_UDP:
+		net_set_udp_header(pkt + eth_hdr_size, dest, dport, sport,
+				   payload_len);
+		pkt_hdr_size = eth_hdr_size + IP_UDP_HDR_SIZE;
+		break;
+	default:
+		return -EINVAL;
+	}
 
 	/* if MAC address was not discovered yet, do an ARP request */
 	if (memcmp(ether, net_null_ethaddr, 6) == 0) {
@@ -1205,9 +1225,6 @@ void net_process_received_packet(uchar *in_packet, int len)
 		dst_ip = net_read_ip(&ip->ip_dst);
 		if (net_ip.s_addr && dst_ip.s_addr != net_ip.s_addr &&
 		    dst_ip.s_addr != 0xFFFFFFFF) {
-#ifdef CONFIG_MCAST_TFTP
-			if (net_mcast_addr != dst_ip)
-#endif
 				return;
 		}
 		/* Read source IP address for later use */
@@ -1354,7 +1371,7 @@ static int net_check_prereq(enum proto_t protocol)
 		/* Fall through */
 	case TFTPGET:
 	case TFTPPUT:
-		if (net_server_ip.s_addr == 0) {
+		if (net_server_ip.s_addr == 0 && !is_serverip_in_cmd()) {
 			puts("*** ERROR: `serverip' not set\n");
 			return 1;
 		}
@@ -1468,7 +1485,8 @@ int net_update_ether(struct ethernet_hdr *et, uchar *addr, uint prot)
 	}
 }
 
-void net_set_ip_header(uchar *pkt, struct in_addr dest, struct in_addr source)
+void net_set_ip_header(uchar *pkt, struct in_addr dest, struct in_addr source,
+		       u16 pkt_len, u8 proto)
 {
 	struct ip_udp_hdr *ip = (struct ip_udp_hdr *)pkt;
 
@@ -1478,7 +1496,8 @@ void net_set_ip_header(uchar *pkt, struct in_addr dest, struct in_addr source)
 	/* IP_HDR_SIZE / 4 (not including UDP) */
 	ip->ip_hl_v  = 0x45;
 	ip->ip_tos   = 0;
-	ip->ip_len   = htons(IP_HDR_SIZE);
+	ip->ip_len   = htons(pkt_len);
+	ip->ip_p     = proto;
 	ip->ip_id    = htons(net_ip_id++);
 	ip->ip_off   = htons(IP_FLAGS_DFRAG);	/* Don't fragment */
 	ip->ip_ttl   = 255;
@@ -1487,6 +1506,8 @@ void net_set_ip_header(uchar *pkt, struct in_addr dest, struct in_addr source)
 	net_copy_ip((void *)&ip->ip_src, &source);
 	/* already in network byte order */
 	net_copy_ip((void *)&ip->ip_dst, &dest);
+
+	ip->ip_sum   = compute_ip_checksum(ip, IP_HDR_SIZE);
 }
 
 void net_set_udp_header(uchar *pkt, struct in_addr dest, int dport, int sport,
@@ -1502,10 +1523,8 @@ void net_set_udp_header(uchar *pkt, struct in_addr dest, int dport, int sport,
 	if (len & 1)
 		pkt[IP_UDP_HDR_SIZE + len] = 0;
 
-	net_set_ip_header(pkt, dest, net_ip);
-	ip->ip_len   = htons(IP_UDP_HDR_SIZE + len);
-	ip->ip_p     = IPPROTO_UDP;
-	ip->ip_sum   = compute_ip_checksum(ip, IP_HDR_SIZE);
+	net_set_ip_header(pkt, dest, net_ip, IP_UDP_HDR_SIZE + len,
+			  IPPROTO_UDP);
 
 	ip->udp_src  = htons(sport);
 	ip->udp_dst  = htons(dport);
@@ -1515,14 +1534,39 @@ void net_set_udp_header(uchar *pkt, struct in_addr dest, int dport, int sport,
 
 void copy_filename(char *dst, const char *src, int size)
 {
-	if (*src && (*src == '"')) {
+	if (src && *src && (*src == '"')) {
 		++src;
 		--size;
 	}
 
-	while ((--size > 0) && *src && (*src != '"'))
+	while ((--size > 0) && src && *src && (*src != '"'))
 		*dst++ = *src++;
 	*dst = '\0';
+}
+
+int is_serverip_in_cmd(void)
+{
+	return !!strchr(net_boot_file_name, ':');
+}
+
+int net_parse_bootfile(struct in_addr *ipaddr, char *filename, int max_len)
+{
+	char *colon;
+
+	if (net_boot_file_name[0] == '\0')
+		return 0;
+
+	colon = strchr(net_boot_file_name, ':');
+	if (colon) {
+		if (ipaddr)
+			*ipaddr = string_to_ip(net_boot_file_name);
+		strncpy(filename, colon + 1, max_len);
+	} else {
+		strncpy(filename, net_boot_file_name, max_len);
+	}
+	filename[max_len - 1] = '\0';
+
+	return 1;
 }
 
 #if	defined(CONFIG_CMD_NFS)		|| \

@@ -34,6 +34,7 @@
 	chosen {
 		bootargs = "earlycon";
 		stdout-path = "serial0:115200n8";
+		xlnx,eeprom = &eeprom;
 	};
 
 	memory@0 {
@@ -175,7 +176,7 @@
 &qspi {
 	status = "okay";
 	flash@0 {
-		compatible = "m25p80"; /* n25q512a 128MiB */
+		compatible = "m25p80", "spi-flash"; /* n25q512a 128MiB */
 		#address-cells = <1>;
 		#size-cells = <1>;
 		reg = <0x0>;

@@ -58,7 +58,6 @@
  * SDRAM: 1 bank, min 32, max 128 MB
  * Initialized before u-boot gets started.
  */
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_SYS_SDRAM_BASE		ATMEL_BASE_CS1
 #define CONFIG_SYS_SDRAM_SIZE		(128 * SZ_1M)
 
@@ -72,7 +71,6 @@
 
 /* NAND flash */
 #ifdef CONFIG_CMD_NAND
-#define CONFIG_NAND_ATMEL
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE		ATMEL_BASE_CS3
 #define CONFIG_SYS_NAND_DBW_8
@@ -87,13 +85,6 @@
 #define CONFIG_RMII
 #define CONFIG_AT91_WANTS_COMMON_PHY
 
-#define CONFIG_AT91SAM9_WATCHDOG
-#define CONFIG_AT91_HW_WDT_TIMEOUT	15
-#if !defined(CONFIG_SPL_BUILD)
-/* Enable the watchdog */
-#define CONFIG_HW_WATCHDOG
-#endif
-
 /* USB */
 #if defined(CONFIG_BOARD_TAURUS)
 #define CONFIG_USB_ATMEL
@@ -105,8 +96,6 @@
 #define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	2
 
 /* USB DFU support */
-#define CONFIG_MTD_DEVICE
-#define CONFIG_MTD_PARTITIONS
 
 #define CONFIG_USB_GADGET_AT91
 
@@ -122,10 +111,6 @@
 #if defined(CONFIG_SPL_BUILD)
 /* SPL related */
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
-
-#define CONFIG_SF_DEFAULT_BUS 0
-#define CONFIG_SF_DEFAULT_SPEED 1000000
-#define CONFIG_SF_DEFAULT_MODE SPI_MODE_3
 #endif
 
 /* load address */

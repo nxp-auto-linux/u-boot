@@ -50,8 +50,9 @@ typedef struct global_data {
 	unsigned long env_addr;		/* Address  of Environment struct */
 	unsigned long env_valid;	/* Environment valid? enum env_valid */
 	unsigned long env_has_init;	/* Bitmask of boolean of struct env_location offsets */
-	int env_load_location;
+	int env_load_prio;		/* Priority of the loaded environment */
 
+	unsigned long ram_base;		/* Base address of RAM used by U-Boot */
 	unsigned long ram_top;		/* Top address of RAM used by U-Boot */
 	unsigned long relocaddr;	/* Start address of U-Boot in RAM */
 	phys_size_t ram_size;		/* RAM size */
@@ -75,6 +76,10 @@ typedef struct global_data {
 	unsigned long fdt_size;		/* Space reserved for relocated FDT */
 #ifdef CONFIG_OF_LIVE
 	struct device_node *of_root;
+#endif
+
+#if CONFIG_IS_ENABLED(MULTI_DTB_FIT)
+	const void *multi_dtb_fit;	/* uncompressed multi-dtb FIT image */
 #endif
 	struct jt_funcs *jt;		/* jump table */
 	char env_buf[32];		/* buffer for env_get() before reloc. */
@@ -120,6 +125,13 @@ typedef struct global_data {
 	int default_log_level;		/* For devices with no filters */
 	struct list_head log_head;	/* List of struct log_device */
 	int log_fmt;			/* Mask containing log format info */
+#endif
+#if CONFIG_IS_ENABLED(BLOBLIST)
+	struct bloblist_hdr *bloblist;	/* Bloblist information */
+	struct bloblist_hdr *new_bloblist;	/* Relocated blolist info */
+# ifdef CONFIG_SPL
+	struct spl_handoff *spl_handoff;
+# endif
 #endif
 } gd_t;
 #endif

@@ -14,7 +14,6 @@
 /*
  * Board
  */
-#define CONFIG_DRIVER_TI_EMAC
 #define CONFIG_MACH_TYPE	MACH_TYPE_CALIMAIN
 
 /*
@@ -26,7 +25,6 @@
 #define CONFIG_SYS_TIMERBASE		DAVINCI_TIMER0_BASE
 #define CONFIG_SYS_HZ_CLOCK		clk_get(DAVINCI_AUXCLK_CLKID)
 #define CONFIG_ARCH_CPU_INIT
-#define CONFIG_DA8XX_GPIO
 #define CONFIG_HW_WATCHDOG
 #define CONFIG_SYS_WDTTIMERBASE	DAVINCI_TIMER1_BASE
 #define CONFIG_SYS_WDT_PERIOD_LOW \
@@ -123,8 +121,6 @@
 /* memtest will be run on 16MB */
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + (16 << 20))
 
-#define CONFIG_NR_DRAM_BANKS	1 /* we have 1 bank of DRAM */
-
 /*
  * Serial Driver info
  */
@@ -133,10 +129,6 @@
 #define CONFIG_SYS_NS16550_COM1	DAVINCI_UART2_BASE /* Base address of UART2 */
 #define CONFIG_SYS_NS16550_CLK	clk_get(DAVINCI_UART2_CLKID)
 
-#define CONFIG_FLASH_CFI_DRIVER
-#define CONFIG_SYS_FLASH_CFI
-#define CONFIG_SYS_FLASH_PROTECTION
-#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
 #define CONFIG_SYS_MAX_FLASH_BANKS  1 /* max number of flash banks */
 #define CONFIG_SYS_FLASH_SECT_SZ    (128 << 10) /* 128KB */
 #define CONFIG_SYS_FLASH_BASE       DAVINCI_ASYNC_EMIF_DATA_CE2_BASE
@@ -154,7 +146,6 @@
  * Network & Ethernet Configuration
  */
 #ifdef CONFIG_DRIVER_TI_EMAC
-#define CONFIG_MII
 #define CONFIG_BOOTP_DNS2
 #define CONFIG_BOOTP_SEND_HOSTNAME
 #define CONFIG_NET_RETRY_COUNT	10
@@ -256,7 +247,6 @@
 	"verify=n\0"							\
 	"clearenv=protect off all;"					\
 		"erase 0x60040000 +0x40000;\0"				\
-	"bootlimit=3\0"							\
 	"altbootcmd=run bootrlk\0"
 
 #define CONFIG_PREBOOT			\

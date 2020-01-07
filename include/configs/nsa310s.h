@@ -15,15 +15,10 @@
 #define CONFIG_KW88F6702		1	/* SOC Name */
 #define CONFIG_SKIP_LOWLEVEL_INIT	/* disable board lowlevel_init */
 
-/* add target to build it automatically upon "make" */
-#define CONFIG_BUILD_TARGET		"u-boot.kwb"
-
 /* compression configuration */
 #define CONFIG_BZIP2
 
 /* commands configuration */
-#define CONFIG_MTD_DEVICE		/* needed for mtdparts commands */
-#define CONFIG_MTD_PARTITIONS
 
 /*
  * mv-common.h should be defined after CMD configs since it used them

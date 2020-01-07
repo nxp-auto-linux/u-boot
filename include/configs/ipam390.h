@@ -17,7 +17,6 @@
 /*
  * Board
  */
-#define CONFIG_DRIVER_TI_EMAC
 
 /*
  * SoC Configuration
@@ -41,8 +40,6 @@
 
 /* memtest will be run on 16MB */
 #define CONFIG_SYS_MEMTEST_END	(CONFIG_SYS_MEMTEST_START + 16 * 1024 * 1024)
-
-#define CONFIG_NR_DRAM_BANKS	1 /* we have 1 bank of DRAM */
 
 #define CONFIG_SYS_DA850_SYSCFG_SUSPSRC (	\
 	DAVINCI_SYSCFG_SUSPSRC_TIMER0 |		\
@@ -117,7 +114,6 @@
 /*
  * Flash & Environment
  */
-#define CONFIG_NAND_DAVINCI
 #define CONFIG_ENV_OFFSET		0x0 /* Block 0--not used by bootcode */
 #define CONFIG_ENV_SIZE			(128 << 10)
 #define	CONFIG_SYS_NAND_USE_FLASH_BBT
@@ -171,7 +167,6 @@
 /*
  * U-Boot general configuration
  */
-#define CONFIG_MISC_INIT_R
 #define CONFIG_BOOTFILE		"uImage" /* Boot file name */
 #define CONFIG_SYS_CBSIZE	1024 /* Console I/O Buffer Size	*/
 #define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE /* Boot Args Buffer Size */
@@ -212,12 +207,6 @@
 #define CONFIG_CLOCKS
 #endif
 
-#ifndef CONFIG_DRIVER_TI_EMAC
-#endif
-
-#define CONFIG_MTD_DEVICE
-#define CONFIG_MTD_PARTITIONS
-
 /* defines for SPL */
 #define CONFIG_SYS_SPL_MALLOC_START	(CONFIG_SYS_TEXT_BASE - \
 						CONFIG_SYS_MALLOC_LEN)
@@ -238,7 +227,6 @@
 #define CONFIG_SYS_SPL_ARGS_ADDR	LINUX_BOOT_PARAM_ADDR
 
 /* GPIO support */
-#define CONFIG_DA8XX_GPIO
 #define CONFIG_IPAM390_GPIO_BOOTMODE	((16 * 7) + 14)
 
 #define CONFIG_SHOW_BOOT_PROGRESS

@@ -53,7 +53,7 @@ enum efi_test_phase {
 };
 
 extern struct efi_simple_text_output_protocol *con_out;
-extern struct efi_simple_input_interface *con_in;
+extern struct efi_simple_text_input_protocol *con_in;
 
 /*
  * Exit the boot services.
@@ -75,6 +75,22 @@ void efi_st_exit_boot_services(void);
  */
 void efi_st_printc(int color, const char *fmt, ...)
 		 __attribute__ ((format (__printf__, 2, 3)));
+
+/**
+ * efi_st_translate_char() - translate a unicode character to a string
+ *
+ * @code:	unicode character
+ * Return:	string
+ */
+u16 *efi_st_translate_char(u16 code);
+
+/**
+ * efi_st_translate_code() - translate a scan code to a human readable string
+ *
+ * @code:	unicode character
+ * Return:	string
+ */
+u16 *efi_st_translate_code(u16 code);
 
 /*
  * Compare memory.
@@ -113,7 +129,6 @@ u16 efi_st_get_key(void);
  * @setup:	set up the unit test
  * @teardown:	tear down the unit test
  * @execute:	execute the unit test
- * @setup_ok:	setup was successful (set at runtime)
  * @on_request:	test is only executed on request
  */
 struct efi_unit_test {
@@ -123,7 +138,6 @@ struct efi_unit_test {
 		     const struct efi_system_table *systable);
 	int (*execute)(void);
 	int (*teardown)(void);
-	int setup_ok;
 	bool on_request;
 };
 

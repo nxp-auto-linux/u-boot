@@ -27,7 +27,6 @@
 #define IRAM_BASE_ADDR			OCRAM_0_BASE
 #define IOMUXC_BASE_ADDR		IOMUXC1_RBASE
 
-#define CONFIG_BOUNCE_BUFFER
 #define CONFIG_FSL_USDHC
 #define CONFIG_SUPPORT_EMMC_BOOT /* eMMC specific */
 
@@ -73,7 +72,6 @@
 #define CONFIG_SYS_MAXARGS		256
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 
 #define PHYS_SDRAM			0x60000000
 #define PHYS_SDRAM_SIZE			SZ_1G

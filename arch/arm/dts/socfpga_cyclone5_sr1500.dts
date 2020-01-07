@@ -11,6 +11,7 @@
 
 	chosen {
 		bootargs = "console=ttyS0,115200";
+		stdout-path = "serial0:115200n8";
 	};
 
 	aliases {
@@ -49,6 +50,18 @@
 	status = "okay";
 };
 
+&porta {
+	bank-name = "porta";
+};
+
+&portb {
+	bank-name = "portb";
+};
+
+&portc {
+	bank-name = "portc";
+};
+
 &i2c0 {
 	status = "okay";
 	speed-mode = <0>;
@@ -67,6 +80,7 @@
 
 &uart0 {
 	status = "okay";
+	u-boot,dm-pre-reloc;
 };
 
 &usb1 {

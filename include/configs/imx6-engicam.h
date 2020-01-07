@@ -43,19 +43,30 @@
 	"fdt_addr=" FDT_ADDR "\0" \
 	"boot_fdt=try\0" \
 	"mmcpart=1\0" \
+	"recovery_device=0\0" \
+	"recovery_part=2\0" \
+	"recovery_root=/dev/mmcblk0p2 rootwait rw\0" \
 	"nandroot=ubi0:rootfs rootfstype=ubifs\0" \
 	"mmcautodetect=yes\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate} " \
 		"root=${mmcroot}\0" \
+	"recovery_mmcargs= setenv bootargs console=${console},${baudrate} "\
+		"root=${recovery_root}\0" \
 	"ubiargs=setenv bootargs console=${console},${baudrate} " \
 		"ubi.mtd=5 root=${nandroot} ${mtdparts}\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
 		"source\0" \
+	"recovery_loadimage=ext2load mmc ${recovery_device}:${recovery_part} ${loadaddr} ${image}\0" \
+	"recovery_loadfdt=ext2load mmc ${recovery_device}:${recovery_part} ${fdt_addr} ${fdt_file}\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"loadfit=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${fit_image}\0" \
+	"altbootcmd=run recovery_boot\0"\
+	"recovery_boot=echo Recovery Boot from mmc ...; " \
+		"run recovery_loadimage ; run recovery_loadfdt; run recovery_mmcargs; "\
+		"bootm ${loadaddr} - ${fdt_addr}\0" \
 	"fitboot=echo Booting FIT image from mmc ...; " \
 		"run mmcargs; " \
 		"bootm ${loadaddr}\0" \
@@ -117,7 +128,6 @@
 #endif
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
@@ -153,8 +163,6 @@
 # define CONFIG_SYS_NAND_U_BOOT_OFFS	0x200000
 
 /* MTD device */
-# define CONFIG_MTD_DEVICE
-# define CONFIG_MTD_PARTITIONS
 #endif
 
 /* Ethernet */
@@ -166,8 +174,6 @@
 #  define CONFIG_FEC_MXC_PHYADDR	0
 #  define CONFIG_FEC_XCV_TYPE		RMII
 # endif
-
-# define CONFIG_MII
 #endif
 
 /* Falcon Mode */

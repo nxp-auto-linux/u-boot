@@ -80,7 +80,6 @@
 #define IMX_FEC_BASE	FEC_BASE_ADDR
 #define CONFIG_FEC_MXC_PHYADDR	0x1
 
-#define CONFIG_MII
 #define CONFIG_DISCOVER_PHY
 
 #define CONFIG_ARP_TIMEOUT	200UL
@@ -97,7 +96,6 @@
 /*
  * Physical Memory Map
  */
-#define CONFIG_NR_DRAM_BANKS	1
 #define PHYS_SDRAM_1		CSD0_BASE_ADDR
 #define PHYS_SDRAM_1_SIZE	(256 * 1024 * 1024)
 
@@ -112,9 +110,6 @@
 /*
  * MTD Command for mtdparts
  */
-#define CONFIG_MTD_DEVICE
-#define CONFIG_FLASH_CFI_MTD
-#define CONFIG_MTD_PARTITIONS
 
 /*
  * FLASH and environment organization
@@ -139,12 +134,8 @@
 /*
  * CFI FLASH driver setup
  */
-#define CONFIG_SYS_FLASH_CFI		/* Flash memory is CFI compliant */
-#define CONFIG_FLASH_CFI_DRIVER
 
 /* A non-standard buffered write algorithm */
-#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE	/* faster */
-#define CONFIG_SYS_FLASH_PROTECTION	/* Use hardware sector protection */
 
 /*
  * NAND FLASH driver setup

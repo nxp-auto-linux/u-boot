@@ -40,8 +40,6 @@
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 3
 
 /* SPI NOR flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_SPEED		27777777 /* for fast SPL booting */
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_3
 
 /* Environment in SPI NOR flash */
 #define CONFIG_ENV_OFFSET		(1 << 20) /* 1MiB in */
@@ -62,15 +60,12 @@
 #define CONFIG_SYS_SATA_MAX_DEVICE	1
 #define CONFIG_LBA48
 
-/* PCIe support */
-#ifdef CONFIG_CMD_PCI
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_PCI_MVEBU
-#endif
-#endif
-
 /* Enable LCD and reserve 512KB from top of memory*/
 #define CONFIG_SYS_MEM_TOP_HIDE		0x80000
+
+#define CONFIG_BMP_16BPP
+#define CONFIG_BMP_24BPP
+#define CONFIG_BMP_32BPP
 
 /* FPGA programming support */
 #define CONFIG_FPGA_STRATIX_V

@@ -138,7 +138,17 @@ void *devfdt_get_addr_ptr(struct udevice *dev)
 
 void *devfdt_remap_addr_index(struct udevice *dev, int index)
 {
-	fdt_addr_t addr = devfdt_get_addr(dev);
+	fdt_addr_t addr = devfdt_get_addr_index(dev, index);
+
+	if (addr == FDT_ADDR_T_NONE)
+		return NULL;
+
+	return map_physmem(addr, 0, MAP_NOCACHE);
+}
+
+void *devfdt_remap_addr_name(struct udevice *dev, const char *name)
+{
+	fdt_addr_t addr = devfdt_get_addr_name(dev, name);
 
 	if (addr == FDT_ADDR_T_NONE)
 		return NULL;

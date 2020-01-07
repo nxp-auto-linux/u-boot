@@ -5,6 +5,7 @@ config SPL
 	select SPL_CLK
 	select SPL_DM
 	select SPL_DM_SEQ_ALIAS
+	select SPL_DRIVERS_MISC_SUPPORT
 	select SPL_FRAMEWORK
 	select SPL_GPIO_SUPPORT
 	select SPL_LIBCOMMON_SUPPORT
@@ -13,7 +14,7 @@ config SPL
 	select SPL_OF_TRANSLATE
 	select SPL_PINCTRL
 	select SPL_REGMAP
-	select SPL_RESET_SUPPORT
+	select SPL_DM_RESET
 	select SPL_SERIAL_SUPPORT
 	select SPL_SYSCON
 	select SPL_DRIVERS_MISC_SUPPORT
@@ -29,6 +30,7 @@ config TARGET_STM32MP1
 	select CPU_V7_HAS_NONSEC
 	select CPU_V7_HAS_VIRT
 	select PINCTRL_STM32
+	select STM32_RCC
 	select STM32_RESET
 	select SYS_ARCH_TIMER
 	select SYSRESET_SYSCON

@@ -47,8 +47,6 @@
 #define CONFIG_SYS_BOOTMAPSZ	(8 * 1024 * 1024)
 
 /* FLASH */
-#define CONFIG_SYS_FLASH_CFI
-#define CONFIG_FLASH_CFI_DRIVER
 #undef  CONFIG_SYS_FLASH_QUIET_TEST
 #define CONFIG_SYS_FLASH_EMPTY_INFO			/* print 'E' for empty sector on flinfo */
 
@@ -68,8 +66,6 @@
 #define CONFIG_SYS_FLASH_LOCK_TOUT	(3 * 1000)	/* Timeout for Flash set sector lock bit operations (in ms) */
 #define CONFIG_SYS_FLASH_UNLOCK_TOUT	(3 * 1000)	/* Timeout for Flash clear lock bit operations (in ms) */
 
-#undef  CONFIG_SYS_FLASH_PROTECTION			/* Use hardware flash sectors protection instead of U-Boot software protection */
-
 #undef  CONFIG_SYS_DIRECT_FLASH_TFTP
 
 #define CONFIG_ENV_OVERWRITE	1
@@ -82,8 +78,6 @@
 
 /* Board Clock */
 #define CONFIG_SYS_CLK_FREQ	33333333
-#define CONFIG_SH_TMU_CLK_FREQ CONFIG_SYS_CLK_FREQ
 #define CONFIG_SH_SCIF_CLK_FREQ CONFIG_SYS_CLK_FREQ
-#define CONFIG_SYS_TMU_CLK_DIV		(4)	/* 4 (default), 16, 64, 256 or 1024 */
 
 #endif	/* __MS7722SE_H */

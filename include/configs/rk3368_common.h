@@ -15,7 +15,6 @@
 
 #define CONFIG_SYS_SDRAM_BASE		0
 #define SDRAM_MAX_SIZE			0xff000000
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_BAUDRATE			115200
 #define CONFIG_SYS_MALLOC_LEN		(32 << 20)
 #define CONFIG_SYS_CBSIZE		1024
@@ -33,8 +32,6 @@
 #define CONFIG_SPL_BSS_START_ADDR       0x400000
 #define CONFIG_SPL_BSS_MAX_SIZE         0x20000
 
-#define CONFIG_BOUNCE_BUFFER
-
 #ifndef CONFIG_SPL_BUILD
 #define ENV_MEM_LAYOUT_SETTINGS \
 	"scriptaddr=0x00500000\0" \
@@ -46,6 +43,7 @@
 #include <config_distro_bootcmd.h>
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"fdtfile=" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" \
 	ENV_MEM_LAYOUT_SETTINGS	\
 	BOOTENV
 

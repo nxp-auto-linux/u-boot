@@ -11,8 +11,6 @@
  * High Level Configuration Options (easy to change)
  */
 
-#define CONFIG_MISC_INIT_R
-
 /*
  * TEXT_BASE needs to be below 16MiB, since this area is scrubbed
  * for DDR ECC byte filling in the SPL before loading the main
@@ -37,9 +35,6 @@
 #endif
 
 /* SPI NOR flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_SPEED		1000000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_3
-#define CONFIG_SPI_FLASH
 #define CONFIG_SPI_FLASH_SPANSION
 
 /*
@@ -68,7 +63,6 @@
 
 /* PCIe support */
 #ifndef CONFIG_SPL_BUILD
-#define CONFIG_PCI_MVEBU
 #define CONFIG_PCI_SCAN_SHOW
 #endif
 
@@ -93,13 +87,13 @@
 #define CONFIG_SPL_BOOTROM_SAVE		(CONFIG_SPL_STACK + 4)
 #define CONFIG_SPL_DRIVERS_MISC_SUPPORT
 
-#ifdef CONFIG_TURRIS_OMNIA_SPL_BOOT_DEVICE_SPI
+#ifdef CONFIG_MVEBU_SPL_BOOT_DEVICE_SPI
 /* SPL related SPI defines */
 # define CONFIG_SYS_SPI_U_BOOT_OFFS	0x24000
 # define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
 #endif
 
-#ifdef CONFIG_TURRIS_OMNIA_SPL_BOOT_DEVICE_MMC
+#ifdef CONFIG_MVEBU_SPL_BOOT_DEVICE_MMC
 /* SPL related MMC defines */
 # define CONFIG_SYS_MMC_U_BOOT_OFFS		(160 << 10)
 # define CONFIG_SYS_U_BOOT_OFFS			CONFIG_SYS_MMC_U_BOOT_OFFS

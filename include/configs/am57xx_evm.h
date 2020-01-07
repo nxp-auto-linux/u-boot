@@ -16,8 +16,6 @@
 
 #define CONFIG_IODELAY_RECALIBRATION
 
-#define CONFIG_NR_DRAM_BANKS		2
-
 /* MMC ENV related defines */
 #define CONFIG_SYS_MMC_ENV_DEV		1		/* eMMC */
 #define CONFIG_SYS_MMC_ENV_PART		0
@@ -37,11 +35,22 @@
 
 #define CONFIG_SYS_OMAP_ABE_SYSCK
 
+#ifdef CONFIG_SPL_DFU
+#ifndef CONFIG_SPL_BUILD
 #define DFUARGS \
 	"dfu_bufsiz=0x10000\0" \
 	DFU_ALT_INFO_MMC \
 	DFU_ALT_INFO_EMMC \
 	DFU_ALT_INFO_RAM \
+	DFU_ALT_INFO_QSPI
+#else
+#undef CONFIG_CMD_BOOTD
+#define CONFIG_SPL_LOAD_FIT_ADDRESS 0x80200000
+#define DFUARGS \
+	"dfu_bufsiz=0x10000\0" \
+	DFU_ALT_INFO_RAM
+#endif
+#endif
 
 #include <configs/ti_omap5_common.h>
 
@@ -52,7 +61,6 @@
 #define CONFIG_BOOTP_DNS2
 #define CONFIG_BOOTP_SEND_HOSTNAME
 #define CONFIG_NET_RETRY_COUNT		10
-#define CONFIG_MII			/* Required in net/eth.c */
 #define PHY_ANEG_TIMEOUT	8000	/* PHY needs longer aneg time at 1G */
 
 #define CONFIG_SUPPORT_EMMC_BOOT
@@ -89,8 +97,6 @@
 
 /* SPI */
 #define CONFIG_TI_SPI_MMAP
-#define CONFIG_SF_DEFAULT_SPEED                76800000
-#define CONFIG_SF_DEFAULT_MODE                 SPI_MODE_0
 #define CONFIG_QSPI_QUAD_SUPPORT
 
 #endif /* __CONFIG_AM57XX_EVM_H */

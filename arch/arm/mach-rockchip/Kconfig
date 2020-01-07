@@ -29,12 +29,12 @@ config ROCKCHIP_RK3188
 	select SUPPORT_SPL
 	select SPL
 	select SPL_CLK
-	select SPL_PINCTRL
 	select SPL_REGMAP
 	select SPL_SYSCON
 	select SPL_RAM
 	select SPL_DRIVERS_MISC_SUPPORT
 	select SPL_ROCKCHIP_EARLYRETURN_TO_BROM
+	select DEBUG_UART_BOARD_INIT
 	select BOARD_LATE_INIT
 	select ROCKCHIP_BROM_HELPER
 	help
@@ -74,11 +74,11 @@ config ROCKCHIP_RK3288
 
 if ROCKCHIP_RK3288
 
-config TPL_LDSCRIPT
-	default "arch/arm/mach-rockchip/rk3288/u-boot-tpl.lds"
-
 config TPL_TEXT_BASE
 	default 0xff704000
+
+config TPL_MAX_SIZE
+	default 32768
 
 endif
 
@@ -116,9 +116,6 @@ config ROCKCHIP_RK3368
 
 if ROCKCHIP_RK3368
 
-config TPL_LDSCRIPT
-	default "arch/arm/mach-rockchip/rk3368/u-boot-tpl.lds"
-
 config TPL_TEXT_BASE
         default 0xff8c1000
 
@@ -155,6 +152,14 @@ config ROCKCHIP_RV1108
 	help
 	  The Rockchip RV1108 is a ARM-based SoC with a single-core Cortex-A7
 	  and a DSP.
+
+config ROCKCHIP_USB_UART
+	bool "Route uart output to usb pins"
+	help
+	  Rockchip SoCs have the ability to route the signals of the debug
+	  uart through the d+ and d- pins of a specific usb phy to enable
+	  some form of closed-case debugging. With this option supported
+	  SoCs will enable this routing as a debug measure.
 
 config SPL_ROCKCHIP_BACK_TO_BROM
 	bool "SPL returns to bootrom"

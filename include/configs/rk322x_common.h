@@ -25,11 +25,7 @@
 #define CONFIG_ROCKCHIP_MAX_INIT_SIZE	(28 << 10)
 #define CONFIG_ROCKCHIP_CHIP_TAG	"RK32"
 
-/* MMC/SD IP block */
-#define CONFIG_BOUNCE_BUFFER
-
 #define CONFIG_SYS_SDRAM_BASE		0x60000000
-#define CONFIG_NR_DRAM_BANKS		2
 #define SDRAM_BANK_SIZE			(512UL << 20UL)
 #define SDRAM_MAX_SIZE			0x80000000
 
@@ -52,6 +48,7 @@
 /* Linux fails to load the fdt if it's loaded above 512M on a evb-rk3036 board,
  * so limit the fdt reallocation to that */
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
 	"fdt_high=0x7fffffff\0" \
 	"partitions=" PARTS_DEFAULT \
 	ENV_MEM_LAYOUT_SETTINGS \

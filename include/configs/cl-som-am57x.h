@@ -10,8 +10,6 @@
 #ifndef __CONFIG_CL_SOM_AM57X_H
 #define __CONFIG_CL_SOM_AM57X_H
 
-#define CONFIG_NR_DRAM_BANKS		2
-
 #define CONSOLEDEV			"ttyO2"
 #define CONFIG_SYS_NS16550_COM3		UART3_BASE	/* UART3 */
 
@@ -22,7 +20,6 @@
 #include <configs/ti_omap5_common.h>
 
 /* misc */
-#define CONFIG_MISC_INIT_R
 #define CONFIG_REVISION_TAG
 
 /* PMIC I2C bus number */
@@ -30,8 +27,6 @@
 
 /* SPI Flash support */
 #define CONFIG_TI_SPI_MMAP
-#define CONFIG_SF_DEFAULT_SPEED		48000000
-#define CONFIG_DEFAULT_SPI_MODE		SPI_MODE_3
 
 /* SPI SPL defines */
 /* Offsets: 0K - SPL1, 64K - SPL2, 128K - SPL3, 192K - SPL4, 256K - U-Boot */
@@ -47,7 +42,6 @@
 
 #define CONFIG_ENV_SECT_SIZE		(64 * 1024)
 #define CONFIG_ENV_OFFSET		(768 * 1024)
-#define CONFIG_ENV_SPI_MAX_HZ		48000000
 
 /* EEPROM */
 #define CONFIG_SYS_I2C_EEPROM_ADDR      0x50
@@ -79,7 +73,6 @@
 /* USB Networking options */
 
 /* CPSW Ethernet */
-#define CONFIG_MII
 #define CONFIG_BOOTP_DEFAULT
 #define CONFIG_BOOTP_SEND_HOSTNAME
 #define CONFIG_PHY_ATHEROS

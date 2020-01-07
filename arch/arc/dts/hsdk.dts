@@ -8,6 +8,8 @@
 #include "dt-bindings/clock/snps,hsdk-cgu.h"
 
 / {
+	model = "snps,hsdk";
+
 	#address-cells = <1>;
 	#size-cells = <1>;
 
@@ -20,7 +22,7 @@
 		core_clk: core_clk {
 			#clock-cells = <0>;
 			compatible = "fixed-clock";
-			clock-frequency = <1000000000>;
+			clock-frequency = <500000000>;
 			u-boot,dm-pre-reloc;
 		};
 	};
@@ -101,11 +103,16 @@
 	};
 
 	cs_gpio: gpio@f00014b0 {
-		compatible = "snps,hsdk-creg-gpio";
+		compatible = "snps,creg-gpio";
 		reg = <0xf00014b0 0x4>;
 		gpio-controller;
 		#gpio-cells = <1>;
 		gpio-bank-name = "hsdk-spi-cs";
 		gpio-count = <1>;
+		gpio-first-shift = <0>;
+		gpio-bit-per-line = <2>;
+		gpio-activate-val = <2>;
+		gpio-deactivate-val = <3>;
+		gpio-default-val = <1>;
 	};
 };

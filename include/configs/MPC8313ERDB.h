@@ -51,8 +51,6 @@
 #define CONFIG_PCI_INDIRECT_BRIDGE
 #define CONFIG_FSL_ELBC 1
 
-#define CONFIG_MISC_INIT_R
-
 /*
  * On-board devices
  *
@@ -184,13 +182,9 @@
 /*
  * FLASH on the Local Bus
  */
-#define CONFIG_SYS_FLASH_CFI		/* use the Common Flash Interface */
-#define CONFIG_FLASH_CFI_DRIVER		/* use the CFI driver */
 #define CONFIG_SYS_FLASH_BASE		0xFE000000	/* start of FLASH   */
 #define CONFIG_SYS_FLASH_SIZE		8	/* flash size in MB */
-#define CONFIG_SYS_FLASH_PROTECTION	1	/* Use h/w Flash protection. */
 #define CONFIG_SYS_FLASH_EMPTY_INFO		/* display empty sectors */
-#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE	/* buffer up multiple bytes */
 
 #define CONFIG_SYS_NOR_BR_PRELIM	(CONFIG_SYS_FLASH_BASE \
 					| BR_PS_16	/* 16 bit port */ \
@@ -242,14 +236,13 @@
 				/* LB refresh timer prescal, 266MHz/32 */
 #define CONFIG_SYS_LBC_MRTPR	0x20000000  /*TODO */
 
-/* drivers/mtd/nand/nand.c */
+/* drivers/mtd/nand/raw/nand.c */
 #if defined(CONFIG_NAND) && defined(CONFIG_SPL_BUILD)
 #define CONFIG_SYS_NAND_BASE		0xFFF00000
 #else
 #define CONFIG_SYS_NAND_BASE		0xE2800000
 #endif
 
-#define CONFIG_MTD_DEVICE
 #define CONFIG_MTD_PARTITION
 
 #define CONFIG_SYS_MAX_NAND_DEVICE	1

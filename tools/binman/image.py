@@ -42,7 +42,8 @@ class Image:
         self._size = None
         self._filename = '%s.bin' % self._name
         if test:
-            self._section = bsection.Section('main-section', self._node, True)
+            self._section = bsection.Section('main-section', None, self._node,
+                                             self, True)
         else:
             self._ReadNode()
 
@@ -52,20 +53,52 @@ class Image:
         filename = fdt_util.GetString(self._node, 'filename')
         if filename:
             self._filename = filename
-        self._section = bsection.Section('main-section', self._node)
+        self._section = bsection.Section('main-section', None, self._node, self)
+
+    def GetFdtSet(self):
+        """Get the set of device tree files used by this image"""
+        return self._section.GetFdtSet()
+
+    def ExpandEntries(self):
+        """Expand out any entries which have calculated sub-entries
+
+        Some entries are expanded out at runtime, e.g. 'files', which produces
+        a section containing a list of files. Process these entries so that
+        this information is added to the device tree.
+        """
+        self._section.ExpandEntries()
+
+    def AddMissingProperties(self):
+        """Add properties that are not present in the device tree
+
+        When binman has completed packing the entries the offset and size of
+        each entry are known. But before this the device tree may not specify
+        these. Add any missing properties, with a dummy value, so that the
+        size of the entry is correct. That way we can insert the correct values
+        later.
+        """
+        self._section.AddMissingProperties()
+
+    def ProcessFdt(self, fdt):
+        """Allow entries to adjust the device tree
+
+        Some entries need to adjust the device tree for their purposes. This
+        may involve adding or deleting properties.
+        """
+        return self._section.ProcessFdt(fdt)
 
     def GetEntryContents(self):
         """Call ObtainContents() for the section
         """
         self._section.GetEntryContents()
 
-    def GetEntryPositions(self):
-        """Handle entries that want to set the position/size of other entries
+    def GetEntryOffsets(self):
+        """Handle entries that want to set the offset/size of other entries
 
-        This calls each entry's GetPositions() method. If it returns a list
+        This calls each entry's GetOffsets() method. If it returns a list
         of entries to update, it updates them.
         """
-        self._section.GetEntryPositions()
+        self._section.GetEntryOffsets()
 
     def PackEntries(self):
         """Pack all entries into the image"""
@@ -78,6 +111,12 @@ class Image:
     def CheckEntries(self):
         """Check that entries do not overlap or extend outside the image"""
         self._section.CheckEntries()
+
+    def SetCalculatedProperties(self):
+        self._section.SetCalculatedProperties()
+
+    def SetImagePos(self):
+        self._section.SetImagePos(0)
 
     def ProcessEntryContents(self):
         """Call the ProcessContents() method for each entry
@@ -100,9 +139,15 @@ class Image:
         return self._section.GetEntries()
 
     def WriteMap(self):
-        """Write a map of the image to a .map file"""
+        """Write a map of the image to a .map file
+
+        Returns:
+            Filename of map file written
+        """
         filename = '%s.map' % self._name
         fname = tools.GetOutputFilename(filename)
         with open(fname, 'w') as fd:
-            print('%8s  %8s  %s' % ('Position', 'Size', 'Name'), file=fd)
+            print('%8s  %8s  %8s  %s' % ('ImagePos', 'Offset', 'Size', 'Name'),
+                  file=fd)
             self._section.WriteMap(fd, 0)
+        return fname

@@ -26,6 +26,7 @@ static const unsigned long baudrate_table[] = CONFIG_SYS_BAUDRATE_TABLE;
 #error "Serial is required before relocation - define CONFIG_$(SPL_)SYS_MALLOC_F_LEN to make this work"
 #endif
 
+#if CONFIG_IS_ENABLED(SERIAL_PRESENT)
 static int serial_check_stdout(const void *blob, struct udevice **devp)
 {
 	int node;
@@ -61,7 +62,7 @@ static int serial_check_stdout(const void *blob, struct udevice **devp)
 	 * anyway.
 	 */
 	if (node > 0 && !lists_bind_fdt(gd->dm_root, offset_to_ofnode(node),
-					devp)) {
+					devp, false)) {
 		if (!device_probe(*devp))
 			return 0;
 	}
@@ -150,12 +151,15 @@ static void serial_find_console_or_panic(void)
 	panic_str("No serial driver found");
 #endif
 }
+#endif /* CONFIG_SERIAL_PRESENT */
 
 /* Called prior to relocation */
 int serial_init(void)
 {
+#if CONFIG_IS_ENABLED(SERIAL_PRESENT)
 	serial_find_console_or_panic();
 	gd->flags |= GD_FLG_SERIAL_READY;
+#endif
 
 	return 0;
 }
@@ -228,6 +232,9 @@ static int _serial_getc(struct udevice *dev)
 	struct serial_dev_priv *upriv = dev_get_uclass_priv(dev);
 	char val;
 
+	if (upriv->rd_ptr == upriv->wr_ptr)
+		return __serial_getc(dev);
+
 	val = upriv->buf[upriv->rd_ptr++];
 	upriv->rd_ptr %= CONFIG_SERIAL_RX_BUFFER_SIZE;
 
@@ -285,6 +292,44 @@ void serial_setbrg(void)
 	ops = serial_get_ops(gd->cur_serial_dev);
 	if (ops->setbrg)
 		ops->setbrg(gd->cur_serial_dev, gd->baudrate);
+}
+
+int serial_getconfig(struct udevice *dev, uint *config)
+{
+	struct dm_serial_ops *ops;
+
+	ops = serial_get_ops(dev);
+	if (ops->getconfig)
+		return ops->getconfig(dev, config);
+
+	return 0;
+}
+
+int serial_setconfig(struct udevice *dev, uint config)
+{
+	struct dm_serial_ops *ops;
+
+	ops = serial_get_ops(dev);
+	if (ops->setconfig)
+		return ops->setconfig(dev, config);
+
+	return 0;
+}
+
+int serial_getinfo(struct udevice *dev, struct serial_device_info *info)
+{
+	struct dm_serial_ops *ops;
+
+	if (!info)
+		return -EINVAL;
+
+	info->baudrate = gd->baudrate;
+
+	ops = serial_get_ops(dev);
+	if (ops->getinfo)
+		return ops->getinfo(dev, info);
+
+	return -EINVAL;
 }
 
 void serial_stdio_init(void)
@@ -398,10 +443,16 @@ static int serial_post_probe(struct udevice *dev)
 		ops->pending += gd->reloc_off;
 	if (ops->clear)
 		ops->clear += gd->reloc_off;
+	if (ops->getconfig)
+		ops->getconfig += gd->reloc_off;
+	if (ops->setconfig)
+		ops->setconfig += gd->reloc_off;
 #if CONFIG_POST & CONFIG_SYS_POST_UART
 	if (ops->loop)
-		ops->loop += gd->reloc_off
+		ops->loop += gd->reloc_off;
 #endif
+	if (ops->getinfo)
+		ops->getinfo += gd->reloc_off;
 #endif
 	/* Set the baud rate */
 	if (ops->setbrg) {

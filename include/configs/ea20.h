@@ -13,7 +13,6 @@
 /*
  * Board
  */
-#define CONFIG_DRIVER_TI_EMAC
 #define CONFIG_USE_SPIFLASH
 #define	CONFIG_SYS_USE_NAND
 #define CONFIG_DRIVER_TI_EMAC_USE_RMII
@@ -28,7 +27,6 @@
 #define CONFIG_SYS_TIMERBASE		DAVINCI_TIMER0_BASE
 #define CONFIG_SYS_HZ_CLOCK		clk_get(DAVINCI_AUXCLK_CLKID)
 #define CONFIG_SKIP_LOWLEVEL_INIT
-#define CONFIG_DA8XX_GPIO
 
 /*
  * Memory Info
@@ -44,8 +42,6 @@
 /* memtest will be run on 16MB */
 #define CONFIG_SYS_MEMTEST_END	(PHYS_SDRAM_1 + 0x2000000 + 16*1024*1024)
 
-#define CONFIG_NR_DRAM_BANKS	1 /* we have 1 bank of DRAM */
-
 /*
  * Serial Driver info
  */
@@ -56,14 +52,11 @@
 
 #define CONFIG_SYS_SPI_BASE		DAVINCI_SPI1_BASE
 #define CONFIG_SYS_SPI_CLK		clk_get(DAVINCI_SPI1_CLKID)
-#define CONFIG_SF_DEFAULT_SPEED		30000000
-#define CONFIG_ENV_SPI_MAX_HZ	CONFIG_SF_DEFAULT_SPEED
 
 /*
  * I2C Configuration
  */
 #define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_DAVINCI
 #define CONFIG_SYS_DAVINCI_I2C_SPEED		100000
 #define CONFIG_SYS_DAVINCI_I2C_SLAVE   10 /* Bogus, master-only in U-Boot */
 
@@ -71,7 +64,6 @@
  * Network & Ethernet Configuration
  */
 #ifdef CONFIG_DRIVER_TI_EMAC
-#define CONFIG_MII
 #define CONFIG_BOOTP_DNS2
 #define CONFIG_BOOTP_SEND_HOSTNAME
 #define CONFIG_NET_RETRY_COUNT	10
@@ -111,15 +103,8 @@
 #define CONFIG_CLOCKS
 #endif
 
-#ifndef CONFIG_DRIVER_TI_EMAC
-#endif
-
 /* NAND Setup */
 #ifdef CONFIG_SYS_USE_NAND
-#define CONFIG_MTD_DEVICE
-#define CONFIG_MTD_PARTITIONS
-
-#define CONFIG_NAND_DAVINCI
 #define	CONFIG_SYS_NAND_PAGE_2K
 #define CONFIG_SYS_NAND_NO_SUBPAGE
 #define CONFIG_SYS_NAND_CS		2
@@ -128,10 +113,6 @@
 #define CONFIG_SYS_NAND_4BIT_HW_ECC_OOBFIRST
 #define	CONFIG_SYS_NAND_USE_FLASH_BBT
 #define CONFIG_SYS_MAX_NAND_DEVICE	1 /* Max number of NAND devices */
-#endif
-
-/* SPI Flash */
-#ifdef CONFIG_USE_SPIFLASH
 #endif
 
 #if !defined(CONFIG_SYS_USE_NAND) && \

@@ -39,7 +39,6 @@
 #define CONFIG_SERIAL_TAG
 #define CONFIG_REVISION_TAG
 #define CONFIG_CMDLINE_TAG			/* enable passing of ATAGs */
-#define CONFIG_MISC_INIT_R			/* Call misc_init_r */
 
 #define CONFIG_PREBOOT				/* enable preboot variable */
 
@@ -59,7 +58,6 @@
 #define PHYS_SDRAM					ATMEL_BASE_CS1 /* 0x20000000 */
 #define PHYS_SDRAM_SIZE				0x02000000     /* 32 MByte */
 
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
 #define CONFIG_SYS_SDRAM_SIZE		PHYS_SDRAM_SIZE
 
@@ -77,7 +75,6 @@
 
 /* NAND flash */
 #ifdef CONFIG_CMD_NAND
-# define CONFIG_NAND_ATMEL
 # define CONFIG_SYS_MAX_NAND_DEVICE		1
 # define CONFIG_SYS_NAND_BASE			ATMEL_BASE_CS3 /* 0x40000000 */
 # define CONFIG_SYS_NAND_DBW_8
@@ -102,7 +99,6 @@
 #define CONFIG_ENV_OFFSET	0x4200
 #define CONFIG_ENV_SIZE		0x4200
 #define CONFIG_ENV_SECT_SIZE	0x210
-#define CONFIG_ENV_SPI_MAX_HZ	15000000
 
 #elif CONFIG_SYS_USE_NANDFLASH
 

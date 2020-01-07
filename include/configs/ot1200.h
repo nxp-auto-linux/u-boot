@@ -12,17 +12,11 @@
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN           (10 * 1024 * 1024)
 
-#define CONFIG_MISC_INIT_R
-
 /* UART Configs */
 #define CONFIG_MXC_UART
 #define CONFIG_MXC_UART_BASE           UART1_BASE
 
 /* SF Configs */
-#define CONFIG_SF_DEFAULT_BUS  2
-#define CONFIG_SF_DEFAULT_CS   0
-#define CONFIG_SF_DEFAULT_SPEED 25000000
-#define CONFIG_SF_DEFAULT_MODE (SPI_MODE_0)
 
 /* IO expander */
 #define CONFIG_PCA953X
@@ -69,7 +63,6 @@
 #endif
 
 #define CONFIG_FEC_MXC
-#define CONFIG_MII
 #define IMX_FEC_BASE                    ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE             MII100
 #define CONFIG_ETHPRIME                 "FEC"
@@ -90,7 +83,6 @@
 #define CONFIG_IMX_THERMAL
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS           1
 #define PHYS_SDRAM                     MMDC0_ARB_BASE_ADDR
 
 #define CONFIG_SYS_SDRAM_BASE          PHYS_SDRAM
@@ -107,10 +99,6 @@
 #define CONFIG_ENV_OFFSET               (1024 * 1024)
 /* M25P16 has an erase size of 64 KiB */
 #define CONFIG_ENV_SECT_SIZE            (64 * 1024)
-#define CONFIG_ENV_SPI_BUS              CONFIG_SF_DEFAULT_BUS
-#define CONFIG_ENV_SPI_CS               CONFIG_SF_DEFAULT_CS
-#define CONFIG_ENV_SPI_MODE             CONFIG_SF_DEFAULT_MODE
-#define CONFIG_ENV_SPI_MAX_HZ           CONFIG_SF_DEFAULT_SPEED
 
 #define CONFIG_BOOTP_SERVERIP
 #define CONFIG_BOOTP_BOOTFILE

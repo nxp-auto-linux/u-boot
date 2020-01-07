@@ -277,7 +277,7 @@ config ENV_IS_IN_ONENAND
 	  provision.
 
 config ENV_IS_IN_REMOTE
-	bool "Environment is in remove memory space"
+	bool "Environment is in remote memory space"
 	depends on !CHAIN_OF_TRUST
 	help
 	  Define this if you have a remote memory space which you
@@ -324,18 +324,57 @@ config ENV_IS_IN_SPI_FLASH
 	  during a "saveenv" operation. CONFIG_ENV_OFFSET_REDUND must be
 	  aligned to an erase sector boundary.
 
-	  - CONFIG_ENV_SPI_BUS (optional):
-	  - CONFIG_ENV_SPI_CS (optional):
+config USE_ENV_SPI_BUS
+	bool "SPI flash bus for environment"
+	depends on ENV_IS_IN_SPI_FLASH
+	help
+	  Force the SPI bus for environment.
+	  If not defined, use CONFIG_SF_DEFAULT_BUS.
 
-	  Define the SPI bus and chip select. If not defined they will be 0.
+config ENV_SPI_BUS
+	int "Value of SPI flash bus for environment"
+	depends on USE_ENV_SPI_BUS
+	help
+	  Value the SPI bus and chip select for environment.
 
-	  - CONFIG_ENV_SPI_MAX_HZ (optional):
+config USE_ENV_SPI_CS
+	bool "SPI flash chip select for environment"
+	depends on ENV_IS_IN_SPI_FLASH
+	help
+	  Force the SPI chip select for environment.
+	  If not defined, use CONFIG_SF_DEFAULT_CS.
 
-	  Define the SPI max work clock. If not defined then use 1MHz.
+config ENV_SPI_CS
+	int "Value of SPI flash chip select for environment"
+	depends on USE_ENV_SPI_CS
+	help
+	  Value of the SPI chip select for environment.
 
-	  - CONFIG_ENV_SPI_MODE (optional):
+config USE_ENV_SPI_MAX_HZ
+	bool "SPI flash bus for environment"
+	depends on ENV_IS_IN_SPI_FLASH
+	help
+	  Force the SPI max work clock for environment.
+	  If not defined, use CONFIG_SF_DEFAULT_SPEED.
 
-	  Define the SPI work mode. If not defined then use SPI_MODE_3.
+config ENV_SPI_MAX_HZ
+	int "Value of SPI flash max work for environment"
+	depends on USE_ENV_SPI_MAX_HZ
+	help
+	  Value of the SPI max work clock for environment.
+
+config USE_ENV_SPI_MODE
+	bool "SPI flash mode for environment"
+	depends on ENV_IS_IN_SPI_FLASH
+	help
+	  Force the SPI work mode for environment.
+
+config ENV_SPI_MODE
+	hex "Value of SPI flash work mode for environment"
+	depends on USE_ENV_SPI_MODE
+	help
+	  Value of the SPI work mode for environment.
+	  See include/spi.h for value.
 
 config ENV_IS_IN_UBI
 	bool "Environment in a UBI volume"
@@ -431,22 +470,36 @@ config ENV_EXT4_FILE
 	  It's a string of the EXT4 file name. This file use to store the
 	  environment (explicit path to the file)
 
-if ARCH_SUNXI
+if ARCH_ROCKCHIP || ARCH_SUNXI || ARCH_ZYNQ || ARCH_ZYNQMP || ARCH_VERSAL || ARC
 
 config ENV_OFFSET
 	hex "Environment Offset"
 	depends on !ENV_IS_IN_UBI
 	depends on !ENV_IS_NOWHERE
+	default 0x3f8000 if ARCH_ROCKCHIP
 	default 0x88000 if ARCH_SUNXI
+	default 0xE0000 if ARCH_ZYNQ
+	default 0x1E00000 if ARCH_ZYNQMP
+	default 0 if ARC
 	help
 	  Offset from the start of the device (or partition)
 
 config ENV_SIZE
 	hex "Environment Size"
-	depends on !ENV_IS_NOWHERE
-	default 0x20000 if ARCH_SUNXI
+	default 0x40000 if ENV_IS_IN_SPI_FLASH && ARCH_ZYNQMP
+	default 0x20000 if ARCH_SUNXI || ARCH_ZYNQ
+	default 0x8000 if ARCH_ROCKCHIP || ARCH_ZYNQMP || ARCH_VERSAL
+	default 0x4000 if ARC
 	help
 	  Size of the environment storage area
+
+config ENV_SECT_SIZE
+	hex "Environment Sector-Size"
+	depends on !ENV_IS_NOWHERE && (ARCH_ZYNQ || ARCH_ZYNQMP)
+	default 0x40000 if ARCH_ZYNQMP
+	default 0x20000 if ARCH_ZYNQ
+	help
+	  Size of the sector containing the environment.
 
 config ENV_UBI_PART
 	string "UBI partition name"
@@ -459,24 +512,6 @@ config ENV_UBI_VOLUME
 	depends on ENV_IS_IN_UBI
 	help
 	  Name of the volume that you want to store the environment in.
-
-endif
-
-if ARCH_ROCKCHIP
-
-config ENV_OFFSET
-	hex
-	depends on !ENV_IS_IN_UBI
-	depends on !ENV_IS_NOWHERE
-	default 0x3f8000
-	help
-	  Offset from the start of the device (or partition)
-
-config ENV_SIZE
-	hex
-	default 0x8000
-	help
-	  Size of the environment storage area
 
 endif
 
@@ -504,5 +539,120 @@ config ENV_VARS_UBOOT_RUNTIME_CONFIG
 	  Enable this in order to add variables describing certain
 	  run-time determined information about the hardware to the
 	  environment.  These will be named board_name, board_rev.
+
+if SPL_ENV_SUPPORT
+config SPL_ENV_IS_NOWHERE
+	bool "SPL Environment is not stored"
+	default y if ENV_IS_NOWHERE
+	help
+	  Similar to ENV_IS_NOWHERE, used for SPL environment.
+
+config SPL_ENV_IS_IN_MMC
+	bool "SPL Environment in an MMC device"
+	depends on !SPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_MMC
+	default y
+	help
+	  Similar to ENV_IS_IN_MMC, used for SPL environment.
+
+config SPL_ENV_IS_IN_FAT
+	bool "SPL Environment is in a FAT filesystem"
+	depends on !SPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_FAT
+	default y
+	help
+	  Similar to ENV_IS_IN_FAT, used for SPL environment.
+
+config SPL_ENV_IS_IN_EXT4
+	bool "SPL Environment is in a EXT4 filesystem"
+	depends on !SPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_EXT4
+	default y
+	help
+	  Similar to ENV_IS_IN_EXT4, used for SPL environment.
+
+config SPL_ENV_IS_IN_NAND
+	bool "SPL Environment in a NAND device"
+	depends on !SPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_NAND
+	default y
+	help
+	  Similar to ENV_IS_IN_NAND, used for SPL environment.
+
+config SPL_ENV_IS_IN_SPI_FLASH
+	bool "SPL Environment is in SPI flash"
+	depends on !SPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_SPI_FLASH
+	default y
+	help
+	  Similar to ENV_IS_IN_SPI_FLASH, used for SPL environment.
+
+config SPL_ENV_IS_IN_FLASH
+	bool "SPL Environment in flash memory"
+	depends on !SPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_FLASH
+	default y
+	help
+	  Similar to ENV_IS_IN_FLASH, used for SPL environment.
+
+endif
+
+if TPL_ENV_SUPPORT
+
+config TPL_ENV_IS_NOWHERE
+	bool "TPL Environment is not stored"
+	default y if ENV_IS_NOWHERE
+	help
+	  Similar to ENV_IS_NOWHERE, used for TPL environment.
+
+config TPL_ENV_IS_IN_MMC
+	bool "TPL Environment in an MMC device"
+	depends on !TPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_MMC
+	default y
+	help
+	  Similar to ENV_IS_IN_MMC, used for TPL environment.
+
+config TPL_ENV_IS_IN_FAT
+	bool "TPL Environment is in a FAT filesystem"
+	depends on !TPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_FAT
+	default y
+	help
+	  Similar to ENV_IS_IN_FAT, used for TPL environment.
+
+config TPL_ENV_IS_IN_EXT4
+	bool "TPL Environment is in a EXT4 filesystem"
+	depends on !TPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_EXT4
+	default y
+	help
+	  Similar to ENV_IS_IN_EXT4, used for TPL environment.
+
+config TPL_ENV_IS_IN_NAND
+	bool "TPL Environment in a NAND device"
+	depends on !TPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_NAND
+	default y
+	help
+	  Similar to ENV_IS_IN_NAND, used for TPL environment.
+
+config TPL_ENV_IS_IN_SPI_FLASH
+	bool "TPL Environment is in SPI flash"
+	depends on !TPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_SPI_FLASH
+	default y
+	help
+	  Similar to ENV_IS_IN_SPI_FLASH, used for TPL environment.
+
+config TPL_ENV_IS_IN_FLASH
+	bool "TPL Environment in flash memory"
+	depends on !TPL_ENV_IS_NOWHERE
+	depends on ENV_IS_IN_FLASH
+	default y
+	help
+	  Similar to ENV_IS_IN_FLASH, used for TPL environment.
+
+endif
 
 endmenu

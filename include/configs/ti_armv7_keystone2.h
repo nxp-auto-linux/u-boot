@@ -20,7 +20,6 @@
 #define CONFIG_SYS_DCACHE_OFF
 
 /* Memory Configuration */
-#define CONFIG_NR_DRAM_BANKS		2
 #define CONFIG_SYS_LPAE_SDRAM_BASE	0x800000000
 #define CONFIG_MAX_RAM_BANK_SIZE	(2 << 30)       /* 2GB */
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SPL_TEXT_BASE - \
@@ -72,8 +71,6 @@
 
 /* SPI Configuration */
 #define CONFIG_SYS_SPI_CLK		ks_clk_get_rate(KS2_CLK1_6)
-#define CONFIG_SF_DEFAULT_SPEED		30000000
-#define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
 #define CONFIG_SYS_SPI0
 #define CONFIG_SYS_SPI_BASE		KS2_SPI0_BASE
 #define CONFIG_SYS_SPI0_NUM_CS		4
@@ -89,7 +86,6 @@
 #endif
 
 /* Network Configuration */
-#define CONFIG_MII
 #define CONFIG_BOOTP_DEFAULT
 #define CONFIG_BOOTP_DNS2
 #define CONFIG_BOOTP_SEND_HOSTNAME
@@ -130,7 +126,6 @@
 #define CONFIG_KSNAV_NETCP_PDMA_TX_SND_QUEUE	KS2_NETCP_PDMA_TX_SND_QUEUE
 
 /* Keystone net */
-#define CONFIG_DRIVER_TI_KEYSTONE_NET
 #define CONFIG_KSNET_MAC_ID_BASE		KS2_MAC_ID_BASE_ADDR
 #define CONFIG_KSNET_NETCP_BASE			KS2_NETCP_BASE
 #define CONFIG_KSNET_SERDES_SGMII_BASE		KS2_SGMII_SERDES_BASE
@@ -143,7 +138,6 @@
 #define CONFIG_AEMIF_CNTRL_BASE		KS2_AEMIF_CNTRL_BASE
 
 /* I2C Configuration */
-#define CONFIG_SYS_I2C_DAVINCI
 #define CONFIG_SYS_DAVINCI_I2C_SPEED	100000
 #define CONFIG_SYS_DAVINCI_I2C_SLAVE	0x10 /* SMBus host address */
 #define CONFIG_SYS_DAVINCI_I2C_SPEED1	100000
@@ -159,7 +153,6 @@
 #define CONFIG_ENV_EEPROM_IS_ON_I2C
 
 /* NAND Configuration */
-#define CONFIG_NAND_DAVINCI
 #define CONFIG_KEYSTONE_RBL_NAND
 #define CONFIG_KEYSTONE_NAND_MAX_RBL_SIZE	CONFIG_ENV_OFFSET
 #define CONFIG_SYS_NAND_MASK_CLE		0x4000
@@ -173,17 +166,19 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE		1
 #define CONFIG_SYS_NAND_MAX_CHIPS		1
 #define CONFIG_SYS_NAND_NO_SUBPAGE_WRITE
-#define CONFIG_MTD_PARTITIONS
 
-/* USB Configuration */
-#define CONFIG_USB_XHCI_KEYSTONE
-#define CONFIG_USB_SS_BASE			KS2_USB_SS_BASE
-#define CONFIG_USB_HOST_XHCI_BASE		KS2_USB_HOST_XHCI_BASE
-#define CONFIG_DEV_USB_PHY_BASE			KS2_DEV_USB_PHY_BASE
-#define CONFIG_USB_PHY_CFG_BASE			KS2_USB_PHY_CFG_BASE
+#define DFU_ALT_INFO_MMC \
+	"dfu_alt_info_mmc=" \
+	"MLO fat 0 1;" \
+	"u-boot.img fat 0 1;" \
+	"uEnv.txt fat 0 1\0"
+
+/* DFU settings */
+#define DFUARGS \
+	"dfu_bufsiz=0x10000\0" \
+	DFU_ALT_INFO_MMC \
 
 /* U-Boot general configuration */
-#define CONFIG_MISC_INIT_R
 #define CONFIG_MX_CYCLIC
 #define CONFIG_TIMESTAMP
 
@@ -221,6 +216,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
 	CONFIG_EXTRA_ENV_KS2_BOARD_SETTINGS				\
+	DFUARGS								\
 	"bootdir=/boot\0" \
 	"tftp_root=/\0"							\
 	"nfs_root=/export\0"						\

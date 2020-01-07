@@ -37,6 +37,7 @@
 #define FLASH_OFFSET_NOR	0x1000
 #define FLASH_OFFSET_SATA	FLASH_OFFSET_STANDARD
 #define FLASH_OFFSET_QSPI	0x1000
+#define FLASH_OFFSET_FLEXSPI	0x1000
 
 /* Initial Load Region Size */
 #define FLASH_LOADSIZE_UNDEFINED	0xFFFFFFFF
@@ -80,6 +81,12 @@ enum imximage_cmd {
 	CMD_CSF,
 	CMD_PLUGIN,
 	CMD_SECURE_CALLBACK,
+	/* Follwoing on i.MX8MQ/MM */
+	CMD_FIT,
+	CMD_SIGNED_HDMI,
+	CMD_LOADER,
+	CMD_SECOND_LOADER,
+	CMD_DDR_FW,
 };
 
 enum imximage_fld_types {
@@ -94,7 +101,7 @@ enum imximage_version {
 	IMXIMAGE_VER_INVALID = -1,
 	IMXIMAGE_V1 = 1,
 	IMXIMAGE_V2,
-	IMXIMAGE_V3,
+	IMXIMAGE_V3
 };
 
 typedef struct {
@@ -207,6 +214,12 @@ struct imx_header_v3 {
 	/* BootROM assumes that the DCD table address is 8-byte aligned */
 	dcd_v2_t dcd_table __attribute__((aligned(8)));
 };
+
+typedef struct {
+	flash_header_v2_t fhdr;
+	boot_data_t boot_data;
+	uint32_t padding[5];
+} imx_header_v3_t;
 
 /* The header must be aligned to 4k on MX53 for NAND boot */
 struct imx_header {

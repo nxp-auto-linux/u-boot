@@ -86,7 +86,7 @@ static int vidconsole_back(struct udevice *dev)
 		if (priv->ycur < 0)
 			priv->ycur = 0;
 	}
-	video_sync(dev->parent);
+	video_sync(dev->parent, false);
 
 	return 0;
 }
@@ -113,7 +113,7 @@ static void vidconsole_newline(struct udevice *dev)
 	}
 	priv->last_ch = 0;
 
-	video_sync(dev->parent);
+	video_sync(dev->parent, false);
 }
 
 static const struct vid_rgb colors[VID_COLOR_COUNT] = {
@@ -165,6 +165,43 @@ static char *parsenum(char *s, int *num)
 	return end;
 }
 
+/**
+ * set_cursor_position() - set cursor position
+ *
+ * @priv:	private data of the video console
+ * @row:	new row
+ * @col:	new column
+ */
+static void set_cursor_position(struct vidconsole_priv *priv, int row, int col)
+{
+	/*
+	 * Ensure we stay in the bounds of the screen.
+	 */
+	if (row >= priv->rows)
+		row = priv->rows - 1;
+	if (col >= priv->cols)
+		col = priv->cols - 1;
+
+	priv->ycur = row * priv->y_charsize;
+	priv->xcur_frac = priv->xstart_frac +
+			  VID_TO_POS(col * priv->x_charsize);
+}
+
+/**
+ * get_cursor_position() - get cursor position
+ *
+ * @priv:	private data of the video console
+ * @row:	row
+ * @col:	column
+ */
+static void get_cursor_position(struct vidconsole_priv *priv,
+				int *row, int *col)
+{
+	*row = priv->ycur / priv->y_charsize;
+	*col = VID_TO_PIXEL(priv->xcur_frac - priv->xstart_frac) /
+	       priv->x_charsize;
+}
+
 /*
  * Process a character while accumulating an escape string.  Chars are
  * accumulated into escape_buf until the end of escape sequence is
@@ -180,8 +217,30 @@ static void vidconsole_escape_char(struct udevice *dev, char ch)
 	/* Sanity checking for bogus ESC sequences: */
 	if (priv->escape_len >= sizeof(priv->escape_buf))
 		goto error;
-	if (priv->escape_len == 0 && ch != '[')
-		goto error;
+	if (priv->escape_len == 0) {
+		switch (ch) {
+		case '7':
+			/* Save cursor position */
+			get_cursor_position(priv, &priv->row_saved,
+					    &priv->col_saved);
+			priv->escape = 0;
+
+			return;
+		case '8': {
+			/* Restore cursor position */
+			int row = priv->row_saved;
+			int col = priv->col_saved;
+
+			set_cursor_position(priv, row, col);
+			priv->escape = 0;
+			return;
+		}
+		case '[':
+			break;
+		default:
+			goto error;
+		}
+	}
 
 	priv->escape_buf[priv->escape_len++] = ch;
 
@@ -213,9 +272,15 @@ static void vidconsole_escape_char(struct udevice *dev, char ch)
 		s++;    /* ; */
 		s = parsenum(s, &col);
 
-		priv->ycur = row * priv->y_charsize;
-		priv->xcur_frac = priv->xstart_frac +
-			VID_TO_POS(col * priv->x_charsize);
+		/*
+		 * Video origin is [0, 0], terminal origin is [1, 1].
+		 */
+		if (row)
+			--row;
+		if (col)
+			--col;
+
+		set_cursor_position(priv, row, col);
 
 		break;
 	}
@@ -236,7 +301,7 @@ static void vidconsole_escape_char(struct udevice *dev, char ch)
 
 		if (mode == 2) {
 			video_clear(dev->parent);
-			video_sync(dev->parent);
+			video_sync(dev->parent, false);
 			priv->ycur = 0;
 			priv->xcur_frac = priv->xstart_frac;
 		} else {
@@ -287,7 +352,7 @@ static void vidconsole_escape_char(struct udevice *dev, char ch)
 			switch (val) {
 			case 0:
 				/* all attributes off */
-				video_set_default_colors(vid_priv);
+				video_set_default_colors(dev->parent, false);
 				break;
 			case 1:
 				/* bold */
@@ -392,7 +457,7 @@ static void vidconsole_putc(struct stdio_dev *sdev, const char ch)
 	struct udevice *dev = sdev->priv;
 
 	vidconsole_put_char(dev, ch);
-	video_sync(dev->parent);
+	video_sync(dev->parent, false);
 }
 
 static void vidconsole_puts(struct stdio_dev *sdev, const char *s)
@@ -401,7 +466,7 @@ static void vidconsole_puts(struct stdio_dev *sdev, const char *s)
 
 	while (*s)
 		vidconsole_put_char(dev, *s++);
-	video_sync(dev->parent);
+	video_sync(dev->parent, false);
 }
 
 /* Set up the number of rows and colours (rotated drivers override this) */
@@ -454,6 +519,8 @@ void vidconsole_position_cursor(struct udevice *dev, unsigned col, unsigned row)
 	struct udevice *vid_dev = dev->parent;
 	struct video_priv *vid_priv = dev_get_uclass_priv(vid_dev);
 
+	col *= priv->x_charsize;
+	row *= priv->y_charsize;
 	priv->xcur_frac = VID_TO_POS(min_t(short, col, vid_priv->xsize - 1));
 	priv->ycur = min_t(short, row, vid_priv->ysize - 1);
 }
@@ -490,7 +557,7 @@ static int do_video_puts(cmd_tbl_t *cmdtp, int flag, int argc,
 	for (s = argv[1]; *s; s++)
 		vidconsole_put_char(dev, *s);
 
-	video_sync(dev->parent);
+	video_sync(dev->parent, false);
 
 	return 0;
 }

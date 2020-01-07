@@ -33,6 +33,13 @@ int board_mmc_init(bd_t *bis)
 	return 0;
 }
 
+int board_mmc_getcd(struct mmc *mmc)
+{
+	struct dwmci_host *host = mmc->priv;
+
+	return !(dwmci_readl(host, DWMCI_CDETECT) & 1);
+}
+
 #define AXS_MB_CREG	0xE0011000
 
 int board_early_init_f(void)
@@ -102,3 +109,11 @@ void smp_kick_all_cpus(void)
 	writel(cmd, (void __iomem *)AXC003_CREG_CPU_START);
 }
 #endif
+
+int checkboard(void)
+{
+	printf("Board: ARC Software Development Platform AXS%s\n",
+	     is_isa_arcv2() ? "103" : "101");
+
+	return 0;
+};

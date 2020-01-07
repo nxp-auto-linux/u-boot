@@ -23,8 +23,6 @@
 /*
  * Commands configuration
  */
-#define CONFIG_MTD_DEVICE		/* needed for mtdparts commands */
-#define CONFIG_MTD_PARTITIONS
 
 /*
  * mv-common.h should be defined after CMD configs since it used them
@@ -62,9 +60,7 @@
 	CONFIG_MTDPARTS_DEFAULT " rw ubi.mtd=2,2048\0" \
 	"x_bootcmd_kernel=nand read 0x6400000 0x100000 0x300000\0"	\
 	"x_bootcmd_usb=usb start\0"					\
-	"x_bootargs_root=root=ubi0:rootfs rootfstype=ubifs\0"		\
-	"mtdids="CONFIG_MTDIDS_DEFAULT"\0"					\
-	"mtdparts="CONFIG_MTDPARTS_DEFAULT"\0"
+	"x_bootargs_root=root=ubi0:rootfs rootfstype=ubifs\0"
 
 /*
  * Ethernet Driver configuration

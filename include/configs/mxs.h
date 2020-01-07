@@ -111,7 +111,6 @@
 
 /* FEC Ethernet on SoC */
 #ifdef CONFIG_FEC_MXC
-#define CONFIG_MII
 #ifndef CONFIG_ETHPRIME
 #define CONFIG_ETHPRIME			"FEC0"
 #endif
@@ -123,11 +122,6 @@
 /* LCD */
 #ifdef CONFIG_VIDEO
 #define CONFIG_VIDEO_MXS
-#endif
-
-/* MMC */
-#ifdef CONFIG_CMD_MMC
-#define CONFIG_BOUNCE_BUFFER
 #endif
 
 /* NAND */
@@ -144,7 +138,6 @@
 
 /* SPI */
 #ifdef CONFIG_CMD_SPI
-#define CONFIG_HARD_SPI
 #define CONFIG_SPI_HALF_DUPLEX
 #endif
 

@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <linux/io.h>
 #include <linux/printk.h>
-#include <../drivers/mtd/nand/denali.h>
+#include <../drivers/mtd/nand/raw/denali.h>
 
 #include "init.h"
 
@@ -66,20 +66,20 @@ int board_late_init(void)
 	switch (uniphier_boot_device_raw()) {
 	case BOOT_DEVICE_MMC1:
 		printf("eMMC Boot");
-		env_set("bootmode", "emmcboot");
+		env_set("bootdev", "emmc");
 		break;
 	case BOOT_DEVICE_NAND:
 		printf("NAND Boot");
-		env_set("bootmode", "nandboot");
+		env_set("bootdev", "nand");
 		nand_denali_wp_disable();
 		break;
 	case BOOT_DEVICE_NOR:
 		printf("NOR Boot");
-		env_set("bootmode", "norboot");
+		env_set("bootdev", "nor");
 		break;
 	case BOOT_DEVICE_USB:
 		printf("USB Boot");
-		env_set("bootmode", "usbboot");
+		env_set("bootdev", "usb");
 		break;
 	default:
 		printf("Unknown");

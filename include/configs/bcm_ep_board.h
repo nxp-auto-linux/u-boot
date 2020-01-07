@@ -24,8 +24,6 @@
 #error	CONFIG_SYS_SDRAM_SIZE must be defined!
 #endif
 
-#define CONFIG_NR_DRAM_BANKS		1
-
 #define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
 
 /* Some commands use this as the default load address */
@@ -56,8 +54,5 @@
 #define CONFIG_MX_CYCLIC
 
 /* Enable Time Command */
-
-/* Misc utility code */
-#define CONFIG_BOUNCE_BUFFER
 
 #endif /* __BCM_EP_BOARD_H */

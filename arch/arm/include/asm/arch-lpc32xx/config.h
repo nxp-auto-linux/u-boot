@@ -12,8 +12,6 @@
 /* Basic CPU architecture */
 #define CONFIG_ARCH_CPU_INIT
 
-#define CONFIG_NR_DRAM_BANKS_MAX	2
-
 /* UART configuration */
 #if	(CONFIG_SYS_LPC32XX_UART == 1) || (CONFIG_SYS_LPC32XX_UART == 2) || \
 	(CONFIG_SYS_LPC32XX_UART == 7)
@@ -62,10 +60,6 @@
 #endif	/* CONFIG_NAND_LPC32XX_SLC */
 
 /* NOR Flash */
-#if defined(CONFIG_SYS_FLASH_CFI)
-#define CONFIG_FLASH_CFI_DRIVER
-#define CONFIG_SYS_FLASH_PROTECTION
-#endif
 
 /* USB OHCI */
 #if defined(CONFIG_USB_OHCI_LPC32XX)

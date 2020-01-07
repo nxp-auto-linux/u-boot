@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  */
 #include <common.h>
 #include <i2c.h>
@@ -27,6 +27,121 @@
 #include <fsl_immap.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+#ifdef CONFIG_TARGET_LS1088AQDS
+#ifdef CONFIG_TFABOOT
+struct ifc_regs ifc_cfg_ifc_nor_boot[CONFIG_SYS_FSL_IFC_BANK_COUNT] = {
+	{
+		"nor0",
+		CONFIG_SYS_NOR0_CSPR_EARLY,
+		CONFIG_SYS_NOR0_CSPR_EXT,
+		CONFIG_SYS_NOR_AMASK,
+		CONFIG_SYS_NOR_CSOR,
+		{
+			CONFIG_SYS_NOR_FTIM0,
+			CONFIG_SYS_NOR_FTIM1,
+			CONFIG_SYS_NOR_FTIM2,
+			CONFIG_SYS_NOR_FTIM3
+		},
+		0,
+		CONFIG_SYS_NOR0_CSPR,
+		0,
+	},
+	{
+		"nor1",
+		CONFIG_SYS_NOR1_CSPR_EARLY,
+		CONFIG_SYS_NOR0_CSPR_EXT,
+		CONFIG_SYS_NOR_AMASK_EARLY,
+		CONFIG_SYS_NOR_CSOR,
+		{
+			CONFIG_SYS_NOR_FTIM0,
+			CONFIG_SYS_NOR_FTIM1,
+			CONFIG_SYS_NOR_FTIM2,
+			CONFIG_SYS_NOR_FTIM3
+		},
+		0,
+		CONFIG_SYS_NOR1_CSPR,
+		CONFIG_SYS_NOR_AMASK,
+	},
+	{
+		"nand",
+		CONFIG_SYS_NAND_CSPR,
+		CONFIG_SYS_NAND_CSPR_EXT,
+		CONFIG_SYS_NAND_AMASK,
+		CONFIG_SYS_NAND_CSOR,
+		{
+			CONFIG_SYS_NAND_FTIM0,
+			CONFIG_SYS_NAND_FTIM1,
+			CONFIG_SYS_NAND_FTIM2,
+			CONFIG_SYS_NAND_FTIM3
+		},
+	},
+	{
+		"fpga",
+		CONFIG_SYS_FPGA_CSPR,
+		CONFIG_SYS_FPGA_CSPR_EXT,
+		SYS_FPGA_AMASK,
+		CONFIG_SYS_FPGA_CSOR,
+		{
+			SYS_FPGA_CS_FTIM0,
+			SYS_FPGA_CS_FTIM1,
+			SYS_FPGA_CS_FTIM2,
+			SYS_FPGA_CS_FTIM3
+		},
+		0,
+		SYS_FPGA_CSPR_FINAL,
+		0,
+	}
+};
+
+struct ifc_regs ifc_cfg_qspi_nor_boot[CONFIG_SYS_FSL_IFC_BANK_COUNT] = {
+	{
+		"nand",
+		CONFIG_SYS_NAND_CSPR,
+		CONFIG_SYS_NAND_CSPR_EXT,
+		CONFIG_SYS_NAND_AMASK,
+		CONFIG_SYS_NAND_CSOR,
+		{
+			CONFIG_SYS_NAND_FTIM0,
+			CONFIG_SYS_NAND_FTIM1,
+			CONFIG_SYS_NAND_FTIM2,
+			CONFIG_SYS_NAND_FTIM3
+		},
+	},
+	{
+		"reserved",
+	},
+	{
+		"fpga",
+		CONFIG_SYS_FPGA_CSPR,
+		CONFIG_SYS_FPGA_CSPR_EXT,
+		SYS_FPGA_AMASK,
+		CONFIG_SYS_FPGA_CSOR,
+		{
+			SYS_FPGA_CS_FTIM0,
+			SYS_FPGA_CS_FTIM1,
+			SYS_FPGA_CS_FTIM2,
+			SYS_FPGA_CS_FTIM3
+		},
+		0,
+		SYS_FPGA_CSPR_FINAL,
+		0,
+	}
+};
+
+void ifc_cfg_boot_info(struct ifc_regs_info *regs_info)
+{
+	enum boot_src src = get_boot_src();
+
+	if (src == BOOT_SOURCE_QSPI_NOR)
+		regs_info->regs = ifc_cfg_qspi_nor_boot;
+	else
+		regs_info->regs = ifc_cfg_ifc_nor_boot;
+
+	regs_info->cs_size = CONFIG_SYS_FSL_IFC_BANK_COUNT;
+}
+#endif /* CONFIG_TFABOOT */
+#endif /* CONFIG_TARGET_LS1088AQDS */
 
 int board_early_init_f(void)
 {
@@ -67,9 +182,30 @@ int init_func_vid(void)
 }
 #endif
 
+int is_pb_board(void)
+{
+	u8 board_id;
+
+	board_id = QIXIS_READ(id);
+	if (board_id == LS1088ARDB_PB_BOARD)
+		return 1;
+	else
+		return 0;
+}
+
+int fixup_ls1088ardb_pb_banner(void *fdt)
+{
+	fdt_setprop_string(fdt, 0, "model", "LS1088ARDB-PB Board");
+
+	return 0;
+}
+
 #if !defined(CONFIG_SPL_BUILD)
 int checkboard(void)
 {
+#ifdef CONFIG_TFABOOT
+	enum boot_src src = get_boot_src();
+#endif
 	char buf[64];
 	u8 sw;
 	static const char *const freq[] = {"100", "125", "156.25",
@@ -79,7 +215,10 @@ int checkboard(void)
 #ifdef CONFIG_TARGET_LS1088AQDS
 	printf("Board: LS1088A-QDS, ");
 #else
-	printf("Board: LS1088A-RDB, ");
+	if (is_pb_board())
+		printf("Board: LS1088ARDB-PB, ");
+	else
+		printf("Board: LS1088A-RDB, ");
 #endif
 
 	sw = QIXIS_READ(arch);
@@ -96,9 +235,14 @@ int checkboard(void)
 	sw = QIXIS_READ(brdcfg[0]);
 	sw = (sw & QIXIS_LBMAP_MASK) >> QIXIS_LBMAP_SHIFT;
 
+#ifdef CONFIG_TFABOOT
+	if (src == BOOT_SOURCE_SD_MMC)
+		puts("SD card\n");
+#else
 #ifdef CONFIG_SD_BOOT
 	puts("SD card\n");
 #endif
+#endif /* CONFIG_TFABOOT */
 	switch (sw) {
 #ifdef CONFIG_TARGET_LS1088AQDS
 	case 0:
@@ -499,6 +643,11 @@ int arch_misc_init(void)
 #endif
 
 #ifdef CONFIG_FSL_MC_ENET
+void board_quiesce_devices(void)
+{
+	fsl_mc_ldpaa_exit(gd->bd);
+}
+
 void fdt_fixup_board_enet(void *fdt)
 {
 	int offset;
@@ -506,7 +655,7 @@ void fdt_fixup_board_enet(void *fdt)
 	offset = fdt_path_offset(fdt, "/fsl-mc");
 
 	if (offset < 0)
-		offset = fdt_path_offset(fdt, "/fsl,dprc@0");
+		offset = fdt_path_offset(fdt, "/soc/fsl-mc");
 
 	if (offset < 0) {
 		printf("%s: ERROR: fsl-mc node not found in device tree (error %d)\n",
@@ -514,7 +663,8 @@ void fdt_fixup_board_enet(void *fdt)
 		return;
 	}
 
-	if ((get_mc_boot_status() == 0) && (get_dpl_apply_status() == 0))
+	if (get_mc_boot_status() == 0 &&
+	    (is_lazy_dpl_addr_valid() || get_dpl_apply_status() == 0))
 		fdt_status_okay(fdt, offset);
 	else
 		fdt_status_fail(fdt, offset);
@@ -525,6 +675,10 @@ void fdt_fixup_board_enet(void *fdt)
 void fsl_fdt_fixup_flash(void *fdt)
 {
 	int offset;
+#ifdef CONFIG_TFABOOT
+	u32 __iomem *dcfg_ccsr = (u32 __iomem *)DCFG_BASE;
+	u32 val;
+#endif
 
 /*
  * IFC-NOR and QSPI are muxed on SoC.
@@ -532,6 +686,37 @@ void fsl_fdt_fixup_flash(void *fdt)
  * disable QSPI node in dts in case QSPI is not enabled.
  */
 
+#ifdef CONFIG_TFABOOT
+	enum boot_src src = get_boot_src();
+	bool disable_ifc = false;
+
+	switch (src) {
+	case BOOT_SOURCE_IFC_NOR:
+		disable_ifc = false;
+		break;
+	case BOOT_SOURCE_QSPI_NOR:
+		disable_ifc = true;
+		break;
+	default:
+		val = in_le32(dcfg_ccsr + DCFG_RCWSR15 / 4);
+		if (DCFG_RCWSR15_IFCGRPABASE_QSPI == (val & (u32)0x3))
+			disable_ifc = true;
+		break;
+	}
+
+	if (disable_ifc) {
+		offset = fdt_path_offset(fdt, "/soc/ifc/nor");
+
+		if (offset < 0)
+			offset = fdt_path_offset(fdt, "/ifc/nor");
+	} else {
+		offset = fdt_path_offset(fdt, "/soc/quadspi");
+
+		if (offset < 0)
+			offset = fdt_path_offset(fdt, "/quadspi");
+	}
+
+#else
 #ifdef CONFIG_FSL_QSPI
 	offset = fdt_path_offset(fdt, "/soc/ifc/nor");
 
@@ -543,6 +728,7 @@ void fsl_fdt_fixup_flash(void *fdt)
 	if (offset < 0)
 		offset = fdt_path_offset(fdt, "/quadspi");
 #endif
+#endif
 	if (offset < 0)
 		return;
 
@@ -551,7 +737,7 @@ void fsl_fdt_fixup_flash(void *fdt)
 
 int ft_board_setup(void *blob, bd_t *bd)
 {
-	int err, i;
+	int i;
 	u64 base[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
 
@@ -575,16 +761,51 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	fdt_fixup_memory_banks(blob, base, size, CONFIG_NR_DRAM_BANKS);
 
+	fdt_fsl_mc_fixup_iommu_map_entry(blob);
+
 	fsl_fdt_fixup_flash(blob);
 
 #ifdef CONFIG_FSL_MC_ENET
 	fdt_fixup_board_enet(blob);
-	err = fsl_mc_ldpaa_exit(bd);
-	if (err)
-		return err;
 #endif
+	if (is_pb_board())
+		fixup_ls1088ardb_pb_banner(blob);
 
 	return 0;
 }
 #endif
 #endif /* defined(CONFIG_SPL_BUILD) */
+
+#ifdef CONFIG_TFABOOT
+#ifdef CONFIG_MTD_NOR_FLASH
+int is_flash_available(void)
+{
+	char *env_hwconfig = env_get("hwconfig");
+	enum boot_src src = get_boot_src();
+	int is_nor_flash_available = 1;
+
+	switch (src) {
+	case BOOT_SOURCE_IFC_NOR:
+		is_nor_flash_available = 1;
+		break;
+	case BOOT_SOURCE_QSPI_NOR:
+		is_nor_flash_available = 0;
+		break;
+	/*
+	 * In Case of SD boot,if qspi is defined in env_hwconfig
+	 * disable nor flash probe.
+	 */
+	default:
+		if (hwconfig_f("qspi", env_hwconfig))
+			is_nor_flash_available = 0;
+		break;
+	}
+	return is_nor_flash_available;
+}
+#endif
+
+void *env_sf_get_env_addr(void)
+{
+	return (void *)(CONFIG_SYS_FSL_QSPI_BASE + CONFIG_ENV_OFFSET);
+}
+#endif

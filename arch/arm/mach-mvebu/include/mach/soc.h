@@ -27,6 +27,7 @@
 /* A38x revisions */
 #define MV_88F68XX_Z1_ID	0x0
 #define MV_88F68XX_A0_ID	0x4
+#define MV_88F68XX_B0_ID	0xa
 
 /* TCLK Core Clock definition */
 #ifndef CONFIG_SYS_TCLK
@@ -110,16 +111,12 @@
 #define COMPHY_REFCLK_ALIGNMENT	(MVEBU_REGISTER(0x182f8))
 
 /* BootROM error register (also includes some status infos) */
-#if defined(CONFIG_ARMADA_38X)
-#define CONFIG_BOOTROM_ERR_REG	(MVEBU_REGISTER(0x182d0))
-#define BOOTROM_ERR_MODE_OFFS	0
-#define BOOTROM_ERR_MODE_MASK	(0xf << BOOTROM_ERR_MODE_OFFS)
-#else
 #define CONFIG_BOOTROM_ERR_REG	(MVEBU_REGISTER(0x182d0))
 #define BOOTROM_ERR_MODE_OFFS	28
 #define BOOTROM_ERR_MODE_MASK	(0xf << BOOTROM_ERR_MODE_OFFS)
 #define BOOTROM_ERR_MODE_UART	0x6
-#endif
+#define BOOTROM_ERR_CODE_OFFS	0
+#define BOOTROM_ERR_CODE_MASK	(0xf << BOOTROM_ERR_CODE_OFFS)
 
 #if defined(CONFIG_ARMADA_375)
 /* SAR values for Armada 375 */

@@ -207,7 +207,7 @@ static int cadence_spi_xfer(struct udevice *dev, unsigned int bitlen,
 	} else {
 		data_bytes = bitlen / 8;
 	}
-	debug("%s: len=%d [bytes]\n", __func__, data_bytes);
+	debug("%s: len=%zu [bytes]\n", __func__, data_bytes);
 
 	/* Set Chip select */
 	cadence_qspi_apb_chipselect(base, spi_chip_select(dev),
@@ -329,7 +329,7 @@ static const struct dm_spi_ops cadence_spi_ops = {
 };
 
 static const struct udevice_id cadence_spi_ids[] = {
-	{ .compatible = "cadence,qspi" },
+	{ .compatible = "cdns,qspi-nor" },
 	{ }
 };
 

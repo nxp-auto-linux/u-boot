@@ -85,8 +85,6 @@
 #undef  CONFIG_SYS_LOADS_BAUD_CHANGE
 
 /* FLASH */
-#define CONFIG_FLASH_CFI_DRIVER 1
-#define CONFIG_SYS_FLASH_CFI
 #undef  CONFIG_SYS_FLASH_QUIET_TEST
 #define CONFIG_SYS_FLASH_EMPTY_INFO
 #define CONFIG_SYS_FLASH_BASE	(0xA0000000)
@@ -109,7 +107,6 @@
  * Use hardware flash sectors protection instead
  * of U-Boot software protection
  */
-#undef  CONFIG_SYS_FLASH_PROTECTION
 #undef  CONFIG_SYS_DIRECT_FLASH_TFTP
 
 /* Address of u-boot image in Flash (NOT run time address in SDRAM) ?!? */
@@ -131,8 +128,6 @@
 
 /* Board Clock */
 #define CONFIG_SYS_CLK_FREQ 41666666
-#define CONFIG_SH_TMU_CLK_FREQ CONFIG_SYS_CLK_FREQ
 #define CONFIG_SH_SCIF_CLK_FREQ CONFIG_SYS_CLK_FREQ
-#define CONFIG_SYS_TMU_CLK_DIV      4
 
 #endif	/* __ECOVEC_H */

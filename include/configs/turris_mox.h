@@ -8,6 +8,8 @@
 #ifndef _CONFIG_TURRIS_MOX_H
 #define _CONFIG_TURRIS_MOX_H
 
+#define CONFIG_SYS_BOOTM_LEN (64 << 20)
+
 #define CONFIG_LAST_STAGE_INIT
 
 /*
@@ -17,8 +19,6 @@
 
 /* additions for new ARM relocation support */
 #define CONFIG_SYS_SDRAM_BASE	0x00000000
-
-#define CONFIG_NR_DRAM_BANKS	1
 
 /* auto boot */
 #define CONFIG_PREBOOT
@@ -66,13 +66,6 @@
 /*
  * SPI Flash configuration
  */
-#define CONFIG_ENV_SPI_BUS		0
-#define CONFIG_ENV_SPI_CS		0
-
-/* SPI NOR flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_SPEED		20000000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
-#define CONFIG_ENV_SPI_MODE		CONFIG_SF_DEFAULT_MODE
 
 /* Environment in SPI NOR flash */
 #define CONFIG_ENV_OFFSET		0x180000 /* as Marvell U-Boot version */

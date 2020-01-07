@@ -25,13 +25,9 @@
 #define CONFIG_SKIP_LOWLEVEL_INIT
 #endif
 
-/* generate LPC32XX-specific SPL image */
-#define CONFIG_LPC32XX_SPL
-
 /*
  * Memory configurations
  */
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_SYS_MALLOC_LEN		SZ_1M
 #define CONFIG_SYS_SDRAM_BASE		EMC_DYCS0_BASE
 #define CONFIG_SYS_SDRAM_SIZE		SZ_128M
@@ -150,7 +146,6 @@
 /* SPL will load U-Boot from NAND offset 0x40000 */
 #define CONFIG_SPL_NAND_DRIVERS
 #define CONFIG_SPL_NAND_BASE
-#define CONFIG_SPL_NAND_BOOT
 #define CONFIG_SYS_NAND_U_BOOT_OFFS  0x00040000
 #define CONFIG_SPL_PAD_TO 0x20000
 /* U-Boot will be 0x40000 bytes, loaded and run at CONFIG_SYS_TEXT_BASE */

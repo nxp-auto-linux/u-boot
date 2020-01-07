@@ -26,17 +26,6 @@
 #define CONFIG_LOADADDR 		1000000
 
 /*
- * Commands configuration
- */
-#define CONFIG_CMD_I2C
-#define CONFIG_CMD_SPI
-
-/* SPI NOR flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_BUS		1
-#define CONFIG_SF_DEFAULT_SPEED		1000000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_3
-
-/*
  * SDIO/MMC Card Configuration
  */
 #define CONFIG_SYS_MMC_BASE		MVEBU_SDIO_BASE
@@ -54,7 +43,6 @@
 #define CONFIG_EHCI_IS_TDI
 
 /* Environment in SPI NOR flash */
-#define CONFIG_ENV_SPI_BUS		1
 #define CONFIG_ENV_OFFSET		(1 << 20) /* 1MiB in */
 #define CONFIG_ENV_SIZE			(64 << 10) /* 64KiB */
 #define CONFIG_ENV_SECT_SIZE		(256 << 10) /* 256KiB sectors */
@@ -63,9 +51,6 @@
 
 /* PCIe support */
 #ifndef CONFIG_SPL_BUILD
-#define CONFIG_PCI
-#define CONFIG_PCI_MVEBU
-#define CONFIG_PCI_PNP
 #define CONFIG_PCI_SCAN_SHOW
 #endif
 

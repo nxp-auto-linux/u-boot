@@ -24,7 +24,6 @@
 #define KZM_SDRAM_BASE	(0x40000000)
 #define PHYS_SDRAM		KZM_SDRAM_BASE
 #define PHYS_SDRAM_SIZE		(512 * 1024 * 1024)
-#define CONFIG_NR_DRAM_BANKS	(1)
 
 /* NOR Flash */
 #define KZM_FLASH_BASE	(0x00000000)
@@ -64,8 +63,6 @@
 #define CONFIG_STANDALONE_LOAD_ADDR	0x41000000
 
 /* FLASH */
-#define CONFIG_FLASH_CFI_DRIVER
-#define CONFIG_SYS_FLASH_CFI
 #undef  CONFIG_SYS_FLASH_QUIET_TEST
 #define CONFIG_SYS_FLASH_EMPTY_INFO
 #define FLASH_SECTOR_SIZE	(256 * 1024)	/* 256 KB sectors */
@@ -82,7 +79,6 @@
 /* Timeout for Flash clear lock bit operations (in ms) */
 #define CONFIG_SYS_FLASH_UNLOCK_TOUT	(3 * 1000)
 
-#undef  CONFIG_SYS_FLASH_PROTECTION
 #undef  CONFIG_SYS_DIRECT_FLASH_TFTP
 
 /* GPIO / PFC */

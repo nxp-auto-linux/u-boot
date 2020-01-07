@@ -40,11 +40,9 @@
 #endif
 
 #if defined(ENV_IS_EMBEDDED)
-env_t *env_ptr = &environment;
+static env_t *env_ptr = &environment;
 #elif defined(CONFIG_NAND_ENV_DST)
-env_t *env_ptr = (env_t *)CONFIG_NAND_ENV_DST;
-#else /* ! ENV_IS_EMBEDDED */
-env_t *env_ptr;
+static env_t *env_ptr = (env_t *)CONFIG_NAND_ENV_DST;
 #endif /* ENV_IS_EMBEDDED */
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -327,7 +325,7 @@ static int env_nand_load(void)
 	tmp_env2 = (env_t *)malloc(CONFIG_ENV_SIZE);
 	if (tmp_env1 == NULL || tmp_env2 == NULL) {
 		puts("Can't allocate buffers for environment\n");
-		set_default_env("!malloc() failed");
+		set_default_env("malloc() failed", 0);
 		ret = -EIO;
 		goto done;
 	}
@@ -366,14 +364,14 @@ static int env_nand_load(void)
 	if (mtd && !get_nand_env_oob(mtd, &nand_env_oob_offset)) {
 		printf("Found Environment offset in OOB..\n");
 	} else {
-		set_default_env("!no env offset in OOB");
+		set_default_env("no env offset in OOB", 0);
 		return;
 	}
 #endif
 
 	ret = readenv(CONFIG_ENV_OFFSET, (u_char *)buf);
 	if (ret) {
-		set_default_env("!readenv() failed");
+		set_default_env("readenv() failed", 0);
 		return -EIO;
 	}
 

@@ -154,6 +154,10 @@ static int clk_set_default_parents(struct udevice *dev)
 	for (index = 0; index < num_parents; index++) {
 		ret = clk_get_by_indexed_prop(dev, "assigned-clock-parents",
 					      index, &parent_clk);
+		/* If -ENOENT, this is a no-op entry */
+		if (ret == -ENOENT)
+			continue;
+
 		if (ret) {
 			debug("%s: could not get parent clock %d for %s\n",
 			      __func__, index, dev_read_name(dev));
@@ -210,6 +214,10 @@ static int clk_set_default_rates(struct udevice *dev)
 		goto fail;
 
 	for (index = 0; index < num_rates; index++) {
+		/* If 0 is passed, this is a no-op */
+		if (!rates[index])
+			continue;
+
 		ret = clk_get_by_indexed_prop(dev, "assigned-clocks",
 					      index, &clk);
 		if (ret) {
@@ -220,8 +228,8 @@ static int clk_set_default_rates(struct udevice *dev)
 
 		ret = clk_set_rate(&clk, rates[index]);
 		if (ret < 0) {
-			debug("%s: failed to set rate on clock %d for %s\n",
-			      __func__, index, dev_read_name(dev));
+			debug("%s: failed to set rate on clock index %d (%ld) for %s\n",
+			      __func__, index, clk.id, dev_read_name(dev));
 			break;
 		}
 	}
@@ -235,8 +243,8 @@ int clk_set_defaults(struct udevice *dev)
 {
 	int ret;
 
-	/* If this is running pre-reloc state, don't take any action. */
-	if (!(gd->flags & GD_FLG_RELOC))
+	/* If this not in SPL and pre-reloc state, don't take any action. */
+	if (!(IS_ENABLED(CONFIG_SPL_BUILD) || (gd->flags & GD_FLG_RELOC)))
 		return 0;
 
 	debug("%s(%s)\n", __func__, dev_read_name(dev));

@@ -30,7 +30,7 @@
  */
 #define HCHALT_TIMEOUT (8 * 1000)
 
-#ifndef CONFIG_DM_USB
+#if !CONFIG_IS_ENABLED(DM_USB)
 static struct ehci_ctrl ehcic[CONFIG_USB_MAX_CONTROLLER_COUNT];
 #endif
 
@@ -111,7 +111,7 @@ static struct descriptor {
 
 static struct ehci_ctrl *ehci_get_ctrl(struct usb_device *udev)
 {
-#ifdef CONFIG_DM_USB
+#if CONFIG_IS_ENABLED(DM_USB)
 	return dev_get_priv(usb_get_bus(udev->dev));
 #else
 	return udev->controller;
@@ -409,9 +409,15 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	endpt = QH_ENDPT1_RL(8) | QH_ENDPT1_C(c) |
 		QH_ENDPT1_MAXPKTLEN(maxpacket) | QH_ENDPT1_H(0) |
 		QH_ENDPT1_DTC(QH_ENDPT1_DTC_DT_FROM_QTD) |
-		QH_ENDPT1_EPS(ehci_encode_speed(dev->speed)) |
 		QH_ENDPT1_ENDPT(usb_pipeendpoint(pipe)) | QH_ENDPT1_I(0) |
 		QH_ENDPT1_DEVADDR(usb_pipedevice(pipe));
+
+	/* Force FS for fsl HS quirk */
+	if (!ctrl->has_fsl_erratum_a005275)
+		endpt |= QH_ENDPT1_EPS(ehci_encode_speed(dev->speed));
+	else
+		endpt |= QH_ENDPT1_EPS(ehci_encode_speed(QH_FULL_SPEED));
+
 	qh->qh_endpt1 = cpu_to_hc32(endpt);
 	endpt = QH_ENDPT2_MULT(1) | QH_ENDPT2_UFCMASK(0) | QH_ENDPT2_UFSMASK(0);
 	qh->qh_endpt2 = cpu_to_hc32(endpt);
@@ -832,6 +838,10 @@ static int ehci_submit_root(struct usb_device *dev, unsigned long pipe,
 			} else {
 				int ret;
 
+				/* Disable chirp for HS erratum */
+				if (ctrl->has_fsl_erratum_a005275)
+					reg |= PORTSC_FSL_PFSC;
+
 				reg |= EHCI_PS_PR;
 				reg &= ~EHCI_PS_PE;
 				ehci_writel(status_reg, reg);
@@ -963,7 +973,7 @@ static void ehci_setup_ops(struct ehci_ctrl *ctrl, const struct ehci_ops *ops)
 	}
 }
 
-#ifndef CONFIG_DM_USB
+#if !CONFIG_IS_ENABLED(DM_USB)
 void ehci_set_controller_priv(int index, void *priv, const struct ehci_ops *ops)
 {
 	struct ehci_ctrl *ctrl = &ehcic[index];
@@ -1087,7 +1097,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	return 0;
 }
 
-#ifndef CONFIG_DM_USB
+#if !CONFIG_IS_ENABLED(DM_USB)
 int usb_lowlevel_stop(int index)
 {
 	ehci_shutdown(&ehcic[index]);
@@ -1508,7 +1518,7 @@ static int _ehci_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	return result;
 }
 
-#ifndef CONFIG_DM_USB
+#if !CONFIG_IS_ENABLED(DM_USB)
 int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 			    void *buffer, int length)
 {
@@ -1546,7 +1556,7 @@ int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
 }
 #endif
 
-#ifdef CONFIG_DM_USB
+#if CONFIG_IS_ENABLED(DM_USB)
 static int ehci_submit_control_msg(struct udevice *dev, struct usb_device *udev,
 				   unsigned long pipe, void *buffer, int length,
 				   struct devrequest *setup)
@@ -1674,4 +1684,70 @@ struct dm_usb_ops ehci_usb_ops = {
 	.get_max_xfer_size  = ehci_get_max_xfer_size,
 };
 
+#endif
+
+#ifdef CONFIG_PHY
+int ehci_setup_phy(struct udevice *dev, struct phy *phy, int index)
+{
+	int ret;
+
+	if (!phy)
+		return 0;
+
+	ret = generic_phy_get_by_index(dev, index, phy);
+	if (ret) {
+		if (ret != -ENOENT) {
+			dev_err(dev, "failed to get usb phy\n");
+			return ret;
+		}
+	} else {
+		ret = generic_phy_init(phy);
+		if (ret) {
+			dev_err(dev, "failed to init usb phy\n");
+			return ret;
+		}
+
+		ret = generic_phy_power_on(phy);
+		if (ret) {
+			dev_err(dev, "failed to power on usb phy\n");
+			return generic_phy_exit(phy);
+		}
+	}
+
+	return 0;
+}
+
+int ehci_shutdown_phy(struct udevice *dev, struct phy *phy)
+{
+	int ret = 0;
+
+	if (!phy)
+		return 0;
+
+	if (generic_phy_valid(phy)) {
+		ret = generic_phy_power_off(phy);
+		if (ret) {
+			dev_err(dev, "failed to power off usb phy\n");
+			return ret;
+		}
+
+		ret = generic_phy_exit(phy);
+		if (ret) {
+			dev_err(dev, "failed to power off usb phy\n");
+			return ret;
+		}
+	}
+
+	return 0;
+}
+#else
+int ehci_setup_phy(struct udevice *dev, struct phy *phy, int index)
+{
+	return 0;
+}
+
+int ehci_shutdown_phy(struct udevice *dev, struct phy *phy)
+{
+	return 0;
+}
 #endif

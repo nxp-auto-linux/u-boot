@@ -23,7 +23,7 @@ mmc_dev = 1
 temp_addr = 0x90000000
 temp_addr2 = 0x90002000
 
-@pytest.mark.buildconfigspec('cmd_avb')
+@pytest.mark.buildconfigspec('cmd_avb', 'cmd_mmc')
 def test_avb_verify(u_boot_console):
     """Run AVB 2.0 boot verification chain with avb subset of commands
     """
@@ -36,7 +36,7 @@ def test_avb_verify(u_boot_console):
     assert response.find(success_str)
 
 
-@pytest.mark.buildconfigspec('cmd_avb')
+@pytest.mark.buildconfigspec('cmd_avb', 'cmd_mmc')
 def test_avb_mmc_uuid(u_boot_console):
     """Check if 'avb get_uuid' works, compare results with
     'part list mmc 1' output
@@ -51,22 +51,22 @@ def test_avb_mmc_uuid(u_boot_console):
 
     part_lines = u_boot_console.run_command('mmc part').splitlines()
     part_list = {}
-    cur_partname = ""
+    cur_partname = ''
 
     for line in part_lines:
-        if "\"" in line:
-            start_pt = line.find("\"")
-            end_pt = line.find("\"", start_pt + 1)
+        if '"' in line:
+            start_pt = line.find('"')
+            end_pt = line.find('"', start_pt + 1)
             cur_partname = line[start_pt + 1: end_pt]
 
-        if "guid:" in line:
-            guid_to_check = line.split("guid:\t")
+        if 'guid:' in line:
+            guid_to_check = line.split('guid:\t')
             part_list[cur_partname] = guid_to_check[1]
 
     # lets check all guids with avb get_guid
     for part, guid in part_list.iteritems():
         avb_guid_resp = u_boot_console.run_command('avb get_uuid %s' % part)
-        assert guid == avb_guid_resp.split("UUID: ")[1]
+        assert guid == avb_guid_resp.split('UUID: ')[1]
 
 
 @pytest.mark.buildconfigspec('cmd_avb')
@@ -78,6 +78,7 @@ def test_avb_read_rb(u_boot_console):
     assert response == ''
 
     response = u_boot_console.run_command('avb read_rb 1')
+    assert response == 'Rollback index: 0'
 
 
 @pytest.mark.buildconfigspec('cmd_avb')
@@ -89,9 +90,10 @@ def test_avb_is_unlocked(u_boot_console):
     assert response == ''
 
     response = u_boot_console.run_command('avb is_unlocked')
+    assert response == 'Unlocked = 1'
 
 
-@pytest.mark.buildconfigspec('cmd_avb')
+@pytest.mark.buildconfigspec('cmd_avb', 'cmd_mmc')
 def test_avb_mmc_read(u_boot_console):
     """Test mmc read operation
     """

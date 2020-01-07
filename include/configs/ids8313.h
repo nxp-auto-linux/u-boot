@@ -19,8 +19,6 @@
 
 #define CONFIG_FSL_ELBC
 
-#define CONFIG_MISC_INIT_R
-
 #define CONFIG_BOOT_RETRY_TIME		900
 #define CONFIG_BOOT_RETRY_MIN		30
 #define CONFIG_RESET_TO_RETRY
@@ -161,20 +159,15 @@
  */
 #define CONFIG_TSEC1
 #define CONFIG_TSEC2
-#define CONFIG_HARD_SPI
 
 /*
  * NOR FLASH setup
  */
-#define CONFIG_SYS_FLASH_CFI
-#define CONFIG_FLASH_CFI_DRIVER
 #define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_8BIT
 #define CONFIG_FLASH_SHOW_PROGRESS	50
-#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
 
 #define CONFIG_SYS_FLASH_BASE		0xFF800000
 #define CONFIG_SYS_FLASH_SIZE		8
-#define CONFIG_SYS_FLASH_PROTECTION
 
 #define CONFIG_SYS_LBLAWBAR0_PRELIM	CONFIG_SYS_FLASH_BASE
 #define CONFIG_SYS_LBLAWAR0_PRELIM	0x80000016
@@ -278,15 +271,6 @@
 #define CONFIG_SYS_FSL_I2C_OFFSET	0x3100
 #define CONFIG_RTC_PCF8563
 #define CONFIG_SYS_I2C_RTC_ADDR	0x51
-
-/*
- * SPI setup
- */
-#ifdef CONFIG_HARD_SPI
-#define CONFIG_SYS_GPIO1_PRELIM
-#define CONFIG_SYS_GPIO1_DIR		0x00000001
-#define CONFIG_SYS_GPIO1_DAT		0x00000001
-#endif
 
 /*
  * Ethernet setup
@@ -446,7 +430,6 @@
 #define CONFIG_SYS_MEMTEST_END		0x00C00000
 
 #define CONFIG_SYS_LOAD_ADDR		0x100000
-#define CONFIG_MII
 #define CONFIG_LOADS_ECHO
 #define CONFIG_TIMESTAMP
 #define CONFIG_PREBOOT			"echo;" \
@@ -459,8 +442,6 @@
 #define CONFIG_JFFS2_DEV		"0"
 
 /* mtdparts command line support */
-#define CONFIG_FLASH_CFI_MTD
-#define CONFIG_MTD_DEVICE
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"netdev=" __stringify(CONFIG_NETDEV) "\0"			\
@@ -503,6 +484,5 @@
 	"bootm ${loadaddr} - ${fdtaddr}"
 
 /* UBI Support */
-#define CONFIG_MTD_PARTITIONS
 
 #endif	/* __CONFIG_H */

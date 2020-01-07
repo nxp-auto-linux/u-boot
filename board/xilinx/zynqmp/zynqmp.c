@@ -20,13 +20,12 @@
 #include <usb.h>
 #include <dwc3-uboot.h>
 #include <zynqmppl.h>
-#include <i2c.h>
 #include <g_dnl.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 #if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT)
-static struct udevice *watchdog_dev;
+static struct udevice *watchdog_dev __attribute__((section(".data"))) = NULL;
 #endif
 
 #if defined(CONFIG_FPGA) && defined(CONFIG_FPGA_ZYNQMPPL) && \
@@ -72,6 +71,7 @@ static const struct {
 		.id = 0x20,
 		.ver = 0x12c,
 		.name = "5cg",
+		.evexists = 1,
 	},
 	{
 		.id = 0x21,
@@ -88,6 +88,7 @@ static const struct {
 		.id = 0x21,
 		.ver = 0x12c,
 		.name = "4cg",
+		.evexists = 1,
 	},
 	{
 		.id = 0x30,
@@ -104,6 +105,7 @@ static const struct {
 		.id = 0x30,
 		.ver = 0x12c,
 		.name = "7cg",
+		.evexists = 1,
 	},
 	{
 		.id = 0x38,
@@ -234,14 +236,18 @@ int chip_id(unsigned char id)
 
 #define ZYNQMP_VERSION_SIZE		9
 #define ZYNQMP_PL_STATUS_BIT		9
+#define ZYNQMP_IPDIS_VCU_BIT		8
 #define ZYNQMP_PL_STATUS_MASK		BIT(ZYNQMP_PL_STATUS_BIT)
 #define ZYNQMP_CSU_VERSION_MASK		~(ZYNQMP_PL_STATUS_MASK)
+#define ZYNQMP_CSU_VCUDIS_VER_MASK	ZYNQMP_CSU_VERSION_MASK & \
+					~BIT(ZYNQMP_IPDIS_VCU_BIT)
+#define MAX_VARIANTS_EV			3
 
 #if defined(CONFIG_FPGA) && defined(CONFIG_FPGA_ZYNQMPPL) && \
 	!defined(CONFIG_SPL_BUILD)
 static char *zynqmp_get_silicon_idcode_name(void)
 {
-	u32 i, id, ver;
+	u32 i, id, ver, j;
 	char *buf;
 	static char name[ZYNQMP_VERSION_SIZE];
 
@@ -249,24 +255,43 @@ static char *zynqmp_get_silicon_idcode_name(void)
 	ver = chip_id(IDCODE2);
 
 	for (i = 0; i < ARRAY_SIZE(zynqmp_devices); i++) {
-		if ((zynqmp_devices[i].id == id) &&
-		    (zynqmp_devices[i].ver == (ver &
-		    ZYNQMP_CSU_VERSION_MASK))) {
-			strncat(name, "zu", 2);
-			strncat(name, zynqmp_devices[i].name,
-				ZYNQMP_VERSION_SIZE - 3);
-			break;
+		if (zynqmp_devices[i].id == id) {
+			if (zynqmp_devices[i].evexists &&
+			    !(ver & ZYNQMP_PL_STATUS_MASK))
+				break;
+			if (zynqmp_devices[i].ver == (ver &
+			    ZYNQMP_CSU_VERSION_MASK))
+				break;
 		}
 	}
 
 	if (i >= ARRAY_SIZE(zynqmp_devices))
 		return "unknown";
 
-	if (!zynqmp_devices[i].evexists)
+	strncat(name, "zu", 2);
+	if (!zynqmp_devices[i].evexists ||
+	    (ver & ZYNQMP_PL_STATUS_MASK)) {
+		strncat(name, zynqmp_devices[i].name,
+			ZYNQMP_VERSION_SIZE - 3);
 		return name;
+	}
 
-	if (ver & ZYNQMP_PL_STATUS_MASK)
-		return name;
+	/*
+	 * Here we are means, PL not powered up and ev variant
+	 * exists. So, we need to ignore VCU disable bit(8) in
+	 * version and findout if its CG or EG/EV variant.
+	 */
+	for (j = 0; j < MAX_VARIANTS_EV; j++, i++) {
+		if ((zynqmp_devices[i].ver & ~BIT(ZYNQMP_IPDIS_VCU_BIT)) ==
+		    (ver & ZYNQMP_CSU_VCUDIS_VER_MASK)) {
+			strncat(name, zynqmp_devices[i].name,
+				ZYNQMP_VERSION_SIZE - 3);
+			break;
+		}
+	}
+
+	if (j >= MAX_VARIANTS_EV)
+		return "unknown";
 
 	if (strstr(name, "eg") || strstr(name, "ev")) {
 		buf = strstr(name, "e");
@@ -281,16 +306,20 @@ int board_early_init_f(void)
 {
 	int ret = 0;
 #if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_CLK_ZYNQMP)
-	zynqmp_pmufw_version();
+	u32 pm_api_version;
+
+	pm_api_version = zynqmp_pmufw_version();
+	printf("PMUFW:\tv%d.%d\n",
+	       pm_api_version >> ZYNQMP_PM_VERSION_MAJOR_SHIFT,
+	       pm_api_version & ZYNQMP_PM_VERSION_MINOR_MASK);
+
+	if (pm_api_version < ZYNQMP_PM_VERSION)
+		panic("PMUFW version error. Expected: v%d.%d\n",
+		      ZYNQMP_PM_VERSION_MAJOR, ZYNQMP_PM_VERSION_MINOR);
 #endif
 
 #if defined(CONFIG_ZYNQMP_PSU_INIT_ENABLED)
 	ret = psu_init();
-#endif
-
-#if defined(CONFIG_WDT) && !defined(CONFIG_SPL_BUILD)
-	/* bss is not cleared at time when watchdog_reset() is called */
-	watchdog_dev = NULL;
 #endif
 
 	return ret;
@@ -312,12 +341,16 @@ int board_init(void)
 #endif
 
 #if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT)
-	if (uclass_get_device(UCLASS_WDT, 0, &watchdog_dev)) {
-		puts("Watchdog: Not found!\n");
-	} else {
-		wdt_start(watchdog_dev, 0, 0);
-		puts("Watchdog: Started\n");
+	if (uclass_get_device_by_seq(UCLASS_WDT, 0, &watchdog_dev)) {
+		debug("Watchdog: Not found by seq!\n");
+		if (uclass_get_device(UCLASS_WDT, 0, &watchdog_dev)) {
+			puts("Watchdog: Not found!\n");
+			return 0;
+		}
 	}
+
+	wdt_start(watchdog_dev, 0, 0);
+	puts("Watchdog: Started\n");
 #endif
 
 	return 0;
@@ -370,22 +403,6 @@ int board_early_init_r(void)
 	return 0;
 }
 
-int zynq_board_read_rom_ethaddr(unsigned char *ethaddr)
-{
-#if defined(CONFIG_ZYNQ_GEM_EEPROM_ADDR) && \
-    defined(CONFIG_ZYNQ_GEM_I2C_MAC_OFFSET) && \
-    defined(CONFIG_ZYNQ_EEPROM_BUS)
-	i2c_set_bus_num(CONFIG_ZYNQ_EEPROM_BUS);
-
-	if (eeprom_read(CONFIG_ZYNQ_GEM_EEPROM_ADDR,
-			CONFIG_ZYNQ_GEM_I2C_MAC_OFFSET,
-			ethaddr, 6))
-		printf("I2C EEPROM MAC address read failed\n");
-#endif
-
-	return 0;
-}
-
 unsigned long do_go_exec(ulong (*entry)(int, char * const []), int argc,
 			 char * const argv[])
 {
@@ -419,7 +436,7 @@ int dram_init_banksize(void)
 
 int dram_init(void)
 {
-	if (fdtdec_setup_memory_size() != 0)
+	if (fdtdec_setup_mem_size_base() != 0)
 		return -EINVAL;
 
 	return 0;
@@ -450,6 +467,7 @@ void reset_cpu(ulong addr)
 {
 }
 
+#if defined(CONFIG_BOARD_LATE_INIT)
 static const struct {
 	u32 bit;
 	const char *name;
@@ -491,6 +509,36 @@ static u32 reset_reason(void)
 	return ret;
 }
 
+static int set_fdtfile(void)
+{
+	char *compatible, *fdtfile;
+	const char *suffix = ".dtb";
+	const char *vendor = "xilinx/";
+
+	if (env_get("fdtfile"))
+		return 0;
+
+	compatible = (char *)fdt_getprop(gd->fdt_blob, 0, "compatible", NULL);
+	if (compatible) {
+		debug("Compatible: %s\n", compatible);
+
+		/* Discard vendor prefix */
+		strsep(&compatible, ",");
+
+		fdtfile = calloc(1, strlen(vendor) + strlen(compatible) +
+				 strlen(suffix) + 1);
+		if (!fdtfile)
+			return -ENOMEM;
+
+		sprintf(fdtfile, "%s%s%s", vendor, compatible, suffix);
+
+		env_set("fdtfile", fdtfile);
+		free(fdtfile);
+	}
+
+	return 0;
+}
+
 int board_late_init(void)
 {
 	u32 reg = 0;
@@ -504,10 +552,18 @@ int board_late_init(void)
 	char *env_targets;
 	int ret;
 
+#if defined(CONFIG_USB_ETHER) && !defined(CONFIG_USB_GADGET_DOWNLOAD)
+	usb_ether_init();
+#endif
+
 	if (!(gd->flags & GD_FLG_ENV_DEFAULT)) {
 		debug("Saved variables - Skipping\n");
 		return 0;
 	}
+
+	ret = set_fdtfile();
+	if (ret)
+		return ret;
 
 	ret = zynqmp_mmio_read((ulong)&crlapb_base->boot_mode, &reg);
 	if (ret)
@@ -544,6 +600,8 @@ int board_late_init(void)
 	case SD_MODE:
 		puts("SD_MODE\n");
 		if (uclass_get_device_by_name(UCLASS_MMC,
+					      "mmc@ff160000", &dev) &&
+		    uclass_get_device_by_name(UCLASS_MMC,
 					      "sdhci@ff160000", &dev)) {
 			puts("Boot from SD0 but without SD0 enabled!\n");
 			return -1;
@@ -560,6 +618,8 @@ int board_late_init(void)
 	case SD_MODE1:
 		puts("SD_MODE1\n");
 		if (uclass_get_device_by_name(UCLASS_MMC,
+					      "mmc@ff170000", &dev) &&
+		    uclass_get_device_by_name(UCLASS_MMC,
 					      "sdhci@ff170000", &dev)) {
 			puts("Boot from SD1 but without SD1 enabled!\n");
 			return -1;
@@ -612,6 +672,7 @@ int board_late_init(void)
 
 	return 0;
 }
+#endif
 
 int checkboard(void)
 {

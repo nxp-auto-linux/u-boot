@@ -14,13 +14,9 @@
 
 #define CONFIG_TIMESTAMP		/* Print image info with timestamp */
 
-/* add target to build it automatically upon "make" */
-#define CONFIG_BUILD_TARGET		"u-boot-with-spl.sfp"
-
 /*
  * Memory configurations
  */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM_1			0x0
 #define CONFIG_SYS_MALLOC_LEN		(64 * 1024 * 1024)
 #define CONFIG_SYS_MEMTEST_START	PHYS_SDRAM_1
@@ -32,8 +28,21 @@
 #define CONFIG_SYS_INIT_RAM_ADDR	0xFFE00000
 #define CONFIG_SYS_INIT_RAM_SIZE	0x40000 /* 256KB */
 #endif
+
+/*
+ * Some boards (e.g. socfpga_sr1500) use 8 bytes at the end of the internal
+ * SRAM as bootcounter storage. Make sure to not put the stack directly
+ * at this address to not overwrite the bootcounter by checking, if the
+ * bootcounter address is located in the internal SRAM.
+ */
+#if ((CONFIG_SYS_BOOTCOUNT_ADDR > CONFIG_SYS_INIT_RAM_ADDR) &&	\
+     (CONFIG_SYS_BOOTCOUNT_ADDR < (CONFIG_SYS_INIT_RAM_ADDR +	\
+				   CONFIG_SYS_INIT_RAM_SIZE)))
+#define CONFIG_SYS_INIT_SP_ADDR		CONFIG_SYS_BOOTCOUNT_ADDR
+#else
 #define CONFIG_SYS_INIT_SP_ADDR			\
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
+#endif
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1
 
@@ -60,7 +69,6 @@
  * EPCS/EPCQx1 Serial Flash Controller
  */
 #ifdef CONFIG_ALTERA_SPI
-#define CONFIG_SF_DEFAULT_SPEED		30000000
 /*
  * The base address is configurable in QSys, each board must specify the
  * base address based on it's particular FPGA configuration. Please note
@@ -75,7 +83,6 @@
  */
 #ifdef CONFIG_CMD_NET
 #define CONFIG_DW_ALTDESCRIPTOR
-#define CONFIG_MII
 #endif
 
 /*
@@ -88,11 +95,13 @@
 /*
  * L4 OSC1 Timer 0
  */
+#ifndef CONFIG_TIMER
 /* This timer uses eosc1, whose clock frequency is fixed at any condition. */
 #define CONFIG_SYS_TIMERBASE		SOCFPGA_OSC1TIMER0_ADDRESS
 #define CONFIG_SYS_TIMER_COUNTS_DOWN
 #define CONFIG_SYS_TIMER_COUNTER	(CONFIG_SYS_TIMERBASE + 0x4)
 #define CONFIG_SYS_TIMER_RATE		25000000
+#endif
 
 /*
  * L4 Watchdog
@@ -108,7 +117,6 @@
  * MMC Driver
  */
 #ifdef CONFIG_CMD_MMC
-#define CONFIG_BOUNCE_BUFFER
 /* FIXME */
 /* using smaller max blk cnt to avoid flooding the limited stack we have */
 #define CONFIG_SYS_MMC_MAX_BLK_COUNT	256	/* FIXME -- SPL only? */
@@ -156,8 +164,6 @@ unsigned int cm_get_l4_sp_clk_hz(void);
 /* Enable multiple SPI NOR flash manufacturers */
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_SPI_FLASH_MTD
-#define CONFIG_MTD_DEVICE
-#define CONFIG_MTD_PARTITIONS
 #endif
 /* QSPI reference clock */
 #ifndef __ASSEMBLY__
@@ -241,8 +247,10 @@ unsigned int cm_get_qspi_controller_clk_hz(void);
  * 0xFFEz_zzzz ...... Malloc area (grows up to top)
  * 0xFFE3_FFFF ...... End of SRAM (top)
  */
+#ifndef CONFIG_SPL_TEXT_BASE
 #define CONFIG_SPL_TEXT_BASE		CONFIG_SYS_INIT_RAM_ADDR
 #define CONFIG_SPL_MAX_SIZE		CONFIG_SYS_INIT_RAM_SIZE
+#endif
 
 #if defined(CONFIG_TARGET_SOCFPGA_ARRIA10)
 /* SPL memory allocation configuration, this is for FAT implementation */
@@ -256,7 +264,7 @@ unsigned int cm_get_qspi_controller_clk_hz(void);
 
 /* SPL SDMMC boot support */
 #ifdef CONFIG_SPL_MMC_SUPPORT
-#if defined(CONFIG_SPL_FAT_SUPPORT) || defined(CONFIG_SPL_EXT_SUPPORT)
+#if defined(CONFIG_SPL_FS_FAT) || defined(CONFIG_SPL_FS_EXT4)
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME		"u-boot-dtb.img"
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION	1
 #endif
@@ -268,13 +276,20 @@ unsigned int cm_get_qspi_controller_clk_hz(void);
 
 /* SPL QSPI boot support */
 #ifdef CONFIG_SPL_SPI_SUPPORT
+#if defined(CONFIG_TARGET_SOCFPGA_GEN5)
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x40000
+#elif defined(CONFIG_TARGET_SOCFPGA_ARRIA10)
+#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x100000
+#endif
 #endif
 
 /* SPL NAND boot support */
 #ifdef CONFIG_SPL_NAND_SUPPORT
-#define CONFIG_SYS_NAND_BAD_BLOCK_POS	0
+#if defined(CONFIG_TARGET_SOCFPGA_GEN5)
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x40000
+#elif defined(CONFIG_TARGET_SOCFPGA_ARRIA10)
+#define CONFIG_SYS_NAND_U_BOOT_OFFS	0x100000
+#endif
 #endif
 
 /*

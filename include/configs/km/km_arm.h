@@ -22,7 +22,6 @@
 /*
  * High Level Configuration Options (easy to change)
  */
-#define CONFIG_MARVELL
 #define CONFIG_FEROCEON_88FR131		/* CPU Core subversion */
 #define CONFIG_KW88F6281		/* SOC Name */
 
@@ -34,15 +33,6 @@
 #include "keymile-common.h"
 
 /* SPI NOR Flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_SPEED		8100000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_3
-
-#if defined CONFIG_KM_ENV_IS_IN_SPI_NOR
-#define CONFIG_ENV_SPI_BUS		0
-#define CONFIG_ENV_SPI_CS		0
-#define CONFIG_ENV_SPI_MAX_HZ		8100000
-#define CONFIG_ENV_SPI_MODE		SPI_MODE_3
-#endif
 
 /* Reserve 4 MB for malloc */
 #define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
@@ -80,7 +70,6 @@
 	""
 
 #define CONFIG_SKIP_LOWLEVEL_INIT	/* disable board lowlevel_init */
-#define CONFIG_MISC_INIT_R
 
 /*
  * NS16550 Configuration
@@ -125,14 +114,12 @@
  * Other required minimal configurations
  */
 #define CONFIG_ARCH_CPU_INIT		/* call arch_cpu_init() */
-#define CONFIG_NR_DRAM_BANKS	4
 #define CONFIG_SYS_RESET_ADDRESS 0xffff0000	/* Rst Vector Adr */
 
 /*
  * Ethernet Driver configuration
  */
 #define CONFIG_NETCONSOLE	/* include NetConsole support   */
-#define CONFIG_MII		/* expose smi ove miiphy interface */
 #define CONFIG_SYS_FAULT_ECHO_LINK_DOWN	/* detect link using phy */
 #define CONFIG_MVGBE_PORTS	{1, 0}	/* enable port 0 only */
 #define CONFIG_PHY_BASE_ADR	0
@@ -257,7 +244,6 @@ int get_scl(void);
 	""
 
 #if !defined(CONFIG_MTD_NOR_FLASH)
-#undef	CONFIG_FLASH_CFI_MTD
 #undef	CONFIG_JFFS2_CMDLINE
 #endif
 

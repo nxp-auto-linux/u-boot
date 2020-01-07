@@ -36,7 +36,15 @@ static void serial_null(void)
 /**
  * on_baudrate() - Update the actual baudrate when the env var changes
  *
+ * @name:	changed environment variable
+ * @value:	new value of the environment variable
+ * @op:		operation (create, overwrite, or delete)
+ * @flags:	attributes of environment variable change,
+ *		see flags H_* in include/search.h
+ *
  * This will check for a valid baudrate and only apply it if valid.
+ *
+ * Return:	0 on success, 1 on error
  */
 static int on_baudrate(const char *name, const char *value, enum env_op op,
 	int flags)
@@ -109,10 +117,8 @@ U_BOOT_ENV_CALLBACK(baudrate, on_baudrate);
 		__attribute__((weak, alias("serial_null")));
 
 serial_initfunc(atmel_serial_initialize);
-serial_initfunc(au1x00_serial_initialize);
 serial_initfunc(mcf_serial_initialize);
 serial_initfunc(mpc85xx_serial_initialize);
-serial_initfunc(mpc8xx_serial_initialize);
 serial_initfunc(mxc_serial_initialize);
 serial_initfunc(ns16550_serial_initialize);
 serial_initfunc(pl01x_serial_initialize);
@@ -164,10 +170,8 @@ void serial_register(struct serial_device *dev)
 void serial_initialize(void)
 {
 	atmel_serial_initialize();
-	au1x00_serial_initialize();
 	mcf_serial_initialize();
 	mpc85xx_serial_initialize();
-	mpc8xx_serial_initialize();
 	mxc_serial_initialize();
 	ns16550_serial_initialize();
 	pl01x_serial_initialize();

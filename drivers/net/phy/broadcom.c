@@ -5,7 +5,6 @@
  * Copyright 2010-2015 Freescale Semiconductor, Inc.
  * authors: Andy Fleming, Stoica Cosmin Stefan
  */
-#include <config.h>
 #include <common.h>
 #include <phy.h>
 

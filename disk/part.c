@@ -150,6 +150,9 @@ void dev_print (struct blk_desc *dev_desc)
 			dev_desc->revision,
 			dev_desc->product);
 		break;
+	case IF_TYPE_VIRTIO:
+		printf("%s VirtIO Block Device\n", dev_desc->vendor);
+		break;
 	case IF_TYPE_DOC:
 		puts("device type DOC\n");
 		return;
@@ -281,6 +284,9 @@ static void print_part_header(const char *type, struct blk_desc *dev_desc)
 	case IF_TYPE_NVME:
 		puts ("NVMe");
 		break;
+	case IF_TYPE_VIRTIO:
+		puts("VirtIO");
+		break;
 	default:
 		puts ("UNKNOWN");
 		break;
@@ -400,7 +406,7 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
 
 	*dev_desc = get_dev_hwpart(ifname, dev, hwpart);
 	if (!(*dev_desc) || ((*dev_desc)->type == DEV_TYPE_UNKNOWN)) {
-		printf("** Bad device %s %s **\n", ifname, dev_hwpart_str);
+		debug("** Bad device %s %s **\n", ifname, dev_hwpart_str);
 		dev = -ENOENT;
 		goto cleanup;
 	}

@@ -19,7 +19,6 @@
 #define CONFIG_IMX_THERMAL
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_SYS_SDRAM_BASE		MMDC0_ARB_BASE_ADDR
 
 #define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
@@ -51,7 +50,6 @@
 /* Ethernet */
 #define CONFIG_FEC_MXC
 #define CONFIG_FEC_MXC
-#define CONFIG_MII
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE		RGMII
 #define CONFIG_ETHPRIME			"FEC"
@@ -96,7 +94,7 @@
 		"run set_con_hdmi; " \
 	"else " \
 		"run set_con_serial; " \
-	"fi;"
+	"fi"
 #endif /* CONFIG_USB_KEYBOARD */
 #endif /* CONFIG_CMD_USB      */
 
@@ -124,6 +122,8 @@
 #define CONFIG_ENV_OFFSET		(384 * 1024)
 #define CONFIG_ENV_OVERWRITE
 
+#define CONFIG_BOARD_SIZE_LIMIT		392192 /* (CONFIG_ENV_OFFSET - 1024) */
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"bootargs_mmc1=console=ttymxc0,115200 di0_primary console=tty1\0" \
 	"bootargs_mmc2=video=mxcfb0:dev=hdmi,1920x1080M@60 " \
@@ -142,12 +142,12 @@
 	"console=ttymxc0\0" \
 	"fan=gpio set 92\0" \
 	"set_con_serial=setenv stdout serial; " \
-			"setenv stderr serial;\0" \
+			"setenv stderr serial\0" \
 	"set_con_hdmi=setenv stdout serial,vga; " \
-			"setenv stderr serial,vga;\0" \
-	"stderr=serial,vga;\0" \
-	"stdin=serial,usbkbd;\0" \
-	"stdout=serial,vga;\0"
+			"setenv stderr serial,vga\0" \
+	"stderr=serial,vga\0" \
+	"stdin=serial,usbkbd\0" \
+	"stdout=serial,vga\0"
 
 #define CONFIG_BOOTCOMMAND \
 	"mmc rescan; " \

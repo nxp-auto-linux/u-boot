@@ -18,7 +18,6 @@
 #endif
 
 /* High Level Configuration Options */
-#define CONFIG_MP		/* support multiple processors */
 
 #define CONFIG_PCI_INDIRECT_BRIDGE     /* indirect PCI bridge support */
 #define CONFIG_PCIE1		/* PCIE controller 1 (slot 1) */
@@ -60,7 +59,6 @@ extern unsigned long get_clock_freq(void);
 #define CONFIG_CHIP_SELECTS_PER_CTRL	1
 
 #define CONFIG_DDR_SPD
-#define CONFIG_FSL_DDR_INTERACTIVE
 #define CONFIG_SYS_SDRAM_SIZE		512u	/* DDR is 512M */
 #define CONFIG_SYS_SPD_BUS_NUM          0
 #define SPD_EEPROM_ADDRESS              0x50
@@ -93,8 +91,6 @@ extern unsigned long get_clock_freq(void);
 				| BR_PS_16 | BR_V)
 #define CONFIG_FLASH_OR_PRELIM	0xfc000ff7
 
-#define CONFIG_FLASH_CFI_DRIVER
-#define CONFIG_SYS_FLASH_CFI
 #define CONFIG_SYS_FLASH_EMPTY_INFO
 #define CONFIG_SYS_MAX_FLASH_BANKS	1	/* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	512	/* sectors per device */
@@ -303,7 +299,6 @@ extern unsigned long get_clock_freq(void);
 #define CONFIG_SYS_FM1_DTSEC2_PHY_ADDR	0x2
 
 #define CONFIG_SYS_TBIPA_VALUE	8
-#define CONFIG_MII		/* MII PHY management */
 #define CONFIG_ETHPRIME		"FM1@DTSEC1"
 #endif
 

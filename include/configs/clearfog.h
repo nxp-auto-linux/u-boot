@@ -22,12 +22,15 @@
  */
 
 /* SPI NOR flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_BUS		1
 
 /*
  * SDIO/MMC Card Configuration
  */
 #define CONFIG_SYS_MMC_BASE		MVEBU_SDIO_BASE
+
+#ifdef CONFIG_CMD_MMC
+#define CONFIG_SUPPORT_EMMC_BOOT
+#endif
 
 /* USB/EHCI configuration */
 #define CONFIG_EHCI_IS_TDI
@@ -51,7 +54,6 @@
 
 /* PCIe support */
 #ifndef CONFIG_SPL_BUILD
-#define CONFIG_PCI_MVEBU
 #define CONFIG_PCI_SCAN_SHOW
 #endif
 
@@ -70,16 +72,6 @@
 	"initrd_high=0x10000000\0"
 
 /* SPL */
-/*
- * Select the boot device here
- *
- * Currently supported are:
- * SPL_BOOT_SPI_NOR_FLASH	- Booting via SPI NOR flash
- * SPL_BOOT_SDIO_MMC_CARD	- Booting via SDIO/MMC card (partition 1)
- */
-#define SPL_BOOT_SPI_NOR_FLASH		1
-#define SPL_BOOT_SDIO_MMC_CARD		2
-#define CONFIG_SPL_BOOT_DEVICE		SPL_BOOT_SDIO_MMC_CARD
 
 /* Defines for SPL */
 #define CONFIG_SPL_SIZE			(140 << 10)
@@ -96,13 +88,11 @@
 #define CONFIG_SPL_STACK		(0x40000000 + ((192 - 16) << 10))
 #define CONFIG_SPL_BOOTROM_SAVE		(CONFIG_SPL_STACK + 4)
 
-#if CONFIG_SPL_BOOT_DEVICE == SPL_BOOT_SPI_NOR_FLASH
+#if defined(CONFIG_MVEBU_SPL_BOOT_DEVICE_SPI)
 /* SPL related SPI defines */
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
 #define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
-#endif
-
-#if CONFIG_SPL_BOOT_DEVICE == SPL_BOOT_SDIO_MMC_CARD
+#elif defined(CONFIG_MVEBU_SPL_BOOT_DEVICE_MMC)
 /* SPL related MMC defines */
 #define CONFIG_SYS_MMC_U_BOOT_OFFS		(160 << 10)
 #define CONFIG_SYS_U_BOOT_OFFS			CONFIG_SYS_MMC_U_BOOT_OFFS

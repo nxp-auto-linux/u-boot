@@ -27,10 +27,6 @@
 /*
  * Commands configuration
  */
-#define CONFIG_MTD_DEVICE		/* needed for mtdparts commands */
-#define CONFIG_MTD_PARTITIONS
-
-#define CONFIG_NR_DRAM_BANKS		1
 
 /*
  * mv-common.h should be defined after CMD configs since it used them
@@ -54,13 +50,6 @@
 #ifdef CONFIG_MVSATA_IDE
 #define CONFIG_SYS_ATA_IDE0_OFFSET      MV_SATA_PORT0_OFFSET
 #define CONFIG_SYS_ATA_IDE1_OFFSET      MV_SATA_PORT1_OFFSET
-#endif
-
-/*
- * RTC driver configuration
- */
-#ifdef CONFIG_CMD_DATE
-#define CONFIG_RTC_MV
 #endif
 
 /*

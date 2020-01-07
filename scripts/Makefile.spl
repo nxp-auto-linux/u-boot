@@ -45,6 +45,13 @@ SPL_ :=
 SPL_TPL_ :=
 endif
 
+ifeq ($(obj)$(CONFIG_SUPPORT_SPL),spl)
+$(error You cannot build SPL without enabling CONFIG_SUPPORT_SPL)
+endif
+ifeq ($(obj)$(CONFIG_SUPPORT_TPL),tpl)
+$(error You cannot build TPL without enabling CONFIG_SUPPORT_TPL)
+endif
+
 include $(srctree)/config.mk
 include $(srctree)/arch/$(ARCH)/Makefile
 
@@ -74,11 +81,13 @@ libs-$(CONFIG_TPL_LIBGENERIC_SUPPORT) += lib/
 else
 libs-$(CONFIG_SPL_LIBCOMMON_SUPPORT) += common/ cmd/ env/
 libs-$(CONFIG_SPL_LIBGENERIC_SUPPORT) += lib/
+ifdef CONFIG_SPL_FRAMEWORK
+libs-$(CONFIG_PARTITIONS) += disk/
+endif
 endif
 
-libs-$(CONFIG_SPL_LIBDISK_SUPPORT) += disk/
 libs-y += drivers/
-libs-$(CONFIG_SPL_USB_GADGET_SUPPORT) += drivers/usb/dwc3/
+libs-$(CONFIG_SPL_USB_GADGET) += drivers/usb/dwc3/
 libs-y += dts/
 libs-y += fs/
 libs-$(CONFIG_SPL_POST_MEM_SUPPORT) += post/drivers/
@@ -138,11 +147,24 @@ LDPPFLAGS += \
 	$(shell $(LD) --version | \
 	  sed -ne 's/GNU ld version \([0-9][0-9]*\)\.\([0-9][0-9]*\).*/-DLD_MAJOR=\1 -DLD_MINOR=\2/p')
 
+# Turn various CONFIG symbols into IMAGE symbols for easy reuse of
+# the scripts between SPL and TPL.
+ifneq ($(CONFIG_$(SPL_TPL_)MAX_SIZE),)
+LDPPFLAGS += -DIMAGE_MAX_SIZE=$(CONFIG_$(SPL_TPL_)MAX_SIZE)
+endif
+ifneq ($(CONFIG_$(SPL_TPL_)TEXT_BASE),)
+LDPPFLAGS += -DIMAGE_TEXT_BASE=$(CONFIG_$(SPL_TPL_)TEXT_BASE)
+endif
+
 MKIMAGEOUTPUT ?= /dev/null
 
 quiet_cmd_mkimage = MKIMAGE $@
 cmd_mkimage = $(objtree)/tools/mkimage $(MKIMAGEFLAGS_$(@F)) -d $< $@ \
 	>$(MKIMAGEOUTPUT) $(if $(KBUILD_VERBOSE:0=), && cat $(MKIMAGEOUTPUT))
+
+quiet_cmd_mkfitimage = MKIMAGE $@
+cmd_mkfitimage = $(objtree)/tools/mkimage $(MKIMAGEFLAGS_$(@F)) -f $(SPL_ITS) -E $@ \
+	$(if $(KBUILD_VERBOSE:1=), MKIMAGEOUTPUT)
 
 MKIMAGEFLAGS_MLO = -T omapimage -a $(CONFIG_SPL_TEXT_BASE)
 
@@ -177,7 +199,10 @@ MKIMAGEFLAGS_boot.bin = -T zynqmpimage -R $(srctree)/$(CONFIG_BOOT_INIT_FILE) \
 	-n "$(shell cd $(srctree); readlink -f $(CONFIG_PMUFW_INIT_FILE))"
 endif
 
-spl/boot.bin: $(obj)/u-boot-spl.bin FORCE
+$(obj)/$(SPL_BIN)-align.bin: $(obj)/$(SPL_BIN).bin
+	@dd if=$< of=$@ conv=block,sync bs=4 2>/dev/null;
+
+spl/boot.bin: $(obj)/$(SPL_BIN)-align.bin FORCE
 	$(call if_changed,mkimage)
 endif
 
@@ -187,7 +212,7 @@ ifdef CONFIG_SAMSUNG
 ALL-y	+= $(obj)/$(BOARD)-spl.bin
 endif
 
-ifdef CONFIG_ARCH_SOCFPGA
+ifneq ($(CONFIG_TARGET_SOCFPGA_GEN5)$(CONFIG_TARGET_SOCFPGA_ARRIA10),)
 ALL-y	+= $(obj)/$(SPL_BIN).sfp
 endif
 
@@ -207,6 +232,8 @@ ALL-$(CONFIG_SPL_X86_16BIT_INIT) += $(obj)/u-boot-x86-16bit-spl.bin
 
 ALL-$(CONFIG_ARCH_ZYNQ)		+= $(obj)/boot.bin
 ALL-$(CONFIG_ARCH_ZYNQMP)	+= $(obj)/boot.bin
+
+ALL-$(CONFIG_ARCH_MEDIATEK)	+= $(obj)/u-boot-spl-mtk.bin
 
 all:	$(ALL-y)
 
@@ -303,14 +330,9 @@ LDFLAGS_$(SPL_BIN) += -T u-boot-spl.lds $(LDFLAGS_FINAL)
 # Avoid 'Not enough room for program headers' error on binutils 2.28 onwards.
 LDFLAGS_$(SPL_BIN) += $(call ld-option, --no-dynamic-linker)
 
-# First try the best-match (i.e. SPL_TEXT_BASE for SPL, TPL_TEXT_BASE for TPL)
+# Pick the best-match (i.e. SPL_TEXT_BASE for SPL, TPL_TEXT_BASE for TPL)
 ifneq ($(CONFIG_$(SPL_TPL_)TEXT_BASE),)
 LDFLAGS_$(SPL_BIN) += -Ttext $(CONFIG_$(SPL_TPL_)TEXT_BASE)
-else
-# And then fall back to just testing for SPL_TEXT_BASE, even if in TPL mode
-ifneq ($(CONFIG_SPL_TEXT_BASE),)
-LDFLAGS_$(SPL_BIN) += -Ttext $(CONFIG_SPL_TEXT_BASE)
-endif
 endif
 
 ifdef CONFIG_TARGET_SOCFPGA_ARRIA10
@@ -338,6 +360,15 @@ cmd_sunxi_spl_image_builder = $(objtree)/tools/sunxi-spl-image-builder \
 $(obj)/sunxi-spl-with-ecc.bin: $(obj)/sunxi-spl.bin
 	$(call if_changed,sunxi_spl_image_builder)
 
+
+# MediaTek's specific SPL build
+MKIMAGEFLAGS_u-boot-spl-mtk.bin = -T mtk_image \
+	-a $(CONFIG_SPL_TEXT_BASE) -e $(CONFIG_SPL_TEXT_BASE) \
+	-n "$(patsubst "%",%,$(CONFIG_MTK_BROM_HEADER_INFO))"
+
+$(obj)/u-boot-spl-mtk.bin: $(obj)/u-boot-spl.bin FORCE
+	$(call if_changed,mkimage)
+
 # Rule to link u-boot-spl
 # May be overridden by arch/$(ARCH)/config.mk
 quiet_cmd_u-boot-spl ?= LD      $@
@@ -360,7 +391,7 @@ $(u-boot-spl-dirs): $(u-boot-spl-platdata)
 
 quiet_cmd_cpp_lds = LDS     $@
 cmd_cpp_lds = $(CPP) -Wp,-MD,$(depfile) $(cpp_flags) $(LDPPFLAGS) -ansi \
-		-D__ASSEMBLY__ -x assembler-with-cpp -P -o $@ $<
+		-D__ASSEMBLY__ -x assembler-with-cpp -std=c99 -P -o $@ $<
 
 $(obj)/u-boot-spl.lds: $(LDSCRIPT) FORCE
 	$(call if_changed_dep,cpp_lds)
@@ -407,3 +438,8 @@ $(obj)/$(SPL_BIN).multidtb.fit.gz: $(obj)/$(SPL_BIN).multidtb.fit
 
 $(obj)/$(SPL_BIN).multidtb.fit.lzo: $(obj)/$(SPL_BIN).multidtb.fit
 	@lzop -f9 $< > $@
+
+ifdef CONFIG_ARCH_K3
+tispl.bin: $(obj)/u-boot-spl-nodtb.bin $(SHRUNK_ARCH_DTB) $(SPL_ITS) FORCE
+	$(call if_changed,mkfitimage)
+endif

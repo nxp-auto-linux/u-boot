@@ -55,7 +55,6 @@
 #define CONFIG_SYS_MCFRRTC_BASE		0xFC0A8000
 
 /* spi not partitions */
-#define CONFIG_MTD_DEVICE
 #define CONFIG_JFFS2_CMDLINE
 #define CONFIG_JFFS2_DEV		"nor0"
 
@@ -65,12 +64,7 @@
 
 /* DSPI and Serial Flash */
 #define CONFIG_CF_DSPI
-#define CONFIG_SF_DEFAULT_SPEED		50000000
 #define CONFIG_SERIAL_FLASH
-#define CONFIG_HARD_SPI
-#define CONFIG_SPI_FLASH_ISSI
-#define CONFIG_ENV_SPI_BUS		0
-#define CONFIG_ENV_SPI_CS		1
 
 #define CONFIG_SYS_SBFHDR_SIZE		0x7
 
@@ -156,7 +150,6 @@
 
 #if defined(CONFIG_CF_SBF)
 #define CONFIG_ENV_IS_IN_SPI_FLASH	1
-#define CONFIG_ENV_SPI_CS		1
 #define CONFIG_ENV_OFFSET		0x40000
 #define CONFIG_ENV_SIZE			0x2000
 #define CONFIG_ENV_SECT_SIZE		0x10000

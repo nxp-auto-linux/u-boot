@@ -26,7 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
 long get_ram_size(ramcell *base, long maxsize)
 {
 	volatile ramcell *addr;
-	ramcell           save[31];
+	ramcell           save[BITS_PER_LONG - 1];
 	ramcell           save_base;
 	long              cnt;
 	ramcell           val;

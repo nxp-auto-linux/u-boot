@@ -212,7 +212,7 @@ static struct mv_ddr_topology_map board_topology_map_1g = {
 	    SPEED_BIN_DDR_1600K,	/* speed_bin */
 	    MV_DDR_DEV_WIDTH_16BIT,	/* memory_width */
 	    MV_DDR_DIE_CAP_4GBIT,			/* mem_size */
-	    DDR_FREQ_800,		/* frequency */
+	    MV_DDR_FREQ_800,		/* frequency */
 	    0, 0,			/* cas_wl cas_l */
 	    MV_DDR_TEMP_NORMAL,		/* temperature */
 	    MV_DDR_TIM_2T} },		/* timing */
@@ -234,7 +234,7 @@ static struct mv_ddr_topology_map board_topology_map_2g = {
 	    SPEED_BIN_DDR_1600K,	/* speed_bin */
 	    MV_DDR_DEV_WIDTH_16BIT,	/* memory_width */
 	    MV_DDR_DIE_CAP_8GBIT,			/* mem_size */
-	    DDR_FREQ_800,		/* frequency */
+	    MV_DDR_FREQ_800,		/* frequency */
 	    0, 0,			/* cas_wl cas_l */
 	    MV_DDR_TEMP_NORMAL,		/* temperature */
 	    MV_DDR_TIM_2T} },		/* timing */
@@ -365,7 +365,7 @@ static bool disable_mcu_watchdog(void)
 #endif
 
 #if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT_ORION)
-static struct udevice *watchdog_dev = NULL;
+static struct udevice *watchdog_dev __attribute__((section(".data"))) = NULL;
 #endif
 
 int board_init(void)

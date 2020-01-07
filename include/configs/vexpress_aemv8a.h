@@ -126,11 +126,8 @@
 #define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM_1
 
 #ifdef CONFIG_TARGET_VEXPRESS64_JUNO
-#define CONFIG_NR_DRAM_BANKS		2
 #define PHYS_SDRAM_2			(0x880000000)
 #define PHYS_SDRAM_2_SIZE		0x180000000
-#else
-#define CONFIG_NR_DRAM_BANKS		1
 #endif
 
 /* Enable memtest */
@@ -231,13 +228,9 @@
 #define CONFIG_ENV_SECT_SIZE		0x00040000
 #endif
 
-#define CONFIG_SYS_FLASH_CFI		1
-#define CONFIG_FLASH_CFI_DRIVER		1
 #define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_32BIT
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
 
-#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE /* use buffered writes */
-#define CONFIG_SYS_FLASH_PROTECTION	/* The devices have real protection */
 #define CONFIG_SYS_FLASH_EMPTY_INFO	/* flinfo indicates empty blocks */
 #define FLASH_MAX_SECTOR_SIZE		0x00040000
 #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE

@@ -13,6 +13,17 @@
 
 #define PHYS_SDRAM_SIZE			SZ_512M
 
+/*
+ * If we have defined the OPTEE ram size and not OPTEE it means that we were
+ * launched by OPTEE, because of that we shall skip all the low level
+ * initialization since it was already done by ATF or OPTEE
+ */
+#ifdef CONFIG_OPTEE_TZDRAM_SIZE
+#ifndef CONFIG_OPTEE
+#define CONFIG_SKIP_LOWLEVEL_INIT
+#endif
+#endif
+
 #define CONFIG_MXC_UART_BASE		UART1_IPS_BASE_ADDR
 
 /* Size of malloc() pool */
@@ -103,7 +114,6 @@
 #define CONFIG_SYS_HZ			1000
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
@@ -116,16 +126,8 @@
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
 /* I2C configs */
-#define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1
 #define CONFIG_SYS_I2C_SPEED		100000
-
-/* PMIC */
-#define CONFIG_POWER
-#define CONFIG_POWER_I2C
-#define CONFIG_POWER_PFUZE3000
-#define CONFIG_POWER_PFUZE3000_I2C_ADDR	0x08
 
 /* environment organization */
 #define CONFIG_ENV_SIZE			SZ_8K

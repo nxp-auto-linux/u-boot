@@ -10,7 +10,6 @@
 #include "rockchip-common.h"
 
 #define CONFIG_SKIP_LOWLEVEL_INIT_ONLY
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_SYS_MALLOC_LEN		(32 << 20)
 #define CONFIG_SYS_CBSIZE		1024
 
@@ -30,9 +29,6 @@
 # define CONFIG_SPL_TEXT_BASE		0xff704000
 #endif
 
-/* MMC/SD IP block */
-#define CONFIG_BOUNCE_BUFFER
-
 /* RAW SD card / eMMC locations. */
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	(128 << 10)
 
@@ -41,12 +37,8 @@
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME		"u-boot.img"
 
 #define CONFIG_SYS_SDRAM_BASE		0
-#define CONFIG_NR_DRAM_BANKS		1
 #define SDRAM_BANK_SIZE			(2UL << 30)
 #define SDRAM_MAX_SIZE			0xfe000000
-
-#define CONFIG_SPI_FLASH
-#define CONFIG_SF_DEFAULT_SPEED 20000000
 
 #ifndef CONFIG_SPL_BUILD
 /* usb otg */
@@ -69,7 +61,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"fdt_high=0x0fffffff\0" \
 	"initrd_high=0x0fffffff\0" \
-	"fdtfile=" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" \
+	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
 	"partitions=" PARTS_DEFAULT \
 	ENV_MEM_LAYOUT_SETTINGS \
 	ROCKCHIP_DEVICE_SETTINGS \

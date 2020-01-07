@@ -31,8 +31,6 @@
 #define CONFIG_JFFS2_NAND
 
 /* Dynamic MTD partition support */
-#define CONFIG_MTD_PARTITIONS
-#define CONFIG_MTD_DEVICE
 
 #endif
 
@@ -42,7 +40,6 @@
 /*#define CONFIG_ESDHC_DETECT_USE_EXTERN_IRQ1*/
 
 #define CONFIG_FEC_MXC
-#define CONFIG_MII
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE		RMII
 #define CONFIG_FEC_MXC_PHYADDR          0
@@ -61,7 +58,6 @@
 #define CONFIG_SYS_I2C_MXC
 
 /* RTC (actually an RV-4162 but M41T62-compatible) */
-#define CONFIG_RTC_M41T62
 #define CONFIG_SYS_I2C_RTC_ADDR 0x68
 #define CONFIG_SYS_RTC_BUS_NUM 2
 
@@ -191,7 +187,6 @@
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 /* Physical memory map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM			(0x80000000)
 #define PHYS_SDRAM_SIZE			(CONFIG_PCM052_DDR_SIZE * 1024 * 1024)
 

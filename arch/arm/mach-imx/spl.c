@@ -96,8 +96,8 @@ u32 spl_boot_device(void)
 	return BOOT_DEVICE_NONE;
 }
 
-#elif defined(CONFIG_MX7) || defined(CONFIG_MX8M)
-/* Translate iMX7/MX8M boot device to the SPL boot device enumeration */
+#elif defined(CONFIG_MX7) || defined(CONFIG_IMX8M) || defined(CONFIG_IMX8)
+/* Translate iMX7/i.MX8M boot device to the SPL boot device enumeration */
 u32 spl_boot_device(void)
 {
 #if defined(CONFIG_MX7)
@@ -126,6 +126,7 @@ u32 spl_boot_device(void)
 	enum boot_device boot_device_spl = get_boot_device();
 
 	switch (boot_device_spl) {
+#if defined(CONFIG_MX7)
 	case SD1_BOOT:
 	case MMC1_BOOT:
 	case SD2_BOOT:
@@ -133,6 +134,23 @@ u32 spl_boot_device(void)
 	case SD3_BOOT:
 	case MMC3_BOOT:
 		return BOOT_DEVICE_MMC1;
+#elif defined(CONFIG_IMX8)
+	case MMC1_BOOT:
+		return BOOT_DEVICE_MMC1;
+	case SD2_BOOT:
+		return BOOT_DEVICE_MMC2_2;
+	case SD3_BOOT:
+		return BOOT_DEVICE_MMC1;
+	case FLEXSPI_BOOT:
+		return BOOT_DEVICE_SPI;
+#elif defined(CONFIG_IMX8M)
+	case SD1_BOOT:
+	case MMC1_BOOT:
+		return BOOT_DEVICE_MMC1;
+	case SD2_BOOT:
+	case MMC2_BOOT:
+		return BOOT_DEVICE_MMC2;
+#endif
 	case NAND_BOOT:
 		return BOOT_DEVICE_NAND;
 	case SPI_NOR_BOOT:
@@ -143,9 +161,9 @@ u32 spl_boot_device(void)
 		return BOOT_DEVICE_NONE;
 	}
 }
-#endif /* CONFIG_MX6 || CONFIG_MX7 || CONFIG_MX8M */
+#endif /* CONFIG_MX7 || CONFIG_IMX8M || CONFIG_IMX8 */
 
-#ifdef CONFIG_SPL_USB_GADGET_SUPPORT
+#ifdef CONFIG_SPL_USB_GADGET
 int g_dnl_bind_fixup(struct usb_device_descriptor *dev, const char *name)
 {
 	put_unaligned(CONFIG_USB_GADGET_PRODUCT_NUM + 0xfff, &dev->idProduct);
@@ -162,7 +180,8 @@ u32 spl_boot_mode(const u32 boot_device)
 	/* for MMC return either RAW or FAT mode */
 	case BOOT_DEVICE_MMC1:
 	case BOOT_DEVICE_MMC2:
-#if defined(CONFIG_SPL_FAT_SUPPORT)
+	case BOOT_DEVICE_MMC2_2:
+#if defined(CONFIG_SPL_FS_FAT)
 		return MMCSD_MODE_FS;
 #elif defined(CONFIG_SUPPORT_EMMC_BOOT)
 		return MMCSD_MODE_EMMCBOOT;
@@ -220,14 +239,46 @@ __weak void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 
 	debug("image entry point: 0x%lX\n", spl_image->entry_point);
 
-	/* HAB looks for the CSF at the end of the authenticated data therefore,
-	 * we need to subtract the size of the CSF from the actual filesize */
-	offset = spl_image->size - CONFIG_CSF_SIZE;
-	if (!imx_hab_authenticate_image(spl_image->load_addr,
-					offset + IVT_SIZE + CSF_PAD_SIZE,
-					offset)) {
+	if (spl_image->flags & SPL_FIT_FOUND) {
 		image_entry();
 	} else {
+		/*
+		 * HAB looks for the CSF at the end of the authenticated
+		 * data therefore, we need to subtract the size of the
+		 * CSF from the actual filesize
+		 */
+		offset = spl_image->size - CONFIG_CSF_SIZE;
+		if (!imx_hab_authenticate_image(spl_image->load_addr,
+						offset + IVT_SIZE +
+						CSF_PAD_SIZE, offset)) {
+			image_entry();
+		} else {
+			puts("spl: ERROR:  image authentication fail\n");
+			hang();
+		}
+	}
+}
+
+ulong board_spl_fit_size_align(ulong size)
+{
+	/*
+	 * HAB authenticate_image requests the IVT offset is
+	 * aligned to 0x1000
+	 */
+
+	size = ALIGN(size, 0x1000);
+	size += CONFIG_CSF_SIZE;
+
+	return size;
+}
+
+void board_spl_fit_post_load(ulong load_addr, size_t length)
+{
+	u32 offset = length - CONFIG_CSF_SIZE;
+
+	if (imx_hab_authenticate_image(load_addr,
+				       offset + IVT_SIZE + CSF_PAD_SIZE,
+				       offset)) {
 		puts("spl: ERROR:  image authentication unsuccessful\n");
 		hang();
 	}

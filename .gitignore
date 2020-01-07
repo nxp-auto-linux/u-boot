@@ -8,8 +8,9 @@
 .*
 *.a
 *.bin
-*.cfgtmp
+*.cfgout
 *.dtb
+*.dtbo
 *.dtb.S
 *.elf
 *.exe

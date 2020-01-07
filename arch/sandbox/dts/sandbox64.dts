@@ -8,7 +8,6 @@
 	model = "sandbox";
 
 	aliases {
-		eth5 = "/eth@90000000";
 		i2c0 = &i2c_0;
 		pci0 = &pci;
 		rtc0 = &rtc_0;
@@ -18,7 +17,7 @@
 		stdout-path = "/serial";
 	};
 
-	cros_ec: cros-ec@0 {
+	cros_ec: cros-ec {
 		reg = <0 0 0 0>;
 		compatible = "google,cros-ec-sandbox";
 
@@ -26,43 +25,36 @@
 		 * This describes the flash memory within the EC. Note
 		 * that the STM32L flash erases to 0, not 0xff.
 		 */
-		#address-cells = <1>;
-		#size-cells = <1>;
-		flash@8000000 {
-			reg = <0x08000000 0x20000>;
+		flash {
+			image-pos = <0x08000000>;
+			size = <0x20000>;
 			erase-value = <0>;
-			#address-cells = <1>;
-			#size-cells = <1>;
 
 			/* Information for sandbox */
 			ro {
-				reg = <0 0xf000>;
+				image-pos = <0>;
+				size = <0xf000>;
 			};
 			wp-ro {
-				reg = <0xf000 0x1000>;
+				image-pos = <0xf000>;
+				size = <0x1000>;
 			};
 			rw {
-				reg = <0x10000 0x10000>;
+				image-pos = <0x10000>;
+				size = <0x10000>;
 			};
 		};
+	};
+
+	ethrawbus {
+		compatible = "sandbox,eth-raw-bus";
+		skip-localhost = <1>;
 	};
 
 	eth@10002000 {
 		compatible = "sandbox,eth";
 		reg = <0x0 0x10002000 0x0 0x1000>;
 		fake-host-hwaddr = [00 00 66 44 22 00];
-	};
-
-	eth@80000000 {
-		compatible = "sandbox,eth-raw";
-		reg = <0x0 0x80000000 0x0 0x1000>;
-		host-raw-interface = "eth0";
-	};
-
-	eth@90000000 {
-		compatible = "sandbox,eth-raw";
-		reg = <0x0 0x90000000 0x0 0x1000>;
-		host-raw-interface = "lo";
 	};
 
 	gpio_a: gpios@0 {
@@ -98,19 +90,13 @@
 		eeprom@2c {
 			reg = <0x2c>;
 			compatible = "i2c-eeprom";
-			emul {
-				compatible = "sandbox,i2c-eeprom";
-				sandbox,filename = "i2c.bin";
-				sandbox,size = <128>;
-			};
+			sandbox,emul = <&emul_eeprom>;
 		};
 
 		rtc_0: rtc@43 {
 			reg = <0x43>;
 			compatible = "sandbox-rtc";
-			emul {
-				compatible = "sandbox,i2c-rtc";
-			};
+			sandbox,emul = <&emul0>;
 		};
 		sandbox_pmic: sandbox_pmic {
 			reg = <0x40>;
@@ -118,6 +104,19 @@
 
 		mc34708: pmic@41 {
 			reg = <0x41>;
+		};
+
+		i2c_emul: emul {
+			reg = <0xff>;
+			compatible = "sandbox,i2c-emul-parent";
+			emul_eeprom: emul-eeprom {
+				compatible = "sandbox,i2c-eeprom";
+				sandbox,filename = "i2c.bin";
+				sandbox,size = <256>;
+			};
+			emul0: emul0 {
+				compatible = "sandbox,i2c-rtc";
+			};
 		};
 	};
 
@@ -318,6 +317,10 @@
 				gpio-bank-name="spmi";
 			};
 		};
+	};
+
+	sandbox_tee {
+		compatible = "sandbox,tee";
 	};
 };
 

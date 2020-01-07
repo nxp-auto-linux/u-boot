@@ -48,7 +48,6 @@
 /* Network configuration */
 #define CONFIG_MCFFEC
 #ifdef CONFIG_MCFFEC
-#define CONFIG_MII			1
 #define CONFIG_MII_INIT		1
 #define CONFIG_SYS_DISCOVER_PHY
 #define CONFIG_SYS_RX_ETH_BUFFER	2
@@ -152,7 +151,6 @@
 /* DSPI and Serial Flash */
 #define CONFIG_CF_DSPI
 #define CONFIG_SERIAL_FLASH
-#define CONFIG_HARD_SPI
 #define CONFIG_SYS_SBFHDR_SIZE		0x7
 #ifdef CONFIG_CMD_SPI
 
@@ -240,7 +238,6 @@
 #endif
 
 #if defined(CONFIG_CF_SBF)
-#define CONFIG_ENV_SPI_CS		1
 #define CONFIG_ENV_OFFSET		0x40000
 #define CONFIG_ENV_SIZE		0x2000
 #define CONFIG_ENV_SECT_SIZE		0x10000
@@ -255,10 +252,8 @@
 /* FLASH organization */
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_CS0_BASE
 
-#undef CONFIG_SYS_FLASH_CFI
 #ifdef CONFIG_SYS_FLASH_CFI
 
-#define CONFIG_FLASH_CFI_DRIVER	1
 /* Max size that the board might have */
 #define CONFIG_SYS_FLASH_SIZE		0x1000000
 #define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
@@ -267,7 +262,6 @@
 /* max number of sectors on one chip */
 #define CONFIG_SYS_MAX_FLASH_SECT	270
 /* "Real" (hardware) sectors protection */
-#define CONFIG_SYS_FLASH_PROTECTION
 #define CONFIG_SYS_FLASH_CHECKSUM
 #define CONFIG_SYS_FLASH_BANKS_LIST	{ CONFIG_SYS_CS0_BASE }
 #else
@@ -284,14 +278,9 @@
 #ifdef CONFIG_CMD_JFFS2
 #define CONFIG_JFFS2_DEV		"nand0"
 #define CONFIG_JFFS2_PART_OFFSET	(0x800000)
-#define CONFIG_MTD_DEVICE
 
 #endif
 
-#ifdef CONFIG_CMD_UBI
-#define CONFIG_MTD_DEVICE	/* needed for mtdparts command */
-#define CONFIG_MTD_PARTITIONS	/* mtdparts and UBI support */
-#endif
 /* Cache Configuration */
 #define CONFIG_SYS_CACHELINE_SIZE	16
 #define ICACHE_STATUS			(CONFIG_SYS_INIT_RAM_ADDR + \

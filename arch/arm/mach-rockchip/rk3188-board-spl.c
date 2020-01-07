@@ -12,10 +12,12 @@
 #include <malloc.h>
 #include <ram.h>
 #include <spl.h>
+#include <syscon.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
 #include <asm/arch/bootrom.h>
 #include <asm/arch/clock.h>
+#include <asm/arch/grf_rk3188.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/periph.h>
 #include <asm/arch/pmu_rk3188.h>
@@ -26,7 +28,6 @@
 #include <dm/test.h>
 #include <dm/util.h>
 #include <power/regulator.h>
-#include <syscon.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -49,7 +50,7 @@ u32 spl_boot_device(void)
 		debug("node=%d\n", node);
 		goto fallback;
 	}
-	ret = device_get_global_by_of_offset(node, &dev);
+	ret = device_get_global_by_ofnode(offset_to_ofnode(node), &dev);
 	if (ret) {
 		debug("device at node %s/%d not found: %d\n", bootdev, node,
 		      ret);
@@ -92,23 +93,38 @@ static int setup_arm_clock(void)
 	return ret;
 }
 
-void board_init_f(ulong dummy)
+void board_debug_uart_init(void)
 {
-	struct udevice *pinctrl, *dev;
-	int ret;
-
-	/* Example code showing how to enable the debug UART on RK3188 */
-#ifdef EARLY_UART
-#include <asm/arch/grf_rk3188.h>
 	/* Enable early UART on the RK3188 */
 #define GRF_BASE	0x20008000
 	struct rk3188_grf * const grf = (void *)GRF_BASE;
+	enum {
+		GPIO1B1_SHIFT		= 2,
+		GPIO1B1_MASK		= 3,
+		GPIO1B1_GPIO		= 0,
+		GPIO1B1_UART2_SOUT,
 
+		GPIO1B0_SHIFT		= 0,
+		GPIO1B0_MASK		= 3,
+		GPIO1B0_GPIO		= 0,
+		GPIO1B0_UART2_SIN,
+	};
+
+	/* Enable early UART on the RK3188 */
 	rk_clrsetreg(&grf->gpio1b_iomux,
 		     GPIO1B1_MASK << GPIO1B1_SHIFT |
 		     GPIO1B0_MASK << GPIO1B0_SHIFT,
 		     GPIO1B1_UART2_SOUT << GPIO1B1_SHIFT |
 		     GPIO1B0_UART2_SIN << GPIO1B0_SHIFT);
+}
+
+void board_init_f(ulong dummy)
+{
+	struct udevice *dev;
+	int ret;
+
+#define EARLY_UART
+#ifdef EARLY_UART
 	/*
 	 * Debug UART can be used from here if required:
 	 *
@@ -118,10 +134,26 @@ void board_init_f(ulong dummy)
 	 * printascii("string");
 	 */
 	debug_uart_init();
-	printch('s');
-	printch('p');
-	printch('l');
-	printch('\n');
+	printascii("U-Boot SPL board init");
+#endif
+
+#ifdef CONFIG_ROCKCHIP_USB_UART
+	rk_clrsetreg(&grf->uoc0_con[0],
+		     SIDDQ_MASK | UOC_DISABLE_MASK | COMMON_ON_N_MASK,
+		     1 << SIDDQ_SHIFT | 1 << UOC_DISABLE_SHIFT |
+		     1 << COMMON_ON_N_SHIFT);
+	rk_clrsetreg(&grf->uoc0_con[2],
+		     SOFT_CON_SEL_MASK, 1 << SOFT_CON_SEL_SHIFT);
+	rk_clrsetreg(&grf->uoc0_con[3],
+		     OPMODE_MASK | XCVRSELECT_MASK |
+		     TERMSEL_FULLSPEED_MASK | SUSPENDN_MASK,
+		     OPMODE_NODRIVING << OPMODE_SHIFT |
+		     XCVRSELECT_FSTRANSC << XCVRSELECT_SHIFT |
+		     1 << TERMSEL_FULLSPEED_SHIFT |
+		     1 << SUSPENDN_SHIFT);
+	rk_clrsetreg(&grf->uoc0_con[0],
+		     BYPASSSEL_MASK | BYPASSDMEN_MASK,
+		     1 << BYPASSSEL_SHIFT | 1 << BYPASSDMEN_SHIFT);
 #endif
 
 	ret = spl_early_init();
@@ -133,12 +165,6 @@ void board_init_f(ulong dummy)
 	ret = rockchip_get_clk(&dev);
 	if (ret) {
 		debug("CLK init failed: %d\n", ret);
-		return;
-	}
-
-	ret = uclass_get_device(UCLASS_PINCTRL, 0, &pinctrl);
-	if (ret) {
-		debug("Pinctrl init failed: %d\n", ret);
 		return;
 	}
 
@@ -179,7 +205,6 @@ static int setup_led(void)
 
 void spl_board_init(void)
 {
-	struct udevice *pinctrl;
 	int ret;
 
 	ret = setup_led();
@@ -188,36 +213,9 @@ void spl_board_init(void)
 		hang();
 	}
 
-	ret = uclass_get_device(UCLASS_PINCTRL, 0, &pinctrl);
-	if (ret) {
-		debug("%s: Cannot find pinctrl device\n", __func__);
-		goto err;
-	}
-
-#ifdef CONFIG_SPL_MMC_SUPPORT
-	ret = pinctrl_request_noflags(pinctrl, PERIPH_ID_SDCARD);
-	if (ret) {
-		debug("%s: Failed to set up SD card\n", __func__);
-		goto err;
-	}
-#endif
-
-	/* Enable debug UART */
-	ret = pinctrl_request_noflags(pinctrl, PERIPH_ID_UART_DBG);
-	if (ret) {
-		debug("%s: Failed to set up console UART\n", __func__);
-		goto err;
-	}
-
 	preloader_console_init();
 #if CONFIG_IS_ENABLED(ROCKCHIP_BACK_TO_BROM)
 	back_to_bootrom(BROM_BOOT_NEXTSTAGE);
 #endif
 	return;
-
-err:
-	printf("spl_board_init: Error %d\n", ret);
-
-	/* No way to report error here */
-	hang();
 }

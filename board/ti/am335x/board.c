@@ -70,8 +70,9 @@ static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 void do_board_detect(void)
 {
 	enable_i2c0_pin_mux();
+#ifndef CONFIG_DM_I2C
 	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
-
+#endif
 	if (ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS,
 				 CONFIG_EEPROM_CHIP_ADDRESS))
 		printf("ti_i2c_eeprom_init failed\n");
@@ -328,8 +329,14 @@ static void scale_vcores_bone(int freq)
 	if (board_is_bone() && !strncmp(board_ti_get_rev(), "00A1", 4))
 		return;
 
+#ifndef CONFIG_DM_I2C
 	if (i2c_probe(TPS65217_CHIP_PM))
 		return;
+#else
+	if (power_tps65217_init(0))
+		return;
+#endif
+
 
 	/*
 	 * On Beaglebone White we need to ensure we have AC power
@@ -421,9 +428,13 @@ void scale_vcores_generic(int freq)
 	 * 1.10V.  For MPU voltage we need to switch based on
 	 * the frequency we are running at.
 	 */
+#ifndef CONFIG_DM_I2C
 	if (i2c_probe(TPS65910_CTRL_I2C_ADDR))
 		return;
-
+#else
+	if (power_tps65910_init(0))
+		return;
+#endif
 	/*
 	 * Depending on MPU clock and PG we will need a different
 	 * VDD to drive at that speed.
@@ -451,8 +462,10 @@ void gpi2c_init(void)
 
 	if (first_time) {
 		enable_i2c0_pin_mux();
+#ifndef CONFIG_DM_I2C
 		i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED,
 			 CONFIG_SYS_OMAP24_I2C_SLAVE);
+#endif
 		first_time = false;
 	}
 }
@@ -608,6 +621,84 @@ static struct clk_synth cdce913_data = {
 };
 #endif
 
+#if defined(CONFIG_OF_BOARD_SETUP) && defined(CONFIG_OF_CONTROL) && \
+	defined(CONFIG_DM_ETH) && defined(CONFIG_DRIVER_TI_CPSW)
+
+#define MAX_CPSW_SLAVES	2
+
+/* At the moment, we do not want to stop booting for any failures here */
+int ft_board_setup(void *fdt, bd_t *bd)
+{
+	const char *slave_path, *enet_name;
+	int enetnode, slavenode, phynode;
+	struct udevice *ethdev;
+	char alias[16];
+	u32 phy_id[2];
+	int phy_addr;
+	int i, ret;
+
+	/* phy address fixup needed only on beagle bone family */
+	if (!board_is_beaglebonex())
+		goto done;
+
+	for (i = 0; i < MAX_CPSW_SLAVES; i++) {
+		sprintf(alias, "ethernet%d", i);
+
+		slave_path = fdt_get_alias(fdt, alias);
+		if (!slave_path)
+			continue;
+
+		slavenode = fdt_path_offset(fdt, slave_path);
+		if (slavenode < 0)
+			continue;
+
+		enetnode = fdt_parent_offset(fdt, slavenode);
+		enet_name = fdt_get_name(fdt, enetnode, NULL);
+
+		ethdev = eth_get_dev_by_name(enet_name);
+		if (!ethdev)
+			continue;
+
+		phy_addr = cpsw_get_slave_phy_addr(ethdev, i);
+
+		/* check for phy_id as well as phy-handle properties */
+		ret = fdtdec_get_int_array_count(fdt, slavenode, "phy_id",
+						 phy_id, 2);
+		if (ret == 2) {
+			if (phy_id[1] != phy_addr) {
+				printf("fixing up phy_id for %s, old: %d, new: %d\n",
+				       alias, phy_id[1], phy_addr);
+
+				phy_id[0] = cpu_to_fdt32(phy_id[0]);
+				phy_id[1] = cpu_to_fdt32(phy_addr);
+				do_fixup_by_path(fdt, slave_path, "phy_id",
+						 phy_id, sizeof(phy_id), 0);
+			}
+		} else {
+			phynode = fdtdec_lookup_phandle(fdt, slavenode,
+							"phy-handle");
+			if (phynode < 0)
+				continue;
+
+			ret = fdtdec_get_int(fdt, phynode, "reg", -ENOENT);
+			if (ret < 0)
+				continue;
+
+			if (ret != phy_addr) {
+				printf("fixing up phy-handle for %s, old: %d, new: %d\n",
+				       alias, ret, phy_addr);
+
+				fdt_setprop_u32(fdt, phynode, "reg",
+						cpu_to_fdt32(phy_addr));
+			}
+		}
+	}
+
+done:
+	return 0;
+}
+#endif
+
 /*
  * Basic board specific setup.  Pinmux has been handled already.
  */
@@ -725,6 +816,8 @@ int board_late_init(void)
 
 	if (board_is_bbg1())
 		name = "BBG1";
+	if (board_is_bben())
+		name = "BBEN";
 	set_board_info_env(name);
 
 	/*
@@ -870,7 +963,7 @@ int board_eth_init(bd_t *bis)
 	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
 
 #ifdef CONFIG_DRIVER_TI_CPSW
-	if (board_is_bone() || board_is_bone_lt() ||
+	if (board_is_bone() || board_is_bone_lt() || board_is_bben() ||
 	    board_is_idk()) {
 		writel(MII_MODE_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
@@ -906,7 +999,7 @@ int board_eth_init(bd_t *bis)
 #define AR8051_DEBUG_RGMII_CLK_DLY_REG	0x5
 #define AR8051_RGMII_TX_CLK_DLY		0x100
 
-	if (board_is_evm_sk() || board_is_gp_evm()) {
+	if (board_is_evm_sk() || board_is_gp_evm() || board_is_bben()) {
 		const char *devname;
 		devname = miiphy_get_current_dev();
 
