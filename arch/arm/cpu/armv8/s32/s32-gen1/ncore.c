@@ -96,7 +96,7 @@ void ncore_init(u32 cpumask)
 
 	for (i = 0; i < csuid_numdirus; i++) {
 		writel(0, DIRUSFMC(i));
-		while (!(readl(DIRUSFMA(i)) & DIRUSFMA_MNTOPACTIV))
+		while (readl(DIRUSFMA(i)) & DIRUSFMA_MNTOPACTIV)
 			;
 	}
 
@@ -108,7 +108,7 @@ void ncore_init(u32 cpumask)
 	}
 
 	for (i = 0; i < csuid_numdirus; i++)
-		while (!(readl(DIRUSFMA(i)) & DIRUSFMA_MNTOPACTIV))
+		while (readl(DIRUSFMA(i)) & DIRUSFMA_MNTOPACTIV)
 			;
 
 	for (i=0; i<csuid_numdirus; i++) {
