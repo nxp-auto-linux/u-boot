@@ -819,6 +819,7 @@ static struct regconf message_block_1d[] = {
 struct ddrss_conf ddrss_conf = {
 	.ddrc_conf = &ddrc_configuration[0],
 	.ddrc_conf_length = ARRAY_SIZE(ddrc_configuration),
+	.dq_bswap = &dq_bswap[0],
 	.ddrphy_conf = &ddrphy_configuration[0],
 	.ddrphy_conf_length = ARRAY_SIZE(ddrphy_configuration),
 	.pie = &pie[0],

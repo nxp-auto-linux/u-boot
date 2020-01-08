@@ -34,7 +34,10 @@ static int run_firmware(void)
 void ddrss_init(struct ddrss_conf *ddrss_conf,
 		struct ddrss_firmware *ddrss_firmware)
 {
+	populate_ddrss_conf(ddrss_conf);
+
 	write_regconf_32(ddrss_conf->ddrc_conf, ddrss_conf->ddrc_conf_length);
+	write_regconf_32(ddrss_conf->dq_bswap, ddrss_conf->dq_bswap_length);
 
 	writel(readl(REG_GRP0) | AXI_PARITY_EN_MASK, REG_GRP0);
 	writel(readl(REG_GRP0) | AXI_PARITY_TYPE_MASK, REG_GRP0);
