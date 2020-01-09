@@ -162,14 +162,6 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI0);
 }
 
-static void enable_block_partitions(u32 part_num, u32 *blocks, size_t n_blocks)
-{
-	size_t i;
-
-	for (i = 0U; i < n_blocks; i++)
-		s32gen1_enable_partition_block(part_num, blocks[i]);
-}
-
 void clock_init(void)
 {
 	u32 arm_dfs[ARM_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
@@ -205,17 +197,26 @@ void clock_init(void)
 	u64 ddr_phi[DDR_PLL_PHI_Nr] = { DDR_PLL_PHI0_FREQ };
 	u64 accel_phi[ACCEL_PLL_PHI_Nr] = { ACCEL_PLL_PHI0_FREQ,
 					    ACCEL_PLL_PHI1_FREQ };
-	u32 part_blocks[] = { MC_ME_USDHC_REQ, MC_ME_DDR_0_REQ,
+	u32 part0_blocks[] = { MC_ME_USDHC_REQ, MC_ME_DDR_0_REQ,
 			      MC_ME_MIPICSI2_0_REQ, MC_ME_MIPICSI2_1_REQ,
 			      MC_ME_MIPICSI2_2_REQ, MC_ME_MIPICSI2_3_REQ,
 			      MC_ME_FDMA_REQ, MC_ME_FLEXCAN4_REQ,
 			      MC_ME_FLEXCAN5_REQ, MC_ME_FLEXCAN6_REQ,
 			      MC_ME_FLEXCAN7_REQ };
+
+	u32 part2_blocks[] = { MC_ME_LAX1_REQ, MC_ME_LAX2_REQ };
+
+	u32 part3_blocks[] = { MC_ME_CTE_XBAR3_REQ, MC_ME_EIM_DSP_REQ,
+			       MC_ME_BBE32EP_REQ, MC_ME_SPT_REQ };
 	s32gen1_setup_fxosc();
 
-	/* Enable all blocks from partion 0 */
-	enable_block_partitions(MC_ME_USDHC_PRTN, &part_blocks[0],
-				ARRAY_SIZE(part_blocks));
+	/* Enable all blocks from partion 0, 2, 3 */
+	s32gen1_enable_partition_blocks(MC_ME_USDHC_PRTN, &part0_blocks[0],
+					ARRAY_SIZE(part0_blocks));
+	s32gen1_enable_partition_blocks(MC_ME_LAX_PRTN, &part2_blocks[0],
+					ARRAY_SIZE(part2_blocks));
+	s32gen1_enable_partition_blocks(MC_ME_SPT_PRTN, &part3_blocks[0],
+					ARRAY_SIZE(part3_blocks));
 
 	s32gen1_program_pll(ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
 			    ARM_PLL_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_RDIV,

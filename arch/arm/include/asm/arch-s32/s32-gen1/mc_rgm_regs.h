@@ -14,12 +14,14 @@
 #define RGM_FES				(MC_RGM_BASE_ADDR + 0x8)
 #define RGM_FES_EXT			(0x00000001)
 
-#define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x40 + (per) * 0x8)
+#define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x40 + \
+					 ((per) * 0x8))
 #define MC_RGM_PRST_CM7			(0)
 #define PRST_PERIPH_n_RST(n)		BIT(n)
 #define PRST_PERIPH_CM7n_RST(n)		PRST_PERIPH_n_RST(n)
 
-#define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x140 + (per) * 0x8)
+#define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x140 + \
+					 ((per) * 0x8))
 #define MC_RGM_PSTAT_CM7		(0)
 #define PSTAT_PERIPH_n_STAT(n)		BIT(n)
 #define PSTAT_PERIPH_CM7n_STAT(n)	PSTAT_PERIPH_n_STAT(n)
