@@ -162,6 +162,14 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI0);
 }
 
+static void enable_block_partitions(u32 part_num, u32 *blocks, size_t n_blocks)
+{
+	size_t i;
+
+	for (i = 0U; i < n_blocks; i++)
+		s32gen1_enable_partition_block(part_num, blocks[i]);
+}
+
 void clock_init(void)
 {
 	u32 arm_dfs[ARM_PLL_DFS_Nr][DFS_PARAMS_Nr] = {
@@ -197,9 +205,17 @@ void clock_init(void)
 	u64 ddr_phi[DDR_PLL_PHI_Nr] = { DDR_PLL_PHI0_FREQ };
 	u64 accel_phi[ACCEL_PLL_PHI_Nr] = { ACCEL_PLL_PHI0_FREQ,
 					    ACCEL_PLL_PHI1_FREQ };
+	u32 part_blocks[] = { MC_ME_USDHC_REQ, MC_ME_DDR_0_REQ,
+			      MC_ME_MIPICSI2_0_REQ, MC_ME_MIPICSI2_1_REQ,
+			      MC_ME_MIPICSI2_2_REQ, MC_ME_MIPICSI2_3_REQ,
+			      MC_ME_FDMA_REQ, MC_ME_FLEXCAN4_REQ,
+			      MC_ME_FLEXCAN5_REQ, MC_ME_FLEXCAN6_REQ,
+			      MC_ME_FLEXCAN7_REQ };
 	s32gen1_setup_fxosc();
-	s32gen1_enable_partition_block(MC_ME_USDHC_PRTN, MC_ME_USDHC_REQ);
-	s32gen1_enable_partition_block(MC_ME_DDR_0_PRTN, MC_ME_DDR_0_REQ);
+
+	/* Enable all blocks from partion 0 */
+	enable_block_partitions(MC_ME_USDHC_PRTN, &part_blocks[0],
+				ARRAY_SIZE(part_blocks));
 
 	s32gen1_program_pll(ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
 			    ARM_PLL_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_RDIV,

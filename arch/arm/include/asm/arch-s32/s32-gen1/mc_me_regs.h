@@ -70,6 +70,15 @@
 #define MC_ME_PFE_TS_REQ	(1 << 3)
 #define MC_ME_PFE_REQ_GROUP	(MC_ME_PFE_EMAC0_REQ | MC_ME_PFE_EMAC1_REQ | \
 				 MC_ME_PFE_EMAC2_REQ | MC_ME_PFE_TS_REQ)
+#define MC_ME_MIPICSI2_0_REQ	(5)
+#define MC_ME_MIPICSI2_1_REQ	(6)
+#define MC_ME_MIPICSI2_2_REQ	(7)
+#define MC_ME_MIPICSI2_3_REQ	(8)
+#define MC_ME_FDMA_REQ	(9)
+#define MC_ME_FLEXCAN4_REQ	(11)
+#define MC_ME_FLEXCAN5_REQ	(12)
+#define MC_ME_FLEXCAN6_REQ	(13)
+#define MC_ME_FLEXCAN7_REQ	(14)
 
 /* Reset domain definitions */
 
