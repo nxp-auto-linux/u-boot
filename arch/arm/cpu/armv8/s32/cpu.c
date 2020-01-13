@@ -18,6 +18,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if defined(CONFIG_S32_RUN_AT_EL3)
+static int s32_gentimer_init(void);
+#endif
+
 static struct mm_region s32_mem_map[] = {
 	{
 		/* List terminator */
@@ -315,6 +319,9 @@ int arch_cpu_init(void)
 	__asm_invalidate_tlb_all();
 	early_mmu_setup();
 
+#if defined(CONFIG_S32_RUN_AT_EL3)
+	s32_gentimer_init();
+#endif
 	return 0;
 }
 
@@ -355,8 +362,12 @@ int arch_early_init_r(void)
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
 
+/* For configurations with U-Boot *not* at EL3, it is presumed that
+ * the EL3 software (e.g. the TF-A) will initialize the generic timer.
+ */
+#if defined(CONFIG_S32_RUN_AT_EL3)
 #ifdef CONFIG_S32V234
-int timer_init(void)
+static int s32_gentimer_init(void)
 {
 	if (get_siul2_midr1_major() >= 1)
 		return 0;
@@ -374,10 +385,12 @@ int timer_init(void)
 	return 0;
 }
 #elif defined(CONFIG_S32_GEN1)
-/* The base counter frequency (FXOSC on the S32G)
- * is actually board-dependent
+/* The base counter frequency (FXOSC on the S32G) is actually board-dependent.
+ * Moreoever, only software running at the highest implemented Exception level
+ * can write to CNTFRQ_EL0, so we won't even define this function if we are
+ * running with TF-A.
  */
-int timer_init(void)
+static int s32_gentimer_init(void)
 {
 	u32 clk_div;
 
@@ -394,4 +407,7 @@ int timer_init(void)
 
 	return 0;
 }
+#else
+#error "S32 platform should provide ARMv8 generic timer initialization"
 #endif
+#endif /* CONFIG_S32_RUN_AT_EL3 */
