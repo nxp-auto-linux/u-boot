@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  */
 
 #include <config.h>
 #include <asm/io.h>
 #include <asm/arch/soc.h>
+#include <s32g274a_common.h>
 
 #if defined(CONFIG_TARGET_S32G274ASIM) || defined(CONFIG_TARGET_S32G274AEMU)
 void setup_iomux_uart1_pb09_pb10(void)
@@ -27,6 +28,37 @@ void setup_iomux_uart1_pb09_pb10(void)
 #endif
 
 #if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+void setup_iomux_i2c_pc01_pc02(void)
+{
+	/* PMIC */
+	/* I2C4 Serial Data Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C4_SDA,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PC_01));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C4_SDA,
+	       SIUL2_1_IMCRn(SIUL2_PC_01_IMCR_S32G_I2C4_SDA));
+
+	/* I2C4 Serial Clock Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C4_SCLK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PC_02));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C4_SCLK,
+	       SIUL2_1_IMCRn(SIUL2_PC_02_IMCR_S32G_I2C4_SCLK));
+}
+
+void setup_iomux_i2c_pc05_pc06(void)
+{
+	/* I2C2 Serial Data Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C2_SDA,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_06));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C2_SDA,
+	       SIUL2_1_IMCRn(SIUL2_PB_06_IMCR_S32G_I2C2_SDA));
+
+	/* I2C2 Serial Clock Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C2_SCLK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_05));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C2_SCLK,
+	       SIUL2_1_IMCRn(SIUL2_PB_05_IMCR_S32G_I2C2_SCLK));
+}
+
 #ifdef CONFIG_FSL_DSPI
 void setup_iomux_dspi(void)
 {
