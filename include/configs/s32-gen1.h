@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -124,5 +124,8 @@
 #define IS_ADDR_IN_DDR(addr) \
 	((addr) >= (DDR_BASE_ADDR) && \
 	(addr) <= (DDR_BASE_ADDR) + (CONFIG_SYS_DDR_SIZE))
+
+#define CONFIG_SYS_I2C
+#define CONFIG_SYS_I2C_SPEED		100000
 
 #endif
