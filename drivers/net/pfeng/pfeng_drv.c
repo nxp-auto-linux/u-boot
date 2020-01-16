@@ -173,8 +173,17 @@ static int emac_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 {
 	pfe_emac_t *emac = bus->priv;
 	u16 val;
+	int ret;
 
-	if (pfe_emac_mdio_read22(emac, mdio_addr, mdio_reg, &val)) {
+	if (mdio_devad == MDIO_DEVAD_NONE)
+		/* clause 22 */
+		ret = pfe_emac_mdio_read22(emac, mdio_addr, mdio_reg, &val);
+	else
+		/* clause 45 */
+		ret = pfe_emac_mdio_read45(emac, mdio_addr, mdio_devad,
+					   mdio_reg, &val);
+
+	if (ret) {
 		pr_err("%s: MDIO read on MAC failed\n", bus->name);
 		return -EAGAIN;
 	}
@@ -187,11 +196,21 @@ static int emac_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 			   int mdio_reg, u16 mdio_val)
 {
 	pfe_emac_t *emac = bus->priv;
+	int ret;
 
 	debug("%s(addr=%x, reg=%d, val=%x):\n", __func__,
 	      mdio_addr, mdio_reg, mdio_val);
 
-	if (pfe_emac_mdio_write22(emac, mdio_addr, mdio_reg, mdio_val)) {
+	if (mdio_devad == MDIO_DEVAD_NONE)
+		/* clause 22 */
+		ret = pfe_emac_mdio_write22(emac, mdio_addr, mdio_reg,
+					    mdio_val);
+	else
+		/* clause 45 */
+		ret = pfe_emac_mdio_write45(emac, mdio_addr, mdio_devad,
+					    mdio_reg, mdio_val);
+
+	if (ret) {
 		pr_err("%s: MDIO write on MAC failed\n", bus->name);
 		return -EAGAIN;
 	}
