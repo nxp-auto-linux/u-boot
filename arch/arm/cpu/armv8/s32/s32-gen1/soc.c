@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  */
 
 #include <common.h>
@@ -338,10 +338,15 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	/* TBD: get DDR clock */
 	case MXC_DDR_CLK:
 		return get_ddr_clk();
+#ifdef CONFIG_SYS_I2C_MXC
+	case MXC_I2C_CLK:
+		return get_xbar_clk() / 3;
+#endif
 	default:
 		break;
 	}
-	printf("Error: Unsupported function to read the frequency! Please define it correctly!");
+	printf("Error: Unsupported function to read the frequency!\n");
+	printf("Please define it correctly!\n");
 	return 0;
 }
 

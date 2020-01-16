@@ -1,11 +1,12 @@
 #
 # (C) Copyright 2013-2015 Freescale Semiconductor, Inc.
-# Copyright 2018-2019 NXP
+# Copyright 2018-2020 NXP
 #
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
 ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
+ccflags-$(CONFIG_S32_GEN1) += -Iboard/freescale/s32-gen1
 obj-y := common.o
 
 obj-$(CONFIG_S32G274A) += s32g274a.o
