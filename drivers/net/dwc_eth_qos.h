@@ -103,6 +103,7 @@ struct eqos_mac_regs {
 #define EQOS_MAC_MDIO_ADDRESS_GB			BIT(0)
 
 #define EQOS_MAC_MDIO_DATA_GD_MASK			0xffff
+#define EQOS_MAC_MDIO_DATA_RA_SHIFT			16
 
 #define EQOS_MMC_REGS_BASE				0x0700
 struct eqos_mmc_regs {
