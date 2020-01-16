@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * 2019 NXP
+ * 2019-2020 NXP
  *
  */
 
@@ -12,6 +12,7 @@
 #include <miiphy.h>
 #include <net.h>
 #include <elf.h>
+#include <hwconfig.h>
 
 #include "oal.h"
 #include "pfe_platform.h"
@@ -25,6 +26,8 @@
 #define HIF_HEADER_SIZE sizeof(pfe_ct_hif_rx_hdr_t)
 
 static struct pfeng_priv *pfeng_drv_priv = NULL;
+
+int s32_serdes1_wait_link(int idx);
 
 /* firmware */
 
@@ -474,6 +477,17 @@ static int pfeng_start(struct udevice *dev)
 	priv->last_rx = NULL;
 	priv->last_tx = NULL;
 
+	/* check if the interface is up */
+	if (pfeng_cfg_emac_get_interface(clid) == PHY_INTERFACE_MODE_SGMII) {
+		if (clid == 0 || clid == 1) {
+			s32_serdes1_wait_link(clid);
+		} else {
+			dev_err(dev, "PFE2 SGMII mode not supported\n");
+			ret = -ENODEV;
+			goto err;
+		}
+	}
+
 	/* Sanitize hwaddr */
 	pfeng_write_hwaddr(dev);
 
@@ -656,6 +670,10 @@ static int pfeng_probe(struct udevice *dev)
 	env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
 	if (env_mode && ((env_mode = strchr(env_mode, ','))) && *env_mode)
 		pfeng_set_emacs_from_env(++env_mode);
+
+	/* check if pcie is not using serdes_1 */
+	if (REQUIRE_SERDES(1) && !hwconfig_subarg_cmp("pcie1", "mode", "sgmii"))
+		return -ENODEV;
 
 	/* enable PFE IP support */
 	pfeng_cfg_set_mode(PFENG_MODE_RUN);

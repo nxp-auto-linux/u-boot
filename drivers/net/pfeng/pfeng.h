@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  */
 
@@ -16,6 +16,9 @@
 					 (0x4000 * n) + 0x1000)
 #define S32G_PFE_EMACS_INTF_SEL		0x4007CA04
 #define S32G_PFE_PRW_CTRL		0x4007CA20
+#define S32G_MAIN_GENCTRL1		0x4007CAE4
+
+#define SGMII_CSEL			(1U << 0)
 
 #define GPR_PFE_EMACn_PWR_ACK(n)	(1 << (9 + n)) /* RD Only */
 #define GPR_PFE_EMACn_PWR_ISO(n)	(1 << (6 + n))
@@ -94,10 +97,14 @@ struct pfeng_priv {
  */
 #define PFENG_ENV_VAR_FW_SOURCE	"pfengfw"
 
+#define REQUIRE_SERDES(n)  (pfeng_cfg_emac_get_interface(0) == PHY_INTERFACE_MODE_SGMII || \
+			    pfeng_cfg_emac_get_interface(1) == PHY_INTERFACE_MODE_SGMII)
+
 bool pfeng_cfg_set_mode(u32 mode);
 int pfeng_set_emacs_from_env(char *env_mode);
 void pfeng_cfg_emacs_enable_all(void);
 void pfeng_cfg_emacs_disable_all(void);
+u32 pfeng_cfg_emac_get_interface(u32 idx);
 
 /* cmd debug calls */
 int pfeng_debug_emac(u32 idx);

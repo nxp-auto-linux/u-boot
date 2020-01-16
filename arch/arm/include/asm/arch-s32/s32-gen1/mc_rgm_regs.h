@@ -33,5 +33,16 @@
 #define RGM_CORE_RST(num)		BIT((num) + 1)
 #define RGM_PERIPH_RST(num)		BIT(num)
 
+/* S32G */
+#define PRST_CM7_CLUSTER_0		0
+#define PRST_CM7_CLUSTER_1		1
+#define PRST_CM7_CLUSTER_2		2
+#define PRST_DDR			3
+#define PRST_PCIE_SERDES		4
+#define PRST_PCIE_FUNC			5
+#define PRST_PCIE_1_SERDES		16
+#define PRST_PCIE_1_FUNC		17
+#define PRST_PFE			128
+
 #endif /* __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__ */
 
