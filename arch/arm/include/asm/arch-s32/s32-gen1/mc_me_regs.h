@@ -51,8 +51,8 @@
 #define MC_ME_PRTN_N_CORE_M_ADDR(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) + 0xC)
 
 /* MC_ME_PRTN_N_CORE_M_* registers fields. */
-#define MC_ME_PRTN_N_CORE_M_PCONF_CCE		(1 << 0)
-#define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		(1 << 0)
+#define MC_ME_PRTN_N_CORE_M_PCONF_CCE		BIT(0)
+#define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		BIT(0)
 #define MC_ME_PRTN_N_CORE_M_STAT_CCS		BIT(0)
 
 /* MC_ME partition mapping */

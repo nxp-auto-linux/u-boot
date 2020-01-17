@@ -69,48 +69,44 @@ int fsl_s32_wake_secondary_cores(void)
 }
 
 #elif defined(CONFIG_S32_GEN1)
-#define GPR06_CA53_LCKSTEP_EN (0x1 << 0)
 static void fsl_s32_wake_secondary_core(int prtn, int core)
 {
-	u32 reset;
-	u32 gpr_06;
+	u32 reset, resetc;
 
-	/* Write start_address in MC_ME_PRTN_N_CORE_M_ADDR register. */
+	/* MC_ME holds the low 32 bits of the start_address */
 	writel(gd->relocaddr, MC_ME_PRTN_N_CORE_M_ADDR(prtn, core));
 
-	reset = readl(RGM_PRST(RGM_CORES_RESET_GROUP));
-	reset &= ~(RGM_CORE_RST(core));
-
-	writel(reset, RGM_PRST(RGM_CORES_RESET_GROUP));
-
-	/* if Lockstep configuration for CA53 is not enabled,
-	 * enable all 4 cores
+	/* If in performance (i.e. not lockstep) mode, the following bits used
+	 * in the core wakeup sequence are only defined for the first core of
+	 * each cluster: CCE, CCUPD, CCS.
 	 */
+	/*
+	 * Enable core clock
+	 */
+	writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE,
+	       MC_ME_PRTN_N_CORE_M_PCONF(prtn, core & ~1));
+	writel(MC_ME_PRTN_N_CORE_M_PUPD_CCUPD,
+	       MC_ME_PRTN_N_CORE_M_PUPD(prtn, core & ~1));
 
-	gpr_06 = readl(S32_A53_GPR_BASE_ADDR + S32_A53_GP06_OFF);
-	if (!(gpr_06 & GPR06_CA53_LCKSTEP_EN)) {
-		printf("performance mode for CA53 clusters\n");
-		/* Set core clock enable bit. */
-		writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE,
-		       MC_ME_PRTN_N_CORE_M_PCONF(prtn, core & ~1));
+	/* Write valid key sequence to trigger the update. */
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
 
-		/* Enable core clock triggering to update on writing
-		 * CTRL key sequence.
-		 */
-		writel(MC_ME_PRTN_N_CORE_M_PUPD_CCUPD,
-		       MC_ME_PRTN_N_CORE_M_PUPD(prtn, core & ~1));
-
-		/* Write valid key sequence to trigger the update. */
-		writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-		writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
-
-		/* Wait until hardware process to enable core is completed. */
-		while (readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, core & ~1)) !=
-		       MC_ME_PRTN_N_CORE_M_PCONF_CCE)
-			;
-	}
-	while (readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)) != reset)
+	/* Wait for core clock enable status bit. */
+	while ((readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, core & ~1)) &
+				MC_ME_PRTN_N_CORE_M_STAT_CCS) !=
+			MC_ME_PRTN_N_CORE_M_STAT_CCS)
 		;
+
+	/* Deassert core reset */
+	reset = readl(RGM_PRST(RGM_CORES_RESET_GROUP));
+	resetc = RGM_CORE_RST(core);
+	reset &= ~resetc;
+	writel(reset, RGM_PRST(RGM_CORES_RESET_GROUP));
+	while ((readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)) & resetc) != 0)
+		;
+
+	printf("CA53 core %d running.\n", core);
 }
 
 int fsl_s32_wake_secondary_cores(void)
