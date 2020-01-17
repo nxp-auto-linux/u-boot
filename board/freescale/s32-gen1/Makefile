@@ -43,7 +43,13 @@ obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_s32g274a.o
 endif
 
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf.o ddrss_firmware.o
-obj-$(CONFIG_SJA1105) += sja1105_cfg.o
+
+ifdef CONFIG_TARGET_S32G274AEVB
+obj-$(CONFIG_SJA1105) += sja1105_cfg_evb.o
+else ifdef CONFIG_TARGET_S32G274ARDB
+obj-$(CONFIG_SJA1105) += sja1105_cfg_rdb.o
+endif
+
 endif
 
 #########################################################################
