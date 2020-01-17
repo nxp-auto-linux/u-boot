@@ -77,25 +77,4 @@
 			 0x82000000 0x0 0x00013000 0x58 0x00013000 0x0 0x40000000>;
 		status = "disabled";
 	};
-
-	pcie1: pcie@44100000 {
-		compatible = "fsl,s32gen1-pcie", "snps,dw-pcie";
-		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
-		       0x00 0x44180000 0x0 0x04000   /* ctrl registers */
-		       0x48 0x00000000 0x0 0x20000>; /* configuration space */
-		reg-names = "dbi", "ctrl", "config";
-		#address-cells = <3>;
-		#size-cells = <2>;
-		device_type = "pci";
-		device_id = <1>;
-		num-lanes = <1>;
-		bus-range = <0x0 0x4>;
-		ranges =
-			/* downstream I/O */
-			<0x81000000 0x0 0x00000000 0x48 0x00020000 0x0 0x00010000
-			/* non-prefetchable memory */
-			0x82000000 0x0 0x40000000 0x48 0x40000000 0x0 0x40000000>;
-		status = "disabled";
-	};
-
 };

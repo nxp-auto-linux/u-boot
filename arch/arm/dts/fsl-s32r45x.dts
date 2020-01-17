@@ -12,8 +12,7 @@
 #include "fsl-s32-gen1.dtsi"
 / {
 	model = "NXP S32G27x";
-	compatible = "fsl,s32g275-simu", "fsl,s32g275", "fsl,s32gen1",
-				 "arm,vexpress,v2p-aarch64", "arm,vexpress";
+	compatible = "fsl,s32r45x", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
 	signature {
 		key-boot_key {
@@ -38,25 +37,6 @@
 		      /* extended DDR from 4 to 32 GB should go elsewhere */
 	};
 
-	pcie1: pcie@44100000 {
-		compatible = "fsl,s32gen1-pcie", "snps,dw-pcie";
-		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
-		       0x00 0x44180000 0x0 0x04000   /* ctrl registers */
-		       0x48 0x00000000 0x0 0x20000>; /* configuration space */
-		reg-names = "dbi", "ctrl", "config";
-		#address-cells = <3>;
-		#size-cells = <2>;
-		device_type = "pci";
-		device_id = <1>;
-		num-lanes = <1>;
-		bus-range = <0x0 0x4>;
-		ranges =
-			/* downstream I/O */
-			<0x81000000 0x0 0x00000000 0x48 0x00020000 0x0 0x00010000
-			/* non-prefetchable memory */
-			0x82000000 0x0 0x40000000 0x48 0x40000000 0x0 0x40000000>;
-		status = "disabled";
-	};
 };
 
 &usdhc0 {
@@ -67,10 +47,4 @@
 	status = "okay";
 
 	link-speed = <3>; /* Gen3 */
-};
-
-&pcie1 {
-	status = "okay";
-
-	link-speed = <2>; /* Gen2 */
 };
