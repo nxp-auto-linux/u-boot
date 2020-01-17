@@ -49,10 +49,13 @@
 "BusDevFun           VendorId   DeviceId   Device Class       Sub-Class\n" \
 "______________________________________________________________________\n"
 
+
+#ifdef CONFIG_TARGET_S32G274AEVB
 /* First SOC revision with functional PCIe: rev 1.0.1, which means
  * major 0, minor 0, subminor 1
  */
 #define PCIE_MIN_SOC_REV_SUPPORTED 0x1
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -921,6 +924,8 @@ static int s32_pcie_probe(struct udevice *dev)
 	struct uclass *uc = dev->uclass;
 	u16 link_sta, link_cap;
 	int ret = 0;
+
+#ifdef PCIE_MIN_SOC_REV_SUPPORTED
 	uint32_t raw_rev = 0;
 
 	/* construct a revision number based on major, minor and subminor,
@@ -934,6 +939,7 @@ static int s32_pcie_probe(struct udevice *dev)
 		printf("PCIe not supported\n");
 		return -ENXIO;
 	}
+#endif
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
