@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  */
 
@@ -211,13 +211,25 @@ static int eqos_disable_calibration_s32cc(struct udevice *dev)
 
 static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 {
-	u32 idx;
+	u32 idx, speed;
 
 	idx = (readl(GMAC_MAC_PHYIF_CTRL_STAT)
 	       >> EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_SHIFT)
 	      & EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_MASK;
 
-	return set_tx_clk_enet_gmac(idx);
+	switch (idx) {
+	case 0:
+		speed = SPEED_10;
+		break;
+	case 1:
+		speed = SPEED_100;
+		break;
+	default:
+	case 2:
+		speed = SPEED_1000;
+		break;
+	}
+	return set_tx_clk_enet_gmac(speed);
 }
 
 static int eqos_probe_resources_s32cc(struct udevice *dev)

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  */
 
 #include <common.h>
@@ -35,7 +35,7 @@ static struct eqos_pdata dwmac_pdata = {
 		/* generic fake HW addr */
 		.enetaddr = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 },
 		/* max 1 Gbps */
-		.max_speed = 1000,
+		.max_speed = SPEED_1000,
 	},
 	/* vendor specific driver config */
 	.config = &eqos_s32cc_config,
@@ -54,7 +54,6 @@ void setup_iomux_enet_gmac(int intf)
 	/* Note: this is valid for NXP S32G EVB only */
 	switch (intf) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* TODO: pinmuxing for SGMII  */
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
@@ -129,30 +128,30 @@ void setup_iomux_enet_gmac(int intf)
 	}
 }
 
-static u32 gmac_calc_link_speed_divider(u32 idx)
+static u32 gmac_calc_link_speed_divider(u32 speed)
 {
 	u32 div;
 
-	switch (idx) {
-	case 0:
-		div = 50 - 1; /* 2.5MHz */
+	switch (speed) {
+	case SPEED_10:   /* 2.5MHz */
+		div = 50 - 1;
 		break;
-	case 1:
-		div = 5 - 1; /* 25MHz */
+	case SPEED_100:  /* 25MHz */
+		div = 5 - 1;
 		break;
 	default:
-	case 2:
-		div = 1 - 1; /* 125MHz */
+	case SPEED_1000: /* 125MHz */
+		div = 1 - 1;
 		break;
 	}
 
 	return div;
 }
 
-int set_tx_clk_enet_gmac(u32 idx)
+int set_tx_clk_enet_gmac(u32 speed)
 {
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 10, 0,
-			   gmac_calc_link_speed_divider(idx));
+			   gmac_calc_link_speed_divider(speed));
 
 	return 0;
 }
