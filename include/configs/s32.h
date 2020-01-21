@@ -287,6 +287,13 @@
 #define PFE_INIT_CMD ""
 #endif
 
+#ifdef CONFIG_PCIE_S32GEN1
+#define PCIE_EXTRA_ENV_SETTINGS \
+	"hwconfig=" CONFIG_PCIE_S32GEN1_HWCONFIG "\0"
+#else
+#define PCIE_EXTRA_ENV_SETTINGS ""
+#endif
+
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 
 #ifdef CONFIG_XEN_SUPPORT
@@ -437,7 +444,8 @@
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
-	PFE_EXTRA_ENV_SETTINGS
+	PFE_EXTRA_ENV_SETTINGS \
+	PCIE_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
 

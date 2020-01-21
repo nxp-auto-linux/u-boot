@@ -24,7 +24,6 @@
 
 #include "pcie_s32gen1.h"
 
-#define PCIE_DEFAULT_MODE_EP 0
 #define PCIE_DEFAULT_INTERNAL_CLK 0
 
 #define PCIE_OVERCONFIG_BUS
@@ -822,32 +821,42 @@ static void s32_pcie_get_mode_from_hwconfig(struct s32_pcie *pcie)
 	char pcie_name[10];
 
 	sprintf(pcie_name, "pcie%d", pcie->id);
-	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
 
+#ifdef DEBUG
+	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
 	debug("%s: default configuration: %s\n", pcie_name,
 			PCIE_EP_RC_MODE(pcie->ep_mode));
+#endif
 
 	pcie->clk_int = PCIE_DEFAULT_INTERNAL_CLK;
-	pcie->ep_mode = PCIE_DEFAULT_MODE_EP;
 
 	debug("%s: testing hwconfig for '%s'\n", __func__,
 		pcie_name);
 
-	if (hwconfig_subarg_cmp(pcie_name, "mode", "rc"))
+	if (hwconfig_subarg_cmp(pcie_name, "mode", "rc")) {
 		pcie->ep_mode = 0;
-	if (hwconfig_subarg_cmp(pcie_name, "mode", "ep"))
+		pcie->enabled = 1;
+	}
+	if (hwconfig_subarg_cmp(pcie_name, "mode", "ep")) {
 		pcie->ep_mode = 1;
-	if (hwconfig_subarg_cmp(pcie_name, "clock", "ext"))
+		pcie->enabled = 1;
+	}
+	if (hwconfig_subarg_cmp(pcie_name, "clock", "ext")) {
 		pcie->clk_int = 0;
-	if (hwconfig_subarg_cmp(pcie_name, "clock", "int"))
+		pcie->enabled = 1;
+	}
+	if (hwconfig_subarg_cmp(pcie_name, "clock", "int")) {
 		pcie->clk_int = 1;
+		pcie->enabled = 1;
+	}
 
-	printf("Using %s clock for PCIe%d\n", PCIE_CLK_MODE(pcie->clk_int),
-		pcie->id);
-
-	debug("Reconfiguring node %s (PCIe%d) as %s\n",
-		ofnode_get_name(pcie->bus->node),
-		pcie->id, PCIE_EP_RC_MODE(pcie->ep_mode));
+	if (pcie->enabled) {
+		printf("Using %s clock for PCIe%d\n", PCIE_CLK_MODE(pcie->clk_int),
+			pcie->id);
+		debug("Reconfiguring node %s (PCIe%d) as %s\n",
+			ofnode_get_name(pcie->bus->node),
+			pcie->id, PCIE_EP_RC_MODE(pcie->ep_mode));
+	}
 }
 
 
@@ -956,6 +965,11 @@ static int s32_pcie_probe(struct udevice *dev)
 		return ret;
 
 	s32_pcie_get_mode_from_hwconfig(pcie);
+	if (!pcie->enabled) {
+		printf("Not configuring pcie%d, no RC/EP configuration selected\n",
+			pcie->id);
+		return -ENXIO;
+	}
 
 	/* Keep app_ltssm_enable =0 to disable link  training for programming
 	 * the DBI
