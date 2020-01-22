@@ -345,8 +345,12 @@ void enable_caches(void)
 #endif
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
+#if !defined(CONFIG_S32_RUN_AT_EL2)
 int arch_early_init_r(void)
 {
+	/* Don't touch the secondaries if we're on top of TF-A; Linux
+	 * will wake them up, via PSCI.
+	 */
 	int rv;
 	asm volatile("dsb sy");
 	rv = fsl_s32_wake_secondary_cores();
@@ -363,7 +367,16 @@ int arch_early_init_r(void)
 
 	return 0;
 }
-#endif /* CONFIG_ARCH_EARLY_INIT_R */
+#else
+/* At EL2, practically we should do nothing of the above; define an empty
+ * stub to appease the compiler.
+ */
+int arch_early_init_r(void)
+{
+	return 0;
+}
+#endif
+#endif
 
 /* For configurations with U-Boot *not* at EL3, it is presumed that
  * the EL3 software (e.g. the TF-A) will initialize the generic timer.
