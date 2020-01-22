@@ -434,7 +434,15 @@ void reset_cpu(ulong addr)
 int print_cpuinfo(void)
 {
 #ifdef CONFIG_S32G274A
-	printf("CPU:\tNXP S32G274A\n");
+	printf("CPU:\tNXP S32G274A");
+	#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
+	printf("\n");
+	#else
+	printf(" rev. %d.%d.%d\n",
+		   get_siul2_midr1_major() + 1,
+		   get_siul2_midr1_minor(),
+		   get_siul2_midr2_subminor());
+	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
 #elif defined(CONFIG_S32R45X)
 	printf("CPU:\tNXP S32R45X\n");
 #elif defined(CONFIG_S32V344)
