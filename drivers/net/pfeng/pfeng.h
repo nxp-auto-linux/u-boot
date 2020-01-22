@@ -105,6 +105,7 @@ int pfeng_set_emacs_from_env(char *env_mode);
 void pfeng_cfg_emacs_enable_all(void);
 void pfeng_cfg_emacs_disable_all(void);
 u32 pfeng_cfg_emac_get_interface(u32 idx);
+void pfeng_apply_clocks(void);
 
 /* cmd debug calls */
 int pfeng_debug_emac(u32 idx);

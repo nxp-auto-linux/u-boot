@@ -465,7 +465,10 @@ static int pfeng_start(struct udevice *dev)
 	priv->emac_changed = priv->emac_index != clid;
 	priv->emac_index = clid;
 
-	dev_info(dev, "using pfe%d ...\n", clid);
+	printf("Attached to pfe%d\n", clid);
+
+	/* Update clocks */
+	pfeng_apply_clocks();
 
 	/* Retrieve LOGIF */
 	priv->iface = pfe_platform_get_log_if_by_id(priv->pfe, clid);

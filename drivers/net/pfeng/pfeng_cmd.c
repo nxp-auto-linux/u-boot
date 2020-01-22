@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  */
 
@@ -637,6 +637,12 @@ static void setup_iomux_pfe(int intf0, int intf1, int intf2)
 	}
 }
 
+/* setup all EMACs clocks */
+void pfeng_apply_clocks(void)
+{
+	setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
+}
+
 /* disable power for EMACs */
 void pfeng_cfg_emacs_disable_all(void)
 {
@@ -692,6 +698,7 @@ static int pfeng_cfg_mode_enable(void)
 
 	/* enable partition 2 */
 	enable_partition_2();
+
 	setup_iomux_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
 	setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
 
@@ -875,6 +882,13 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		if (argc < 3) {
 			print_emacs_mode("  ");
 			return 0;
+		} else if (!strcmp(argv[2], "reapply-clocks")) {
+			setup_iomux_pfe(emac_intf[0], emac_intf[1],
+					emac_intf[2]);
+			pfeng_apply_clocks();
+			printf("PFE reapply clocks\n");
+			print_emacs_mode("  ");
+			return 0;
 		} else {
 			/* parse argv[2] for "rgmii,none,mii" */
 			if (pfeng_set_emacs_from_env(argv[2]))
@@ -920,5 +934,6 @@ U_BOOT_CMD(
 	   "pfeng [disable|enable]                  - disable/enable full PFE/EMACs subsystem\n"
 	   "pfeng stop                              - stop the driver but don't disable PFE/EMACs\n"
 	   "pfeng emacs [<inf0-mode>,<intf1-mode>,<intf2-mode>] - read or set EMAC0-2 interface mode\n"
+	   "pfeng emacs reapply-clocks              - reapply clock setting for all EMACs\n"
 	   "pfeng reg <offset>                      - read register"
 );
