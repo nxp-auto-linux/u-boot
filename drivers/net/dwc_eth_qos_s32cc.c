@@ -133,6 +133,11 @@ static phy_interface_t eqos_get_interface_s32cc(struct udevice *dev)
 
 static int eqos_start_clks_s32cc(struct udevice *dev)
 {
+	u32 mode = eqos_get_interface_s32cc(dev);
+
+	setup_iomux_enet_gmac(mode);
+	setup_clocks_enet_gmac(mode);
+
 	return 0;
 }
 
