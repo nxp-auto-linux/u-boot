@@ -298,9 +298,9 @@
 #define PFE_INIT_CMD ""
 #endif
 
-#ifdef CONFIG_PCIE_S32GEN1
+#if defined(CONFIG_PCIE_S32GEN1) || defined(CONFIG_FSL_PFENG)
 #define PCIE_EXTRA_ENV_SETTINGS \
-	"hwconfig=" CONFIG_PCIE_S32GEN1_HWCONFIG "\0"
+	"hwconfig=" CONFIG_S32GEN1_HWCONFIG "\0"
 #else
 #define PCIE_EXTRA_ENV_SETTINGS ""
 #endif
