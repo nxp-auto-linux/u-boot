@@ -448,9 +448,7 @@ int serdes_xpcs_set_2500_mode(void *base, u32 xpcs, bool ext_ref,
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
 			      EN_VSMMD1 | EN_2_5G_MODE);
 	/*	(Switch to 2.5G mode: #2) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DBG_CTRL,
-			      MII_DBG_CTRL_SUPRESS_LOS_DET
-			      | MII_DBG_CTRL_RX_DT_EN_CTL);
+	serdes_xpcs_reg_write(base, xpcs, VR_MII_DBG_CTRL, 0U);
 	/*	(Switch to 2.5G mode: #3) */
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL,
 			      MPLL_CMN_CTRL_MPLL_EN_0
