@@ -49,28 +49,27 @@ void ft_enet_fixup(void *fdt)
  */
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 
-/* driver platform data (TODO: remove when switching to DT) */
+#if !CONFIG_IS_ENABLED(OF_CONTROL)
+/* driver platform data (in case of no DT) */
 static struct eqos_pdata dwmac_pdata = {
 	.eth = {
 		/* registers base address */
 		.iobase = (phys_addr_t)ETHERNET_0_BASE_ADDR,
 		/* default phy mode */
 		.phy_interface = PHY_INTERFACE_MODE_RGMII,
-		/* generic fake HW addr */
-		.enetaddr = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 },
 		/* max 1 Gbps */
 		.max_speed = SPEED_1000,
 	},
 	/* vendor specific driver config */
 	.config = &eqos_s32cc_config,
 };
+#endif /* OF_CONTROL */
 
 /* GMAC platform specific setup */
 
 void setup_iomux_enet_gmac(int intf)
 {
 	/* configure interface specific pins */
-	/* Note: this is valid for NXP S32G EVB only */
 	switch (intf) {
 	case PHY_INTERFACE_MODE_SGMII:
 		break;
@@ -193,7 +192,7 @@ void setup_clocks_enet_gmac(int intf)
 		 */
 		mux_source_clk_config(MC_CGM0_BASE_ADDR, 10,
 				      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI5);
-		set_tx_clk_enet_gmac(dwmac_pdata.eth.max_speed);
+		set_tx_clk_enet_gmac(SPEED_1000);
 
 		/* setup the mux clock divider for GMAC_0_RX_CLK
 		 * (Ext source from PHY - RX)
@@ -221,17 +220,15 @@ void setup_clocks_enet_gmac(int intf)
  * PFEng driver for S32G only
  *
  */
-#if CONFIG_IS_ENABLED(FSL_PFENG)
+#if CONFIG_IS_ENABLED(FSL_PFENG) && !CONFIG_IS_ENABLED(OF_CONTROL)
 
-/* driver platform data (TODO: remove when switching to DT) */
+/* driver platform data (in case of no DT) */
 static struct pfeng_pdata pfeng_platdata = {
 	.eth = {
 		/* registers base address */
 		.iobase = (phys_addr_t)ETHERNET_0_BASE_ADDR,
 		/* default phy mode */
 		.phy_interface = PHY_INTERFACE_MODE_RGMII,
-		/* generic fake HW addr to let uboot happy */
-		.enetaddr = { 0x00, 0x01, 0xBE, 0xEF, 0x10, 0xAD },
 	},
 	/* vendor specific driver config */
 	.config = &pfeng_s32g274a_config,
@@ -239,10 +236,9 @@ static struct pfeng_pdata pfeng_platdata = {
 
 #endif /* CONFIG_FSL_PFENG */
 
+#if !CONFIG_IS_ENABLED(OF_CONTROL)
 /*
  * Platform network devices
- *
- * (TODO: remove when switching to DT)
  *
  */
 U_BOOT_DEVICES(s32_enet) = {
@@ -259,3 +255,4 @@ U_BOOT_DEVICES(s32_enet) = {
 	},
 #endif
 };
+#endif
