@@ -42,6 +42,9 @@
 
 #include "dwc_eth_qos.h"
 
+/* Number of dwc eqos devices seen so far */
+static int num_cards;
+
 /*
  * Warn if the cache-line size is larger than the descriptor size. In such
  * cases the driver will likely fail because the CPU needs to flush the cache
@@ -984,6 +987,10 @@ __weak int board_interface_eth_init(int interface_type, bool eth_clk_sel_reg,
 static int eqos_ofdata_to_platdata(struct udevice *dev)
 {
 	struct eqos_pdata *pdata = dev_get_platdata(dev);
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	const char *phy_mode;
+	int node = dev_of_offset(dev);
+	int offset = 0;
 
 	if (!pdata) {
 		pr_err("no platform data");
@@ -996,7 +1003,45 @@ static int eqos_ofdata_to_platdata(struct udevice *dev)
 		return -ENODEV;
 	}
 
+	/* DT: parse phy-mode */
+	pdata->eth.phy_interface = -1;
+	phy_mode = fdt_getprop(gd->fdt_blob, node, "phy-mode", NULL);
+	if (phy_mode)
+		pdata->eth.phy_interface = phy_get_interface_by_name(phy_mode);
+	if (pdata->eth.phy_interface == -1) {
+		pr_err("invalid PHY interface '%s'\n", phy_mode);
+		return -EINVAL;
+	}
+
+	/* DT: check for fixed-link subnode */
+	offset = fdt_subnode_offset(gd->fdt_blob, node, "fixed-link");
+	if (offset != -FDT_ERR_NOTFOUND) {
+		printf("EQOS phy: %s fixed-link\n", phy_mode);
+	} else {
+		/* DT: parse phy-handle */
+		offset = fdtdec_lookup_phandle(gd->fdt_blob, node,
+					       "phy-handle");
+		if (offset > 0) {
+			eqos->phy_addr = fdtdec_get_int(gd->fdt_blob, offset,
+							"reg", -1);
+			/* DT: parse max-speed */
+			pdata->eth.max_speed = fdtdec_get_uint(gd->fdt_blob,
+							       offset,
+							       "max-speed",
+							       SPEED_1000);
+			printf("EQOS phy: %s @ %d\n", phy_mode, eqos->phy_addr);
+		}
+	}
+
 	pdata->config = (void *)dev_get_driver_data(dev);
+
+	/* DT: allow rewrite platform specific t/rx-fifo-depth */
+	pdata->config->tx_fifo_size = fdtdec_get_uint(gd->fdt_blob, node,
+						      "tx-fifo-depth",
+						      pdata->config->tx_fifo_size);
+	pdata->config->rx_fifo_size = fdtdec_get_uint(gd->fdt_blob, node,
+						      "rx-fifo-depth",
+						      pdata->config->rx_fifo_size);
 
 	return 0;
 }
@@ -1095,6 +1140,24 @@ static int eqos_remove(struct udevice *dev)
 	return 0;
 }
 
+static void eqos_name(char *str, u32 cardnum)
+{
+	if (cardnum)
+		sprintf(str, "eth_eqos%i", cardnum);
+	else
+		/* backcompatibility name for instance 0 */
+		strcpy(str, "eth_eqos");
+}
+
+static int eqos_bind(struct udevice *dev)
+{
+	char name[20];
+
+	eqos_name(name, num_cards++);
+
+	return device_set_name(dev, name);
+}
+
 static const struct eth_ops eqos_ops = {
 	.start = eqos_start,
 	.stop = eqos_stop,
@@ -1134,10 +1197,30 @@ static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
 	int ret;
 	u32 version;
 	u32 reg;
+	unsigned long devnum;
+	u32 coffs = 0;
+	char devname[16];
 
-	ret = uclass_get_device_by_name(UCLASS_ETH, "eth_eqos", &dev);
+	/* check if device index was entered */
+	devnum = simple_strtoul(argv[1], NULL, 10);
+	if (strict_strtoul(argv[1], 10, &devnum)) {
+		devnum = 0;
+		coffs = 0;
+	} else {
+		coffs = 1;
+	}
+
+	if (devnum >= num_cards) {
+		printf("eqos: ERROR: device instance %lu does't exist\n",
+		       devnum);
+		return 1;
+	}
+
+	eqos_name(devname, devnum);
+
+	ret = uclass_get_device_by_name(UCLASS_ETH, devname, &dev);
 	if (ret) {
-		printf("eqos: ERROR: device eth_eqos was not found\n");
+		printf("eqos: ERROR: device '%s' was not found\n", devname);
 		return 1;
 	}
 
@@ -1160,7 +1243,7 @@ static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
 	}
 
 	/* process command */
-	if (!strcmp(argv[1], "info")) {
+	if (!strcmp(argv[1 + coffs], "info")) {
 		u32 val;
 
 		reg = readl(&eqos->mac_regs->version);
@@ -1189,27 +1272,31 @@ static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
 			       get_state_safety(val));
 		}
 		return 0;
-	} else if (!strcmp(argv[1], "ethaddr")) {
+	} else if (!strcmp(argv[1 + coffs], "ethaddr")) {
 		printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
 		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 		return 0;
-	} else if (!strcmp(argv[1], "counters")) {
+	} else if (!strcmp(argv[1 + coffs], "counters")) {
 		u32 reg2;
 
 		reg = readl(&eqos->mmc_regs->tx_packet_count_good_bad);
 		reg2 = readl(&eqos->mmc_regs->rx_packets_count_good_bad);
 		printf("RX packets: %u TX packets: %u\n", reg2, reg);
 		return 0;
-	} else if (!strcmp(argv[1], "physelect")) {
+	} else if (!strcmp(argv[1 + coffs], "physelect")) {
 		u32 phy = 0;
 
-		if (argc > 3)
+		if (argc > (3 + coffs))
 			return CMD_RET_USAGE;
 
-		if (argc < 3) {
-			printf("phy address: 0x%x\n", eqos->phy_addr);
+		if (argc < (3 + coffs)) {
+			if (eqos->phy)
+				printf("phy '%s' @ 0x%x\n",
+				       eqos->phy->drv->name, eqos->phy_addr);
+			else
+				printf("phy is not yet inited or missing\n");
 		} else {
-			phy = simple_strtoul(argv[2], NULL, 16);
+			phy = simple_strtoul(argv[2 + coffs], NULL, 16);
 			if (phy) {
 				if (eqos->phy)
 					phy_shutdown(eqos->phy);
@@ -1221,13 +1308,13 @@ static int do_eqos_cmd(cmd_tbl_t *cmdtp, int flag,
 			}
 		}
 		return 0;
-	} else if (!strcmp(argv[1], "reg")) {
+	} else if (!strcmp(argv[1 + coffs], "reg")) {
 		u32 offs = 0;
 
-		if (argc != 3)
+		if (argc != (3 + coffs))
 			return CMD_RET_USAGE;
 
-		offs = simple_strtoul(argv[2], NULL, 16);
+		offs = simple_strtoul(argv[2 + coffs], NULL, 16);
 		reg = readl(((void *)(eqos->regs + EQOS_MAC_REGS_BASE)) + offs);
 		printf("reg 0x%x at 0x%p: %08x\n", offs,
 		       ((void *)(eqos->regs + EQOS_MAC_REGS_BASE)) + offs,
@@ -1255,6 +1342,7 @@ U_BOOT_DRIVER(eth_eqos) = {
 	.id = UCLASS_ETH,
 	.of_match = of_match_ptr(eqos_ids),
 	.ofdata_to_platdata = of_match_ptr(eqos_ofdata_to_platdata),
+	.bind = eqos_bind,
 	.probe = eqos_probe,
 	.remove = eqos_remove,
 	.ops = &eqos_ops,

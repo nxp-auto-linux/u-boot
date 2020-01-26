@@ -713,6 +713,11 @@ static int pfeng_remove(struct udevice *dev)
 	return 0;
 }
 
+static int pfeng_bind(struct udevice *dev)
+{
+	return device_set_name(dev, "eth_pfeng");
+}
+
 /* Driver declaration */
 
 U_BOOT_DRIVER(eth_pfeng) = {
@@ -720,6 +725,7 @@ U_BOOT_DRIVER(eth_pfeng) = {
 	.id = UCLASS_ETH,
 	.of_match = of_match_ptr(pfeng_eth_ids),
 	.ofdata_to_platdata = of_match_ptr(pfeng_ofdata_to_platdata),
+	.bind = pfeng_bind,
 	.probe = pfeng_probe,
 	.remove = pfeng_remove,
 	.ops = &pfeng_ops,

@@ -22,7 +22,7 @@ extern struct pfeng_config pfeng_s32g274a_config;
 static const struct udevice_id pfeng_eth_ids[] = {
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 	{
-		.compatible = "fsl,s32g275-pfe",
+		.compatible = "fsl,s32g274a-pfe",
 		.data = (ulong)&pfeng_s32g274a_config
 	},
 #endif /* CONFIG_FSL_PFENG */

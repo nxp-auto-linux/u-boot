@@ -252,7 +252,6 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 		pr_err("HW setting error\n");
 		return -EINVAL;
 	}
-	printf("GMAC interface: %s\n", s32ccgmac_cfg_get_interface_mode_str());
 
 	if (env_mode && !strcmp(env_mode, "disable"))
 		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_DISABLE);

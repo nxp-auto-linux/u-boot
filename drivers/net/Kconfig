@@ -26,6 +26,8 @@ if NETDEVICES
 config FSL_PFENG
 	bool "Enable PFEng on S32G support"
 	depends on NET && DM_ETH && S32_GEN1
+	select OF_EMBED
+	select OF_CONTROL
 	default n
 	help
 	  Enables support for PFEng on S32G.
@@ -185,6 +187,8 @@ config DWC_ETH_QOS_STM32
 config DWC_ETH_QOS_S32CC
 	bool "Synopsys DWC EQoS device support on NXP S32"
 	depends on DM_ETH
+	select OF_EMBED
+	select OF_CONTROL
 	select PHYLIB
 	help
 	  This driver supports NXP S32G/R/V automotive chips.
