@@ -7,7 +7,9 @@
 #include <dm.h>
 #include <asm/io.h>
 #include <net.h>
+#ifndef CONFIG_DM_ETH
 #include <netdev.h>
+#endif
 #include <phy.h>
 #include <malloc.h>
 #include <asm/types.h>
@@ -18,6 +20,28 @@
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 #include <dm/platform_data/pfeng_dm_eth.h>
 #endif
+#include <fdt_support.h>
+
+/*
+ * Ethernet DT fixup before OS load
+ *
+ */
+void ft_enet_fixup(void *fdt)
+{
+	int __maybe_unused nodeoff;
+
+	/* GMAC */
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32cc-dwmac");
+	if (nodeoff >= 0) {
+		if (s32ccgmac_cfg_get_mode() == S32CCGMAC_MODE_DISABLE) {
+			/* Disable GMAC in DT */
+			printf("DT: Disabling GMAC\n");
+			fdt_status_disabled(fdt, nodeoff);
+		}
+	}
+#endif
+}
 
 /*
  * GMAC driver for common chassis

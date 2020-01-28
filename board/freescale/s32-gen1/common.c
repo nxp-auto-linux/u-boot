@@ -177,6 +177,11 @@ int checkboard(void)
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	ft_cpu_setup(blob, bd);
+
+#if CONFIG_IS_ENABLED(NETDEVICES)
+	ft_enet_fixup(blob);
+#endif
+
 	return 0;
 }
 #endif /* defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP) */

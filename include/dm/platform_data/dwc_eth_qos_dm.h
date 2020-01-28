@@ -25,6 +25,12 @@ extern struct eqos_config eqos_stm32_config;
 #endif
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 extern struct eqos_config eqos_s32cc_config;
+
+enum {
+	S32CCGMAC_MODE_DISABLE = 0,
+	S32CCGMAC_MODE_ENABLE,
+};
+
 u32 s32ccgmac_cfg_get_mode(void);
 #endif
 
