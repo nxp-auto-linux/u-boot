@@ -55,7 +55,7 @@ int set_tx_clk_enet_gmac(int idx);
 
 static bool s32ccgmac_set_interface(u32 mode);
 
-static u32 s32ccgmac_cfg_get_mode(void)
+u32 s32ccgmac_cfg_get_mode(void)
 {
 	return s32ccgmac_mode;
 }
