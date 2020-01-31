@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2016 Jagan Teki <jagan@openedev.com>
  * Copyright (C) 2013 Jagannadha Sutradharudu Teki, Xilinx Inc.
- * (C) Copyright 2017 NXP
+ * Copyright 2017,2020 NXP
  */
 
 #include <common.h>
@@ -93,6 +93,7 @@ const struct spi_flash_info spi_flash_ids[] = {
 	{"mx25u25635f",    INFO(0xc22539, 0x0, 64 * 1024,   512, RD_FULL | WR_QPP) },
 	{"mx66u51235f",    INFO(0xc2253a, 0x0, 64 * 1024,  1024, RD_FULL | WR_QPP) },
 	{"mx66l1g45g",     INFO(0xc2201b, 0x0, 64 * 1024,  2048, RD_FULL | WR_QPP) },
+	{"mx25uw51245g",   INFO(0xc2813a, 0x0, 64 * 1024,  1024, 0) },
 #endif
 #ifdef CONFIG_SPI_FLASH_SPANSION	/* SPANSION */
 	{"s25fl008a",	   INFO(0x010213, 0x0, 64 * 1024,    16, 0) },
