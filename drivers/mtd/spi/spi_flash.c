@@ -6,6 +6,7 @@
  * Copyright (C) 2013 Jagannadha Sutradharudu Teki, Xilinx Inc.
  * Copyright (C) 2010 Reinhard Meyer, EMK Elektronik
  * Copyright (C) 2008 Atmel Corporation
+ * Copyright 2020 NXP
  */
 
 #include <common.h>
@@ -1321,7 +1322,7 @@ int spi_flash_scan(struct spi_flash *flash)
 	puts("\n");
 #endif
 
-	if (params->flags & ADDR_4B) {
+	if (flash->flags & ADDR_4B) {
 		flash->cmd_len = 1 + SPI_FLASH_4B_ADDR_LEN;
 	} else {
 		flash->cmd_len = 1 + SPI_FLASH_3B_ADDR_LEN;
