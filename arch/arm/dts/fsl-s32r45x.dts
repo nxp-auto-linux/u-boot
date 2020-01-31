@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -11,7 +11,7 @@
 /dts-v1/;
 #include "fsl-s32-gen1.dtsi"
 / {
-	model = "NXP S32G27x";
+	model = "NXP S32R45X";
 	compatible = "fsl,s32r45x", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
 	signature {
@@ -37,6 +37,18 @@
 		      /* extended DDR from 4 to 32 GB should go elsewhere */
 	};
 
+};
+
+&qspi {
+	status = "okay";
+
+	mx25uw51245g@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "spi-flash";
+		spi-max-frequency = <200000000>;
+		reg = <0>;
+	};
 };
 
 &usdhc0 {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,18 @@
 			/* non-prefetchable memory */
 			0x82000000 0x0 0x40000000 0x48 0x40000000 0x0 0x40000000>;
 		status = "disabled";
+	};
+};
+
+&qspi {
+	status = "okay";
+
+	mx25uw51245g@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "spi-flash";
+		spi-max-frequency = <200000000>;
+		reg = <0>;
 	};
 };
 
