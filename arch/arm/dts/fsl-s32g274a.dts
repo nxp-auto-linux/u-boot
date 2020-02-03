@@ -15,6 +15,10 @@
 	compatible = "fsl,s32g275-simu", "fsl,s32g275", "fsl,s32gen1",
 				 "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
+	aliases {
+		pcie1 = &pcie1;
+	};
+
 	signature {
 		key-boot_key {
 			required = "conf";
