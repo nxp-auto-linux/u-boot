@@ -64,30 +64,31 @@ config XEN_SUPPORT
 	  Dom0.
 
 choice
-	prompt "Select U-Boot's execution level"
-	default S32_RUN_AT_EL3
+	prompt "Select boot flow configuration"
+	default S32_STANDALONE_BOOT_FLOW
 	help
-	  In secure boot scenarios, there would be a Trusted Firmware running at
-	  EL3 just before U-Boot, while the latter runs at EL2. Running at EL2
-	  prevents U-Boot from configuring certain registers, in particular
-	  secure GICv3 registers.
+	  In secure boot and power management aware scenarios, there would be a
+	  Trusted Firmware running at EL3 just before U-Boot, while the latter
+	  runs at EL2 or EL1. Running in the non-secure world prevents U-Boot
+	  from configuring certain registers, in particular secure GICv3.
 	  While the secure boot feature and the Trusted Firmware are still in
 	  development, this choice will enable the U-Boot and firmware developer
-	  switch between EL3 and EL2 execution levels. The default is EL3, to
-	  allow for backward compatibility with existing, stable configurations.
+	  to switch between TF-A and standalone boot flows. The default
+	  is standalone, to allow for backward compatibility with the existing,
+	  stable configurations.
 
-	config S32_RUN_AT_EL3
-		bool "U-Boot runs at EL3 (no TF-A)"
+	config S32_STANDALONE_BOOT_FLOW
+		bool "Standalone boot flow"
 		help
 		  U-Boot runs at EL3 as the first component in the boot flow.
 		  This boot flow does not accommodate an ARM Trusted Firmware
 		  (TF-A) for this platform.
 
-	config S32_RUN_AT_EL2
-		bool "U-Boot runs at EL2 (with TF-A)"
+	config S32_ATF_BOOT_FLOW
+		bool "Boot flow with TF-A"
 		help
-		  U-Boot runs at EL2 and is started by the ARM Trusted Firmware
-		  (TF-A) for this platform.
+		  U-Boot is started by the ARM Trusted Firmware (TF-A) and runs
+		  in the non-secure world.
 endchoice
 
 endif

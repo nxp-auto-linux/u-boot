@@ -16,8 +16,7 @@
 
 #ifdef CONFIG_MP
 
-#if CONFIG_S32_RUN_AT_EL2
-/* U-Boot at EL2, presumably because of a Trusted Firmware running at EL3 */
+#if CONFIG_S32_ATF_BOOT_FLOW
 static void ft_fixup_enable_method(void *blob, int off, u64 __always_unused reg)
 {
 	const char *prop = fdt_getprop(blob, off, "enable-method", NULL);
@@ -69,7 +68,7 @@ static void ft_fixup_enable_method(void *blob, int off, u64 reg)
 }
 #endif
 
-#if CONFIG_S32_RUN_AT_EL2
+#if CONFIG_S32_ATF_BOOT_FLOW
 /* Add a "psci" node at the top-level of the devide-tree,
  * if it does not already exist
  */
@@ -141,7 +140,7 @@ void ft_fixup_cpu(void *blob)
 						    "cpu", 4);
 	}
 
-#if CONFIG_S32_RUN_AT_EL2
+#if CONFIG_S32_ATF_BOOT_FLOW
 	/* Check if a "psci" node should be added */
 	ft_fixup_psci_node(blob);
 #endif

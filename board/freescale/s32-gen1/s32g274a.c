@@ -104,7 +104,7 @@ void setup_iomux_dspi(void)
 }
 #endif
 
-#if defined(CONFIG_S32_RUN_AT_EL3)
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */
@@ -159,5 +159,5 @@ void setup_iomux_sdhc(void)
 void setup_iomux_sdhc(void)
 {
 }
-#endif /* CONFIG_S32_RUN_AT_EL3 */
+#endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 #endif

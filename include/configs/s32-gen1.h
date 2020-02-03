@@ -92,11 +92,11 @@
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 
-#if defined(CONFIG_S32_RUN_AT_EL3)
-/* In secure boot scenarios such as on S32G274A, the Trusted Firmware runs at
- * EL3, while U-Boot runs at EL2. This produces errors while U-Boot attempts to
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+/* In secure boot scenarios, the Trusted Firmware runs at EL3, while U-Boot runs
+ * in the non-secure world. This produces errors while U-Boot attempts to
  * configure the secure GIC registers. As a result, GICv3 initialization on S32G
- * is done by the Trusted Firmware - or we keep running U-Boot at EL3.
+ * is done by the Trusted Firmware - unless we run U-Boot at EL3.
  */
 #define CONFIG_GICV3
 #define GIC_BASE	0x50800000
