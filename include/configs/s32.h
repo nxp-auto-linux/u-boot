@@ -275,10 +275,17 @@
 #define NFSRAMFS_TFTP_CMD ""
 #endif
 
+#ifdef CONFIG_DWC_ETH_QOS_S32CC
+#define GMAC_EXTRA_ENV_SETTINGS \
+	"s32cc_gmac_mode=enable\0"
+#else
+#define GMAC_EXTRA_ENV_SETTINGS ""
+#endif
+
 #ifdef CONFIG_FSL_PFENG
 #define PFENG_EXTRA_BOOT_ARGS " nohz=off coherent_pool=64M "
 #ifdef CONFIG_TARGET_S32G274AEVB
-#define PFENG_MODE "enable,rgmii,rgmii,none"
+#define PFENG_MODE "enable,none,rgmii,rgmii"
 #define PFENG_EMAC "1"
 #endif
 #ifdef CONFIG_TARGET_S32G274ARDB
@@ -461,6 +468,7 @@
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
+	GMAC_EXTRA_ENV_SETTINGS \
 	PFE_EXTRA_ENV_SETTINGS \
 	PCIE_EXTRA_ENV_SETTINGS
 
