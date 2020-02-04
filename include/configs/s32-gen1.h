@@ -126,4 +126,13 @@
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_SPEED		100000
 
+#if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
+#define CONFIG_SYS_FSL_QSPI_AHB
+
+#undef FSL_QSPI_FLASH_SIZE
+#define FSL_QSPI_FLASH_SIZE            SZ_64M
+#endif
+
+
+
 #endif
