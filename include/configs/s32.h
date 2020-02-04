@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -276,7 +276,7 @@
 #endif
 
 #ifdef CONFIG_FSL_PFENG
-#define PFENG_EXTRA_BOOT_ARGS " nohz=off "
+#define PFENG_EXTRA_BOOT_ARGS " nohz=off coherent_pool=64M "
 #ifdef CONFIG_TARGET_S32G274AEVB
 #define PFENG_MODE "enable,rgmii,rgmii,none"
 #define PFENG_EMAC "1"
