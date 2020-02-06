@@ -306,10 +306,13 @@ static inline void final_mmu_setup(void)
 
 int arch_cpu_init(void)
 {
-#ifdef CONFIG_S32_GEN1
+#if defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_RUN_AT_EL3)
 	/* Platforms with Concerto/Ncore have to explicitly initialize
 	 * the interconnect before any cache operations are performed.
 	 * Also, ensure that clocks are initialized before the interconnect.
+	 *
+	 * Note: TF-A has already initialized these, so don't do it again if
+	 * we're running at EL2.
 	 */
 	clock_init();
 	ncore_init(0x1);
@@ -384,7 +387,7 @@ static int s32_gentimer_init(void)
 	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
 	return 0;
 }
-#elif defined(CONFIG_S32_GEN1)
+#elif defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_RUN_AT_EL3)
 /* The base counter frequency (FXOSC on the S32G) is actually board-dependent.
  * Moreoever, only software running at the highest implemented Exception level
  * can write to CNTFRQ_EL0, so we won't even define this function if we are

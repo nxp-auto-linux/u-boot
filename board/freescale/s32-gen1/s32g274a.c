@@ -104,6 +104,7 @@ void setup_iomux_dspi(void)
 }
 #endif
 
+#if defined(CONFIG_S32_RUN_AT_EL3)
 void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */
@@ -153,4 +154,10 @@ void setup_iomux_sdhc(void)
 	/* PD10 pad: uSDHC SD0_DQS_I */
 	writel(0x2, SIUL2_0_MSCRn(524));
 }
+#else
+/* The previous-stage bootloader (TF-A) is expected to have handled this. */
+void setup_iomux_sdhc(void)
+{
+}
+#endif /* CONFIG_S32_RUN_AT_EL3 */
 #endif

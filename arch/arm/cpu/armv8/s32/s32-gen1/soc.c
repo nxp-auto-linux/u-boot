@@ -527,14 +527,14 @@ U_BOOT_CMD(
 		"and disconnect from the Hyperflash.\n");
 #endif
 
-#ifdef CONFIG_SYS_FSL_DDRSS
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_RUN_AT_EL3)
 extern struct ddrss_conf ddrss_conf;
 extern struct ddrss_firmware ddrss_firmware;
 #endif
 
 __weak int dram_init(void)
 {
-#ifdef CONFIG_SYS_FSL_DDRSS
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_RUN_AT_EL3)
 	ddrss_init(&ddrss_conf, &ddrss_firmware);
 #endif
 	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
