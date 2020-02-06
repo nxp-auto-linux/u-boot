@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * (C) Copyright 2018-2019 NXP
+ * (C) Copyright 2018-2020 NXP
  */
 
 #include <asm/io.h>
@@ -83,6 +83,7 @@ void s32gen1_enable_partition_blocks(u32 partition_n, u32 *blocks,
 		       RDC_RD_N_CTRL(partition_n));
 	}
 
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(partition_n)) | blocks_mask,
 	       MC_ME_PRTN_N_COFB0_CLKEN(partition_n));
 
@@ -92,6 +93,7 @@ void s32gen1_enable_partition_blocks(u32 partition_n, u32 *blocks,
 	while (!(readl(MC_ME_PRTN_N_COFB0_STAT(partition_n)) &
 		 blocks_mask))
 		;
+#endif
 }
 
 /*
