@@ -41,11 +41,6 @@ static struct eqos_pdata dwmac_pdata = {
 	.config = &eqos_s32cc_config,
 };
 
-U_BOOT_DEVICE(dwmac_s32cc) = {
-	.name = "eth_eqos",
-	.platdata = &dwmac_pdata,
-};
-
 /* GMAC platform specific setup */
 
 void setup_iomux_enet_gmac(int intf)
@@ -218,11 +213,25 @@ static struct pfeng_pdata pfeng_platdata = {
 	.config = &pfeng_s32g274a_config,
 };
 
-U_BOOT_DEVICE(pfeng) = {
-	.name = "eth_pfeng",
-	.platdata = &pfeng_platdata,
-};
-
-
-
 #endif /* CONFIG_FSL_PFENG */
+
+/*
+ * Platform network devices
+ *
+ * (TODO: remove when switching to DT)
+ *
+ */
+U_BOOT_DEVICES(s32_enet) = {
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	{
+		.name = "eth_eqos",
+		.platdata = &dwmac_pdata,
+	},
+#endif
+#if CONFIG_IS_ENABLED(FSL_PFENG)
+	{
+		.name = "eth_pfeng",
+		.platdata = &pfeng_platdata,
+	},
+#endif
+};
