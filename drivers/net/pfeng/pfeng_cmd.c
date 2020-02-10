@@ -116,9 +116,9 @@ static void disable_partition_2(void)
 	while (!(readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS))
 		;
 
-	/* Lift partition reset for PFE */
+	/* Assert partition reset for PFE */
 	writel(readl(RGM_PRST(PART_PFE_NO)) | 0x1, RGM_PRST(PART_PFE_NO));
-	while (readl(RGM_PSTAT(PART_PFE_NO)) & 0x1)
+	while (!(readl(RGM_PSTAT(PART_PFE_NO)) & 0x1))
 		;
 }
 
