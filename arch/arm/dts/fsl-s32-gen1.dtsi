@@ -12,7 +12,13 @@
 	#size-cells = <2>;
 
 	aliases {
-		spi0 = &qspi;
+		spi0 = &dspi0;
+		spi1 = &dspi1;
+		spi2 = &dspi2;
+		spi3 = &dspi3;
+		spi4 = &dspi4;
+		spi5 = &dspi5;
+		spi6 = &qspi;
 		pcie0 = &pcie0;
 	};
 
@@ -83,6 +89,60 @@
 		status = "disabled";
 	};
 
+	dspi0: dspi0@401D4000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-dspi";
+		reg = <0x0 0x401d4000 0x0 0x1000>;
+		num-cs = <8>;
+		status = "disabled";
+	};
+
+	dspi1: dspi1@401D8000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-dspi";
+		reg = <0x0 0x401d8000 0x0 0x1000>;
+		num-cs = <5>;
+		status = "disabled";
+	};
+
+	dspi2: dspi2@401DC000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-dspi";
+		reg = <0x0 0x401dc000 0x0 0x1000>;
+		num-cs = <5>;
+		status = "disabled";
+	};
+
+	dspi3: dspi3@402C8000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-dspi";
+		reg = <0x0 0x402c8000 0x0 0x1000>;
+		num-cs = <5>;
+		status = "disabled";
+	};
+
+	dspi4: dspi4@402CC000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-dspi";
+		reg = <0x0 0x402cc000 0x0 0x1000>;
+		num-cs = <5>;
+		status = "disabled";
+	};
+
+	dspi5: dspi5@402D0000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-dspi";
+		reg = <0x0 0x402d0000 0x0 0x1000>;
+		num-cs = <5>;
+		status = "disabled";
+	};
+
 	qspi: quadspi@40134000 {
 		compatible = "fsl,vf610-qspi";
 		#address-cells = <1>;
@@ -95,3 +155,4 @@
 		status = "disabled";
 	};
 };
+
