@@ -113,8 +113,7 @@ static void disable_partition_2(void)
 	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
 	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	//while (readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) & ~MC_ME_PRTN_N_OSSE)
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS)
+	while (!(readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS))
 		;
 
 	/* Lift partition reset for PFE */
@@ -162,7 +161,7 @@ static void enable_partition_2(void)
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
 	while (readl(RGM_PSTAT(PART_PFE_NO)) & 0x1)
 		;
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSE)
+	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS)
 		;
 }
 
