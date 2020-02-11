@@ -151,7 +151,6 @@
 			<0x0 0x40134000 0x0 0x1000>;
 		reg-names = "QuadSPI-memory", "QuadSPI";
 		num-cs = <2>;
-		bus-num = <0>;
 		status = "disabled";
 	};
 };
