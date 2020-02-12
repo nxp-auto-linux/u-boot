@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright 2019-2020 NXP
+ */
+
+/dts-v1/;
+#include "fsl-s32g274a.dtsi"
+
+&dspi1 {
+	status = "okay";
+};
+
+&dspi5 {
+	status = "okay";
+};
+
