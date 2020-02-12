@@ -139,7 +139,10 @@ sram_init:
 	ldr x0,  =__bss_start
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	ldr x1, =__bss_end
-#else
+#elif defined CONFIG_S32_GEN1
+	ldr x1, =CONFIG_SYS_TEXT_BASE
+	add x1, x1, #CONFIG_UBOOT_SRAM_FOOTPRINT
+#else	/* S32V234 */
 	ldr x1, = IRAM_BASE_ADDR
 	add x1, x1, IRAM_SIZE
 #endif
