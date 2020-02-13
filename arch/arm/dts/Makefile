@@ -309,6 +309,10 @@ dtb-$(CONFIG_FSL_LSCH2) += fsl-ls1043a-qds-duart.dtb \
 	fsl-ls1012a-frdm.dtb \
 	fsl-ls1012a-frwy.dtb
 
+dtb-$(CONFIG_TARGET_S32G274AEVB) += fsl-s32g274aevb.dtb
+dtb-$(CONFIG_TARGET_S32G274ARDB) += fsl-s32g274ardb.dtb
+dtb-$(CONFIG_TARGET_S32R45XEVB) += fsl-s32r45x.dtb
+
 dtb-$(CONFIG_TARGET_DRAGONBOARD410C) += dragonboard410c.dtb
 dtb-$(CONFIG_TARGET_DRAGONBOARD820C) += dragonboard820c.dtb
 
