@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -21,7 +21,7 @@
 #undef CONFIG_BOOTARGS_LOGLEVEL
 #endif
 
-#define CONFIG_BOOTARGS_LOGLEVEL " loglevel=7 "
+#define CONFIG_BOOTARGS_LOGLEVEL	" loglevel=7 "
 
 #ifdef CONFIG_BOOTDELAY
 #undef CONFIG_BOOTDELAY
@@ -30,4 +30,12 @@
 #define CONFIG_BOOTDELAY	-1
 
 #endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
+
+#if defined(CONFIG_TARGET_S32R45XEVB)
+/* J36 - PMIC */
+#define CONFIG_SYS_I2C_MXC_I2C1
+/* J37 */
+#define CONFIG_SYS_I2C_MXC_I2C2
+#endif
+
 #endif

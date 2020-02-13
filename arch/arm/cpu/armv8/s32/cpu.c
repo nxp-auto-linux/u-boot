@@ -18,6 +18,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+static int s32_gentimer_init(void);
+#endif
+
 static struct mm_region s32_mem_map[] = {
 	{
 		/* List terminator */
@@ -302,10 +306,13 @@ static inline void final_mmu_setup(void)
 
 int arch_cpu_init(void)
 {
-#ifdef CONFIG_S32_GEN1
+#if defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	/* Platforms with Concerto/Ncore have to explicitly initialize
 	 * the interconnect before any cache operations are performed.
 	 * Also, ensure that clocks are initialized before the interconnect.
+	 *
+	 * Note: TF-A has already initialized these, so don't do it again if
+	 * we're running at EL2.
 	 */
 	clock_init();
 	ncore_init(0x1);
@@ -315,6 +322,9 @@ int arch_cpu_init(void)
 	__asm_invalidate_tlb_all();
 	early_mmu_setup();
 
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+	s32_gentimer_init();
+#endif
 	return 0;
 }
 
@@ -335,6 +345,7 @@ void enable_caches(void)
 #endif
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
+#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 int arch_early_init_r(void)
 {
 	int rv;
@@ -353,10 +364,23 @@ int arch_early_init_r(void)
 
 	return 0;
 }
-#endif /* CONFIG_ARCH_EARLY_INIT_R */
+#else
+/* With TF-A, practically we should do nothing of the above; define an empty
+ * stub to appease the compiler.
+ */
+int arch_early_init_r(void)
+{
+	return 0;
+}
+#endif
+#endif
 
+/* For configurations with U-Boot *not* at EL3, it is presumed that
+ * the EL3 software (e.g. the TF-A) will initialize the generic timer.
+ */
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 #ifdef CONFIG_S32V234
-int timer_init(void)
+static int s32_gentimer_init(void)
 {
 	if (get_siul2_midr1_major() >= 1)
 		return 0;
@@ -373,11 +397,13 @@ int timer_init(void)
 	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
 	return 0;
 }
-#elif defined(CONFIG_S32_GEN1)
-/* The base counter frequency (FXOSC on the S32G)
- * is actually board-dependent
+#elif defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+/* The base counter frequency (FXOSC on the S32G) is actually board-dependent.
+ * Moreoever, only software running at the highest implemented Exception level
+ * can write to CNTFRQ_EL0, so we won't even define this function if we are
+ * running with TF-A.
  */
-int timer_init(void)
+static int s32_gentimer_init(void)
 {
 	u32 clk_div;
 
@@ -394,4 +420,7 @@ int timer_init(void)
 
 	return 0;
 }
+#else
+#error "S32 platform should provide ARMv8 generic timer initialization"
 #endif
+#endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */

@@ -131,6 +131,8 @@ struct regconf {
 struct ddrss_conf {
 	struct regconf *ddrc_conf;
 	size_t ddrc_conf_length;
+	struct regconf *dq_bswap;
+	size_t dq_bswap_length;
 	struct regconf *ddrphy_conf;
 	size_t ddrphy_conf_length;
 	struct regconf *pie;
@@ -145,6 +147,14 @@ struct ddrss_firmware {
 	struct regconf *dmem_1d;
 	size_t dmem_1d_length;
 };
+
+extern struct regconf dq_bswap[];
+extern size_t dq_bswap_length;
+
+static inline void populate_ddrss_conf(struct ddrss_conf *ddrss_conf)
+{
+	ddrss_conf->dq_bswap_length = dq_bswap_length;
+}
 
 static inline void deassert_ddr_reset(void)
 {

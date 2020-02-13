@@ -1,11 +1,12 @@
 #
 # (C) Copyright 2013-2015 Freescale Semiconductor, Inc.
-# Copyright 2018-2019 NXP
+# Copyright 2018-2020 NXP
 #
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
 ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
+ccflags-$(CONFIG_S32_GEN1) += -Iboard/freescale/s32-gen1
 obj-y := common.o
 
 obj-$(CONFIG_S32G274A) += s32g274a.o
@@ -32,8 +33,23 @@ obj-$(CONFIG_TARGET_S32V344SIM) += s32v344sim.o
 ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
+
+ifdef CONFIG_TARGET_S32R45XEVB
+obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_s32r45xevb.o
+endif
+
+ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB)),)
+obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_s32g274a.o
+endif
+
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf.o ddrss_firmware.o
-obj-$(CONFIG_SJA1105) += sja1105_cfg.o
+
+ifdef CONFIG_TARGET_S32G274AEVB
+obj-$(CONFIG_SJA1105) += sja1105_cfg_evb.o
+else ifdef CONFIG_TARGET_S32G274ARDB
+obj-$(CONFIG_SJA1105) += sja1105_cfg_rdb.o
+endif
+
 endif
 
 #########################################################################

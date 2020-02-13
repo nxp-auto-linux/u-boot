@@ -103,6 +103,7 @@ struct eqos_mac_regs {
 #define EQOS_MAC_MDIO_ADDRESS_GB			BIT(0)
 
 #define EQOS_MAC_MDIO_DATA_GD_MASK			0xffff
+#define EQOS_MAC_MDIO_DATA_RA_SHIFT			16
 
 #define EQOS_MMC_REGS_BASE				0x0700
 struct eqos_mmc_regs {
@@ -242,6 +243,8 @@ struct eqos_config {
 	bool reg_access_always_ok;
 	int mdio_wait;
 	int swr_wait;
+	u32 tx_fifo_size;
+	u32 rx_fifo_size;
 	int config_mac;
 	int config_mac_mdio;
 	u32 config_phy_addr;

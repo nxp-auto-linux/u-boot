@@ -159,16 +159,33 @@ static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 		return ret;
 	}
 
-	val = readl(&eqos->mac_regs->mdio_address);
-	val &= EQOS_MAC_MDIO_ADDRESS_SKAP |
-		EQOS_MAC_MDIO_ADDRESS_C45E;
-	val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
-		(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
-		(eqos->config->config_mac_mdio <<
-		 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
-		(EQOS_MAC_MDIO_ADDRESS_GOC_READ <<
-		 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
-		EQOS_MAC_MDIO_ADDRESS_GB;
+	if (mdio_devad == MDIO_DEVAD_NONE) {
+		/* Clause 22 */
+		val = readl(&eqos->mac_regs->mdio_address);
+
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_READ <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB;
+	} else {
+		/* Clause 45 */	
+		writel(mdio_reg << EQOS_MAC_MDIO_DATA_RA_SHIFT, &eqos->mac_regs->mdio_data);
+		val = readl(&eqos->mac_regs->mdio_address);
+
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_devad << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_READ <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB |
+			EQOS_MAC_MDIO_ADDRESS_C45E;
+	}
 	writel(val, &eqos->mac_regs->mdio_address);
 
 	udelay(eqos->config->mdio_wait);
@@ -203,18 +220,34 @@ static int eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 		return ret;
 	}
 
-	writel(mdio_val, &eqos->mac_regs->mdio_data);
+	if (mdio_devad == MDIO_DEVAD_NONE) {
+		/* Clause 22 */
+		writel(mdio_val, &eqos->mac_regs->mdio_data);
+		val = readl(&eqos->mac_regs->mdio_address);
 
-	val = readl(&eqos->mac_regs->mdio_address);
-	val &= EQOS_MAC_MDIO_ADDRESS_SKAP |
-		EQOS_MAC_MDIO_ADDRESS_C45E;
-	val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
-		(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
-		(eqos->config->config_mac_mdio <<
-		 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
-		(EQOS_MAC_MDIO_ADDRESS_GOC_WRITE <<
-		 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
-		EQOS_MAC_MDIO_ADDRESS_GB;
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_WRITE <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB;
+	} else {
+		/* Clause 45 */
+		writel(mdio_val | (mdio_reg << EQOS_MAC_MDIO_DATA_RA_SHIFT), &eqos->mac_regs->mdio_data);
+		val = readl(&eqos->mac_regs->mdio_address);
+
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_devad << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_WRITE <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB |
+			EQOS_MAC_MDIO_ADDRESS_C45E;
+	}
 	writel(val, &eqos->mac_regs->mdio_address);
 
 	udelay(eqos->config->mdio_wait);
@@ -499,25 +532,33 @@ static int eqos_start(struct udevice *dev)
 	setbits_le32(&eqos->mtl_regs->rxq0_operation_mode,
 		     EQOS_MTL_RXQ0_OPERATION_MODE_RSF);
 
-	/* Transmit/Receive queue fifo size; use all RAM for 1 queue */
-	val = readl(&eqos->mac_regs->hw_feature1);
-	tx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT) &
-		EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK;
-	rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
-		EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
+	/* Get the RX fifo size - use preconfigured value if defined */
+	if (eqos->config->rx_fifo_size) {
+		rx_fifo_sz = eqos->config->rx_fifo_size;
+	} else {
+		val = readl(&eqos->mac_regs->hw_feature1);
+		rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
+			EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
+		/* r/tx_fifo_sz is encoded as log2(n / 128). */
+		rx_fifo_sz = (128 << rx_fifo_sz);
+	}
 
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-	/* Workaround for MTL ECC error experienced on S32CC platform */
-	tqs = 0x4f;
-	rqs = 0x4f;
-#else
-	/*
-	 * r/tx_fifo_sz is encoded as log2(n / 128). Undo that by shifting.
-	 * r/tqs is encoded as (n / 256) - 1.
-	 */
-	tqs = (128 << tx_fifo_sz) / 256 - 1;
-	rqs = (128 << rx_fifo_sz) / 256 - 1;
-#endif
+	/* Get the TX fifo size - use preconfigured value if defined */
+	if (eqos->config->tx_fifo_size) {
+		tx_fifo_sz = eqos->config->tx_fifo_size;
+	} else {
+		val = readl(&eqos->mac_regs->hw_feature1);
+		tx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT) &
+			EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK;
+		/* r/tx_fifo_sz is encoded as log2(n / 128). */
+		tx_fifo_sz = (128 << tx_fifo_sz);
+	}
+
+	/* Transmit/Receive queue fifo size; use all RAM for 1 queue */
+	/* r/tqs is encoded as (n / 256) - 1 */
+	tqs = (tx_fifo_sz / 256) - 1;
+	rqs = (rx_fifo_sz / 256) - 1;
+
 	clrsetbits_le32(&eqos->mtl_regs->txq0_operation_mode,
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_MASK <<
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_SHIFT,

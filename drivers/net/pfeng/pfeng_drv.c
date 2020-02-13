@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * 2019 NXP
+ * 2019-2020 NXP
  *
  */
 
@@ -12,6 +12,7 @@
 #include <miiphy.h>
 #include <net.h>
 #include <elf.h>
+#include <hwconfig.h>
 
 #include "oal.h"
 #include "pfe_platform.h"
@@ -21,12 +22,12 @@
 
 #include "pfeng.h"
 
-bool pfeng_cfg_set_mode(u32 mode);
-
 #define HIF_QUEUE_ID 0
 #define HIF_HEADER_SIZE sizeof(pfe_ct_hif_rx_hdr_t)
 
 static struct pfeng_priv *pfeng_drv_priv = NULL;
+
+int s32_serdes1_wait_link(int idx);
 
 /* firmware */
 
@@ -175,8 +176,17 @@ static int emac_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 {
 	pfe_emac_t *emac = bus->priv;
 	u16 val;
+	int ret;
 
-	if (pfe_emac_mdio_read22(emac, mdio_addr, mdio_reg, &val)) {
+	if (mdio_devad == MDIO_DEVAD_NONE)
+		/* clause 22 */
+		ret = pfe_emac_mdio_read22(emac, mdio_addr, mdio_reg, &val);
+	else
+		/* clause 45 */
+		ret = pfe_emac_mdio_read45(emac, mdio_addr, mdio_devad,
+					   mdio_reg, &val);
+
+	if (ret) {
 		pr_err("%s: MDIO read on MAC failed\n", bus->name);
 		return -EAGAIN;
 	}
@@ -189,11 +199,21 @@ static int emac_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 			   int mdio_reg, u16 mdio_val)
 {
 	pfe_emac_t *emac = bus->priv;
+	int ret;
 
 	debug("%s(addr=%x, reg=%d, val=%x):\n", __func__,
 	      mdio_addr, mdio_reg, mdio_val);
 
-	if (pfe_emac_mdio_write22(emac, mdio_addr, mdio_reg, mdio_val)) {
+	if (mdio_devad == MDIO_DEVAD_NONE)
+		/* clause 22 */
+		ret = pfe_emac_mdio_write22(emac, mdio_addr, mdio_reg,
+					    mdio_val);
+	else
+		/* clause 45 */
+		ret = pfe_emac_mdio_write45(emac, mdio_addr, mdio_devad,
+					    mdio_reg, mdio_val);
+
+	if (ret) {
 		pr_err("%s: MDIO write on MAC failed\n", bus->name);
 		return -EAGAIN;
 	}
@@ -264,16 +284,38 @@ static int pfeng_write_hwaddr(struct udevice *dev)
 	return -EINVAL;
 }
 
-static int pfeng_init(struct pfeng_priv *priv)
+static int pfeng_check_env(void)
+{
+	char *env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
+	char *tok, *loc_mode;
+
+	if (!env_mode || !strlen(env_mode)) {
+		/* return default mode */
+		return PFENG_MODE_DEFAULT;
+	}
+	loc_mode = strdup(env_mode);
+
+	tok = strchr(loc_mode, ',');
+	if (tok)
+		*tok = '\0';
+	if (!strcmp("disable", loc_mode)) {
+		return PFENG_MODE_DISABLE;
+	} else {
+		if (strcmp("enable", loc_mode)) {
+			/* not "disable" nor "enable" so do default */
+			return PFENG_MODE_DEFAULT;
+		}
+	}
+
+	return PFENG_MODE_ENABLE;
+}
+
+static int pfeng_set_fw_from_env(struct pfeng_priv *priv)
 {
 	char *env_fw;
 	char *fw_int = NULL, *fw_name = NULL, *fw_part = NULL;
 	int fw_type = FS_TYPE_ANY;
-	int ret = 0;
 	char *p;
-
-	/* enable PFE IP support */
-	pfeng_cfg_set_mode(1);
 
 	/* Parse fw destination from environment */
 	env_fw = env_get(PFENG_ENV_VAR_FW_SOURCE);
@@ -314,9 +356,13 @@ static int pfeng_init(struct pfeng_priv *priv)
 #endif
 
 	/* FW load */
-	ret = pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);
-	if (ret)
-		return ret;
+	return pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);
+}
+
+
+static int pfeng_driver_init(struct pfeng_priv *priv)
+{
+	int ret;
 
 	/* CFG setup */
 	priv->pfe_cfg.common_irq_mode = FALSE; /* don't use common irq mode */
@@ -419,7 +465,10 @@ static int pfeng_start(struct udevice *dev)
 	priv->emac_changed = priv->emac_index != clid;
 	priv->emac_index = clid;
 
-	dev_info(dev, "using pfe%d ...\n", clid);
+	printf("Attached to pfe%d\n", clid);
+
+	/* Update clocks */
+	pfeng_apply_clocks();
 
 	/* Retrieve LOGIF */
 	priv->iface = pfe_platform_get_log_if_by_id(priv->pfe, clid);
@@ -430,6 +479,17 @@ static int pfeng_start(struct udevice *dev)
 
 	priv->last_rx = NULL;
 	priv->last_tx = NULL;
+
+	/* check if the interface is up */
+	if (pfeng_cfg_emac_get_interface(clid) == PHY_INTERFACE_MODE_SGMII) {
+		if (clid == 0 || clid == 1) {
+			s32_serdes1_wait_link(clid);
+		} else {
+			dev_err(dev, "PFE2 SGMII mode not supported\n");
+			ret = -ENODEV;
+			goto err;
+		}
+	}
 
 	/* Sanitize hwaddr */
 	pfeng_write_hwaddr(dev);
@@ -587,8 +647,15 @@ static int pfeng_probe(struct udevice *dev)
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
 	int ret, i;
+	char *env_mode;
 
 	debug("%s(dev=%p):\n", __func__, dev);
+
+	/* check environment vars */
+	if (pfeng_check_env() == PFENG_MODE_DISABLE) {
+		dev_warn(dev, "pfeng: driver disabled by environment (pfeng_mode)\n");
+		return -ENODEV;
+	}
 
 	pfeng_drv_priv = priv;
 	priv->dev = dev;
@@ -602,10 +669,29 @@ static int pfeng_probe(struct udevice *dev)
 		return -ENODEV;
 	}
 
-	ret = pfeng_init(priv);
+	/* retrieve emacs mode from env */
+	env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
+	if (env_mode && ((env_mode = strchr(env_mode, ','))) && *env_mode)
+		pfeng_set_emacs_from_env(++env_mode);
+
+	/* check if pcie is not using serdes_1 */
+	if (REQUIRE_SERDES(1) && !hwconfig_subarg_cmp("pcie1", "mode", "sgmii"))
+		return -ENODEV;
+
+	/* enable PFE IP support */
+	pfeng_cfg_set_mode(PFENG_MODE_RUN);
+
+	/* fw: parse location and load it */
+	ret = pfeng_set_fw_from_env(priv);
 	if (ret)
 		return ret;
 
+	/* init pfe platform driver */
+	ret = pfeng_driver_init(priv);
+	if (ret)
+		return ret;
+
+	/* register mdios */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++)
 		if (priv->config->config_mac_mask & (1 << i))
 			pfeng_mdio_register(priv, i);
@@ -620,8 +706,6 @@ static int pfeng_remove(struct udevice *dev)
 	struct pfeng_priv *priv = dev_get_priv(dev);
 
 	debug("%s(dev=%p):\n", __func__, dev);
-
-	printf("\n-----> [%s] ...\n", __func__);
 
 	/* free all registered MDIO buses */
 	pfeng_mdio_unregister_all(priv);

@@ -812,7 +812,11 @@ int device_set_name(struct udevice *dev, const char *name)
 
 bool device_is_compatible(struct udevice *dev, const char *compat)
 {
+#ifdef CONFIG_OF_CONTROL
 	return ofnode_device_is_compatible(dev_ofnode(dev), compat);
+#else
+	return false;
+#endif
 }
 
 bool of_machine_is_compatible(const char *compat)

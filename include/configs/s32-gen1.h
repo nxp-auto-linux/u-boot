@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -59,7 +59,7 @@
 #elif defined(CONFIG_TARGET_S32G274ARDB)
 #define FDT_FILE fsl-s32g274a-rdb.dtb
 #elif defined(CONFIG_TARGET_S32R45XEVB)
-#define FDT_FILE fsl-s32r45x.dtb
+#define FDT_FILE fsl-s32r45x-evb.dtb
 #endif
 
 #define CONFIG_LOADADDR		LOADADDR
@@ -67,11 +67,9 @@
 #define CONFIG_SYS_INIT_SP_OFFSET \
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
 
-/* #define CONFIG_CMD_PCI */
-#ifdef CONFIG_CMD_PCI
+#ifdef CONFIG_CMD_IRQ
 #define CONFIG_GICSUPPORT
 #define CONFIG_USE_IRQ
-#define CONFIG_CMD_IRQ
 #endif
 
 #if CONFIG_FSL_LINFLEX_MODULE == 0
@@ -94,11 +92,11 @@
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 
-#if defined(CONFIG_S32_RUN_AT_EL3)
-/* In secure boot scenarios such as on S32G274A, the Trusted Firmware runs at
- * EL3, while U-Boot runs at EL2. This produces errors while U-Boot attempts to
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+/* In secure boot scenarios, the Trusted Firmware runs at EL3, while U-Boot runs
+ * in the non-secure world. This produces errors while U-Boot attempts to
  * configure the secure GIC registers. As a result, GICv3 initialization on S32G
- * is done by the Trusted Firmware - or we keep running U-Boot at EL3.
+ * is done by the Trusted Firmware - unless we run U-Boot at EL3.
  */
 #define CONFIG_GICV3
 #define GIC_BASE	0x50800000
@@ -124,5 +122,17 @@
 #define IS_ADDR_IN_DDR(addr) \
 	((addr) >= (DDR_BASE_ADDR) && \
 	(addr) <= (DDR_BASE_ADDR) + (CONFIG_SYS_DDR_SIZE))
+
+#define CONFIG_SYS_I2C
+#define CONFIG_SYS_I2C_SPEED		100000
+
+#if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
+#define CONFIG_SYS_FSL_QSPI_AHB
+
+#undef FSL_QSPI_FLASH_SIZE
+#define FSL_QSPI_FLASH_SIZE            SZ_64M
+#endif
+
+
 
 #endif

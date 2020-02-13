@@ -207,7 +207,7 @@ static int initr_unlock_ram_in_cache(void)
 #endif
 
 #ifdef CONFIG_PCI
-static int initr_pci(void)
+__weak int initr_pci(void)
 {
 #ifndef CONFIG_DM_PCI
 	pci_init();

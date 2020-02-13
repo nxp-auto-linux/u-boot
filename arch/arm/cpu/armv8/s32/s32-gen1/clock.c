@@ -10,16 +10,87 @@
 #include <asm/arch/mc_rgm_regs.h>
 #include <asm/arch/clock.h>
 
-void s32gen1_enable_partition_block(u32 partition_n, u32 block_n)
+static void mc_me_wait_update(u32 partition_n, unsigned long address, u32 mask)
 {
-	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(partition_n));
-	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(partition_n)) | MC_ME_PRTN_N_REQ(block_n),
-	       MC_ME_PRTN_N_COFB0_CLKEN(partition_n));
-	writel(MC_ME_PRTN_N_PCUD, MC_ME_PRTN_N_PUPD(partition_n));
+	writel(mask, MC_ME_PRTN_N_PUPD(partition_n));
 	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
 
-	while (readl(MC_ME_PRTN_N_PUPD(partition_n)) & MC_ME_PRTN_N_PCUD)
+	while (readl(address) & mask)
+		;
+}
+
+static u32 get_blocks_mask(u32 *blocks, size_t n_blocks)
+{
+	size_t i;
+	u32 blocks_mask = 0U;
+
+	for (i = 0U; i < n_blocks; i++)
+		blocks_mask |= MC_ME_PRTN_N_REQ(blocks[i]);
+
+	return blocks_mask;
+}
+
+void s32gen1_enable_partition_blocks(u32 partition_n, u32 *blocks,
+				     size_t n_blocks)
+{
+	u32 blocks_mask = get_blocks_mask(blocks, n_blocks);
+
+	writel(readl(MC_ME_PRTN_N_PCONF(partition_n)) | MC_ME_PRTN_N_PCE,
+	       MC_ME_PRTN_N_PCONF(partition_n));
+
+	/*
+	 * Partition 0 is enabled by default. The second activation of a
+	 * partition will be blocked, unless it has been previously disabled.
+	 */
+	if (partition_n != 0) {
+		mc_me_wait_update(partition_n, MC_ME_PRTN_N_PUPD(partition_n),
+				  MC_ME_PRTN_N_PCUD);
+
+		/* Unlock RDC register write */
+		writel(RD_CTRL_UNLOCK_MASK, RDC_RD_N_CTRL(partition_n));
+
+		/* Enable the XBAR interface */
+		writel(readl(RDC_RD_N_CTRL(partition_n)) &
+		       ~RD_XBAR_DISABLE_MASK, RDC_RD_N_CTRL(partition_n));
+
+		/* Wait until XBAR interface enabled */
+		while (readl(RDC_RD_N_STATUS(partition_n)) &
+		       RDC_RD_STAT_XBAR_DISABLE_MASK)
+			;
+
+		/* Lift reset for partition */
+		writel(readl(RGM_PRST(partition_n)) & (~PRST_PERIPH_n_RST(0)),
+		       RGM_PRST(partition_n));
+
+		/* Follow steps to clear OSSE bit */
+		writel(readl(MC_ME_PRTN_N_PCONF(partition_n)) &
+		       ~MC_ME_PRTN_N_OSSE, MC_ME_PRTN_N_PCONF(partition_n));
+
+		mc_me_wait_update(partition_n, MC_ME_PRTN_N_PUPD(partition_n),
+				  MC_ME_PRTN_N_OSSUD);
+
+		while (readl(MC_ME_PRTN_N_STAT(partition_n)) &
+		       MC_ME_PRTN_N_OSSS)
+			;
+
+		while (readl(RGM_PSTAT(partition_n)) &
+		       PSTAT_PERIPH_n_STAT(0))
+			;
+
+		/* Lock RDC register write */
+		writel(readl(RDC_RD_N_CTRL(partition_n)) & ~RD_CTRL_UNLOCK_MASK,
+		       RDC_RD_N_CTRL(partition_n));
+	}
+
+	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(partition_n)) | blocks_mask,
+	       MC_ME_PRTN_N_COFB0_CLKEN(partition_n));
+
+	mc_me_wait_update(partition_n, MC_ME_PRTN_N_PUPD(partition_n),
+			  MC_ME_PRTN_N_PCUD);
+
+	while (!(readl(MC_ME_PRTN_N_COFB0_STAT(partition_n)) &
+		 blocks_mask))
 		;
 }
 

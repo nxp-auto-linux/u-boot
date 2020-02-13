@@ -10,6 +10,7 @@
  *  Copyright (C) 2005 Matthias Blaschke <blaschke at synertronixx.de>
  *  Copyright (C) 2007 RightHand Technologies, Inc.
  *  Copyright (C) 2008 Darius Augulis <darius.augulis at teltonika.lt>
+ *  Copyright 2020 NXP
  *
  */
 
@@ -116,6 +117,9 @@ static u16 i2c_clk_div[50][2] = {
 #ifndef CONFIG_SYS_MXC_I2C4_SPEED
 #define CONFIG_SYS_MXC_I2C4_SPEED 100000
 #endif
+#ifndef CONFIG_SYS_MXC_I2C5_SPEED
+#define CONFIG_SYS_MXC_I2C5_SPEED 100000
+#endif
 
 #ifndef CONFIG_SYS_MXC_I2C1_SLAVE
 #define CONFIG_SYS_MXC_I2C1_SLAVE 0
@@ -128,6 +132,9 @@ static u16 i2c_clk_div[50][2] = {
 #endif
 #ifndef CONFIG_SYS_MXC_I2C4_SLAVE
 #define CONFIG_SYS_MXC_I2C4_SLAVE 0
+#endif
+#ifndef CONFIG_SYS_MXC_I2C5_SLAVE
+#define CONFIG_SYS_MXC_I2C5_SLAVE 0
 #endif
 
 
@@ -608,7 +615,8 @@ static int bus_i2c_write(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
 static struct mxc_i2c_bus mxc_i2c_buses[] = {
 #if defined(CONFIG_LS1021A) || defined(CONFIG_VF610) || \
 	defined(CONFIG_FSL_LAYERSCAPE) || defined(CONFIG_S32V234) || \
-	defined(CONFIG_SAC58R) || defined(CONFIG_MAC57D5XH)
+	defined(CONFIG_SAC58R) || defined(CONFIG_MAC57D5XH) || \
+	defined(CONFIG_S32_GEN1)
 	{ 0, I2C1_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 1, I2C2_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 2, I2C3_BASE_ADDR, I2C_QUIRK_FLAG },

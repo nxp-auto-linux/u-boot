@@ -27,6 +27,9 @@
 
 #define SIUL2_IFCPR				(SIUL2_0_BASE_ADDR + 0x000000C0)
 
+#define SIUL2_1_MIDR1			(SIUL2_1_BASE_ADDR + 0x00000004)
+#define SIUL2_1_MIDR2			(SIUL2_1_BASE_ADDR + 0x00000008)
+
 #else
 
 #define SIUL2_MIDR1				(SIUL2_BASE_ADDR + 0x00000004)
@@ -50,6 +53,11 @@
 #define SIUL2_MIDR1_MAJOR_SHIFT		(4)
 #define SIUL2_MIDR1_MAJOR_MASK		(0xF << SIUL2_MIDR1_MAJOR_SHIFT)
 
+#ifdef CONFIG_S32_GEN1
+#define SIUL2_MIDR2_SUBMINOR_SHIFT	(26)
+#define SIUL2_MIDR2_SUBMINOR_MASK	(0xF << SIUL2_MIDR2_SUBMINOR_SHIFT)
+#endif  /* CONFIG_S32_GEN1 */
+
 #define TREERUNNER_GENERATION_2_MAJOR	1
 
 #if defined(CONFIG_S32V234)
@@ -60,13 +68,25 @@
 #error "Incomplete platform definition"
 #endif
 
-static inline int get_siul2_midr1_minor(void) {
+static inline int get_siul2_midr1_minor(void)
+{
 	return (readl(SIUL2_MIDR1) & SIUL2_MIDR1_MINOR_MASK);
 }
 
-static inline int get_siul2_midr1_major(void) {
+static inline int get_siul2_midr1_major(void)
+{
 	return ((readl(SIUL2_MIDR1) & SIUL2_MIDR1_MAJOR_MASK)
 			>> SIUL2_MIDR1_MAJOR_SHIFT);
 }
+
+#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
+
+static inline int get_siul2_midr2_subminor(void)
+{
+	return ((readl(SIUL2_1_MIDR2) & SIUL2_MIDR2_SUBMINOR_MASK)
+			>> SIUL2_MIDR2_SUBMINOR_SHIFT);
+}
+
+#endif  /* CONFIG_S32_GEN1 */
 
 #endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */

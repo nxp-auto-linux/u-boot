@@ -142,6 +142,7 @@
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
 
 /* Flash booting */
+#define UBOOT_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0x0
 #define KERNEL_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0x100000
 #define KERNEL_FLASH_MAXSIZE		0xA00000
 #define FDT_FLASH_ADDR			CONFIG_SYS_FSL_FLASH0_BASE + 0xB00000
@@ -275,16 +276,34 @@
 #endif
 
 #ifdef CONFIG_FSL_PFENG
+#define PFENG_EXTRA_BOOT_ARGS " nohz=off "
+#ifdef CONFIG_TARGET_S32G274AEVB
+#define PFENG_MODE "enable,rgmii,rgmii,none"
+#define PFENG_EMAC "1"
+#endif
+#ifdef CONFIG_TARGET_S32G274ARDB
+#define PFENG_MODE "enable,sgmii,none,rgmii"
+#define PFENG_EMAC "2"
+#endif
 #define PFE_EXTRA_ENV_SETTINGS \
-	"pfe0addr=00:01:be:be:ef:11\0" \
+	"pfeng_mode=" PFENG_MODE "\0" \
+	"pfeaddr=00:01:be:be:ef:11\0" \
 	"pfe1addr=00:01:be:be:ef:22\0" \
 	"pfe2addr=00:01:be:be:ef:33\0" \
 	"ethact=eth_pfeng\0" \
-	"pfengemac=1\0"
-#define PFE_INIT_CMD "pfeng emacs rgmii,rgmii; pfeng enable; "
+	"pfengemac=" PFENG_EMAC "\0"
+#define PFE_INIT_CMD "pfeng stop; "
 #else
+#define PFENG_EXTRA_BOOT_ARGS ""
 #define PFE_EXTRA_ENV_SETTINGS ""
 #define PFE_INIT_CMD ""
+#endif
+
+#if defined(CONFIG_PCIE_S32GEN1) || defined(CONFIG_FSL_PFENG)
+#define PCIE_EXTRA_ENV_SETTINGS \
+	"hwconfig=" CONFIG_S32GEN1_HWCONFIG "\0"
+#else
+#define PCIE_EXTRA_ENV_SETTINGS ""
 #endif
 
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
@@ -333,7 +352,8 @@
 		"root=/dev/nfs rw " \
 		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
 		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp " \
-		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS "\0" \
+		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS \
+		PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
@@ -372,7 +392,8 @@
 		"fi\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate} " CONFIG_BOOTARGS_LOGLEVEL \
 		" root=${mmcroot} earlycon " \
-		CONFIG_EXTRA_KERNEL_BOOT_ARGS "\0" \
+		CONFIG_EXTRA_KERNEL_BOOT_ARGS \
+		PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
@@ -395,7 +416,8 @@
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
-		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS "\0" \
+		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS \
+		PFENG_EXTRA_BOOT_ARGS "\0" \
 	"netboot=echo Booting from net ...; " \
 		"run netargs; " \
 		"if test ${ip_dyn} = yes; then " \
@@ -419,7 +441,9 @@
 		"fi;\0" \
 	"flashbootargs=setenv bootargs console=${console}" \
 		CONFIG_BOOTARGS_LOGLEVEL " root=/dev/ram rw earlycon " \
-		CONFIG_EXTRA_KERNEL_BOOT_ARGS ";" \
+		CONFIG_EXTRA_KERNEL_BOOT_ARGS \
+		PFENG_EXTRA_BOOT_ARGS ";" \
+		"setexpr uboot_flashaddr " __stringify(UBOOT_FLASH_ADDR) ";" \
 		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
@@ -437,7 +461,8 @@
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
-	PFE_EXTRA_ENV_SETTINGS
+	PFE_EXTRA_ENV_SETTINGS \
+	PCIE_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
 
@@ -530,12 +555,17 @@
 
 #define CONFIG_BOOTP_BOOTFILESIZE
 
+#if !defined(CONFIG_TARGET_S32G274AEVB) && !defined(CONFIG_TARGET_S32R45XEVB)
+/* TODO: update S32V234 defconfigs so that definitions below to not apply
+ * to all S32's or find a smarter way to make S32G and S32V PCI coexist
+ */
 #ifdef CONFIG_CMD_PCI
 #define CONFIG_PCIE_S32V234
 #define CONFIG_PCI
 #define CONFIG_PCI_PNP
 #define CONFIG_PCI_SCAN_SHOW
 #endif
+#endif  /* !CONFIG_TARGET_S32G274AEVB && !CONFIG_TARGET_S32R45XEVB */
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
 

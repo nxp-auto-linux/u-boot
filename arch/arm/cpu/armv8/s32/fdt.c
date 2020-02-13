@@ -16,8 +16,7 @@
 
 #ifdef CONFIG_MP
 
-#if CONFIG_S32_RUN_AT_EL2
-/* U-Boot at EL2, presumably because of a Trusted Firmware running at EL3 */
+#if CONFIG_S32_ATF_BOOT_FLOW
 static void ft_fixup_enable_method(void *blob, int off, u64 __always_unused reg)
 {
 	const char *prop = fdt_getprop(blob, off, "enable-method", NULL);
@@ -69,7 +68,7 @@ static void ft_fixup_enable_method(void *blob, int off, u64 reg)
 }
 #endif
 
-#if CONFIG_S32_RUN_AT_EL2
+#if CONFIG_S32_ATF_BOOT_FLOW
 /* Add a "psci" node at the top-level of the devide-tree,
  * if it does not already exist
  */
@@ -141,7 +140,7 @@ void ft_fixup_cpu(void *blob)
 						    "cpu", 4);
 	}
 
-#if CONFIG_S32_RUN_AT_EL2
+#if CONFIG_S32_ATF_BOOT_FLOW
 	/* Check if a "psci" node should be added */
 	ft_fixup_psci_node(blob);
 #endif
@@ -195,7 +194,7 @@ void ft_fixup_clock_frequency(void *blob)
 }
 #endif
 
-/* Fixup the DDR node in order to reserve "pram" amount of KB at the top of
+/* Fixup the DDR node in order to reserve "pram" amount of KB somewhere in the
  * available physical memory. This would typically be used by TF-A as a secure
  * memory, and enforced through XRDC. Making it "invisible" to Linux is only a
  * defensive means of keeping software out of trouble.
@@ -205,7 +204,7 @@ void ft_fixup_clock_frequency(void *blob)
 #if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
 static void ft_fixup_ddr_pram(void *blob)
 {
-	int off, maxoff = -1;
+	int off = -1, maxoff = -1;
 	fdt32_t *reg;
 	fdt_addr_t rambase, maxbase = 0;
 	fdt_size_t ramsize, maxsize = 0;
@@ -213,12 +212,13 @@ static void ft_fixup_ddr_pram(void *blob)
 	const void *val;
 	void *newval;
 	int len;
-	int count = 0;
 
-	off = fdt_node_offset_by_prop_value(blob, -1, "device_type",
-					    "memory", 7);
-	while (off != -FDT_ERR_NOTFOUND) {
-		count++;
+	while (1) {
+		off = fdt_node_offset_by_prop_value(blob, off, "device_type",
+						    "memory", 7);
+		if (off == -FDT_ERR_NOTFOUND)
+			break;
+
 		reg = (fdt32_t *)fdt_getprop(blob, off, "reg", 0);
 		if (!reg) {
 			puts("Warning: memory node with no reg property\n");
@@ -229,13 +229,18 @@ static void ft_fixup_ddr_pram(void *blob)
 			puts("Warning: Can't get baseaddr/size\n");
 			continue;
 		}
+		/* Only take into account nodes that declare memory below the
+		 * 2GB mark. In the SoC's memory map, these are guaranteed to
+		 * reside in the 32-bit physical address space, so all we need
+		 * to check is the start address of the region.
+		 */
+		if (rambase >> 32)
+			continue;
 		if (rambase + ramsize > maxbase + maxsize) {
 			maxbase = rambase;
 			maxsize = ramsize;
 			maxoff = off;
 		}
-		off = fdt_node_offset_by_prop_value(blob, off, "device_type",
-						    "memory", 7);
 	}
 
 	if (maxoff == -1) {
@@ -257,9 +262,8 @@ static void ft_fixup_ddr_pram(void *blob)
 		return;
 	}
 
-	printf("Reserving %ldk off the top of ddr@0x%llx for protected RAM; " \
-	       "new size=0x%llx\n",
-	       pram_size >> 10, maxbase, maxsize);
+	printf("Reserving %ldk off the top of [%llx-%llx] for protected RAM\n",
+	       pram_size >> 10, maxbase, maxbase + maxsize + pram_size - 1);
 	switch (sizeof(maxsize)) {
 	case 8:
 		maxsize = cpu_to_be64(maxsize);

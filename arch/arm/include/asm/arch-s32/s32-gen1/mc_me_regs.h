@@ -51,8 +51,8 @@
 #define MC_ME_PRTN_N_CORE_M_ADDR(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) + 0xC)
 
 /* MC_ME_PRTN_N_CORE_M_* registers fields. */
-#define MC_ME_PRTN_N_CORE_M_PCONF_CCE		(1 << 0)
-#define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		(1 << 0)
+#define MC_ME_PRTN_N_CORE_M_PCONF_CCE		BIT(0)
+#define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		BIT(0)
 #define MC_ME_PRTN_N_CORE_M_STAT_CCS		BIT(0)
 
 /* MC_ME partition mapping */
@@ -61,6 +61,8 @@
 #define MC_ME_DDR_0_PRTN	(0)
 #define MC_ME_PFE_PRTN		(2)
 #define MC_ME_CM7_PRTN		(0)
+#define MC_ME_LAX_PRTN		(2)
+#define MC_ME_SPT_PRTN		(3)
 
 #define MC_ME_USDHC_REQ		(0)
 #define MC_ME_DDR_0_REQ		(1)
@@ -70,15 +72,40 @@
 #define MC_ME_PFE_TS_REQ	(1 << 3)
 #define MC_ME_PFE_REQ_GROUP	(MC_ME_PFE_EMAC0_REQ | MC_ME_PFE_EMAC1_REQ | \
 				 MC_ME_PFE_EMAC2_REQ | MC_ME_PFE_TS_REQ)
+#define MC_ME_MIPICSI2_0_REQ	(5)
+#define MC_ME_MIPICSI2_1_REQ	(6)
+#define MC_ME_MIPICSI2_2_REQ	(7)
+#define MC_ME_MIPICSI2_3_REQ	(8)
+#define MC_ME_FDMA_REQ	(9)
+#define MC_ME_FLEXCAN4_REQ	(11)
+#define MC_ME_FLEXCAN5_REQ	(12)
+#define MC_ME_FLEXCAN6_REQ	(13)
+#define MC_ME_FLEXCAN7_REQ	(14)
+
+/* S32R45X partition 2 */
+#define MC_ME_LAX1_REQ		(0)
+#define MC_ME_LAX2_REQ		(1)
+
+/* S32R45X partition 3 */
+#define MC_ME_CTE_XBAR3_REQ	(2)
+#define MC_ME_EIM_DSP_REQ	(3)
+#define MC_ME_BBE32EP_REQ	(4)
+#define MC_ME_SPT_REQ		(5)
 
 /* Reset domain definitions */
 
 #define RDC_RD_2_CTRL		(RDC_BASE_ADDR + 0x8)
 #define RDC_RD_2_STAT		(RDC_BASE_ADDR + 0x88)
+#define RDC_RD_N_CTRL(N)	(RDC_BASE_ADDR + (0x4 * (N)))
+#define RDC_RD_N_STATUS(N)	(RDC_BASE_ADDR + 0x80 + (0x4 * (N)))
+#define RD_CTRL_UNLOCK_MASK	(0x80000000)
+#define RD_XBAR_DISABLE_MASK	(0x00000008)
 #define RDC_RD_CTRL_UNLOCK	(1 << 31)
 #define RDC_RD_INTERCONNECT_DISABLE (1 << 3)
 #define RDC_RD_INTERCONNECT_DISABLE_REQ_STAT (1 << 3)
 #define RDC_RD_INTERCONNECT_DISABLE_STAT (1 << 4)
+
+#define RDC_RD_STAT_XBAR_DISABLE_MASK	BIT(4)
 
 #endif
 

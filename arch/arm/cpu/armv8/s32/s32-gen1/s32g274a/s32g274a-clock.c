@@ -183,12 +183,14 @@ void clock_init(void)
 		PERIPH_PLL_PHI6_FREQ, PERIPH_PLL_PHI7_FREQ,
 	};
 
+	u32 part0_blocks[] = { MC_ME_USDHC_REQ, MC_ME_DDR_0_REQ };
+
 	u64 ddr_phi[DDR_PLL_PHI_Nr] = { DDR_PLL_PHI0_FREQ };
 	u64 accel_phi[ACCEL_PLL_PHI_Nr] = { ACCEL_PLL_PHI0_FREQ,
 					    ACCEL_PLL_PHI1_FREQ };
 	s32gen1_setup_fxosc();
-	s32gen1_enable_partition_block(MC_ME_USDHC_PRTN, MC_ME_USDHC_REQ);
-	s32gen1_enable_partition_block(MC_ME_DDR_0_PRTN, MC_ME_DDR_0_REQ);
+	s32gen1_enable_partition_blocks(MC_ME_USDHC_PRTN, &part0_blocks[0],
+					ARRAY_SIZE(part0_blocks));
 
 	s32gen1_program_pll(ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
 			    ARM_PLL_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_RDIV,

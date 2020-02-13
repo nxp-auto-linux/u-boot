@@ -8,10 +8,25 @@
 
 #include "siul-s32-gen1.h"
 
+#ifdef SIUL2_1_MSCR_BASE
+#undef SIUL2_1_MSCR_BASE
+#define SIUL2_1_MSCR_BASE		(SIUL2_1_BASE_ADDR + 0x000003D8)
+#endif
+
+#ifdef SIUL2_1_IMCR_BASE
+#undef SIUL2_1_IMCR_BASE
+#define SIUL2_1_IMCR_BASE		 (SIUL2_1_BASE_ADDR + 0x00000BAC)
+#endif
+
 /* MSCR 102-785 */
 #ifdef SIUL2_1_MSCRn
 #undef SIUL2_1_MSCRn
 #define SIUL2_1_MSCRn(i)		(SIUL2_1_MSCR_BASE + 4 * (i - 102))
+#endif
+
+#ifdef SIUL2_1_IMCRn
+#undef SIUL2_1_IMCRn
+#define SIUL2_1_IMCRn(i)		(SIUL2_1_IMCR_BASE +  4 * (i - 91))
 #endif
 
 /* UART0 settings */

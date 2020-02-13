@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  */
 
 #include <common.h>
@@ -338,10 +338,15 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	/* TBD: get DDR clock */
 	case MXC_DDR_CLK:
 		return get_ddr_clk();
+#ifdef CONFIG_SYS_I2C_MXC
+	case MXC_I2C_CLK:
+		return get_xbar_clk() / 3;
+#endif
 	default:
 		break;
 	}
-	printf("Error: Unsupported function to read the frequency! Please define it correctly!");
+	printf("Error: Unsupported function to read the frequency!\n");
+	printf("Please define it correctly!\n");
 	return 0;
 }
 
@@ -429,7 +434,15 @@ void reset_cpu(ulong addr)
 int print_cpuinfo(void)
 {
 #ifdef CONFIG_S32G274A
-	printf("CPU:\tNXP S32G274A\n");
+	printf("CPU:\tNXP S32G274A");
+	#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
+	printf("\n");
+	#else
+	printf(" rev. %d.%d.%d\n",
+		   get_siul2_midr1_major() + 1,
+		   get_siul2_midr1_minor(),
+		   get_siul2_midr2_subminor());
+	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
 #elif defined(CONFIG_S32R45X)
 	printf("CPU:\tNXP S32R45X\n");
 #elif defined(CONFIG_S32V344)
@@ -514,14 +527,14 @@ U_BOOT_CMD(
 		"and disconnect from the Hyperflash.\n");
 #endif
 
-#ifdef CONFIG_SYS_FSL_DDRSS
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 extern struct ddrss_conf ddrss_conf;
 extern struct ddrss_firmware ddrss_firmware;
 #endif
 
 __weak int dram_init(void)
 {
-#ifdef CONFIG_SYS_FSL_DDRSS
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	ddrss_init(&ddrss_conf, &ddrss_firmware);
 #endif
 	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
