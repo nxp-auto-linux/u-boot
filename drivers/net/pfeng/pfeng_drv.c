@@ -51,7 +51,7 @@ static int pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
 	if (ret)
 		goto err;
 
-	addr = memalign(32, length);
+	addr = valloc(length);
 	if (!addr) {
 		ret = -ENOMEM;
 		goto err;

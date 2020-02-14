@@ -298,12 +298,12 @@ static struct eqos_ops eqos_s32cc_ops = {
 
 struct eqos_config eqos_s32cc_config = {
 	.reg_access_always_ok = false,
-	.mdio_wait = 10000,
+	.mdio_wait = 50,
 	.swr_wait = 50,
 	.tx_fifo_size = 20480,
 	.rx_fifo_size = 20480,
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
-	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_250_300,
+	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
 	.interface = eqos_get_interface_s32cc,
 	.ops = &eqos_s32cc_ops
 };
