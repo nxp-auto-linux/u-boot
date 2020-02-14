@@ -5,8 +5,6 @@
  *
  * Freescale Quad Serial Peripheral Interface (QSPI) driver
  */
-
-#include <common.h>
 #include <malloc.h>
 #include <spi.h>
 #include <asm/io.h>
@@ -18,6 +16,7 @@
 #include <wait_bit.h>
 #include "fsl_qspi.h"
 #include <cpu_func.h>
+#include <spi-mem.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -79,9 +78,6 @@ DECLARE_GLOBAL_DATA_PTR;
 /* default SCK frequency, unit: HZ */
 #define FSL_QSPI_DEFAULT_SCK_FREQ	50000000
 
-/* QSPI max chipselect signals number */
-#define FSL_QSPI_MAX_CHIPSELECT_NUM     4
-
 /* Controller needs driver to swap endian */
 #define QUADSPI_QUIRK_SWAP_ENDIAN	BIT(0)
 
@@ -129,36 +125,6 @@ struct fsl_qspi_platdata {
 	u32 num_chipselect;
 };
 
-/**
- * struct fsl_qspi_priv - private data for Freescale QSPI
- *
- * @flags: Flags for QSPI QSPI_FLAG_...
- * @bus_clk: QSPI input clk frequency
- * @speed_hz: Default SCK frequency
- * @cur_seqid: current LUT table sequence id
- * @sf_addr: flash access offset
- * @amba_base: Base address of QSPI memory mapping of every CS
- * @amba_total_size: size of QSPI memory mapping
- * @cur_amba_base: Base address of QSPI memory mapping of current CS
- * @flash_num: Number of active slave devices
- * @num_chipselect: Number of QSPI chipselect signals
- * @regs: Point to QSPI register structure for I/O access
- */
-struct fsl_qspi_priv {
-	u32 flags;
-	u32 bus_clk;
-	u32 speed_hz;
-	u32 cur_seqid;
-	u32 sf_addr;
-	u32 amba_base[FSL_QSPI_MAX_CHIPSELECT_NUM];
-	u32 amba_total_size;
-	u32 cur_amba_base;
-	u32 flash_num;
-	u32 num_chipselect;
-	struct fsl_qspi_regs *regs;
-	struct fsl_qspi_devtype_data *devtype_data;
-};
-
 static const struct fsl_qspi_devtype_data vybrid_data = {
 	.devtype = FSL_QUADSPI_VYBRID,
 	.rxfifo = 128,
@@ -194,7 +160,7 @@ static const struct fsl_qspi_devtype_data imx7ulp_data = {
 static const struct fsl_qspi_devtype_data s32gen1_data = {
 	.devtype = FSL_QUADSPI_S32GEN1,
 	.rxfifo = 128,
-	.txfifo = 64,
+	.txfifo = 256,
 	.ahb_buf_size = 1024,
 	.driver_data = 0,
 };
@@ -439,7 +405,7 @@ static void qspi_set_lut(struct fsl_qspi_priv *priv)
  * the wrong data. The spec tells us reset the AHB domain and Serial Flash
  * domain at the same time.
  */
-static inline void qspi_ahb_invalid(struct fsl_qspi_priv *priv)
+void qspi_ahb_invalid(struct fsl_qspi_priv *priv)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 reg;
@@ -460,10 +426,7 @@ static inline void qspi_ahb_invalid(struct fsl_qspi_priv *priv)
 
 static void enable_write(struct fsl_qspi_priv *priv)
 {
-	u32 reg, status_reg;
-#ifdef CONFIG_S32_GEN1
-	u32 fr;
-#endif
+	u32 status_reg;
 	struct fsl_qspi_regs *regs = priv->regs;
 
 	qspi_write32(priv->flags, &regs->rbct, QSPI_RBCT_RXBRD_USEIPS);
@@ -482,18 +445,12 @@ static void enable_write(struct fsl_qspi_priv *priv)
 		while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 			;
 
-		reg = qspi_read32(priv->flags, &regs->rbsr);
+		while (!(qspi_read32(priv->flags, &regs->rbsr) &
+			QSPI_RBSR_RDBFL_MASK))
+			;
 
-		if (reg & QSPI_RBSR_RDBFL_MASK) {
-			status_reg = qspi_read32(priv->flags, &regs->rbdr[0]);
-			status_reg = qspi_endian_xchg(status_reg);
-		}
-
-#ifdef CONFIG_S32_GEN1
-		fr = qspi_read32(priv->flags, &regs->fr);
-		fr |= QSPI_FR_RBDF_MASK;
-		qspi_write32(priv->flags, &regs->fr, fr);
-#endif
+		status_reg = qspi_read32(priv->flags, &regs->rbdr[0]);
+		status_reg = qspi_endian_xchg(priv, status_reg);
 
 		qspi_write32(priv->flags, &regs->mcr,
 			     qspi_read32(priv->flags, &regs->mcr) |
@@ -502,7 +459,7 @@ static void enable_write(struct fsl_qspi_priv *priv)
 }
 
 /* Read out the data from the AHB buffer. */
-static inline void qspi_ahb_read(struct fsl_qspi_priv *priv, u8 *rxbuf, int len)
+void qspi_ahb_read(struct fsl_qspi_priv *priv, u8 *rxbuf, int len)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg;
@@ -649,13 +606,10 @@ static void qspi_op_rdbank(struct fsl_qspi_priv *priv, u8 *rxbuf, u32 len)
 }
 #endif
 
-static void qspi_op_rdid(struct fsl_qspi_priv *priv, u32 *rxbuf, u32 len)
+void qspi_op_rdid(struct fsl_qspi_priv *priv, u32 *rxbuf, u32 len)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg, rbsr_reg, data, size = 0;
-#ifdef CONFIG_S32_GEN1
-	u32 fr;
-#endif
 	int i;
 
 	mcr_reg = qspi_read32(priv->flags, &regs->mcr);
@@ -690,12 +644,6 @@ static void qspi_op_rdid(struct fsl_qspi_priv *priv, u32 *rxbuf, u32 len)
 			len -= size;
 			rxbuf++;
 			i++;
-
-#ifdef CONFIG_S32_GEN1
-			fr = qspi_read32(priv->flags, &regs->fr);
-			fr |= QSPI_FR_RBDF_MASK;
-			qspi_write32(priv->flags, &regs->fr, fr);
-#endif
 		} else {
 			break;
 		}
@@ -764,12 +712,13 @@ static void qspi_op_read(struct fsl_qspi_priv *priv, u32 *rxbuf, u32 len)
 	qspi_write32(priv->flags, &regs->mcr, mcr_reg);
 }
 
-static void qspi_op_write(struct fsl_qspi_priv *priv, u8 *txbuf, u32 len)
+void qspi_op_write(struct fsl_qspi_priv *priv, u8 *txbuf, u32 len)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg, data, seqid;
 	int i, size, tx_size;
 	u32 to_or_from = 0;
+	u32 tbsr, trctr, trbfl;
 
 	mcr_reg = qspi_read32(priv->flags, &regs->mcr);
 
@@ -777,9 +726,7 @@ static void qspi_op_write(struct fsl_qspi_priv *priv, u8 *txbuf, u32 len)
 		     QSPI_MCR_CLR_RXF_MASK | QSPI_MCR_CLR_TXF_MASK |
 		     mcr_reg);
 
-#ifndef CONFIG_S32_GEN1
 	enable_write(priv);
-#endif
 
 	/* Default is page programming */
 	seqid = SEQID_PP;
@@ -831,25 +778,24 @@ static void qspi_op_write(struct fsl_qspi_priv *priv, u8 *txbuf, u32 len)
 		txbuf += 4;
 	}
 
-#ifdef CONFIG_S32_GEN1
-	enable_write(priv);
-#endif
 	qspi_write32(priv->flags, &regs->ipcr,
 		     (seqid << QSPI_IPCR_SEQID_SHIFT) | tx_size);
 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 		;
 
+	/* Wait until all bytes are transmitted */
+	do {
+		tbsr = qspi_read32(priv->flags, &regs->tbsr);
+		trctr = QSPI_TBSR_TRCTR(tbsr);
+		trbfl = QSPI_TBSR_TRBFL(tbsr);
+	} while ((trctr != tx_size / 4) || trbfl);
 	qspi_write32(priv->flags, &regs->mcr, mcr_reg);
 }
 
-static void qspi_op_rdsr(struct fsl_qspi_priv *priv, void *rxbuf, u32 len)
+void qspi_op_rdsr(struct fsl_qspi_priv *priv, void *rxbuf, u32 len)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg, reg, data;
-
-#ifdef CONFIG_S32_GEN1
-	u32 fr;
-#endif
 
 	mcr_reg = qspi_read32(priv->flags, &regs->mcr);
 
@@ -876,11 +822,6 @@ static void qspi_op_rdsr(struct fsl_qspi_priv *priv, void *rxbuf, u32 len)
 			qspi_write32(priv->flags, &regs->mcr,
 				     qspi_read32(priv->flags, &regs->mcr) |
 				     QSPI_MCR_CLR_RXF_MASK);
-#ifdef CONFIG_S32_GEN1
-			fr = qspi_read32(priv->flags, &regs->fr);
-			fr |= QSPI_FR_RBDF_MASK;
-			qspi_write32(priv->flags, &regs->fr, fr);
-#endif
 			break;
 		}
 	}
@@ -888,7 +829,7 @@ static void qspi_op_rdsr(struct fsl_qspi_priv *priv, void *rxbuf, u32 len)
 	qspi_write32(priv->flags, &regs->mcr, mcr_reg);
 }
 
-static void qspi_op_erase(struct fsl_qspi_priv *priv)
+void qspi_op_erase(struct fsl_qspi_priv *priv)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg;
@@ -900,20 +841,19 @@ static void qspi_op_erase(struct fsl_qspi_priv *priv)
 		     QSPI_MCR_CLR_RXF_MASK | QSPI_MCR_CLR_TXF_MASK |
 		     mcr_reg);
 
-#ifndef CONFIG_S32_GEN
+	enable_write(priv);
+#ifndef CONFIG_S32_GEN1
 	qspi_write32(priv->flags, &regs->rbct, QSPI_RBCT_RXBRD_USEIPS);
 #endif
 
 	to_or_from = priv->sf_addr + priv->cur_amba_base;
 	qspi_write32(priv->flags, &regs->sfar, to_or_from);
 
-#ifndef CONFIG_S32_GEN
+#ifndef CONFIG_S32_GEN1
 	qspi_write32(priv->flags, &regs->ipcr,
 		     (SEQID_WREN << QSPI_IPCR_SEQID_SHIFT) | 0);
 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 		;
-#else
-	enable_write(priv);
 #endif
 
 	if (priv->cur_seqid == QSPI_CMD_SE) {
@@ -1085,6 +1025,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 	struct fsl_qspi_priv *priv = dev_get_priv(bus);
 	struct dm_spi_bus *dm_spi_bus;
 	int i, ret;
+	u32 mcr_val;
 
 	dm_spi_bus = bus->uclass_priv;
 
@@ -1337,6 +1278,9 @@ static const struct dm_spi_ops fsl_qspi_ops = {
 	.xfer		= fsl_qspi_xfer,
 	.set_speed	= fsl_qspi_set_speed,
 	.set_mode	= fsl_qspi_set_mode,
+#ifdef CONFIG_S32_GEN1
+	.mem_ops	= &s32gen1_mem_ops,
+#endif
 };
 
 static const struct udevice_id fsl_qspi_ids[] = {
@@ -1345,6 +1289,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "fsl,imx6ul-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7d-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7ulp-qspi", .data = (ulong)&imx7ulp_data },
+	{ .compatible = "fsl,s32gen1-qspi", .data = (ulong)&s32gen1_data },
 	{ }
 };
 

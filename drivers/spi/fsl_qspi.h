@@ -9,6 +9,9 @@
 #ifndef _FSL_QSPI_H_
 #define _FSL_QSPI_H_
 
+#include <linux/sizes.h>
+#include <linux/types.h>
+
 struct fsl_qspi_regs {
 	u32 mcr;
 	u32 rsvd0[1];
@@ -168,8 +171,12 @@ struct fsl_qspi_regs {
 #define QSPI_SR_BUSY_SHIFT		0
 #define QSPI_SR_BUSY_MASK		(1 << QSPI_SR_BUSY_SHIFT)
 
+#define QSPI_TBSR_TRCTR_SHIFT		16
+#define QSPI_TBSR_TRCTR(TBSR)		((TBSR) >> QSPI_TBSR_TRCTR_SHIFT)
+#define QSPI_TBSR_TRBFL(TBSR)		((TBSR) & 0xFF)
+
 #ifdef CONFIG_S32_GEN1
-#define QSPI_FR_RBDF_SHIFT		1
+#define QSPI_FR_RBDF_SHIFT		16
 #define QSPI_FR_RBDF_MASK		(1 << QSPI_FR_RBDF_SHIFT)
 #define QSPI_FR_ALL_FLAGS_MASK		(0xffffffff)
 #endif
@@ -204,5 +211,51 @@ struct fsl_qspi_regs {
 
 #define ADDR24BIT			0x18
 #define ADDR32BIT			0x20
+
+/* QSPI max chipselect signals number */
+#define FSL_QSPI_MAX_CHIPSELECT_NUM     4
+
+/**
+ * struct fsl_qspi_priv - private data for Freescale QSPI
+ *
+ * @flags: Flags for QSPI QSPI_FLAG_...
+ * @bus_clk: QSPI input clk frequency
+ * @speed_hz: Default SCK frequency
+ * @cur_seqid: current LUT table sequence id
+ * @sf_addr: flash access offset
+ * @amba_base: Base address of QSPI memory mapping of every CS
+ * @amba_total_size: size of QSPI memory mapping
+ * @cur_amba_base: Base address of QSPI memory mapping of current CS
+ * @flash_num: Number of active slave devices
+ * @num_chipselect: Number of QSPI chipselect signals
+ * @regs: Point to QSPI register structure for I/O access
+ */
+struct fsl_qspi_priv {
+	u32 flags;
+	u32 bus_clk;
+	u32 speed_hz;
+	u32 cur_seqid;
+	u32 sf_addr;
+	u32 amba_base[FSL_QSPI_MAX_CHIPSELECT_NUM];
+	u32 amba_total_size;
+	u32 cur_amba_base;
+#ifdef CONFIG_S32_GEN1
+	u32 bar_addr;
+#endif
+	u32 flash_num;
+	u32 num_chipselect;
+	struct fsl_qspi_regs *regs;
+	struct fsl_qspi_devtype_data *devtype_data;
+};
+
+#ifdef CONFIG_S32_GEN1
+extern struct spi_controller_mem_ops s32gen1_mem_ops;
+void qspi_op_rdid(struct fsl_qspi_priv *priv, u32 *rxbuf, u32 len);
+void qspi_op_rdsr(struct fsl_qspi_priv *priv, void *rxbuf, u32 len);
+void qspi_op_erase(struct fsl_qspi_priv *priv);
+void qspi_ahb_read(struct fsl_qspi_priv *priv, u8 *rxbuf, int len);
+void qspi_op_write(struct fsl_qspi_priv *priv, u8 *txbuf, u32 len);
+void qspi_ahb_invalid(struct fsl_qspi_priv *priv);
+#endif
 
 #endif /* _FSL_QSPI_H_ */
