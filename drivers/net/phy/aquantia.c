@@ -62,6 +62,9 @@
 
 /* addresses of memory segments in the phy */
 #define DRAM_BASE_ADDR 0x3FFE0000
+#ifdef IRAM_BASE_ADDR
+#undef IRAM_BASE_ADDR
+#endif
 #define IRAM_BASE_ADDR 0x40000000
 
 /* firmware image format constants */
