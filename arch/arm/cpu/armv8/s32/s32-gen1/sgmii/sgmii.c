@@ -239,6 +239,8 @@ int s32_serdes1_setup(int mode)
 
 	debug("SerDes Init Done.\n");
 
+#ifdef SGMII_VERIFY_LINK_ON_STARTUP
+	/* disabled by default */
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_0_BASE, true);
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_1_BASE, true);
 
@@ -247,6 +249,7 @@ int s32_serdes1_setup(int mode)
 
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_0_BASE, false);
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_1_BASE, false);
+#endif
 
 	return 0;
 }
