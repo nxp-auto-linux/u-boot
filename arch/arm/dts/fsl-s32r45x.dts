@@ -60,3 +60,18 @@
 
 	link-speed = <3>; /* Gen3 */
 };
+
+&gmac0 {
+	status = "okay";
+	phy-mode = "rgmii";
+	phy-handle = <&gmac0_phy1>;
+};
+
+&gmac0_mdio {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	/* KSZ9031RNXCA on S32R-VNP-PROC */
+	gmac0_phy1: ethernet-phy@1 {
+		reg = <1>;
+	};
+};

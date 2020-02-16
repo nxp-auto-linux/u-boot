@@ -153,5 +153,17 @@
 		num-cs = <2>;
 		status = "disabled";
 	};
+
+	gmac0: ethernet@4033c000 {
+		compatible = "fsl,s32cc-dwmac";
+		reg = <0x0 0x4033c000 0x0 0x2000>, /* gmac IP */
+		      <0x0 0x4007C004 0x0 0x4>;    /* S32 CTRL_STS reg */
+		tx-fifo-depth = <20480>;
+		rx-fifo-depth = <20480>;
+		status = "disabled";
+		gmac0_mdio: mdio0 {
+			compatible = "snps,dwmac-mdio";
+		};
+	};
 };
 

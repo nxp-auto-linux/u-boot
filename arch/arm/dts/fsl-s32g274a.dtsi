@@ -61,6 +61,12 @@
 			0x82000000 0x0 0x40000000 0x48 0x40000000 0x0 0x40000000>;
 		status = "disabled";
 	};
+
+	pfe: ethernet@46080000 {
+		compatible = "fsl,s32g274a-pfe";
+		reg = <0x0 0x46000000 0x0 0x1000000>;
+		status = "disabled";
+	};
 };
 
 &qspi {
