@@ -14,3 +14,15 @@
 	status = "okay";
 };
 
+&gmac0 {
+	status = "okay";
+	phy-mode = "rgmii";
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
+};
+
+&pfe {
+	status = "okay";
+};
