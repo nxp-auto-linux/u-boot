@@ -48,6 +48,19 @@ void setup_iomux_i2c(void)
 	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C1_SCLK,
 	       SIUL2_1_IMCRn(SIUL2_PB_03_IMCR_S32G_I2C1_SCLK));
 
+	/* EEPROM - AT24C01B */
+	/* I2C0 Serial Data Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C0_SDA,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_00));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C0_SDA,
+	       SIUL2_0_IMCRn(SIUL2_PB_00_IMCR_S32G_I2C0_SDA));
+
+	/* I2C0 Serial Clock Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C0_SCLK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_01));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C0_SCLK,
+	       SIUL2_0_IMCRn(SIUL2_PB_01_IMCR_S32G_I2C0_SCLK));
+
 	/* Plaftorm board - Arduino connector (J56) */
 	setup_iomux_i2c_pc05_pc06();
 
