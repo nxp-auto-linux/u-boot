@@ -7,7 +7,9 @@
 #include <dm.h>
 #include <asm/io.h>
 #include <net.h>
+#ifndef CONFIG_DM_ETH
 #include <netdev.h>
+#endif
 #include <phy.h>
 #include <malloc.h>
 #include <asm/types.h>
@@ -18,6 +20,28 @@
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 #include <dm/platform_data/pfeng_dm_eth.h>
 #endif
+#include <fdt_support.h>
+
+/*
+ * Ethernet DT fixup before OS load
+ *
+ */
+void ft_enet_fixup(void *fdt)
+{
+	int __maybe_unused nodeoff;
+
+	/* GMAC */
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32cc-dwmac");
+	if (nodeoff >= 0) {
+		if (s32ccgmac_cfg_get_mode() == S32CCGMAC_MODE_DISABLE) {
+			/* Disable GMAC in DT */
+			printf("DT: Disabling GMAC\n");
+			fdt_status_disabled(fdt, nodeoff);
+		}
+	}
+#endif
+}
 
 /*
  * GMAC driver for common chassis
@@ -39,11 +63,6 @@ static struct eqos_pdata dwmac_pdata = {
 	},
 	/* vendor specific driver config */
 	.config = &eqos_s32cc_config,
-};
-
-U_BOOT_DEVICE(dwmac_s32cc) = {
-	.name = "eth_eqos",
-	.platdata = &dwmac_pdata,
 };
 
 /* GMAC platform specific setup */
@@ -218,11 +237,25 @@ static struct pfeng_pdata pfeng_platdata = {
 	.config = &pfeng_s32g274a_config,
 };
 
-U_BOOT_DEVICE(pfeng) = {
-	.name = "eth_pfeng",
-	.platdata = &pfeng_platdata,
-};
-
-
-
 #endif /* CONFIG_FSL_PFENG */
+
+/*
+ * Platform network devices
+ *
+ * (TODO: remove when switching to DT)
+ *
+ */
+U_BOOT_DEVICES(s32_enet) = {
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	{
+		.name = "eth_eqos",
+		.platdata = &dwmac_pdata,
+	},
+#endif
+#if CONFIG_IS_ENABLED(FSL_PFENG)
+	{
+		.name = "eth_pfeng",
+		.platdata = &pfeng_platdata,
+	},
+#endif
+};

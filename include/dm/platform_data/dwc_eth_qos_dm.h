@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  */
 
 #ifndef DWC_ETH_QOS_DM_H
@@ -25,6 +25,14 @@ extern struct eqos_config eqos_stm32_config;
 #endif
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 extern struct eqos_config eqos_s32cc_config;
+
+enum {
+	S32CCGMAC_MODE_UNINITED = 0,
+	S32CCGMAC_MODE_DISABLE,
+	S32CCGMAC_MODE_ENABLE,
+};
+
+u32 s32ccgmac_cfg_get_mode(void);
 #endif
 
 /* Supported implementations */

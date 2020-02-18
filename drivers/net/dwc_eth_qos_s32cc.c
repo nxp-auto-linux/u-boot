@@ -41,13 +41,8 @@
 #define S32CC_GMAC_0_CTRL_STS		0x4007C004
 #define GMAC_MAC_PHYIF_CTRL_STAT	0x4033C0F8
 
-enum {
-	S32CCGMAC_MODE_DISABLE = 0,
-	S32CCGMAC_MODE_ENABLE,
-};
-
 static u32 mac_intf = PHY_INTERFACE_MODE_NONE;
-static u32 s32ccgmac_mode = S32CCGMAC_MODE_ENABLE;
+static u32 s32ccgmac_mode = S32CCGMAC_MODE_UNINITED;
 
 void setup_iomux_enet_gmac(int intf);
 void setup_clocks_enet_gmac(int intf);
@@ -55,30 +50,42 @@ int set_tx_clk_enet_gmac(int idx);
 
 static bool s32ccgmac_set_interface(u32 mode);
 
-static u32 s32ccgmac_cfg_get_mode(void)
+u32 s32ccgmac_cfg_get_mode(void)
 {
 	return s32ccgmac_mode;
 }
 
-static bool s32ccgmac_cfg_set_mode(u32 mode)
+static int s32ccgmac_cfg_set_mode(u32 mode)
 {
+	int ret;
+
 	if (s32ccgmac_mode == mode)
 		/* already in the same mode */
-		return true;
+		return 0;
 
 	switch (mode) {
 	case S32CCGMAC_MODE_DISABLE:
 		/* TODO: GMAC IP: stop the driver, stop clocks and power down */
+		env_set(S32CCGMAC_ENV_VAR_MODE_NAME, "disable");
+		ret = 0;
 		break;
 	case S32CCGMAC_MODE_ENABLE:
-		if (!s32ccgmac_set_interface(mac_intf))
-			return false;
+		ret = s32ccgmac_set_interface(mac_intf) ? 0 : -EINVAL;
+		if (ret)
+			goto err;
+
+		env_set(S32CCGMAC_ENV_VAR_MODE_NAME, "enable");
 		break;
+	default:
+		/* invalid mode */
+		ret = -EINVAL;
+		goto err;
 	}
 
 	s32ccgmac_mode = mode;
 
-	return true;
+err:
+	return ret;
 }
 
 static bool s32ccgmac_cfg_set_interface(u32 mode)
@@ -114,16 +121,6 @@ static bool s32ccgmac_set_interface(u32 mode)
 	mac_intf = mode;
 
 	return true;
-}
-
-static bool s32ccgmac_init(void)
-{
-	char *env_mode = env_get(S32CCGMAC_ENV_VAR_MODE_NAME);
-
-	if (!env_mode || s32ccgmac_mode == S32CCGMAC_MODE_DISABLE)
-		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_DISABLE);
-	else
-		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_ENABLE);
 }
 
 static phy_interface_t eqos_get_interface_s32cc(struct udevice *dev)
@@ -240,6 +237,7 @@ static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 static int eqos_probe_resources_s32cc(struct udevice *dev)
 {
 	struct eqos_pdata *pdata = dev_get_platdata(dev);
+	char *env_mode = env_get(S32CCGMAC_ENV_VAR_MODE_NAME);
 
 	debug("%s(dev=%p):\n", __func__, dev);
 
@@ -256,7 +254,10 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 	}
 	printf("GMAC interface: %s\n", s32ccgmac_cfg_get_interface_mode_str());
 
-	s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_ENABLE);
+	if (env_mode && !strcmp(env_mode, "disable"))
+		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_DISABLE);
+	else
+		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_ENABLE);
 
 	debug("%s: OK\n", __func__);
 	return 0;
@@ -269,7 +270,12 @@ static int eqos_remove_resources_s32cc(struct udevice *dev)
 
 static int eqos_pre_init_s32cc(struct udevice *dev)
 {
-	return s32ccgmac_init() ? 0 : -EINVAL;
+	char *env_mode = env_get(S32CCGMAC_ENV_VAR_MODE_NAME);
+
+	if (env_mode && !strcmp(env_mode, "disable"))
+		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_DISABLE);
+	else
+		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_ENABLE);
 }
 
 static struct eqos_ops eqos_s32cc_ops = {
@@ -292,12 +298,12 @@ static struct eqos_ops eqos_s32cc_ops = {
 
 struct eqos_config eqos_s32cc_config = {
 	.reg_access_always_ok = false,
-	.mdio_wait = 10000,
+	.mdio_wait = 50,
 	.swr_wait = 50,
 	.tx_fifo_size = 20480,
 	.rx_fifo_size = 20480,
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
-	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_250_300,
+	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
 	.interface = eqos_get_interface_s32cc,
 	.ops = &eqos_s32cc_ops
 };

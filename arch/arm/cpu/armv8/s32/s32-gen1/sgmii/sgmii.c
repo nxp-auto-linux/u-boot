@@ -44,6 +44,17 @@
 #define USE_2500_EMAC0_MODE
 #endif
 
+/*
+ * Demo feature
+ *
+ * When defined, the Serdes1.Lane1 is uses internal PLL clocking.
+ * Tested only on S32G-VNP-PROC EVB.
+ *
+ * WARNING: can be enabled only for SGMII 1.25G mode
+ *
+ */
+/* #define USE_INTERNAL_SERDES_CLOCK */
+
 static int rgm_get_regs(u32 id, phys_addr_t *prst, phys_addr_t *pstat)
 {
 	if (id <= 17U) {
@@ -192,10 +203,17 @@ int s32_serdes1_setup(int mode)
 	 */
 	writel(PHY_GEN_CTRL_REF_USE_PAD, serdes1_base + SS_PHY_GEN_CTRL);
 
+#ifdef USE_INTERNAL_SERDES_CLOCK
 	/*	1Gbps */
-	/*	Configure XPCS_0 (external reference clock) */
+	/*	Configure XPCS_0 (internal 100 MHz reference clock) */
+	retval = serdes_xpcs_set_1000_mode(serdes1_base, SERDES_XPCS_0_BASE,
+					   true, 100U);
+#else
+	/*	1Gbps */
+	/*	Configure XPCS_0 (external 125 MHz reference clock) */
 	retval = serdes_xpcs_set_1000_mode(serdes1_base, SERDES_XPCS_0_BASE,
 					   true, 125U);
+#endif
 	if (retval) {
 		printf("XPCS_0 init failed\n");
 		return -EXIT_FAILURE;
@@ -239,6 +257,8 @@ int s32_serdes1_setup(int mode)
 
 	debug("SerDes Init Done.\n");
 
+#ifdef SGMII_VERIFY_LINK_ON_STARTUP
+	/* disabled by default */
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_0_BASE, true);
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_1_BASE, true);
 
@@ -247,6 +267,7 @@ int s32_serdes1_setup(int mode)
 
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_0_BASE, false);
 	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_1_BASE, false);
+#endif
 
 	return 0;
 }

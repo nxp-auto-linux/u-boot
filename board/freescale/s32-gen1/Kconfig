@@ -40,6 +40,15 @@ config SYS_CONFIG_NAME
 	default "s32r45x" if TARGET_S32R45XEVB || TARGET_S32R45XSIM || \
 			  TARGET_S32R45XEMU
 
+# Size of SRAM area used by U-boot during the first boot stage. This includes
+# all of the sections in the System.map, plus the runtime stack which
+# is constructed starting from this offset downwards. Note this has nothing
+# to do with the memory layout after relocation to DDR, which includes
+# heap and other zones reservations.
+config UBOOT_SRAM_FOOTPRINT
+	hex
+	default 0x200000
+
 # DDR0(256MB) and DDR1(256MB).
 # U-boot uses only one DDR slot.
 

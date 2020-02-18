@@ -19,6 +19,8 @@
 #endif
 
 #if defined(CONFIG_TARGET_S32G274AEVB)
+/* EEPROM */
+#define CONFIG_SYS_I2C_MXC_I2C1
 /* Platform board PCI X16 EXPRESS - I2C_SCL_S0, I2C_SDA_S0  */
 #define CONFIG_SYS_I2C_MXC_I2C2
 /* Platform board GPIO_J3-17 (SDA), GPIO_J3-19 (SCL0)  */
