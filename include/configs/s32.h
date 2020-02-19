@@ -326,7 +326,7 @@
 #endif
 #define XEN_EXTRA_ENV_SETTINGS \
 	"dom0_addr=0xbe800000\0" \
-	"bootargs=dom0_mem=384M\0" \
+	"bootargs=dom0_mem=384M bootscrub=0\0" \
 	"updatexenfdt=fdt addr ${fdt_addr} 0x40000; fdt resize; fdt chosen; " \
 		"fdt set /chosen \\\\\#address-cells <1>; " \
 		"fdt set /chosen \\\\\#size-cells <1>; " \
@@ -335,6 +335,7 @@
 		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
 		"fdt set /chosen/module@0 bootargs \"console=ttyLF0,115200 root=/dev/mmcblk0p2 rootwait rw\" \0" \
 	"bootcmd=" XEN_LOAD_FILES "run updatexenfdt; fdt rm /chosen stdout-path; " \
+		"fdt rm /chosen linux,initrd-start; fdt rm /chosen linux,initrd-end; " \
 		"booti ${loadaddr} - ${fdt_addr}\0"
 #else
 #define XEN_EXTRA_ENV_SETTINGS  ""
