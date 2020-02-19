@@ -79,7 +79,7 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		device_id = <0>;
-		num-lanes = <1>; /* supports max 2 lanes, use 1 for now */
+		num-lanes = <2>; /* supports max 2 lanes */
 		bus-range = <0x0 0xff>;
 		ranges =
 			/* downstream I/O */
