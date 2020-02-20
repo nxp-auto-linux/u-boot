@@ -134,10 +134,10 @@
 /* Flash comand disabled until implemented */
 #undef CONFIG_CMD_FLASH
 
-#define FLASH_SECTOR_SIZE	0x40000 /* 256 KB */
 #define FLASH_BASE_ADR2		(CONFIG_SYS_FSL_FLASH0_BASE + 0x4000000)
 
 #endif
+#define FLASH_SECTOR_SIZE	0x40000 /* 256 KB */
 
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
 
