@@ -563,7 +563,7 @@
 
 #define CONFIG_BOOTP_BOOTFILESIZE
 
-#if !defined(CONFIG_TARGET_S32G274AEVB) && !defined(CONFIG_TARGET_S32R45XEVB)
+#if !defined(CONFIG_S32_GEN1)
 /* TODO: update S32V234 defconfigs so that definitions below to not apply
  * to all S32's or find a smarter way to make S32G and S32V PCI coexist
  */
@@ -573,7 +573,7 @@
 #define CONFIG_PCI_PNP
 #define CONFIG_PCI_SCAN_SHOW
 #endif
-#endif  /* !CONFIG_TARGET_S32G274AEVB && !CONFIG_TARGET_S32R45XEVB */
+#endif  /* !CONFIG_S32_GEN1 */
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
 
