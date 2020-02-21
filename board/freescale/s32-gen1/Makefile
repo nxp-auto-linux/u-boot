@@ -34,15 +34,13 @@ ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 
-ifdef CONFIG_TARGET_S32R45XEVB
-obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_s32r45xevb.o
-endif
-
 ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_s32g274a.o
+obj-$(CONFIG_SYS_FSL_DDRSS) += s32g274a_phy_cfg.o s32g274a_pie_cfg.o s32g274a_ddrc_cfg.o ddr_utils.o ddrss_cfg.o dq_swap_cfg.o imem_cfg.o s32g274a_dmem_cfg.o ddr_init.o
 endif
 
-obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf.o ddrss_firmware.o
+ifneq ($(filter y,$(CONFIG_TARGET_S32R45XEVB)),)
+obj-$(CONFIG_SYS_FSL_DDRSS) += s32r45x_phy_cfg.o s32r45x_pie_cfg.o s32r45x_ddrc_cfg.o ddr_utils.o ddrss_cfg.o dq_swap_cfg.o imem_cfg.o s32r45x_dmem_cfg.o ddr_init.o
+endif
 
 ifdef CONFIG_TARGET_S32G274AEVB
 obj-$(CONFIG_SJA1105) += sja1105_cfg_evb.o

@@ -14,7 +14,11 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/s32-gen1/mc_me_regs.h>
 #include <asm/arch/s32-gen1/mc_rgm_regs.h>
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 #include <asm/arch/s32-gen1/ddrss.h>
+#elif defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+#include <ddr_init.h>
+#endif
 #include <board_common.h>
 #ifdef CONFIG_FSL_DSPI
 #include <fsl_dspi.h>
@@ -527,15 +531,22 @@ U_BOOT_CMD(
 		"and disconnect from the Hyperflash.\n");
 #endif
 
-#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 extern struct ddrss_conf ddrss_conf;
 extern struct ddrss_firmware ddrss_firmware;
 #endif
 
 __weak int dram_init(void)
 {
-#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 	ddrss_init(&ddrss_conf, &ddrss_firmware);
+#elif defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+	uint32_t ret = 0;
+	ret = ddr_init();
+	if (ret) {
+		printf("Error %d on ddr_init\n", ret);
+		return ret;
+	}
 #endif
 	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
 
