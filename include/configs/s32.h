@@ -553,7 +553,7 @@
 
 #elif defined(CONFIG_SD_BOOT)
 #define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
-#define CONFIG_ENV_OFFSET		(0xC0000) /* 12 * 64 * 1024 */
+#define CONFIG_ENV_OFFSET		(0x100000) /* 16 * 64 * 1024 */
 
 #elif defined(CONFIG_ENV_IS_NOWHERE)
 #define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
