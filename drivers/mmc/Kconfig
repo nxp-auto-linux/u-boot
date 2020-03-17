@@ -718,8 +718,6 @@ config MMC_MTK
 	  This is needed if support for any SD/SDIO/MMC devices is required.
 	  If unsure, say N.
 
-endif
-
 config FSL_ESDHC
 	bool "Freescale/NXP eSDHC controller support"
 	help
@@ -732,6 +730,8 @@ config FSL_ESDHC_IMX
 	  This selects support for the i.MX eSDHC (Enhanced Secure Digital Host
 	  Controller) found on numerous Freescale/NXP SoCs.
 
+
+endif
 config FSL_USDHC
 	bool "Freescale/NXP i.MX uSDHC controller support"
 	depends on MX6 || MX7 ||ARCH_MX7ULP || IMX8 || IMX8M || IMXRT || TARGET_S32V234EVB
