@@ -622,6 +622,12 @@ config MMC_MTK
 	  This is needed if support for any SD/SDIO/MMC devices is required.
 	  If unsure, say N.
 
+config FSL_ESDHC
+        bool "Freescale/NXP eSDHC controller support"
+        help
+          This selects support for the eSDHC (enhanced secure digital host
+          controller) found on numerous Freescale/NXP SoCs.
+
 endif
 
 config TEGRA124_MMC_DISABLE_EXT_LOOPBACK
@@ -634,12 +640,6 @@ config TEGRA124_MMC_DISABLE_EXT_LOOPBACK
 
 	  TODO(marcel.ziswiler@toradex.com): Move to device tree controlled
 	  approach once proper kernel integration made it mainline.
-
-config FSL_ESDHC
-	bool "Freescale/NXP eSDHC controller support"
-	help
-	  This selects support for the eSDHC (enhanced secure digital host
-	  controller) found on numerous Freescale/NXP SoCs.
 
 endmenu
 
