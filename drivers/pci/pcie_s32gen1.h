@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -10,8 +10,6 @@
 #include <dm.h>
 #include <asm/io.h>
 
-#define PCIE_SS_BASEADDRESS (pcie->dbi)
-#define PCIE_CTRL_BASEADDRESS (pcie->dbi)
 #include "ss_pcie_regs.h"
 #include "mc_rgm_regs.h"
 
@@ -95,32 +93,22 @@ do { \
  * DBI register offsets and fields
  */
 
-/* Symbol Timer Register and Filter Mask 1 Register (SYMBOL_TIMER_FILTER_1) */
-#define PCIE_STRFMR1		0x71c
-
-/* Link Capabilities */
-#define PCIE_LINK_CAP				0x7c
-#define PCIE_MAX_LINK_SPEED_MASK	0xf
-#define PCIE_MAX_LINK_SPEED_OFF		0
-#define PCIE_MAX_LINK_WIDTH_MASK	0x3f0
-#define PCIE_MAX_LINK_WIDTH_OFF		4
-
 /* Upper half of the LINK_CTRL_STATUS register, accessible by half-word reads */
-#define PCIE_LINK_STATUS			0x82
+#define PCIE_LINK_STATUS(dbi_base)	((uint64_t)(dbi_base) + 0x82)
 #define PCIE_LINK_SPEED_MASK		0xf
 #define PCIE_LINK_SPEED_OFF			0
 #define PCIE_LINK_WIDTH_MASK		0x3f0
 #define PCIE_LINK_WIDTH_OFF			4
 
 /* Debug Register 0 (PL_DEBUG0_OFF) */
-#define PCIE_PL_DEBUG0		0x728
+#define PCIE_PL_DEBUG0(dbi_base)	((uint64_t)(dbi_base) + 0x728)
 #define LTSSM_STATE_MASK	0x3f
 #define LTSSM_STATE_OFF		0
 
 #define LTSSM_STATE_L0		0x11 /* L0 state */
 
 /* Debug Register 1 (PL_DEBUG1_OFF) */
-#define PCIE_PL_DEBUG1		0x72C
+#define PCIE_PL_DEBUG1(dbi_base)	((uint64_t)(dbi_base) + 0x72C)
 
 #define PCIE_ATU_NR_REGIONS			6
 
@@ -167,12 +155,8 @@ do { \
 
 #define PCIE_CS2_OFFSET		0x20000
 
-/* SERDES Subsystem registers */
-
-#define PCIE_DBI_SS_OFFSET 0x80000
-
 /* PCIe controller general control 1 (PE0_GEN_CTRL_1 / PE1_GEN_CTRL_1) */
-#define PE_GEN_CTRL_1		0x1050
+#define PE_GEN_CTRL_1(dbi_base)	((uint64_t)(dbi_base) + 0x1050)
 #define DEVICE_TYPE_OVERRIDE	0x10
 #define DEVICE_TYPE_MASK		0xF
 #define DEVICE_TYPE_OFF			0
@@ -180,7 +164,7 @@ do { \
 #define DEVICE_TYPE_RC			0x4
 
 /* PCIe controller 0 general control 3 (PE0_GEN_CTRL_3) */
-#define PE0_GEN_CTRL_3		0x1058
+#define PE0_GEN_CTRL_3(reg_base)	((uint64_t)(reg_base) + 0x1058)
 /* Configuration Request Retry Status (CRS) Enable. Active high. */
 /* Defer incoming configuration requests. */
 #define CRS_EN					0x2
