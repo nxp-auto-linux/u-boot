@@ -24,6 +24,31 @@
 #define CONFIG_RUN_FROM_DDR0
 #undef CONFIG_RUN_FROM_DDR1
 
+#define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
+#define CONFIG_SYS_FSL_DRAM_BASE2       0xC0000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x40000000
+
+#if defined(CONFIG_S32V234)
+
+#ifdef CONFIG_RUN_FROM_DDR0
+#define DDR_BASE_ADDR			CONFIG_SYS_FSL_DRAM_BASE1
+#define CONFIG_STANDALONE_LOAD_ADDR	0x80100000
+#else
+#define DDR_BASE_ADDR			0xC0000000
+#define CONFIG_STANDALONE_LOAD_ADDR	0xC0100000
+#endif
+
+#elif defined(CONFIG_S32_GEN1)
+
+#ifdef CONFIG_RUN_FROM_DDR0
+#define DDR_BASE_ADDR		CONFIG_SYS_FSL_DRAM_BASE1
+#else
+#define DDR_BASE_ADDR		0xA0000000
+#endif
+
+#endif /* CONFIG_S32V234/CONFIG_S32_GEN1 */
+
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */
@@ -517,12 +542,6 @@
  * The stack sizes are set up in start.S using the settings below
  */
 #define CONFIG_STACKSIZE		(128 * 1024)	/* regular stack */
-
-#if 0
-/* Configure PXE */
-#define CONFIG_CMD_PXE
-#define CONFIG_BOOTP_PXE_CLIENTARCH	0x100
-#endif
 
 /* Physical memory map */
 #define CONFIG_NR_DRAM_BANKS	1
