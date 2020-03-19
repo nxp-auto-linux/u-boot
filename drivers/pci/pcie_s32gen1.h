@@ -26,6 +26,7 @@ do { \
 	out_le16(address, write_data); \
 } while(0)
 
+
 #define W32(address, write_data) \
 do { \
 	debug_wr("%s: W32(0x%llx, 0x%x)\n", __func__, (uint64_t)(address), \
@@ -52,7 +53,7 @@ do { \
 	debug_wr("%s: RMW32(0x%llx, 0x%x, mask 0x%x)\n", __func__, \
 		(uint64_t)(address), (uint32_t)(write_data), \
 		(uint32_t)(mask)); \
-	clrsetbits_le32(address, write_data, mask); \
+	clrsetbits_le32(address, mask, write_data); \
 } while(0)
 
 #ifndef CONFIG_SYS_PCI_MEMORY_BUS
