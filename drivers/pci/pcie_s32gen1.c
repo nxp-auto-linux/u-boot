@@ -36,8 +36,9 @@
 #define PCIE_LINKUP_EXPECT	(PCIE_SS_SMLH_LINK_UP | PCIE_SS_RDLH_LINK_UP | \
 			PCIE_SS_SMLH_LTSSM_STATE_VALUE(LTSSM_STATE_L0))
 
-#define PCIE_LINK_UP_COUNT 5000
-#define PCIE_MPLL_LOCK_COUNT 1000
+#define PCIE_LINK_UP_COUNT 50
+#define PCIE_MPLL_LOCK_COUNT 10
+#define DELAY_QUANTUM 1000
 
 #define PCIE_EP_RC_MODE(ep_mode) ((ep_mode) ? "Endpoint" : "Root Complex")
 #define PCIE_CLK_MODE(clk_int) ((clk_int) ? "internal" : "external")
@@ -56,6 +57,8 @@
 #define PCIE_MIN_SOC_REV_SUPPORTED 0x1
 #endif
 
+#define PCIE_LINK_RECONFIG_ON_ERR
+
 DECLARE_GLOBAL_DATA_PTR;
 
 LIST_HEAD(s32_pcie_list);
@@ -66,7 +69,7 @@ static inline bool wait_read32(void *address, uint32_t expect_data,
 	uint32_t tmp;
 
 	while ((tmp = (in_le32(address) & (mask))) != (expect_data)) {
-		udelay(10); read_attempts--;
+		udelay(DELAY_QUANTUM); read_attempts--;
 		if (read_attempts < 0) {
 			debug_wr("WARNING: timeout read 0x%x from 0x%llx,",
 				tmp, (uint64_t)(address));
@@ -139,6 +142,8 @@ static bool s32_pcie_link_up(struct s32_pcie *pcie)
 			!= ((uint32_t)(PCIE_LINKUP_EXPECT)));
 }
 
+static bool s32_get_link_status(struct s32_pcie*, u32 *, u32 *, bool);
+
 static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
 {
 	printf("LINK_DBG_1: 0x%08x, LINK_DBG_2: 0x%08x ",
@@ -168,9 +173,30 @@ static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
 
 static bool s32_pcie_wait_link_up(struct s32_pcie *pcie)
 {
+	u32 speed, width;
 	int count = PCIE_LINK_UP_COUNT;
 	bool ready = wait_read32((void *)PCIE_SS_PE0_LINK_DBG_2(pcie->dbi),
 			PCIE_LINKUP_EXPECT, PCIE_LINKUP_MASK, count);
+
+	if (!ready)
+		return false;
+
+	ready = s32_get_link_status(pcie, &width, &speed, true);
+	count = PCIE_LINK_UP_COUNT;
+	while (!ready && (count > 0)) {
+		udelay(DELAY_QUANTUM); count--;
+		ready = s32_get_link_status(pcie, &width, &speed, false);
+	}
+	udelay(DELAY_QUANTUM);
+	ready = s32_get_link_status(pcie, &width, &speed, true);
+	if (!ready) {
+		debug("PCIe%d: Failed to get expected link width/speed\n",
+				pcie->id);
+		pcie->linkwidth = width;
+		pcie->linkspeed = speed;
+	}
+	printf("PCIe%d: Link established at X%d, Gen%d\n",
+			pcie->id, pcie->linkwidth, pcie->linkspeed);
 
 	return ready;
 }
@@ -625,8 +651,8 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	return ret;
 }
 
-void pcie_phy_reg_write(struct s32_pcie *pcie, uint32_t addr, uint32_t wdata,
-		uint32_t wmask)
+void s32_pcie_phy_reg_write(struct s32_pcie *pcie, uint32_t addr,
+		uint32_t wdata, uint32_t wmask)
 {
 	uint32_t temp_data;
 
@@ -642,13 +668,13 @@ void pcie_phy_reg_write(struct s32_pcie *pcie, uint32_t addr, uint32_t wdata,
 	W32(PCIE_SS_PHY_REG_DATA(pcie->dbi), temp_data);
 }
 
-void force_rxdet_sim(struct s32_pcie *pcie)
+void s32_pcie_force_rxdet_sim(struct s32_pcie *pcie)
 {
-	pcie_phy_reg_write(pcie, 0x1006, 0x0c, 0xff);
-	pcie_phy_reg_write(pcie, 0x1106, 0x0c, 0xff);
+	s32_pcie_phy_reg_write(pcie, 0x1006, 0x0c, 0xff);
+	s32_pcie_phy_reg_write(pcie, 0x1106, 0x0c, 0xff);
 }
 
-void change_mstr_ace_domain(struct s32_pcie *pcie, uint32_t ardomain,
+void s32_pcie_change_mstr_ace_domain(struct s32_pcie *pcie, uint32_t ardomain,
 		uint32_t awdomain)
 {
 	BSET32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(pcie->dbi),
@@ -661,7 +687,7 @@ void change_mstr_ace_domain(struct s32_pcie *pcie, uint32_t ardomain,
 			PCIE_CFG_MSTR_AWDOMAIN_VALUE);
 }
 
-void change_mstr_ace_cache(struct s32_pcie *pcie, uint32_t arcache,
+void s32_pcie_change_mstr_ace_cache(struct s32_pcie *pcie, uint32_t arcache,
 		uint32_t awcache)
 {
 	BSET32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(pcie->dbi),
@@ -680,6 +706,10 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 	if (pcie->ep_mode) {
 		debug("Configure pcie%d as EndPoint\n", pcie->id);
 
+		/* Enable writing dbi registers */
+		BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
+				PCIE_DBI_RO_WR_EN);
+
 		/* Monitor MPLL state */
 		if (!wait_read32((void *)PCIE_SS_PCIE_PHY_MPLLA_CTRL(pcie->dbi),
 			PCIE_SS_MPLL_STATE, PCIE_SS_MPLL_STATE, count)) {
@@ -687,50 +717,40 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 				pcie->id);
 			return false;
 		}
-		/* Set fast link scaling factor to 1 */
-		BSET32(PCIE_PORT_LOGIC_TIMER_CTRL_MAX_FUNC_NUM(pcie->dbi),
-				PCIE_FAST_LINK_SCALING_FACTOR_VALUE(2));
 		/* Set PHY register access to CR interface */
 		BSET32(PCIE_SS_SS_RW_REG_0(pcie->dbi), 0x200);
-		force_rxdet_sim(pcie);
+		s32_pcie_force_rxdet_sim(pcie);
 		/* Set device type */
 		W32(PCIE_SS_PE0_GEN_CTRL_1(pcie->dbi),
-			PCIE_SS_DEVICE_TYPE_VALUE(PCIE_EP));
-		/* Set fast link mode */
-		BSET32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(pcie->dbi),
-				PCIE_FAST_LINK_MODE);
+				PCIE_SS_DEVICE_TYPE_VALUE(PCIE_EP));
 		/* Set link width */
 		RMW32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
 				PCIE_NUM_OF_LANES_VALUE(pcie->linkwidth),
 				PCIE_NUM_OF_LANES);
 		if (pcie->linkwidth == X1) {
+			debug("Set link X1\n");
 			RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(pcie->dbi),
 					PCIE_LINK_CAPABLE_VALUE(1),
 					PCIE_LINK_CAPABLE);
 		} else {
+			debug("Set link X2\n");
 			RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(pcie->dbi),
 					PCIE_LINK_CAPABLE_VALUE(3),
 					PCIE_LINK_CAPABLE);
 		}
 
-		/* Set link speed */
-		RMW32(PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG(pcie->dbi),
-			PCIE_CAP_TARGET_LINK_SPEED_VALUE(pcie->linkspeed),
-			PCIE_CAP_TARGET_LINK_SPEED);
-
-		/* Enable writing dbi registers */
-		BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
-				PCIE_DBI_RO_WR_EN);
+		/* Enable direct speed change */
+		BSET32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
+				PCIE_DIRECT_SPEED_CHANGE);
 
 		/* Write to equalization control register */
-		W32(PCIE_SPCIE_CAP_SPCIE_CAP_0CH_REG(pcie->dbi), 0x0);
 		RMW32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(pcie->dbi),
 			PCIE_GEN3_EQ_FB_MODE_VALUE(1) |
 			PCIE_GEN3_EQ_PSET_REQ_VEC_VALUE(0x84),
 			PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
 		// Set domain to 0 and cache to 3
-		change_mstr_ace_cache(pcie, 3, 3);
-		change_mstr_ace_domain(pcie, 0, 0);
+		s32_pcie_change_mstr_ace_cache(pcie, 3, 3);
+		s32_pcie_change_mstr_ace_domain(pcie, 0, 0);
 
 		BCLR32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
 				PCIE_DBI_RO_WR_EN);
@@ -748,19 +768,13 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 				pcie->id);
 			return false;
 		}
-		/* Set fast link scaling factor to 1 */
-		BSET32(PCIE_PORT_LOGIC_TIMER_CTRL_MAX_FUNC_NUM(pcie->dbi),
-				PCIE_FAST_LINK_SCALING_FACTOR_VALUE(2));
 		/* Set PHY register access to CR interface */
 		BSET32(PCIE_SS_SS_RW_REG_0(pcie->dbi), 0x200);
-		force_rxdet_sim(pcie);
+		s32_pcie_force_rxdet_sim(pcie);
 
 		/* Set device type */
 		W32(PCIE_SS_PE0_GEN_CTRL_1(pcie->dbi),
 			PCIE_SS_DEVICE_TYPE_VALUE(PCIE_RC));
-		/* Set fast link mode */
-		BSET32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(pcie->dbi),
-				PCIE_FAST_LINK_MODE);
 		/* Set link width */
 		RMW32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
 				PCIE_NUM_OF_LANES_VALUE(pcie->linkwidth),
@@ -777,26 +791,18 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 					PCIE_LINK_CAPABLE);
 		}
 
-		/* Set link speed */
-		RMW32(PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG(pcie->dbi),
-			PCIE_CAP_TARGET_LINK_SPEED_VALUE(pcie->linkspeed),
-			PCIE_CAP_TARGET_LINK_SPEED);
 		/* Write to equalization control register */
 		BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
 				PCIE_DBI_RO_WR_EN);
 
-		W32(PCIE_SPCIE_CAP_SPCIE_CAP_0CH_REG(pcie->dbi), 0x0);
 		RMW32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(pcie->dbi),
 			PCIE_GEN3_EQ_FB_MODE_VALUE(1) |
 			PCIE_GEN3_EQ_PSET_REQ_VEC_VALUE(0x84),
 			PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
 
-		if (pcie->linkspeed == GEN3)
-			BSET32(PCIE_PORT_LOGIC_GEN3_RELATED(pcie->dbi),
-				PCIE_EQ_PHASE_2_3);
 		/* Set domain to 0 and cache to 3 */
-		change_mstr_ace_cache(pcie, 3, 3);
-		change_mstr_ace_domain(pcie, 0, 0);
+		s32_pcie_change_mstr_ace_cache(pcie, 3, 3);
+		s32_pcie_change_mstr_ace_domain(pcie, 0, 0);
 		/* Set link number to 0 */
 		BCLR32(PCIE_PORT_LOGIC_PORT_FORCE(pcie->dbi), PCIE_LINK_NUM);
 		/* Set max payload supported */
@@ -868,7 +874,6 @@ static void s32_pcie_get_mode_from_hwconfig(struct s32_pcie *pcie)
 	}
 }
 
-
 static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 {
 	const void *fdt = gd->fdt_blob;
@@ -930,18 +935,118 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 	/* define speed (Gen1/Gen2/Gen3) from device tree */
 	pcie->linkspeed = fdtdec_get_int(fdt, node, "link-speed", GEN1);
-	debug("Attempting Gen%d link speed for PCIe%d\n", pcie->linkspeed,
-			pcie->id);
 
 	return ret;
+}
+
+#ifdef PCIE_LINK_RECONFIG_ON_ERR
+void s32_pcie_switch_speed(struct s32_pcie *pcie)
+{
+	debug("Switching to GEN%d\n", pcie->linkspeed);
+
+	// Set link speed
+	RMW32(PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG(pcie->dbi),
+			PCIE_CAP_TARGET_LINK_SPEED_VALUE(pcie->linkspeed),
+			PCIE_CAP_TARGET_LINK_SPEED);
+
+	if (pcie->linkspeed > GEN1) {
+		BCLR32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
+				PCIE_DIRECT_SPEED_CHANGE);
+		BSET32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
+				PCIE_DIRECT_SPEED_CHANGE);
+	}
+}
+#endif
+
+bool s32_pcie_set_linkspeed(struct s32_pcie *pcie)
+{
+#ifdef PCIE_LINK_RECONFIG_ON_ERR
+	u32 last_speed = pcie->linkspeed;
+#endif
+	debug("PCIe%d: Attempting X%d, Gen%d\n",
+			pcie->id, pcie->linkwidth, pcie->linkspeed);
+
+	s32_pcie_enable_ltssm(pcie);
+	if (s32_pcie_wait_link_up(pcie)) {
+		printf("Link up! X%d, Gen%d\n", pcie->linkwidth,
+				pcie->linkspeed);
+	}
+#ifdef PCIE_LINK_RECONFIG_ON_ERR
+	else {
+		pcie->linkspeed = last_speed - 1;
+
+		s32_pcie_switch_speed(pcie);
+
+		if (s32_pcie_wait_link_up(pcie)) {
+			printf("Link up! X%d, GEN%d\n", pcie->linkwidth,
+					pcie->linkspeed);
+		} else {
+#endif
+			if (s32_pcie_link_up(pcie)) {
+				printf("Link established at X%d, GEN%d\n",
+					pcie->linkwidth, pcie->linkspeed);
+			} else {
+				printf("Failed to get link up\n");
+				return false;
+			}
+#ifdef PCIE_LINK_RECONFIG_ON_ERR
+		}
+	}
+#endif
+
+	return true;
+}
+
+static bool s32_get_link_status(struct s32_pcie *pcie,
+		u32 *width, u32 *speed, bool verbose)
+{
+	u16 link_sta;
+
+#ifdef DEBUG
+	/* PCIE_CAP_LINK_CAP register contains the maximum link width and speed.
+	 * For the field SUPPORT_LINK_SPEED_VECTOR,
+	 * The bit definitions within this field are:
+	 * Bit 0: 2.5 GT/s (Gen1)
+	 * Bit 1: 5.0 GT/s (Gen2)
+	 * Bit 2: 8.0 GT/s (Gen3)
+	 * Bits 3-6: Reserved
+	 */
+	if (verbose) {
+		u16 link_cap = readw(PCIE_CAP_LINK_CAP(pcie->dbi));
+
+		debug("PCIe%d: max X%d Gen%d\n", pcie->id,
+				PCIE_BIT_VALUE(link_cap, PCIE_MAX_LINK_WIDTH),
+				PCIE_BIT_VALUE(link_cap, PCIE_MAX_LINK_SPEED));
+	}
+#endif
+	if (verbose) {
+		debug("PCIe%d: expected X%d Gen%d\n", pcie->id,
+				pcie->linkwidth, pcie->linkspeed);
+	}
+
+	link_sta = readw(PCIE_LINK_STATUS(pcie->dbi));
+	/* update link width based on negotiated link status */
+	*width = PCIE_BIT_VALUE(link_sta, PCIE_LINK_WIDTH);
+	/* For link speed, LINK_SPEED value specifies a bit location in
+	 * LINK_CAPABILITIES_2[SUPPORT_LINK_SPEED_VECTOR] that corresponds
+	 * to the current link speed.
+	 * 0001b - SUPPORT_LINK_SPEED_VECTOR bit 0 (Gen1)
+	 * 0010b - SUPPORT_LINK_SPEED_VECTOR bit 1 (Gen2)
+	 * 0011b - SUPPORT_LINK_SPEED_VECTOR bit 2 (Gen3)
+	 */
+	*speed = PCIE_BIT_VALUE(link_sta, PCIE_LINK_SPEED);
+	if (verbose)
+		debug("PCIe%d: current X%d Gen%d\n", pcie->id, *width, *speed);
+
+	return (pcie->linkspeed == *speed) && (pcie->linkwidth == *width);
 }
 
 static int s32_pcie_probe(struct udevice *dev)
 {
 	struct s32_pcie *pcie = dev_get_priv(dev);
 	struct uclass *uc = dev->uclass;
-	u16 link_sta, link_cap;
 	int ret = 0;
+	u32 pcie_default_speed = GEN1;
 
 #ifdef PCIE_MIN_SOC_REV_SUPPORTED
 	uint32_t raw_rev = 0;
@@ -984,6 +1089,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	 * the DBI
 	 */
 	s32_pcie_disable_ltssm(pcie);
+	pcie_default_speed = pcie->linkspeed;
 
 	/* We assume that we have mode SUBSYS_MODE_PCIE_ONLY, i.e. 2 lanes */
 	if (pcie->linkwidth == 1)
@@ -1016,34 +1122,22 @@ static int s32_pcie_probe(struct udevice *dev)
 		return -EPERM;
 	}
 
-	/* apply other custom settings (bars, iATU etc.) */
-	if (!pcie->ep_mode)
-		ret = s32_pcie_setup_ctrl(pcie);
-	else
-		ret = s32_pcie_setup_ep(pcie);
-
-	if (ret)
-		return ret;
-
-	/* sets app_ltssm_enable =1 to start the link up process */
-	s32_pcie_enable_ltssm(pcie);
-
-	if (s32_pcie_wait_link_up(pcie)) {
-		printf("%s: Link is UP (X%d)!\n", dev->name, pcie->linkwidth);
-	} else {
+	if (!s32_pcie_set_linkspeed(pcie)) {
 		debug("%s: Link failed to come up (X%d)\n",
 			dev->name, pcie->linkwidth);
+
 		if (pcie->linkwidth > X1) {
 			/* Attempt to link at X1
 			 * TODO: Investigate an automatic way to change lane number
 			 */
 			pcie->linkwidth = X1;
+			pcie->linkspeed = pcie_default_speed;
 			s32_pcie_disable_ltssm(pcie);
 			serdes_working_mode_select(pcie, SUBSYS_MODE_PCIE_SGMII0);
 			RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(pcie->dbi),
 				PCIE_LINK_CAPABLE_VALUE(1),
 				PCIE_LINK_CAPABLE);
-			s32_pcie_enable_ltssm(pcie);
+			s32_pcie_set_linkspeed(pcie);
 
 			if (s32_pcie_wait_link_up(pcie)) {
 				printf("%s: Link is UP (X%d)!\n", dev->name, pcie->linkwidth);
@@ -1055,17 +1149,14 @@ static int s32_pcie_probe(struct udevice *dev)
 		}
 	}
 
-	/* print the maximum and negotiated PCIe link width and speed */
-	link_cap = readw(PCIE_CAP_LINK_CAP(pcie->dbi));
-	debug("%s: max x%d gen%d\n", dev->name, PCIE_BIT_VALUE(link_cap,
-			PCIE_MAX_LINK_WIDTH),
-			PCIE_BIT_VALUE(link_cap, PCIE_MAX_LINK_SPEED));
+	/* apply other custom settings (bars, iATU etc.) */
+	if (!pcie->ep_mode)
+		ret = s32_pcie_setup_ctrl(pcie);
+	else
+		ret = s32_pcie_setup_ep(pcie);
 
-	link_sta = readw(PCIE_LINK_STATUS(pcie->dbi));
-	/* update link width based on negotiated link status */
-	pcie->linkwidth = PCIE_BIT_VALUE(link_sta, PCIE_LINK_WIDTH);
-	printf("%s: running x%d, Gen%d\n", dev->name, pcie->linkwidth,
-		       PCIE_BIT_VALUE(link_sta, PCIE_LINK_SPEED));
+	if (ret)
+		return ret;
 
 	if (uc) {
 		struct uclass_driver *uc_drv = uc->uc_drv;
