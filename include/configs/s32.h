@@ -20,33 +20,14 @@
 
 #define CONFIG_REMAKE_ELF
 
-/* u-boot uses just DDR0 */
-#define CONFIG_RUN_FROM_DDR0
-#undef CONFIG_RUN_FROM_DDR1
-
 #define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
 #define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
 #define CONFIG_SYS_FSL_DRAM_BASE2       0xC0000000
 #define CONFIG_SYS_FSL_DRAM_SIZE2       0x40000000
 
-#if defined(CONFIG_S32V234)
-
-#ifdef CONFIG_RUN_FROM_DDR0
 #define DDR_BASE_ADDR			CONFIG_SYS_FSL_DRAM_BASE1
+#if defined(CONFIG_S32V234)
 #define CONFIG_STANDALONE_LOAD_ADDR	0x80100000
-#else
-#define DDR_BASE_ADDR			0xC0000000
-#define CONFIG_STANDALONE_LOAD_ADDR	0xC0100000
-#endif
-
-#elif defined(CONFIG_S32_GEN1)
-
-#ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR		CONFIG_SYS_FSL_DRAM_BASE1
-#else
-#define DDR_BASE_ADDR		0xA0000000
-#endif
-
 #endif /* CONFIG_S32V234/CONFIG_S32_GEN1 */
 
 #define CONFIG_MACH_TYPE		4146
@@ -114,8 +95,6 @@
 /* Increase image size */
 #define CONFIG_SYS_BOOTM_LEN    (64 << 20)
 
-#ifdef CONFIG_RUN_FROM_DDR0
-
 /* Flat device tree definitions */
 #  ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 #      define FDT_ADDR		0x82000000
@@ -128,16 +107,6 @@
 
 /* Ramdisk load address */
 #  define RAMDISK_ADDR		0x84000000
-#else
-/* Flat device tree definitions */
-#  define FDT_ADDR		0xC3E00000
-
-/*Kernel image load address */
-#  define LOADADDR		0xC007FFC0
-
-/* Ramdisk load address */
-#  define RAMDISK_ADDR		0xC4000000
-#endif
 
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 
