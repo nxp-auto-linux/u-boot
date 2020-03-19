@@ -97,18 +97,13 @@
 #define GICR_BASE	(GIC_BASE + 0x80000)
 #endif
 
-#ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR		0x80000000
-#else
-#define DDR_BASE_ADDR		0xA0000000
-#endif
-
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
 #define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
 #define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
 
 #ifndef CONFIG_SYS_DDR_SIZE
+#warn CONFIG_SYS_DDR_SIZE should be already defined in the defconfig
 #define CONFIG_SYS_DDR_SIZE 0x20000000
 #endif
 

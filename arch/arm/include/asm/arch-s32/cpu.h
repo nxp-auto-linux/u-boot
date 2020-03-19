@@ -4,8 +4,8 @@
  * Copyright 2017,2019-2020 NXP
  *
  */
-#ifndef _FSL_S32V234_CPU_H
-#define _FSL_S32V234_CPU_H
+#ifndef _FSL_S32_CPU_H
+#define _FSL_S32_CPU_H
 
 #include <config.h>
 
@@ -43,13 +43,8 @@
 			TCR_T0SZ(S32V_VA_BITS))
 
 #define CONFIG_SYS_FSL_IRAM_BASE        (IRAM_BASE_ADDR)
-
 #define CONFIG_SYS_FSL_IRAM_SIZE        (CONFIG_SYS_MEM_SIZE)
 
-#define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
-#define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
-#define CONFIG_SYS_FSL_DRAM_BASE2       0xC0000000
-#define CONFIG_SYS_FSL_DRAM_SIZE2       0x40000000
 #define CONFIG_SYS_FSL_PERIPH_BASE      0x40000000
 
 #if defined(CONFIG_S32V234)
@@ -170,4 +165,4 @@ static const struct sys_mmu_table s32_final_mmu_table[] = {
 u32 cpu_mask(void);
 int cpu_numcores(void);
 
-#endif /* _FSL_S32V234_CPU_H */
+#endif /* _FSL_S32_CPU_H */
