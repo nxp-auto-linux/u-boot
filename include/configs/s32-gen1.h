@@ -20,10 +20,6 @@
 
 #undef CONFIG_RUN_FROM_IRAM_ONLY
 
-/* u-boot uses just DDR0 */
-#define CONFIG_RUN_FROM_DDR0
-#undef CONFIG_RUN_FROM_DDR1
-
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */
