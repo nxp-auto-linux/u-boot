@@ -4,6 +4,7 @@
  * S32Gen1 PCIe driver
  */
 
+
 #include <common.h>
 #include <pci.h>
 #include <asm/io.h>
@@ -31,10 +32,10 @@
 /* Enable this if we want RC to be able to send config commands to EP */
 #define PCIE_ENABLE_EP_CFG_FROM_RC
 
-#define PCIE_LINKUP_MASK	(PCIE_SS_SMLH_LINK_UP | PCIE_SS_RDLH_LINK_UP | \
-			PCIE_SS_SMLH_LTSSM_STATE)
-#define PCIE_LINKUP_EXPECT	(PCIE_SS_SMLH_LINK_UP | PCIE_SS_RDLH_LINK_UP | \
-			PCIE_SS_SMLH_LTSSM_STATE_VALUE(LTSSM_STATE_L0))
+#define SERDES_LINKUP_MASK	(SMLH_LINK_UP | RDLH_LINK_UP | \
+			SMLH_LTSSM_STATE)
+#define SERDES_LINKUP_EXPECT	(SMLH_LINK_UP | RDLH_LINK_UP | \
+			SMLH_LTSSM_STATE_VALUE(LTSSM_STATE_L0))
 
 #define PCIE_LINK_UP_COUNT 50
 #define PCIE_MPLL_LOCK_COUNT 10
@@ -81,19 +82,19 @@ static inline bool wait_read32(void *address, uint32_t expect_data,
 	return true;
 }
 
-static void s32_pcie_disable_ltssm(struct s32_pcie *pcie)
+static void s32_serdes_disable_ltssm(struct s32_pcie *pcie)
 {
-	BCLR32(PE0_GEN_CTRL_3(pcie->ctrl), LTSSM_EN);
+	BCLR32(pcie->dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
-static void s32_pcie_enable_ltssm(struct s32_pcie *pcie)
+static void s32_serdes_enable_ltssm(struct s32_pcie *pcie)
 {
-	BSET32(PE0_GEN_CTRL_3(pcie->ctrl), LTSSM_EN);
+	BSET32(pcie->dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
 void serdes_working_mode_select(struct s32_pcie *pcie, uint32_t sel)
 {
-	BSET32(PCIE_SS_SS_RW_REG_0(pcie->dbi), (sel & 0x7));
+	BSET32(pcie->dbi + SS_SS_RW_REG_0, SUBSYS_MODE_VALUE(sel));
 	/* small delay for stabilizing the signals */
 	mdelay(10);
 }
@@ -101,9 +102,9 @@ void serdes_working_mode_select(struct s32_pcie *pcie, uint32_t sel)
 /* SERDES Peripheral reset.
  * See Reference Manual for peripheral indices used below.
  */
-void deassert_pcie_reset(struct s32_pcie *pcie)
+void s32_deassert_serdes_reset(struct s32_pcie *pcie)
 {
-	debug("%s: PCIe%d\n", __func__, pcie->id);
+	debug("%s: SerDes%d\n", __func__, pcie->id);
 
 	/* deassert_pcie_perst */
 	if (pcie->id == 0)
@@ -118,9 +119,9 @@ void deassert_pcie_reset(struct s32_pcie *pcie)
 		BCLR32(RGM_PRST(0), RGM_PERIPH_RST(17));
 }
 
-void assert_pcie_reset(struct s32_pcie *pcie)
+void s32_assert_serdes_reset(struct s32_pcie *pcie)
 {
-	debug("%s: PCIe%d\n", __func__, pcie->id);
+	debug("%s: SertDes%d\n", __func__, pcie->id);
 
 	/* assert_pcie_perst */
 	if (pcie->id == 0)
@@ -137,9 +138,9 @@ void assert_pcie_reset(struct s32_pcie *pcie)
 
 static bool s32_pcie_link_up(struct s32_pcie *pcie)
 {
-	return !((in_le32(PCIE_SS_PE0_LINK_DBG_2(pcie->dbi)) &
-			(PCIE_LINKUP_MASK))
-			!= ((uint32_t)(PCIE_LINKUP_EXPECT)));
+	return !((in_le32(pcie->dbi + SS_PE0_LINK_DBG_2) &
+			(SERDES_LINKUP_MASK))
+			!= ((uint32_t)(SERDES_LINKUP_EXPECT)));
 }
 
 static bool s32_get_link_status(struct s32_pcie*, u32 *, u32 *, bool);
@@ -147,10 +148,10 @@ static bool s32_get_link_status(struct s32_pcie*, u32 *, u32 *, bool);
 static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
 {
 	printf("LINK_DBG_1: 0x%08x, LINK_DBG_2: 0x%08x ",
-			in_le32(PCIE_SS_PE0_LINK_DBG_1(pcie->dbi)),
-			in_le32(PCIE_SS_PE0_LINK_DBG_2(pcie->dbi)));
+			in_le32(pcie->dbi + SS_PE0_LINK_DBG_1),
+			in_le32(pcie->dbi + SS_PE0_LINK_DBG_2));
 	printf("(expected 0x%08x)\n",
-			PCIE_LINKUP_EXPECT);
+			SERDES_LINKUP_EXPECT);
 	printf("DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
 			in_le32(PCIE_PL_DEBUG0(pcie->dbi)),
 			in_le32(PCIE_PL_DEBUG1(pcie->dbi)));
@@ -175,8 +176,9 @@ static bool s32_pcie_wait_link_up(struct s32_pcie *pcie)
 {
 	u32 speed, width;
 	int count = PCIE_LINK_UP_COUNT;
-	bool ready = wait_read32((void *)PCIE_SS_PE0_LINK_DBG_2(pcie->dbi),
-			PCIE_LINKUP_EXPECT, PCIE_LINKUP_MASK, count);
+
+	bool ready = wait_read32((void *)(pcie->dbi + SS_PE0_LINK_DBG_2),
+			SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK, count);
 
 	if (!ready)
 		return false;
@@ -603,13 +605,13 @@ static void s32_pcie_ep_setup_atu(struct s32_pcie *pcie)
 /* Delay incoming configuration requests, to allow initialization to complete,
  * by enabling/disabling Configuration Request Retry Status (CRS).
  */
-static void s32_pcie_ep_delay_cfg(struct s32_pcie *pcie, bool enable)
+static void s32_serdes_delay_cfg(struct s32_pcie *pcie, bool enable)
 {
 #ifdef PCIE_ENABLE_EP_CFG_FROM_RC
 	if (enable)
-		BSET32(PE0_GEN_CTRL_3(pcie->ctrl), CRS_EN);
+		BSET32(pcie->dbi + SS_PE0_GEN_CTRL_3, CRS_EN);
 	else
-		BCLR32(PE0_GEN_CTRL_3(pcie->ctrl), CRS_EN);
+		BCLR32(pcie->dbi + SS_PE0_GEN_CTRL_3, CRS_EN);
 #endif
 }
 
@@ -621,7 +623,7 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	/* Enable writing dbi registers */
 	BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi), PCIE_DBI_RO_WR_EN);
 
-	s32_pcie_ep_delay_cfg(pcie, true);
+	s32_serdes_delay_cfg(pcie, true);
 
 	/* Set the CLASS_REV of EP CFG header to something that
 	 * makes sense for this SoC by itself. For a product,
@@ -643,7 +645,7 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	s32_pcie_ep_setup_bars(pcie);
 	s32_pcie_ep_setup_atu(pcie);
 
-	s32_pcie_ep_delay_cfg(pcie, false);
+	s32_serdes_delay_cfg(pcie, false);
 
 	/* Enable writing dbi registers */
 	BCLR32(PCIE_PORT_LOGIC_MISC_CONTROL_1((pcie->dbi)), PCIE_DBI_RO_WR_EN);
@@ -651,27 +653,26 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	return ret;
 }
 
-void s32_pcie_phy_reg_write(struct s32_pcie *pcie, uint32_t addr,
+void s32_serdes_phy_reg_write(struct s32_pcie *pcie, uint32_t addr,
 		uint32_t wdata, uint32_t wmask)
 {
 	uint32_t temp_data;
 
-	W32(PCIE_SS_PHY_REG_ADDR(pcie->dbi),
-			(PCIE_SS_PHY_REG_ADDR_FIELD_VALUE(addr) |
-			PCIE_SS_PHY_REG_EN));
+	W32(pcie->dbi + SS_PHY_REG_ADDR, (PHY_REG_ADDR_FIELD_VALUE(addr) |
+			PHY_REG_EN));
 	if (wmask != 0xFFFF)
-		temp_data = in_le32(PCIE_SS_PHY_REG_DATA(pcie->dbi));
+		temp_data = in_le32(pcie->dbi + SS_PHY_REG_DATA);
 	else
 		temp_data = 0;
 	temp_data &= 0x0000FFFF;
 	temp_data = (temp_data & (!wmask)) | (wdata & wmask);
-	W32(PCIE_SS_PHY_REG_DATA(pcie->dbi), temp_data);
+	W32(pcie->dbi + SS_PHY_REG_DATA, temp_data);
 }
 
-void s32_pcie_force_rxdet_sim(struct s32_pcie *pcie)
+void s32_serdes_force_rxdet_sim(struct s32_pcie *pcie)
 {
-	s32_pcie_phy_reg_write(pcie, 0x1006, 0x0c, 0xff);
-	s32_pcie_phy_reg_write(pcie, 0x1106, 0x0c, 0xff);
+	s32_serdes_phy_reg_write(pcie, 0x1006, 0x0c, 0xff);
+	s32_serdes_phy_reg_write(pcie, 0x1106, 0x0c, 0xff);
 }
 
 void s32_pcie_change_mstr_ace_domain(struct s32_pcie *pcie, uint32_t ardomain,
@@ -699,10 +700,50 @@ void s32_pcie_change_mstr_ace_cache(struct s32_pcie *pcie, uint32_t arcache,
 		  PCIE_CFG_MSTR_ARCACHE_VALUE|PCIE_CFG_MSTR_AWCACHE_VALUE);
 }
 
+bool s32_serdes_init(struct s32_pcie *pcie)
+{
+	/* We assume that we have mode SUBSYS_MODE_PCIE_ONLY, i.e. 2 lanes */
+	if (pcie->linkwidth == 1)
+		serdes_working_mode_select(pcie, SUBSYS_MODE_PCIE_SGMII0);
+
+	/* Reset the Serdes module */
+	s32_assert_serdes_reset(pcie);
+	s32_deassert_serdes_reset(pcie);
+
+	/* Set the clock for the Serdes module */
+	if (pcie->clk_int) {
+		debug("Set internal clock\n");
+		BCLR32(pcie->dbi + SS_PHY_GEN_CTRL, PHY_GEN_CTRL_REF_USE_PAD);
+		BSET32(pcie->dbi + SS_SS_RW_REG_0, 1 << 23);
+	} else {
+		debug("Set external clock\n");
+		BSET32(pcie->dbi + SS_PHY_GEN_CTRL, PHY_GEN_CTRL_REF_USE_PAD);
+		BCLR32(pcie->dbi + SS_SS_RW_REG_0, 1 << 23);
+	}
+
+	/* Monitor Serdes MPLL state */
+	if (!wait_read32((void *)(pcie->dbi + SS_PHY_MPLLA_CTRL),
+		MPLL_STATE, MPLL_STATE, PCIE_MPLL_LOCK_COUNT)) {
+		printf("WARNING: Failed to lock PCIe%d MPLLs\n",
+			pcie->id);
+		return false;
+	}
+
+	/* Set PHY register access to CR interface */
+	BSET32(pcie->dbi + SS_SS_RW_REG_0, 0x200);
+	s32_serdes_force_rxdet_sim(pcie);
+
+	/* Set device type */
+	if (pcie->ep_mode)
+		W32(pcie->dbi + SS_PE0_GEN_CTRL_1, DEVICE_TYPE_VALUE(PCIE_EP));
+	else
+		W32(pcie->dbi + SS_PE0_GEN_CTRL_1, DEVICE_TYPE_VALUE(PCIE_RC));
+
+	return true;
+}
+
 bool s32_pcie_init(struct s32_pcie *pcie)
 {
-	int count = PCIE_MPLL_LOCK_COUNT;
-
 	if (pcie->ep_mode) {
 		debug("Configure pcie%d as EndPoint\n", pcie->id);
 
@@ -710,19 +751,6 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 		BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
 				PCIE_DBI_RO_WR_EN);
 
-		/* Monitor MPLL state */
-		if (!wait_read32((void *)PCIE_SS_PCIE_PHY_MPLLA_CTRL(pcie->dbi),
-			PCIE_SS_MPLL_STATE, PCIE_SS_MPLL_STATE, count)) {
-			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
-				pcie->id);
-			return false;
-		}
-		/* Set PHY register access to CR interface */
-		BSET32(PCIE_SS_SS_RW_REG_0(pcie->dbi), 0x200);
-		s32_pcie_force_rxdet_sim(pcie);
-		/* Set device type */
-		W32(PCIE_SS_PE0_GEN_CTRL_1(pcie->dbi),
-				PCIE_SS_DEVICE_TYPE_VALUE(PCIE_EP));
 		/* Set link width */
 		RMW32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
 				PCIE_NUM_OF_LANES_VALUE(pcie->linkwidth),
@@ -748,7 +776,7 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 			PCIE_GEN3_EQ_FB_MODE_VALUE(1) |
 			PCIE_GEN3_EQ_PSET_REQ_VEC_VALUE(0x84),
 			PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
-		// Set domain to 0 and cache to 3
+		/* Set domain to 0 and cache to 3 */
 		s32_pcie_change_mstr_ace_cache(pcie, 3, 3);
 		s32_pcie_change_mstr_ace_domain(pcie, 0, 0);
 
@@ -761,20 +789,6 @@ bool s32_pcie_init(struct s32_pcie *pcie)
 		BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
 				PCIE_DBI_RO_WR_EN);
 
-		/* Monitor MPLL state */
-		if (!wait_read32((void *)PCIE_SS_PCIE_PHY_MPLLA_CTRL(pcie->dbi),
-			PCIE_SS_MPLL_STATE, PCIE_SS_MPLL_STATE, count)) {
-			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
-				pcie->id);
-			return false;
-		}
-		/* Set PHY register access to CR interface */
-		BSET32(PCIE_SS_SS_RW_REG_0(pcie->dbi), 0x200);
-		s32_pcie_force_rxdet_sim(pcie);
-
-		/* Set device type */
-		W32(PCIE_SS_PE0_GEN_CTRL_1(pcie->dbi),
-			PCIE_SS_DEVICE_TYPE_VALUE(PCIE_RC));
 		/* Set link width */
 		RMW32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
 				PCIE_NUM_OF_LANES_VALUE(pcie->linkwidth),
@@ -898,21 +912,6 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 			pcie->dbi);
 
 	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
-				     "ctrl", &pcie->ctrl_res);
-	if (!ret)
-		pcie->ctrl = map_physmem(pcie->ctrl_res.start,
-					 fdt_resource_size(&pcie->ctrl_res),
-					 MAP_NOCACHE);
-	if (!pcie->ctrl) {
-		printf("WARNING: ctrl not found for %s\nUsing DBI + 0x%x\n",
-				dev->name, PCIE_DBI_SS_OFFSET);
-		pcie->ctrl = pcie->dbi + PCIE_DBI_SS_OFFSET;
-	}
-
-	debug("%s: ctrl: 0x%p (0x%p)\n", __func__, (void *)pcie->ctrl_res.start,
-			pcie->ctrl);
-
-	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
 				     "config", &pcie->cfg_res);
 	if (ret) {
 		printf("%s: resource \"config\" not found\n", dev->name);
@@ -944,7 +943,7 @@ void s32_pcie_switch_speed(struct s32_pcie *pcie)
 {
 	debug("Switching to GEN%d\n", pcie->linkspeed);
 
-	// Set link speed
+	/* Set link speed */
 	RMW32(PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG(pcie->dbi),
 			PCIE_CAP_TARGET_LINK_SPEED_VALUE(pcie->linkspeed),
 			PCIE_CAP_TARGET_LINK_SPEED);
@@ -966,7 +965,7 @@ bool s32_pcie_set_linkspeed(struct s32_pcie *pcie)
 	debug("PCIe%d: Attempting X%d, Gen%d\n",
 			pcie->id, pcie->linkwidth, pcie->linkspeed);
 
-	s32_pcie_enable_ltssm(pcie);
+	s32_serdes_enable_ltssm(pcie);
 	if (s32_pcie_wait_link_up(pcie)) {
 		printf("Link up! X%d, Gen%d\n", pcie->linkwidth,
 				pcie->linkspeed);
@@ -1088,31 +1087,16 @@ static int s32_pcie_probe(struct udevice *dev)
 	/* Keep app_ltssm_enable =0 to disable link  training for programming
 	 * the DBI
 	 */
-	s32_pcie_disable_ltssm(pcie);
+	s32_serdes_disable_ltssm(pcie);
 	pcie_default_speed = pcie->linkspeed;
 
-	/* We assume that we have mode SUBSYS_MODE_PCIE_ONLY, i.e. 2 lanes */
-	if (pcie->linkwidth == 1)
-		serdes_working_mode_select(pcie, SUBSYS_MODE_PCIE_SGMII0);
-
-	assert_pcie_reset(pcie);
-	deassert_pcie_reset(pcie);
-
-	if (pcie->clk_int) {
-		debug("Set internal clock\n");
-		BCLR32(PCIE_SS_PCIE_PHY_GEN_CTRL(pcie->dbi),
-				PCIE_SS_REF_USE_PAD);
-		BSET32(PCIE_SS_SS_RW_REG_0(pcie->dbi), 1 << 23);
-	} else {
-		debug("Set external clock\n");
-		BSET32(PCIE_SS_PCIE_PHY_GEN_CTRL(pcie->dbi),
-				PCIE_SS_REF_USE_PAD);
-		BCLR32(PCIE_SS_SS_RW_REG_0(pcie->dbi), 1 << 23);
-	}
+	/* apply the base SerDes/PHY settings */
+	if (!s32_serdes_init(pcie))
+		return -EIO;
 
 	mdelay(10);
 
-	/* apply the base settings, i.e. phy, controller, etc. */
+	/* apply the base PCIe controller settings. */
 	if (!s32_pcie_init(pcie))
 		return -EIO;
 
@@ -1132,7 +1116,7 @@ static int s32_pcie_probe(struct udevice *dev)
 			 */
 			pcie->linkwidth = X1;
 			pcie->linkspeed = pcie_default_speed;
-			s32_pcie_disable_ltssm(pcie);
+			s32_serdes_disable_ltssm(pcie);
 			serdes_working_mode_select(pcie, SUBSYS_MODE_PCIE_SGMII0);
 			RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(pcie->dbi),
 				PCIE_LINK_CAPABLE_VALUE(1),
