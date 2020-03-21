@@ -5,12 +5,13 @@
  * The SerDes module source file.
  */
 
+#include <serdes_regs.h>
+#include <serdes_xpcs_regs.h>
 #include <stdio.h>
 #include <linux/delay.h>
 #include <linux/printk.h>
 #include <asm/io.h>
 
-#include <asm/arch/s32-gen1/serdes.h>
 
 /**
  * @brief	Variables for XPCS indirect access

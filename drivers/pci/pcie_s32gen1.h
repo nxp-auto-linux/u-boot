@@ -10,6 +10,7 @@
 #include <dm.h>
 #include <asm/io.h>
 
+#include "serdes_regs.h"
 #include "ss_pcie_regs.h"
 #include "mc_rgm_regs.h"
 
@@ -156,16 +157,6 @@ do { \
 
 #define PCIE_CS2_OFFSET		0x20000
 
-/* PCIe controller general control 1 (PE0_GEN_CTRL_1 / PE1_GEN_CTRL_1) */
-#define PE_GEN_CTRL_1(dbi_base)	((uint64_t)(dbi_base) + 0x1050)
-#define DEVICE_TYPE_OVERRIDE	0x10
-#define DEVICE_TYPE_MASK		0xF
-#define DEVICE_TYPE_OFF			0
-#define DEVICE_TYPE_EP			0x0
-#define DEVICE_TYPE_RC			0x4
-
-/* PCIe controller 0 general control 3 (PE0_GEN_CTRL_3) */
-#define PE0_GEN_CTRL_3(reg_base)	((uint64_t)(reg_base) + 0x1058)
 /* Configuration Request Retry Status (CRS) Enable. Active high. */
 /* Defer incoming configuration requests. */
 #define CRS_EN					0x2
@@ -240,7 +231,6 @@ struct s32_pcie {
 	struct fdt_resource ctrl_res;
 	struct fdt_resource cfg_res;
 	void __iomem *dbi;
-	void __iomem *ctrl;
 	void __iomem *cfg0;
 #ifdef PCIE_USE_CFG1
 	void __iomem *cfg1;

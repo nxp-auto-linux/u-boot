@@ -13,7 +13,7 @@ obj-$(CONFIG_S32R45X)			+= s32r45x/s32r45x-clock.o
 obj-y					+= ncore.o
 obj-y					+= soc.o
 ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB)),)
-obj-$(CONFIG_NETDEVICES)		+= sgmii/sgmii.o sgmii/serdes.o
+obj-$(CONFIG_NETDEVICES)		+= sgmii/sgmii.o sgmii/serdes_xpcs.o
 endif
 obj-$(CONFIG_S32_GEN_1_USES_FLASH)	+= qspi.o
 ccflags-y				+= -I./board/freescale/s32-gen1/

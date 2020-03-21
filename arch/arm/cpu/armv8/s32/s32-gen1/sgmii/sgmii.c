@@ -15,7 +15,8 @@
 
 #include <asm/arch-s32/mc_rgm_regs.h>
 
-#include "serdes.h"
+#include <serdes_regs.h>
+#include <serdes_xpcs_regs.h>
 
 #define S32G_MAIN_GPR_BASE			0x4007ca00U
 #define S32G_MAIN_GPR_LEN			0x1000U
