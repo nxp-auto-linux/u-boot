@@ -5,13 +5,11 @@
  * The SerDes module header file.
  */
 
-#ifndef SERDES_H
-#define SERDES_H
+#ifndef SERDES_REGS_H
+#define SERDES_REGS_H
 
 #include "linux/types.h"
 #include "linux/errno.h"
-
-#define EXIT_FAILURE 1
 
 /**
  * @brief	SerDes Modes
@@ -33,11 +31,18 @@ typedef enum {
 /*
  * SS Registers
  */
+
+/* PHY General Control */
 #define SS_PHY_GEN_CTRL				(SERDES_SS_BASE + 0x0U)
+
 #define SS_PHY_LPBK_CTRL			(SERDES_SS_BASE + 0x4U)
 #define SS_PHY_SRAM_CSR				(SERDES_SS_BASE + 0x8U)
+
+/* PHY MPLLA Control */
 #define SS_PHY_MPLLA_CTRL			(SERDES_SS_BASE + 0x10U)
+/* PHY MPLLB Control */
 #define SS_PHY_MPLLB_CTRL			(SERDES_SS_BASE + 0x14U)
+
 #define SS_PHY_EXT_CTRL_SEL			(SERDES_SS_BASE + 0x18U)
 #define SS_PHY_EXT_BS_CTRL			(SERDES_SS_BASE + 0x1cU)
 #define SS_PHY_REF_CLK_CTRL			(SERDES_SS_BASE + 0x20U)
@@ -69,22 +74,30 @@ typedef enum {
 #define SS_PHY_EXT_TX_EQ_CTRL_3			(SERDES_SS_BASE + 0xb8U)
 #define SS_PHY_XPCS0_RX_OVRD_CTRL		(SERDES_SS_BASE + 0xc0U)
 #define SS_PHY_XPCS1_RX_OVRD_CTRL		(SERDES_SS_BASE + 0xd0U)
+
+/* Subsystem Read Only Registers 0-3 */
 #define SS_SS_RO_REG_0				(SERDES_SS_BASE + 0xe0U)
 #define SS_SS_RO_REG_1				(SERDES_SS_BASE + 0xe4U)
 #define SS_SS_RO_REG_2				(SERDES_SS_BASE + 0xe5U)
 #define SS_SS_RO_REG_3				(SERDES_SS_BASE + 0xecU)
+
+/* Subsystem Read Write Registers 0-5 */
 #define SS_SS_RW_REG_0				(SERDES_SS_BASE + 0xf0U)
 #define SS_SS_RW_REG_1				(SERDES_SS_BASE + 0xf4U)
 #define SS_SS_RW_REG_2				(SERDES_SS_BASE + 0xf8U)
 #define SS_SS_RW_REG_3				(SERDES_SS_BASE + 0xfcU)
 #define SS_SS_RW_REG_4				(SERDES_SS_BASE + 0x100U)
 #define SS_SS_RW_REG_5				(SERDES_SS_BASE + 0x104U)
+
 #define SS_PCIE_SUBSYSTEM_VERSION		(SERDES_SS_BASE + 0x1000U)
 #define SS_LINK_INT_CTRL_STS			(SERDES_SS_BASE + 0x1040U)
-#define SS_PFE0_GEN_CTRL_1			(SERDES_SS_BASE + 0x1050U)
-#define SS_PFE0_GEN_CTRL_2			(SERDES_SS_BASE + 0x1054U)
-#define SS_PFE0_GEN_CTRL_3			(SERDES_SS_BASE + 0x1058U)
-#define SS_PFE0_GEN_CTRL_4			(SERDES_SS_BASE + 0x105cU)
+
+/* PCIe Controller 0 General Control 1-4 */
+#define SS_PE0_GEN_CTRL_1			(SERDES_SS_BASE + 0x1050U)
+#define SS_PE0_GEN_CTRL_2			(SERDES_SS_BASE + 0x1054U)
+#define SS_PE0_GEN_CTRL_3			(SERDES_SS_BASE + 0x1058U)
+#define SS_PE0_GEN_CTRL_4			(SERDES_SS_BASE + 0x105cU)
+
 #define SS_PE0_PM_CTRL				(SERDES_SS_BASE + 0x1060U)
 #define SS_PE0_PM_STS				(SERDES_SS_BASE + 0x1064U)
 #define SS_PE0_TX_MSG_HDR_1			(SERDES_SS_BASE + 0x1070U)
@@ -99,8 +112,12 @@ typedef enum {
 #define SS_PE0_RX_MSG_STS			(SERDES_SS_BASE + 0x10a0U)
 #define SS_PE0_RX_MSG_CAP_CTRL			(SERDES_SS_BASE + 0x10a4U)
 #define SS_PE0_RX_MSG_INT_CTRL			(SERDES_SS_BASE + 0x10a8U)
+
+/* PCIe Controller 0 Link Debug 1 */
 #define SS_PE0_LINK_DBG_1			(SERDES_SS_BASE + 0x10b0U)
+/* PCIe Controller 0 Link Debug 2 */
 #define SS_PE0_LINK_DBG_2			(SERDES_SS_BASE + 0x10b4U)
+
 #define SS_PE0_AXI_MSTR_DBG_1			(SERDES_SS_BASE + 0x10c0U)
 #define SS_PE0_AXI_MSTR_DBG_2			(SERDES_SS_BASE + 0x10c4U)
 #define SS_PE0_AXI_SLV_DBG_1			(SERDES_SS_BASE + 0x10d0U)
@@ -112,92 +129,30 @@ typedef enum {
 #define SS_PE0_FSM_TRACK_1			(SERDES_SS_BASE + 0x10f0U)
 #define SS_PE0_FSM_TRACK_2			(SERDES_SS_BASE + 0x10f4U)
 #define SS_APB_BRIDGE_TO_CTRL			(SERDES_SS_BASE + 0x3000U)
+
+/* PHY Register Address Register */
 #define SS_PHY_REG_ADDR				(SERDES_SS_BASE + 0x3008U)
+/* PHY Register Data Register */
 #define SS_PHY_REG_DATA				(SERDES_SS_BASE + 0x300cU)
+/* RESET CONTROL Register */
 #define SS_RST_CTRL				(SERDES_SS_BASE + 0x3010U)
 
-#define SUBSYS_MODE_VALUE(x)			(((x) & 0x7) << 0)
+
+/* Field definitions for PHY_GEN_CTRL */
+
+#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_BIT     (16)
+#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_VALUE(x) \
+		((x) & (1) << (REF_REPEAT_CLK_EN_BIT))
+#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN  ((1) << (REF_REPEAT_CLK_EN_BIT))
+
+#define PHY_GEN_CTRL_REF_USE_PAD_BIT           (17)
+#define PHY_GEN_CTRL_REF_USE_PAD_VALUE(x) \
+		((x) & (1) << (PHY_GEN_CTRL_REF_USE_PAD_BIT))
+#define PHY_GEN_CTRL_REF_USE_PAD    ((1) << (PHY_GEN_CTRL_REF_USE_PAD_BIT))
+
 #define EXT_PCLK_REQ				(1U << 0)
-#define PHY_GEN_CTRL_REF_USE_PAD		(1U << 17)
 
-/*
- *		XPCS registers
- */
-#define SERDES_XPCS_0_BASE			0x82000U
-#define SERDES_XPCS_0_OFFSET			0x0U
-#define SERDES_XPCS_0_ADDR1			0x823fcU
-#define SERDES_XPCS_0_ADDR2			0x82000U
-#define SERDES_XPCS_1_BASE			0x82800U
-#define SERDES_XPCS_1_OFFSET			0x800U
-#define SERDES_XPCS_1_ADDR1			0x827fcU
-#define SERDES_XPCS_1_ADDR2			0x82400U
-
-#define VR_MII_DIG_CTRL1			0x1f8000U
-#define VR_MII_AN_CTRL				0x1f8001U
-#define VR_MII_AN_INTR_STS			0x1f8002U
-#define VR_MII_DBG_CTRL				0x1f8005U
-#define VR_MII_LINK_TIMER_CTRL			0x1f800aU
-#define VR_MII_DIG_STS				0x1f8010U
-#define VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL	0x1f8070U
-#define VR_MII_GEN5_12G_16G_MPLLA_CTRL0		0x1f8071U
-#define VR_MII_GEN5_12G_MPLLA_CTRL1		0x1f8072U
-#define VR_MII_GEN5_12G_16G_MPLLA_CTRL2		0x1f8073U
-#define VR_MII_GEN5_12G_16G_MPLLB_CTRL0		0x1f8074U
-#define VR_MII_GEN5_12G_MPLLB_CTRL1		0x1f8075U
-#define VR_MII_GEN5_12G_16G_MPLLB_CTRL2		0x1f8076U
-#define VR_MII_GEN5_12G_MPLLA_CTRL3		0x1f8077U
-#define VR_MII_GEN5_12G_MPLLB_CTRL3		0x1f8078U
-#define VR_MII_GEN5_12G_VCO_CAL_REF0		0x1f8096U
-#define VR_MII_GEN5_12G_16G_TX_RATE_CTRL	0x1f8034U
-#define VR_MII_GEN5_12G_16G_RX_RATE_CTRL	0x1f8054U
-#define VR_MII_GEN5_12G_16G_CDR_CTRL		0x1f8056U
-#define VR_MII_GEN5_12G_16G_VCO_CAL_LD0		0x1f8092U
-#define VR_MII_GEN5_12G_16G_REF_CLK_CTRL	0x1f8091U
-#define SR_MII_CTRL				0x1f0000U
-#define SR_MII_STS				0x1f0001U
-#define SR_MII_DEV_ID1				0x1f0002U
-#define SR_MII_DEV_ID2				0x1f0003U
-
-#define PCS_MODE_1000_BASE_X			0U
-#define PCS_MODE_SGMII				1U
-#define PCS_MODE_QSGMII				2U
-#define PCS_MODE_XPCS				3U
-#define MII_AN_CTRL_PCS_MODE(x)			(((x) & 0x3U) << 1)
-#define MII_AN_CTRL_MII_CTRL			(1U << 8)
-#define MII_AN_CTRL_TX_CONFIG			(1U << 3)
-#define MII_AN_INTR_STS_CL37_ANCMPLT_INTR	(1U << 0)
-
-#define MII_CTRL_SS6				(1U << 6)
-#define MII_CTRL_DUPLEX_MODE			(1U << 8)
-#define MII_CTRL_RESTART_AN			(1U << 9)
-#define MII_CTRL_AN_ENABLE			(1U << 12)
-#define MII_CTRL_SS13				(1U << 13)
-
-#define MII_STS_LINK_STS			(1U << 2)
-
-#define MPLL_CMN_CTRL_MPLL_EN_0			(1U << 0)
-#define MPLL_CMN_CTRL_MPLLB_SEL_0		(1U << 4)
-
-#define MPLLA_MULTIPLIER_VALUE(x)		(((x) & 0xffU) << 0)
-
-#define MII_DBG_CTRL_SUPRESS_LOS_DET		(1U << 4)
-#define MII_DBG_CTRL_RX_DT_EN_CTL		(1U << 6)
-
-#define REF_CLK_CTRL_REF_CLK_EN			(1U << 0)
-#define REF_CLK_CTRL_REF_USE_PAD		(1U << 1)
-#define REF_CLK_CTRL_REF_CLK_DIV2		(1U << 2)
-#define REF_CLK_CTRL_REF_RANGE(x)		(((x) & 0x7U) << 3)
-#define REF_CLK_CTRL_REF_MPLLA_DIV2		(1U << 6)
-#define REF_CLK_CTRL_REF_MPLLB_DIV2		(1U << 7)
-#define REF_CLK_CTRL_REF_RPT_CLK_EN		(1U << 8)
-
-#define EN_2_5G_MODE				(1U << 2)
-#define MAC_AUTO_SW				(1U << 9)
-#define CS_EN					(1U << 10)
-#define PWRSV					(1U << 11)
-#define EN_VSMMD1				(1U << 13)
-#define R2TLBE					(1U << 14)
-#define VR_RST					(1U << 15)
+/* Field definitions for PHY_EXT_MPLLA/B Registers */
 
 #define MPLLA_DIV8_CLK_EN			(1U << 8)
 #define MPLLA_DIV10_CLK_EN			(1U << 9)
@@ -214,23 +169,89 @@ typedef enum {
 #define MPLLB_CTRL2_MPLLB_DIV_CLK_EN		(1U << 10)
 #define MPLLB_CTRL2_MPLLB_TX_CLK_DIV(n)		(((n) & 0x7U) << 11)
 
-#define CDR_CTRL_VCO_LOW_FREQ_0			(1U << 8)
+#define MPLL_STATE_BIT         (30)
+#define MPLL_STATE_VALUE       ((x) & (1) << (MPLL_STATE_BIT))
+#define MPLL_STATE             ((1) << (MPLL_STATE_BIT))
 
+#define MPLLA_STATE_BIT        (31)
+#define MPLLA_STATE_VALUE(x)   ((x) & (1) << (MPLLA_STATE_BIT))
+#define MPLLA_STATE            ((1) << (MPLLA_STATE_BIT))
 
+/* Field definitions for PCIE_PHY_MPLLB_CTRL */
 
-int serdes_set_mode(void *base, serdes_mode_t mode);
-int serdes_xpcs_wait_for_power_good(void *base, uint32_t xpcs);
-int serdes_xpcs_set_sgmii_speed(void *base, uint32_t xpcs,
-				    uint32_t mbps, bool fduplex);
-int serdes_xpcs_set_1000_mode(void *base, uint32_t xpcs, bool ext_ref,
-				  uint8_t ref_mhz);
-int serdes_xpcs_set_2500_mode(void *base, uint32_t xpcs, bool ext_ref,
-				  uint8_t ref_mhz);
-int serdes_xpcs_set_loopback(void *base, uint32_t xpcs, bool enable);
-int serdes_wait_for_link(void *base, uint32_t xpcs, uint8_t timeout);
+#define MPLLB_FORCE_EN_BIT      (0)
+#define MPLLB_FORCE_EN_VALUE(x) ((x) & (1) << (MPLLB_FORCE_EN_BIT))
+#define MPLLB_FORCE_EN          ((1) << (MPLLB_FORCE_EN_BIT))
 
-int s32_serdes1_wait_link(int idx);
-int s32_serdes1_setup(int mode);
+#define MPLLB_SSC_EN_BIT       (1)
+#define MPLLB_SSC_EN_VALUE(x)  ((x) & (1) << (MPLLB_SSC_EN_BIT))
+#define MPLLB_SSC_EN           ((1) << (MPLLB_SSC_EN_BIT))
+
+#define MPLLB_STATE_BIT        (31)
+#define MPLLB_STATE_VALUE(x)   ((x) & (1) << (MPLLB_STATE_BIT))
+#define MPLLB_STATE            ((1) << (MPLLB_STATE_BIT))
+
+/* Field definitions for SS_RW_REG_0 */
+
+#define SUBSYS_MODE_VALUE(x)			(((x) & 0x7) << 0)
+
+/* Field definitions for PE0_GEN_CTRL_1 */
+
+#define DEVICE_TYPE_OVERRIDE	0x10
+#define DEVICE_TYPE_EP			0x0
+#define DEVICE_TYPE_RC			0x4
+
+#define DEVICE_TYPE_LSB        (0)
+#define DEVICE_TYPE_MASK       (0x0000000F)
+#define DEVICE_TYPE_VALUE(x)   ((x) & (DEVICE_TYPE_MASK) << \
+		(DEVICE_TYPE_LSB))
+#define DEVICE_TYPE            ((DEVICE_TYPE_MASK) << \
+		(DEVICE_TYPE_LSB))
+
+/* Field definitions for PE0_LINK_DBG_2 */
+
+#define SMLH_LTSSM_STATE_LSB   (0)
+#define SMLH_LTSSM_STATE_MASK  (0x0000003F)
+#define SMLH_LTSSM_STATE_VALUE(x) ((x) & (SMLH_LTSSM_STATE_MASK) << \
+		(SMLH_LTSSM_STATE_LSB))
+#define SMLH_LTSSM_STATE       ((SMLH_LTSSM_STATE_MASK) << \
+		(SMLH_LTSSM_STATE_LSB))
+
+#define SMLH_LINK_UP_BIT       (6)
+#define SMLH_LINK_UP_VALUE(x)  ((x) & (1) << (SMLH_LINK_UP_BIT))
+#define SMLH_LINK_UP           ((1) << (SMLH_LINK_UP_BIT))
+
+#define RDLH_LINK_UP_BIT       (7)
+#define RDLH_LINK_UP_VALUE(x)  ((x) & (1) << (RDLH_LINK_UP_BIT))
+#define RDLH_LINK_UP           ((1) << (RDLH_LINK_UP_BIT))
+
+#define RATE_LSB           (8)
+#define RATE_MASK          (0x00000003)
+#define RATE_VALUE(x)      ((x) & (RATE_MASK) << (RATE_LSB))
+#define RATE               ((RATE_MASK) << (RATE_LSB))
+
+/* Field definitions for PHY_REG_ADDR */
+
+#define PHY_REG_ADDR_FIELD_LSB (0)
+#define PHY_REG_ADDR_FIELD_MASK (0x0000FFFF)
+#define PHY_REG_ADDR_FIELD_VALUE(x) \
+		((x) & (PHY_REG_ADDR_FIELD_MASK) << \
+			(PHY_REG_ADDR_FIELD_LSB))
+#define PHY_REG_ADDR_FIELD     ((PHY_REG_ADDR_FIELD_MASK) << \
+		(PHY_REG_ADDR_FIELD_LSB))
+
+#define PHY_REG_EN_BIT         (31)
+#define PHY_REG_EN_VALUE(x)    ((x) & (1) << (PHY_REG_EN_BIT))
+#define PHY_REG_EN             ((1) << (PHY_REG_EN_BIT))
+
+/* Field definitions for PHY_REG_DATA */
+
+#define PHY_REG_DATA_FIELD_LSB (0)
+#define PHY_REG_DATA_FIELD_MASK (0x0000FFFF)
+#define PHY_REG_DATA_FIELD_VALUE(x) ((x) & (PHY_REG_DATA_FIELD_MASK) << \
+		(PHY_REG_DATA_FIELD_LSB))
+#define PHY_REG_DATA_FIELD     ((PHY_REG_DATA_FIELD_MASK) << \
+		(PHY_REG_DATA_FIELD_LSB))
 
 #endif
 

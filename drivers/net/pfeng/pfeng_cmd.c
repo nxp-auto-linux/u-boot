@@ -15,8 +15,8 @@
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>
-#include <asm/arch/s32-gen1/serdes.h>
-
+#include <asm/arch/s32-gen1/serdes_regs.h>
+#include <asm/arch/s32-gen1/serdes_xpcs_regs.h>
 #include <linux/string.h>
 
 #include "pfeng.h"
