@@ -81,11 +81,7 @@
 #define PERIPH_PLL_PLLDV_MFI (50)
 #define PERIPH_PLL_PLLFD_MFN (0)
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 #define DDR_PLL_PHI0_FREQ (800000000)
-#else
-#define DDR_PLL_PHI0_FREQ (400000000)
-#endif
 #define DDR_PLL_PHI_Nr (1)
 #define DDR_PLL_DFS_Nr (0)
 #define DDR_PLL_PLLDV_RDIV (1)
@@ -154,7 +150,7 @@ static void setup_mux_clocks(void)
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 0);
 
-	/* setup the mux clock divider for DDR_CLK (400 MHz) */
+	/* setup the mux clock divider for DDR_CLK (800 MHz) */
 	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
 			      MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0);
 
