@@ -10,22 +10,12 @@
 #include <config.h>
 
 #ifndef CONFIG_SYS_DCACHE_OFF
-/*
- * To start MMU before DDR is available, we create MMU table in SRAM.
- * The base address of SRAM is CONFIG_SYS_FSL_OCRAM_BASE. We use three
- * levels of translation tables here to cover 40-bit address space.
- * We use 4KB granule size, with 40 bits physical address, T0SZ=24
- * Level 0 IA[39], table address @0
- * Level 1 IA[38:30], table address @0x1000, 0x2000
- * Level 2 IA[29:21], table address @0x3000
- */
-
 #define SECTION_SHIFT_L0	39UL
 #define SECTION_SHIFT_L1	30UL
 #define SECTION_SHIFT_L2	21UL
-#define BLOCK_SIZE_L0	0x8000000000UL
-#define BLOCK_SIZE_L1	(1 << SECTION_SHIFT_L1)
-#define BLOCK_SIZE_L2	(1 << SECTION_SHIFT_L2)
+#define BLOCK_SIZE_L0	BIT_ULL(SECTION_SHIFT_L0)
+#define BLOCK_SIZE_L1	BIT(SECTION_SHIFT_L1)
+#define BLOCK_SIZE_L2	BIT(SECTION_SHIFT_L2)
 #define NUM_OF_ENTRY            512
 #define TCR_EL2_PS_40BIT	(2 << 16)
 #define S32V_VA_BITS		(40)
@@ -86,8 +76,12 @@ static const struct sys_mmu_table s32_early_mmu_table[] = {
 	{ CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
 	  CONFIG_SYS_FSL_DRAM_SIZE1, MT_NORMAL, PTE_BLOCK_OUTER_SHARE },
 #else
+	/* DRAM_SIZE1 is configurable via defconfig, but there are both
+	 * address and size alignment restrictions in the MMU table lookup code
+	 */
 	{ CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
-	  CONFIG_SYS_FSL_DRAM_SIZE1, MT_NORMAL_NC, PTE_BLOCK_OUTER_SHARE },
+	  ALIGN(CONFIG_SYS_FSL_DRAM_SIZE1, BLOCK_SIZE_L1), MT_NORMAL_NC,
+	  PTE_BLOCK_OUTER_SHARE },
 #endif
 #ifdef CONFIG_S32_GEN1
 	{ CONFIG_SYS_FSL_IRAM_BASE, CONFIG_SYS_FSL_IRAM_BASE,
@@ -117,7 +111,8 @@ static const struct sys_mmu_table s32_final_mmu_table[] = {
 	  CONFIG_SYS_FSL_DRAM_SIZE1, MT_NORMAL, PTE_BLOCK_OUTER_SHARE },
 #else
 	{ CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
-	  CONFIG_SYS_FSL_DRAM_SIZE1, MT_NORMAL_NC, PTE_BLOCK_OUTER_SHARE },
+	  ALIGN(CONFIG_SYS_FSL_DRAM_SIZE1, BLOCK_SIZE_L1), MT_NORMAL_NC,
+	  PTE_BLOCK_OUTER_SHARE },
 #endif
 #ifdef CONFIG_S32_GEN1
 	{ CONFIG_SYS_FSL_IRAM_BASE, CONFIG_SYS_FSL_IRAM_BASE,

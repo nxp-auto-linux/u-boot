@@ -204,7 +204,7 @@ static inline void early_mmu_setup(void)
 			set_block_entry(&s32_early_mmu_table[i], &table);
 			/*
 			 * If set_block_entry() returns error, it cannot be
-			 * dealt with here too.
+			 * dealt with here, either.
 			 */
 		}
 	}
@@ -272,12 +272,12 @@ static inline void final_mmu_setup(void)
 			if (set_block_entry(&s32_final_mmu_table[i],
 					&table) != 0) {
 				printf("MMU error: could not set block entry for %p\n",
-				&s32_final_mmu_table[i]);
+				       &s32_final_mmu_table[i]);
 			}
-			} else {
-				printf("MMU error: could not find the table for %p\n",
-				&s32_final_mmu_table[i]);
-			}
+		} else {
+			printf("MMU error: could not find the table for %p\n",
+			       &s32_final_mmu_table[i]);
+		}
 	}
 
 	/* flush new MMU table */
