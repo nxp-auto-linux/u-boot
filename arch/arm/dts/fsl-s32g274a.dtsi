@@ -42,15 +42,27 @@
 		      /* extended DDR from 4 to 32 GB should go elsewhere */
 	};
 
-	pcie1: pcie@44100000 {
-		compatible = "fsl,s32gen1-pcie", "snps,dw-pcie";
+	serdes1: serdes@44180000 {
+		compatible = "fsl,s32gen1-serdes";
 		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
-		       0x00 0x44180000 0x0 0x04000   /* ctrl registers */
+		       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
+		reg-names = "dbi", "ss";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci-generic";
+		device_id = <1>;
+		num-lanes = <2>; /* supports max 2 lanes */
+	};
+
+	pcie1: pcie@44100000 {
+		compatible = "fsl,s32gen1-pcie";
+		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
 		       0x48 0x00000000 0x0 0x20000>; /* configuration space */
-		reg-names = "dbi", "ctrl", "config";
+		reg-names = "dbi", "config";
 		#address-cells = <3>;
 		#size-cells = <2>;
 		device_type = "pci";
+		serdes-handle = <&serdes1>;
 		device_id = <1>;
 		num-lanes = <1>;
 		bus-range = <0x0 0xff>;
