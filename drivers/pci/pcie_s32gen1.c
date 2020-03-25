@@ -36,7 +36,7 @@
 #define PCIE_LINKUP_EXPECT	(PCIE_SS_SMLH_LINK_UP | PCIE_SS_RDLH_LINK_UP | \
 			PCIE_SS_SMLH_LTSSM_STATE_VALUE(LTSSM_STATE_L0))
 
-#define PCIE_LINK_UP_COUNT 10000
+#define PCIE_LINK_UP_COUNT 5000
 #define PCIE_MPLL_LOCK_COUNT 1000
 
 #define PCIE_EP_RC_MODE(ep_mode) ((ep_mode) ? "Endpoint" : "Root Complex")
@@ -67,7 +67,7 @@ static inline bool wait_read32(void *address, uint32_t expect_data,
 
 	while ((tmp = (in_le32(address) & (mask))) != (expect_data)) {
 		udelay(10); read_attempts--;
-		if (read_attempts <= 0) {
+		if (read_attempts < 0) {
 			debug_wr("WARNING: timeout read 0x%x from 0x%llx,",
 				tmp, (uint64_t)(address));
 			debug_wr(" expected 0x%x\n", expect_data);
@@ -138,6 +138,18 @@ static bool s32_pcie_link_up(struct s32_pcie *pcie)
 		 !=  ((uint32_t)(PCIE_LINKUP_EXPECT)));
 }
 
+static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
+{
+	printf("LINK_DBG_1: 0x%08x, LINK_DBG_2: 0x%08x ",
+			in_le32(PCIE_SS_PE0_LINK_DBG_1),
+			in_le32(PCIE_SS_PE0_LINK_DBG_2));
+	printf("(expected 0x%08x)\n",
+			PCIE_LINKUP_EXPECT);
+	printf("DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
+			in_le32(pcie->dbi + PCIE_PL_DEBUG0),
+			in_le32(pcie->dbi + PCIE_PL_DEBUG1));
+}
+
 /* From the S32G RM:
  *
  * Power on and link training
@@ -156,24 +168,10 @@ static bool s32_pcie_link_up(struct s32_pcie *pcie)
 static bool s32_pcie_wait_link_up(struct s32_pcie *pcie)
 {
 	int count = PCIE_LINK_UP_COUNT;
-
-	wait_read32(PCIE_SS_PE0_LINK_DBG_2, PCIE_LINKUP_EXPECT,
+	bool ready = wait_read32(PCIE_SS_PE0_LINK_DBG_2, PCIE_LINKUP_EXPECT,
 		PCIE_LINKUP_MASK, count);
 
-	if (count <= 0) {
-		printf("phy link never came up\n");
-		printf("LINK_DBG_1: 0x%08x, LINK_DBG_2: 0x%08x ",
-			in_le32(PCIE_SS_PE0_LINK_DBG_1),
-			in_le32(PCIE_SS_PE0_LINK_DBG_2));
-		printf("(expected 0x%08x)\n",
-			PCIE_LINKUP_EXPECT);
-		printf("DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
-			in_le32(pcie->dbi + PCIE_PL_DEBUG0),
-			in_le32(pcie->dbi + PCIE_PL_DEBUG1));
-		return false;
-	}
-
-	return true;
+	return ready;
 }
 
 #ifdef PCIE_OVERCONFIG_BUS
@@ -1017,8 +1015,32 @@ static int s32_pcie_probe(struct udevice *dev)
 	/* sets app_ltssm_enable =1 to start the link up process */
 	s32_pcie_enable_ltssm(pcie);
 
-	if (s32_pcie_wait_link_up(pcie))
-		debug("%s: Link is UP!\n", dev->name);
+	if (s32_pcie_wait_link_up(pcie)) {
+		printf("%s: Link is UP (X%d)!\n", dev->name, pcie->linkwidth);
+	} else {
+		debug("%s: Link failed to come up (X%d)\n",
+			dev->name, pcie->linkwidth);
+		if (pcie->linkwidth > X1) {
+			/* Attempt to link at X1
+			 * TODO: Investigate an automatic way to change lane number
+			 */
+			pcie->linkwidth = X1;
+			s32_pcie_disable_ltssm(pcie);
+			serdes_working_mode_select(pcie, SUBSYS_MODE_PCIE_SGMII0);
+			RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL_OFF,
+				PCIE_LINK_CAPABLE_VALUE(1),
+				PCIE_LINK_CAPABLE);
+			s32_pcie_enable_ltssm(pcie);
+
+			if (s32_pcie_wait_link_up(pcie)) {
+				printf("%s: Link is UP (X%d)!\n", dev->name, pcie->linkwidth);
+			} else {
+				printf("%s: Link failed to come up (X%d)\n", dev->name,
+					pcie->linkwidth);
+				s32_pcie_show_link_err_status(pcie);
+			}
+		}
+	}
 
 	/* print the maximum and negotiated PCIe link width and speed */
 	link_cap = readw(pcie->dbi + PCIE_LINK_CAP);
