@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * The SerDes config code
  */
@@ -56,90 +56,6 @@
  */
 /* #define USE_INTERNAL_SERDES_CLOCK */
 
-static int rgm_get_regs(u32 id, phys_addr_t *prst, phys_addr_t *pstat)
-{
-	if (id <= 17U) {
-		*prst = RGM_PRST(0);
-		*pstat = RGM_PSTAT(0);
-	} else if ((id >= 64U) && (id <= 68U)) {
-		*prst = RGM_PRST(1);
-		*pstat = RGM_PSTAT(1);
-	} else if ((id >= 128U) && (id <= 130)) {
-		*prst = RGM_PRST(2);
-		*pstat = RGM_PSTAT(2);
-	} else if ((id >= 192U) && (id <= 194U)) {
-		*prst = RGM_PRST(3);
-		*pstat = RGM_PSTAT(3);
-	} else {
-		printf("error: Reset of unknown peripheral or domain requested (%d)\n", id);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-/**
- * @brief		Issue peripheral/domain reset
- * @param[in]	pid Peripheral/domain index. See RM.
- */
-static int rgm_issue_reset(u32 pid)
-{
-	phys_addr_t prst, pstat;
-	u32 timeout = 100U;
-	u32 regval;
-	int retval;
-
-	retval = rgm_get_regs(pid, &prst, &pstat);
-	if (retval)
-		return retval;
-
-	regval = readl(prst);
-	regval |= (1U << (pid % 32));
-	writel(regval, prst);
-
-	do {
-		timeout--;
-		udelay(1000U);
-		regval = readl(pstat);
-	} while (0U == (regval & (1U << (pid % 32))));
-
-	if (!timeout)
-		return -ETIMEDOUT;
-
-	return 0;
-}
-
-/**
- * @brief		Release peripheral/domain reset
- * @param[in]	pid Peripheral/domain index. See RM.
- */
-static int rgm_release_reset(u32 pid)
-{
-	phys_addr_t prst, pstat;
-	u32 timeout = 100U;
-	u32 regval;
-	int retval;
-
-	retval = rgm_get_regs(pid, &prst, &pstat);
-	if (retval)
-		return retval;
-
-	regval = readl(prst);
-	regval &= ~(1U << (pid % 32));
-	writel(regval, prst);
-
-	do {
-		timeout--;
-		udelay(1000U);
-		regval = readl(pstat);
-	} while (0U != (regval & (1U << (pid % 32))));
-
-	if (!timeout)
-		return -ETIMEDOUT;
-
-	return 0;
-}
-
 int s32_serdes1_wait_link(int id)
 {
 	void *serdes1_base = (void *)(phys_addr_t)S32G_SERDES_1_BASE;
@@ -162,45 +78,52 @@ int s32_serdes1_setup(int mode)
 	int retval;
 	void *serdes1_base = (void *)(phys_addr_t)S32G_SERDES_1_BASE;
 
-	/*
-	 *	Configure SERDES
+	/* Configure SERDES
+	 * Is SERDES already configured?
+	 * TODO: Unify this with code in SerDes driver.
 	 */
+	if (!s32_get_serdes_mode_from_target(serdes1_base,
+			SERDES_MODE_SGMII_SGMII)) {
 
-	/*	Issue SERDES_1 reset */
-	if (rgm_issue_reset(PRST_PCIE_1_SERDES)) {
-		printf("PCIE reset failed\n");
-		return -EXIT_FAILURE;
-	}
+		/* Configure SERDES */
 
-	if (rgm_issue_reset(PRST_PCIE_1_FUNC)) {
-		printf("PCIE reset failed\n");
-		return -EXIT_FAILURE;
-	}
+		/*	Issue SERDES_1 reset */
+		if (rgm_issue_reset(PRST_PCIE_1_SERDES)) {
+			printf("PCIE reset failed\n");
+			return -EXIT_FAILURE;
+		}
 
-	/*	Set pipeP_pclk */
-	writel(EXT_PCLK_REQ, serdes1_base + SS_PHY_GEN_CTRL);
+		if (rgm_issue_reset(PRST_PCIE_1_FUNC)) {
+			printf("PCIE reset failed\n");
+			return -EXIT_FAILURE;
+		}
 
-	/*	PFE_MAC0 = Lane0 = SGMII && PFE_MAC1 = Lane1 = SGMII */
-	if (serdes_set_mode(serdes1_base, SERDES_MODE_SGMII_SGMII)) {
-		printf("SerDes1 PHY mode selection failed\n");
-		return -EXIT_FAILURE;
-	}
+		/*	Set pipeP_pclk */
+		writel(EXT_PCLK_REQ, serdes1_base + SS_PHY_GEN_CTRL);
 
-	udelay(50); /* At least 10us */
+		/*	PFE_MAC0 = Lane0 = SGMII && PFE_MAC1 = Lane1 = SGMII */
+		if (serdes_set_mode(serdes1_base, 1, SERDES_MODE_SGMII_SGMII)) {
+			printf("SerDes1 PHY mode selection failed\n");
+			return -EXIT_FAILURE;
+		}
 
-	/*	Release PCIE_1 reset */
-	if (rgm_release_reset(PRST_PCIE_1_SERDES)) {
-		printf("PCIE reset failed\n");
-		return -EXIT_FAILURE;
-	}
+		udelay(50); /* At least 10us */
 
-	if (rgm_release_reset(PRST_PCIE_1_FUNC)) {
-		printf("PCIE reset failed\n");
-		return -EXIT_FAILURE;
+		/*	Release PCIE_1 reset */
+		if (rgm_release_reset(PRST_PCIE_1_SERDES)) {
+			printf("PCIE reset failed\n");
+			return -EXIT_FAILURE;
+		}
+
+		if (rgm_release_reset(PRST_PCIE_1_FUNC)) {
+			printf("PCIE reset failed\n");
+			return -EXIT_FAILURE;
+		}
 	}
 
 	/*	Set SerDes reference clock from external pads.
 	 *	See HW connections for reference clock frequency.
+	 *	TODO: Use 'hwconfig' for setting the clock.
 	 */
 	writel(PHY_GEN_CTRL_REF_USE_PAD, serdes1_base + SS_PHY_GEN_CTRL);
 
