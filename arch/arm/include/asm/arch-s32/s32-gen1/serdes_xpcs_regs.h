@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * The SerDes module header file.
  */
@@ -99,7 +99,7 @@
 #define CDR_CTRL_VCO_LOW_FREQ_0			(1U << 8)
 
 
-int serdes_set_mode(void *base, serdes_mode_t mode);
+int serdes_set_mode(void *base, int id, enum serdes_mode mode);
 int serdes_xpcs_wait_for_power_good(void *base, uint32_t xpcs);
 int serdes_xpcs_set_sgmii_speed(void *base, uint32_t xpcs,
 				    uint32_t mbps, bool fduplex);

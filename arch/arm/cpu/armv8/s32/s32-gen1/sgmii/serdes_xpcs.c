@@ -97,18 +97,9 @@ static void serdes_xpcs_reg_write(void *base, u32 xpcs, u32 reg, u16 val)
  * @param[in]	mode Mode
  * @return	0 if success, error code otherwise
  */
-int serdes_set_mode(void *base, serdes_mode_t mode)
+int serdes_set_mode(void *base, int id, enum serdes_mode mode)
 {
-	u32 regval;
-
-	if (mode > SERDES_MODE_MAX)
-		return -EINVAL;
-
-	regval = readl(base + SS_SS_RW_REG_0);
-	regval &= ~(SUBSYS_MODE_VALUE(0xff));
-	writel(regval | mode, base + SS_SS_RW_REG_0);
-
-	return 0;
+	return s32_serdes_set_mode(base, id, mode);
 }
 
 /**

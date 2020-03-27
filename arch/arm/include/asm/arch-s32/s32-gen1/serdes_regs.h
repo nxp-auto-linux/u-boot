@@ -14,7 +14,7 @@
 /**
  * @brief	SerDes Modes
  */
-typedef enum {
+enum serdes_mode {
 	/*	Lane0=PCIE, Lane1=PCIE */
 	SERDES_MODE_PCIE_PCIE = 0,
 	/*	Lane0=SGMII (1G), Lane1=PCIE */
@@ -24,7 +24,20 @@ typedef enum {
 	/*	Lane0=SGMII(1G/2.5G), Lane1=SGMII(1G/2.5G) */
 	SERDES_MODE_SGMII_SGMII = 3,
 	SERDES_MODE_MAX = SERDES_MODE_SGMII_SGMII
-} serdes_mode_t;
+};
+
+enum serdes_dev_type {
+	SERDES_INVALID = -1,
+	PCIE_EP = 0x1, /* EP mode is 0x0, use 0x1 to allow us to use masks */
+	PCIE_RC = 0x4,
+	SGMII = 0x10, /* outside range of PE0_GEN_CTRL_1:DEVICE_TYPE */
+	PCIE_EP_SGMII = PCIE_EP | SGMII,
+	PCIE_RC_SGMII = PCIE_RC | SGMII
+};
+/* use a mask to fix DEVICE_TYPE for EP */
+#define SERDES_MODE(mode) (mode & 0xe)
+#define IS_SERDES_PCIE(mode) (mode & (PCIE_EP | PCIE_RC))
+#define IS_SERDES_SGMII(mode) (mode & (SGMII))
 
 #define SERDES_SS_BASE				0x80000
 
@@ -252,6 +265,13 @@ typedef enum {
 		(PHY_REG_DATA_FIELD_LSB))
 #define PHY_REG_DATA_FIELD     ((PHY_REG_DATA_FIELD_MASK) << \
 		(PHY_REG_DATA_FIELD_LSB))
+
+enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
+int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode);
+enum serdes_mode s32_get_serdes_mode_from_target(void *dbi, int id);
+
+int rgm_issue_reset(u32 pid);
+int rgm_release_reset(u32 pid);
 
 #endif
 

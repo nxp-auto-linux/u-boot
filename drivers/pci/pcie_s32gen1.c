@@ -84,8 +84,8 @@ static bool s32_pcie_wait_link_up(struct s32_pcie *pcie)
 {
 	int count = PCIE_LINK_UP_COUNT;
 
-	bool ready = wait_read32((void *)(pcie->dbi + SS_PE0_LINK_DBG_2),
-			SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK, count);
+	bool ready = (wait_read32((void *)(pcie->dbi + SS_PE0_LINK_DBG_2),
+			SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK, count) == 0);
 
 	if (ready) {
 		u32 speed, width;
