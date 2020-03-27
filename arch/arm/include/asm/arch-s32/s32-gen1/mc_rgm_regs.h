@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2019 NXP
+ * Copyright 2016-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -38,8 +38,8 @@
 #define PRST_CM7_CLUSTER_1		1
 #define PRST_CM7_CLUSTER_2		2
 #define PRST_DDR			3
-#define PRST_PCIE_SERDES		4
-#define PRST_PCIE_FUNC			5
+#define PRST_PCIE_0_SERDES		4
+#define PRST_PCIE_0_FUNC		5
 #define PRST_PCIE_1_SERDES		16
 #define PRST_PCIE_1_FUNC		17
 #define PRST_PFE			128
