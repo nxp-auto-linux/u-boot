@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2021 NXP
+ */
+
 /dts-v1/;
 
 / {
@@ -93,6 +98,7 @@
 			<&gpio_b 9 0xc 3 2 1>;
 		int-value = <1234>;
 		uint-value = <(-1234)>;
+		int-array = <5678 9123 4567>;
 		interrupts-extended = <&irq 3 0>;
 	};
 

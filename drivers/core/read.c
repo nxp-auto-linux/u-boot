@@ -2,6 +2,8 @@
 /*
  * Copyright (c) 2017 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * Copyright 2021 NXP
  */
 
 #include <asm/types.h>
@@ -20,6 +22,19 @@ int dev_read_u32_default(const struct udevice *dev, const char *propname,
 			 int def)
 {
 	return ofnode_read_u32_default(dev_ofnode(dev), propname, def);
+}
+
+int dev_read_u32_index(struct udevice *dev, const char *propname, int index,
+		       u32 *outp)
+{
+	return ofnode_read_u32_index(dev_ofnode(dev), propname, index, outp);
+}
+
+u32 dev_read_u32_index_default(struct udevice *dev, const char *propname,
+			       int index, u32 def)
+{
+	return ofnode_read_u32_index_default(dev_ofnode(dev), propname, index,
+					     def);
 }
 
 int dev_read_s32(const struct udevice *dev, const char *propname, s32 *outp)

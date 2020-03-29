@@ -17,6 +17,8 @@
  *
  * This file follows drivers/of/base.c with functions in the same order as the
  * Linux version.
+ *
+ * Copyright 2021 NXP
  */
 
 #include <common.h>
@@ -481,6 +483,28 @@ int of_read_u32_array(const struct device_node *np, const char *propname,
 	debug("size %zd\n", sz);
 	while (sz--)
 		*out_values++ = be32_to_cpup(val++);
+
+	return 0;
+}
+
+int of_read_u32_index(const struct device_node *np, const char *propname,
+		      int index, u32 *outp)
+{
+	const __be32 *val;
+
+	debug("%s: %s: ", __func__, propname);
+	if (!np)
+		return -EINVAL;
+
+	val = of_find_property_value_of_size(np, propname,
+					     sizeof(*outp) * (index + 1));
+	if (IS_ERR(val)) {
+		debug("(not found)\n");
+		return PTR_ERR(val);
+	}
+
+	*outp = be32_to_cpup(val + index);
+	debug("%#x (%d)\n", *outp, *outp);
 
 	return 0;
 }
