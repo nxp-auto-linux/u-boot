@@ -96,8 +96,8 @@ int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
 	/* Will have to figure out how to handle SERDES_MODE_SGMII_PCIE
 	 * and SERDES_MODE_PCIE_SGMII, since lane assignment may differ.
 	 */
-	case SERDES_MODE_SGMII_PCIE:
-	case SERDES_MODE_PCIE_SGMII:
+	case SERDES_MODE_PCIE_SGMII0:
+	case SERDES_MODE_PCIE_SGMII1:
 		if (!IS_SERDES_PCIE(devtype) || !IS_SERDES_SGMII(devtype))
 			return -EINVAL;
 		break;
@@ -267,8 +267,11 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 			return false;
 	} else if (IS_SERDES_PCIE(pcie->devtype) &&
 				IS_SERDES_SGMII(pcie->devtype)) {
+		/* TODO: which of the modes SERDES_MODE_PCIE_SGMII0/1
+		 * are used?
+		 */
 		if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-				SERDES_MODE_PCIE_SGMII) < 0)
+				SERDES_MODE_PCIE_SGMII0) < 0)
 			return false;
 	} else if (!IS_SERDES_PCIE(pcie->devtype) &&
 				IS_SERDES_SGMII(pcie->devtype)) {
