@@ -70,6 +70,7 @@ enum spi_mem_data_dir {
 
 /**
  * struct spi_mem_op - describes a SPI memory operation
+ * @memop: true for memory reads/writes and false for registers accesses
  * @cmd.buswidth: number of IO lines used to transmit the command
  * @cmd.opcode: operation opcode
  * @addr.nbytes: number of address bytes to send. Can be zero if the operation
@@ -88,6 +89,8 @@ enum spi_mem_data_dir {
  * @data.buf.out: output buffer
  */
 struct spi_mem_op {
+	bool memop;
+
 	struct {
 		u8 buswidth;
 		u8 opcode;
