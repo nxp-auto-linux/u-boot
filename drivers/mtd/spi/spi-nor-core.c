@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2005, Intec Automation Inc.
  * Copyright (C) 2014, Freescale Semiconductor, Inc.
+ * Copyright 2020 NXP
  *
  * Synced from Linux v4.19
  */
@@ -39,10 +40,22 @@
 static int spi_nor_read_write_reg(struct spi_nor *nor, struct spi_mem_op
 		*op, void *buf)
 {
-	if (op->data.dir == SPI_MEM_DATA_IN)
-		op->data.buf.in = buf;
-	else
-		op->data.buf.out = buf;
+	if (nor->erase_opcode != op->cmd.opcode) {
+		if (op->data.dir == SPI_MEM_DATA_IN)
+			op->data.buf.in = buf;
+		else
+			op->data.buf.out = buf;
+	} else {
+		if (op->data.nbytes == 2)
+			op->addr.val = swab16(*(u32 *)buf);
+		if (op->data.nbytes == 4)
+			op->addr.val = swab32(*(u32 *)buf);
+
+		op->addr.buswidth = op->cmd.buswidth;
+		op->addr.nbytes = op->data.nbytes;
+		op->data.nbytes = 0;
+	}
+
 	return spi_mem_exec_op(nor->spi, op);
 }
 
@@ -53,6 +66,9 @@ static int spi_nor_read_reg(struct spi_nor *nor, u8 code, u8 *val, int len)
 					  SPI_MEM_OP_NO_DUMMY,
 					  SPI_MEM_OP_DATA_IN(len, NULL, 1));
 	int ret;
+
+	op.cmd.buswidth = spi_nor_get_protocol_inst_nbits(nor->reg_proto);
+	op.memop = false;
 
 	ret = spi_nor_read_write_reg(nor, &op, val);
 	if (ret < 0)
@@ -68,6 +84,8 @@ static int spi_nor_write_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 					  SPI_MEM_OP_NO_ADDR,
 					  SPI_MEM_OP_NO_DUMMY,
 					  SPI_MEM_OP_DATA_OUT(len, NULL, 1));
+	op.cmd.buswidth = spi_nor_get_protocol_inst_nbits(nor->reg_proto);
+	op.memop = false;
 
 	return spi_nor_read_write_reg(nor, &op, buf);
 }
@@ -82,6 +100,8 @@ static ssize_t spi_nor_read_data(struct spi_nor *nor, loff_t from, size_t len,
 				   SPI_MEM_OP_DATA_IN(len, buf, 1));
 	size_t remaining = len;
 	int ret;
+
+	op.memop = true;
 
 	/* get transfer protocols. */
 	op.cmd.buswidth = spi_nor_get_protocol_inst_nbits(nor->read_proto);
@@ -121,6 +141,7 @@ static ssize_t spi_nor_write_data(struct spi_nor *nor, loff_t to, size_t len,
 	int ret;
 
 	/* get transfer protocols. */
+	op.memop = true;
 	op.cmd.buswidth = spi_nor_get_protocol_inst_nbits(nor->write_proto);
 	op.addr.buswidth = spi_nor_get_protocol_addr_nbits(nor->write_proto);
 	op.data.buswidth = spi_nor_get_protocol_data_nbits(nor->write_proto);
@@ -1475,6 +1496,7 @@ enum spi_nor_read_command_index {
 	SNOR_CMD_READ_1_8_8,
 	SNOR_CMD_READ_8_8_8,
 	SNOR_CMD_READ_1_8_8_DTR,
+	SNOR_CMD_READ_8_8_8_DTR,
 
 	SNOR_CMD_READ_MAX
 };
@@ -2193,6 +2215,14 @@ static int spi_nor_init_params(struct spi_nor *nor,
 					SPINOR_OP_PP_1_1_4, SNOR_PROTO_1_1_4);
 	}
 
+	if (info->flags & SPI_NOR_OCTAL_DTR_READ) {
+		params->hwcaps.mask |= SNOR_HWCAPS_READ_8_8_8_DTR;
+		spi_nor_set_read_settings
+				(&params->reads[SNOR_CMD_READ_8_8_8_DTR],
+				0, 20, SPINOR_OP_READ_8_8_8_DTR,
+				SNOR_PROTO_8_8_8_DTR);
+	}
+
 	/* Select the procedure to set the Quad Enable bit. */
 	if (params->hwcaps.mask & (SNOR_HWCAPS_READ_QUAD |
 				   SNOR_HWCAPS_PP_QUAD)) {
@@ -2263,6 +2293,7 @@ static int spi_nor_hwcaps_read2cmd(u32 hwcaps)
 		{ SNOR_HWCAPS_READ_1_8_8,	SNOR_CMD_READ_1_8_8 },
 		{ SNOR_HWCAPS_READ_8_8_8,	SNOR_CMD_READ_8_8_8 },
 		{ SNOR_HWCAPS_READ_1_8_8_DTR,	SNOR_CMD_READ_1_8_8_DTR },
+		{ SNOR_HWCAPS_READ_8_8_8_DTR,	SNOR_CMD_READ_8_8_8_DTR },
 	};
 
 	return spi_nor_hwcaps2cmd(hwcaps, hwcaps_read2cmd,
@@ -2494,6 +2525,8 @@ int spi_nor_scan(struct spi_nor *nor)
 
 		if (spi->mode & SPI_TX_OCTAL)
 			hwcaps.mask |= (SNOR_HWCAPS_READ_1_8_8 |
+					SNOR_HWCAPS_READ_1_8_8_DTR |
+					SNOR_HWCAPS_READ_8_8_8_DTR |
 					SNOR_HWCAPS_PP_1_1_8 |
 					SNOR_HWCAPS_PP_1_8_8);
 	} else if (spi->mode & SPI_RX_QUAD) {
