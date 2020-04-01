@@ -4,7 +4,7 @@
  *
  * (C) Copyright 2001
  * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com.
- * Copyright 2017 NXP
+ * Copyright 2017,2020 NXP
  */
 
 #ifndef _SPI_H_
@@ -32,9 +32,11 @@
 #define SPI_RX_SLOW	BIT(11)			/* receive with 1 wire slow */
 #define SPI_RX_DUAL	BIT(12)			/* receive with 2 wires */
 #define SPI_RX_QUAD	BIT(13)			/* receive with 4 wires */
-#define SPI_FMSZ_8	BIT(14)			/* Force frame size to 8 bits */
-#define SPI_FMSZ_16	BIT(15)
-#define SPI_FMSZ_32	BIT(16)
+#define SPI_TX_OCTAL	BIT(14)			/* transmit with 8 wires */
+#define SPI_RX_OCTAL	BIT(15)			/* receive with 8 wires */
+#define SPI_FMSZ_8	BIT(16)			/* Force frame size to 8 bits */
+#define SPI_FMSZ_16	BIT(16)
+#define SPI_FMSZ_32	BIT(18)
 
 /* SPI TX operation modes */
 #define SPI_OPM_TX_QPP		(1 << 0)
