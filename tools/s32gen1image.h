@@ -1,5 +1,5 @@
-/* Copyright 2019 NXP */
 /* SPDX-License-Identifier: GPL-2.0+ */
+/* Copyright 2019-2020 NXP */
 
 #ifndef S32GEN1IMAGE_H
 #define S32GEN1IMAGE_H
@@ -116,6 +116,23 @@ struct image_comp {
 };
 
 #ifdef CONFIG_FLASH_BOOT
+struct flash_write {
+	union {
+		struct {
+			__u32 opcode:8;
+			__u32 reserved:8;
+			__u32 pad:2;
+			__u32 addr_size:6;
+			__u32 cdata_size:7;
+
+			__u32 valid_addr:1;
+		} config;
+		__u32 _config;
+	};
+	__u32 addr;
+	__u32 data;
+} __packed;
+
 struct qspi_params {
 	__u32 header;
 	__u32 mcr;
@@ -138,8 +155,8 @@ struct qspi_params {
 	__u8 ipcr_trigger_en;
 	__u8 sflash_clk_freq;
 	__u8 reserved[3];
-	__u8 command_seq[320];
-	__u8 flash_write_data[120];
+	__u32 command_seq[80];
+	struct flash_write writes[10];
 };
 #endif
 
