@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2019 NXP */
+/* Copyright 2019-2020 NXP */
 
 #include <image.h>
 #include <generated/autoconf.h>
@@ -278,15 +278,16 @@ static void enforce_reserved_range(void *image_start, int image_length,
 
 #else
 #ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+/* Load U-Boot using DTR octal mode @ 133 MHz*/
 static struct qspi_params s32g2xx_qspi_conf = {
 	.header   = 0x5a5a5a5a,
-	.mcr      = 0x010f004c,
-	.flshcr   = 0x00000303,
+	.mcr      = 0x030f00cc,
+	.flshcr   = 0x00010303,
 	.bufgencr = 0x00000000,
-	.dllcr    = 0x01200006,
+	.dllcr    = 0x8280000c,
 	.paritycr = 0x00000000,
-	.sfacr    = 0x00000800,
-	.smpr     = 0x00000020,
+	.sfacr    = 0x00020000,
+	.smpr     = 0x44000000,
 	.dlcr     = 0x40ff40ff,
 	.sflash_1_size = 0x20000000,
 	.sflash_2_size = 0x20000000,
@@ -294,22 +295,44 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	.sfar = 0x00000000,
 	.ipcr = 0x00000000,
 	.tbdr = 0x00000000,
-	.dll_bypass_en   = 0x01,
-	.dll_slv_upd_en  = 0x00,
-	.dll_auto_upd_en = 0x00,
+	.dll_bypass_en   = 0x00,
+	.dll_slv_upd_en  = 0x01,
+	.dll_auto_upd_en = 0x01,
 	.ipcr_trigger_en = 0x00,
-	.sflash_clk_freq = 0x85,
+	.sflash_clk_freq = 133,
 	.reserved = {0x00, 0x00, 0x00},
-	.command_seq = {0xec, 0x07, 0x13, 0x07,
-			0x20, 0x0b, 0x14, 0x0f,
-			0x01, 0x1f, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00},
-	.flash_write_data = {0x06, 0x00, 0x00, 0x00,
-			     0x00, 0x00, 0x00, 0x00,
-			     0x00, 0x00, 0x00, 0x00,
-			     0x72, 0x00, 0x80, 0x81,
-			     0x00, 0x00, 0x00, 0x00,
-			     0x01, 0x00, 0x00, 0x00,}
+	/* Macronix read - 8DTRD */
+	.command_seq = {0x471147ee,
+			0x0f142b20,
+			0x00003b10},
+	.writes = {
+		{
+			/* Write enable */
+			.config = {
+				.valid_addr = 0,
+				.cdata_size = 0,
+				.addr_size = 0,
+				.pad = 0,
+				.reserved = 0,
+				.opcode = 6,
+			},
+			.addr = 0,
+			.data = 0,
+		},
+		{
+			/* WRCR2 - DTR OPI */
+			.config = {
+				.valid_addr = 1,
+				.cdata_size = 1,
+				.addr_size = 32,
+				.pad = 0,
+				.reserved = 0,
+				.opcode = 0x72,
+			},
+			.addr = 0x0,
+			.data = 0x2,
+		},
+	},
 };
 
 static struct qspi_params *get_qspi_params(struct program_image *image)
@@ -320,8 +343,6 @@ static struct qspi_params *get_qspi_params(struct program_image *image)
 static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 {
 	memcpy(qspi_params, &s32g2xx_qspi_conf, sizeof(*qspi_params));
-	memset(&qspi_params->command_seq[S32G2XX_COMMAND_SEQ_FILL_OFF], 0xff,
-	       sizeof(qspi_params->command_seq) - S32G2XX_COMMAND_SEQ_FILL_OFF);
 }
 #endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 #endif
