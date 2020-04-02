@@ -45,7 +45,16 @@ struct fsl_qspi_regs {
 	u32 smpr;
 	u32 rbsr;
 	u32 rbct;
+#ifdef CONFIG_S32_GEN1
+	u32 rsvd31[3];
+	u32 awrsr;
+	u32 rsvd32[2];
+	u32 dllsr;
+	u32 dlcr;
+	u32 rsvd4[7];
+#else
 	u32 rsvd4[15];
+#endif
 	u32 tbsr;
 	u32 tbdr;
 	u32 rsvd5[1];
@@ -59,7 +68,12 @@ struct fsl_qspi_regs {
 	u32 sfa2ad;
 	u32 sfb1ad;
 	u32 sfb2ad;
+#ifdef CONFIG_S32_GEN1
+	u32 dlpr;
+	u32 rsvd7[27];
+#else
 	u32 rsvd7[28];
+#endif
 	u32 rbdr[32];
 	u32 rsvd8[32];
 	u32 lutkey;
@@ -68,6 +82,7 @@ struct fsl_qspi_regs {
 	u32 lut[64];
 };
 
+#define RX_BUFFER_SIZE		0x80
 #define QSPI_IPCR_SEQID_SHIFT		24
 #define QSPI_IPCR_SEQID_MASK		(0xf << QSPI_IPCR_SEQID_SHIFT)
 
@@ -87,6 +102,10 @@ struct fsl_qspi_regs {
 #define QSPI_MCR_CLR_RXF_MASK		(1 << QSPI_MCR_CLR_RXF_SHIFT)
 #define QSPI_MCR_CLR_TXF_SHIFT		11
 #define QSPI_MCR_CLR_TXF_MASK		(1 << QSPI_MCR_CLR_TXF_SHIFT)
+#ifdef CONFIG_S32_GEN1
+#define QSPI_MCR_DLPEN_SHIFT		12
+#define QSPI_MCR_DLPEN_MASK		(1 << QSPI_MCR_DLPEN_SHIFT)
+#endif
 #define QSPI_MCR_MDIS_SHIFT		14
 #define QSPI_MCR_MDIS_MASK		(1 << QSPI_MCR_MDIS_SHIFT)
 #define QSPI_MCR_RESERVED_SHIFT		16
@@ -95,9 +114,21 @@ struct fsl_qspi_regs {
 #define QSPI_MCR_SWRSTHD_MASK		(1 << QSPI_MCR_SWRSTHD_SHIFT)
 #define QSPI_MCR_SWRSTSD_SHIFT		0
 #define QSPI_MCR_SWRSTSD_MASK		(1 << QSPI_MCR_SWRSTSD_SHIFT)
+#ifdef CONFIG_S32_GEN1
+#define QSPI_MCR_ISD2FA_SHIFT		16
+#define QSPI_MCR_ISD2FA_EN		(1 << QSPI_MCR_ISD2FA_SHIFT)
+#define QSPI_MCR_ISD3FA_SHIFT		17
+#define QSPI_MCR_ISD3FA_EN		(1 << QSPI_MCR_ISD3FA_SHIFT)
+#define QSPI_MCR_ISD2FB_SHIFT		18
+#define QSPI_MCR_ISD2FB_EN		(1 << QSPI_MCR_ISD2FB_SHIFT)
+#define QSPI_MCR_ISD3FB_SHIFT		19
+#define QSPI_MCR_ISD3FB_EN		(1 << QSPI_MCR_ISD3FB_SHIFT)
+#endif
 #define QSPI_MCR_DQS_FA_SEL_SHIFT	24
 #define QSPI_MCR_DQS_LOOPBACK		(0x1 << QSPI_MCR_DQS_FA_SEL_SHIFT)
 #define QSPI_MCR_DQS_PAD_LOOPBACK	(0x2 << QSPI_MCR_DQS_FA_SEL_SHIFT)
+#define QSPI_MCR_DQS_EXTERNAL		(0x3 << QSPI_MCR_DQS_FA_SEL_SHIFT)
+#define QSPI_MCR_DQS_MASK		(0x3 << QSPI_MCR_DQS_FA_SEL_SHIFT)
 
 #ifndef CONFIG_S32_GEN1
 #define QSPI_SMPR_HSENA_SHIFT		0
@@ -116,6 +147,22 @@ struct fsl_qspi_regs {
 #define QSPI_SMPR_DDRSMP_SHIFT		16
 #define QSPI_SMPR_DDRSMP_MASK		(7 << QSPI_SMPR_DDRSMP_SHIFT)
 #endif
+
+#define QSPI_SFACR_BSWAP_SHIFT		17
+#define QSPI_SFACR_BSWAP_EN		(1 << QSPI_SFACR_BSWAP_SHIFT)
+
+#define QSPI_FLSHCR_TCSS_SHIFT		0
+#define QSPI_FLSHCR_TCSS(N)		((N) << QSPI_FLSHCR_TCSS_SHIFT)
+#define QSPI_FLSHCR_TCHS_SHIFT		8
+#define QSPI_FLSHCR_TCHS(N)		((N) << QSPI_FLSHCR_TCHS_SHIFT)
+#define QSPI_FLSHCR_TDH_SHIFT		16
+#define QSPI_FLSHCR_TDH(N)		((N) << QSPI_FLSHCR_TDH_SHIFT)
+
+#define QSPI_DLCR_RESERVED_MASK		((0xff << 0) | (0xff << 16))
+#define QSPI_DLCR_DLP_SEL_FA_SHIFT	14
+#define QSPI_DLCR_DLP_SEL_FA(N)		((N) << QSPI_DLCR_DLP_SEL_FA_SHIFT)
+#define QSPI_DLCR_DLP_SEL_FB_SHIFT	30
+#define QSPI_DLCR_DLP_SEL_FB(N)		((N) << QSPI_DLCR_DLP_SEL_FB_SHIFT)
 
 #define QSPI_BUFXCR_MASTER_ID_N(N)	(N)
 #define QSPI_BUFXCR_INVALID_MSTRID	0xe
@@ -138,12 +185,26 @@ struct fsl_qspi_regs {
 #define QSPI_DLLCR_SLV_AUTO_UPDT_EN	(1 << QSPI_DLLCR_SLV_AUTO_UPDT_SHIFT)
 #define QSPI_DLLCR_SLV_DLY_COARSE_SHIFT	8
 #define QSPI_DLLCR_SLV_DLY_COARSE_N(N)	((N) << QSPI_DLLCR_SLV_DLY_COARSE_SHIFT)
+#define QSPI_DLLCR_SLV_DLY_OFFSET_SHIFT	12
+#define QSPI_DLLCR_SLV_DLY_OFFSET_N(N)	((N) << QSPI_DLLCR_SLV_DLY_OFFSET_SHIFT)
 #define QSPI_DLLCR_DLLRES_SHIFT		20
 #define QSPI_DLLCR_DLLRES_N(N)		((N) << QSPI_DLLCR_DLLRES_SHIFT)
 #define QSPI_DLLCR_DLL_REFCNTR_SHIFT	24
 #define QSPI_DLLCR_DLL_REFCNTR_N(N)	((N) << QSPI_DLLCR_DLL_REFCNTR_SHIFT)
 #define QSPI_DLLCR_FREQEN_SHIFT		30
 #define QSPI_DLLCR_FREQEN_EN		(1 << QSPI_DLLCR_FREQEN_SHIFT)
+#define QSPI_DLLCR_DLLEN_SHIFT		31
+#define QSPI_DLLCR_DLLEN_EN		(1 << QSPI_DLLCR_DLLEN_SHIFT)
+#define QSPI_DLLCR_MASK			0x7FFFFFF0UL
+
+#define QSPI_DLPR_RESET_VALUE		0xaa553443
+
+#ifdef CONFIG_S32_GEN1
+#define QSPI_DLLSR_SLVA_LOCK_SHIFT	14
+#define QSPI_DLLSR_SLVA_LOCK_MASK	(1 << QSPI_DLLSR_SLVA_LOCK_SHIFT)
+#define QSPI_DLLSR_DLLA_LOCK_SHIFT	15
+#define QSPI_DLLSR_DLLA_LOCK_MASK	(1 << QSPI_DLLSR_DLLA_LOCK_SHIFT)
+#endif
 
 #define QSPI_AWRCR_AWTRGLVL_SHIFT	0
 #define QSPI_AWRCR_AWTRGLVL(N)		(((N) / 4) << QSPI_AWRCR_AWTRGLVL_SHIFT)
@@ -190,8 +251,10 @@ struct fsl_qspi_regs {
 #define OPRND0(x)			((x) << OPRND0_SHIFT)
 #define PAD0_SHIFT			8
 #define PAD0(x)				((x) << PAD0_SHIFT)
+#define LUT2PAD0(X)			(((X) >> PAD0_SHIFT) & 0x3)
 #define INSTR0_SHIFT			10
 #define INSTR0(x)			((x) << INSTR0_SHIFT)
+#define LUT2INSTR0(x)			(((x) >> INSTR0_SHIFT) & 0x3f)
 #define OPRND1_SHIFT			16
 #define OPRND1(x)			((x) << OPRND1_SHIFT)
 #define PAD1_SHIFT			24
@@ -204,6 +267,10 @@ struct fsl_qspi_regs {
 #define LUT_DUMMY			3
 #define LUT_READ			7
 #define LUT_WRITE			8
+#define LUT_CMD_DDR			17
+#define LUT_ADDR_DDR			10
+#define LUT_READ_DDR			14
+#define LUT_WRITE_DDR			15
 
 #define LUT_PAD1			0
 #define LUT_PAD2			1
@@ -214,6 +281,8 @@ struct fsl_qspi_regs {
 
 /* QSPI max chipselect signals number */
 #define FSL_QSPI_MAX_CHIPSELECT_NUM     4
+#define FLASH_STATUS_WEL	0x02
+
 
 /**
  * struct fsl_qspi_priv - private data for Freescale QSPI
@@ -239,23 +308,25 @@ struct fsl_qspi_priv {
 	u32 amba_base[FSL_QSPI_MAX_CHIPSELECT_NUM];
 	u32 amba_total_size;
 	u32 cur_amba_base;
-#ifdef CONFIG_S32_GEN1
-	u32 bar_addr;
-#endif
 	u32 flash_num;
 	u32 num_chipselect;
+	u32 num_pads;
 	struct fsl_qspi_regs *regs;
 	struct fsl_qspi_devtype_data *devtype_data;
+	bool ddr_mode;
 };
 
+/* fsl_qspi_priv flags */
+#define QSPI_FLAG_REGMAP_ENDIAN_BIG	BIT(0)
+#define QSPI_FLAG_PREV_READ_MEM		BIT(1)
+
 #ifdef CONFIG_S32_GEN1
+void reset_bootrom_settings(struct fsl_qspi_priv *priv);
+void qspi_init_ahb_read(struct fsl_qspi_priv *priv);
+int enable_spi(struct fsl_qspi_priv *priv, bool force);
 extern struct spi_controller_mem_ops s32gen1_mem_ops;
-void qspi_op_rdid(struct fsl_qspi_priv *priv, u32 *rxbuf, u32 len);
-void qspi_op_rdsr(struct fsl_qspi_priv *priv, void *rxbuf, u32 len);
-void qspi_op_erase(struct fsl_qspi_priv *priv);
-void qspi_ahb_read(struct fsl_qspi_priv *priv, u8 *rxbuf, int len);
-void qspi_op_write(struct fsl_qspi_priv *priv, u8 *txbuf, u32 len);
-void qspi_ahb_invalid(struct fsl_qspi_priv *priv);
+void qspi_write32(u32 flags, u32 *addr, u32 val);
+u32 qspi_read32(u32 flags, u32 *addr);
 #endif
 
 #endif /* _FSL_QSPI_H_ */
