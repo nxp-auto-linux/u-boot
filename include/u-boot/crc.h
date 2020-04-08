@@ -24,6 +24,8 @@
  * Return: CRC8 checksum
  */
 unsigned int crc8(unsigned int crc_start, const unsigned char *vptr, int len);
+unsigned int crc8poly(unsigned int crc_start, unsigned short poly,
+		      const unsigned char *vptr, int len);
 
 void crc8_wd_buf(const unsigned char *input, unsigned int len,
 		 unsigned char output[1], unsigned int chunk_sz);
