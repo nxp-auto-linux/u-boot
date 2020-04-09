@@ -367,6 +367,11 @@ config PMIC_TPS65941
 	The TPS65941 is a PMIC containing a bunch of SMPS & LDOs.
 	This driver binds the pmic children.
 
+config DM_PMIC_VR5510
+	bool "Enable Driver Model for PMIC VR5510"
+	help
+	This config enables implementation of driver-model pmic uclass features
+	for PMIC VR5510. The driver implements read/write operations.
 endif
 
 config POWER_MC34VR500

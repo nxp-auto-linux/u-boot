@@ -1,0 +1,26 @@
+NXP VR5510 pmic
+
+This file describes the binding info for the PMIC driver:
+- drivers/power/pmic/vr5510.c
+
+Required properties:
+- compatible: "nxp,vr5510"
+- reg:
+	* 0x20 - Main unit
+	* 0x21 - Fail Safe Unit
+
+With those two properties, the pmic device can be used for read/write only.
+
+Example:
+
+vr5510 {
+	compatible = "nxp,vr5510";
+	reg = <0x20>;
+	status = "okay";
+};
+
+vr5510_fsu {
+	compatible = "nxp,vr5510";
+	reg = <0x21>;
+	status = "okay";
+};
