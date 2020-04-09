@@ -49,4 +49,16 @@
 &i2c4 {
 	clock-frequency=<100000>;
 	status = "okay";
+
+	vr5510 {
+		compatible = "fsl,vr5510";
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	vr5510_fsu {
+		compatible = "fsl,vr5510";
+		reg = <0x21>;
+		status = "okay";
+	};
 };
