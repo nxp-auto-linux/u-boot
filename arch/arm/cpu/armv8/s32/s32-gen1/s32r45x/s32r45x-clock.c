@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  */
 #include <asm/arch/clock.h>
 #include <asm/arch/mc_cgm_regs.h>
@@ -51,18 +51,18 @@
 #define PERIPH_PLL_PHI7_FREQ (100000000)
 #define PERIPH_PLL_PHI_Nr (8)
 
-/* PERIPH_PLL_DFS1_freq - 400 mhz */
+/* PERIPH_PLL_DFS1_freq - 800 mhz */
 #define PERIPH_PLL_DFS1_EN (1)
-#define PERIPH_PLL_DFS1_MFI (2)
-#define PERIPH_PLL_DFS1_MFN (18)
+#define PERIPH_PLL_DFS1_MFI (1)
+#define PERIPH_PLL_DFS1_MFN (9)
 /* PERIPH_PLL_DFS2_freq - 400 mhz */
 #define PERIPH_PLL_DFS2_EN (1)
 #define PERIPH_PLL_DFS2_MFI (2)
 #define PERIPH_PLL_DFS2_MFN (18)
-/* PERIPH_PLL_DFS3_freq - 400 mhz */
+/* PERIPH_PLL_DFS3_freq - 800 mhz */
 #define PERIPH_PLL_DFS3_EN (1)
-#define PERIPH_PLL_DFS3_MFI (2)
-#define PERIPH_PLL_DFS3_MFN (18)
+#define PERIPH_PLL_DFS3_MFI (1)
+#define PERIPH_PLL_DFS3_MFN (9)
 /* PERIPH_PLL_DFS4_freq - 400 mhz */
 #define PERIPH_PLL_DFS4_EN (1)
 #define PERIPH_PLL_DFS4_MFI (2)
@@ -148,7 +148,7 @@ static void setup_mux_clocks(void)
 	/* setup the mux clock divider for SDHC_CLK (200 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 14,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3);
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 0);
+	mux_div_clk_config(MC_CGM0_BASE_ADDR, 14, 0, 3);
 
 	/* setup the mux clock divider for DDR_CLK (800 MHz) */
 	mux_source_clk_config(MC_CGM5_BASE_ADDR, 0,
