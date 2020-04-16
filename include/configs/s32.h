@@ -124,7 +124,11 @@
 #define QSPI0_AMBA_BASE                CONFIG_SYS_FSL_FLASH0_BASE
 
 #else
+
+#ifndef CONFIG_S32_GEN1
+/* S32V234 flash driver */
 #define CONFIG_S32_FLASH
+#endif
 
 /* QSPI/hyperflash configs */
 
@@ -137,7 +141,6 @@
 #define FLASH_BASE_ADR2		(CONFIG_SYS_FSL_FLASH0_BASE + 0x4000000)
 
 #endif
-#define FLASH_SECTOR_SIZE	0x40000 /* 256 KB */
 
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
 
@@ -542,15 +545,15 @@
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_MMC_PART			1
 
+#ifdef CONFIG_S32_GEN1
+#define FLASH_SECTOR_SIZE               (64 * 1024) /* 64 KB */
+#else
+#define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */
+#endif
+
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
-#define CONFIG_ENV_SECT_SIZE		(FLASH_SECTOR_SIZE) /* 256 KB */
 #define CONFIG_SYS_MAX_FLASH_SECT 	(0x4000000 / CONFIG_ENV_SECT_SIZE)
-#define CONFIG_SYS_MMC_ENV_DEV         0
-#define CONFIG_MMC_PART			1
-
-#elif !defined(CONFIG_ENV_IS_NOWHERE) && !defined(CONFIG_SD_BOOT)
-#warning "Warning: enviroment is neither in MMC nor in flash"
 #endif
 
 #define CONFIG_BOOTP_BOOTFILESIZE
