@@ -399,6 +399,9 @@ static int scmi_bind(struct udevice *dev)
 			continue;
 
 		switch (protocol_id) {
+		case SCMI_PROTOCOL_ID_CLOCK:
+			drv = DM_GET_DRIVER(scmi_clock);
+			break;
 		default:
 			dev_info(dev, "Ignore unsupported SCMI protocol %u\n",
 				 protocol_id);
