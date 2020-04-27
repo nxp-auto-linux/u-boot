@@ -3,6 +3,9 @@
 # Copyright 2018-2020 NXP
 #
 
+obj-$(CONFIG_TARGET_S32G274ARDB)	+= cmu.o
+obj-$(CONFIG_TARGET_S32G274AEVB)	+= cmu.o
+obj-$(CONFIG_TARGET_S32R45XEVB)		+= cmu.o
 obj-y					+= clock.o
 obj-$(CONFIG_S32G274A)			+= s32g274a/s32g274a-clock.o
 obj-$(CONFIG_S32V344)			+= s32g274a/s32g274a-clock.o
