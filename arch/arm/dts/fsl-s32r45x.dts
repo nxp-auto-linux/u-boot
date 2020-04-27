@@ -77,3 +77,16 @@
 		reg = <1>;
 	};
 };
+
+/* J36 - PMIC */
+&i2c0 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* J37 */
+&i2c1 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+

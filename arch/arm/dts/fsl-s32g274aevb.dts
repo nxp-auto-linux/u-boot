@@ -44,3 +44,40 @@
 &pfe {
 	status = "okay";
 };
+
+/* EEPROM */
+&i2c0 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* Platform board PCI X16 EXPRESS - I2C_SCL_S0, I2C_SDA_S0  */
+&i2c1 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* Platform board GPIO_J3-17 (SDA), GPIO_J3-19 (SCL0)  */
+&i2c2 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* PMIC */
+&i2c4 {
+	status = "okay";
+	clock-frequency=<100000>;
+
+	vr5510 {
+		compatible = "fsl,vr5510";
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	vr5510_fsu {
+		compatible = "fsl,vr5510";
+		reg = <0x21>;
+		status = "okay";
+	};
+
+};

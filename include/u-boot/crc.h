@@ -8,8 +8,10 @@
 #ifndef _UBOOT_CRC_H
 #define _UBOOT_CRC_H
 
-/* lib/crc8.c */
+/* lib/crc8.c - 8 bit CRC with polynomial x^8+x^2+x^1+1 */
 unsigned int crc8(unsigned int crc_start, const unsigned char *vptr, int len);
+unsigned int crc8poly(unsigned int crc_start, unsigned short poly,
+		      const unsigned char *vptr, int len);
 
 /* lib/crc16.c - 16 bit CRC with polynomial x^16+x^12+x^5+1 (CRC-CCITT) */
 uint16_t crc16_ccitt(uint16_t crc_start, const unsigned char *s, int len);
