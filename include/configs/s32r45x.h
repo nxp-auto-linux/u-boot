@@ -31,11 +31,4 @@
 
 #endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 
-#if defined(CONFIG_TARGET_S32R45XEVB)
-/* J36 - PMIC */
-#define CONFIG_SYS_I2C_MXC_I2C1
-/* J37 */
-#define CONFIG_SYS_I2C_MXC_I2C2
-#endif
-
 #endif
