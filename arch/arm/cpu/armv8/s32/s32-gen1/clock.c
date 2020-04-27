@@ -290,4 +290,7 @@ void s32gen1_setup_fxosc(void)
 		;
 }
 
-
+int enable_i2c_clk(unsigned char enable, unsigned int i2c_num)
+{
+	return 0;
+}
