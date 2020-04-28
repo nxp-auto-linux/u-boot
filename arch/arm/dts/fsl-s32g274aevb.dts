@@ -6,6 +6,24 @@
 /dts-v1/;
 #include "fsl-s32g274a.dtsi"
 
+/ {
+	aliases {
+		usb0 = &usbotg;
+	};
+
+	usbotg: usb@44064000 {
+		compatible = "fsl,imx27-usb";
+		reg = <0x0 0x44064000 0x0 0x200>;
+		phys = <&saf1508_phy>;
+	};
+
+	saf1508_phy: usb_phy@44064000 {
+		compatible = "nxp,saf1508bet";
+		reg = <0x0 0x44064000 0x0 0x200>;
+		#phy-cells = <0>;
+	};
+};
+
 &usdhc0 {
 	status = "okay";
 };
@@ -22,6 +40,10 @@
 	status = "okay";
 	phy-mode = "rgmii";
 	phy-handle = <&mdio_c_phy4>;
+};
+
+&usbotg {
+	status = "okay";
 };
 
 &gmac0_mdio {
