@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
  * Copyright 2019-2020 NXP
  *
@@ -49,13 +49,16 @@ struct pfeng_config {
 
 struct pfeng_priv {
 	/* pfe platform members */
-        pfe_platform_config_t pfe_cfg;
-        pfe_fw_t fw;
-        pfe_platform_t *pfe;
-        pfe_log_if_t *iface;
-        pfe_hif_drv_t *hif;
-        pfe_hif_chnl_t *channel;
-        pfe_hif_drv_client_t *client;
+	pfe_platform_config_t pfe_cfg;
+	pfe_fw_t fw;
+	pfe_platform_t *pfe;
+
+	pfe_hif_drv_t *hif;
+	pfe_hif_chnl_t *channel;
+
+	pfe_hif_drv_client_t *client;
+	pfe_log_if_t *logif_emac, *logif_hif;
+	pfe_phy_if_t *phyif_emac, *phyif_hif;
 
 	struct mii_dev *mii[PFENG_EMACS_COUNT];
 	struct phy_device *phy[PFENG_EMACS_COUNT];
@@ -63,8 +66,8 @@ struct pfeng_priv {
 	struct udevice *dev;
 	const struct pfeng_config *config;
 	u32 dev_index;
-	u32 emac_index;
-	int emac_changed;
+	u32 if_index;
+	int if_changed;
 
 	void *last_rx;
 	void *last_tx;

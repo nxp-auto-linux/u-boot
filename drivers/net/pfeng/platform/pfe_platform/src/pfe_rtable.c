@@ -404,14 +404,8 @@ static uint32_t pfe_rtable_entry_get_hash(pfe_rtable_entry_t *entry, pfe_rtable_
 	}
 
 	if (htype & ADD_SRC_PHY)
-	{
 		/*	+ PHY_ID */
-#if 0
-		temp += entry->phys_entry->inPhyPortNum;
-#else
 		NXP_LOG_ERROR("Unsupported hash algorithm\n");
-#endif /* 0 */
-	}
 
 	return (temp & hash_mask);
 }
