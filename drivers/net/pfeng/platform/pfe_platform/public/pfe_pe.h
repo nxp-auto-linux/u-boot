@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
@@ -59,6 +59,8 @@ uint32_t pfe_pe_get_text_statistics(pfe_pe_t *pe, char_t *buf, uint32_t buf_len,
 void pfe_pe_destroy(pfe_pe_t *pe);
 errno_t pfe_pe_check_mmap(pfe_pe_t *pe);
 errno_t pfe_pe_get_fw_errors(pfe_pe_t *pe);
+errno_t pfe_pe_mem_lock(pfe_pe_t *pe);
+errno_t pfe_pe_mem_unlock(pfe_pe_t *pe);
 #endif /* PFE_PE_H_ */
 
 /** @}*/

@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2019 NXP
+ *  Copyright 2019-2020 NXP
  */
 
 /**
@@ -28,14 +28,14 @@
  * QNX
  *
  */
-#ifdef TARGET_OS_QNX
+#ifdef PFE_CFG_TARGET_OS_QNX
 #include "oal_util_net_qnx.h"
 
 /*
  * LINUX
  *
  */
-#elif defined(TARGET_OS_LINUX)
+#elif defined(PFE_CFG_TARGET_OS_LINUX)
 #include "oal_util_net_linux.h"
 
 /*
@@ -43,8 +43,8 @@
  *
  */
 #else
-#error "TARGET_OS_xx was not set!"
-#endif /* TARGET_OS */
+#error "PFE_CFG_TARGET_OS_xx was not set!"
+#endif /* PFE_CFG_TARGET_OS_xx */
 
 /**
  * @brief		Convert a numeric network address to a string

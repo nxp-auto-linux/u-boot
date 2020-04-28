@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
@@ -152,55 +152,89 @@
  * @details	When TRUE then RX buffer management is embedded so caller layer
  * 			does not need to care about it. FALSE disables the feature.
  */
-#define PFE_HIF_CHNL_CFG_RX_BUFFERS_ENABLED		TRUE
+#if !defined(PFE_CFG_TARGET_OS_LINUX)
+#define PFE_HIF_CHNL_CFG_RX_BUFFERS_ENABLED TRUE
+#else
+#define PFE_HIF_CHNL_CFG_RX_BUFFERS_ENABLED FALSE
+#endif
 
+/**
+ * @brief	RX OOB management
+ * @details	When TRUE then RX OOB buffer management is embedded so caller layer
+ *			can process the RX_OOB_EVENT. FALSE removed the feature.
+ */
+#if !defined(PFE_CFG_TARGET_OS_LINUX)
+#define PFE_HIF_CHNL_CFG_RX_OOB_EVENT_ENABLED TRUE
+#else
+#define PFE_HIF_CHNL_CFG_RX_OOB_EVENT_ENABLED FALSE
+#endif
 #include "pfe_bmu.h"
 
 /**
  * @brief	List of available HIF channel events
  */
-typedef enum
-{
-	HIF_CHNL_EVT_RX_IRQ,	/*!< RX interrupt - packet received */
-	HIF_CHNL_EVT_TX_IRQ,	/*!< TX interrupt - packet transmitted */
-	HIF_CHNL_EVT_RX_OOB		/*!< Out of RX buffers */
+typedef enum {
+	HIF_CHNL_EVT_RX_IRQ = (1 << 0), /*!< RX interrupt - packet received */
+	HIF_CHNL_EVT_TX_IRQ =
+		(1 << 1), /*!< TX interrupt - packet transmitted */
+#if (TRUE == PFE_HIF_CHNL_CFG_RX_OOB_EVENT_ENABLED)
+	HIF_CHNL_EVT_RX_OOB = (1 << 2) /*!< Out of RX buffers */
+#endif
 } pfe_hif_chnl_event_t;
 
 typedef struct __pfe_hif_chnl_tag pfe_hif_chnl_t;
-typedef void (* pfe_hif_chnl_drain_cbk_t)(void *arg, void **buf_pa);
-typedef void (* pfe_hif_chnl_cbk_t)(void *arg);
+typedef void (*pfe_hif_chnl_drain_cbk_t)(void *arg, void **buf_pa);
+typedef void (*pfe_hif_chnl_cbk_t)(void *arg);
 
 /*	This is the channel ID used to identify HIF_NOCPY channel */
-#define PFE_HIF_CHNL_NOCPY_ID		1000U
+#define PFE_HIF_CHNL_NOCPY_ID 1000U
 
 /*	RX */
 errno_t pfe_hif_chnl_rx_enable(pfe_hif_chnl_t *chnl) __attribute__((cold));
 void pfe_hif_chnl_rx_disable(pfe_hif_chnl_t *chnl) __attribute__((cold));
-errno_t pfe_hif_chnl_rx(pfe_hif_chnl_t *chnl, void **buf_pa, uint32_t *len, bool_t *lifm) __attribute__((hot));
-errno_t pfe_hif_chnl_rx_va(pfe_hif_chnl_t *chnl, void **buf_va, uint32_t *len, bool_t *lifm, void **meta) __attribute__((hot));
+errno_t pfe_hif_chnl_rx(pfe_hif_chnl_t *chnl, void **buf_pa, uint32_t *len,
+			bool_t *lifm) __attribute__((hot));
+errno_t pfe_hif_chnl_rx_va(pfe_hif_chnl_t *chnl, void **buf_va, uint32_t *len,
+			   bool_t *lifm, void **meta) __attribute__((hot));
 uint32_t pfe_hif_chnl_get_meta_size(pfe_hif_chnl_t *chnl) __attribute__((cold));
-errno_t pfe_hif_chnl_release_buf(pfe_hif_chnl_t *chnl, void *buf_va) __attribute__((hot));
+errno_t pfe_hif_chnl_release_buf(pfe_hif_chnl_t *chnl, void *buf_va)
+	__attribute__((hot));
 void pfe_hif_chnl_rx_dma_start(pfe_hif_chnl_t *chnl) __attribute__((hot));
-bool_t pfe_hif_chnl_can_accept_rx_buf(pfe_hif_chnl_t *chnl) __attribute__((pure, hot));
-errno_t pfe_hif_chnl_supply_rx_buf(pfe_hif_chnl_t *chnl, void *buf_pa, uint32_t size) __attribute__((hot));
-uint32_t pfe_hif_chnl_get_rx_fifo_depth(pfe_hif_chnl_t *chnl) __attribute__((pure, cold));
+bool_t pfe_hif_chnl_can_accept_rx_buf(pfe_hif_chnl_t *chnl)
+	__attribute__((pure, hot));
+errno_t pfe_hif_chnl_supply_rx_buf(pfe_hif_chnl_t *chnl, void *buf_pa,
+				   uint32_t size) __attribute__((hot));
+uint32_t pfe_hif_chnl_get_rx_fifo_depth(pfe_hif_chnl_t *chnl)
+	__attribute__((pure, cold));
 
 /*	TX */
 errno_t pfe_hif_chnl_tx_enable(pfe_hif_chnl_t *chnl) __attribute__((cold));
 void pfe_hif_chnl_tx_disable(pfe_hif_chnl_t *chnl) __attribute__((cold));
-errno_t pfe_hif_chnl_tx(pfe_hif_chnl_t *chnl, void *buf_pa, void *buf_va, uint32_t len, bool_t lifm) __attribute__((hot));
+errno_t pfe_hif_chnl_tx(pfe_hif_chnl_t *chnl, void *buf_pa, void *buf_va,
+			u32 len, bool_t lifm) __attribute__((hot));
 void pfe_hif_chnl_tx_dma_start(pfe_hif_chnl_t *chnl) __attribute__((hot));
-bool_t pfe_hif_chnl_can_accept_tx_num(pfe_hif_chnl_t *chnl, uint16_t num) __attribute__((pure, hot));
-bool_t pfe_hif_chnl_tx_fifo_empty(pfe_hif_chnl_t *chnl) __attribute__((pure, hot));
-bool_t pfe_hif_chnl_has_tx_conf(pfe_hif_chnl_t *chnl) __attribute__((pure, hot));
+bool_t pfe_hif_chnl_can_accept_tx_num(pfe_hif_chnl_t *chnl, uint16_t num)
+	__attribute__((pure, hot));
+#ifdef PFE_CFG_HIF_TX_FIFO_FIX
+bool_t pfe_hif_chnl_can_accept_tx_data(pfe_hif_chnl_t *chnl, uint32_t num)
+	__attribute__((hot));
+#endif /* PFE_CFG_HIF_TX_FIFO_FIX */
+bool_t pfe_hif_chnl_tx_fifo_empty(pfe_hif_chnl_t *chnl)
+	__attribute__((pure, hot));
+bool_t pfe_hif_chnl_has_tx_conf(pfe_hif_chnl_t *chnl)
+	__attribute__((pure, hot));
 errno_t pfe_hif_chnl_get_tx_conf(pfe_hif_chnl_t *chnl) __attribute__((hot));
-uint32_t pfe_hif_chnl_get_tx_fifo_depth(pfe_hif_chnl_t *chnl) __attribute__((pure, cold));
+uint32_t pfe_hif_chnl_get_tx_fifo_depth(pfe_hif_chnl_t *chnl)
+	__attribute__((pure, cold));
 
 /*	Instance control */
-pfe_hif_chnl_t *pfe_hif_chnl_create(void *cbus_base_va, uint32_t id, pfe_bmu_t *bmu) __attribute__((cold));
+pfe_hif_chnl_t *pfe_hif_chnl_create(void *cbus_base_va, uint32_t id,
+				    pfe_bmu_t *bmu) __attribute__((cold));
 errno_t pfe_hif_chnl_isr(pfe_hif_chnl_t *chnl) __attribute__((hot));
 void pfe_hif_chnl_destroy(pfe_hif_chnl_t *chnl) __attribute__((cold));
-errno_t pfe_hif_chnl_set_event_cbk(pfe_hif_chnl_t *chnl, pfe_hif_chnl_event_t event, pfe_hif_chnl_cbk_t cbk, void *arg);
+errno_t pfe_hif_chnl_set_event_cbk(pfe_hif_chnl_t *chnl,
+				   pfe_hif_chnl_event_t event,
+				   pfe_hif_chnl_cbk_t cbk, void *arg);
 void pfe_hif_chnl_irq_mask(pfe_hif_chnl_t *chnl);
 void pfe_hif_chnl_irq_unmask(pfe_hif_chnl_t *chnl);
 void pfe_hif_chnl_rx_irq_mask(pfe_hif_chnl_t *chnl) __attribute__((hot));
@@ -210,8 +244,12 @@ void pfe_hif_chnl_tx_irq_unmask(pfe_hif_chnl_t *chnl) __attribute__((hot));
 bool_t pfe_hif_chnl_is_rx_dma_active(pfe_hif_chnl_t *chnl) __attribute__((hot));
 bool_t pfe_hif_chnl_is_tx_dma_active(pfe_hif_chnl_t *chnl) __attribute__((hot));
 uint32_t pfe_hif_chnl_get_id(pfe_hif_chnl_t *chnl) __attribute__((pure, cold));
-void pfe_hif_chnl_dump_ring(pfe_hif_chnl_t *chnl, bool_t dump_rx, bool_t dump_tx) __attribute__((cold));
-uint32_t pfe_hif_chnl_get_text_statistics(pfe_hif_chnl_t *chnl, char_t *buf, uint32_t buf_len, uint8_t verb_level) __attribute__((cold));
+uint32_t pfe_hif_chnl_dump_ring(pfe_hif_chnl_t *chnl, bool_t dump_rx,
+				bool_t dump_tx, char_t *buf, uint32_t size,
+				uint8_t verb_level) __attribute__((cold));
+uint32_t pfe_hif_chnl_get_text_statistics(pfe_hif_chnl_t *chnl, char_t *buf,
+					  u32 buf_len, uint8_t verb_level)
+	__attribute__((cold));
 
 #endif /* PUBLIC_PFE_HIF_CHNL_H_ */
 

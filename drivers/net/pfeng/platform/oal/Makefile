@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
 #
-#  Copyright 2018-2019 NXP
+#  Copyright 2018-2020 NXP
 #
 
 ifndef KERNELRELEASE
@@ -18,7 +18,6 @@ TARGET = $(OUTPUT_DIR)/$(ARTIFACT)
 #User defined include/preprocessor flags and libraries
 
 INCLUDES += -I$(INC_PREFIX).. \
-			-I$(INC_PREFIX)public \
 			-I$(INC_PREFIX)oal/public \
 			-I$(INC_PREFIX)hal/public \
 			-I$(INC_PREFIX)fifo/public \
@@ -28,14 +27,14 @@ INCLUDES += -I$(INC_PREFIX).. \
 DEPENDENCIES = $(subst -L,,$(subst $(EMPTY) $(EMPTY)-l:,/,$(LIBS)))
 
 #Compiler flags for build profiles
-CCFLAGS_release += -O2
+CCFLAGS_release += -O3
 CCFLAGS_debug += -g -O0 -fno-builtin
 CCFLAGS_coverage += -g -O0 -ftest-coverage -fprofile-arcs -nopipe -Wc,-auxbase-strip,$@
 LDFLAGS_coverage += -ftest-coverage -fprofile-arcs
 CCFLAGS_profile += -g -O0 -finstrument-functions
 LIBS_profile += -lprofilingS
 
-CCFLAGS_pfe += -D$(TARGET_ARCH_DEF) -D$(TARGET_OS_DEF) -D$(TARGET_ENDIAN_DEF) -D$(TARGET_HW_DEF) -D$(BUILD_PROFILE_DEF)
+CCFLAGS_pfe += -D$(PFE_CFG_TARGET_ARCH_DEF) -D$(PFE_CFG_TARGET_OS_DEF) -D$(PFE_CFG_BUILD_PROFILE_DEF)
 
 #Generic compiler flags (which include build type flags)
 CCFLAGS_all += -Wall -fmessage-length=0
@@ -125,7 +124,7 @@ ccflags-y += $(INCLUDES)
 ccflags-y += $(CCFLAGS_pfe)
 ccflags-y += $(GLOBAL_CCFLAGS)
 
-oal-y := $(OBJS) #src/oal_irq_uboot.o src/oal_mbox_uboot.o src/oal_mm_uboot.o src/oal_time_uboot.o src/oal_util_uboot.o src/oal_job_uboot.o
+oal-y := $(OBJS)
 oal-y := src/oal_irq_uboot.o src/oal_mbox_uboot.o src/oal_mm_uboot.o src/oal_time_uboot.o src/oal_util_uboot.o src/oal_job_uboot.o
 
 obj-y += oal.o
