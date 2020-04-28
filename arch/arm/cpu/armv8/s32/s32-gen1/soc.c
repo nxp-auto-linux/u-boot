@@ -543,12 +543,6 @@ U_BOOT_CMD(
 #ifdef CONFIG_ARCH_MISC_INIT
 int arch_misc_init(void)
 {
-#ifdef CONFIG_FSL_CSE3
-	int ret;
-	ret = cse_init();
-	if (ret && ret != -ENODEV)
-		printf("Failed to initialize CSE3 security engine\n");
-#endif
 	return 0;
 }
 #endif
