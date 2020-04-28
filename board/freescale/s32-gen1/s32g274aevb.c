@@ -67,3 +67,84 @@ void setup_iomux_i2c(void)
 	/* PMIC - I2C4 */
 	setup_iomux_i2c_pc01_pc02();
 }
+
+#ifdef CONFIG_SAF1508BET_USB_PHY
+struct usb_data_iomux {
+	u32 mscr;
+	u32 imcr;
+};
+
+static const struct usb_data_iomux usb_data_pins[] = {
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PD14_USB_ULPI_DATA_O0,
+		.imcr = SIUL2_MSCR_S32_G1_PD14_USB_ULPI_DATA_I0_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PD15_USB_ULPI_DATA_O1,
+		.imcr = SIUL2_MSCR_S32_G1_PD15_USB_ULPI_DATA_I1_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PE0_USB_ULPI_DATA_O2,
+		.imcr = SIUL2_MSCR_S32_G1_PE0_USB_ULPI_DATA_I2_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PE1_USB_ULPI_DATA_O3,
+		.imcr = SIUL2_MSCR_S32_G1_PE1_USB_ULPI_DATA_I3_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PL12_USB_ULPI_DATA_O4,
+		.imcr = SIUL2_MSCR_S32_G1_PL12_USB_ULPI_DATA_I4_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PL13_USB_ULPI_DATA_O5,
+		.imcr = SIUL2_MSCR_S32_G1_PL13_USB_ULPI_DATA_I5_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PL14_USB_ULPI_DATA_O6,
+		.imcr = SIUL2_MSCR_S32_G1_PL14_USB_ULPI_DATA_I6_IN,
+	},
+	{
+		.mscr = SIUL2_MSCR_S32_G1_PH0_USB_ULPI_DATA_O7,
+		.imcr = SIUL2_MSCR_S32_G1_PH0_USB_ULPI_DATA_I7_IN,
+	},
+};
+
+void setup_iomux_usb(void)
+{
+	size_t i;
+	const struct usb_data_iomux *data_pin;
+
+	for (i = 0; i < ARRAY_SIZE(usb_data_pins); i++) {
+		data_pin = &usb_data_pins[i];
+		if (i < 4)
+			writel(SIUL2_MSCR_S32G_PAD_CTL_USB_DATA,
+			       SIUL2_0_MSCRn(data_pin->mscr));
+		else
+			writel(SIUL2_MSCR_S32G_PAD_CTL_USB_DATA,
+			       SIUL2_1_MSCRn(data_pin->mscr));
+		writel(SIUL2_MSCR_MUX_MODE_ALT2, SIUL2_1_IMCRn(data_pin->imcr));
+	}
+
+	/* USB ULPI Clock In */
+	writel(SIUL2_IMCR_S32G_PAD_CTL_USB_DATA,
+	       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PL8_USB_ULPI_CLK_OUT));
+	writel(SIUL2_MSCR_MUX_MODE_ALT2,
+	       SIUL2_1_IMCRn(SIUL2_MSCR_S32_G1_PL8_USB_ULPI_CLK_IN));
+
+	/* USB ULPI Bus Direction */
+	writel(SIUL2_IMCR_S32G_PAD_CTL_USB_DATA,
+	       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PL9_USB_ULPI_DIR_OUT));
+	writel(SIUL2_MSCR_MUX_MODE_ALT2,
+	       SIUL2_1_IMCRn(SIUL2_MSCR_S32_G1_PL9_USB_ULPI_DIR_IN));
+
+	/* USB ULPI End Transfer */
+	writel(SIUL2_MSCR_S32G_PAD_CTL_USB_STP,
+	       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PL10_USB_ULPI_STP));
+
+	/* USB ULPI Data Flow Control */
+	writel(SIUL2_IMCR_S32G_PAD_CTL_USB_DATA,
+	       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PL11_USB_ULPI_NXT_OUT));
+	writel(SIUL2_MSCR_MUX_MODE_ALT2,
+	       SIUL2_1_IMCRn(SIUL2_MSCR_S32_G1_PL11_USB_ULPI_NXT_IN));
+}
+#endif

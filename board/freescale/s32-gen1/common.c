@@ -137,6 +137,9 @@ int board_early_init_f(void)
 #ifdef CONFIG_FSL_QSPI
 	setup_iomux_qspi();
 #endif
+#ifdef CONFIG_USB
+	setup_iomux_usb();
+#endif
 	return 0;
 }
 
