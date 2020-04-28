@@ -936,7 +936,6 @@ ifeq ($(CONFIG_DM_I2C_COMPAT)$(CONFIG_SANDBOX),y)
 	@echo >&2 "before sending patches to the mailing list."
 	@echo >&2 "===================================================="
 endif
-ifeq (,$(CONFIG_S32))
 ifeq ($(CONFIG_MMC),y)
 ifneq ($(CONFIG_DM_MMC)$(CONFIG_OF_CONTROL)$(CONFIG_BLK),yyy)
 	@echo >&2 "===================== WARNING ======================"
@@ -945,7 +944,6 @@ ifneq ($(CONFIG_DM_MMC)$(CONFIG_OF_CONTROL)$(CONFIG_BLK),yyy)
 	@echo >&2 "Failure to update by the deadline may result in board removal."
 	@echo >&2 "See doc/driver-model/MIGRATION.txt for more info."
 	@echo >&2 "===================================================="
-endif
 endif
 endif
 ifeq ($(CONFIG_USB),y)
