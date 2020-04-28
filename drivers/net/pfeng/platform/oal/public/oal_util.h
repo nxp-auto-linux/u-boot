@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2019 NXP
+ *  Copyright 2019-2020 NXP
  */
 
 /**
@@ -23,6 +23,11 @@
 
 #ifndef OAL_UTIL_H_
 #define OAL_UTIL_H_
+
+#ifdef PFE_CFG_TARGET_OS_AUTOSAR
+#include "oal_util_autosar.h"
+#endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+
 /**
  * @brief		Modified snprintf function
  * @details		Function return real number of written data into buffer
@@ -34,9 +39,8 @@
  *
  * @return		Number of bytes written to the buffer
  */
-uint32_t oal_util_snprintf(char_t *buffer, size_t buf_len, const char_t *format, ...);
-
-
+uint32_t oal_util_snprintf(char_t *buffer, size_t buf_len,
+			   const char_t *format, ...);
 
 #endif /* OAL_UTIL_H_ */
 

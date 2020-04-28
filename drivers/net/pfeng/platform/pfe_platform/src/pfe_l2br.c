@@ -122,9 +122,6 @@ enum pfe_rtable_worker_signals
 	SIG_TIMER_TICK		/*!< Pulse from timer */
 };
 
-#if 0
-static errno_t pfe_def_bd_read_from_class(pfe_l2br_t *bridge, pfe_ct_bd_entry_t *class_entry);
-#endif /* 0 */
 static errno_t pfe_fb_bd_write_to_class(pfe_l2br_t *bridge, pfe_ct_bd_entry_t *class_entry);
 static errno_t pfe_l2br_update_hw_entry(pfe_l2br_domain_t *domain);
 static pfe_l2br_domain_t *pfe_l2br_create_default_domain(pfe_l2br_t *bridge, uint16_t vlan);
@@ -133,33 +130,6 @@ static void *pfe_l2br_worker_func(void *arg);
 static void pfe_l2br_do_timeouts(pfe_l2br_t *bridge);
 static bool_t pfe_l2br_domain_match_if_criterion(pfe_l2br_domain_t *domain, pfe_phy_if_t *iface);
 static bool_t pfe_l2br_domain_match_criterion(pfe_l2br_t *bridge, pfe_l2br_domain_t *domain);
-
-#if 0 /* For future use */
-/**
- * @brief		Read default bridge domain structure from classifier memory
- * @param[in]	bridge The bridge instance
- * @param[in]	class_entry Pointer where the structure shall be written
- * @retval		EOK Success
- * @retval		EINVAL Invalid or missing argument
- */
-static errno_t pfe_def_bd_read_from_class(pfe_l2br_t *bridge, pfe_ct_bd_entry_t *class_entry)
-{
-#if defined(GLOBAL_CFG_NULL_ARG_CHECK)
-	if (unlikely(((NULL == class_entry) || (NULL == bridge) || (0U == bridge->dmem_fb_bd_base)))
-	{
-		NXP_LOG_ERROR("NULL argument received\n");
-		return EINVAL;
-	}
-#endif /* GLOBAL_CFG_NULL_ARG_CHECK */
-
-	/*
-		Read current interface configuration from classifier. Since all class PEs are running the
-		same code, also the data are the same (except statistics counters...).
-		Returned data will be in __NETWORK__ endian format.
-	*/
-	return pfe_class_read_dmem(bridge->class, 0U, class_entry, (void *)bridge->dmem_fb_bd_base, sizeof(pfe_ct_bd_entry_t));
-}
-#endif /* 0 */
 
 /**
  * @brief		Write fall-back bridge domain structure to classifier memory

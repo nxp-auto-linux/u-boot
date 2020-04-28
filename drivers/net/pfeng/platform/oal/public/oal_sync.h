@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
  * @addtogroup	dxgrOAL
  * @{
- * 
+ *
  * @defgroup    dxgr_OAL_SYNC SYNC
  * @brief		Thread synchronization
  * @details		Package provides OS-independent thread synchronization primitives. All API should
@@ -15,7 +15,7 @@
  * 	
  * @addtogroup	dxgr_OAL_SYNC
  * @{
- * 
+ *
  * @file		oal_sync.h
  * @brief		The thread synchronization header file
  * @details		Use this header to include all the OS-independent thread synchronization functionality
@@ -29,7 +29,7 @@
  * QNX
  *
  */
-#ifdef TARGET_OS_QNX
+#ifdef PFE_CFG_TARGET_OS_QNX
 #include "oal_spinlock_qnx.h"
 #include "oal_mutex_qnx.h"
 
@@ -37,7 +37,7 @@
  * LINUX
  *
  */
-#elif defined(TARGET_OS_LINUX)
+#elif defined(PFE_CFG_TARGET_OS_LINUX)
 #include "oal_spinlock_linux.h"
 #include "oal_mutex_linux.h"
 
@@ -45,7 +45,7 @@
  * AUTOSAR
  *
  */
-#elif defined(TARGET_OS_AUTOSAR)
+#elif defined(PFE_CFG_TARGET_OS_AUTOSAR)
 #include "oal_spinlock_autosar.h"
 #include "SchM_Eth_43_PFE.h"
 
@@ -53,7 +53,7 @@
  * UBOOT
  *
  */
-#elif defined(TARGET_OS_UBOOT)
+#elif defined(PFE_CFG_TARGET_OS_UBOOT)
 #include "oal_spinlock_uboot.h"
 #include "oal_mutex_uboot.h"
 
@@ -63,8 +63,8 @@
  *
  */
 #else
-#error "TARGET_OS_xx was not set!"
-#endif /* TARGET_OS */
+#error "PFE_CFG_TARGET_OS_xx was not set!"
+#endif /* PFE_CFG_TARGET_OS_xx */
 
 #endif /* PUBLIC_OAL_SYNC_H_ */
 

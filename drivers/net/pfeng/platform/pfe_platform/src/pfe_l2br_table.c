@@ -154,9 +154,6 @@ struct __pfe_l2br_table_entry_tag
 static errno_t pfe_l2br_table_init_cmd(pfe_l2br_table_t *l2br);
 static errno_t pfe_l2br_table_write_cmd(pfe_l2br_table_t *l2br, uint16_t addr, pfe_l2br_table_entry_t *entry);
 static errno_t pfe_l2br_table_read_cmd(pfe_l2br_table_t *l2br, uint16_t addr, pfe_l2br_table_entry_t *entry);
-#if 0 /*	For future use */
-static uint32_t pfe_l2br_table_entry_get_hash(pfe_l2br_table_t *l2br, pfe_l2br_table_entry_t *entry)
-#endif /* 0 */
 static errno_t pfe_l2br_wait_for_cmd_done(pfe_l2br_table_t *l2br, uint32_t *status_val);
 static errno_t pfe_l2br_entry_to_cmd_args(pfe_l2br_table_t *l2br, pfe_l2br_table_entry_t *entry);
 static uint32_t pfe_l2br_table_get_col_ptr(pfe_l2br_table_entry_t *entry);
@@ -271,65 +268,6 @@ static uint32_t pfe_l2br_table_get_col_ptr(pfe_l2br_table_entry_t *entry)
 
 	return 0U;
 }
-
-#if 0 /*	For future use */
-/**
- * @brief		Get hash
- * @param[in]	l2br The L2 Bridge table instance
- * @param[in]	entry Entry
- * @return		Hash value computed from input entry as defined by PFE HW.
- */
-static uint32_t pfe_l2br_table_entry_get_hash(pfe_l2br_table_t *l2br, pfe_l2br_table_entry_t *entry)
-{
-	uint16_t *entry16 = (uint16_t *)entry;
-	uint32_t hash = 0U;
-	bool_t match = FALSE;
-
-#if defined(GLOBAL_CFG_NULL_ARG_CHECK)
-	if (unlikely((NULL == l2br) || (NULL == entry)))
-	{
-		NXP_LOG_ERROR("NULL argument received\n");
-		return 0U;
-	}
-#endif /* GLOBAL_CFG_NULL_ARG_CHECK */
-
-	if (PFE_L2BR_TABLE_MAC2F == l2br->type)
-	{
-		if (0U != (entry->mac2f_entry.field_valids & MAC2F_ENTRY_MAC_VALID))
-		{
-			hash ^= entry16[0] ^ entry16[1] ^ entry16[2]; /* MAC address */
-			match = TRUE;
-		}
-
-		if (0U != (entry->mac2f_entry.field_valids & MAC2F_ENTRY_VLAN_VALID))
-		{
-			hash ^= (entry16[3] & 0x1ffffU); /* VLAN is 13-bits here */
-			match = TRUE;
-		}
-	}
-	else if (PFE_L2BR_TABLE_VLAN == l2br->type)
-	{
-		if (0U != (entry->vlan_entry.field_valids & VLAN_ENTRY_VLAN_VALID))
-		{
-			hash ^= (entry16[0] & 0x1ffffU); /* VLAN is 13-bits here */
-			match = TRUE;
-		}
-	}
-	else
-	{
-		NXP_LOG_DEBUG("Invalid table type\n");
-		return 0U;
-	}
-
-	if (FALSE == match)
-	{
-		NXP_LOG_DEBUG("No valid entry to compute hash. Result is invalid.\n");
-		return 0U;
-	}
-
-	return hash & (l2br->hash_space_depth - 1U);
-}
-#endif /* 0 */
 
 /**
  * @brief		Convert entry to command arguments
