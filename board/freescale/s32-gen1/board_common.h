@@ -30,4 +30,8 @@ void ft_enet_fixup(void *fdt);
 u32 s32ccgmac_cfg_get_mode(void);
 #endif
 
+#if defined(CONFIG_USB)
+void setup_iomux_usb(void);
+#endif
+
 #endif /* __S32_GEN1_BOARD_COMMON_H__ */
