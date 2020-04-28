@@ -25,6 +25,7 @@
 		spi5 = &dspi5;
 		spi6 = &qspi;
 		pcie0 = &pcie0;
+		mmc0 = &usdhc0;
 	};
 
 	uart0:serial@401C8000 {
@@ -52,7 +53,7 @@
 	};
 
 	usdhc0: usdhc@402F0000{
-		compatible = "fsl,s32gen1-usdhc";
+		compatible = "fsl,s32gen1-usdhc", "fsl,esdhc";
 		reg = <0x0 0x402F0000 0x0 0x1000>;
 		interrupts = <0 36 4>;
 		clock-frequency = <0>;	/* updated dynamically if 0 */

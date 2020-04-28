@@ -128,6 +128,9 @@ int board_early_init_f(void)
 	setup_iomux_i2c();
 	setup_iomux_uart();
 #endif
+#ifdef CONFIG_DM_MMC
+	setup_iomux_sdhc();
+#endif
 #ifdef CONFIG_FSL_DSPI
 	setup_iomux_dspi();
 #endif

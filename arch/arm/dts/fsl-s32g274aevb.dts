@@ -6,6 +6,10 @@
 /dts-v1/;
 #include "fsl-s32g274a.dtsi"
 
+&usdhc0 {
+	status = "okay";
+};
+
 &dspi1 {
 	status = "okay";
 };

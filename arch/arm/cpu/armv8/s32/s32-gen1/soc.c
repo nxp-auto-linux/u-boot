@@ -327,6 +327,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	switch (clk) {
 	case MXC_UART_CLK:
 		return get_uart_clk();
+	case MXC_ESDHC_CLK:
 	case MXC_USDHC_CLK:
 		return get_usdhc_clk();
 	case MXC_QSPI_CLK:
@@ -456,79 +457,6 @@ int print_cpuinfo(void)
 
 	return 0;
 }
-#endif
-
-#ifdef CONFIG_FSL_ESDHC
-#define mmc_get_clock() mxc_get_clock(MXC_USDHC_CLK)
-#endif
-
-int get_clocks(void)
-{
-#ifdef CONFIG_FSL_ESDHC
-	gd->arch.sdhc_clk = mmc_get_clock();
-	mxc_get_clock(MXC_USDHC_CLK);
-#endif
-	return 0;
-}
-
-#ifdef CONFIG_FSL_ESDHC
-struct fsl_esdhc_cfg esdhc_cfg[1] = {
-	{USDHC_BASE_ADDR},
-};
-
-__weak int board_mmc_getcd(struct mmc *mmc)
-{
-	/* eSDHC1 is always present */
-	return 1;
-}
-
-__weak int sdhc_setup(bd_t *bis)
-{
-	get_clocks();
-
-	esdhc_cfg[0].sdhc_clk = mmc_get_clock();
-
-	setup_iomux_sdhc();
-
-	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
-}
-
-int board_mmc_init(bd_t *bis)
-{
-
-	/* QSPI boot not supported yet */
-	return sdhc_setup(bis);
-}
-
-static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
-               char * const argv[])
-{
-	int ret;
-	struct mmc *mmc = find_mmc_device(0);
-
-	if (mmc == NULL)
-	return sdhc_setup(gd->bd);
-
-	/* set the sdhc pinmuxing */
-	setup_iomux_sdhc();
-
-	/* reforce the mmc's initialization */
-	ret = mmc_init(mmc);
-	if (ret) {
-		printf("Impossible to configure the SDHC controller. Please check the SDHC jumpers\n");
-		return 1;
-	}
-	return 0;
-}
-
-
-/* sdhc setup */
-U_BOOT_CMD(
-		sdhcsetup, 1, 1, do_sdhc_setup,
-		"setup sdhc pinmuxing and sdhc registers for access to SD",
-		"\n"
-		"Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
-		"and disconnect from the Hyperflash.\n");
 #endif
 
 #if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
