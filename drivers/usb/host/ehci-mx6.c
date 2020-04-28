@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
  * Copyright (C) 2010 Freescale Semiconductor, Inc.
+ * Copyright 2020 NXP
  */
 
 #include <common.h>
@@ -142,20 +143,24 @@ static void usb_power_config(int index)
 
 #endif
 }
+#endif
 
+#if defined(CONFIG_MX6) || defined(CONFIG_TARGET_S32G274AEVB)
 /* Return 0 : host node, <>0 : device mode */
 static int usb_phy_enable(int index, struct usb_ehci *ehci)
 {
+	int ret;
+	void __iomem *usb_cmd;
+#ifndef CONFIG_TARGET_S32G274AEVB
 	void __iomem *phy_reg;
 	void __iomem *phy_ctrl;
-	void __iomem *usb_cmd;
-	int ret;
 
 	if (index >= ARRAY_SIZE(phy_bases))
 		return 0;
 
 	phy_reg = (void __iomem *)phy_bases[index];
 	phy_ctrl = (void __iomem *)(phy_reg + USBPHY_CTRL);
+#endif
 	usb_cmd = (void __iomem *)&ehci->usbcmd;
 
 	/* Stop then Reset */
@@ -169,6 +174,7 @@ static int usb_phy_enable(int index, struct usb_ehci *ehci)
 	if (ret)
 		return ret;
 
+#ifndef CONFIG_TARGET_S32G274AEVB
 	/* Reset USBPHY module */
 	setbits_le32(phy_ctrl, USBPHY_CTRL_SFTRST);
 	udelay(10);
@@ -182,10 +188,13 @@ static int usb_phy_enable(int index, struct usb_ehci *ehci)
 	/* enable FS/LS device */
 	setbits_le32(phy_ctrl, USBPHY_CTRL_ENUTMILEVEL2 |
 			USBPHY_CTRL_ENUTMILEVEL3);
+#endif
 
 	return 0;
 }
+#endif
 
+#if defined(CONFIG_MX6)
 int usb_phy_mode(int port)
 {
 	void __iomem *phy_reg;
@@ -267,6 +276,7 @@ int usb_phy_mode(int port)
 
 static void usb_oc_config(int index)
 {
+#ifndef CONFIG_TARGET_S32G274AEVB
 #if defined(CONFIG_MX6)
 	struct usbnc_regs *usbnc = (struct usbnc_regs *)(USB_BASE_ADDR +
 			USB_OTHERREGS_OFFSET);
@@ -291,6 +301,7 @@ static void usb_oc_config(int index)
 	setbits_le32(ctrl, UCTRL_PWR_POL);
 #else
 	clrbits_le32(ctrl, UCTRL_PWR_POL);
+#endif
 #endif
 }
 
@@ -342,6 +353,7 @@ int __weak board_ehci_power(int port, int on)
 
 int ehci_mx6_common_init(struct usb_ehci *ehci, int index)
 {
+#ifndef CONFIG_TARGET_S32G274AEVB
 	int ret;
 
 	enable_usboh3_clk(1);
@@ -353,10 +365,14 @@ int ehci_mx6_common_init(struct usb_ehci *ehci, int index)
 		return ret;
 
 	usb_power_config(index);
+#endif
 	usb_oc_config(index);
 
 #if defined(CONFIG_MX6) || defined(CONFIG_MX7ULP)
 	usb_internal_phy_clock_gate(index, 1);
+#endif
+
+#if defined(CONFIG_MX6) || defined(CONFIG_TARGET_S32G274AEVB)
 	usb_phy_enable(index, ehci);
 #endif
 
@@ -462,6 +478,7 @@ static const struct ehci_ops mx6_ehci_ops = {
 
 static int ehci_usb_phy_mode(struct udevice *dev)
 {
+#ifndef CONFIG_TARGET_S32G274AEVB
 	struct usb_platdata *plat = dev_get_platdata(dev);
 	void *__iomem addr = (void *__iomem)devfdt_get_addr(dev);
 	void *__iomem phy_ctrl, *__iomem phy_status;
@@ -504,6 +521,7 @@ static int ehci_usb_phy_mode(struct udevice *dev)
 	} else {
 		return -EINVAL;
 	}
+#endif
 
 	return 0;
 }
@@ -532,6 +550,7 @@ static int ehci_usb_ofdata_to_platdata(struct udevice *dev)
 
 static int ehci_usb_bind(struct udevice *dev)
 {
+#ifndef CONFIG_TARGET_S32G274AEVB
 	/*
 	 * TODO:
 	 * This driver is only partly converted to DT probing and still uses
@@ -564,6 +583,7 @@ static int ehci_usb_bind(struct udevice *dev)
 
 	dev->req_seq = (addr - USB_BASE_ADDR) / controller_spacing;
 
+#endif
 	return 0;
 }
 
@@ -611,8 +631,8 @@ static int ehci_usb_probe(struct udevice *dev)
 
 	mdelay(10);
 
-	hccr = (struct ehci_hccr *)((uint32_t)&ehci->caplength);
-	hcor = (struct ehci_hcor *)((uint32_t)hccr +
+	hccr = (struct ehci_hccr *)((uintptr_t)&ehci->caplength);
+	hcor = (struct ehci_hcor *)((uintptr_t)hccr +
 			HC_LENGTH(ehci_readl(&(hccr)->cr_capbase)));
 
 	return ehci_register(dev, hccr, hcor, &mx6_ehci_ops, 0, priv->init_type);

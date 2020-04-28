@@ -24,6 +24,12 @@
 #ifdef CONFIG_FSL_DSPI
 #include <fsl_dspi.h>
 #endif
+#ifdef CONFIG_SAF1508BET_USB_PHY
+#include <dm/device.h>
+#include <dm/device-internal.h>
+#include <dm/uclass.h>
+#include <generic-phy.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -544,7 +550,45 @@ U_BOOT_CMD(
 #ifdef CONFIG_ARCH_MISC_INIT
 int arch_misc_init(void)
 {
-	return 0;
+	int ret = 0;
+#ifdef CONFIG_SAF1508BET_USB_PHY
+	struct udevice *dev;
+	struct phy phy;
+	struct uclass *uc;
+	struct udevice *bus;
+
+	ret = uclass_get_device(UCLASS_USB, 0, &dev);
+	if (ret) {
+		pr_err("%s: Cannot find USB device\n", __func__);
+		return ret;
+	}
+	ret = uclass_get(UCLASS_USB, &uc);
+	if (ret)
+		return ret;
+
+	/* Probe USB controller */
+	uclass_foreach_dev(bus, uc) {
+		ret = device_probe(bus);
+		if (ret == -ENODEV) {	/* No such device. */
+			puts("Port not available.\n");
+			continue;
+		}
+	}
+
+	/* SAF1508BET PHY */
+	ret = generic_phy_get_by_index(dev, 0, &phy);
+	if (ret) {
+		pr_err("failed to get %s USB PHY\n", dev->name);
+		return ret;
+	}
+
+	ret =  generic_phy_power_on(&phy);
+	if (ret) {
+		pr_err("failed to get %s USB PHY\n", dev->name);
+		return ret;
+	}
+#endif
+	return ret;
 }
 #endif
 
