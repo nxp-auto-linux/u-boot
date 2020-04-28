@@ -544,20 +544,12 @@
 
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
-#define CONFIG_ENV_SIZE 			(0x2000) /* 8 KB */
 #define CONFIG_ENV_SECT_SIZE		(FLASH_SECTOR_SIZE) /* 256 KB */
 #define CONFIG_SYS_MAX_FLASH_SECT 	(0x4000000 / CONFIG_ENV_SECT_SIZE)
-#define CONFIG_ENV_OFFSET			2 * CONFIG_ENV_SECT_SIZE
 #define CONFIG_SYS_MMC_ENV_DEV         0
 #define CONFIG_MMC_PART			1
 
-#elif defined(CONFIG_SD_BOOT)
-#define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
-#define CONFIG_ENV_OFFSET		(0x100000) /* 16 * 64 * 1024 */
-
-#elif defined(CONFIG_ENV_IS_NOWHERE)
-#define CONFIG_ENV_SIZE			(0x2000) /* 8 KB */
-#else
+#elif !defined(CONFIG_ENV_IS_NOWHERE) && !defined(CONFIG_SD_BOOT)
 #warning "Warning: enviroment is neither in MMC nor in flash"
 #endif
 
