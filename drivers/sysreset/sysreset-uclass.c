@@ -7,6 +7,8 @@
 #define LOG_CATEGORY UCLASS_SYSRESET
 
 #include <common.h>
+#include <cpu_func.h>
+#include <hang.h>
 #include <sysreset.h>
 #include <dm.h>
 #include <errno.h>
@@ -117,6 +119,24 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	return 0;
 }
+
+#if IS_ENABLED(CONFIG_SYSRESET_CMD_POWEROFF)
+int do_poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	puts("poweroff ...\n");
+	mdelay(100);
+
+	ret = sysreset_walk(SYSRESET_POWER_OFF);
+
+	if (ret == -EINPROGRESS)
+		mdelay(1000);
+
+	/*NOTREACHED when power off*/
+	return CMD_RET_FAILURE;
+}
+#endif
 
 static int sysreset_post_bind(struct udevice *dev)
 {

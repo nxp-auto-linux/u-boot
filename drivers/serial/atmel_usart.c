@@ -9,6 +9,7 @@
 #include <clk.h>
 #include <dm.h>
 #include <errno.h>
+#include <malloc.h>
 #include <watchdog.h>
 #include <serial.h>
 #include <debug_uart.h>
@@ -218,6 +219,17 @@ static const struct dm_serial_ops atmel_serial_ops = {
 	.setbrg = atmel_serial_setbrg,
 };
 
+#if defined(CONFIG_SPL_BUILD) && !defined(CONFIG_SPL_CLK)
+static int atmel_serial_enable_clk(struct udevice *dev)
+{
+	struct atmel_serial_priv *priv = dev_get_priv(dev);
+
+	/* Use fixed clock value in SPL */
+	priv->usart_clk_rate = CONFIG_SPL_UART_CLOCK;
+
+	return 0;
+}
+#else
 static int atmel_serial_enable_clk(struct udevice *dev)
 {
 	struct atmel_serial_priv *priv = dev_get_priv(dev);
@@ -245,6 +257,7 @@ static int atmel_serial_enable_clk(struct udevice *dev)
 
 	return 0;
 }
+#endif
 
 static int atmel_serial_probe(struct udevice *dev)
 {

@@ -11,6 +11,7 @@
 
 #include <common.h>
 #include <SA-1100.h>
+#include <time.h>
 
 static ulong get_timer_masked (void)
 {
@@ -58,7 +59,7 @@ unsigned long long get_ticks(void)
  * This function is derived from PowerPC code (timebase clock frequency).
  * On ARM it returns the number of timer ticks per second.
  */
-ulong get_tbclk (void)
+ulong get_tbclk(void)
 {
 	return CONFIG_SYS_HZ;
 }

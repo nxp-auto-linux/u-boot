@@ -8,7 +8,11 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#define ROCKCHIP_DEVICE_SETTINGS
+#define ROCKCHIP_DEVICE_SETTINGS \
+		"stdin=serial,usbkbd\0" \
+		"stdout=serial,vidconsole\0" \
+		"stderr=serial,vidconsole\0"
+
 #include <configs/rk3288_common.h>
 
 #undef BOOT_TARGET_DEVICES
@@ -17,7 +21,6 @@
 	func(MMC, mmc, 1) \
 
 #define CONFIG_SYS_MMC_ENV_DEV 1
-#undef CONFIG_CMD_USB_MASS_STORAGE
 
 #ifndef CONFIG_TPL_BUILD
 

@@ -91,7 +91,13 @@ typedef struct {
 #define EFI_IP_ADDRESS_CONFLICT		(EFI_ERROR_MASK | 34)
 #define EFI_HTTP_ERROR			(EFI_ERROR_MASK | 35)
 
-#define EFI_WARN_DELETE_FAILURE	2
+#define EFI_WARN_UNKNOWN_GLYPH		1
+#define EFI_WARN_DELETE_FAILURE		2
+#define EFI_WARN_WRITE_FAILURE		3
+#define EFI_WARN_BUFFER_TOO_SMALL	4
+#define EFI_WARN_STALE_DATA		5
+#define EFI_WARN_FILE_SYSTEM		6
+#define EFI_WARN_RESET_REQUIRED		7
 
 typedef unsigned long efi_status_t;
 typedef u64 efi_physical_addr_t;
@@ -168,6 +174,10 @@ enum efi_mem_type {
 	 * part of the processor.
 	 */
 	EFI_PAL_CODE,
+	/*
+	 * Non-volatile memory.
+	 */
+	EFI_PERSISTENT_MEMORY_TYPE,
 
 	EFI_MAX_MEMORY_TYPE,
 	EFI_TABLE_END,	/* For efi_build_mem_table() */
@@ -190,7 +200,7 @@ enum efi_mem_type {
 #define EFI_MEM_DESC_VERSION	1
 
 #define EFI_PAGE_SHIFT		12
-#define EFI_PAGE_SIZE		(1UL << EFI_PAGE_SHIFT)
+#define EFI_PAGE_SIZE		(1ULL << EFI_PAGE_SHIFT)
 #define EFI_PAGE_MASK		(EFI_PAGE_SIZE - 1)
 
 struct efi_mem_desc {

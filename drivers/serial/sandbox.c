@@ -33,7 +33,7 @@ DECLARE_GLOBAL_DATA_PTR;
  *   serial_buf_write		 == serial_buf_read -> empty buffer
  *   (serial_buf_write + 1) % 16 == serial_buf_read -> full buffer
  */
-static char serial_buf[16];
+static unsigned char serial_buf[16];
 static unsigned int serial_buf_write;
 static unsigned int serial_buf_read;
 
@@ -220,6 +220,8 @@ static int sandbox_serial_ofdata_to_platdata(struct udevice *dev)
 	const char *colour;
 	int i;
 
+	if (CONFIG_IS_ENABLED(OF_PLATDATA))
+		return 0;
 	plat->colour = -1;
 	colour = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
 			     "sandbox,text-colour", NULL);

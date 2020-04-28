@@ -5,7 +5,7 @@
 
 #include <common.h>
 #include <command.h>
-#include <environment.h>
+#include <cpu_func.h>
 #include <tpm-v1.h>
 #include "tpm-user-utils.h"
 

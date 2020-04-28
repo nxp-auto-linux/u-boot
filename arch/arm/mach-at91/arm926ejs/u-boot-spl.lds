@@ -39,6 +39,8 @@ SECTIONS
 		*(.__end)
 	} >.sram
 
+	_image_binary_end = .;
+
 	.bss :
 	{
 		. = ALIGN(4);
@@ -50,11 +52,11 @@ SECTIONS
 }
 
 #if defined(IMAGE_MAX_SIZE)
-ASSERT(__image_copy_end - __start < (IMAGE_MAX_SIZE), \
+ASSERT(__image_copy_end - __start <= (IMAGE_MAX_SIZE), \
 	"SPL image too big");
 #endif
 
 #if defined(CONFIG_SPL_BSS_MAX_SIZE)
-ASSERT(__bss_end - __bss_start < (CONFIG_SPL_BSS_MAX_SIZE), \
+ASSERT(__bss_end - __bss_start <= (CONFIG_SPL_BSS_MAX_SIZE), \
 	"SPL image BSS too big");
 #endif

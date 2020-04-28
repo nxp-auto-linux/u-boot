@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <hang.h>
 #include <wait_bit.h>
 #include <asm/io.h>
 #include <asm/arch/mailbox_s10.h>
@@ -55,11 +56,11 @@ static __always_inline int mbox_fill_cmd_circular_buff(u32 header, u32 len,
 	cout = MBOX_READL(MBOX_COUT) % MBOX_CMD_BUFFER_SIZE;
 
 	/* if command buffer is full or not enough free space
-	 * to fit the data
+	 * to fit the data. Note, len is in u32 unit.
 	 */
 	if (((cin + 1) % MBOX_CMD_BUFFER_SIZE) == cout ||
 	    ((MBOX_CMD_BUFFER_SIZE - cin + cout - 1) %
-	     MBOX_CMD_BUFFER_SIZE) < len)
+	     MBOX_CMD_BUFFER_SIZE) < (len + 1))
 		return -ENOMEM;
 
 	/* write header to circular buffer */
@@ -287,9 +288,6 @@ int mbox_qspi_close(void)
 
 int mbox_qspi_open(void)
 {
-	static const struct socfpga_system_manager *sysmgr_regs =
-		(struct socfpga_system_manager *)SOCFPGA_SYSMGR_ADDRESS;
-
 	int ret;
 	u32 resp_buf[1];
 	u32 resp_buf_len;
@@ -318,7 +316,8 @@ int mbox_qspi_open(void)
 
 	/* We are getting QSPI ref clock and set into sysmgr boot register */
 	printf("QSPI: Reference clock at %d Hz\n", resp_buf[0]);
-	writel(resp_buf[0], &sysmgr_regs->boot_scratch_cold0);
+	writel(resp_buf[0],
+	       socfpga_get_sysmgr_addr() + SYSMGR_SOC64_BOOT_SCRATCH_COLD0);
 
 	return 0;
 

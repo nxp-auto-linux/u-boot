@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017, 2020 NXP
  */
 
 #ifndef __LS1088A_RDB_H
@@ -10,25 +10,12 @@
 
 #ifdef CONFIG_TFABOOT
 #define CONFIG_SYS_MMC_ENV_DEV		0
-
-#define CONFIG_ENV_SIZE			0x2000          /* 8KB */
-#define CONFIG_ENV_OFFSET		0x500000
-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + \
-					 CONFIG_ENV_OFFSET)
-#define CONFIG_ENV_SECT_SIZE		0x40000
 #else
 #if defined(CONFIG_QSPI_BOOT)
-#define CONFIG_ENV_SIZE			0x2000          /* 8KB */
-#define CONFIG_ENV_SECT_SIZE		0x40000
 #elif defined(CONFIG_SD_BOOT)
-#define CONFIG_ENV_OFFSET		(3 * 1024 * 1024)
 #define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_ENV_SIZE			0x2000
 #else
 #define CONFIG_ENV_IS_IN_FLASH
-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x300000)
-#define CONFIG_ENV_SECT_SIZE		0x20000
-#define CONFIG_ENV_SIZE			0x20000
 #endif
 #endif /* CONFIG_TFABOOT */
 
@@ -269,9 +256,7 @@
 * RTC configuration
 */
 #define RTC
-#define CONFIG_RTC_PCF8563 1
 #define CONFIG_SYS_I2C_RTC_ADDR         0x51  /* Channel 3*/
-#define CONFIG_CMD_DATE
 #endif
 
 /* EEPROM */
@@ -311,19 +296,19 @@
 	"sf probe 0:0;sf read 0x80000000 0xA00000 0x100000;"	\
 	"sf read 0x80100000 0xE00000 0x100000;"				\
 	"env exists secureboot && "			\
-	"sf read 0x80700000 0x700000 0x40000 && "	\
-	"sf read 0x80740000 0x740000 0x40000 && "	\
-	"esbc_validate 0x80700000 && "			\
-	"esbc_validate 0x80740000 ;"			\
+	"sf read 0x80640000 0x640000 0x40000 && "	\
+	"sf read 0x80680000 0x680000 0x40000 && "	\
+	"esbc_validate 0x80640000 && "			\
+	"esbc_validate 0x80680000 ;"			\
 	"fsl_mc start mc 0x80000000 0x80100000\0"
 #define SD_MC_INIT_CMD				\
 	"mmcinfo;mmc read 0x80000000 0x5000 0x800;"		\
 	"mmc read 0x80100000 0x7000 0x800;"				\
 	"env exists secureboot && "			\
-	"mmc read 0x80700000 0x3800 0x10 && "		\
-	"mmc read 0x80740000 0x3A00 0x10 && "		\
-	"esbc_validate 0x80700000 && "			\
-	"esbc_validate 0x80740000 ;"			\
+	"mmc read 0x80640000 0x3200 0x20 && "		\
+	"mmc read 0x80680000 0x3400 0x20 && "		\
+	"esbc_validate 0x80640000 && "			\
+	"esbc_validate 0x80680000 ;"			\
 	"fsl_mc start mc 0x80000000 0x80100000\0"
 #else
 #if defined(CONFIG_QSPI_BOOT)
@@ -331,10 +316,10 @@
 	"mcinitcmd=sf probe 0:0;sf read 0x80000000 0xA00000 0x100000;"	\
 	"sf read 0x80100000 0xE00000 0x100000;"				\
 	"env exists secureboot && "			\
-	"sf read 0x80700000 0x700000 0x40000 && "	\
-	"sf read 0x80740000 0x740000 0x40000 && "	\
-	"esbc_validate 0x80700000 && "			\
-	"esbc_validate 0x80740000 ;"			\
+	"sf read 0x80640000 0x640000 0x40000 && "	\
+	"sf read 0x80680000 0x680000 0x40000 && "	\
+	"esbc_validate 0x80640000 && "			\
+	"esbc_validate 0x80680000 ;"			\
 	"fsl_mc start mc 0x80000000 0x80100000\0"	\
 	"mcmemsize=0x70000000\0"
 #elif defined(CONFIG_SD_BOOT)
@@ -342,10 +327,10 @@
 	"mcinitcmd=mmcinfo;mmc read 0x80000000 0x5000 0x800;"		\
 	"mmc read 0x80100000 0x7000 0x800;"				\
 	"env exists secureboot && "			\
-	"mmc read 0x80700000 0x3800 0x10 && "		\
-	"mmc read 0x80740000 0x3A00 0x10 && "		\
-	"esbc_validate 0x80700000 && "			\
-	"esbc_validate 0x80740000 ;"			\
+	"mmc read 0x80640000 0x3200 0x20 && "		\
+	"mmc read 0x80680000 0x3400 0x20 && "		\
+	"esbc_validate 0x80640000 && "			\
+	"esbc_validate 0x80680000 ;"			\
 	"fsl_mc start mc 0x80000000 0x80100000\0"	\
 	"mcmemsize=0x70000000\0"
 #endif
@@ -363,13 +348,13 @@
 	"fdt_addr=0x64f00000\0"			\
 	"kernel_addr=0x1000000\0"		\
 	"kernel_addr_sd=0x8000\0"		\
-	"kernelhdr_addr_sd=0x4000\0"		\
+	"kernelhdr_addr_sd=0x3000\0"		\
 	"kernel_start=0x580100000\0"		\
-	"kernelheader_start=0x580800000\0"	\
+	"kernelheader_start=0x580600000\0"	\
 	"scriptaddr=0x80000000\0"		\
 	"scripthdraddr=0x80080000\0"		\
 	"fdtheader_addr_r=0x80100000\0"		\
-	"kernelheader_addr=0x800000\0"		\
+	"kernelheader_addr=0x600000\0"		\
 	"kernelheader_addr_r=0x80200000\0"	\
 	"kernel_addr_r=0x81000000\0"		\
 	"kernelheader_size=0x40000\0"		\
@@ -377,7 +362,7 @@
 	"load_addr=0xa0000000\0"		\
 	"kernel_size=0x2800000\0"		\
 	"kernel_size_sd=0x14000\0"		\
-	"kernelhdr_size_sd=0x10\0"		\
+	"kernelhdr_size_sd=0x20\0"		\
 	QSPI_MC_INIT_CMD			\
 	"mcmemsize=0x70000000\0"		\
 	BOOTENV					\
@@ -398,7 +383,8 @@
 		"${scriptaddr} ${prefix}${script}; "		\
 	"env exists secureboot && load ${devtype} "		\
 		"${devnum}:${distro_bootpart} "			\
-		"${scripthdraddr} ${prefix}${boot_script_hdr} " \
+		"${scripthdraddr} ${prefix}${boot_script_hdr}; "\
+		"env exists secureboot "			\
 		"&& esbc_validate ${scripthdraddr};"		\
 		"source ${scriptaddr}\0"			\
 	"installer=load mmc 0:2 $load_addr "			\
@@ -431,13 +417,13 @@
 	"fdt_addr=0x64f00000\0"			\
 	"kernel_addr=0x1000000\0"		\
 	"kernel_addr_sd=0x8000\0"		\
-	"kernelhdr_addr_sd=0x4000\0"		\
+	"kernelhdr_addr_sd=0x3000\0"		\
 	"kernel_start=0x580100000\0"		\
 	"kernelheader_start=0x580800000\0"	\
 	"scriptaddr=0x80000000\0"		\
 	"scripthdraddr=0x80080000\0"		\
 	"fdtheader_addr_r=0x80100000\0"		\
-	"kernelheader_addr=0x800000\0"		\
+	"kernelheader_addr=0x600000\0"		\
 	"kernelheader_addr_r=0x80200000\0"	\
 	"kernel_addr_r=0x81000000\0"		\
 	"kernelheader_size=0x40000\0"		\
@@ -445,7 +431,7 @@
 	"load_addr=0xa0000000\0"		\
 	"kernel_size=0x2800000\0"		\
 	"kernel_size_sd=0x14000\0"		\
-	"kernelhdr_size_sd=0x10\0"		\
+	"kernelhdr_size_sd=0x20\0"		\
 	MC_INIT_CMD				\
 	BOOTENV					\
 	"boot_scripts=ls1088ardb_boot.scr\0"	\
@@ -492,10 +478,10 @@
 #undef CONFIG_BOOTCOMMAND
 #ifdef CONFIG_TFABOOT
 #define QSPI_NOR_BOOTCOMMAND					\
-		"sf read 0x80001000 0xd00000 0x100000;"		\
+	"sf read 0x80001000 0xd00000 0x100000;"		\
 		"env exists mcinitcmd && env exists secureboot "	\
-		" && sf read 0x80780000 0x780000 0x100000 "	\
-		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
+		" && sf read 0x806C0000 0x6C0000 0x100000 "	\
+		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
 		"&& fsl_mc lazyapply dpl 0x80001000;"		\
 		"run distro_bootcmd;run qspi_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"
@@ -503,8 +489,8 @@
 		"env exists mcinitcmd && mmcinfo; "		\
 		"mmc read 0x80001000 0x6800 0x800; "		\
 		"env exists mcinitcmd && env exists secureboot "	\
-		" && mmc read 0x80780000 0x3C00 0x10 "		\
-		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
+		" && mmc read 0x806C0000 0x3600 0x20 "		\
+		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
 		"&& fsl_mc lazyapply dpl 0x80001000;"		\
 		"run distro_bootcmd;run sd_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"
@@ -514,8 +500,8 @@
 #define CONFIG_BOOTCOMMAND                                      \
 		"sf read 0x80001000 0xd00000 0x100000;"		\
 		"env exists mcinitcmd && env exists secureboot "	\
-		" && sf read 0x80780000 0x780000 0x100000 "	\
-		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
+		" && sf read 0x806C0000 0x6C0000 0x100000 "	\
+		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
 		"&& fsl_mc lazyapply dpl 0x80001000;"		\
 		"run distro_bootcmd;run qspi_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"
@@ -526,8 +512,8 @@
 		"env exists mcinitcmd && mmcinfo; "		\
 		"mmc read 0x80001000 0x6800 0x800; "		\
 		"env exists mcinitcmd && env exists secureboot "	\
-		" && mmc read 0x80780000 0x3C00 0x10 "		\
-		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
+		" && mmc read 0x806C0000 0x3600 0x20 "		\
+		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
 		"&& fsl_mc lazyapply dpl 0x80001000;"		\
 		"run distro_bootcmd;run sd_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"

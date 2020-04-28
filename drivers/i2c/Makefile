@@ -3,7 +3,6 @@
 # (C) Copyright 2000-2007
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 obj-$(CONFIG_DM_I2C) += i2c-uclass.o
-obj-$(CONFIG_DM_I2C_COMPAT) += i2c-uclass-compat.o
 obj-$(CONFIG_DM_I2C_GPIO) += i2c-gpio.o
 obj-$(CONFIG_$(SPL_)I2C_CROS_EC_TUNNEL) += cros_ec_tunnel.o
 obj-$(CONFIG_$(SPL_)I2C_CROS_EC_LDO) += cros_ec_ldo.o
@@ -15,6 +14,9 @@ obj-$(CONFIG_SYS_I2C_AT91) += at91_i2c.o
 obj-$(CONFIG_SYS_I2C_CADENCE) += i2c-cdns.o
 obj-$(CONFIG_SYS_I2C_DAVINCI) += davinci_i2c.o
 obj-$(CONFIG_SYS_I2C_DW) += designware_i2c.o
+ifdef CONFIG_DM_PCI
+obj-$(CONFIG_SYS_I2C_DW) += designware_i2c_pci.o
+endif
 obj-$(CONFIG_SYS_I2C_FSL) += fsl_i2c.o
 obj-$(CONFIG_SYS_I2C_IHS) += ihs_i2c.o
 obj-$(CONFIG_SYS_I2C_INTEL) += intel_i2c.o

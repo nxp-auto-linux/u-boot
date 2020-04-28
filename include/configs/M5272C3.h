@@ -29,13 +29,6 @@
 /* Configuration for environment
  * Environment is embedded in u-boot in the second sector of the flash
  */
-#ifndef CONFIG_MONITOR_IS_IN_RAM
-#define CONFIG_ENV_OFFSET		0x4000
-#define CONFIG_ENV_SECT_SIZE	0x2000
-#else
-#define CONFIG_ENV_ADDR		0xffe04000
-#define CONFIG_ENV_SECT_SIZE	0x2000
-#endif
 
 #define LDS_BOARD_TEXT \
 	. = DEFINED(env_offset) ? env_offset : .; \
@@ -49,17 +42,11 @@
 /*
  * Command line configuration.
  */
-
-#define CONFIG_MCFFEC
 #ifdef CONFIG_MCFFEC
 #	define CONFIG_MII_INIT		1
 #	define CONFIG_SYS_DISCOVER_PHY
 #	define CONFIG_SYS_RX_ETH_BUFFER	8
 #	define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
-
-#	define CONFIG_SYS_FEC0_PINMUX		0
-#	define CONFIG_SYS_FEC0_MIIBASE		CONFIG_SYS_FEC0_IOBASE
-#	define MCFFEC_TOUT_LOOP		50000
 /* If CONFIG_SYS_DISCOVER_PHY is not defined - hardcoded */
 #	ifndef CONFIG_SYS_DISCOVER_PHY
 #		define FECDUPLEX	FULL

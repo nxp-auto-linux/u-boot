@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2018 NXP
+ * Copyright 2018-2020 NXP
  */
 
 #ifndef __LX2_COMMON_H
@@ -173,11 +173,6 @@ unsigned long get_board_ddr_clk(void);
 #define HWCONFIG_BUFFER_SIZE		128
 
 #define CONFIG_SYS_MMC_ENV_DEV          0
-#define CONFIG_ENV_SIZE			0x2000          /* 8KB */
-#define CONFIG_ENV_SECT_SIZE		0x20000
-#define CONFIG_ENV_OFFSET		0x500000
-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + \
-					 CONFIG_ENV_OFFSET)
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -187,27 +182,30 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
 					sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE /* Boot args buffer */
-#define CONFIG_CMDLINE_EDITING		1
 #define CONFIG_SYS_MAXARGS		64	/* max command args */
 
 #define CONFIG_SYS_BOOTM_LEN   (64 << 20)      /* Increase max gunzip size */
 
 /* Initial environment variables */
-#define XSPI_MC_INIT_CMD			\
-	"env exists secureboot && "		\
-	"esbc_validate 0x20700000 && "		\
-	"esbc_validate 0x20740000 ;"		\
-	"fsl_mc start mc 0x20a00000 0x20e00000\0"
+#define XSPI_MC_INIT_CMD				\
+	"sf probe 0:0 && "				\
+	"sf read 0x80640000 0x640000 0x80000 && "	\
+	"env exists secureboot && "			\
+	"esbc_validate 0x80640000 && "			\
+	"esbc_validate 0x80680000; "			\
+	"sf read 0x80a00000 0xa00000 0x300000 && "	\
+	"sf read 0x80e00000 0xe00000 0x100000; "	\
+	"fsl_mc start mc 0x80a00000 0x80e00000\0"
 
 #define SD_MC_INIT_CMD				\
-	"mmc read 0x80000000 0x5000 0x800;"	\
-	"mmc read 0x80100000 0x7000 0x800;"	\
+	"mmc read 0x80a00000 0x5000 0x1200;"	\
+	"mmc read 0x80e00000 0x7000 0x800;"	\
 	"env exists secureboot && "		\
-	"mmc read 0x80700000 0x3800 0x10 && "	\
-	"mmc read 0x80740000 0x3A00 0x10 && "	\
-	"esbc_validate 0x80700000 && "		\
-	"esbc_validate 0x80740000 ;"		\
-	"fsl_mc start mc 0x80000000 0x80100000\0"
+	"mmc read 0x80640000 0x3200 0x20 && "	\
+	"mmc read 0x80680000 0x3400 0x20 && "	\
+	"esbc_validate 0x80640000 && "		\
+	"esbc_validate 0x80680000 ;"		\
+	"fsl_mc start mc 0x80a00000 0x80e00000\0"
 
 #define EXTRA_ENV_SETTINGS			\
 	"hwconfig=fsl_ddr:bank_intlv=auto\0"	\
@@ -217,7 +215,7 @@ unsigned long get_board_ddr_clk(void);
 	"initrd_high=0xffffffffffffffff\0"	\
 	"fdt_addr=0x64f00000\0"			\
 	"kernel_start=0x1000000\0"		\
-	"kernelheader_start=0x7C0000\0"		\
+	"kernelheader_start=0x600000\0"		\
 	"scriptaddr=0x80000000\0"		\
 	"scripthdraddr=0x80080000\0"		\
 	"fdtheader_addr_r=0x80100000\0"		\
@@ -228,15 +226,13 @@ unsigned long get_board_ddr_clk(void);
 	"load_addr=0xa0000000\0"		\
 	"kernel_size=0x2800000\0"		\
 	"kernel_addr_sd=0x8000\0"		\
-	"kernelhdr_addr_sd=0x3E00\0"            \
+	"kernelhdr_addr_sd=0x3000\0"            \
 	"kernel_size_sd=0x1d000\0"              \
-	"kernelhdr_size_sd=0x10\0"              \
+	"kernelhdr_size_sd=0x20\0"              \
 	"console=ttyAMA0,38400n8\0"		\
 	BOOTENV					\
 	"mcmemsize=0x70000000\0"		\
 	XSPI_MC_INIT_CMD				\
-	"boot_scripts=lx2160ardb_boot.scr\0"	\
-	"boot_script_hdr=hdr_lx2160ardb_bs.out\0"	\
 	"scan_dev_for_boot_part="		\
 		"part list ${devtype} ${devnum} devplist; "	\
 		"env exists devplist || setenv devplist 1; "	\
@@ -247,12 +243,6 @@ unsigned long get_board_ddr_clk(void);
 				"run scan_dev_for_boot; "	\
 			"fi; "					\
 		"done\0"					\
-	"scan_dev_for_boot="					\
-		"echo Scanning ${devtype} "			\
-			"${devnum}:${distro_bootpart}...; "	\
-		"for prefix in ${boot_prefixes}; do "		\
-			"run scan_dev_for_scripts; "		\
-		"done;\0"					\
 	"boot_a_script="					\
 		"load ${devtype} ${devnum}:${distro_bootpart} "	\
 			"${scriptaddr} ${prefix}${script}; "	\
@@ -263,27 +253,42 @@ unsigned long get_board_ddr_clk(void);
 		"source ${scriptaddr}\0"
 
 #define XSPI_NOR_BOOTCOMMAND						\
-			"env exists mcinitcmd && env exists secureboot "\
-			"&& esbc_validate 0x20780000; "			\
+			"sf probe 0:0; "				\
+			"sf read 0x806c0000 0x6c0000 0x40000; "		\
+			"env exists mcinitcmd && env exists secureboot"	\
+			" && esbc_validate 0x806c0000; "		\
+			"sf read 0x80d00000 0xd00000 0x100000; "	\
 			"env exists mcinitcmd && "			\
-			"fsl_mc lazyapply dpl 0x20d00000; "		\
+			"fsl_mc lazyapply dpl 0x80d00000; "		\
 			"run distro_bootcmd;run xspi_bootcmd; "		\
 			"env exists secureboot && esbc_halt;"
 
 #define SD_BOOTCOMMAND						\
 		"env exists mcinitcmd && mmcinfo; "		\
-		"mmc read 0x80001000 0x6800 0x800; "		\
+		"mmc read 0x80d00000 0x6800 0x800; "		\
 		"env exists mcinitcmd && env exists secureboot "	\
-		" && mmc read 0x80780000 0x3C00 0x10 "		\
-		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
-		"&& fsl_mc lazyapply dpl 0x80001000;"		\
+		" && mmc read 0x806C0000 0x3600 0x20 "		\
+		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
+		"&& fsl_mc lazyapply dpl 0x80d00000;"		\
 		"run distro_bootcmd;run sd_bootcmd;"		\
+		"env exists secureboot && esbc_halt;"
+
+#define SD2_BOOTCOMMAND						\
+		"env exists mcinitcmd && mmcinfo; "		\
+		"mmc read 0x80d00000 0x6800 0x800; "		\
+		"env exists mcinitcmd && env exists secureboot "	\
+		" && mmc read 0x80780000 0x3C00 0x20 "		\
+		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
+		"&& fsl_mc lazyapply dpl 0x80d00000;"		\
+		"run distro_bootcmd;run sd2_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(USB, usb, 0) \
 	func(MMC, mmc, 0) \
-	func(SCSI, scsi, 0)
+	func(MMC, mmc, 1) \
+	func(SCSI, scsi, 0) \
+	func(DHCP, dhcp, na)
 #include <config_distro_bootcmd.h>
 
 #endif /* __LX2_COMMON_H */

@@ -87,6 +87,15 @@ config MX6ULL
 	select SYSCOUNTER_TIMER
 	select SYS_L2CACHE_OFF
 
+config MX6_OCRAM_256KB
+	bool "Support 256KB OCRAM"
+	depends on MX6D || MX6Q
+	help
+	 Allows using the full 256KB size of the OCRAM on the MX6Q/MX6D series
+	 of chips, such as for SPL. The OCRAM of the Lite series of chips is
+	 only 128KB, so using this option will prevent the resulting code from
+	 working on those chips.
+
 config MX6_DDRCAL
 	bool "Include dynamic DDR calibration routines"
 	depends on SPL
@@ -108,6 +117,7 @@ config TARGET_ADVANTECH_DMS_BA16
 config TARGET_APALIS_IMX6
 	bool "Toradex Apalis iMX6 board"
 	select BOARD_LATE_INIT
+	select MX6Q
 	select DM
 	select DM_SERIAL
 	select DM_THERMAL
@@ -115,16 +125,49 @@ config TARGET_APALIS_IMX6
 	imply CMD_DM
 	imply CMD_SATA
 
-config TARGET_ARISTAINETOS
-	bool "aristainetos"
-
 config TARGET_ARISTAINETOS2
 	bool "aristainetos2"
 	select BOARD_LATE_INIT
+	select MX6DL
+	select SYS_I2C_MXC
+	select MXC_UART
+	select FEC_MXC
+	select DM
+	imply CMD_SATA
+	imply CMD_DM
 
 config TARGET_ARISTAINETOS2B
 	bool "Support aristainetos2-revB"
 	select BOARD_LATE_INIT
+	select MX6DL
+	select SYS_I2C_MXC
+	select MXC_UART
+	select FEC_MXC
+	select DM
+	imply CMD_SATA
+	imply CMD_DM
+
+config TARGET_ARISTAINETOS2BCSL
+	bool "Support aristainetos2-revB CSL"
+	select BOARD_LATE_INIT
+	select MX6DL
+	select SYS_I2C_MXC
+	select MXC_UART
+	select FEC_MXC
+	select DM
+	imply CMD_SATA
+	imply CMD_DM
+
+config TARGET_ARISTAINETOS2C
+	bool "Support aristainetos2-revC"
+	select BOARD_LATE_INIT
+	select MX6DL
+	select SYS_I2C_MXC
+	select MXC_UART
+	select FEC_MXC
+	select DM
+	imply CMD_SATA
+	imply CMD_DM
 
 config TARGET_CGTQMX6EVAL
 	bool "cgtqmx6eval"
@@ -161,6 +204,18 @@ config TARGET_COLIBRI_IMX6ULL
 	select DM_THERMAL
 	select MX6ULL
 
+config TARGET_DART_6UL
+	bool "Variscite imx6ULL dart(DART-SOM-6ULL)"
+	select MX6ULL
+	select DM
+	select DM_ETH
+	select DM_GPIO
+	select DM_I2C
+	select DM_MMC
+	select DM_SERIAL
+	select DM_THERMAL
+	select SUPPORT_SPL
+
 config TARGET_DHCOMIMX6
 	bool "dh_imx6"
 	select BOARD_EARLY_INIT_F
@@ -175,6 +230,11 @@ config TARGET_DHCOMIMX6
 config TARGET_DISPLAY5
 	bool "LWN DISPLAY5 board"
 	select DM
+	select DM_ETH
+	select DM_I2C
+	select DM_MMC
+	select DM_SPI
+	select DM_GPIO
 	select DM_SERIAL
 	select SUPPORT_SPL
 	imply CMD_DM
@@ -199,12 +259,28 @@ config TARGET_GW_VENTANA
 config TARGET_KOSAGI_NOVENA
 	bool "Kosagi Novena"
 	select BOARD_LATE_INIT
+	select DM_ETH
+	select DM_GPIO
+	select DM_MMC
+	select DM_PCI
+	select DM_SCSI
+	select DM_USB
+	select DM_VIDEO
+	select OF_CONTROL
 	select SUPPORT_SPL
+	imply CMD_DM
 
 config TARGET_MCCMON6
 	bool "mccmon6"
 	select MX6QDL
 	select SUPPORT_SPL
+	select DM
+	select DM_GPIO
+	select DM_ETH
+	select DM_SERIAL
+	select DM_I2C
+	select DM_SPI
+	imply CMD_DM
 
 config TARGET_MX6CUBOXI
 	bool "Solid-run mx6 boards"
@@ -390,6 +466,7 @@ config TARGET_NITROGEN6X
 	imply USB_ETHER_MCS7830
 	imply USB_ETHER_SMSC95XX
 	imply USB_HOST_ETHER
+	select MX6QDL
 
 config TARGET_OPOS6ULDEV
 	bool "Armadeus OPOS6ULDev board"
@@ -399,6 +476,16 @@ config TARGET_OT1200
 	bool "Bachmann OT1200"
 	select SUPPORT_SPL
 	imply CMD_SATA
+
+config TARGET_PICO_IMX6
+	bool "PICO-IMX6"
+	select BOARD_EARLY_INIT_F
+	select BOARD_LATE_INIT
+	select DM
+	select DM_THERMAL
+	select MX6QDL
+	select SUPPORT_SPL
+	imply CMD_DM
 
 config TARGET_PICO_IMX6UL
 	bool "PICO-IMX6UL-EMMC"
@@ -443,12 +530,36 @@ config TARGET_PCL063
 	select DM_THERMAL
 	select SUPPORT_SPL
 
+config TARGET_PCL063_ULL
+	bool "PHYTEC PCL063 (phyCORE-i.MX6ULL)"
+	select MX6ULL
+	select DM
+	select DM_ETH
+	select DM_GPIO
+	select DM_I2C
+	select DM_MMC
+	select DM_SERIAL
+	select DM_THERMAL
+	select SUPPORT_SPL
+
 config TARGET_SECOMX6
 	bool "secomx6 boards"
 
 config TARGET_SKSIMX6
 	bool "sks-imx6"
 	select SUPPORT_SPL
+
+config TARGET_SOMLABS_VISIONSOM_6ULL
+	bool "visionsom-6ull"
+	select MX6ULL
+	select BOARD_LATE_INIT
+	select DM
+	select DM_ETH
+	select DM_GPIO
+	select DM_MMC
+	select DM_SERIAL
+	select DM_THERMAL
+	imply CMD_DM
 
 config TARGET_TBS2910
 	bool "TBS2910 Matrix ARM mini PC"
@@ -461,9 +572,19 @@ config TARGET_KP_IMX6Q_TPC
 	select BOARD_EARLY_INIT_F
 	select BOARD_LATE_INIT
 	select DM
+	select SPL_DM if SPL
 	select DM_THERMAL
+	select DM_MMC
+	select DM_ETH
+	select DM_REGULATOR
+	select SPL_DM_REGULATOR if SPL
+	select DM_SERIAL
+	select DM_I2C
+	select DM_GPIO
+	select DM_USB
 	select MX6QDL
 	select SUPPORT_SPL
+	select SPL_SEPARATE_BSS if SPL
 	imply CMD_DM
 	imply CMD_SPL
 
@@ -486,12 +607,13 @@ config TARGET_UDOO_NEO
 	select SUPPORT_SPL
 	imply CMD_DM
 
-config TARGET_SAMTEC_VINING_2000
-	bool "samtec VIN|ING 2000"
+config TARGET_SOFTING_VINING_2000
+	bool "Softing VIN|ING 2000"
 	select BOARD_LATE_INIT
 	select DM
 	select DM_THERMAL
 	select MX6SX
+	select SUPPORT_SPL
 	imply CMD_DM
 
 config TARGET_WANDBOARD
@@ -530,6 +652,24 @@ config TARGET_ZC5601
 	select SUPPORT_SPL
 	imply CMD_DM
 
+config TARGET_BRPPT2
+	bool "brppt2"
+	select BOARD_LATE_INIT
+	select MX6QDL
+	select OF_CONTROL
+	select SPL_OF_LIBFDT
+	select DM
+	select DM_ETH
+	select DM_GPIO
+	select DM_I2C
+	select DM_MMC
+	select SUPPORT_SPL
+	select SPL_DM if SPL
+	select SPL_OF_CONTROL if SPL
+        help
+          Support
+          B&R BRPPT2 platform
+          based on Freescale's iMX6 SoC
 endchoice
 
 config SYS_SOC
@@ -568,13 +708,15 @@ source "board/phytec/pfla02/Kconfig"
 source "board/phytec/pcl063/Kconfig"
 source "board/gateworks/gw_ventana/Kconfig"
 source "board/kosagi/novena/Kconfig"
-source "board/samtec/vining_2000/Kconfig"
+source "board/softing/vining_2000/Kconfig"
 source "board/liebherr/display5/Kconfig"
 source "board/liebherr/mccmon6/Kconfig"
 source "board/logicpd/imx6/Kconfig"
 source "board/seco/Kconfig"
 source "board/sks-kinkel/sksimx6/Kconfig"
 source "board/solidrun/mx6cuboxi/Kconfig"
+source "board/somlabs/visionsom-6ull/Kconfig"
+source "board/technexion/pico-imx6/Kconfig"
 source "board/technexion/pico-imx6ul/Kconfig"
 source "board/tbs/tbs2910/Kconfig"
 source "board/tqc/tqma6/Kconfig"
@@ -586,5 +728,6 @@ source "board/udoo/Kconfig"
 source "board/udoo/neo/Kconfig"
 source "board/wandboard/Kconfig"
 source "board/warp/Kconfig"
+source "board/BuR/brppt2/Kconfig"
 
 endif

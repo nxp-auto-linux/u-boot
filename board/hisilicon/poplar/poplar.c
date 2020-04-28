@@ -4,8 +4,10 @@
  * Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
  */
 
-#include <dm.h>
 #include <common.h>
+#include <cpu_func.h>
+#include <dm.h>
+#include <init.h>
 #include <asm/io.h>
 #include <dm/platform_data/serial_pl01x.h>
 #include <asm/arch/hi3798cv200.h>
@@ -155,6 +157,7 @@ static void usb2_phy_init(void)
 }
 
 #if defined(CONFIG_USB_GADGET) && defined(CONFIG_USB_GADGET_DWC2_OTG)
+#include <env.h>
 #include <usb.h>
 #include <usb/dwc2_udc.h>
 #include <g_dnl.h>

@@ -42,16 +42,12 @@
 /* Serial Info */
 #define CONFIG_SYS_NS16550_SERIAL
 
-#define CONFIG_ENV_SIZE			0x2000
-
 /* console configuration */
 #define CONFIG_SYS_CBSIZE		1024	/* Console buffer size */
 #define CONFIG_SYS_MAXARGS		64
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 
 /* version string, parser, etc */
-
-#define CONFIG_MX_CYCLIC
 
 /* Enable Time Command */
 

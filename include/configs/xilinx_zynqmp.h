@@ -47,10 +47,6 @@
 #define CONFIG_BOOTP_BOOTFILESIZE
 #define CONFIG_BOOTP_MAY_FAIL
 
-#if defined(CONFIG_MMC_SDHCI_ZYNQ)
-# define CONFIG_SUPPORT_EMMC_BOOT
-#endif
-
 #ifdef CONFIG_NAND_ARASAN
 # define CONFIG_SYS_MAX_NAND_DEVICE	1
 # define CONFIG_SYS_NAND_ONFI_DETECTION
@@ -66,7 +62,6 @@
 #if defined(CONFIG_ZYNQMP_USB)
 #define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x1800000
 #define DFU_DEFAULT_POLL_TIMEOUT	300
-#define CONFIG_USB_CABLE_CHECK
 #define CONFIG_THOR_RESET_OFF
 #define DFU_ALT_INFO_RAM \
 	"dfu_ram_info=" \
@@ -99,7 +94,6 @@
 /* Console I/O Buffer Size */
 #define CONFIG_SYS_CBSIZE		2048
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
-#define CONFIG_PANIC_HANG
 #define CONFIG_SYS_MAXARGS		64
 
 /* Ethernet driver */
@@ -108,28 +102,17 @@
 # define PHY_ANEG_TIMEOUT       20000
 #endif
 
-/* EEPROM */
-#ifdef CONFIG_ZYNQMP_EEPROM
-# define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		2
-# define CONFIG_SYS_I2C_EEPROM_ADDR		0x54
-# define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	4
-# define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
-# define CONFIG_SYS_EEPROM_SIZE			(64 * 1024)
-#endif
-
 #define CONFIG_SYS_BOOTM_LEN	(60 * 1024 * 1024)
 
 #define CONFIG_CLOCKS
 
 #define ENV_MEM_LAYOUT_SETTINGS \
 	"fdt_high=10000000\0" \
-	"initrd_high=10000000\0" \
 	"fdt_addr_r=0x40000000\0" \
 	"pxefile_addr_r=0x10000000\0" \
 	"kernel_addr_r=0x18000000\0" \
-	"scriptaddr=0x02000000\0" \
+	"scriptaddr=0x20000000\0" \
 	"ramdisk_addr_r=0x02100000\0" \
-	"script_offset_f=0x3e80000\0" \
 	"script_size_f=0x80000\0" \
 
 #if defined(CONFIG_MMC_SDHCI_ZYNQ)
@@ -190,7 +173,16 @@
 #define BOOTENV_DEV_NAME_NAND(devtypeu, devtypel, instance) \
 	#devtypel #instance " "
 
+#define BOOT_TARGET_DEVICES_JTAG(func)	func(JTAG, jtag, na)
+
+#define BOOTENV_DEV_JTAG(devtypeu, devtypel, instance) \
+	"bootcmd_jtag=source $scriptaddr; echo SCRIPT FAILED: continuing...;\0"
+
+#define BOOTENV_DEV_NAME_JTAG(devtypeu, devtypel, instance) \
+	"jtag "
+
 #define BOOT_TARGET_DEVICES(func) \
+	BOOT_TARGET_DEVICES_JTAG(func) \
 	BOOT_TARGET_DEVICES_MMC(func) \
 	BOOT_TARGET_DEVICES_QSPI(func) \
 	BOOT_TARGET_DEVICES_NAND(func) \
@@ -220,7 +212,6 @@
 	"dfu_bufsiz=0x1000\0"
 #endif
 
-#define CONFIG_SPL_TEXT_BASE		0xfffc0000
 #define CONFIG_SPL_STACK		0xfffffffc
 #define CONFIG_SPL_MAX_SIZE		0x40000
 
@@ -232,8 +223,6 @@
 # define CONFIG_SYS_SPI_KERNEL_OFFS	0x80000
 # define CONFIG_SYS_SPI_ARGS_OFFS	0xa0000
 # define CONFIG_SYS_SPI_ARGS_SIZE	0xa0000
-
-# define CONFIG_SYS_SPI_U_BOOT_OFFS	0x170000
 #endif
 
 /* u-boot is like dtb */
@@ -252,7 +241,11 @@
 # define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR	0 /* unused */
 # define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS	0 /* unused */
 # define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0 /* unused */
-# define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"u-boot.img"
+# if defined(CONFIG_SPL_LOAD_FIT)
+#  define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"u-boot.itb"
+# else
+#  define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"u-boot.img"
+# endif
 #endif
 
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_DFU)

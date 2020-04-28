@@ -18,7 +18,6 @@ void hw_watchdog_reset(void)
 	out_be16(&immap->im_siu_conf.sc_swsr, 0xaa39);	/* write magic2 */
 }
 
-#ifdef CONFIG_WDT_MPC8xx
 static int mpc8xx_wdt_start(struct udevice *dev, u64 timeout, ulong flags)
 {
 	immap_t __iomem *immap = (immap_t __iomem *)CONFIG_SYS_IMMR;
@@ -66,4 +65,3 @@ U_BOOT_DRIVER(wdt_mpc8xx) = {
 	.of_match = mpc8xx_wdt_ids,
 	.ops = &mpc8xx_wdt_ops,
 };
-#endif /* CONFIG_WDT_MPC8xx */

@@ -264,7 +264,7 @@ struct __attribute__((__may_alias__)) fec_priv {
 #ifdef CONFIG_DM_REGULATOR
 	struct udevice *phy_supply;
 #endif
-#ifdef CONFIG_DM_GPIO
+#if CONFIG_IS_ENABLED(DM_GPIO)
 	struct gpio_desc phy_reset_gpio;
 	uint32_t reset_delay;
 	uint32_t reset_post_delay;
@@ -273,6 +273,10 @@ struct __attribute__((__may_alias__)) fec_priv {
 	u32 interface;
 #endif
 	struct clk ipg_clk;
+	struct clk ahb_clk;
+	struct clk clk_enet_out;
+	struct clk clk_ref;
+	struct clk clk_ptp;
 	u32 clk_rate;
 };
 

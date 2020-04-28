@@ -82,7 +82,7 @@
 		ranges = <0 0 0 0xffffffff>;
 		u-boot,dm-pre-reloc;
 
-		clkmgr@ffd1000 {
+		clkmgr: clkmgr@ffd10000 {
 			compatible = "altr,clk-mgr";
 			reg = <0xffd10000 0x1000>;
 		};
@@ -237,6 +237,19 @@
 			reg = <0xffe00000 0x100000>;
 		};
 
+		qspi: spi@ff8d2000 {
+			compatible = "cdns,qspi-nor";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0xff8d2000 0x100>,
+			      <0xff900000 0x100000>;
+			interrupts = <0 3 4>;
+			cdns,fifo-depth = <128>;
+			cdns,fifo-width = <4>;
+			cdns,trigger-address = <0x00000000>;
+			status = "disabled";
+		};
+
 		rst: rstmgr@ffd11000 {
 			#reset-cells = <1>;
 			compatible = "altr,rst-mgr";
@@ -244,6 +257,15 @@
 			altr,modrst-offset = <0x20>;
 			u-boot,dm-pre-reloc;
 		};
+
+		sdr: sdr@f8000400 {
+			 compatible = "altr,sdr-ctl-s10";
+			 reg = <0xf8000400 0x80>,
+			       <0xf8010000 0x190>,
+			       <0xf8011000 0x500>;
+			 resets = <&rst DDRSCH_RESET>;
+			 u-boot,dm-pre-reloc;
+		 };
 
 		spi0: spi@ffda4000 {
 			compatible = "snps,dw-apb-ssi";

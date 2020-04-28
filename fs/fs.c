@@ -6,6 +6,7 @@
 #include <config.h>
 #include <errno.h>
 #include <common.h>
+#include <env.h>
 #include <mapmem.h>
 #include <part.h>
 #include <ext4fs.h>
@@ -17,6 +18,7 @@
 #include <asm/io.h>
 #include <div64.h>
 #include <linux/math64.h>
+#include <efi_loader.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -90,6 +92,11 @@ static inline int fs_write_unsupported(const char *filename, void *buf,
 	return -1;
 }
 
+static inline int fs_ln_unsupported(const char *filename, const char *target)
+{
+	return -1;
+}
+
 static inline void fs_close_unsupported(void)
 {
 }
@@ -154,6 +161,7 @@ struct fstype_info {
 	void (*closedir)(struct fs_dir_stream *dirs);
 	int (*unlink)(const char *filename);
 	int (*mkdir)(const char *dirname);
+	int (*ln)(const char *filename, const char *target);
 };
 
 static struct fstype_info fstypes[] = {
@@ -181,6 +189,7 @@ static struct fstype_info fstypes[] = {
 		.opendir = fat_opendir,
 		.readdir = fat_readdir,
 		.closedir = fat_closedir,
+		.ln = fs_ln_unsupported,
 	},
 #endif
 
@@ -197,8 +206,10 @@ static struct fstype_info fstypes[] = {
 		.read = ext4_read_file,
 #ifdef CONFIG_CMD_EXT4_WRITE
 		.write = ext4_write_file,
+		.ln = ext4fs_create_link,
 #else
 		.write = fs_write_unsupported,
+		.ln = fs_ln_unsupported,
 #endif
 		.uuid = ext4fs_uuid,
 		.opendir = fs_opendir_unsupported,
@@ -222,6 +233,7 @@ static struct fstype_info fstypes[] = {
 		.opendir = fs_opendir_unsupported,
 		.unlink = fs_unlink_unsupported,
 		.mkdir = fs_mkdir_unsupported,
+		.ln = fs_ln_unsupported,
 	},
 #endif
 #ifdef CONFIG_CMD_UBIFS
@@ -240,6 +252,7 @@ static struct fstype_info fstypes[] = {
 		.opendir = fs_opendir_unsupported,
 		.unlink = fs_unlink_unsupported,
 		.mkdir = fs_mkdir_unsupported,
+		.ln = fs_ln_unsupported,
 	},
 #endif
 #ifdef CONFIG_FS_BTRFS
@@ -258,6 +271,7 @@ static struct fstype_info fstypes[] = {
 		.opendir = fs_opendir_unsupported,
 		.unlink = fs_unlink_unsupported,
 		.mkdir = fs_mkdir_unsupported,
+		.ln = fs_ln_unsupported,
 	},
 #endif
 	{
@@ -275,6 +289,7 @@ static struct fstype_info fstypes[] = {
 		.opendir = fs_opendir_unsupported,
 		.unlink = fs_unlink_unsupported,
 		.mkdir = fs_mkdir_unsupported,
+		.ln = fs_ln_unsupported,
 	},
 };
 
@@ -290,6 +305,19 @@ static struct fstype_info *fs_get_info(int fstype)
 
 	/* Return the 'unsupported' sentinel */
 	return info;
+}
+
+/**
+ * fs_get_type() - Get type of current filesystem
+ *
+ * Return: filesystem type
+ *
+ * Returns filesystem type representing the current filesystem, or
+ * FS_TYPE_ANY for any unrecognised filesystem.
+ */
+int fs_get_type(void)
+{
+	return fs_type;
 }
 
 /**
@@ -374,7 +402,7 @@ int fs_set_blk_dev_with_part(struct blk_desc *desc, int part)
 	return -1;
 }
 
-static void fs_close(void)
+void fs_close(void)
 {
 	struct fstype_info *info = fs_get_info(fs_type);
 
@@ -398,7 +426,6 @@ int fs_ls(const char *dirname)
 
 	ret = info->ls(dirname);
 
-	fs_type = FS_TYPE_ANY;
 	fs_close();
 
 	return ret;
@@ -582,7 +609,6 @@ int fs_unlink(const char *filename)
 
 	ret = info->unlink(filename);
 
-	fs_type = FS_TYPE_ANY;
 	fs_close();
 
 	return ret;
@@ -596,7 +622,22 @@ int fs_mkdir(const char *dirname)
 
 	ret = info->mkdir(dirname);
 
-	fs_type = FS_TYPE_ANY;
+	fs_close();
+
+	return ret;
+}
+
+int fs_ln(const char *fname, const char *target)
+{
+	struct fstype_info *info = fs_get_info(fs_type);
+	int ret;
+
+	ret = info->ln(fname, target);
+
+	if (ret < 0) {
+		printf("** Unable to create link %s -> %s **\n", fname, target);
+		ret = -1;
+	}
 	fs_close();
 
 	return ret;
@@ -671,6 +712,10 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	else
 		pos = 0;
 
+#ifdef CONFIG_CMD_BOOTEFI
+	efi_set_bootdev(argv[1], (argc > 2) ? argv[2] : "",
+			(argc > 4) ? argv[4] : "");
+#endif
 	time = get_timer(0);
 	ret = _fs_read(filename, addr, pos, bytes, 1, &len_read);
 	time = get_timer(time);
@@ -837,6 +882,21 @@ int do_mkdir(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 		printf("** Unable to create a directory \"%s\" **\n", argv[3]);
 		return 1;
 	}
+
+	return 0;
+}
+
+int do_ln(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+	  int fstype)
+{
+	if (argc != 5)
+		return CMD_RET_USAGE;
+
+	if (fs_set_blk_dev(argv[1], argv[2], fstype))
+		return 1;
+
+	if (fs_ln(argv[3], argv[4]))
+		return 1;
 
 	return 0;
 }

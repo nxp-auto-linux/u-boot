@@ -58,6 +58,7 @@
 
 #include <common.h>
 #include <edid.h>
+#include <env.h>
 #include <errno.h>
 #include <linux/ctype.h>
 
@@ -397,7 +398,7 @@ int video_edid_dtd_to_ctfb_res_modes(struct edid_detailed_timing *t,
 	    EDID_DETAILED_TIMING_VERTICAL_BLANKING(*t) == 0 ||
 	    EDID_DETAILED_TIMING_HSYNC_OFFSET(*t) == 0 ||
 	    EDID_DETAILED_TIMING_VSYNC_OFFSET(*t) == 0 ||
-	    /* 3d formats are not supported*/
+	    /* 3d formats are not supported */
 	    EDID_DETAILED_TIMING_FLAG_STEREO(*t) != 0)
 		return -EINVAL;
 

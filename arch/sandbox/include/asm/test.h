@@ -12,13 +12,16 @@
 #define SANDBOX_I2C_TEST_ADDR		0x59
 
 #define SANDBOX_PCI_VENDOR_ID		0x1234
-#define SANDBOX_PCI_DEVICE_ID		0x5678
+#define SANDBOX_PCI_SWAP_CASE_EMUL_ID	0x5678
+#define SANDBOX_PCI_PMC_EMUL_ID		0x5677
+#define SANDBOX_PCI_P2SB_EMUL_ID	0x5676
 #define SANDBOX_PCI_CLASS_CODE		PCI_CLASS_CODE_COMM
 #define SANDBOX_PCI_CLASS_SUB_CODE	PCI_CLASS_SUB_CODE_COMM_SERIAL
 
 #define PCI_CAP_ID_PM_OFFSET		0x50
 #define PCI_CAP_ID_EXP_OFFSET		0x60
 #define PCI_CAP_ID_MSIX_OFFSET		0x70
+#define PCI_CAP_ID_EA_OFFSET		0x80
 
 #define PCI_EXT_CAP_ID_ERR_OFFSET	0x100
 #define PCI_EXT_CAP_ID_VC_OFFSET	0x200
@@ -29,6 +32,22 @@
 #define SWAP_CASE_DRV_DATA		0x55aa
 
 #define SANDBOX_CLK_RATE		32768
+
+/* Macros used to test PCI EA capability structure */
+#define PCI_CAP_EA_BASE_LO0		0x00100000
+#define PCI_CAP_EA_BASE_LO1		0x00110000
+#define PCI_CAP_EA_BASE_LO2		0x00120000
+#define PCI_CAP_EA_BASE_LO4		0x00140000
+#define PCI_CAP_EA_BASE_HI2		0x00020000ULL
+#define PCI_CAP_EA_BASE_HI4		0x00040000ULL
+#define PCI_CAP_EA_SIZE_LO		0x0000ffff
+#define PCI_CAP_EA_SIZE_HI		0x00000010ULL
+#define PCI_EA_BAR2_MAGIC		0x72727272
+#define PCI_EA_BAR4_MAGIC		0x74747474
+
+enum {
+	SANDBOX_IRQN_PEND = 1,	/* Interrupt number for 'pending' test */
+};
 
 /* System controller driver data */
 enum {
@@ -59,13 +78,12 @@ void sandbox_i2c_eeprom_set_test_mode(struct udevice *dev,
 
 void sandbox_i2c_eeprom_set_offset_len(struct udevice *dev, int offset_len);
 
-/*
- * sandbox_timer_add_offset()
- *
- * Allow tests to add to the time reported through lib/time.c functions
- * offset: number of milliseconds to advance the system time
- */
-void sandbox_timer_add_offset(unsigned long offset);
+void sandbox_i2c_eeprom_set_chip_addr_offset_mask(struct udevice *dev,
+						  uint mask);
+
+uint sanbox_i2c_eeprom_get_prev_addr(struct udevice *dev);
+
+uint sanbox_i2c_eeprom_get_prev_offset(struct udevice *dev);
 
 /**
  * sandbox_i2c_rtc_set_offset() - set the time offset from system/base time
@@ -152,6 +170,13 @@ int sandbox_get_i2s_sum(struct udevice *dev);
 int sandbox_get_setup_called(struct udevice *dev);
 
 /**
+ * sandbox_get_sound_active() - Returns whether sound play is in progress
+ *
+ * @return true if active, false if not
+ */
+int sandbox_get_sound_active(struct udevice *dev);
+
+/**
  * sandbox_get_sound_sum() - Read back the sum of the sound data so far
  *
  * This data is provided to the sandbox driver by the sound play() method.
@@ -184,5 +209,39 @@ int sandbox_get_beep_frequency(struct udevice *dev);
  * @return 0 if not protected, 1 if protected
  */
 int sandbox_get_pch_spi_protect(struct udevice *dev);
+
+/**
+ * sandbox_get_pci_ep_irq_count() - Get the PCI EP IRQ count
+ *
+ * @dev: Device to check
+ * @return irq count
+ */
+int sandbox_get_pci_ep_irq_count(struct udevice *dev);
+
+/**
+ * sandbox_pci_read_bar() - Read the BAR value for a read_config operation
+ *
+ * This is used in PCI emulators to read a base address reset. This has special
+ * rules because when the register is set to 0xffffffff it can be used to
+ * discover the type and size of the BAR.
+ *
+ * @barval: Current value of the BAR
+ * @type: Type of BAR (PCI_BASE_ADDRESS_SPACE_IO or
+ *		PCI_BASE_ADDRESS_MEM_TYPE_32)
+ * @size: Size of BAR in bytes
+ * @return BAR value to return from emulator
+ */
+uint sandbox_pci_read_bar(u32 barval, int type, uint size);
+
+/**
+ * sandbox_set_enable_memio() - Enable readl/writel() for sandbox
+ *
+ * Normally these I/O functions do nothing with sandbox. Certain tests need them
+ * to work as for other architectures, so this function can be used to enable
+ * them.
+ *
+ * @enable: true to enable, false to disable
+ */
+void sandbox_set_enable_memio(bool enable);
 
 #endif

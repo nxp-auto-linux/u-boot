@@ -10,6 +10,7 @@
 
 #include <clk.h>
 #include <common.h>
+#include <cpu_func.h>
 #include <dm.h>
 #include <net.h>
 #include <netdev.h>
@@ -24,9 +25,9 @@
 #include <asm/system.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
+#include <dm/device_compat.h>
+#include <linux/err.h>
 #include <linux/errno.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Bit/mask specification */
 #define ZYNQ_GEM_PHYMNTNC_OP_MASK	0x40020000 /* operation mask bits */
@@ -174,6 +175,7 @@ struct emac_bd {
 #endif
 };
 
+/* Reduce amount of BUFs if you have limited amount of memory */
 #define RX_BUF 32
 /* Page table entries are set to 1MB, or multiples of 1MB
  * (not < 1MB). driver uses less bd's so use 1MB bdspace.
@@ -261,45 +263,6 @@ static int phywrite(struct zynq_gem_priv *priv, u32 phy_addr,
 			    ZYNQ_GEM_PHYMNTNC_OP_W_MASK, &data);
 }
 
-static int phy_detection(struct udevice *dev)
-{
-	int i;
-	u16 phyreg = 0;
-	struct zynq_gem_priv *priv = dev->priv;
-
-	if (priv->phyaddr != -1) {
-		phyread(priv, priv->phyaddr, PHY_DETECT_REG, &phyreg);
-		if ((phyreg != 0xFFFF) &&
-		    ((phyreg & PHY_DETECT_MASK) == PHY_DETECT_MASK)) {
-			/* Found a valid PHY address */
-			debug("Default phy address %d is valid\n",
-			      priv->phyaddr);
-			return 0;
-		} else {
-			debug("PHY address is not setup correctly %d\n",
-			      priv->phyaddr);
-			priv->phyaddr = -1;
-		}
-	}
-
-	debug("detecting phy address\n");
-	if (priv->phyaddr == -1) {
-		/* detect the PHY address */
-		for (i = 31; i >= 0; i--) {
-			phyread(priv, i, PHY_DETECT_REG, &phyreg);
-			if ((phyreg != 0xFFFF) &&
-			    ((phyreg & PHY_DETECT_MASK) == PHY_DETECT_MASK)) {
-				/* Found a valid PHY address */
-				priv->phyaddr = i;
-				debug("Found valid phy address, %d\n", i);
-				return 0;
-			}
-		}
-	}
-	printf("PHY is not detected\n");
-	return -1;
-}
-
 static int zynq_gem_setup_mac(struct udevice *dev)
 {
 	u32 i, macaddrlow, macaddrhigh;
@@ -345,27 +308,19 @@ static int zynq_phy_init(struct udevice *dev)
 	/* Enable only MDIO bus */
 	writel(ZYNQ_GEM_NWCTRL_MDEN_MASK, &regs->nwctrl);
 
-	if ((priv->interface != PHY_INTERFACE_MODE_SGMII) &&
-	    (priv->interface != PHY_INTERFACE_MODE_GMII)) {
-		ret = phy_detection(dev);
-		if (ret) {
-			printf("GEM PHY init failed\n");
-			return ret;
-		}
-	}
-
 	priv->phydev = phy_connect(priv->bus, priv->phyaddr, dev,
 				   priv->interface);
 	if (!priv->phydev)
 		return -ENODEV;
 
-	priv->phydev->supported &= supported | ADVERTISED_Pause |
-				  ADVERTISED_Asym_Pause;
 	if (priv->max_speed) {
 		ret = phy_set_supported(priv->phydev, priv->max_speed);
 		if (ret)
 			return ret;
 	}
+
+	priv->phydev->supported &= supported | ADVERTISED_Pause |
+				  ADVERTISED_Asym_Pause;
 
 	priv->phydev->advertising = priv->phydev->supported;
 	priv->phydev->node = priv->phy_of_node;
@@ -512,7 +467,6 @@ static int zynq_gem_init(struct udevice *dev)
 		break;
 	}
 
-#if !defined(CONFIG_ARCH_VERSAL)
 	ret = clk_set_rate(&priv->clk, clk_rate);
 	if (IS_ERR_VALUE(ret) && ret != (unsigned long)-ENOSYS) {
 		dev_err(dev, "failed to set tx clock rate\n");
@@ -524,9 +478,6 @@ static int zynq_gem_init(struct udevice *dev)
 		dev_err(dev, "failed to enable tx clock\n");
 		return ret;
 	}
-#else
-	debug("requested clk_rate %ld\n", clk_rate);
-#endif
 
 	setbits_le32(&regs->nwctrl, ZYNQ_GEM_NWCTRL_RXEN_MASK |
 					ZYNQ_GEM_NWCTRL_TXEN_MASK);
@@ -704,14 +655,16 @@ static int zynq_gem_probe(struct udevice *dev)
 		return -ENOMEM;
 
 	memset(priv->rxbuffers, 0, RX_BUF * PKTSIZE_ALIGN);
-	u32 addr = (ulong)priv->rxbuffers;
+	ulong addr = (ulong)priv->rxbuffers;
 	flush_dcache_range(addr, addr + roundup(RX_BUF * PKTSIZE_ALIGN, ARCH_DMA_MINALIGN));
 	barrier();
 
 	/* Align bd_space to MMU_SECTION_SHIFT */
 	bd_space = memalign(1 << MMU_SECTION_SHIFT, BD_SPACE);
-	if (!bd_space)
-		return -ENOMEM;
+	if (!bd_space) {
+		ret = -ENOMEM;
+		goto err1;
+	}
 
 	mmu_set_region_dcache_behaviour((phys_addr_t)bd_space,
 					BD_SPACE, DCACHE_OFF);
@@ -723,7 +676,7 @@ static int zynq_gem_probe(struct udevice *dev)
 	ret = clk_get_by_name(dev, "tx_clk", &priv->clk);
 	if (ret < 0) {
 		dev_err(dev, "failed to get clock\n");
-		return -EINVAL;
+		goto err1;
 	}
 
 	priv->bus = mdio_alloc();
@@ -733,9 +686,19 @@ static int zynq_gem_probe(struct udevice *dev)
 
 	ret = mdio_register_seq(priv->bus, dev->seq);
 	if (ret)
-		return ret;
+		goto err2;
 
-	return zynq_phy_init(dev);
+	ret = zynq_phy_init(dev);
+	if (ret)
+		goto err2;
+
+	return ret;
+
+err2:
+	free(priv->rxbuffers);
+err1:
+	free(priv->tx_bd);
+	return ret;
 }
 
 static int zynq_gem_remove(struct udevice *dev)
@@ -800,6 +763,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 }
 
 static const struct udevice_id zynq_gem_ids[] = {
+	{ .compatible = "cdns,versal-gem" },
 	{ .compatible = "cdns,zynqmp-gem" },
 	{ .compatible = "cdns,zynq-gem" },
 	{ .compatible = "cdns,gem" },

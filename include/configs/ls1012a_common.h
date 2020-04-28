@@ -38,13 +38,11 @@
 
 /*SPI device */
 #if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_TFABOOT)
-#define CONFIG_SYS_QE_FW_IN_SPIFLASH
 #define CONFIG_SYS_FMAN_FW_ADDR		0x400d0000
 #define CONFIG_SPI_FLASH_SPANSION
 #define CONFIG_FSL_SPI_INTERFACE
 #define CONFIG_SF_DATAFLASH
 
-#define CONFIG_FSL_QSPI
 #define QSPI0_AMBA_BASE		0x40000000
 #define CONFIG_SPI_FLASH_SPANSION
 
@@ -55,14 +53,6 @@
  * Environment
  */
 #define CONFIG_ENV_OVERWRITE
-
-#define CONFIG_ENV_SIZE			0x40000          /* 256KB */
-#ifdef CONFIG_TFABOOT
-#define CONFIG_ENV_OFFSET		0x500000        /* 5MB */
-#else
-#define CONFIG_ENV_OFFSET		0x300000        /* 3MB */
-#endif
-#define CONFIG_ENV_SECT_SIZE		0x40000
 #endif
 
 /* SATA */
@@ -76,7 +66,12 @@
 						CONFIG_SYS_SCSI_MAX_LUN)
 
 /* I2C */
+#ifndef CONFIG_DM_I2C
 #define CONFIG_SYS_I2C
+#else
+#define CONFIG_I2C_SET_DEFAULT_BUS_NUM
+#define CONFIG_I2C_DEFAULT_BUS_NUMBER 0
+#endif
 
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE     1

@@ -6,10 +6,19 @@
 
 #include <common.h>
 #include <errno.h>
+#include <board.h>
 #include <fpga.h>
+#include <gzip.h>
 #include <image.h>
-#include <linux/libfdt.h>
+#include <malloc.h>
 #include <spl.h>
+#include <linux/libfdt.h>
+
+DECLARE_GLOBAL_DATA_PTR;
+
+#ifndef CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ
+#define CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ (64 * 1024)
+#endif
 
 #ifndef CONFIG_SYS_BOOTM_LEN
 #define CONFIG_SYS_BOOTM_LEN	(64 << 20)
@@ -22,6 +31,29 @@ __weak void board_spl_fit_post_load(ulong load_addr, size_t length)
 __weak ulong board_spl_fit_size_align(ulong size)
 {
 	return size;
+}
+
+static int find_node_from_desc(const void *fit, int node, const char *str)
+{
+	int child;
+
+	if (node < 0)
+		return -EINVAL;
+
+	/* iterate the FIT nodes and find a matching description */
+	for (child = fdt_first_subnode(fit, node); child >= 0;
+	     child = fdt_next_subnode(fit, child)) {
+		int len;
+		const char *desc = fdt_getprop(fit, child, "description", &len);
+
+		if (!desc)
+			continue;
+
+		if (!strcmp(desc, str))
+			return child;
+	}
+
+	return -ENOENT;
 }
 
 /**
@@ -38,12 +70,14 @@ __weak ulong board_spl_fit_size_align(ulong size)
  */
 static int spl_fit_get_image_name(const void *fit, int images,
 				  const char *type, int index,
-				  char **outname)
+				  const char **outname)
 {
+	struct udevice *board;
 	const char *name, *str;
 	__maybe_unused int node;
 	int conf_node;
 	int len, i;
+	bool found = true;
 
 	conf_node = fit_find_config_node(fit);
 	if (conf_node < 0) {
@@ -69,12 +103,45 @@ static int spl_fit_get_image_name(const void *fit, int images,
 	for (i = 0; i < index; i++) {
 		str = strchr(str, '\0') + 1;
 		if (!str || (str - name >= len)) {
-			debug("no string for index %d\n", index);
-			return -E2BIG;
+			found = false;
+			break;
 		}
 	}
 
-	*outname = (char *)str;
+	if (!found && !board_get(&board)) {
+		int rc;
+		/*
+		 * no string in the property for this index. Check if the board
+		 * level code can supply one.
+		 */
+		rc = board_get_fit_loadable(board, index - i - 1, type, &str);
+		if (rc && rc != -ENOENT)
+			return rc;
+
+		if (!rc) {
+			/*
+			 * The board provided a name for a loadable.
+			 * Try to match it against the description properties
+			 * first. If no matching node is found, use it as a
+			 * node name.
+			 */
+			int node;
+			int images = fdt_path_offset(fit, FIT_IMAGES_PATH);
+
+			node = find_node_from_desc(fit, images, str);
+			if (node > 0)
+				str = fdt_get_name(fit, node, NULL);
+
+			found = true;
+		}
+	}
+
+	if (!found) {
+		debug("no string for index %d\n", index);
+		return -E2BIG;
+	}
+
+	*outname = str;
 	return 0;
 }
 
@@ -93,7 +160,7 @@ static int spl_fit_get_image_name(const void *fit, int images,
 static int spl_fit_get_image_node(const void *fit, int images,
 				  const char *type, int index)
 {
-	char *str;
+	const char *str;
 	int err;
 	int node;
 
@@ -105,7 +172,7 @@ static int spl_fit_get_image_node(const void *fit, int images,
 
 	node = fdt_subnode_offset(fit, images, str);
 	if (node < 0) {
-		debug("cannot find image node '%s': %d\n", str, node);
+		pr_err("cannot find image node '%s': %d\n", str, node);
 		return -EINVAL;
 	}
 
@@ -192,11 +259,9 @@ static int spl_load_fit_image(struct spl_load_info *info, ulong sector,
 			debug("%s ", genimg_get_type_name(type));
 	}
 
-	if (IS_ENABLED(CONFIG_SPL_OS_BOOT) && IS_ENABLED(CONFIG_SPL_GZIP)) {
-		if (fit_image_get_comp(fit, node, &image_comp))
-			puts("Cannot get image compression format.\n");
-		else
-			debug("%s ", genimg_get_comp_name(image_comp));
+	if (IS_ENABLED(CONFIG_SPL_GZIP)) {
+		fit_image_get_comp(fit, node, &image_comp);
+		debug("%s ", genimg_get_comp_name(image_comp));
 	}
 
 	if (fit_image_get_load(fit, node, &load_addr))
@@ -278,31 +343,97 @@ static int spl_fit_append_fdt(struct spl_image_info *spl_image,
 			      void *fit, int images, ulong base_offset)
 {
 	struct spl_image_info image_info;
-	int node, ret;
-
-	/* Figure out which device tree the board wants to use */
-	node = spl_fit_get_image_node(fit, images, FIT_FDT_PROP, 0);
-	if (node < 0) {
-		debug("%s: cannot find FDT node\n", __func__);
-		return node;
-	}
+	int node, ret = 0, index = 0;
 
 	/*
-	 * Read the device tree and place it after the image.
-	 * Align the destination address to ARCH_DMA_MINALIGN.
+	 * Use the address following the image as target address for the
+	 * device tree.
 	 */
 	image_info.load_addr = spl_image->load_addr + spl_image->size;
-	ret = spl_load_fit_image(info, sector, fit, base_offset, node,
-				 &image_info);
 
-	if (ret < 0)
-		return ret;
+	/* Figure out which device tree the board wants to use */
+	node = spl_fit_get_image_node(fit, images, FIT_FDT_PROP, index++);
+	if (node < 0) {
+		debug("%s: cannot find FDT node\n", __func__);
+
+		/*
+		 * U-Boot did not find a device tree inside the FIT image. Use
+		 * the U-Boot device tree instead.
+		 */
+		if (gd->fdt_blob)
+			memcpy((void *)image_info.load_addr, gd->fdt_blob,
+			       fdt_totalsize(gd->fdt_blob));
+		else
+			return node;
+	} else {
+		ret = spl_load_fit_image(info, sector, fit, base_offset, node,
+					 &image_info);
+		if (ret < 0)
+			return ret;
+	}
 
 	/* Make the load-address of the FDT available for the SPL framework */
 	spl_image->fdt_addr = (void *)image_info.load_addr;
 #if !CONFIG_IS_ENABLED(FIT_IMAGE_TINY)
+	if (CONFIG_IS_ENABLED(LOAD_FIT_APPLY_OVERLAY)) {
+		void *tmpbuffer = NULL;
+
+		for (; ; index++) {
+			node = spl_fit_get_image_node(fit, images, FIT_FDT_PROP,
+						      index);
+			if (node == -E2BIG) {
+				debug("%s: No additional FDT node\n", __func__);
+				break;
+			} else if (node < 0) {
+				debug("%s: unable to find FDT node %d\n",
+				      __func__, index);
+				continue;
+			}
+
+			if (!tmpbuffer) {
+				/*
+				 * allocate memory to store the DT overlay
+				 * before it is applied. It may not be used
+				 * depending on how the overlay is stored, so
+				 * don't fail yet if the allocation failed.
+				 */
+				tmpbuffer = malloc(CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ);
+				if (!tmpbuffer)
+					debug("%s: unable to allocate space for overlays\n",
+					      __func__);
+			}
+			image_info.load_addr = (ulong)tmpbuffer;
+			ret = spl_load_fit_image(info, sector, fit, base_offset,
+						 node, &image_info);
+			if (ret < 0)
+				break;
+
+			/* Make room in FDT for changes from the overlay */
+			ret = fdt_increase_size(spl_image->fdt_addr,
+						image_info.size);
+			if (ret < 0)
+				break;
+
+			ret = fdt_overlay_apply_verbose(spl_image->fdt_addr,
+							(void *)image_info.load_addr);
+			if (ret) {
+				pr_err("failed to apply DT overlay %s\n",
+				       fit_get_name(fit, node, NULL));
+				break;
+			}
+
+			debug("%s: DT overlay %s applied\n", __func__,
+			      fit_get_name(fit, node, NULL));
+		}
+		if (tmpbuffer)
+			free(tmpbuffer);
+		if (ret)
+			return ret;
+	}
 	/* Try to make space, so we can inject details on the loadables */
 	ret = fdt_shrink_to_minimum(spl_image->fdt_addr, 8192);
+	if (ret < 0)
+		return ret;
 #endif
 
 	return ret;
@@ -313,7 +444,7 @@ static int spl_fit_record_loadable(const void *fit, int images, int index,
 {
 	int ret = 0;
 #if !CONFIG_IS_ENABLED(FIT_IMAGE_TINY)
-	char *name;
+	const char *name;
 	int node;
 
 	ret = spl_fit_get_image_name(fit, images, "loadables",
@@ -333,11 +464,21 @@ static int spl_fit_record_loadable(const void *fit, int images, int index,
 
 static int spl_fit_image_get_os(const void *fit, int noffset, uint8_t *os)
 {
-#if CONFIG_IS_ENABLED(FIT_IMAGE_TINY)
+#if CONFIG_IS_ENABLED(FIT_IMAGE_TINY) && !defined(CONFIG_SPL_OS_BOOT)
 	return -ENOTSUPP;
 #else
 	return fit_image_get_os(fit, noffset, os);
 #endif
+}
+
+/*
+ * Weak default function to allow customizing SPL fit loading for load-only
+ * use cases by allowing to skip the parsing/processing of the FIT contents
+ * (so that this can be done separately in a more customized fashion)
+ */
+__weak bool spl_load_simple_fit_skip_processing(void)
+{
+	return false;
 }
 
 int spl_load_simple_fit(struct spl_image_info *spl_image,
@@ -351,6 +492,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	int images, ret;
 	int base_offset, hsize, align_len = ARCH_DMA_MINALIGN - 1;
 	int index = 0;
+	int firmware_node;
 
 	/*
 	 * For FIT with external data, figure out where the external images
@@ -388,6 +530,10 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 
 	if (count == 0)
 		return -EIO;
+
+	/* skip further processing if requested to enable load-only use cases */
+	if (spl_load_simple_fit_skip_processing())
+		return 0;
 
 	/* find the node holding the images information */
 	images = fdt_path_offset(fit, FIT_IMAGES_PATH);
@@ -476,6 +622,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 		spl_fit_append_fdt(spl_image, info, sector, fit,
 				   images, base_offset);
 
+	firmware_node = node;
 	/* Now check if there are more images for us to load */
 	for (; ; index++) {
 		uint8_t os_type = IH_OS_INVALID;
@@ -484,6 +631,14 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 		if (node < 0)
 			break;
 
+		/*
+		 * if the firmware is also a loadable, skip it because
+		 * it already has been loaded. This is typically the case with
+		 * u-boot.img generated by mkimage.
+		 */
+		if (firmware_node == node)
+			continue;
+
 		ret = spl_load_fit_image(info, sector, fit, base_offset, node,
 					 &image_info);
 		if (ret < 0)
@@ -491,10 +646,6 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 
 		if (!spl_fit_image_get_os(fit, node, &os_type))
 			debug("Loadable is %s\n", genimg_get_os_name(os_type));
-#if CONFIG_IS_ENABLED(FIT_IMAGE_TINY)
-		else
-			os_type = IH_OS_U_BOOT;
-#endif
 
 		if (os_type == IH_OS_U_BOOT) {
 			spl_fit_append_fdt(&image_info, info, sector,
@@ -527,7 +678,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 
 	spl_image->flags |= SPL_FIT_FOUND;
 
-#ifdef CONFIG_SECURE_BOOT
+#ifdef CONFIG_IMX_HAB
 	board_spl_fit_post_load((ulong)fit, size);
 #endif
 

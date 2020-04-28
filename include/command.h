@@ -10,6 +10,7 @@
 #ifndef __COMMAND_H
 #define __COMMAND_H
 
+#include <env.h>
 #include <linker_lists.h>
 
 #ifndef NULL
@@ -109,7 +110,8 @@ int cmd_process_error(cmd_tbl_t *cmdtp, int err);
 #if defined(CONFIG_CMD_MEMORY) || \
 	defined(CONFIG_CMD_I2C) || \
 	defined(CONFIG_CMD_ITEST) || \
-	defined(CONFIG_CMD_PCI)
+	defined(CONFIG_CMD_PCI) || \
+	defined(CONFIG_CMD_SETEXPR)
 #define CMD_DATA_SIZE
 extern int cmd_get_data_size(char* arg, int default_size);
 #endif
@@ -197,6 +199,22 @@ void fixup_cmdtable(cmd_tbl_t *cmdtp, int size);
  * @return 0 if OK, 1 for error
  */
 int board_run_command(const char *cmdline);
+
+int run_command(const char *cmd, int flag);
+int run_command_repeatable(const char *cmd, int flag);
+
+/**
+ * Run a list of commands separated by ; or even \0
+ *
+ * Note that if 'len' is not -1, then the command does not need to be nul
+ * terminated, Memory will be allocated for the command in that case.
+ *
+ * @param cmd	List of commands to run, each separated bu semicolon
+ * @param len	Length of commands excluding terminator if known (-1 if not)
+ * @param flag	Execution flags (CMD_FLAG_...)
+ * @return 0 on success, or != 0 on error.
+ */
+int run_command_list(const char *cmd, int len, int flag);
 #endif	/* __ASSEMBLY__ */
 
 /*

@@ -16,6 +16,7 @@
 #include <dm/uclass.h>
 #include <dm/uclass-internal.h>
 #include <dm/util.h>
+#include <power-domain.h>
 
 int device_chld_unbind(struct udevice *dev, struct driver *drv)
 {
@@ -139,6 +140,7 @@ void device_free(struct udevice *dev)
 			dev->parent_priv = NULL;
 		}
 	}
+	dev->flags &= ~DM_FLAG_PLATDATA_VALID;
 
 	devres_release_probe(dev);
 }
@@ -191,6 +193,11 @@ int device_remove(struct udevice *dev, uint flags)
 				__func__, dev->name);
 		}
 	}
+
+	if (!(drv->flags &
+	      (DM_FLAG_DEFAULT_PD_CTRL_OFF | DM_FLAG_REMOVE_WITH_PD_ON)) &&
+	    dev != gd->cur_serial_dev)
+		dev_power_domain_off(dev);
 
 	if (flags_remove(flags, drv->flags)) {
 		device_free(dev);

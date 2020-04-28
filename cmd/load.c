@@ -10,9 +10,14 @@
 #include <common.h>
 #include <command.h>
 #include <console.h>
+#include <cpu_func.h>
+#include <env.h>
+#include <flash.h>
+#include <image.h>
 #include <s_record.h>
 #include <net.h>
 #include <exports.h>
+#include <serial.h>
 #include <xyzModem.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -105,7 +110,7 @@ static int do_load_serial(cmd_tbl_t *cmdtp, int flag, int argc,
 		rcode = 1;
 	} else {
 		printf("## Start Addr      = 0x%08lX\n", addr);
-		load_addr = addr;
+		image_load_addr = addr;
 	}
 
 #ifdef	CONFIG_SYS_LOADS_BAUD_CHANGE
@@ -481,12 +486,12 @@ static int do_load_serial_bin(cmd_tbl_t *cmdtp, int flag, int argc,
 		addr = load_serial_bin(offset);
 
 		if (addr == ~0) {
-			load_addr = 0;
+			image_load_addr = 0;
 			printf("## Binary (kermit) download aborted\n");
 			rcode = 1;
 		} else {
 			printf("## Start Addr      = 0x%08lX\n", addr);
-			load_addr = addr;
+			image_load_addr = addr;
 		}
 	}
 	if (load_baudrate != current_baudrate) {
@@ -977,7 +982,7 @@ static ulong load_serial_ymodem(ulong offset, int mode)
 				rc = flash_write((char *) ymodemBuf,
 						  store_addr, res);
 				if (rc != 0) {
-					flash_perror (rc);
+					flash_perror(rc);
 					return (~0);
 				}
 			} else

@@ -7,6 +7,7 @@
 #include <clk.h>
 #include <dm.h>
 #include <i2c.h>
+#include <malloc.h>
 #include <reset.h>
 
 #include <dm/device.h>
@@ -115,17 +116,6 @@ struct stm32_i2c_regs {
 
 #define STM32_NSEC_PER_SEC			1000000000L
 
-#define STANDARD_RATE				100000
-#define FAST_RATE				400000
-#define FAST_PLUS_RATE				1000000
-
-enum stm32_i2c_speed {
-	STM32_I2C_SPEED_STANDARD, /* 100 kHz */
-	STM32_I2C_SPEED_FAST, /* 400 kHz */
-	STM32_I2C_SPEED_FAST_PLUS, /* 1 MHz */
-	STM32_I2C_SPEED_END,
-};
-
 /**
  * struct stm32_i2c_spec - private i2c specification timing
  * @rate: I2C bus speed (Hz)
@@ -164,7 +154,7 @@ struct stm32_i2c_spec {
  * @analog_filter: Analog filter delay (On/Off)
  */
 struct stm32_i2c_setup {
-	enum stm32_i2c_speed speed;
+	enum i2c_speed_mode speed;
 	u32 speed_freq;
 	u32 clock_src;
 	u32 rise_time;
@@ -198,8 +188,8 @@ struct stm32_i2c_priv {
 };
 
 static const struct stm32_i2c_spec i2c_specs[] = {
-	[STM32_I2C_SPEED_STANDARD] = {
-		.rate = STANDARD_RATE,
+	[IC_SPEED_MODE_STANDARD] = {
+		.rate = I2C_SPEED_STANDARD_RATE,
 		.rate_min = 8000,
 		.rate_max = 120000,
 		.fall_max = 300,
@@ -210,8 +200,8 @@ static const struct stm32_i2c_spec i2c_specs[] = {
 		.l_min = 4700,
 		.h_min = 4000,
 	},
-	[STM32_I2C_SPEED_FAST] = {
-		.rate = FAST_RATE,
+	[IC_SPEED_MODE_FAST] = {
+		.rate = I2C_SPEED_FAST_RATE,
 		.rate_min = 320000,
 		.rate_max = 480000,
 		.fall_max = 300,
@@ -222,8 +212,8 @@ static const struct stm32_i2c_spec i2c_specs[] = {
 		.l_min = 1300,
 		.h_min = 600,
 	},
-	[STM32_I2C_SPEED_FAST_PLUS] = {
-		.rate = FAST_PLUS_RATE,
+	[IC_SPEED_MODE_FAST_PLUS] = {
+		.rate = I2C_SPEED_FAST_PLUS_RATE,
 		.rate_min = 800000,
 		.rate_max = 1200000,
 		.fall_max = 100,
@@ -500,7 +490,7 @@ static int stm32_i2c_compute_solutions(struct stm32_i2c_setup *setup,
 	af_delay_max = setup->analog_filter ?
 		       STM32_I2C_ANALOG_FILTER_DELAY_MAX : 0;
 
-	sdadel_min = setup->fall_time - i2c_specs[setup->speed].hddat_min -
+	sdadel_min = i2c_specs[setup->speed].hddat_min + setup->fall_time -
 		     af_delay_min - (setup->dnf + 3) * i2cclk;
 
 	sdadel_max = i2c_specs[setup->speed].vddat_max - setup->rise_time -
@@ -519,13 +509,13 @@ static int stm32_i2c_compute_solutions(struct stm32_i2c_setup *setup,
 	/* Compute possible values for PRESC, SCLDEL and SDADEL */
 	for (p = 0; p < STM32_PRESC_MAX; p++) {
 		for (l = 0; l < STM32_SCLDEL_MAX; l++) {
-			u32 scldel = (l + 1) * (p + 1) * i2cclk;
+			int scldel = (l + 1) * (p + 1) * i2cclk;
 
 			if (scldel < scldel_min)
 				continue;
 
 			for (a = 0; a < STM32_SDADEL_MAX; a++) {
-				u32 sdadel = (a * (p + 1) + 1) * i2cclk;
+				int sdadel = (a * (p + 1) + 1) * i2cclk;
 
 				if (((sdadel >= sdadel_min) &&
 				     (sdadel <= sdadel_max)) &&
@@ -540,8 +530,12 @@ static int stm32_i2c_compute_solutions(struct stm32_i2c_setup *setup,
 					p_prev = p;
 
 					list_add_tail(&v->node, solutions);
+					break;
 				}
 			}
+
+			if (p_prev == p)
+				break;
 		}
 	}
 
@@ -609,10 +603,12 @@ static int stm32_i2c_choose_solution(struct stm32_i2c_setup *setup,
 				if ((tscl >= clk_min) && (tscl <= clk_max) &&
 				    (tscl_h >= i2c_specs[setup->speed].h_min) &&
 				    (i2cclk < tscl_h)) {
-					int clk_error = tscl - i2cbus;
+					u32 clk_error;
 
-					if (clk_error < 0)
-						clk_error = -clk_error;
+					if (tscl > i2cbus)
+						clk_error = tscl - i2cbus;
+					else
+						clk_error = i2cbus - tscl;
 
 					if (clk_error < clk_error_prev) {
 						clk_error_prev = clk_error;
@@ -642,9 +638,9 @@ static int stm32_i2c_compute_timing(struct stm32_i2c_priv *i2c_priv,
 	struct list_head solutions;
 	int ret;
 
-	if (setup->speed >= STM32_I2C_SPEED_END) {
+	if (setup->speed >= ARRAY_SIZE(i2c_specs)) {
 		pr_err("%s: speed out of bound {%d/%d}\n", __func__,
-		       setup->speed, STM32_I2C_SPEED_END - 1);
+		       setup->speed, ARRAY_SIZE(i2c_specs) - 1);
 		return -EINVAL;
 	}
 
@@ -713,7 +709,7 @@ static int stm32_i2c_setup_timing(struct stm32_i2c_priv *i2c_priv,
 		if (ret) {
 			debug("%s: failed to compute I2C timings.\n",
 			      __func__);
-			if (i2c_priv->speed > STM32_I2C_SPEED_STANDARD) {
+			if (i2c_priv->speed > IC_SPEED_MODE_STANDARD) {
 				i2c_priv->speed--;
 				setup->speed = i2c_priv->speed;
 				setup->speed_freq =
@@ -778,14 +774,14 @@ static int stm32_i2c_set_bus_speed(struct udevice *bus, unsigned int speed)
 	struct stm32_i2c_priv *i2c_priv = dev_get_priv(bus);
 
 	switch (speed) {
-	case STANDARD_RATE:
-		i2c_priv->speed = STM32_I2C_SPEED_STANDARD;
+	case I2C_SPEED_STANDARD_RATE:
+		i2c_priv->speed = IC_SPEED_MODE_STANDARD;
 		break;
-	case FAST_RATE:
-		i2c_priv->speed = STM32_I2C_SPEED_FAST;
+	case I2C_SPEED_FAST_RATE:
+		i2c_priv->speed = IC_SPEED_MODE_FAST;
 		break;
-	case FAST_PLUS_RATE:
-		i2c_priv->speed = STM32_I2C_SPEED_FAST_PLUS;
+	case I2C_SPEED_FAST_PLUS_RATE:
+		i2c_priv->speed = IC_SPEED_MODE_FAST_PLUS;
 		break;
 	default:
 		debug("%s: Speed %d not supported\n", __func__, speed);

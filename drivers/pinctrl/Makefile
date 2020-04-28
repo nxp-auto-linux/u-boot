@@ -9,6 +9,8 @@ obj-y					+= nxp/
 obj-$(CONFIG_$(SPL_)PINCTRL_ROCKCHIP)	+= rockchip/
 obj-$(CONFIG_ARCH_ASPEED) += aspeed/
 obj-$(CONFIG_ARCH_ATH79) += ath79/
+obj-$(CONFIG_PINCTRL_INTEL) += intel/
+obj-$(CONFIG_ARCH_MTMIPS) += mtmips/
 obj-$(CONFIG_ARCH_RMOBILE) += renesas/
 obj-$(CONFIG_PINCTRL_SANDBOX)	+= pinctrl-sandbox.o
 
@@ -22,4 +24,5 @@ obj-$(CONFIG_ARCH_MVEBU)	+= mvebu/
 obj-$(CONFIG_PINCTRL_SINGLE)	+= pinctrl-single.o
 obj-$(CONFIG_PINCTRL_STI)	+= pinctrl-sti.o
 obj-$(CONFIG_PINCTRL_STM32)	+= pinctrl_stm32.o
+obj-$(CONFIG_$(SPL_)PINCTRL_STMFX)	+= pinctrl-stmfx.o
 obj-y				+= broadcom/

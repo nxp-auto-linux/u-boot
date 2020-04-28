@@ -6,6 +6,7 @@
 #ifndef USE_HOSTCC
 #include <common.h>
 #include <fdtdec.h>
+#include <malloc.h>
 #include <asm/types.h>
 #include <asm/byteorder.h>
 #include <linux/errno.h>
@@ -437,8 +438,7 @@ int rsa_verify(struct image_sign_info *info,
 	if (info->required_keynode != -1) {
 		ret = rsa_verify_with_keynode(info, hash, sig, sig_len,
 			info->required_keynode);
-		if (!ret)
-			return ret;
+		return ret;
 	}
 
 	/* Look for a key that matches our hint */

@@ -9,6 +9,7 @@
  */
 
 #ifndef __UBOOT__
+#include <dm/devres.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/ptrace.h>
@@ -76,8 +77,6 @@ static struct class mtd_class = {
 	.resume = mtd_cls_resume,
 };
 #else
-struct mtd_info *mtd_table[MAX_MTD_DEVICES];
-
 #define MAX_IDR_ID	64
 
 struct idr_layer {
@@ -1051,13 +1050,13 @@ static int mtd_check_oob_ops(struct mtd_info *mtd, loff_t offs,
 		return -EINVAL;
 
 	if (ops->ooblen) {
-		u64 maxooblen;
+		size_t maxooblen;
 
 		if (ops->ooboffs >= mtd_oobavail(mtd, ops))
 			return -EINVAL;
 
-		maxooblen = ((mtd_div_by_ws(mtd->size, mtd) -
-			      mtd_div_by_ws(offs, mtd)) *
+		maxooblen = ((size_t)(mtd_div_by_ws(mtd->size, mtd) -
+				      mtd_div_by_ws(offs, mtd)) *
 			     mtd_oobavail(mtd, ops)) - ops->ooboffs;
 		if (ops->ooblen > maxooblen)
 			return -EINVAL;
@@ -1181,10 +1180,10 @@ int mtd_ooblayout_free(struct mtd_info *mtd, int section,
 	if (!mtd || section < 0)
 		return -EINVAL;
 
-	if (!mtd->ooblayout || !mtd->ooblayout->free)
+	if (!mtd->ooblayout || !mtd->ooblayout->rfree)
 		return -ENOTSUPP;
 
-	return mtd->ooblayout->free(mtd, section, oobfree);
+	return mtd->ooblayout->rfree(mtd, section, oobfree);
 }
 EXPORT_SYMBOL_GPL(mtd_ooblayout_free);
 

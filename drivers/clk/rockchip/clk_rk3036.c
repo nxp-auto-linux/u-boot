@@ -7,11 +7,12 @@
 #include <clk-uclass.h>
 #include <dm.h>
 #include <errno.h>
+#include <malloc.h>
 #include <syscon.h>
 #include <asm/io.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/cru_rk3036.h>
-#include <asm/arch/hardware.h>
+#include <asm/arch-rockchip/clock.h>
+#include <asm/arch-rockchip/cru_rk3036.h>
+#include <asm/arch-rockchip/hardware.h>
 #include <dm/lists.h>
 #include <dt-bindings/clock/rk3036-cru.h>
 #include <linux/log2.h>
@@ -352,7 +353,7 @@ static int rk3036_clk_bind(struct udevice *dev)
 		sys_child->priv = priv;
 	}
 
-#if CONFIG_IS_ENABLED(CONFIG_RESET_ROCKCHIP)
+#if CONFIG_IS_ENABLED(RESET_ROCKCHIP)
 	ret = offsetof(struct rk3036_cru, cru_softrst_con[0]);
 	ret = rockchip_reset_bind(dev, ret, 9);
 	if (ret)

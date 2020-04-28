@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2018 NXP
+ * Copyright 2018,2020 NXP
  */
 
 #ifndef __LX2_RDB_H
@@ -22,7 +22,9 @@
 #define QIXIS_RCFG_CTL_WATCHDOG_ENBLE	0x08
 #define QIXIS_LBMAP_MASK		0x0f
 #define QIXIS_LBMAP_SD
+#define QIXIS_LBMAP_EMMC
 #define QIXIS_RCW_SRC_SD           0x08
+#define QIXIS_RCW_SRC_EMMC         0x09
 #define NON_EXTENDED_DUTCFG
 
 /* VID */
@@ -60,6 +62,7 @@
 
 #define AQR107_PHY_ADDR1	0x04
 #define AQR107_PHY_ADDR2	0x05
+#define AQR107_IRQ_MASK		0x0C
 
 #define CORTINA_NO_FW_UPLOAD
 #define CORTINA_PHY_ADDR1	0x0
@@ -88,7 +91,8 @@
 /* Initial environment variables */
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	EXTRA_ENV_SETTINGS			\
-	"lx2160ardb_vdd_mv=800\0"		\
+	"boot_scripts=lx2160ardb_boot.scr\0"	\
+	"boot_script_hdr=hdr_lx2160ardb_bs.out\0"	\
 	"BOARD=lx2160ardb\0"			\
 	"xspi_bootcmd=echo Trying load from flexspi..;"		\
 		"sf probe 0:0 && sf read $load_addr "		\
@@ -98,6 +102,13 @@
 		" bootm $load_addr#$BOARD\0"			\
 	"sd_bootcmd=echo Trying load from sd card..;"		\
 		"mmcinfo; mmc read $load_addr "			\
+		"$kernel_addr_sd $kernel_size_sd ;"		\
+		"env exists secureboot && mmc read $kernelheader_addr_r "\
+		"$kernelhdr_addr_sd $kernelhdr_size_sd "	\
+		" && esbc_validate ${kernelheader_addr_r};"	\
+		"bootm $load_addr#$BOARD\0"			\
+	"sd2_bootcmd=echo Trying load from emmc card..;"	\
+		"mmc dev 1; mmcinfo; mmc read $load_addr "	\
 		"$kernel_addr_sd $kernel_size_sd ;"		\
 		"env exists secureboot && mmc read $kernelheader_addr_r "\
 		"$kernelhdr_addr_sd $kernelhdr_size_sd "	\

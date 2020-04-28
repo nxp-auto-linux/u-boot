@@ -4,6 +4,7 @@
  * Author: Fabio Estevam <fabio.estevam@nxp.com>
  */
 
+#include <init.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/mx7-pins.h>
@@ -13,8 +14,8 @@
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
 #include <common.h>
+#include <env.h>
 #include <asm/arch/crm_regs.h>
-#include <usb.h>
 #include <netdev.h>
 #include <power/pmic.h>
 #include <power/pfuze3000_pmic.h>
@@ -66,7 +67,7 @@ int power_init_board(void)
 	struct udevice *dev;
 	int ret, dev_id, rev_id;
 
-	ret = pmic_get("pfuze3000", &dev);
+	ret = pmic_get("pfuze3000@8", &dev);
 	if (ret == -ENODEV)
 		return 0;
 	if (ret != 0)
@@ -128,11 +129,6 @@ int checkboard(void)
 	return 0;
 }
 
-int board_usb_phy_mode(int port)
-{
-	return USB_INIT_DEVICE;
-}
-
 int board_late_init(void)
 {
 	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
@@ -151,7 +147,7 @@ int board_late_init(void)
 	 */
 	clrsetbits_le16(&wdog->wcr, 0, 0x10);
 
-#ifdef CONFIG_SECURE_BOOT
+#ifdef CONFIG_IMX_HAB
 	/* Determine HAB state */
 	env_set_ulong(HAB_ENABLED_ENVNAME, imx_hab_is_enabled());
 #else

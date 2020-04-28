@@ -271,6 +271,17 @@ static int twsi_wait(struct mvtwsi_registers *twsi, int expected_status,
 	do {
 		control = readl(&twsi->control);
 		if (control & MVTWSI_CONTROL_IFLG) {
+			/*
+			 * On Armada 38x it seems that the controller works as
+			 * if it first set the MVTWSI_CONTROL_IFLAG in the
+			 * control register and only after that it changed the
+			 * status register.
+			 * This sometimes caused weird bugs which only appeared
+			 * on selected I2C speeds and even then only sometimes.
+			 * We therefore add here a simple ndealy(100), which
+			 * seems to fix this weird bug.
+			 */
+			ndelay(100);
 			status = readl(&twsi->status);
 			if (status == expected_status)
 				return 0;
@@ -794,8 +805,9 @@ static int mvtwsi_i2c_ofdata_to_platdata(struct udevice *bus)
 				    "cell-index", -1);
 	dev->slaveadd = fdtdec_get_int(gd->fdt_blob, dev_of_offset(bus),
 				       "u-boot,i2c-slave-addr", 0x0);
-	dev->speed = fdtdec_get_int(gd->fdt_blob, dev_of_offset(bus),
-				    "clock-frequency", 100000);
+	dev->speed = dev_read_u32_default(bus, "clock-frequency",
+					  I2C_SPEED_STANDARD_RATE);
+
 	return 0;
 }
 

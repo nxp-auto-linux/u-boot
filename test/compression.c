@@ -6,6 +6,8 @@
 #include <common.h>
 #include <bootm.h>
 #include <command.h>
+#include <gzip.h>
+#include <lz4.h>
 #include <malloc.h>
 #include <mapmem.h>
 #include <asm/io.h>
@@ -449,7 +451,7 @@ static int compress_using_none(struct unit_test_state *uts,
 }
 
 /**
- * run_bootm_test() - Run tests on the bootm decopmression function
+ * run_bootm_test() - Run tests on the bootm decompression function
  *
  * @comp_type:	Compression type to test
  * @compress:	Our function to compress data
@@ -471,15 +473,15 @@ static int run_bootm_test(struct unit_test_state *uts, int comp_type,
 	unc_len = strlen(plain);
 	compress(uts, (void *)plain, unc_len, compress_buff, compress_size,
 		 &compress_size);
-	err = bootm_decomp_image(comp_type, load_addr, image_start,
-				 IH_TYPE_KERNEL, map_sysmem(load_addr, 0),
-				 compress_buff, compress_size, unc_len,
-				 &load_end);
+	err = image_decomp(comp_type, load_addr, image_start,
+			   IH_TYPE_KERNEL, map_sysmem(load_addr, 0),
+			   compress_buff, compress_size, unc_len,
+			   &load_end);
 	ut_assertok(err);
-	err = bootm_decomp_image(comp_type, load_addr, image_start,
-				 IH_TYPE_KERNEL, map_sysmem(load_addr, 0),
-				 compress_buff, compress_size, unc_len - 1,
-				 &load_end);
+	err = image_decomp(comp_type, load_addr, image_start,
+			   IH_TYPE_KERNEL, map_sysmem(load_addr, 0),
+			   compress_buff, compress_size, unc_len - 1,
+			   &load_end);
 	ut_assert(err);
 
 	/* We can't detect corruption when not decompressing */
@@ -487,10 +489,10 @@ static int run_bootm_test(struct unit_test_state *uts, int comp_type,
 		return 0;
 	memset(compress_buff + compress_size / 2, '\x49',
 	       compress_size / 2);
-	err = bootm_decomp_image(comp_type, load_addr, image_start,
-				 IH_TYPE_KERNEL, map_sysmem(load_addr, 0),
-				 compress_buff, compress_size, 0x10000,
-				 &load_end);
+	err = image_decomp(comp_type, load_addr, image_start,
+			   IH_TYPE_KERNEL, map_sysmem(load_addr, 0),
+			   compress_buff, compress_size, 0x10000,
+			   &load_end);
 	ut_assert(err);
 
 	return 0;
@@ -538,5 +540,6 @@ int do_ut_compression(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 						 compression_test);
 	const int n_ents = ll_entry_count(struct unit_test, compression_test);
 
-	return cmd_ut_category("compression", tests, n_ents, argc, argv);
+	return cmd_ut_category("compression", "compression_test_",
+			       tests, n_ents, argc, argv);
 }

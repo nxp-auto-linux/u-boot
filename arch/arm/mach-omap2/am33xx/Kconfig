@@ -87,6 +87,14 @@ config TARGET_AM335X_SHC
 	imply CMD_DM
 	imply CMD_SPL
 
+config TARGET_AM335X_GUARDIAN
+	bool "Support am335x based guardian board from bosch"
+	select BOARD_LATE_INIT
+	select DM
+	select DM_SERIAL
+	select DM_GPIO
+	select DM_USB
+
 config TARGET_AM335X_SL50
 	bool "Support am335x_sl50"
 	select BOARD_LATE_INIT
@@ -112,6 +120,10 @@ config TARGET_BAV335X
 
 config TARGET_BRXRE1
 	bool "Support BRXRE1"
+	select BOARD_LATE_INIT
+
+config TARGET_BRSMARC1
+	bool "Support BRSMARC1"
 	select BOARD_LATE_INIT
 
 config TARGET_BRPPT1
@@ -165,6 +177,13 @@ config TARGET_PENGWYN
 
 config TARGET_PEPPER
 	bool "Support pepper"
+	select DM
+	select DM_GPIO
+	select DM_SERIAL
+	imply CMD_DM
+
+config TARGET_PHYCORE_AM335X_R2
+	bool "Support phyCORE AM335X R2"
 	select DM
 	select DM_GPIO
 	select DM_SERIAL

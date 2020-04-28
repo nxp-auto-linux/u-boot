@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor
+ * Copyright 2019 NXP
  */
 
 #ifndef __LS1046ARDB_H__
@@ -159,18 +160,10 @@
 #ifdef CONFIG_TFABOOT
 #define CONFIG_SYS_MMC_ENV_DEV		0
 
-#define CONFIG_ENV_SIZE			0x2000		/* 8KB */
-#define CONFIG_ENV_OFFSET		0x500000	/* 5MB */
-#define CONFIG_ENV_SECT_SIZE		0x40000		/* 256KB */
+#define CONFIG_SYS_FSL_QSPI_BASE        0x40000000
 #else
 #if defined(CONFIG_SD_BOOT)
 #define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_ENV_OFFSET		(3 * 1024 * 1024)
-#define CONFIG_ENV_SIZE			0x2000
-#else
-#define CONFIG_ENV_SIZE			0x2000		/* 8KB */
-#define CONFIG_ENV_OFFSET		0x300000	/* 3MB */
-#define CONFIG_ENV_SECT_SIZE		0x40000		/* 256KB */
 #endif
 #endif
 
@@ -183,7 +176,6 @@
 #endif
 
 #ifdef CONFIG_SYS_DPAA_FMAN
-#define CONFIG_FMAN_ENET
 #define RGMII_PHY1_ADDR			0x1
 #define RGMII_PHY2_ADDR			0x2
 

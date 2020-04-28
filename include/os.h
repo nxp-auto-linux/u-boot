@@ -119,33 +119,13 @@ void os_fd_restore(void);
 void *os_malloc(size_t length);
 
 /**
- * Free memory previous allocated with os_malloc()/os_realloc()
+ * Free memory previous allocated with os_malloc()
  *
  * This returns the memory to the OS.
  *
  * \param ptr		Pointer to memory block to free
  */
 void os_free(void *ptr);
-
-/**
- * Reallocate previously-allocated memory to increase/decrease space
- *
- * This works in a similar way to the C library realloc() function. If
- * length is 0, then ptr is freed. Otherwise the space used by ptr is
- * expanded or reduced depending on whether length is larger or smaller
- * than before.
- *
- * If ptr is NULL, then this is similar to calling os_malloc().
- *
- * This function may need to move the memory block to make room for any
- * extra space, in which case the new pointer is returned.
- *
- * \param ptr		Pointer to memory block to reallocate
- * \param length	New length for memory block
- * \return pointer to new memory block, or NULL on failure or if length
- *	is 0.
- */
-void *os_realloc(void *ptr, size_t length);
 
 /**
  * Access to the usleep function of the os
@@ -363,5 +343,16 @@ int os_write_file(const char *name, const void *buf, int size);
  * @return 0 if OK, -ve on error
  */
 int os_read_file(const char *name, void **bufp, int *sizep);
+
+/*
+ * os_find_text_base() - Find the text section in this running process
+ *
+ * This tries to find the address of the text section in this running process.
+ * It can be useful to map the address of functions to the address listed in
+ * the u-boot.map file.
+ *
+ * @return address if found, else NULL
+ */
+void *os_find_text_base(void);
 
 #endif

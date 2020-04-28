@@ -8,6 +8,7 @@
 #include <dm.h>
 #include <fdtdec.h>
 #include <fdt_support.h>
+#include <malloc.h>
 #include <linux/libfdt.h>
 #include <dm/of_access.h>
 #include <dm/of_addr.h>
@@ -39,7 +40,7 @@ int ofnode_read_u32(ofnode node, const char *propname, u32 *outp)
 	return 0;
 }
 
-int ofnode_read_u32_default(ofnode node, const char *propname, u32 def)
+u32 ofnode_read_u32_default(ofnode node, const char *propname, u32 def)
 {
 	assert(ofnode_valid(node));
 	ofnode_read_u32(node, propname, &def);
@@ -57,7 +58,7 @@ int ofnode_read_s32_default(ofnode node, const char *propname, s32 def)
 
 int ofnode_read_u64(ofnode node, const char *propname, u64 *outp)
 {
-	const fdt64_t *cell;
+	const unaligned_fdt64_t *cell;
 	int len;
 
 	assert(ofnode_valid(node));
@@ -79,7 +80,7 @@ int ofnode_read_u64(ofnode node, const char *propname, u64 *outp)
 	return 0;
 }
 
-int ofnode_read_u64_default(ofnode node, const char *propname, u64 def)
+u64 ofnode_read_u64_default(ofnode node, const char *propname, u64 def)
 {
 	assert(ofnode_valid(node));
 	ofnode_read_u64(node, propname, &def);
@@ -101,30 +102,47 @@ bool ofnode_read_bool(ofnode node, const char *propname)
 	return prop ? true : false;
 }
 
-const char *ofnode_read_string(ofnode node, const char *propname)
+const void *ofnode_read_prop(ofnode node, const char *propname, int *sizep)
 {
-	const char *str = NULL;
-	int len = -1;
+	const char *val = NULL;
+	int len;
 
 	assert(ofnode_valid(node));
 	debug("%s: %s: ", __func__, propname);
 
 	if (ofnode_is_np(node)) {
 		struct property *prop = of_find_property(
-				ofnode_to_np(node), propname, NULL);
+				ofnode_to_np(node), propname, &len);
 
 		if (prop) {
-			str = prop->value;
+			val = prop->value;
 			len = prop->length;
 		}
 	} else {
-		str = fdt_getprop(gd->fdt_blob, ofnode_to_offset(node),
+		val = fdt_getprop(gd->fdt_blob, ofnode_to_offset(node),
 				  propname, &len);
 	}
-	if (!str) {
+	if (!val) {
 		debug("<not found>\n");
+		if (sizep)
+			*sizep = -FDT_ERR_NOTFOUND;
 		return NULL;
 	}
+	if (sizep)
+		*sizep = len;
+
+	return val;
+}
+
+const char *ofnode_read_string(ofnode node, const char *propname)
+{
+	const char *str;
+	int len;
+
+	str = ofnode_read_prop(node, propname, &len);
+	if (!str)
+		return NULL;
+
 	if (strnlen(str, len) >= len) {
 		debug("<invalid>\n");
 		return NULL;
@@ -132,6 +150,16 @@ const char *ofnode_read_string(ofnode node, const char *propname)
 	debug("%s\n", str);
 
 	return str;
+}
+
+int ofnode_read_size(ofnode node, const char *propname)
+{
+	int len;
+
+	if (!ofnode_read_prop(node, propname, &len))
+		return -EINVAL;
+
+	return len;
 }
 
 ofnode ofnode_find_subnode(ofnode node, const char *subnode_name)
@@ -212,7 +240,11 @@ ofnode ofnode_get_parent(ofnode node)
 
 const char *ofnode_get_name(ofnode node)
 {
-	assert(ofnode_valid(node));
+	if (!ofnode_valid(node)) {
+		debug("%s node not valid\n", __func__);
+		return NULL;
+	}
+
 	if (ofnode_is_np(node))
 		return strrchr(node.np->full_name, '/') + 1;
 
@@ -232,38 +264,21 @@ ofnode ofnode_get_by_phandle(uint phandle)
 	return node;
 }
 
-int ofnode_read_size(ofnode node, const char *propname)
-{
-	int len;
-
-	if (ofnode_is_np(node)) {
-		struct property *prop = of_find_property(
-				ofnode_to_np(node), propname, NULL);
-
-		if (prop)
-			return prop->length;
-	} else {
-		if (fdt_getprop(gd->fdt_blob, ofnode_to_offset(node), propname,
-				&len))
-			return len;
-	}
-
-	return -EINVAL;
-}
-
-fdt_addr_t ofnode_get_addr_index(ofnode node, int index)
+fdt_addr_t ofnode_get_addr_size_index(ofnode node, int index, fdt_size_t *size)
 {
 	int na, ns;
-	fdt_size_t size;
 
 	if (ofnode_is_np(node)) {
 		const __be32 *prop_val;
+		u64 size64;
 		uint flags;
 
-		prop_val = of_get_address(ofnode_to_np(node), index,
-					  (u64 *)&size, &flags);
+		prop_val = of_get_address(ofnode_to_np(node), index, &size64,
+					  &flags);
 		if (!prop_val)
 			return FDT_ADDR_T_NONE;
+		if (size)
+			*size = size64;
 
 		ns = of_n_size_cells(ofnode_to_np(node));
 
@@ -278,10 +293,17 @@ fdt_addr_t ofnode_get_addr_index(ofnode node, int index)
 		ns = ofnode_read_simple_size_cells(ofnode_get_parent(node));
 		return fdtdec_get_addr_size_fixed(gd->fdt_blob,
 						  ofnode_to_offset(node), "reg",
-						  index, na, ns, &size, true);
+						  index, na, ns, size, true);
 	}
 
 	return FDT_ADDR_T_NONE;
+}
+
+fdt_addr_t ofnode_get_addr_index(ofnode node, int index)
+{
+	fdt_size_t size;
+
+	return ofnode_get_addr_size_index(node, index, &size);
 }
 
 fdt_addr_t ofnode_get_addr(ofnode node)
@@ -406,20 +428,25 @@ ofnode ofnode_path(const char *path)
 		return offset_to_ofnode(fdt_path_offset(gd->fdt_blob, path));
 }
 
-const char *ofnode_get_chosen_prop(const char *name)
+const void *ofnode_read_chosen_prop(const char *propname, int *sizep)
 {
 	ofnode chosen_node;
 
 	chosen_node = ofnode_path("/chosen");
 
-	return ofnode_read_string(chosen_node, name);
+	return ofnode_read_prop(chosen_node, propname, sizep);
+}
+
+const char *ofnode_read_chosen_string(const char *propname)
+{
+	return ofnode_read_chosen_prop(propname, NULL);
 }
 
 ofnode ofnode_get_chosen_node(const char *name)
 {
 	const char *prop;
 
-	prop = ofnode_get_chosen_prop(name);
+	prop = ofnode_read_chosen_prop(name, NULL);
 	if (!prop)
 		return ofnode_null();
 
@@ -547,7 +574,7 @@ fdt_addr_t ofnode_get_addr_size(ofnode node, const char *property,
 		ns = of_n_size_cells(np);
 		*sizep = of_read_number(prop + na, ns);
 
-		if (IS_ENABLED(CONFIG_OF_TRANSLATE) && ns > 0)
+		if (CONFIG_IS_ENABLED(OF_TRANSLATE) && ns > 0)
 			return of_translate_address(np, prop);
 		else
 			return of_read_number(prop, na);
@@ -607,7 +634,7 @@ int ofnode_read_pci_addr(ofnode node, enum fdt_pci_space type,
 			if ((fdt32_to_cpu(*cell) & type) == type) {
 				addr->phys_hi = fdt32_to_cpu(cell[0]);
 				addr->phys_mid = fdt32_to_cpu(cell[1]);
-				addr->phys_lo = fdt32_to_cpu(cell[1]);
+				addr->phys_lo = fdt32_to_cpu(cell[2]);
 				break;
 			}
 
@@ -700,18 +727,18 @@ int ofnode_read_simple_size_cells(ofnode node)
 
 bool ofnode_pre_reloc(ofnode node)
 {
+#if defined(CONFIG_SPL_BUILD) || defined(CONFIG_TPL_BUILD)
+	/* for SPL and TPL the remaining nodes after the fdtgrep 1st pass
+	 * had property dm-pre-reloc or u-boot,dm-spl/tpl.
+	 * They are removed in final dtb (fdtgrep 2nd pass)
+	 */
+	return true;
+#else
 	if (ofnode_read_bool(node, "u-boot,dm-pre-reloc"))
 		return true;
 	if (ofnode_read_bool(node, "u-boot,dm-pre-proper"))
 		return true;
 
-#ifdef CONFIG_TPL_BUILD
-	if (ofnode_read_bool(node, "u-boot,dm-tpl"))
-		return true;
-#elif defined(CONFIG_SPL_BUILD)
-	if (ofnode_read_bool(node, "u-boot,dm-spl"))
-		return true;
-#else
 	/*
 	 * In regular builds individual spl and tpl handling both
 	 * count as handled pre-relocation for later second init.
@@ -719,9 +746,9 @@ bool ofnode_pre_reloc(ofnode node)
 	if (ofnode_read_bool(node, "u-boot,dm-spl") ||
 	    ofnode_read_bool(node, "u-boot,dm-tpl"))
 		return true;
-#endif
 
 	return false;
+#endif
 }
 
 int ofnode_read_resource(ofnode node, uint index, struct resource *res)
@@ -762,6 +789,14 @@ u64 ofnode_translate_address(ofnode node, const fdt32_t *in_addr)
 		return of_translate_address(ofnode_to_np(node), in_addr);
 	else
 		return fdt_translate_address(gd->fdt_blob, ofnode_to_offset(node), in_addr);
+}
+
+u64 ofnode_translate_dma_address(ofnode node, const fdt32_t *in_addr)
+{
+	if (ofnode_is_np(node))
+		return of_translate_dma_address(ofnode_to_np(node), in_addr);
+	else
+		return fdt_translate_dma_address(gd->fdt_blob, ofnode_to_offset(node), in_addr);
 }
 
 int ofnode_device_is_compatible(ofnode node, const char *compat)
@@ -870,5 +905,5 @@ int ofnode_set_enabled(ofnode node, bool value)
 	if (value)
 		return ofnode_write_string(node, "status", "okay");
 	else
-		return ofnode_write_string(node, "status", "disable");
+		return ofnode_write_string(node, "status", "disabled");
 }

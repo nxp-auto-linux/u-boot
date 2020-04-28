@@ -5,6 +5,7 @@
 #include <common.h>
 #include <malloc.h>
 #include <errno.h>
+#include <net.h>
 #include <netdev.h>
 #include <fsl_ifc.h>
 #include <fsl_ddr.h>
@@ -12,7 +13,7 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <fsl-mc/fsl_mc.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <asm/arch/soc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -47,13 +48,6 @@ void detail_board_ddr_info(void)
 	}
 #endif
 }
-
-#if defined(CONFIG_ARCH_MISC_INIT)
-int arch_misc_init(void)
-{
-	return 0;
-}
-#endif
 
 int board_eth_init(bd_t *bis)
 {

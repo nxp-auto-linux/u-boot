@@ -6,6 +6,8 @@
  */
 
 #include <common.h>
+#include <init.h>
+#include <serial.h>
 #include <watchdog.h>
 #include <command.h>
 #include <asm/m5329.h>

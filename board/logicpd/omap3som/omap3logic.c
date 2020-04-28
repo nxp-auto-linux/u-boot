@@ -12,11 +12,13 @@
  */
 #include <common.h>
 #include <dm.h>
+#include <init.h>
 #include <ns16550.h>
 #include <netdev.h>
 #include <flash.h>
 #include <nand.h>
 #include <i2c.h>
+#include <serial.h>
 #include <twl4030.h>
 #include <asm/io.h>
 #include <asm/arch/mmc_host_def.h>
@@ -141,6 +143,7 @@ void spl_board_prepare_for_linux(void)
 int misc_init_r(void)
 {
 	twl4030_power_init();
+	twl4030_power_mmc_init(0);
 	omap_die_id_display();
 	return 0;
 }

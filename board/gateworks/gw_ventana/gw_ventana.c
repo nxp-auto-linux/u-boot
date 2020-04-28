@@ -21,11 +21,11 @@
 #include <asm/setup.h>
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
-#include <environment.h>
+#include <env.h>
 #include <hwconfig.h>
 #include <i2c.h>
 #include <fdt_support.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <jffs2/load_kernel.h>
 #include <linux/ctype.h>
 #include <miiphy.h>

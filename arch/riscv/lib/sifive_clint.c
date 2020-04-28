@@ -13,6 +13,7 @@
 #include <syscon.h>
 #include <asm/io.h>
 #include <asm/syscon.h>
+#include <linux/err.h>
 
 /* MSIP registers */
 #define MSIP_REG(base, hart)		((ulong)(base) + (hart) * 4)
@@ -67,6 +68,15 @@ int riscv_clear_ipi(int hart)
 	CLINT_BASE_GET();
 
 	writel(0, (void __iomem *)MSIP_REG(gd->arch.clint, hart));
+
+	return 0;
+}
+
+int riscv_get_ipi(int hart, int *pending)
+{
+	CLINT_BASE_GET();
+
+	*pending = readl((void __iomem *)MSIP_REG(gd->arch.clint, hart));
 
 	return 0;
 }

@@ -24,6 +24,7 @@
 
 #include <config.h>
 #include <common.h>
+#include <cpu_func.h>
 #include <malloc.h>
 #include <memalign.h>
 #include <mmc.h>
@@ -46,6 +47,8 @@
 #include <asm/arch/mux.h>
 #endif
 #include <dm.h>
+#include <dm/devres.h>
+#include <linux/err.h>
 #include <power/regulator.h>
 #include <thermal.h>
 
@@ -183,7 +186,7 @@ static int omap_mmc_setup_gpio_in(int gpio, const char *label)
 {
 	int ret;
 
-#ifndef CONFIG_DM_GPIO
+#if !CONFIG_IS_ENABLED(DM_GPIO)
 	if (!gpio_is_valid(gpio))
 		return -1;
 #endif
@@ -264,7 +267,7 @@ static unsigned char mmc_board_init(struct mmc *mmc)
 	!CONFIG_IS_ENABLED(DM_REGULATOR)
 	/* PBIAS config needed for MMC1 only */
 	if (mmc_get_blk_desc(mmc)->devnum == 0)
-		vmmc_pbias_config(LDO_VOLT_3V0);
+		vmmc_pbias_config(LDO_VOLT_3V3);
 #endif
 
 	return 0;
@@ -389,7 +392,6 @@ static void omap_hsmmc_set_timing(struct mmc *mmc)
 		break;
 	case MMC_LEGACY:
 	case MMC_HS:
-	case SD_LEGACY:
 	case UHS_SDR12:
 		val |= AC12_UHSMC_SDR12;
 		break;
@@ -418,7 +420,7 @@ static void omap_hsmmc_conf_bus_power(struct mmc *mmc, uint signal_voltage)
 
 	switch (signal_voltage) {
 	case MMC_SIGNAL_VOLTAGE_330:
-		hctl |= SDVS_3V0;
+		hctl |= SDVS_3V3;
 		break;
 	case MMC_SIGNAL_VOLTAGE_180:
 		hctl |= SDVS_1V8;
@@ -430,8 +432,7 @@ static void omap_hsmmc_conf_bus_power(struct mmc *mmc, uint signal_voltage)
 	writel(ac12, &mmc_base->ac12);
 }
 
-#if CONFIG_IS_ENABLED(MMC_UHS_SUPPORT)
-static int omap_hsmmc_wait_dat0(struct udevice *dev, int state, int timeout)
+static int omap_hsmmc_wait_dat0(struct udevice *dev, int state, int timeout_us)
 {
 	int ret = -ETIMEDOUT;
 	u32 con;
@@ -443,8 +444,8 @@ static int omap_hsmmc_wait_dat0(struct udevice *dev, int state, int timeout)
 	con = readl(&mmc_base->con);
 	writel(con | CON_CLKEXTFREE | CON_PADEN, &mmc_base->con);
 
-	timeout = DIV_ROUND_UP(timeout, 10); /* check every 10 us. */
-	while (timeout--)	{
+	timeout_us = DIV_ROUND_UP(timeout_us, 10); /* check every 10 us. */
+	while (timeout_us--) {
 		dat0_high = !!(readl(&mmc_base->pstate) & PSTATE_DLEV_DAT0);
 		if (dat0_high == target_dat0_high) {
 			ret = 0;
@@ -456,7 +457,6 @@ static int omap_hsmmc_wait_dat0(struct udevice *dev, int state, int timeout)
 
 	return ret;
 }
-#endif
 
 #if CONFIG_IS_ENABLED(MMC_IO_VOLTAGE)
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
@@ -514,10 +514,9 @@ static int omap_hsmmc_set_signal_voltage(struct mmc *mmc)
 		return -EINVAL;
 
 	if (mmc->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
-		/* Use 3.0V rather than 3.3V */
-		mv = 3000;
-		capa_mask = VS30_3V0SUP;
-		palmas_ldo_volt = LDO_VOLT_3V0;
+		mv = 3300;
+		capa_mask = VS33_3V3SUP;
+		palmas_ldo_volt = LDO_VOLT_3V3;
 	} else if (mmc->signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
 		capa_mask = VS18_1V8SUP;
 		palmas_ldo_volt = LDO_VOLT_1V8;
@@ -556,13 +555,13 @@ static uint32_t omap_hsmmc_set_capabilities(struct mmc *mmc)
 	val = readl(&mmc_base->capa);
 
 	if (priv->controller_flags & OMAP_HSMMC_SUPPORTS_DUAL_VOLT) {
-		val |= (VS30_3V0SUP | VS18_1V8SUP);
+		val |= (VS33_3V3SUP | VS18_1V8SUP);
 	} else if (priv->controller_flags & OMAP_HSMMC_NO_1_8_V) {
-		val |= VS30_3V0SUP;
+		val |= VS33_3V3SUP;
 		val &= ~VS18_1V8SUP;
 	} else {
 		val |= VS18_1V8SUP;
-		val &= ~VS30_3V0SUP;
+		val &= ~VS33_3V3SUP;
 	}
 
 	writel(val, &mmc_base->capa);
@@ -776,14 +775,6 @@ tuning_error:
 	return ret;
 }
 #endif
-
-static void omap_hsmmc_send_init_stream(struct udevice *dev)
-{
-	struct omap_hsmmc_data *priv = dev_get_priv(dev);
-	struct hsmmc *mmc_base = priv->base_addr;
-
-	mmc_init_stream(mmc_base);
-}
 #endif
 
 static void mmc_enable_irq(struct mmc *mmc, struct mmc_cmd *cmd)
@@ -842,11 +833,11 @@ static int omap_hsmmc_init_setup(struct mmc *mmc)
 
 #if CONFIG_IS_ENABLED(DM_MMC)
 	reg_val = omap_hsmmc_set_capabilities(mmc);
-	omap_hsmmc_conf_bus_power(mmc, (reg_val & VS30_3V0SUP) ?
+	omap_hsmmc_conf_bus_power(mmc, (reg_val & VS33_3V3SUP) ?
 			  MMC_SIGNAL_VOLTAGE_330 : MMC_SIGNAL_VOLTAGE_180);
 #else
 	writel(DTW_1_BITMODE | SDBP_PWROFF | SDVS_3V0, &mmc_base->hctl);
-	writel(readl(&mmc_base->capa) | VS30_3V0SUP | VS18_1V8SUP,
+	writel(readl(&mmc_base->capa) | VS33_3V3SUP | VS18_1V8SUP,
 		&mmc_base->capa);
 #endif
 
@@ -1066,18 +1057,17 @@ static int omap_hsmmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 		if (get_timer(0) - start > MAX_RETRY_MS) {
 			printf("%s: timedout waiting on cmd inhibit to clear\n",
 					__func__);
+			mmc_reset_controller_fsm(mmc_base, SYSCTL_SRD);
+			mmc_reset_controller_fsm(mmc_base, SYSCTL_SRC);
 			return -ETIMEDOUT;
 		}
 	}
 	writel(0xFFFFFFFF, &mmc_base->stat);
-	start = get_timer(0);
-	while (readl(&mmc_base->stat)) {
-		if (get_timer(0) - start > MAX_RETRY_MS) {
-			printf("%s: timedout waiting for STAT (%x) to clear\n",
-				__func__, readl(&mmc_base->stat));
-			return -ETIMEDOUT;
-		}
+	if (readl(&mmc_base->stat)) {
+		mmc_reset_controller_fsm(mmc_base, SYSCTL_SRD);
+		mmc_reset_controller_fsm(mmc_base, SYSCTL_SRC);
 	}
+
 	/*
 	 * CMDREG
 	 * CMDIDX[13:8]	: Command index
@@ -1523,10 +1513,7 @@ static const struct dm_mmc_ops omap_hsmmc_ops = {
 #ifdef MMC_SUPPORTS_TUNING
 	.execute_tuning = omap_hsmmc_execute_tuning,
 #endif
-	.send_init_stream	= omap_hsmmc_send_init_stream,
-#if CONFIG_IS_ENABLED(MMC_UHS_SUPPORT)
 	.wait_dat0	= omap_hsmmc_wait_dat0,
-#endif
 };
 #else
 static const struct mmc_ops omap_hsmmc_ops = {

@@ -5,11 +5,13 @@
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
  */
 
+#include <init.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/mach-imx/spi.h>
+#include <env.h>
 #include <linux/errno.h>
 #include <asm/gpio.h>
 #include <asm/mach-imx/mxc_i2c.h>
@@ -17,9 +19,8 @@
 #include <asm/mach-imx/boot_mode.h>
 #include <asm/mach-imx/video.h>
 #include <mmc.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <miiphy.h>
-#include <netdev.h>
 #include <asm/arch/mxc_hdmi.h>
 #include <asm/arch/crm_regs.h>
 #include <asm/io.h>
@@ -41,9 +42,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define USDHC_PAD_CTRL (PAD_CTL_PUS_47K_UP |			\
 	PAD_CTL_SPEED_LOW | PAD_CTL_DSE_80ohm |			\
 	PAD_CTL_SRE_FAST  | PAD_CTL_HYS)
-
-#define ENET_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
-	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
 
 #define SPI_PAD_CTRL (PAD_CTL_HYS | PAD_CTL_SPEED_MED | \
 		      PAD_CTL_DSE_40ohm | PAD_CTL_SRE_FAST)
@@ -70,31 +68,6 @@ static iomux_v3_cfg_t const uart1_pads[] = {
 	IOMUX_PADS(PAD_CSI0_DAT10__UART1_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
 	IOMUX_PADS(PAD_CSI0_DAT11__UART1_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
 };
-
-static iomux_v3_cfg_t const enet_pads[] = {
-	IOMUX_PADS(PAD_ENET_MDIO__ENET_MDIO	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_ENET_MDC__ENET_MDC	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_TXC__RGMII_TXC	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_TD0__RGMII_TD0	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_TD1__RGMII_TD1	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_TD2__RGMII_TD2	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_TD3__RGMII_TD3	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_TX_CTL__RGMII_TX_CTL	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_ENET_REF_CLK__ENET_TX_CLK	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_RXC__RGMII_RXC	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_RD0__RGMII_RD0	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_RD1__RGMII_RD1	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_RD2__RGMII_RD2	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_RD3__RGMII_RD3	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	IOMUX_PADS(PAD_RGMII_RX_CTL__RGMII_RX_CTL	| MUX_PAD_CTRL(ENET_PAD_CTRL)),
-	/* AR8031 PHY Reset */
-	IOMUX_PADS(PAD_ENET_CRS_DV__GPIO1_IO25	| MUX_PAD_CTRL(NO_PAD_CTRL)),
-};
-
-static void setup_iomux_enet(void)
-{
-	SETUP_IOMUX_PADS(enet_pads);
-}
 
 static iomux_v3_cfg_t const usdhc2_pads[] = {
 	IOMUX_PADS(PAD_SD2_CLK__SD2_CLK	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
@@ -229,16 +202,6 @@ static void setup_spi(void)
 	SETUP_IOMUX_PADS(ecspi1_pads);
 }
 
-iomux_v3_cfg_t const pcie_pads[] = {
-	IOMUX_PADS(PAD_EIM_D19__GPIO3_IO19 | MUX_PAD_CTRL(NO_PAD_CTRL)),	/* POWER */
-	IOMUX_PADS(PAD_GPIO_17__GPIO7_IO12 | MUX_PAD_CTRL(NO_PAD_CTRL)),	/* RESET */
-};
-
-static void setup_pcie(void)
-{
-	SETUP_IOMUX_PADS(pcie_pads);
-}
-
 iomux_v3_cfg_t const di0_pads[] = {
 	IOMUX_PADS(PAD_DI0_DISP_CLK__IPU1_DI0_DISP_CLK),	/* DISP0_CLK */
 	IOMUX_PADS(PAD_DI0_PIN2__IPU1_DI0_PIN02),		/* DISP0_HSYNC */
@@ -250,7 +213,7 @@ static void setup_iomux_uart(void)
 	SETUP_IOMUX_PADS(uart1_pads);
 }
 
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 struct fsl_esdhc_cfg usdhc_cfg[3] = {
 	{USDHC2_BASE_ADDR},
 	{USDHC3_BASE_ADDR},
@@ -287,49 +250,6 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
-#ifndef CONFIG_SPL_BUILD
-	int ret;
-	int i;
-
-	/*
-	 * According to the board_mmc_init() the following map is done:
-	 * (U-Boot device node)    (Physical Port)
-	 * mmc0                    SD2
-	 * mmc1                    SD3
-	 * mmc2                    eMMC
-	 */
-	for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
-		switch (i) {
-		case 0:
-			SETUP_IOMUX_PADS(usdhc2_pads);
-			gpio_request(USDHC2_CD_GPIO, "USDHC2 CD");
-			gpio_direction_input(USDHC2_CD_GPIO);
-			usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
-			break;
-		case 1:
-			SETUP_IOMUX_PADS(usdhc3_pads);
-			gpio_request(USDHC3_CD_GPIO, "USDHC3 CD");
-			gpio_direction_input(USDHC3_CD_GPIO);
-			usdhc_cfg[1].sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
-			break;
-		case 2:
-			SETUP_IOMUX_PADS(usdhc4_pads);
-			usdhc_cfg[2].sdhc_clk = mxc_get_clock(MXC_ESDHC4_CLK);
-			break;
-		default:
-			printf("Warning: you configured more USDHC controllers"
-			       "(%d) then supported by the board (%d)\n",
-			       i + 1, CONFIG_SYS_FSL_USDHC_NUM);
-			return -EINVAL;
-		}
-
-		ret = fsl_esdhc_initialize(bis, &usdhc_cfg[i]);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
-#else
 	struct src *psrc = (struct src *)SRC_BASE_ADDR;
 	unsigned reg = readl(&psrc->sbmr1) >> 11;
 	/*
@@ -363,7 +283,6 @@ int board_mmc_init(bd_t *bis)
 	}
 
 	return fsl_esdhc_initialize(bis, &usdhc_cfg[0]);
-#endif
 }
 #endif
 
@@ -545,14 +464,6 @@ static void setup_display(void)
 int overwrite_console(void)
 {
 	return 1;
-}
-
-int board_eth_init(bd_t *bis)
-{
-	setup_iomux_enet();
-	setup_pcie();
-
-	return cpu_eth_init(bis);
 }
 
 #ifdef CONFIG_USB_EHCI_MX6

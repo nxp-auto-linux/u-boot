@@ -11,7 +11,7 @@
 #include <efi_selftest.h>
 
 #define EFI_ST_MAX_DATA_SIZE 16
-#define EFI_ST_MAX_VARNAME_SIZE 40
+#define EFI_ST_MAX_VARNAME_SIZE 80
 
 static struct efi_boot_services *boottime;
 static struct efi_runtime_services *runtime;
@@ -78,7 +78,7 @@ static int execute(void)
 		efi_st_error("GetVariable failed\n");
 		return EFI_ST_FAILURE;
 	}
-	if (efi_st_memcmp(data, v + 4, 3)) {
+	if (memcmp(data, v + 4, 3)) {
 		efi_st_error("GetVariable returned wrong value\n");
 		return EFI_ST_FAILURE;
 	}
@@ -106,7 +106,7 @@ static int execute(void)
 			     (unsigned int)len);
 		return EFI_ST_FAILURE;
 	}
-	if (efi_st_memcmp(data, v, 8)) {
+	if (memcmp(data, v, 8)) {
 		efi_st_error("GetVariable returned wrong value\n");
 		return EFI_ST_FAILURE;
 	}
@@ -116,7 +116,7 @@ static int execute(void)
 				    EFI_VARIABLE_APPEND_WRITE,
 				    7, v + 8);
 	if (ret != EFI_SUCCESS) {
-		efi_st_error("SetVariable failed\n");
+		efi_st_error("SetVariable(APPEND_WRITE) failed\n");
 		return EFI_ST_FAILURE;
 	}
 	len = EFI_ST_MAX_DATA_SIZE;
@@ -129,8 +129,17 @@ static int execute(void)
 	if (len != 15)
 		efi_st_todo("GetVariable returned wrong length %u\n",
 			    (unsigned int)len);
-	if (efi_st_memcmp(data, v, len))
+	if (memcmp(data, v, len))
 		efi_st_todo("GetVariable returned wrong value\n");
+	/* Append variable 2 */
+	ret = runtime->set_variable(L"efi_none", &guid_vendor1,
+				    EFI_VARIABLE_BOOTSERVICE_ACCESS |
+				    EFI_VARIABLE_APPEND_WRITE,
+				    15, v);
+	if (ret != EFI_NOT_FOUND) {
+		efi_st_error("SetVariable(APPEND_WRITE) with size 0 to non-existent variable returns wrong code\n");
+		return EFI_ST_FAILURE;
+	}
 	/* Enumerate variables */
 	boottime->set_mem(&guid, 16, 0);
 	*varname = 0;
@@ -145,10 +154,16 @@ static int execute(void)
 				     (unsigned int)ret);
 			return EFI_ST_FAILURE;
 		}
-		if (!efi_st_memcmp(&guid, &guid_vendor0, sizeof(efi_guid_t)) &&
-		    !efi_st_strcmp_16_8(varname, "efi_st_var0"))
+		if (!memcmp(&guid, &guid_vendor0, sizeof(efi_guid_t)) &&
+		    !efi_st_strcmp_16_8(varname, "efi_st_var0")) {
 			flag |= 1;
-		if (!efi_st_memcmp(&guid, &guid_vendor1, sizeof(efi_guid_t)) &&
+			if (len != 24) {
+				efi_st_error("GetNextVariableName report wrong length %u, expected 24\n",
+					     (unsigned int)len);
+				return EFI_ST_FAILURE;
+			}
+		}
+		if (!memcmp(&guid, &guid_vendor1, sizeof(efi_guid_t)) &&
 		    !efi_st_strcmp_16_8(varname, "efi_st_var1"))
 			flag |= 2;
 	}

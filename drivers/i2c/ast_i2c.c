@@ -13,6 +13,7 @@
 #include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/scu_ast2500.h>
+#include <linux/err.h>
 
 #include "ast_i2c.h"
 
@@ -314,7 +315,7 @@ static int ast_i2c_set_speed(struct udevice *dev, unsigned int speed)
 	divider = i2c_rate / speed;
 
 	priv->speed = speed;
-	if (speed > I2C_HIGHSPEED_RATE) {
+	if (speed > I2C_SPEED_FAST_RATE) {
 		debug("Enable High Speed\n");
 		setbits_le32(&regs->fcr, I2CD_M_HIGH_SPEED_EN
 			     | I2CD_M_SDA_DRIVE_1T_EN

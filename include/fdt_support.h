@@ -9,7 +9,22 @@
 
 #ifdef CONFIG_OF_LIBFDT
 
+#include <asm/u-boot.h>
 #include <linux/libfdt.h>
+
+/**
+ * arch_fixup_fdt() - Write arch-specific information to fdt
+ *
+ * Defined in arch/$(ARCH)/lib/bootm-fdt.c
+ *
+ * @blob:	FDT blob to write to
+ * @return 0 if ok, or -ve FDT_ERR_... on failure
+ */
+int arch_fixup_fdt(void *blob);
+
+void ft_cpu_setup(void *blob, bd_t *bd);
+
+void ft_pci_setup(void *blob, bd_t *bd);
 
 u32 fdt_getprop_u32_default_node(const void *fdt, int off, int cell,
 				const char *prop, const u32 dflt);
@@ -94,6 +109,7 @@ int fdt_fixup_memory(void *blob, u64 start, u64 size);
  */
 #ifdef CONFIG_ARCH_FIXUP_FDT_MEMORY
 int fdt_fixup_memory_banks(void *blob, u64 start[], u64 size[], int banks);
+int fdt_set_usable_memory(void *blob, u64 start[], u64 size[], int banks);
 #else
 static inline int fdt_fixup_memory_banks(void *blob, u64 start[], u64 size[],
 					 int banks)
@@ -218,8 +234,32 @@ static inline void fdt_fixup_mtdparts(void *fdt,
 #endif
 
 void fdt_del_node_and_alias(void *blob, const char *alias);
+
+/**
+ * Translate an address from the DT into a CPU physical address
+ *
+ * The translation relies on the "ranges" property.
+ *
+ * @param blob		Pointer to device tree blob
+ * @param node_offset	Node DT offset
+ * @param in_addr	Pointer to the address to translate
+ * @return translated address or OF_BAD_ADDR on error
+ */
 u64 fdt_translate_address(const void *blob, int node_offset,
 			  const __be32 *in_addr);
+/**
+ * Translate a DMA address from the DT into a CPU physical address
+ *
+ * The translation relies on the "dma-ranges" property.
+ *
+ * @param blob		Pointer to device tree blob
+ * @param node_offset	Node DT offset
+ * @param in_addr	Pointer to the DMA address to translate
+ * @return translated DMA address or OF_BAD_ADDR on error
+ */
+u64 fdt_translate_dma_address(const void *blob, int node_offset,
+			      const __be32 *in_addr);
+
 int fdt_node_offset_by_compat_reg(void *blob, const char *compat,
 					phys_addr_t compat_off);
 int fdt_alloc_phandle(void *blob);

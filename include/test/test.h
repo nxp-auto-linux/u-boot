@@ -15,12 +15,16 @@
  * @start: Store the starting mallinfo when doing leak test
  * @priv: A pointer to some other info some suites want to track
  * @of_root: Record of the livetree root node (used for setting up tests)
+ * @expect_str: Temporary string used to hold expected string value
+ * @actual_str: Temporary string used to hold actual string value
  */
 struct unit_test_state {
 	int fail_count;
 	struct mallinfo start;
 	void *priv;
 	struct device_node *of_root;
+	char expect_str[256];
+	char actual_str[256];
 };
 
 /**
@@ -46,5 +50,15 @@ struct unit_test {
 		.func = _name,						\
 	}
 
+/* Sizes for devres tests */
+enum {
+	TEST_DEVRES_SIZE	= 100,
+	TEST_DEVRES_COUNT	= 10,
+	TEST_DEVRES_TOTAL	= TEST_DEVRES_SIZE * TEST_DEVRES_COUNT,
+
+	/* A few different sizes */
+	TEST_DEVRES_SIZE2	= 15,
+	TEST_DEVRES_SIZE3	= 37,
+};
 
 #endif /* __TEST_TEST_H */

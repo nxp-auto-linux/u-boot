@@ -215,6 +215,10 @@
 #define  PCI_BASE_ADDRESS_IO_MASK	(~0x03ULL)
 /* bit 1 is reserved if address_space = 1 */
 
+/* Convert a regsister address (e.g. PCI_BASE_ADDRESS_1) to a bar # (e.g. 1) */
+#define pci_offset_to_barnum(offset)	\
+		(((offset) - PCI_BASE_ADDRESS_0) / sizeof(u32))
+
 /* Header type 0 (normal devices) */
 #define PCI_CARDBUS_CIS		0x28
 #define PCI_SUBSYSTEM_VENDOR_ID 0x2c
@@ -405,6 +409,7 @@
 #define  PCI_MSI_FLAGS_QSIZE	0x70	/* Message queue size configured */
 #define  PCI_MSI_FLAGS_QMASK	0x0e	/* Maximum queue size available */
 #define  PCI_MSI_FLAGS_ENABLE	0x01	/* MSI feature enabled */
+#define  PCI_MSI_FLAGS_MASKBIT	0x0100	/* Per-vector masking capable */
 #define PCI_MSI_RFU		3	/* Rest of capability flags */
 #define PCI_MSI_ADDRESS_LO	4	/* Lower 32 bits */
 #define PCI_MSI_ADDRESS_HI	8	/* Upper 32 bits (if PCI_MSI_FLAGS_64BIT set) */
@@ -454,18 +459,37 @@
 #define PCI_EXT_CAP_ID_PTM	0x1F	/* Precision Time Measurement */
 #define PCI_EXT_CAP_ID_MAX	PCI_EXT_CAP_ID_PTM
 
+/* Enhanced Allocation Registers */
+#define PCI_EA_NUM_ENT		2	/* Number of Capability Entries */
+#define  PCI_EA_NUM_ENT_MASK	0x3f	/* Num Entries Mask */
+#define PCI_EA_FIRST_ENT	4	/* First EA Entry in List */
+#define  PCI_EA_ES		0x00000007 /* Entry Size */
+#define  PCI_EA_BEI		0x000000f0 /* BAR Equivalent Indicator */
+/* Base, MaxOffset registers */
+/* bit 0 is reserved */
+#define  PCI_EA_IS_64		0x00000002	/* 64-bit field flag */
+#define  PCI_EA_FIELD_MASK	0xfffffffc	/* For Base & Max Offset */
+
+/* PCI Express capabilities */
+#define PCI_EXP_DEVCAP		4	/* Device capabilities */
+#define  PCI_EXP_DEVCAP_FLR     0x10000000 /* Function Level Reset */
+#define PCI_EXP_DEVCTL		8	/* Device Control */
+#define  PCI_EXP_DEVCTL_BCR_FLR 0x8000  /* Bridge Configuration Retry / FLR */
+
 /* Include the ID list */
 
 #include <pci_ids.h>
 
 #ifndef __ASSEMBLY__
 
+#include <dm/pci.h>
+
 #ifdef CONFIG_SYS_PCI_64BIT
 typedef u64 pci_addr_t;
 typedef u64 pci_size_t;
 #else
-typedef u32 pci_addr_t;
-typedef u32 pci_size_t;
+typedef unsigned long pci_addr_t;
+typedef unsigned long pci_size_t;
 #endif
 
 struct pci_region {
@@ -549,15 +573,22 @@ extern void pci_cfgfunc_config_device(struct pci_controller* hose, pci_dev_t dev
 
 #define INDIRECT_TYPE_NO_PCIE_LINK	1
 
-/*
+/**
  * Structure of a PCI controller (host bridge)
  *
  * With driver model this is dev_get_uclass_priv(bus)
+ *
+ * @skip_auto_config_until_reloc: true to avoid auto-config until U-Boot has
+ *	relocated. Normally if PCI is used before relocation, this happens
+ *	before relocation also. Some platforms set up static configuration in
+ *	TPL/SPL to reduce code size and boot time, since these phases only know
+ *	about a small subset of PCI devices. This is normally false.
  */
 struct pci_controller {
 #ifdef CONFIG_DM_PCI
 	struct udevice *bus;
 	struct udevice *ctlr;
+	bool skip_auto_config_until_reloc;
 #else
 	struct pci_controller *next;
 #endif
@@ -868,8 +899,8 @@ struct dm_pci_ops {
 	 * @size:	Access size
 	 * @return 0 if OK, -ve on error
 	 */
-	int (*read_config)(struct udevice *bus, pci_dev_t bdf, uint offset,
-			   ulong *valuep, enum pci_size_t size);
+	int (*read_config)(const struct udevice *bus, pci_dev_t bdf,
+			   uint offset, ulong *valuep, enum pci_size_t size);
 	/**
 	 * write_config() - Write a PCI configuration value
 	 *
@@ -893,7 +924,7 @@ struct dm_pci_ops {
  * @dev:	Device to check
  * @return bus/device/function value (see PCI_BDF())
  */
-pci_dev_t dm_pci_get_bdf(struct udevice *dev);
+pci_dev_t dm_pci_get_bdf(const struct udevice *dev);
 
 /**
  * pci_bind_bus_devices() - scan a PCI bus and bind devices
@@ -943,7 +974,7 @@ int dm_pci_bus_find_bdf(pci_dev_t bdf, struct udevice **devp);
  * @devp:	Returns the device for this address, if found
  * @return 0 if OK, -ENODEV if not found
  */
-int pci_bus_find_devfn(struct udevice *bus, pci_dev_t find_devfn,
+int pci_bus_find_devfn(const struct udevice *bus, pci_dev_t find_devfn,
 		       struct udevice **devp);
 
 /**
@@ -1036,7 +1067,7 @@ int dm_pci_hose_probe_bus(struct udevice *bus);
  * @size:	Access size
  * @return 0 if OK, -ve on error
  */
-int pci_bus_read_config(struct udevice *bus, pci_dev_t bdf, int offset,
+int pci_bus_read_config(const struct udevice *bus, pci_dev_t bdf, int offset,
 			unsigned long *valuep, enum pci_size_t size);
 
 /**
@@ -1071,12 +1102,12 @@ int pci_bus_clrset_config32(struct udevice *bus, pci_dev_t bdf, int offset,
  * Driver model PCI config access functions. Use these in preference to others
  * when you have a valid device
  */
-int dm_pci_read_config(struct udevice *dev, int offset, unsigned long *valuep,
-		       enum pci_size_t size);
+int dm_pci_read_config(const struct udevice *dev, int offset,
+		       unsigned long *valuep, enum pci_size_t size);
 
-int dm_pci_read_config8(struct udevice *dev, int offset, u8 *valuep);
-int dm_pci_read_config16(struct udevice *dev, int offset, u16 *valuep);
-int dm_pci_read_config32(struct udevice *dev, int offset, u32 *valuep);
+int dm_pci_read_config8(const struct udevice *dev, int offset, u8 *valuep);
+int dm_pci_read_config16(const struct udevice *dev, int offset, u16 *valuep);
+int dm_pci_read_config32(const struct udevice *dev, int offset, u32 *valuep);
 
 int dm_pci_write_config(struct udevice *dev, int offset, unsigned long value,
 			enum pci_size_t size);
@@ -1124,8 +1155,9 @@ int pci_read_config8(pci_dev_t pcidev, int offset, u8 *valuep);
  * Return: 0 on success, else -EINVAL
  */
 int pci_generic_mmap_write_config(
-	struct udevice *bus,
-	int (*addr_f)(struct udevice *bus, pci_dev_t bdf, uint offset, void **addrp),
+	const struct udevice *bus,
+	int (*addr_f)(const struct udevice *bus, pci_dev_t bdf, uint offset,
+		      void **addrp),
 	pci_dev_t bdf,
 	uint offset,
 	ulong value,
@@ -1149,8 +1181,9 @@ int pci_generic_mmap_write_config(
  * Return: 0 on success, else -EINVAL
  */
 int pci_generic_mmap_read_config(
-	struct udevice *bus,
-	int (*addr_f)(struct udevice *bus, pci_dev_t bdf, uint offset, void **addrp),
+	const struct udevice *bus,
+	int (*addr_f)(const struct udevice *bus, pci_dev_t bdf, uint offset,
+		      void **addrp),
 	pci_dev_t bdf,
 	uint offset,
 	ulong *valuep,
@@ -1280,7 +1313,7 @@ void dm_pci_write_bar32(struct udevice *dev, int barnum, u32 addr);
  * @barnum:	Bar number to read (numbered from 0)
  * @return: value of BAR
  */
-u32 dm_pci_read_bar32(struct udevice *dev, int barnum);
+u32 dm_pci_read_bar32(const struct udevice *dev, int barnum);
 
 /**
  * dm_pci_bus_to_phys() - convert a PCI bus address to a physical address
@@ -1308,12 +1341,16 @@ pci_addr_t dm_pci_phys_to_bus(struct udevice *dev, phys_addr_t addr,
  * dm_pci_map_bar() - get a virtual address associated with a BAR region
  *
  * Looks up a base address register and finds the physical memory address
- * that corresponds to it
+ * that corresponds to it.
+ * Can be used for 32b BARs 0-5 on type 0 functions and for 32b BARs 0-1 on
+ * type 1 functions.
+ * Can also be used on type 0 functions that support Enhanced Allocation for
+ * 32b/64b BARs.  Note that duplicate BEI entries are not supported.
  *
  * @dev:	Device to check
- * @bar:	Bar number to read (numbered from 0)
+ * @bar:	Bar register offset (PCI_BASE_ADDRESS_...)
  * @flags:	Flags for the region type (PCI_REGION_...)
- * @return: pointer to the virtual address to use
+ * @return: pointer to the virtual address to use or 0 on error
  */
 void *dm_pci_map_bar(struct udevice *dev, int bar, int flags);
 
@@ -1410,6 +1447,14 @@ int dm_pci_find_next_ext_capability(struct udevice *dev, int start, int cap);
  */
 int dm_pci_find_ext_capability(struct udevice *dev, int cap);
 
+/**
+ * dm_pci_flr() - Perform FLR if the device suppoorts it
+ *
+ * @dev:	PCI device to reset
+ * @return:	0 if OK, -ENOENT if FLR is not supported by dev
+ */
+int dm_pci_flr(struct udevice *dev);
+
 #define dm_pci_virt_to_bus(dev, addr, flags) \
 	dm_pci_phys_to_bus(dev, (virt_to_phys(addr)), (flags))
 #define dm_pci_bus_to_virt(dev, addr, flags, len, map_flags) \
@@ -1457,16 +1502,20 @@ int dm_pci_find_device(unsigned int vendor, unsigned int device, int index,
 int dm_pci_find_class(uint find_class, int index, struct udevice **devp);
 
 /**
+ * struct pci_emul_uc_priv - holds info about an emulator device
+ *
+ * There is always at most one emulator per client
+ *
+ * @client: Client device if any, else NULL
+ */
+struct pci_emul_uc_priv {
+	struct udevice *client;
+};
+
+/**
  * struct dm_pci_emul_ops - PCI device emulator operations
  */
 struct dm_pci_emul_ops {
-	/**
-	 * get_devfn(): Check which device and function this emulators
-	 *
-	 * @dev:	device to check
-	 * @return the device and function this emulates, or -ve on error
-	 */
-	int (*get_devfn)(struct udevice *dev);
 	/**
 	 * read_config() - Read a PCI configuration value
 	 *
@@ -1476,8 +1525,8 @@ struct dm_pci_emul_ops {
 	 * @size:	Access size
 	 * @return 0 if OK, -ve on error
 	 */
-	int (*read_config)(struct udevice *dev, uint offset, ulong *valuep,
-			   enum pci_size_t size);
+	int (*read_config)(const struct udevice *dev, uint offset,
+			   ulong *valuep, enum pci_size_t size);
 	/**
 	 * write_config() - Write a PCI configuration value
 	 *
@@ -1562,18 +1611,17 @@ struct dm_pci_emul_ops {
  * @emulp:	Returns emulated device if found
  * @return 0 if found, -ENODEV if not found
  */
-int sandbox_pci_get_emul(struct udevice *bus, pci_dev_t find_devfn,
+int sandbox_pci_get_emul(const struct udevice *bus, pci_dev_t find_devfn,
 			 struct udevice **containerp, struct udevice **emulp);
 
 /**
- * pci_get_devfn() - Extract the devfn from fdt_pci_addr of the device
+ * sandbox_pci_get_client() - Find the client for an emulation device
  *
- * Get devfn from fdt_pci_addr of the specifified device
- *
- * @dev:	PCI device
- * @return devfn in bits 15...8 if found, -ENODEV if not found
+ * @emul:	Emulation device to check
+ * @devp:	Returns the client device emulated by this device
+ * @return 0 if OK, -ENOENT if the device has no client yet
  */
-int pci_get_devfn(struct udevice *dev);
+int sandbox_pci_get_client(struct udevice *emul, struct udevice **devp);
 
 #endif /* CONFIG_DM_PCI */
 

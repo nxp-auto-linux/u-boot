@@ -26,7 +26,7 @@ static void print_mmcinfo(struct mmc *mmc)
 
 	printf("Bus Speed: %d\n", mmc->clock);
 #if CONFIG_IS_ENABLED(MMC_VERBOSE)
-	printf("Mode : %s\n", mmc_mode_name(mmc->selected_mode));
+	printf("Mode: %s\n", mmc_mode_name(mmc->selected_mode));
 	mmc_dump_capabilities("card capabilities", mmc->card_caps);
 	mmc_dump_capabilities("host capabilities", mmc->host_caps);
 #endif
@@ -264,7 +264,7 @@ static int do_mmcrpmb(cmd_tbl_t *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 
 	if (!(mmc->version & MMC_VERSION_MMC)) {
-		printf("It is not a EMMC device\n");
+		printf("It is not an eMMC device\n");
 		return CMD_RET_FAILURE;
 	}
 	if (mmc->version < MMC_VERSION_4_41) {
@@ -718,7 +718,7 @@ static int do_mmc_boot_resize(cmd_tbl_t *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 
 	if (IS_SD(mmc)) {
-		printf("It is not a EMMC device\n");
+		printf("It is not an eMMC device\n");
 		return CMD_RET_FAILURE;
 	}
 

@@ -45,7 +45,7 @@ config SERIAL_PRESENT
 
 config SPL_SERIAL_PRESENT
 	bool "Provide a serial driver in SPL"
-	depends on DM_SERIAL
+	depends on DM_SERIAL && SPL
 	default y
 	help
 	  In very space-constrained devices even the full UART driver is too
@@ -55,7 +55,7 @@ config SPL_SERIAL_PRESENT
 
 config TPL_SERIAL_PRESENT
 	bool "Provide a serial driver in TPL"
-	depends on DM_SERIAL
+	depends on DM_SERIAL && TPL
 	default y
 	help
 	  In very space-constrained devices even the full UART driver is too
@@ -100,6 +100,7 @@ config CONS_INDEX
 config DM_SERIAL
 	bool "Enable Driver Model for serial drivers"
 	depends on DM
+	select SYS_MALLOC_F
 	help
 	  Enable driver model for serial. This replaces
 	  drivers/serial/serial.c with the serial uclass, which
@@ -136,6 +137,7 @@ config SERIAL_SEARCH_ALL
 config SPL_DM_SERIAL
 	bool "Enable Driver Model for serial drivers in SPL"
 	depends on DM_SERIAL && SPL_DM
+	select SYS_SPL_MALLOC_F
 	default y
 	help
 	  Enable driver model for serial in SPL. This replaces
@@ -145,7 +147,8 @@ config SPL_DM_SERIAL
 
 config TPL_DM_SERIAL
 	bool "Enable Driver Model for serial drivers in TPL"
-	depends on DM_SERIAL
+	depends on DM_SERIAL && TPL_DM
+	select SYS_TPL_MALLOC_F
 	default y if TPL && DM_SERIAL
 	help
 	  Enable driver model for serial in TPL. This replaces
@@ -508,6 +511,15 @@ config ATMEL_USART
 	  configured in the device tree, and input clock frequency can
 	  be got from the clk node.
 
+config SPL_UART_CLOCK
+	int "SPL fixed UART input clock"
+	depends on ATMEL_USART && SPL && !SPL_CLK
+	default 132096000 if ARCH_AT91
+	help
+	  Provide a fixed clock value as input to the UART controller. This
+	  might be needed on platforms which can't enable CONFIG_SPL_CLK
+	  because of SPL image size restrictions.
+
 config BCM283X_MU_SERIAL
 	bool "Support for BCM283x Mini-UART"
 	depends on DM_SERIAL && ARCH_BCM283X
@@ -530,6 +542,24 @@ config BCM6345_SERIAL
 	help
 	  Select this to enable UART on BCM6345 SoCs.
 
+config COREBOOT_SERIAL
+	bool "Coreboot UART support"
+	depends on DM_SERIAL
+	default y if SYS_COREBOOT
+	select SYS_NS16550
+	help
+	  Select this to enable a ns16550-style UART where the platform data
+	  comes from the coreboot 'sysinfo' tables. This allows U-Boot to have
+	  a serial console on any platform without needing to change the
+	  device tree, etc.
+
+config CORTINA_UART
+	bool "Cortina UART support"
+	depends on DM_SERIAL
+	help
+	  Select this to enable UART support for Cortina-Access UART devices
+	  found on CAxxxx SoCs.
+
 config FSL_LINFLEXUART
 	bool "Freescale Linflex UART support"
 	depends on DM_SERIAL
@@ -550,9 +580,17 @@ config MVEBU_A3700_UART
 	  Choose this option to add support for UART driver on the Marvell
 	  Armada 3700 SoC. The base address is configured via DT.
 
+config MCFUART
+	bool "Freescale ColdFire UART support"
+        help
+          Choose this option to add support for UART driver on the ColdFire
+          SoC's family. The serial communication channel provides a full-duplex
+          asynchronous/synchronous receiver and transmitter deriving an
+          operating frequency from the internal bus clock or an external clock.
+
 config MXC_UART
 	bool "IMX serial port support"
-	depends on MX5 || MX6
+	depends on MX5 || MX6 || MX7 || IMX8M
 	help
 	  If you have a machine based on a Motorola IMX CPU you
 	  can enable its onboard serial port by enabling this option.
@@ -580,6 +618,27 @@ config SYS_NS16550
 	  CONFIG_SYS_NS16550_CLK defined in a legacy board header file will
 	  be used. It can be a constant or a function to get clock, eg,
 	  get_serial_clock().
+
+config NS16550_DYNAMIC
+	bool "Allow NS16550 to be configured at runtime"
+	default y if SYS_COREBOOT || SYS_SLIMBOOTLOADER
+	help
+	  Enable this option to allow device-tree control of the driver.
+
+	  Normally this driver is controlled by the following options:
+
+	  CONFIG_SYS_NS16550_PORT_MAPPED - indicates that port I/O is used for
+	     access. If not enabled, then the UART is memory-mapped.
+	  CONFIG_SYS_NS16550_MEM32 - if memory-mapped, indicates that 32-bit
+	     access should be used (instead of 8-bit)
+	  CONFIG_SYS_NS16550_REG_SIZE - indicates register width and also
+	     endianness. If positive, big-endian access is used. If negative,
+	     little-endian is used.
+
+	  It is not a good practice for a driver to be statically configured,
+	  since it prevents the same driver being used for different types of
+	  UARTs in a system. This option avoids this problem at the cost of a
+	  slightly increased code size.
 
 config INTEL_MID_SERIAL
 	bool "Intel MID platform UART support"

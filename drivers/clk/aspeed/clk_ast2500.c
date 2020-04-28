@@ -10,6 +10,7 @@
 #include <asm/arch/scu_ast2500.h>
 #include <dm/lists.h>
 #include <dt-bindings/clock/ast2500-scu.h>
+#include <linux/err.h>
 
 /*
  * MAC Clock Delay settings, taken from Aspeed SDK
@@ -137,6 +138,17 @@ static ulong ast2500_clk_get_rate(struct clk *clk)
 			ulong apb_div = 4 + 4 * ((readl(&priv->scu->clk_sel1)
 						  & SCU_PCLK_DIV_MASK)
 						 >> SCU_PCLK_DIV_SHIFT);
+			rate = ast2500_get_hpll_rate(clkin,
+						     readl(&priv->
+							   scu->h_pll_param));
+			rate = rate / apb_div;
+		}
+		break;
+	case BCLK_SDCLK:
+		{
+			ulong apb_div = 4 + 4 * ((readl(&priv->scu->clk_sel1)
+						  & SCU_SDCLK_DIV_MASK)
+						 >> SCU_SDCLK_DIV_SHIFT);
 			rate = ast2500_get_hpll_rate(clkin,
 						     readl(&priv->
 							   scu->h_pll_param));
@@ -436,6 +448,22 @@ static int ast2500_clk_enable(struct clk *clk)
 	struct ast2500_clk_priv *priv = dev_get_priv(clk->dev);
 
 	switch (clk->id) {
+	case BCLK_SDCLK:
+		if (readl(&priv->scu->clk_stop_ctrl1) & SCU_CLKSTOP_SDCLK) {
+			ast_scu_unlock(priv->scu);
+
+			setbits_le32(&priv->scu->sysreset_ctrl1,
+				     SCU_SYSRESET_SDIO);
+			udelay(100);
+			clrbits_le32(&priv->scu->clk_stop_ctrl1,
+				     SCU_CLKSTOP_SDCLK);
+			mdelay(10);
+			clrbits_le32(&priv->scu->sysreset_ctrl1,
+				     SCU_SYSRESET_SDIO);
+
+			ast_scu_lock(priv->scu);
+		}
+		break;
 	/*
 	 * For MAC clocks the clock rate is
 	 * configured based on whether RGMII or RMII mode has been selected
@@ -463,7 +491,7 @@ struct clk_ops ast2500_clk_ops = {
 	.enable = ast2500_clk_enable,
 };
 
-static int ast2500_clk_probe(struct udevice *dev)
+static int ast2500_clk_ofdata_to_platdata(struct udevice *dev)
 {
 	struct ast2500_clk_priv *priv = dev_get_priv(dev);
 
@@ -498,5 +526,5 @@ U_BOOT_DRIVER(aspeed_ast2500_scu) = {
 	.priv_auto_alloc_size = sizeof(struct ast2500_clk_priv),
 	.ops		= &ast2500_clk_ops,
 	.bind		= ast2500_clk_bind,
-	.probe		= ast2500_clk_probe,
+	.ofdata_to_platdata		= ast2500_clk_ofdata_to_platdata,
 };

@@ -10,6 +10,7 @@
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
+#include <malloc.h>
 #include <spi.h>
 #include <reset.h>
 #include <wait_bit.h>
@@ -130,7 +131,7 @@ static int bcm63xx_spi_cs_info(struct udevice *bus, uint cs,
 
 	if (cs >= priv->num_cs) {
 		printf("no cs %u\n", cs);
-		return -ENODEV;
+		return -EINVAL;
 	}
 
 	return 0;

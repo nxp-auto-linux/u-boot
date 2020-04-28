@@ -8,6 +8,7 @@
 #include <common.h>
 #include <cpu.h>
 #include <dm.h>
+#include <init.h>
 #include <pci.h>
 #include <asm/cpu.h>
 #include <asm/cpu_x86.h>
@@ -68,9 +69,9 @@ static void set_max_freq(void)
 	msr_t msr;
 
 	/* Enable speed step */
-	msr = msr_read(MSR_IA32_MISC_ENABLES);
-	msr.lo |= (1 << 16);
-	msr_write(MSR_IA32_MISC_ENABLES, msr);
+	msr = msr_read(MSR_IA32_MISC_ENABLE);
+	msr.lo |= MISC_ENABLE_ENHANCED_SPEEDSTEP;
+	msr_write(MSR_IA32_MISC_ENABLE, msr);
 
 	/*
 	 * Set guaranteed ratio [21:16] from IACORE_RATIOS to bits [15:8] of

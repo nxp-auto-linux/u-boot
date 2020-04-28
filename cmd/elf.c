@@ -1,22 +1,15 @@
+// SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2001 William L. Pitts
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms are freely
- * permitted provided that the above copyright notice and this
- * paragraph and the following disclaimer are duplicated in all
- * such forms.
- *
- * This software is provided "AS IS" and without any express or
- * implied warranties, including, without limitation, the implied
- * warranties of merchantability and fitness for a particular
- * purpose.
  */
 
 #include <common.h>
 #include <command.h>
+#include <cpu_func.h>
 #include <elf.h>
-#include <environment.h>
+#include <env.h>
+#include <image.h>
 #include <net.h>
 #include <vxworks.h>
 #ifdef CONFIG_X86
@@ -293,7 +286,7 @@ int do_bootelf(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		/* Consume address */
 		argc--; argv++;
 	} else
-		addr = load_addr;
+		addr = image_load_addr;
 
 	if (!valid_elf_image(addr))
 		return 1;
@@ -347,7 +340,7 @@ int do_bootvx(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	 * If we don't know where the image is then we're done.
 	 */
 	if (argc < 2)
-		addr = load_addr;
+		addr = image_load_addr;
 	else
 		addr = simple_strtoul(argv[1], NULL, 16);
 

@@ -23,8 +23,6 @@
  * Commands configuration
  */
 
-/* SPI NOR flash default params, used by sf commands */
-
 /*
  * SDIO/MMC Card Configuration
  */
@@ -46,19 +44,12 @@
 
 #ifdef CONFIG_MVEBU_SPL_BOOT_DEVICE_SPI
 /* Environment in SPI NOR flash */
-#define CONFIG_ENV_SECT_SIZE		SZ_64K
-#define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
-#define CONFIG_ENV_OFFSET		SZ_1M
 #endif
 
 #ifdef CONFIG_MVEBU_SPL_BOOT_DEVICE_MMC
 /* Environment in MMC */
 #define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_ENV_SECT_SIZE		0x200
-#define CONFIG_ENV_SIZE			0x2000
 /* stay within first 1M */
-#define CONFIG_ENV_OFFSET		(SZ_1M - CONFIG_ENV_SIZE)
-#define CONFIG_ENV_ADDR			CONFIG_ENV_OFFSET
 #endif
 
 #define CONFIG_PHY_MARVELL		/* there is a marvell phy */
@@ -89,7 +80,6 @@
 
 /* Defines for SPL */
 #define CONFIG_SPL_SIZE			(140 << 10)
-#define CONFIG_SPL_TEXT_BASE		0x40000030
 #define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - 0x0030)
 
 #define CONFIG_SPL_BSS_START_ADDR	(0x40000000 + CONFIG_SPL_SIZE)
@@ -107,7 +97,6 @@
 #define CONFIG_SPL_SPI_FLASH_SUPPORT
 #define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SPL_SPI_SUPPORT
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x30000
 #define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
 #endif
 

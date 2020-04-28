@@ -55,6 +55,7 @@ cat << __HEADER_EOF
 	images {
 		uboot@1 {
 			description = "U-Boot (64-bit)";
+			os = "u-boot";
 			data = /incbin/("$BL33");
 			type = "standalone";
 			arch = "arm64";
@@ -63,6 +64,7 @@ cat << __HEADER_EOF
 		};
 		atf@1 {
 			description = "ARM Trusted Firmware";
+			os = "arm-trusted-firmware";
 			data = /incbin/("$BL31");
 			type = "firmware";
 			arch = "arm64";

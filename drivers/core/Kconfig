@@ -92,7 +92,7 @@ config DM_SEQ_ALIAS
 
 config SPL_DM_SEQ_ALIAS
 	bool "Support numbered aliases in device tree in SPL"
-	depends on DM
+	depends on SPL_DM
 	default n
 	help
 	  Most boards will have a '/aliases' node containing the path to
@@ -224,6 +224,15 @@ config SPL_OF_TRANSLATE
 	  If this option is not enabled, simple_bus_translate() will be
 	  used for the address translation. This function is faster and
 	  smaller in size than fdt_translate_address().
+
+config TRANSLATION_OFFSET
+	bool "Platforms specific translation offset"
+	depends on DM && OF_CONTROL
+	help
+	  Some platforms need a special address translation. Those
+	  platforms (e.g. mvebu in SPL) can configure a translation
+	  offset by enabling this option and setting the translation_offset
+	  variable in the GD in their platform- / board-specific code.
 
 config OF_ISA_BUS
 	bool

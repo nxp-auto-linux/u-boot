@@ -11,6 +11,8 @@
  */
 
 #include <common.h>
+#include <irq_func.h>
+#include <time.h>
 #include <watchdog.h>
 #include <command.h>
 #include <asm/processor.h>

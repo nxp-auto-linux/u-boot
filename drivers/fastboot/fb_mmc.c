@@ -6,6 +6,7 @@
 #include <config.h>
 #include <common.h>
 #include <blk.h>
+#include <env.h>
 #include <fastboot.h>
 #include <fastboot-internal.h>
 #include <fb_mmc.h>
@@ -31,13 +32,13 @@ static int part_get_info_by_name_or_alias(struct blk_desc *dev_desc,
 
 	ret = part_get_info_by_name(dev_desc, name, info);
 	if (ret < 0) {
-		/* strlen("fastboot_partition_alias_") + 32(part_name) + 1 */
-		char env_alias_name[25 + 32 + 1];
+		/* strlen("fastboot_partition_alias_") + PART_NAME_LEN + 1 */
+		char env_alias_name[25 + PART_NAME_LEN + 1];
 		char *aliased_part_name;
 
 		/* check for alias */
 		strcpy(env_alias_name, "fastboot_partition_alias_");
-		strncat(env_alias_name, name, 32);
+		strncat(env_alias_name, name, PART_NAME_LEN);
 		aliased_part_name = env_get(env_alias_name);
 		if (aliased_part_name != NULL)
 			ret = part_get_info_by_name(dev_desc,
@@ -127,6 +128,76 @@ static void write_raw_image(struct blk_desc *dev_desc, disk_partition_t *info,
 	       part_name);
 	fastboot_okay(NULL, response);
 }
+
+#ifdef CONFIG_FASTBOOT_MMC_BOOT1_SUPPORT
+static int fb_mmc_erase_mmc_hwpart(struct blk_desc *dev_desc)
+{
+	lbaint_t blks;
+
+	debug("Start Erasing mmc hwpart[%u]...\n", dev_desc->hwpart);
+
+	blks = fb_mmc_blk_write(dev_desc, 0, dev_desc->lba, NULL);
+
+	if (blks != dev_desc->lba) {
+		pr_err("Failed to erase mmc hwpart[%u]\n", dev_desc->hwpart);
+		return 1;
+	}
+
+	printf("........ erased %lu bytes from mmc hwpart[%u]\n",
+	       dev_desc->lba * dev_desc->blksz, dev_desc->hwpart);
+
+	return 0;
+}
+
+static void fb_mmc_boot1_ops(struct blk_desc *dev_desc, void *buffer,
+			     u32 buff_sz, char *response)
+{
+	lbaint_t blkcnt;
+	lbaint_t blks;
+	unsigned long blksz;
+
+	// To operate on EMMC_BOOT1 (mmc0boot0), we first change the hwpart
+	if (blk_dselect_hwpart(dev_desc, 1)) {
+		pr_err("Failed to select hwpart\n");
+		fastboot_fail("Failed to select hwpart", response);
+		return;
+	}
+
+	if (buffer) { /* flash */
+
+		/* determine number of blocks to write */
+		blksz = dev_desc->blksz;
+		blkcnt = ((buff_sz + (blksz - 1)) & ~(blksz - 1));
+		blkcnt = lldiv(blkcnt, blksz);
+
+		if (blkcnt > dev_desc->lba) {
+			pr_err("Image size too large\n");
+			fastboot_fail("Image size too large", response);
+			return;
+		}
+
+		debug("Start Flashing Image to EMMC_BOOT1...\n");
+
+		blks = fb_mmc_blk_write(dev_desc, 0, blkcnt, buffer);
+
+		if (blks != blkcnt) {
+			pr_err("Failed to write EMMC_BOOT1\n");
+			fastboot_fail("Failed to write EMMC_BOOT1", response);
+			return;
+		}
+
+		printf("........ wrote %lu bytes to EMMC_BOOT1\n",
+		       blkcnt * blksz);
+	} else { /* erase */
+		if (fb_mmc_erase_mmc_hwpart(dev_desc)) {
+			fastboot_fail("Failed to erase EMMC_BOOT1", response);
+			return;
+		}
+	}
+
+	fastboot_okay(NULL, response);
+}
+#endif
 
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 /**
@@ -298,7 +369,8 @@ static int fb_mmc_update_zimage(struct blk_desc *dev_desc,
  * @part_info: Pointer to returned disk_partition_t
  * @response: Pointer to fastboot response buffer
  */
-int fastboot_mmc_get_part_info(char *part_name, struct blk_desc **dev_desc,
+int fastboot_mmc_get_part_info(const char *part_name,
+			       struct blk_desc **dev_desc,
 			       disk_partition_t *part_info, char *response)
 {
 	int r;
@@ -308,8 +380,8 @@ int fastboot_mmc_get_part_info(char *part_name, struct blk_desc **dev_desc,
 		fastboot_fail("block device not found", response);
 		return -ENOENT;
 	}
-	if (!part_name) {
-		fastboot_fail("partition not found", response);
+	if (!part_name || !strcmp(part_name, "")) {
+		fastboot_fail("partition not given", response);
 		return -ENOENT;
 	}
 
@@ -343,8 +415,21 @@ void fastboot_mmc_flash_write(const char *cmd, void *download_buffer,
 		return;
 	}
 
+#ifdef CONFIG_FASTBOOT_MMC_BOOT1_SUPPORT
+	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_BOOT1_NAME) == 0) {
+		fb_mmc_boot1_ops(dev_desc, download_buffer,
+				 download_bytes, response);
+		return;
+	}
+#endif
+
 #if CONFIG_IS_ENABLED(EFI_PARTITION)
+#ifndef CONFIG_FASTBOOT_MMC_USER_NAME
 	if (strcmp(cmd, CONFIG_FASTBOOT_GPT_NAME) == 0) {
+#else
+	if (strcmp(cmd, CONFIG_FASTBOOT_GPT_NAME) == 0 ||
+	    strcmp(cmd, CONFIG_FASTBOOT_MMC_USER_NAME) == 0) {
+#endif
 		printf("%s: updating MBR, Primary and Backup GPT(s)\n",
 		       __func__);
 		if (is_valid_gpt_buf(dev_desc, download_buffer)) {
@@ -454,6 +539,25 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 		fastboot_fail("invalid mmc device", response);
 		return;
 	}
+
+#ifdef CONFIG_FASTBOOT_MMC_BOOT1_SUPPORT
+	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_BOOT1_NAME) == 0) {
+		/* erase EMMC boot1 */
+		fb_mmc_boot1_ops(dev_desc, NULL, 0, response);
+		return;
+	}
+#endif
+
+#ifdef CONFIG_FASTBOOT_MMC_USER_NAME
+	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_USER_NAME) == 0) {
+		/* erase EMMC userdata */
+		if (fb_mmc_erase_mmc_hwpart(dev_desc))
+			fastboot_fail("Failed to erase EMMC_USER", response);
+		else
+			fastboot_okay(NULL, response);
+		return;
+	}
+#endif
 
 	ret = part_get_info_by_name_or_alias(dev_desc, cmd, &info);
 	if (ret < 0) {

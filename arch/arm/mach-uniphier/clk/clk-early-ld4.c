@@ -15,16 +15,9 @@ void uniphier_ld4_early_clk_init(void)
 {
 	u32 tmp;
 
-	/* deassert reset */
-	if (spl_boot_device() != BOOT_DEVICE_NAND) {
-		tmp = readl(SC_RSTCTRL);
-		tmp &= ~SC_RSTCTRL_NRST_NAND;
-		writel(tmp, SC_RSTCTRL);
-	};
-
 	/* provide clocks */
-	tmp = readl(SC_CLKCTRL);
+	tmp = readl(sc_base + SC_CLKCTRL);
 	tmp |= SC_CLKCTRL_CEN_SBC | SC_CLKCTRL_CEN_PERI;
-	writel(tmp, SC_CLKCTRL);
-	readl(SC_CLKCTRL); /* dummy read */
+	writel(tmp, sc_base + SC_CLKCTRL);
+	readl(sc_base + SC_CLKCTRL); /* dummy read */
 }

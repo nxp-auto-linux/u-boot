@@ -17,7 +17,10 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <dm.h>
+#include <env.h>
+#include <init.h>
 #include <netdev.h>
 #include <asm/io.h>
 #include <dm/platform_data/serial_pl01x.h>
@@ -108,7 +111,7 @@ extern void cm_remap(void);
 	writel(SC_CTRL_FLASHVPP | SC_CTRL_FLASHWP, SC_CTRLS);
 #endif
 
-	icache_enable ();
+	icache_enable();
 
 	return 0;
 }

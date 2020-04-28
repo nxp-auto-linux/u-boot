@@ -18,7 +18,7 @@ class Entry_u_boot_with_ucode_ptr(Entry_blob):
     """U-Boot with embedded microcode pointer
 
     Properties / Entry arguments:
-        - filename: Filename of u-boot-nodtb.dtb (default 'u-boot-nodtb.dtb')
+        - filename: Filename of u-boot-nodtb.bin (default 'u-boot-nodtb.bin')
         - optional-ucode: boolean property to make microcode optional. If the
             u-boot.bin image does not include microcode, no error will
             be generated.
@@ -49,7 +49,7 @@ class Entry_u_boot_with_ucode_ptr(Entry_blob):
     def ProcessContents(self):
         # If the image does not need microcode, there is nothing to do
         if not self.target_offset:
-            return
+            return True
 
         # Get the offset of the microcode
         ucode_entry = self.section.FindEntryType('u-boot-ucode')
@@ -91,6 +91,6 @@ class Entry_u_boot_with_ucode_ptr(Entry_blob):
         # Write the microcode offset and size into the entry
         offset_and_size = struct.pack('<2L', offset, size)
         self.target_offset -= self.image_pos
-        self.ProcessContentsUpdate(self.data[:self.target_offset] +
-                                   offset_and_size +
-                                   self.data[self.target_offset + 8:])
+        return self.ProcessContentsUpdate(self.data[:self.target_offset] +
+                                          offset_and_size +
+                                          self.data[self.target_offset + 8:])

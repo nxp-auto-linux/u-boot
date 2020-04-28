@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
+ * Copyright 2019 NXP
  */
 
 #ifndef __CONFIG_H
@@ -51,7 +52,6 @@ unsigned long get_board_ddr_clk(void);
 	board/freescale/ls1021aqds/ls102xa_rcw_sd_ifc.cfg
 #endif
 
-#define CONFIG_SPL_TEXT_BASE		0x10000000
 #define CONFIG_SPL_MAX_SIZE		0x1a000
 #define CONFIG_SPL_STACK		0x1001d000
 #define CONFIG_SPL_PAD_TO		0x1c000
@@ -67,7 +67,6 @@ unsigned long get_board_ddr_clk(void);
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_SYS_FSL_PBL_RCW	board/freescale/ls1021aqds/ls102xa_rcw_nand.cfg
 
-#define CONFIG_SPL_TEXT_BASE		0x10000000
 #define CONFIG_SPL_MAX_SIZE		0x1a000
 #define CONFIG_SPL_STACK		0x1001d000
 #define CONFIG_SPL_PAD_TO		0x1c000
@@ -102,11 +101,6 @@ unsigned long get_board_ddr_clk(void);
 #ifdef CONFIG_DDR_ECC
 #define CONFIG_ECC_INIT_VIA_DDRCONTROLLER
 #define CONFIG_MEM_INIT_VALUE           0xdeadbeef
-#endif
-
-#if !defined(CONFIG_SD_BOOT) && !defined(CONFIG_NAND_BOOT) && \
-	!defined(CONFIG_QSPI_BOOT)
-#define CONFIG_SYS_QE_FMAN_FW_IN_NOR
 #endif
 
 /*
@@ -338,7 +332,12 @@ unsigned long get_board_ddr_clk(void);
 /*
  * I2C
  */
+#ifndef CONFIG_DM_I2C
 #define CONFIG_SYS_I2C
+#else
+#define CONFIG_I2C_SET_DEFAULT_BUS_NUM
+#define CONFIG_I2C_DEFAULT_BUS_NUMBER 0
+#endif
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
 #define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
@@ -461,13 +460,11 @@ unsigned long get_board_ddr_clk(void);
 #ifdef CONFIG_LPUART
 #define CONFIG_EXTRA_ENV_SETTINGS       \
 	"bootargs=root=/dev/ram0 rw console=ttyLP0,115200\0" \
-	"fdt_high=0xffffffff\0"         \
 	"initrd_high=0xffffffff\0"      \
 	"hwconfig=fsl_ddr:ctlr_intlv=null,bank_intlv=null\0"
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	"bootargs=root=/dev/ram0 rw console=ttyS0,115200\0" \
-	"fdt_high=0xffffffff\0"		\
 	"initrd_high=0xffffffff\0"      \
 	"hwconfig=fsl_ddr:ctlr_intlv=null,bank_intlv=null\0"
 #endif
@@ -475,6 +472,7 @@ unsigned long get_board_ddr_clk(void);
 /*
  * Miscellaneous configurable options
  */
+#define CONFIG_SYS_BOOTMAPSZ		(256 << 20)
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x9fffffff
@@ -500,20 +498,7 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_ENV_OVERWRITE
 
 #if defined(CONFIG_SD_BOOT)
-#define CONFIG_ENV_OFFSET		0x300000
 #define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_ENV_SIZE			0x2000
-#elif defined(CONFIG_QSPI_BOOT)
-#define CONFIG_ENV_SIZE			0x2000          /* 8KB */
-#define CONFIG_ENV_OFFSET		0x300000        /* 3MB */
-#define CONFIG_ENV_SECT_SIZE		0x10000
-#elif defined(CONFIG_NAND_BOOT)
-#define CONFIG_ENV_SIZE			0x2000
-#define CONFIG_ENV_OFFSET		(10 * CONFIG_SYS_NAND_BLOCK_SIZE)
-#else
-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x300000)
-#define CONFIG_ENV_SIZE			0x2000
-#define CONFIG_ENV_SECT_SIZE		0x20000 /* 128K (one sector) */
 #endif
 
 #include <asm/fsl_secure_boot.h>

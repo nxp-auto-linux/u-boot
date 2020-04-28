@@ -56,9 +56,6 @@
 /*
  *  Environment variables configurations
  */
-#define CONFIG_ENV_SECT_SIZE		0x40000		/* 256K */
-#define CONFIG_ENV_SIZE			0x02000
-#define CONFIG_ENV_OFFSET		0xc0000		/* env starts here - 768K */
 
 /*
  * U-Boot bootcode configuration
@@ -83,7 +80,6 @@
 /*
  * Other required minimal configurations
  */
-#define CONFIG_ARCH_CPU_INIT	/* call arch_cpu_init() */
 #define CONFIG_SYS_MEMTEST_START 0x00400000	/* 4M */
 #define CONFIG_SYS_MEMTEST_END	0x007fffff	/*(_8M -1) */
 #define CONFIG_SYS_RESET_ADDRESS 0xffff0000	/* Rst Vector Adr */

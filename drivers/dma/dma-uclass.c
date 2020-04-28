@@ -10,7 +10,9 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <dm.h>
+#include <malloc.h>
 #include <dm/read.h>
 #include <dma-uclass.h>
 #include <dt-structs.h>
@@ -121,10 +123,10 @@ int dma_free(struct dma *dma)
 
 	debug("%s(dma=%p)\n", __func__, dma);
 
-	if (!ops->free)
+	if (!ops->rfree)
 		return 0;
 
-	return ops->free(dma);
+	return ops->rfree(dma);
 }
 
 int dma_enable(struct dma *dma)
@@ -185,6 +187,18 @@ int dma_send(struct dma *dma, void *src, size_t len, void *metadata)
 		return -ENOSYS;
 
 	return ops->send(dma, src, len, metadata);
+}
+
+int dma_get_cfg(struct dma *dma, u32 cfg_id, void **cfg_data)
+{
+	struct dma_ops *ops = dma_dev_ops(dma->dev);
+
+	debug("%s(dma=%p)\n", __func__, dma);
+
+	if (!ops->get_cfg)
+		return -ENOSYS;
+
+	return ops->get_cfg(dma, cfg_id, cfg_data);
 }
 #endif /* CONFIG_DMA_CHANNELS */
 

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- *  EFI utils
+ * UEFI runtime variable services
  *
- *  Copyright (c) 2017 Rob Clark
+ * Copyright (c) 2017 Rob Clark
  */
 
-#include <malloc.h>
-#include <charset.h>
+#include <common.h>
 #include <efi_loader.h>
+#include <env_internal.h>
 #include <hexdump.h>
-#include <environment.h>
+#include <malloc.h>
 #include <search.h>
-#include <uuid.h>
+#include <u-boot/crc.h>
 
 #define READ_ONLY BIT(31)
 
@@ -125,6 +125,8 @@ static const char *parse_attr(const char *str, u32 *attrp)
 
 		if ((s = prefix(str, "ro"))) {
 			attr |= READ_ONLY;
+		} else if ((s = prefix(str, "nv"))) {
+			attr |= EFI_VARIABLE_NON_VOLATILE;
 		} else if ((s = prefix(str, "boot"))) {
 			attr |= EFI_VARIABLE_BOOTSERVICE_ACCESS;
 		} else if ((s = prefix(str, "run"))) {
@@ -146,7 +148,7 @@ static const char *parse_attr(const char *str, u32 *attrp)
 }
 
 /**
- * efi_efi_get_variable() - retrieve value of a UEFI variable
+ * efi_get_variable() - retrieve value of a UEFI variable
  *
  * This function implements the GetVariable runtime service.
  *
@@ -180,7 +182,7 @@ efi_status_t EFIAPI efi_get_variable(u16 *variable_name,
 	if (ret)
 		return EFI_EXIT(ret);
 
-	debug("%s: get '%s'\n", __func__, native_name);
+	EFI_PRINT("get '%s'\n", native_name);
 
 	val = env_get(native_name);
 	free(native_name);
@@ -202,8 +204,10 @@ efi_status_t EFIAPI efi_get_variable(u16 *variable_name,
 		len /= 2;
 		*data_size = len;
 
-		if (in_size < len)
-			return EFI_EXIT(EFI_BUFFER_TOO_SMALL);
+		if (in_size < len) {
+			ret = EFI_BUFFER_TOO_SMALL;
+			goto out;
+		}
 
 		if (!data)
 			return EFI_EXIT(EFI_INVALID_PARAMETER);
@@ -211,14 +215,16 @@ efi_status_t EFIAPI efi_get_variable(u16 *variable_name,
 		if (hex2bin(data, s, len))
 			return EFI_EXIT(EFI_DEVICE_ERROR);
 
-		debug("%s: got value: \"%s\"\n", __func__, s);
+		EFI_PRINT("got value: \"%s\"\n", s);
 	} else if ((s = prefix(val, "(utf8)"))) {
 		unsigned len = strlen(s) + 1;
 
 		*data_size = len;
 
-		if (in_size < len)
-			return EFI_EXIT(EFI_BUFFER_TOO_SMALL);
+		if (in_size < len) {
+			ret = EFI_BUFFER_TOO_SMALL;
+			goto out;
+		}
 
 		if (!data)
 			return EFI_EXIT(EFI_INVALID_PARAMETER);
@@ -226,16 +232,17 @@ efi_status_t EFIAPI efi_get_variable(u16 *variable_name,
 		memcpy(data, s, len);
 		((char *)data)[len] = '\0';
 
-		debug("%s: got value: \"%s\"\n", __func__, (char *)data);
+		EFI_PRINT("got value: \"%s\"\n", (char *)data);
 	} else {
-		debug("%s: invalid value: '%s'\n", __func__, val);
+		EFI_PRINT("invalid value: '%s'\n", val);
 		return EFI_EXIT(EFI_DEVICE_ERROR);
 	}
 
+out:
 	if (attributes)
 		*attributes = attr & EFI_VARIABLE_MASK;
 
-	return EFI_EXIT(EFI_SUCCESS);
+	return EFI_EXIT(ret);
 }
 
 static char *efi_variables_list;
@@ -256,8 +263,8 @@ static char *efi_cur_variable;
  * is the size of variable name including NULL.
  *
  * Return:		EFI_SUCCESS if parsing is OK, EFI_NOT_FOUND when
-			the entire variable list has been returned,
-			otherwise non-zero status code
+ *			the entire variable list has been returned,
+ *			otherwise non-zero status code
  */
 static efi_status_t parse_uboot_variable(char *variable,
 					 efi_uintn_t *variable_name_size,
@@ -266,7 +273,8 @@ static efi_status_t parse_uboot_variable(char *variable,
 					 u32 *attributes)
 {
 	char *guid, *name, *end, c;
-	unsigned long name_len;
+	size_t name_len;
+	efi_uintn_t old_variable_name_size;
 	u16 *p;
 
 	guid = strchr(variable, '_');
@@ -282,17 +290,17 @@ static efi_status_t parse_uboot_variable(char *variable,
 		return EFI_INVALID_PARAMETER;
 
 	name_len = end - name;
-	if (*variable_name_size < (name_len + 1)) {
-		*variable_name_size = name_len + 1;
+	old_variable_name_size = *variable_name_size;
+	*variable_name_size = sizeof(u16) * (name_len + 1);
+	if (old_variable_name_size < *variable_name_size)
 		return EFI_BUFFER_TOO_SMALL;
-	}
+
 	end++; /* point to value */
 
 	/* variable name */
 	p = variable_name;
 	utf8_utf16_strncpy(&p, name, name_len);
 	variable_name[name_len] = 0;
-	*variable_name_size = name_len + 1;
 
 	/* guid */
 	c = *(name - 1);
@@ -308,6 +316,7 @@ static efi_status_t parse_uboot_variable(char *variable,
 
 /**
  * efi_get_next_variable_name() - enumerate the current variable names
+ *
  * @variable_name_size:	size of variable_name buffer in byte
  * @variable_name:	name of uefi variable's name in u16
  * @vendor:		vendor's guid
@@ -315,14 +324,13 @@ static efi_status_t parse_uboot_variable(char *variable,
  * This function implements the GetNextVariableName service.
  *
  * See the Unified Extensible Firmware Interface (UEFI) specification for
- * details: http://wiki.phoenix.com/wiki/index.php/
- *		EFI_RUNTIME_SERVICES#GetNextVariableName.28.29
+ * details.
  *
  * Return: status code
  */
 efi_status_t EFIAPI efi_get_next_variable_name(efi_uintn_t *variable_name_size,
 					       u16 *variable_name,
-					       const efi_guid_t *vendor)
+					       efi_guid_t *vendor)
 {
 	char *native_name, *variable;
 	ssize_t name_len, list_len;
@@ -397,7 +405,7 @@ efi_status_t EFIAPI efi_get_next_variable_name(efi_uintn_t *variable_name_size,
 }
 
 /**
- * efi_efi_set_variable() - set value of a UEFI variable
+ * efi_set_variable() - set value of a UEFI variable
  *
  * This function implements the SetVariable runtime service.
  *
@@ -416,13 +424,17 @@ efi_status_t EFIAPI efi_set_variable(u16 *variable_name,
 				     efi_uintn_t data_size, const void *data)
 {
 	char *native_name = NULL, *val = NULL, *s;
+	const char *old_val;
+	size_t old_size;
 	efi_status_t ret = EFI_SUCCESS;
 	u32 attr;
 
 	EFI_ENTRY("\"%ls\" %pUl %x %zu %p", variable_name, vendor, attributes,
 		  data_size, data);
 
-	if (!variable_name || !vendor) {
+	if (!variable_name || !*variable_name || !vendor ||
+	    ((attributes & EFI_VARIABLE_RUNTIME_ACCESS) &&
+	     !(attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS))) {
 		ret = EFI_INVALID_PARAMETER;
 		goto out;
 	}
@@ -431,28 +443,56 @@ efi_status_t EFIAPI efi_set_variable(u16 *variable_name,
 	if (ret)
 		goto out;
 
-#define ACCESS_ATTR (EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS)
+	old_val = env_get(native_name);
+	if (old_val) {
+		old_val = parse_attr(old_val, &attr);
 
-	if ((data_size == 0) || !(attributes & ACCESS_ATTR)) {
-		/* delete the variable: */
-		env_set(native_name, NULL);
-		ret = EFI_SUCCESS;
-		goto out;
-	}
-
-	val = env_get(native_name);
-	if (val) {
-		parse_attr(val, &attr);
-
+		/* check read-only first */
 		if (attr & READ_ONLY) {
-			/* We should not free val */
-			val = NULL;
 			ret = EFI_WRITE_PROTECTED;
 			goto out;
 		}
+
+		if ((data_size == 0 &&
+		     !(attributes & EFI_VARIABLE_APPEND_WRITE)) ||
+		    !attributes) {
+			/* delete the variable: */
+			env_set(native_name, NULL);
+			ret = EFI_SUCCESS;
+			goto out;
+		}
+
+		/* attributes won't be changed */
+		if (attr != (attributes & ~EFI_VARIABLE_APPEND_WRITE)) {
+			ret = EFI_INVALID_PARAMETER;
+			goto out;
+		}
+
+		if (attributes & EFI_VARIABLE_APPEND_WRITE) {
+			if (!prefix(old_val, "(blob)")) {
+				ret = EFI_DEVICE_ERROR;
+				goto out;
+			}
+			old_size = strlen(old_val);
+		} else {
+			old_size = 0;
+		}
+	} else {
+		if (data_size == 0 || !attributes ||
+		    (attributes & EFI_VARIABLE_APPEND_WRITE)) {
+			/*
+			 * Trying to delete or to update a non-existent
+			 * variable.
+			 */
+			ret = EFI_NOT_FOUND;
+			goto out;
+		}
+
+		old_size = 0;
 	}
 
-	val = malloc(2 * data_size + strlen("{ro,run,boot}(blob)") + 1);
+	val = malloc(old_size + 2 * data_size
+		     + strlen("{ro,run,boot,nv}(blob)") + 1);
 	if (!val) {
 		ret = EFI_OUT_OF_RESOURCES;
 		goto out;
@@ -460,16 +500,17 @@ efi_status_t EFIAPI efi_set_variable(u16 *variable_name,
 
 	s = val;
 
-	/*
-	 * store attributes
-	 * TODO: several attributes are not supported
-	 */
-	attributes &= (EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS);
+	/* store attributes */
+	attributes &= (EFI_VARIABLE_NON_VOLATILE |
+		       EFI_VARIABLE_BOOTSERVICE_ACCESS |
+		       EFI_VARIABLE_RUNTIME_ACCESS);
 	s += sprintf(s, "{");
 	while (attributes) {
 		u32 attr = 1 << (ffs(attributes) - 1);
 
-		if (attr == EFI_VARIABLE_BOOTSERVICE_ACCESS)
+		if (attr == EFI_VARIABLE_NON_VOLATILE)
+			s += sprintf(s, "nv");
+		else if (attr == EFI_VARIABLE_BOOTSERVICE_ACCESS)
 			s += sprintf(s, "boot");
 		else if (attr == EFI_VARIABLE_RUNTIME_ACCESS)
 			s += sprintf(s, "run");
@@ -480,12 +521,17 @@ efi_status_t EFIAPI efi_set_variable(u16 *variable_name,
 	}
 	s += sprintf(s, "}");
 
+	if (old_size)
+		/* APPEND_WRITE */
+		s += sprintf(s, old_val);
+	else
+		s += sprintf(s, "(blob)");
+
 	/* store payload: */
-	s += sprintf(s, "(blob)");
 	s = bin2hex(s, data, data_size);
 	*s = '\0';
 
-	debug("%s: setting: %s=%s\n", __func__, native_name, val);
+	EFI_PRINT("setting: %s=%s\n", native_name, val);
 
 	if (env_set(native_name, val))
 		ret = EFI_DEVICE_ERROR;
@@ -495,4 +541,104 @@ out:
 	free(val);
 
 	return EFI_EXIT(ret);
+}
+
+/**
+ * efi_query_variable_info() - get information about EFI variables
+ *
+ * This function implements the QueryVariableInfo() runtime service.
+ *
+ * See the Unified Extensible Firmware Interface (UEFI) specification for
+ * details.
+ *
+ * @attributes:				bitmask to select variables to be
+ *					queried
+ * @maximum_variable_storage_size:	maximum size of storage area for the
+ *					selected variable types
+ * @remaining_variable_storage_size:	remaining size of storage are for the
+ *					selected variable types
+ * @maximum_variable_size:		maximum size of a variable of the
+ *					selected type
+ * Returns:				status code
+ */
+efi_status_t __efi_runtime EFIAPI efi_query_variable_info(
+			u32 attributes,
+			u64 *maximum_variable_storage_size,
+			u64 *remaining_variable_storage_size,
+			u64 *maximum_variable_size)
+{
+	return EFI_UNSUPPORTED;
+}
+
+/**
+ * efi_get_variable_runtime() - runtime implementation of GetVariable()
+ *
+ * @variable_name:	name of the variable
+ * @vendor:		vendor GUID
+ * @attributes:		attributes of the variable
+ * @data_size:		size of the buffer to which the variable value is copied
+ * @data:		buffer to which the variable value is copied
+ * Return:		status code
+ */
+static efi_status_t __efi_runtime EFIAPI
+efi_get_variable_runtime(u16 *variable_name, const efi_guid_t *vendor,
+			 u32 *attributes, efi_uintn_t *data_size, void *data)
+{
+	return EFI_UNSUPPORTED;
+}
+
+/**
+ * efi_get_next_variable_name_runtime() - runtime implementation of
+ *					  GetNextVariable()
+ *
+ * @variable_name_size:	size of variable_name buffer in byte
+ * @variable_name:	name of uefi variable's name in u16
+ * @vendor:		vendor's guid
+ * Return: status code
+ */
+static efi_status_t __efi_runtime EFIAPI
+efi_get_next_variable_name_runtime(efi_uintn_t *variable_name_size,
+				   u16 *variable_name, efi_guid_t *vendor)
+{
+	return EFI_UNSUPPORTED;
+}
+
+/**
+ * efi_set_variable_runtime() - runtime implementation of SetVariable()
+ *
+ * @variable_name:	name of the variable
+ * @vendor:		vendor GUID
+ * @attributes:		attributes of the variable
+ * @data_size:		size of the buffer with the variable value
+ * @data:		buffer with the variable value
+ * Return:		status code
+ */
+static efi_status_t __efi_runtime EFIAPI
+efi_set_variable_runtime(u16 *variable_name, const efi_guid_t *vendor,
+			 u32 attributes, efi_uintn_t data_size,
+			 const void *data)
+{
+	return EFI_UNSUPPORTED;
+}
+
+/**
+ * efi_variables_boot_exit_notify() - notify ExitBootServices() is called
+ */
+void efi_variables_boot_exit_notify(void)
+{
+	efi_runtime_services.get_variable = efi_get_variable_runtime;
+	efi_runtime_services.get_next_variable_name =
+				efi_get_next_variable_name_runtime;
+	efi_runtime_services.set_variable = efi_set_variable_runtime;
+	efi_update_table_header_crc32(&efi_runtime_services.hdr);
+}
+
+/**
+ * efi_init_variables() - initialize variable services
+ *
+ * Return:	status code
+ */
+efi_status_t efi_init_variables(void)
+{
+	return EFI_SUCCESS;
 }

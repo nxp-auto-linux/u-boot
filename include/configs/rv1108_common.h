@@ -5,10 +5,11 @@
 #ifndef __CONFIG_RV1108_COMMON_H
 #define __CONFIG_RV1108_COMMON_H
 
-#include <asm/arch/hardware.h>
+#include <asm/arch-rockchip/hardware.h>
 #include "rockchip-common.h"
 
-#define CONFIG_SYS_MALLOC_LEN		(32 << 20)
+#define CONFIG_IRAM_BASE		0x10080000
+
 #define CONFIG_SYS_CBSIZE		1024
 #define CONFIG_SKIP_LOWLEVEL_INIT
 

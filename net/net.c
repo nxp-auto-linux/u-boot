@@ -91,11 +91,16 @@
 #include <common.h>
 #include <command.h>
 #include <console.h>
-#include <environment.h>
+#include <env.h>
+#include <env_internal.h>
 #include <errno.h>
+#include <image.h>
 #include <net.h>
 #include <net/fastboot.h>
 #include <net/tftp.h>
+#if defined(CONFIG_CMD_PCAP)
+#include <net/pcap.h>
+#endif
 #if defined(CONFIG_LED_STATUS)
 #include <miiphy.h>
 #include <status_led.h>
@@ -305,7 +310,7 @@ U_BOOT_ENV_CALLBACK(dnsip, on_dnsip);
  */
 void net_auto_load(void)
 {
-#if defined(CONFIG_CMD_NFS)
+#if defined(CONFIG_CMD_NFS) && !defined(CONFIG_SPL_BUILD)
 	const char *s = env_get("autoload");
 
 	if (s != NULL && strcmp(s, "NFS") == 0) {
@@ -505,7 +510,7 @@ restart:
 			ping_start();
 			break;
 #endif
-#if defined(CONFIG_CMD_NFS)
+#if defined(CONFIG_CMD_NFS) && !defined(CONFIG_SPL_BUILD)
 		case NFS:
 			nfs_start();
 			break;
@@ -570,9 +575,6 @@ restart:
 	 */
 	for (;;) {
 		WATCHDOG_RESET();
-#ifdef CONFIG_SHOW_ACTIVITY
-		show_activity(1);
-#endif
 		if (arp_timeout_check() > 0)
 			time_start = get_timer(0);
 
@@ -648,7 +650,7 @@ restart:
 				printf("Bytes transferred = %d (%x hex)\n",
 				       net_boot_file_size, net_boot_file_size);
 				env_set_hex("filesize", net_boot_file_size);
-				env_set_hex("fileaddr", load_addr);
+				env_set_hex("fileaddr", image_load_addr);
 			}
 			if (protocol != NETCONS)
 				eth_halt();
@@ -684,6 +686,11 @@ done:
 	net_set_icmp_handler(NULL);
 #endif
 	net_set_state(prev_net_state);
+
+#if defined(CONFIG_CMD_PCAP)
+	if (pcap_active())
+		pcap_print_status();
+#endif
 	return ret;
 }
 
@@ -889,9 +896,6 @@ int net_send_ip_packet(uchar *ether, struct in_addr dest, int dport, int sport,
  * to the algorithm in RFC815. It returns NULL or the pointer to
  * a complete packet, in static storage
  */
-#ifndef CONFIG_NET_MAXDEFRAG
-#define CONFIG_NET_MAXDEFRAG 16384
-#endif
 #define IP_PKTSIZE (CONFIG_NET_MAXDEFRAG)
 
 #define IP_MAXUDP (IP_PKTSIZE - IP_HDR_SIZE)
@@ -1096,6 +1100,9 @@ void net_process_received_packet(uchar *in_packet, int len)
 
 	debug_cond(DEBUG_NET_PKT, "packet received\n");
 
+#if defined(CONFIG_CMD_PCAP)
+	pcap_post(in_packet, len, false);
+#endif
 	net_rx_packet = in_packet;
 	net_rx_packet_len = len;
 	et = (struct ethernet_hdr *)in_packet;
@@ -1265,6 +1272,9 @@ void net_process_received_packet(uchar *in_packet, int len)
 			return;
 		}
 
+		if (ntohs(ip->udp_len) < UDP_HDR_SIZE || ntohs(ip->udp_len) > ntohs(ip->ip_len))
+			return;
+
 		debug_cond(DEBUG_DEV_PKT,
 			   "received UDP (to=%pI4, from=%pI4, len=%d)\n",
 			   &dst_ip, &src_ip, len);
@@ -1272,7 +1282,7 @@ void net_process_received_packet(uchar *in_packet, int len)
 #ifdef CONFIG_UDP_CHECKSUM
 		if (ip->udp_xsum != 0) {
 			ulong   xsum;
-			ushort *sumptr;
+			u8 *sumptr;
 			ushort  sumlen;
 
 			xsum  = ip->ip_p;
@@ -1283,22 +1293,16 @@ void net_process_received_packet(uchar *in_packet, int len)
 			xsum += (ntohl(ip->ip_dst.s_addr) >>  0) & 0x0000ffff;
 
 			sumlen = ntohs(ip->udp_len);
-			sumptr = (ushort *)&(ip->udp_src);
+			sumptr = (u8 *)&ip->udp_src;
 
 			while (sumlen > 1) {
-				ushort sumdata;
-
-				sumdata = *sumptr++;
-				xsum += ntohs(sumdata);
+				/* inlined ntohs() to avoid alignment errors */
+				xsum += (sumptr[0] << 8) + sumptr[1];
+				sumptr += 2;
 				sumlen -= 2;
 			}
-			if (sumlen > 0) {
-				ushort sumdata;
-
-				sumdata = *(unsigned char *)sumptr;
-				sumdata = (sumdata << 8) & 0xff00;
-				xsum += sumdata;
-			}
+			if (sumlen > 0)
+				xsum += (sumptr[0] << 8) + sumptr[0];
 			while ((xsum >> 16) != 0) {
 				xsum = (xsum & 0x0000ffff) +
 				       ((xsum >> 16) & 0x0000ffff);

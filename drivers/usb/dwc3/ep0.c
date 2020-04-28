@@ -13,6 +13,8 @@
  * commit c00552ebaf : Merge 3.18-rc7 into usb-next
  */
 #include <common.h>
+#include <cpu_func.h>
+#include <dm/device_compat.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
 

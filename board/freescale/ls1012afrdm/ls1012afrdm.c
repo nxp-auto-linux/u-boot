@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <fdt_support.h>
 #include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
@@ -15,7 +16,7 @@
 #include <asm/arch/soc.h>
 #include <fsl_esdhc.h>
 #include <hwconfig.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <fsl_mmdc.h>
 #include <netdev.h>
 #include <fsl_sec.h>

@@ -7,10 +7,12 @@
  */
 
 #ifndef __UBOOT__
+#include <dm/devres.h>
 #include <linux/dmaengine.h>
 #include <linux/pm_runtime.h>
 #include "internals.h"
 #else
+#include <dm/device_compat.h>
 #include <spi.h>
 #include <spi-mem.h>
 #endif
@@ -123,6 +125,12 @@ static int spi_check_buswidth_req(struct spi_slave *slave, u8 buswidth, bool tx)
 			return 0;
 
 		break;
+	case 8:
+		if ((tx && (mode & SPI_TX_OCTAL)) ||
+		    (!tx && (mode & SPI_RX_OCTAL)))
+			return 0;
+
+		break;
 
 	default:
 		break;
@@ -201,7 +209,6 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	unsigned int pos = 0;
 	const u8 *tx_buf = NULL;
 	u8 *rx_buf = NULL;
-	u8 *op_buf;
 	int op_len;
 	u32 flag;
 	int ret;
@@ -214,7 +221,7 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	if (ret < 0)
 		return ret;
 
-	if (ops->mem_ops) {
+	if (ops->mem_ops && ops->mem_ops->exec_op) {
 #ifndef __UBOOT__
 		/*
 		 * Flush the message queue before executing our SPI memory
@@ -338,7 +345,17 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	}
 
 	op_len = sizeof(op->cmd.opcode) + op->addr.nbytes + op->dummy.nbytes;
-	op_buf = calloc(1, op_len);
+
+	/*
+	 * Avoid using malloc() here so that we can use this code in SPL where
+	 * simple malloc may be used. That implementation does not allow free()
+	 * so repeated calls to this code can exhaust the space.
+	 *
+	 * The value of op_len is small, since it does not include the actual
+	 * data being sent, only the op-code and address. In fact, it should be
+	 * possible to just use a small fixed value here instead of op_len.
+	 */
+	u8 op_buf[op_len];
 
 	op_buf[pos++] = op->cmd.opcode;
 
@@ -382,8 +399,6 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 		debug("%02x ", tx_buf ? tx_buf[i] : rx_buf[i]);
 	debug("[ret %d]\n", ret);
 
-	free(op_buf);
-
 	if (ret < 0)
 		return ret;
 #endif /* __UBOOT__ */
@@ -423,12 +438,14 @@ int spi_mem_adjust_op_size(struct spi_slave *slave, struct spi_mem_op *op)
 		if (slave->max_write_size && len > slave->max_write_size)
 			return -EINVAL;
 
-		if (op->data.dir == SPI_MEM_DATA_IN && slave->max_read_size)
-			op->data.nbytes = min(op->data.nbytes,
+		if (op->data.dir == SPI_MEM_DATA_IN) {
+			if (slave->max_read_size)
+				op->data.nbytes = min(op->data.nbytes,
 					      slave->max_read_size);
-		else if (slave->max_write_size)
+		} else if (slave->max_write_size) {
 			op->data.nbytes = min(op->data.nbytes,
 					      slave->max_write_size - len);
+		}
 
 		if (!op->data.nbytes)
 			return -EINVAL;

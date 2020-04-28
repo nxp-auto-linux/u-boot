@@ -23,14 +23,6 @@
 /* We need architecture specific misc initializations */
 
 /* Link Definitions */
-#ifndef CONFIG_TFABOOT
-#ifndef CONFIG_QSPI_BOOT
-#else
-#define CONFIG_ENV_SIZE			0x2000          /* 8KB */
-#define CONFIG_ENV_OFFSET		0x300000        /* 3MB */
-#define CONFIG_ENV_SECT_SIZE		0x40000
-#endif
-#endif
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
@@ -75,7 +67,9 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2048 * 1024)
 
 /* I2C */
+#ifndef CONFIG_DM_I2C
 #define CONFIG_SYS_I2C
+#endif
 
 /* Serial Port */
 #define CONFIG_SYS_NS16550_SERIAL
@@ -208,7 +202,6 @@ unsigned long long get_qixis_addr(void);
 #define CONFIG_SPL_MAX_SIZE		0x16000
 #define CONFIG_SPL_STACK		(CONFIG_SYS_FSL_OCRAM_BASE + 0x9ff0)
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
-#define CONFIG_SPL_TEXT_BASE		0x1800a000
 
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_SYS_NAND_U_BOOT_DST	0x80400000

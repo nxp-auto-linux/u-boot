@@ -39,17 +39,10 @@
 #define CONFIG_EHCI_IS_TDI
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 3
 
-/* SPI NOR flash default params, used by sf commands */
-
 /* Environment in SPI NOR flash */
-#define CONFIG_ENV_OFFSET		(1 << 20) /* 1MiB in */
-#define CONFIG_ENV_SIZE			(64 << 10) /* 64KiB */
-#define CONFIG_ENV_SECT_SIZE		(256 << 10) /* 256KiB sectors */
 #define CONFIG_ENV_OVERWRITE
 
 #define PHY_ANEG_TIMEOUT	8000	/* PHY needs a longer aneg time */
-
-#define CONFIG_PREBOOT
 
 /* Keep device tree and initrd in lower memory so the kernel can access them */
 #define CONFIG_EXTRA_ENV_SETTINGS	\
@@ -97,7 +90,6 @@
 
 /* SPL */
 /* Defines for SPL */
-#define CONFIG_SPL_TEXT_BASE		0x40004030
 #define CONFIG_SPL_MAX_SIZE		((128 << 10) - 0x4030)
 
 #define CONFIG_SPL_BSS_START_ADDR	(0x40000000 + (128 << 10))
@@ -111,7 +103,6 @@
 #define CONFIG_SPL_BOOTROM_SAVE		(CONFIG_SPL_STACK + 4)
 
 /* SPL related SPI defines */
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x1a000
 #define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
 
 /* Enable DDR support in SPL (DDR3 training from Marvell bin_hdr) */

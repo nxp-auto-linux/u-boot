@@ -7,7 +7,6 @@
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/pinctrl/rockchip.h>
 #include "rk3399.dtsi"
-#include "rk3399-sdram-lpddr3-4GB-1600.dtsi"
 
 / {
 	model = "Rockchip RK3399 Evaluation Board";
@@ -16,8 +15,6 @@
 
 	chosen {
 		stdout-path = &uart2;
-		u-boot,spl-boot-order = \
-			&sdhci, &sdmmc;
 	};
 
 	vdd_center: vdd-center {
@@ -155,7 +152,6 @@
 };
 
 &sdmmc {
-	u-boot,dm-pre-reloc;
 	bus-width = <4>;
 	status = "okay";
 };
@@ -180,7 +176,7 @@
 	status = "okay";
 };
 
-&dwc3_typec0 {
+&usbdrd3_0 {
 	vbus-supply = <&vcc5v0_typec0>;
 	status = "okay";
 };
@@ -193,7 +189,7 @@
 	status = "okay";
 };
 
-&dwc3_typec1 {
+&usbdrd3_1 {
 	vbus-supply = <&vcc5v0_typec1>;
 	status = "okay";
 };

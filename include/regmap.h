@@ -274,7 +274,7 @@ int regmap_raw_read_range(struct regmap *map, uint range_num, uint offset,
 		if (cond) \
 			break; \
 		if (IS_ENABLED(CONFIG_SANDBOX) && test_add_time) \
-			sandbox_timer_add_offset(test_add_time); \
+			timer_test_add_offset(test_add_time); \
 		if ((timeout_ms) && get_timer(__start) > (timeout_ms)) { \
 			__ret = regmap_read((map), (addr), &(val)); \
 			break; \
@@ -295,7 +295,8 @@ int regmap_raw_read_range(struct regmap *map, uint range_num, uint offset,
  * @map:	The map returned by regmap_init_mem*()
  * @offset:	Offset of the memory
  * @mask:	Mask to apply to the read value
- * @val:	Value to apply to the value to write
+ * @val:	Value to OR with the read value after masking. Note that any
+ *	bits set in @val which are not set in @mask are ignored
  * Return: 0 if OK, -ve on error
  */
 int regmap_update_bits(struct regmap *map, uint offset, uint mask, uint val);
@@ -329,6 +330,8 @@ int regmap_init_mem(ofnode node, struct regmap **mapp);
  */
 int regmap_init_mem_platdata(struct udevice *dev, fdt_val_t *reg, int count,
 			     struct regmap **mapp);
+
+int regmap_init_mem_index(ofnode node, struct regmap **mapp, int index);
 
 /**
  * regmap_get_range() - Obtain the base memory address of a regmap range

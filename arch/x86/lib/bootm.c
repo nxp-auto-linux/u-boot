@@ -9,6 +9,7 @@
 
 #include <common.h>
 #include <command.h>
+#include <hang.h>
 #include <dm/device.h>
 #include <dm/root.h>
 #include <errno.h>
@@ -35,7 +36,7 @@ void bootm_announce_and_cleanup(void)
 	timestamp_add_now(TS_U_BOOT_START_KERNEL);
 #endif
 	bootstage_mark_name(BOOTSTAGE_ID_BOOTM_HANDOFF, "start_kernel");
-#ifdef CONFIG_BOOTSTAGE_REPORT
+#if CONFIG_IS_ENABLED(BOOTSTAGE_REPORT)
 	bootstage_report();
 #endif
 

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
+ * Copyright 2019 NXP
  */
 
 #ifndef __CONFIG_H
@@ -69,7 +70,6 @@
 #define CONFIG_SPL_MMC_SUPPORT
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0xe8
 
-#define CONFIG_SPL_TEXT_BASE	0x10000000
 #define CONFIG_SPL_MAX_SIZE		0x1a000
 #define CONFIG_SPL_STACK		0x1001d000
 #define CONFIG_SPL_PAD_TO		0x1c000
@@ -98,7 +98,13 @@
  * I2C
  */
 #define CONFIG_CMD_I2C
+
+#ifndef CONFIG_DM_I2C
 #define CONFIG_SYS_I2C
+#else
+#define CONFIG_I2C_SET_DEFAULT_BUS_NUM
+#define CONFIG_I2C_DEFAULT_BUS_NUMBER 0
+#endif
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
 #define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
@@ -201,12 +207,13 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	"bootargs=root=/dev/ram0 rw console=ttyS0,115200\0" \
-"initrd_high=0xffffffff\0"	\
-"fdt_high=0xffffffff\0"
+"initrd_high=0xffffffff\0"
 
 /*
  * Miscellaneous configurable options
  */
+#define CONFIG_SYS_BOOTMAPSZ		(256 << 20)
+
 #define CONFIG_CMD_GREPENV
 #define CONFIG_CMD_MEMINFO
 
@@ -235,13 +242,7 @@
 #define CONFIG_ENV_OVERWRITE
 
 #if defined(CONFIG_SD_BOOT)
-#define CONFIG_ENV_OFFSET		0x100000
 #define CONFIG_SYS_MMC_ENV_DEV	0
-#define CONFIG_ENV_SIZE			0x2000
-#elif defined(CONFIG_QSPI_BOOT)
-#define CONFIG_ENV_SIZE			0x2000
-#define CONFIG_ENV_OFFSET		0x100000
-#define CONFIG_ENV_SECT_SIZE	0x10000
 #endif
 
 #define CONFIG_OF_BOARD_SETUP

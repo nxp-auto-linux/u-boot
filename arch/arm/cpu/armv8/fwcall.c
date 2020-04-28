@@ -28,7 +28,6 @@ static void hvc_call(struct pt_regs *args)
 		"ldr x4, %4\n"
 		"ldr x5, %5\n"
 		"ldr x6, %6\n"
-		"ldr x7, %7\n"
 		"hvc	#0\n"
 		"str x0, %0\n"
 		"str x1, %1\n"
@@ -37,7 +36,7 @@ static void hvc_call(struct pt_regs *args)
 		: "+m" (args->regs[0]), "+m" (args->regs[1]),
 		  "+m" (args->regs[2]), "+m" (args->regs[3])
 		: "m" (args->regs[4]), "m" (args->regs[5]),
-		  "m" (args->regs[6]), "m" (args->regs[7])
+		  "m" (args->regs[6])
 		: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
 		  "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15",
 		  "x16", "x17");
@@ -90,6 +89,22 @@ void __noreturn psci_system_reset(void)
 
 	regs.regs[0] = ARM_PSCI_0_2_FN_SYSTEM_RESET;
 
+	if (use_smc_for_psci)
+		smc_call(&regs);
+	else
+		hvc_call(&regs);
+
+	while (1)
+		;
+}
+
+void __noreturn psci_system_reset2(u32 reset_level, u32 cookie)
+{
+	struct pt_regs regs;
+
+	regs.regs[0] = ARM_PSCI_0_2_FN64_SYSTEM_RESET2;
+	regs.regs[1] = PSCI_RESET2_TYPE_VENDOR | reset_level;
+	regs.regs[2] = cookie;
 	if (use_smc_for_psci)
 		smc_call(&regs);
 	else

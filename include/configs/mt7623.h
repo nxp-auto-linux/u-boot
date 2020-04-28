@@ -27,12 +27,10 @@
 #define CONFIG_SYS_NONCACHED_MEMORY	SZ_1M
 
 /* Environment */
-#define CONFIG_ENV_SIZE			SZ_4K
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
 
 /* Preloader -> Uboot */
-#define CONFIG_SYS_UBOOT_START		CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_TEXT_BASE + SZ_2M - \
 					 GENERATED_GBL_DATA_SIZE)
 
@@ -42,7 +40,6 @@
 
 /* MMC */
 #define MMC_SUPPORTS_TUNING
-#define CONFIG_SUPPORT_EMMC_BOOT
 
 /* DRAM */
 #define CONFIG_SYS_SDRAM_BASE		0x80000000
@@ -59,6 +56,5 @@
 #define CONFIG_SERVERIP			192.168.1.2
 
 #define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_ENV_OFFSET		0x100000
 
 #endif

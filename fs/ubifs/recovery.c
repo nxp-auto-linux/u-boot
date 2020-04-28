@@ -36,8 +36,10 @@
  */
 
 #ifndef __UBOOT__
+#include <dm/devres.h>
 #include <linux/crc32.h>
 #include <linux/slab.h>
+#include <u-boot/crc.h>
 #else
 #include <linux/err.h>
 #endif

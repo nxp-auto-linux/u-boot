@@ -7,8 +7,6 @@
 #ifndef __CONFIG_KEYMILE_H
 #define __CONFIG_KEYMILE_H
 
-#undef	CONFIG_WATCHDOG		/* disable platform specific watchdog */
-
 /*
  * Miscellaneous configurable options
  */
@@ -27,12 +25,6 @@
 #define CONFIG_LOADS_ECHO
 #define CONFIG_SYS_LOADS_BAUD_CHANGE
 
-
-/* Support the IVM EEprom */
-#define	CONFIG_SYS_IVM_EEPROM_ADR	0x50
-#define CONFIG_SYS_IVM_EEPROM_MAX_LEN	0x400
-#define CONFIG_SYS_IVM_EEPROM_PAGE_LEN	0x100
-
 /*
  * BOOTP options
  */
@@ -44,11 +36,6 @@
 #ifndef CONFIG_KM_DEF_ENV_BOOTPARAMS
 #define CONFIG_KM_DEF_ENV_BOOTPARAMS \
 	"actual_bank=0\0"
-#endif
-
-#ifndef CONFIG_KM_DEF_NETDEV
-#define CONFIG_KM_DEF_NETDEV	\
-	"netdev=eth0\0"
 #endif
 
 #ifndef CONFIG_KM_UBI_PARTITION_NAME_BOOT
@@ -176,7 +163,7 @@
 #ifndef CONFIG_KM_DEF_ENV
 #define CONFIG_KM_DEF_ENV	\
 	CONFIG_KM_DEF_ENV_BOOTPARAMS					\
-	CONFIG_KM_DEF_NETDEV						\
+	"netdev=" __stringify(CONFIG_KM_DEF_NETDEV) "\0"		\
 	CONFIG_KM_DEF_ENV_CPU						\
 	CONFIG_KM_DEF_ENV_BOOTTARGETS					\
 	CONFIG_KM_DEF_ENV_BOOTARGS					\

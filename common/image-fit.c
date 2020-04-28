@@ -11,6 +11,7 @@
 #ifdef USE_HOSTCC
 #include "mkimage.h"
 #include <time.h>
+#include <u-boot/crc.h>
 #else
 #include <linux/compiler.h>
 #include <linux/kconfig.h>
@@ -22,6 +23,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 #endif /* !USE_HOSTCC*/
 
+#include <bootm.h>
 #include <image.h>
 #include <bootstage.h>
 #include <u-boot/crc.h>
@@ -166,7 +168,7 @@ static void fit_image_print_data(const void *fit, int noffset, const char *p,
 	int value_len;
 	char *algo;
 	const char *padding;
-	int required;
+	bool required;
 	int ret, i;
 
 	debug("%s  %s node:    '%s'\n", p, type,
@@ -177,8 +179,8 @@ static void fit_image_print_data(const void *fit, int noffset, const char *p,
 		return;
 	}
 	printf("%s", algo);
-	keyname = fdt_getprop(fit, noffset, "key-name-hint", NULL);
-	required = fdt_getprop(fit, noffset, "required", NULL) != NULL;
+	keyname = fdt_getprop(fit, noffset, FIT_KEY_HINT, NULL);
+	required = fdt_getprop(fit, noffset, FIT_KEY_REQUIRED, NULL) != NULL;
 	if (keyname)
 		printf(":%s", keyname);
 	if (required)
@@ -946,6 +948,31 @@ int fit_image_get_data_size(const void *fit, int noffset, int *data_size)
 }
 
 /**
+ * Get 'data-size-unciphered' property from a given image node.
+ *
+ * @fit: pointer to the FIT image header
+ * @noffset: component image node offset
+ * @data_size: holds the data-size property
+ *
+ * returns:
+ *     0, on success
+ *     -ENOENT if the property could not be found
+ */
+int fit_image_get_data_size_unciphered(const void *fit, int noffset,
+				       size_t *data_size)
+{
+	const fdt32_t *val;
+
+	val = fdt_getprop(fit, noffset, "data-size-unciphered", NULL);
+	if (!val)
+		return -ENOENT;
+
+	*data_size = (size_t)fdt32_to_cpu(*val);
+
+	return 0;
+}
+
+/**
  * fit_image_get_data_and_size - get data and its size including
  *				 both embedded and external data
  * @fit: pointer to the FIT format image header
@@ -984,8 +1011,10 @@ int fit_image_get_data_and_size(const void *fit, int noffset,
 	if (external_data) {
 		debug("External Data\n");
 		ret = fit_image_get_data_size(fit, noffset, &len);
-		*data = fit + offset;
-		*size = len;
+		if (!ret) {
+			*data = fit + offset;
+			*size = len;
+		}
 	} else {
 		ret = fit_image_get_data(fit, noffset, data, size);
 	}
@@ -1074,6 +1103,33 @@ static int fit_image_hash_get_ignore(const void *fit, int noffset, int *ignore)
 		*ignore = 0;
 	else
 		*ignore = *value;
+
+	return 0;
+}
+
+/**
+ * fit_image_cipher_get_algo - get cipher algorithm name
+ * @fit: pointer to the FIT format image header
+ * @noffset: cipher node offset
+ * @algo: double pointer to char, will hold pointer to the algorithm name
+ *
+ * fit_image_cipher_get_algo() finds cipher algorithm property in a given
+ * cipher node. If the property is found its data start address is returned
+ * to the caller.
+ *
+ * returns:
+ *     0, on success
+ *     -1, on failure
+ */
+int fit_image_cipher_get_algo(const void *fit, int noffset, char **algo)
+{
+	int len;
+
+	*algo = (char *)fdt_getprop(fit, noffset, FIT_ALGO_PROP, &len);
+	if (!*algo) {
+		fit_get_debug(fit, noffset, FIT_ALGO_PROP, len);
+		return -1;
+	}
 
 	return 0;
 }
@@ -1352,6 +1408,32 @@ int fit_all_image_verify(const void *fit)
 	return 1;
 }
 
+#ifdef CONFIG_FIT_CIPHER
+static int fit_image_uncipher(const void *fit, int image_noffset,
+			      void **data, size_t *size)
+{
+	int cipher_noffset, ret;
+	void *dst;
+	size_t size_dst;
+
+	cipher_noffset = fdt_subnode_offset(fit, image_noffset,
+					    FIT_CIPHER_NODENAME);
+	if (cipher_noffset < 0)
+		return 0;
+
+	ret = fit_image_decrypt_data(fit, image_noffset, cipher_noffset,
+				     *data, *size, &dst, &size_dst);
+	if (ret)
+		goto out;
+
+	*data = dst;
+	*size = size_dst;
+
+ out:
+	return ret;
+}
+#endif /* CONFIG_FIT_CIPHER */
+
 /**
  * fit_image_check_os - check whether image node is of a given os type
  * @fit: pointer to the FIT format image header
@@ -1521,6 +1603,10 @@ int fit_check_format(const void *fit)
  * compatible list, "foo,bar", matches a compatible string in the root of fdt1.
  * "bim,bam" in fdt2 matches the second string which isn't as good as fdt1.
  *
+ * As an optimization, the compatible property from the FDT's root node can be
+ * copied into the configuration node in the FIT image. This is required to
+ * match configurations with compressed FDTs.
+ *
  * returns:
  *     offset to the configuration to use if one was found
  *     -1 otherwise
@@ -1553,48 +1639,62 @@ int fit_conf_find_compat(const void *fit, const void *fdt)
 	for (noffset = fdt_next_node(fit, confs_noffset, &ndepth);
 			(noffset >= 0) && (ndepth > 0);
 			noffset = fdt_next_node(fit, noffset, &ndepth)) {
-		const void *kfdt;
+		const void *fdt;
 		const char *kfdt_name;
-		int kfdt_noffset;
+		int kfdt_noffset, compat_noffset;
 		const char *cur_fdt_compat;
 		int len;
-		size_t size;
+		size_t sz;
 		int i;
 
 		if (ndepth > 1)
 			continue;
 
-		kfdt_name = fdt_getprop(fit, noffset, "fdt", &len);
-		if (!kfdt_name) {
-			debug("No fdt property found.\n");
-			continue;
-		}
-		kfdt_noffset = fdt_subnode_offset(fit, images_noffset,
-						  kfdt_name);
-		if (kfdt_noffset < 0) {
-			debug("No image node named \"%s\" found.\n",
-			      kfdt_name);
-			continue;
-		}
-		/*
-		 * Get a pointer to this configuration's fdt.
-		 */
-		if (fit_image_get_data(fit, kfdt_noffset, &kfdt, &size)) {
-			debug("Failed to get fdt \"%s\".\n", kfdt_name);
-			continue;
+		/* If there's a compat property in the config node, use that. */
+		if (fdt_getprop(fit, noffset, "compatible", NULL)) {
+			fdt = fit;		  /* search in FIT image */
+			compat_noffset = noffset; /* search under config node */
+		} else {	/* Otherwise extract it from the kernel FDT. */
+			kfdt_name = fdt_getprop(fit, noffset, "fdt", &len);
+			if (!kfdt_name) {
+				debug("No fdt property found.\n");
+				continue;
+			}
+			kfdt_noffset = fdt_subnode_offset(fit, images_noffset,
+							  kfdt_name);
+			if (kfdt_noffset < 0) {
+				debug("No image node named \"%s\" found.\n",
+				      kfdt_name);
+				continue;
+			}
+
+			if (!fit_image_check_comp(fit, kfdt_noffset,
+						  IH_COMP_NONE)) {
+				debug("Can't extract compat from \"%s\" "
+				      "(compressed)\n", kfdt_name);
+				continue;
+			}
+
+			/* search in this config's kernel FDT */
+			if (fit_image_get_data(fit, kfdt_noffset, &fdt, &sz)) {
+				debug("Failed to get fdt \"%s\".\n", kfdt_name);
+				continue;
+			}
+
+			compat_noffset = 0;  /* search kFDT under root node */
 		}
 
 		len = fdt_compat_len;
 		cur_fdt_compat = fdt_compat;
 		/*
 		 * Look for a match for each U-Boot compatibility string in
-		 * turn in this configuration's fdt.
+		 * turn in the compat string property.
 		 */
 		for (i = 0; len > 0 &&
 		     (!best_match_offset || best_match_pos > i); i++) {
 			int cur_len = strlen(cur_fdt_compat) + 1;
 
-			if (!fdt_node_check_compatible(kfdt, 0,
+			if (!fdt_node_check_compatible(fdt, compat_noffset,
 						       cur_fdt_compat)) {
 				best_match_offset = noffset;
 				best_match_pos = i;
@@ -1612,24 +1712,6 @@ int fit_conf_find_compat(const void *fit, const void *fdt)
 	return best_match_offset;
 }
 
-/**
- * fit_conf_get_node - get node offset for configuration of a given unit name
- * @fit: pointer to the FIT format image header
- * @conf_uname: configuration node unit name
- *
- * fit_conf_get_node() finds a configuration (within the '/configurations'
- * parent node) of a provided unit name. If configuration is found its node
- * offset is returned to the caller.
- *
- * When NULL is provided in second argument fit_conf_get_node() will search
- * for a default configuration node instead. Default configuration node unit
- * name is retrieved from FIT_DEFAULT_PROP property of the '/configurations'
- * node.
- *
- * returns:
- *     configuration node offset when found (>=0)
- *     negative number on failure (FDT_ERR_* code)
- */
 int fit_conf_get_node(const void *fit, const char *conf_uname)
 {
 	int noffset, confs_noffset;
@@ -1795,11 +1877,12 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 	const char *fit_uname_config;
 	const char *fit_base_uname_config;
 	const void *fit;
-	const void *buf;
+	void *buf;
+	void *loadbuf;
 	size_t size;
 	int type_ok, os_ok;
-	ulong load, data, len;
-	uint8_t os;
+	ulong load, load_end, data, len;
+	uint8_t os, comp;
 #ifndef USE_HOSTCC
 	uint8_t os_arch;
 #endif
@@ -1868,7 +1951,7 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 		fit_uname = fit_get_name(fit, noffset, NULL);
 	}
 	if (noffset < 0) {
-		puts("Could not find subimage node\n");
+		printf("Could not find subimage node type '%s'\n", prop_name);
 		bootstage_error(bootstage_id + BOOTSTAGE_SUB_SUBNODE);
 		return -ENOENT;
 	}
@@ -1895,12 +1978,6 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 	images->os.arch = os_arch;
 #endif
 
-	if (image_type == IH_TYPE_FLATDT &&
-	    !fit_image_check_comp(fit, noffset, IH_COMP_NONE)) {
-		puts("FDT image is compressed");
-		return -EPROTONOSUPPORT;
-	}
-
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_CHECK_ALL);
 	type_ok = fit_image_check_type(fit, noffset, image_type) ||
 		  fit_image_check_type(fit, noffset, IH_TYPE_FIRMWARE) ||
@@ -1911,7 +1988,9 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 		image_type == IH_TYPE_FPGA ||
 		fit_image_check_os(fit, noffset, IH_OS_LINUX) ||
 		fit_image_check_os(fit, noffset, IH_OS_U_BOOT) ||
-		fit_image_check_os(fit, noffset, IH_OS_OPENRTOS);
+		fit_image_check_os(fit, noffset, IH_OS_OPENRTOS) ||
+		fit_image_check_os(fit, noffset, IH_OS_EFI) ||
+		fit_image_check_os(fit, noffset, IH_OS_VXWORKS);
 
 	/*
 	 * If either of the checks fail, we should report an error, but
@@ -1931,38 +2010,36 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_CHECK_ALL_OK);
 
 	/* get image data address and length */
-	if (fit_image_get_data_and_size(fit, noffset, &buf, &size)) {
+	if (fit_image_get_data_and_size(fit, noffset,
+					(const void **)&buf, &size)) {
 		printf("Could not find %s subimage data!\n", prop_name);
 		bootstage_error(bootstage_id + BOOTSTAGE_SUB_GET_DATA);
 		return -ENOENT;
 	}
 
+#ifdef CONFIG_FIT_CIPHER
+	/* Decrypt data before uncompress/move */
+	if (IMAGE_ENABLE_DECRYPT) {
+		puts("   Decrypting Data ... ");
+		if (fit_image_uncipher(fit, noffset, &buf, &size)) {
+			puts("Error\n");
+			return -EACCES;
+		}
+		puts("OK\n");
+	}
+#endif
+
 #if !defined(USE_HOSTCC) && defined(CONFIG_FIT_IMAGE_POST_PROCESS)
 	/* perform any post-processing on the image data */
-	board_fit_image_post_process((void **)&buf, &size);
+	board_fit_image_post_process(&buf, &size);
 #endif
 
 	len = (ulong)size;
 
-	/* verify that image data is a proper FDT blob */
-	if (image_type == IH_TYPE_FLATDT && fdt_check_header(buf)) {
-		puts("Subimage data is not a FDT");
-		return -ENOEXEC;
-	}
-
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_GET_DATA_OK);
 
-	/*
-	 * Work-around for eldk-4.2 which gives this warning if we try to
-	 * cast in the unmap_sysmem() call:
-	 * warning: initialization discards qualifiers from pointer target type
-	 */
-	{
-		void *vbuf = (void *)buf;
-
-		data = map_to_sysmem(vbuf);
-	}
-
+	data = map_to_sysmem(buf);
+	load = data;
 	if (load_op == FIT_LOAD_IGNORED) {
 		/* Don't load */
 	} else if (fit_image_get_load(fit, noffset, &load)) {
@@ -1974,8 +2051,6 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 		}
 	} else if (load_op != FIT_LOAD_OPTIONAL_NON_ZERO || load) {
 		ulong image_start, image_end;
-		ulong load_end;
-		void *dst;
 
 		/*
 		 * move image data to the load address,
@@ -1993,14 +2068,50 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 
 		printf("   Loading %s from 0x%08lx to 0x%08lx\n",
 		       prop_name, data, load);
-
-		dst = map_sysmem(load, len);
-		memmove(dst, buf, len);
-		data = load;
+	} else {
+		load = data;	/* No load address specified */
 	}
+
+	comp = IH_COMP_NONE;
+	loadbuf = buf;
+	/* Kernel images get decompressed later in bootm_load_os(). */
+	if (!fit_image_get_comp(fit, noffset, &comp) &&
+	    comp != IH_COMP_NONE &&
+	    !(image_type == IH_TYPE_KERNEL ||
+	      image_type == IH_TYPE_KERNEL_NOLOAD ||
+	      image_type == IH_TYPE_RAMDISK)) {
+		ulong max_decomp_len = len * 20;
+		if (load == data) {
+			loadbuf = malloc(max_decomp_len);
+			load = map_to_sysmem(loadbuf);
+		} else {
+			loadbuf = map_sysmem(load, max_decomp_len);
+		}
+		if (image_decomp(comp, load, data, image_type,
+				loadbuf, buf, len, max_decomp_len, &load_end)) {
+			printf("Error decompressing %s\n", prop_name);
+
+			return -ENOEXEC;
+		}
+		len = load_end - load;
+	} else if (load != data) {
+		loadbuf = map_sysmem(load, len);
+		memcpy(loadbuf, buf, len);
+	}
+
+	if (image_type == IH_TYPE_RAMDISK && comp != IH_COMP_NONE)
+		puts("WARNING: 'compression' nodes for ramdisks are deprecated,"
+		     " please fix your .its file!\n");
+
+	/* verify that image data is a proper FDT blob */
+	if (image_type == IH_TYPE_FLATDT && fdt_check_header(loadbuf)) {
+		puts("Subimage data is not a FDT");
+		return -ENOEXEC;
+	}
+
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_LOAD);
 
-	*datap = data;
+	*datap = load;
 	*lenp = len;
 	if (fit_unamep)
 		*fit_unamep = (char *)fit_uname;
@@ -2118,6 +2229,18 @@ int boot_get_fdt_fit(bootm_headers_t *images, ulong addr,
 			if (next_config)
 				*next_config++ = '\0';
 			uname = NULL;
+
+			/*
+			 * fit_image_load() would load the first FDT from the
+			 * extra config only when uconfig is specified.
+			 * Check if the extra config contains multiple FDTs and
+			 * if so, load them.
+			 */
+			cfg_noffset = fit_conf_get_node(fit, uconfig);
+
+			i = 0;
+			count = fit_conf_get_prop_node_count(fit, cfg_noffset,
+							     FIT_FDT_PROP);
 		}
 
 		debug("%d: using uname=%s uconfig=%s\n", i, uname, uconfig);

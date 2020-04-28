@@ -11,6 +11,7 @@
  */
 
 #include <common.h>
+#include <env.h>
 #include <malloc.h>
 #include <command.h>
 #include <part_efi.h>
@@ -19,6 +20,7 @@
 #include <div64.h>
 #include <memalign.h>
 #include <linux/compat.h>
+#include <linux/err.h>
 #include <linux/sizes.h>
 #include <stdlib.h>
 
@@ -632,21 +634,6 @@ static int do_disk_guid(struct blk_desc *dev_desc, char * const namestr)
 }
 
 #ifdef CONFIG_CMD_GPT_RENAME
-/*
- * There are 3 malloc() calls in set_gpt_info() and there is no info about which
- * failed.
- */
-static void set_gpt_cleanup(char **str_disk_guid,
-			    disk_partition_t **partitions)
-{
-#ifdef CONFIG_RANDOM_UUID
-	if (str_disk_guid)
-		free(str_disk_guid);
-#endif
-	if (partitions)
-		free(partitions);
-}
-
 static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 			       char *name1, char *name2)
 {
@@ -654,7 +641,7 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 	struct disk_part *curr;
 	disk_partition_t *new_partitions = NULL;
 	char disk_guid[UUID_STR_LEN + 1];
-	char *partitions_list, *str_disk_guid;
+	char *partitions_list, *str_disk_guid = NULL;
 	u8 part_count = 0;
 	int partlistlen, ret, numparts = 0, partnum, i = 1, ctr1 = 0, ctr2 = 0;
 
@@ -696,14 +683,8 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 	/* set_gpt_info allocates new_partitions and str_disk_guid */
 	ret = set_gpt_info(dev_desc, partitions_list, &str_disk_guid,
 			   &new_partitions, &part_count);
-	if (ret < 0) {
-		del_gpt_info();
-		free(partitions_list);
-		if (ret == -ENOMEM)
-			set_gpt_cleanup(&str_disk_guid, &new_partitions);
-		else
-			goto out;
-	}
+	if (ret < 0)
+		goto out;
 
 	if (!strcmp(subcomm, "swap")) {
 		if ((strlen(name1) > PART_NAME_LEN) || (strlen(name2) > PART_NAME_LEN)) {
@@ -765,14 +746,8 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 	 * Even though valid pointers are here passed into set_gpt_info(),
 	 * it mallocs again, and there's no way to tell which failed.
 	 */
-	if (ret < 0) {
-		del_gpt_info();
-		free(partitions_list);
-		if (ret == -ENOMEM)
-			set_gpt_cleanup(&str_disk_guid, &new_partitions);
-		else
-			goto out;
-	}
+	if (ret < 0)
+		goto out;
 
 	debug("Writing new partition table\n");
 	ret = gpt_restore(dev_desc, disk_guid, new_partitions, numparts);
@@ -794,10 +769,14 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 	}
 	printf("new partition table with %d partitions is:\n", numparts);
 	print_gpt_info();
-	del_gpt_info();
  out:
-	free(new_partitions);
-	free(str_disk_guid);
+	del_gpt_info();
+#ifdef CONFIG_RANDOM_UUID
+	if (str_disk_guid)
+		free(str_disk_guid);
+#endif
+	if (new_partitions)
+		free(new_partitions);
 	free(partitions_list);
 	return ret;
 }
@@ -876,21 +855,21 @@ U_BOOT_CMD(gpt, CONFIG_SYS_MAXARGS, 1, do_gpt,
 	" Example usage:\n"
 	" gpt write mmc 0 $partitions\n"
 	" gpt verify mmc 0 $partitions\n"
-	" read <interface> <dev>\n"
-	"    - read GPT into a data structure for manipulation\n"
-	" guid <interface> <dev>\n"
+	" gpt guid <interface> <dev>\n"
 	"    - print disk GUID\n"
-	" guid <interface> <dev> <varname>\n"
+	" gpt guid <interface> <dev> <varname>\n"
 	"    - set environment variable to disk GUID\n"
 	" Example usage:\n"
 	" gpt guid mmc 0\n"
 	" gpt guid mmc 0 varname\n"
 #ifdef CONFIG_CMD_GPT_RENAME
 	"gpt partition renaming commands:\n"
-	"gpt swap <interface> <dev> <name1> <name2>\n"
+	" gpt read <interface> <dev>\n"
+	"    - read GPT into a data structure for manipulation\n"
+	" gpt swap <interface> <dev> <name1> <name2>\n"
 	"    - change all partitions named name1 to name2\n"
 	"      and vice-versa\n"
-	"gpt rename <interface> <dev> <part> <name>\n"
+	" gpt rename <interface> <dev> <part> <name>\n"
 	"    - rename the specified partition\n"
 	" Example usage:\n"
 	" gpt swap mmc 0 foo bar\n"

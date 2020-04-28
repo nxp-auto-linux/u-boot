@@ -35,7 +35,6 @@
 #define CONFIG_PHY_ATHEROS
 
 /* Framebuffer */
-#define CONFIG_VIDEO_IPUV3
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_SPLASH_SCREEN
 #define CONFIG_SPLASH_SCREEN_ALIGN
@@ -46,21 +45,7 @@
 #define CONFIG_IMX_VIDEO_SKIP
 
 /* USB */
-#define CONFIG_EHCI_HCD_INIT_AFTER_RESET
 #define CONFIG_MXC_USB_PORTSC		(PORT_PTS_UTMI | PORT_PTS_PTW)
-#define CONFIG_MXC_USB_FLAGS		0
-#define CONFIG_USB_MAX_CONTROLLER_COUNT	2
-#define CONFIG_PREBOOT \
-	"if hdmidet; then " \
-		"usb start; "		       \
-		"setenv stdin  serial,usbkbd; "\
-		"setenv stdout serial,vga; "   \
-		"setenv stderr serial,vga; "   \
-	"else " \
-		"setenv stdin  serial; " \
-		"setenv stdout serial; " \
-		"setenv stderr serial; " \
-	"fi;"
 
 /* Command definition */
 
@@ -81,7 +66,6 @@
 	"ramdisk_addr_r=0x13000000\0" \
 	"ramdiskaddr=0x13000000\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_high=0xffffffff\0" \
 	"ip_dyn=yes\0" \
 	"console=" CONSOLE_DEV ",115200\0" \
 	"bootm_size=0x10000000\0" \
@@ -120,7 +104,8 @@
 	BOOTENV
 
 #define BOOT_TARGET_DEVICES(func) \
-	func(MMC, mmc, 0) \
+	func(MMC, mmc, 1) \
+	func(MMC, mmc, 2) \
 	func(SATA, sata, 0) \
 	func(USB, usb, 0) \
 	func(PXE, pxe, na) \
@@ -143,7 +128,5 @@
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
 /* Environment organization */
-#define CONFIG_ENV_SIZE			(8 * 1024)
-#define CONFIG_ENV_OFFSET		(SZ_1M - CONFIG_ENV_SIZE)
 
 #endif                         /* __MX6CUBOXI_CONFIG_H */

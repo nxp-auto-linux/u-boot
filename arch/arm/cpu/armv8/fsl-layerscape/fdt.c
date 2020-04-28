@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <clock_legacy.h>
 #include <efi_loader.h>
 #include <linux/libfdt.h>
 #include <fdt_support.h>
@@ -401,6 +402,32 @@ void fdt_fixup_remove_jr(void *blob)
 }
 #endif
 
+#ifdef CONFIG_ARCH_LS1028A
+static void fdt_disable_multimedia(void *blob, unsigned int svr)
+{
+	int off;
+
+	if (IS_MULTIMEDIA_EN(svr))
+		return;
+
+	/* Disable eDP/LCD node */
+	off = fdt_node_offset_by_compatible(blob, -1, "arm,mali-dp500");
+	if (off != -FDT_ERR_NOTFOUND)
+		fdt_status_disabled(blob, off);
+
+	/* Disable GPU node */
+	off = fdt_node_offset_by_compatible(blob, -1, "fsl,ls1028a-gpu");
+	if (off != -FDT_ERR_NOTFOUND)
+		fdt_status_disabled(blob, off);
+}
+#endif
+
+#ifdef CONFIG_PCIE_ECAM_GENERIC
+__weak void fdt_fixup_ecam(void *blob)
+{
+}
+#endif
+
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
 	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
@@ -435,7 +462,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	do_fixup_by_path_u32(blob, "/sysclk", "clock-frequency",
 			     CONFIG_SYS_CLK_FREQ, 1);
 
-#ifdef CONFIG_PCI
+#if defined(CONFIG_PCIE_LAYERSCAPE) || defined(CONFIG_PCIE_LAYERSCAPE_GEN4)
 	ft_pci_setup(blob, bd);
 #endif
 
@@ -461,5 +488,11 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #endif
 #ifdef CONFIG_HAS_FEATURE_ENHANCED_MSI
 	fdt_fixup_msi(blob);
+#endif
+#ifdef CONFIG_ARCH_LS1028A
+	fdt_disable_multimedia(blob, svr);
+#endif
+#ifdef CONFIG_PCIE_ECAM_GENERIC
+	fdt_fixup_ecam(blob);
 #endif
 }

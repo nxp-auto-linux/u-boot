@@ -4,6 +4,7 @@
  * modified to use CONFIG_SYS_ISA_MEM and new defines
  */
 
+#include <clock_legacy.h>
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
@@ -12,6 +13,7 @@
 #include <reset.h>
 #include <serial.h>
 #include <watchdog.h>
+#include <linux/err.h>
 #include <linux/types.h>
 #include <asm/io.h>
 
@@ -21,7 +23,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define UART_MCRVAL (UART_MCR_DTR | \
 		     UART_MCR_RTS)		/* RTS/DTR */
 
-#ifndef CONFIG_DM_SERIAL
+#if !CONFIG_IS_ENABLED(DM_SERIAL)
 #ifdef CONFIG_SYS_NS16550_PORT_MAPPED
 #define serial_out(x, y)	outb(x, (ulong)y)
 #define serial_in(y)		inb((ulong)y)
@@ -86,11 +88,72 @@ static inline int serial_in_shift(void *addr, int shift)
 #endif
 }
 
-#ifdef CONFIG_DM_SERIAL
+#if CONFIG_IS_ENABLED(DM_SERIAL)
 
 #ifndef CONFIG_SYS_NS16550_CLK
 #define CONFIG_SYS_NS16550_CLK  0
 #endif
+
+/*
+ * Use this #ifdef for now since many platforms don't define in(), out(),
+ * out_le32(), etc. but we don't have #defines to indicate this.
+ *
+ * TODO(sjg@chromium.org): Add CONFIG options to indicate what I/O is available
+ * on a platform
+ */
+#ifdef CONFIG_NS16550_DYNAMIC
+static void serial_out_dynamic(struct ns16550_platdata *plat, u8 *addr,
+			       int value)
+{
+	if (plat->flags & NS16550_FLAG_IO) {
+		outb(value, addr);
+	} else if (plat->reg_width == 4) {
+		if (plat->flags & NS16550_FLAG_ENDIAN) {
+			if (plat->flags & NS16550_FLAG_BE)
+				out_be32(addr, value);
+			else
+				out_le32(addr, value);
+		} else {
+			writel(value, addr);
+		}
+	} else if (plat->flags & NS16550_FLAG_BE) {
+		writeb(value, addr + (1 << plat->reg_shift) - 1);
+	} else {
+		writeb(value, addr);
+	}
+}
+
+static int serial_in_dynamic(struct ns16550_platdata *plat, u8 *addr)
+{
+	if (plat->flags & NS16550_FLAG_IO) {
+		return inb(addr);
+	} else if (plat->reg_width == 4) {
+		if (plat->flags & NS16550_FLAG_ENDIAN) {
+			if (plat->flags & NS16550_FLAG_BE)
+				return in_be32(addr);
+			else
+				return in_le32(addr);
+		} else {
+			return readl(addr);
+		}
+	} else if (plat->flags & NS16550_FLAG_BE) {
+		return readb(addr + (1 << plat->reg_shift) - 1);
+	} else {
+		return readb(addr);
+	}
+}
+#else
+static inline void serial_out_dynamic(struct ns16550_platdata *plat, u8 *addr,
+				      int value)
+{
+}
+
+static inline int serial_in_dynamic(struct ns16550_platdata *plat, u8 *addr)
+{
+	return 0;
+}
+
+#endif /* CONFIG_NS16550_DYNAMIC */
 
 static void ns16550_writeb(NS16550_t port, int offset, int value)
 {
@@ -98,13 +161,12 @@ static void ns16550_writeb(NS16550_t port, int offset, int value)
 	unsigned char *addr;
 
 	offset *= 1 << plat->reg_shift;
-	addr = (unsigned char *)plat->base + offset;
+	addr = (unsigned char *)plat->base + offset + plat->reg_offset;
 
-	/*
-	 * As far as we know it doesn't make sense to support selection of
-	 * these options at run-time, so use the existing CONFIG options.
-	 */
-	serial_out_shift(addr + plat->reg_offset, plat->reg_shift, value);
+	if (IS_ENABLED(CONFIG_NS16550_DYNAMIC))
+		serial_out_dynamic(plat, addr, value);
+	else
+		serial_out_shift(addr, plat->reg_shift, value);
 }
 
 static int ns16550_readb(NS16550_t port, int offset)
@@ -113,9 +175,12 @@ static int ns16550_readb(NS16550_t port, int offset)
 	unsigned char *addr;
 
 	offset *= 1 << plat->reg_shift;
-	addr = (unsigned char *)plat->base + offset;
+	addr = (unsigned char *)plat->base + offset + plat->reg_offset;
 
-	return serial_in_shift(addr + plat->reg_offset, plat->reg_shift);
+	if (IS_ENABLED(CONFIG_NS16550_DYNAMIC))
+		return serial_in_dynamic(plat, addr);
+	else
+		return serial_in_shift(addr, plat->reg_shift);
 }
 
 static u32 ns16550_getfcr(NS16550_t port)
@@ -170,6 +235,13 @@ void NS16550_init(NS16550_t com_port, int baud_divisor)
 	     == UART_LSR_THRE) {
 		if (baud_divisor != -1)
 			NS16550_setbrg(com_port, baud_divisor);
+		else {
+			// Re-use old baud rate divisor to flush transmit reg.
+			const int dll = serial_in(&com_port->dll);
+			const int dlm = serial_in(&com_port->dlm);
+			const int divisor = dll | (dlm << 8);
+			NS16550_setbrg(com_port, divisor);
+		}
 		serial_out(0, &com_port->mdr1);
 	}
 #endif
@@ -301,7 +373,7 @@ DEBUG_UART_FUNCS
 
 #endif
 
-#ifdef CONFIG_DM_SERIAL
+#if CONFIG_IS_ENABLED(DM_SERIAL)
 static int ns16550_serial_putc(struct udevice *dev, const char ch)
 {
 	struct NS16550 *const com_port = dev_get_priv(dev);
@@ -407,11 +479,38 @@ static int ns16550_serial_getinfo(struct udevice *dev,
 	return 0;
 }
 
+static int ns16550_serial_assign_base(struct ns16550_platdata *plat, ulong base)
+{
+	if (base == FDT_ADDR_T_NONE)
+		return -EINVAL;
+
+#ifdef CONFIG_SYS_NS16550_PORT_MAPPED
+	plat->base = base;
+#else
+	plat->base = (unsigned long)map_physmem(base, 0, MAP_NOCACHE);
+#endif
+
+	return 0;
+}
+
 int ns16550_serial_probe(struct udevice *dev)
 {
+	struct ns16550_platdata *plat = dev->platdata;
 	struct NS16550 *const com_port = dev_get_priv(dev);
 	struct reset_ctl_bulk reset_bulk;
+	fdt_addr_t addr;
 	int ret;
+
+	/*
+	 * If we are on PCI bus, either directly attached to a PCI root port,
+	 * or via a PCI bridge, assign platdata->base before probing hardware.
+	 */
+	if (device_is_on_pci_bus(dev)) {
+		addr = devfdt_get_addr_pci(dev);
+		ret = ns16550_serial_assign_base(plat, addr);
+		if (ret)
+			return ret;
+	}
 
 	ret = reset_get_bulk(dev, &reset_bulk);
 	if (!ret)
@@ -439,45 +538,10 @@ int ns16550_serial_ofdata_to_platdata(struct udevice *dev)
 	struct clk clk;
 	int err;
 
-	/* try Processor Local Bus device first */
 	addr = dev_read_addr(dev);
-#if CONFIG_IS_ENABLED(PCI) && defined(CONFIG_DM_PCI)
-	if (addr == FDT_ADDR_T_NONE) {
-		/* then try pci device */
-		struct fdt_pci_addr pci_addr;
-		u32 bar;
-		int ret;
-
-		/* we prefer to use a memory-mapped register */
-		ret = fdtdec_get_pci_addr(gd->fdt_blob, dev_of_offset(dev),
-					  FDT_PCI_SPACE_MEM32, "reg",
-					  &pci_addr);
-		if (ret) {
-			/* try if there is any i/o-mapped register */
-			ret = fdtdec_get_pci_addr(gd->fdt_blob,
-						  dev_of_offset(dev),
-						  FDT_PCI_SPACE_IO,
-						  "reg", &pci_addr);
-			if (ret)
-				return ret;
-		}
-
-		ret = fdtdec_get_pci_bar32(dev, &pci_addr, &bar);
-		if (ret)
-			return ret;
-
-		addr = bar;
-	}
-#endif
-
-	if (addr == FDT_ADDR_T_NONE)
-		return -EINVAL;
-
-#ifdef CONFIG_SYS_NS16550_PORT_MAPPED
-	plat->base = addr;
-#else
-	plat->base = (unsigned long)map_physmem(addr, 0, MAP_NOCACHE);
-#endif
+	err = ns16550_serial_assign_base(plat, addr);
+	if (err && !device_is_on_pci_bus(dev))
+		return err;
 
 	plat->reg_offset = dev_read_u32_default(dev, "reg-offset", 0);
 	plat->reg_shift = dev_read_u32_default(dev, "reg-shift", 0);

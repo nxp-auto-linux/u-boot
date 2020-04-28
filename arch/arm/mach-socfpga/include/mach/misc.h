@@ -3,8 +3,8 @@
  * Copyright (C) 2016-2017 Intel Corporation
  */
 
-#ifndef _MISC_H_
-#define _MISC_H_
+#ifndef _SOCFPGA_MISC_H_
+#define _SOCFPGA_MISC_H_
 
 #include <asm/sections.h>
 
@@ -39,6 +39,8 @@ void socfpga_init_security_policies(void);
 void socfpga_sdram_remap_zero(void);
 #endif
 
-void do_bridge_reset(int enable);
+void do_bridge_reset(int enable, unsigned int mask);
+void socfpga_pl310_clear(void);
+void socfpga_get_managers_addr(void);
 
-#endif /* _MISC_H_ */
+#endif /* _SOCFPGA_MISC_H_ */

@@ -6,14 +6,17 @@
  * Author: Neil Armstrong <narmstrong@baylibre.com>
  */
 
-#include "meson_vpu.h"
-#include <power-domain.h>
+#include <common.h>
+#include <display.h>
+#include <dm.h>
 #include <efi_loader.h>
-#include <dm/device-internal.h>
-#include <dm/uclass-internal.h>
 #include <fdt_support.h>
 #include <linux/sizes.h>
 #include <asm/arch/mem.h>
+#include <dm/device-internal.h>
+#include <dm/uclass-internal.h>
+
+#include "meson_vpu.h"
 #include "meson_registers.h"
 #include "simplefb_common.h"
 
@@ -27,6 +30,14 @@ static struct meson_framebuffer {
 	unsigned int ysize;
 	bool is_cvbs;
 } meson_fb = { 0 };
+
+bool meson_vpu_is_compatible(struct meson_vpu_priv *priv,
+			     enum vpu_compatible family)
+{
+	enum vpu_compatible compat = dev_get_driver_data(priv->dev);
+
+	return compat == family;
+}
 
 static int meson_vpu_setup_mode(struct udevice *dev, struct udevice *disp)
 {
@@ -87,13 +98,13 @@ static const struct udevice_id meson_vpu_ids[] = {
 	{ .compatible = "amlogic,meson-gxbb-vpu", .data = VPU_COMPATIBLE_GXBB },
 	{ .compatible = "amlogic,meson-gxl-vpu", .data = VPU_COMPATIBLE_GXL },
 	{ .compatible = "amlogic,meson-gxm-vpu", .data = VPU_COMPATIBLE_GXM },
+	{ .compatible = "amlogic,meson-g12a-vpu", .data = VPU_COMPATIBLE_G12A },
 	{ }
 };
 
 static int meson_vpu_probe(struct udevice *dev)
 {
 	struct meson_vpu_priv *priv = dev_get_priv(dev);
-	struct power_domain pd;
 	struct udevice *disp;
 	int ret;
 
@@ -114,14 +125,6 @@ static int meson_vpu_probe(struct udevice *dev)
 	priv->dmc_base = dev_remap_addr_index(dev, 2);
 	if (!priv->dmc_base)
 		return -EINVAL;
-
-	ret = power_domain_get(dev, &pd);
-	if (ret)
-		return ret;
-
-	ret = power_domain_on(&pd);
-	if (ret)
-		return ret;
 
 	meson_vpu_init(dev);
 
@@ -207,5 +210,5 @@ U_BOOT_DRIVER(meson_vpu) = {
 	.probe = meson_vpu_probe,
 	.bind = meson_vpu_bind,
 	.priv_auto_alloc_size = sizeof(struct meson_vpu_priv),
-	.flags  = DM_FLAG_PRE_RELOC,
+	.flags  = DM_FLAG_PRE_RELOC | DM_FLAG_REMOVE_WITH_PD_ON,
 };

@@ -13,19 +13,15 @@
 # - Implementing custom pytest markers.
 
 import atexit
+import configparser
 import errno
+import io
 import os
 import os.path
 import pytest
-from _pytest.runner import runtestprotocol
 import re
-import StringIO
+from _pytest.runner import runtestprotocol
 import sys
-
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
 
 # Globals: The HTML log file, and the connection to the U-Boot console.
 log = None
@@ -87,6 +83,26 @@ def pytest_configure(config):
     Returns:
         Nothing.
     """
+    def parse_config(conf_file):
+        """Parse a config file, loading it into the ubconfig container
+
+        Args:
+            conf_file: Filename to load (within build_dir)
+
+        Raises
+            Exception if the file does not exist
+        """
+        dot_config = build_dir + '/' + conf_file
+        if not os.path.exists(dot_config):
+            raise Exception(conf_file + ' does not exist; ' +
+                            'try passing --build option?')
+
+        with open(dot_config, 'rt') as f:
+            ini_str = '[root]\n' + f.read()
+            ini_sio = io.StringIO(ini_str)
+            parser = configparser.RawConfigParser()
+            parser.read_file(ini_sio)
+            ubconfig.buildconfig.update(parser.items('root'))
 
     global log
     global console
@@ -161,18 +177,13 @@ def pytest_configure(config):
 
     ubconfig.buildconfig = dict()
 
-    for conf_file in ('.config', 'include/autoconf.mk'):
-        dot_config = build_dir + '/' + conf_file
-        if not os.path.exists(dot_config):
-            raise Exception(conf_file + ' does not exist; ' +
-                'try passing --build option?')
-
-        with open(dot_config, 'rt') as f:
-            ini_str = '[root]\n' + f.read()
-            ini_sio = StringIO.StringIO(ini_str)
-            parser = configparser.RawConfigParser()
-            parser.readfp(ini_sio)
-            ubconfig.buildconfig.update(parser.items('root'))
+    # buildman -k puts autoconf.mk in the rootdir, so handle this as well
+    # as the standard U-Boot build which leaves it in include/autoconf.mk
+    parse_config('.config')
+    if os.path.exists(build_dir + '/' + 'autoconf.mk'):
+        parse_config('autoconf.mk')
+    else:
+        parse_config('include/autoconf.mk')
 
     ubconfig.test_py_dir = test_py_dir
     ubconfig.source_dir = source_dir
@@ -431,11 +442,9 @@ def setup_boardspec(item):
         Nothing.
     """
 
-    mark = item.get_marker('boardspec')
-    if not mark:
-        return
     required_boards = []
-    for board in mark.args:
+    for boards in item.iter_markers('boardspec'):
+        board = boards.args[0]
         if board.startswith('!'):
             if ubconfig.board_type == board[1:]:
                 pytest.skip('board "%s" not supported' % ubconfig.board_type)
@@ -459,12 +468,14 @@ def setup_buildconfigspec(item):
         Nothing.
     """
 
-    mark = item.get_marker('buildconfigspec')
-    if not mark:
-        return
-    for option in mark.args:
+    for options in item.iter_markers('buildconfigspec'):
+        option = options.args[0]
         if not ubconfig.buildconfig.get('config_' + option.lower(), None):
             pytest.skip('.config feature "%s" not enabled' % option.lower())
+    for options in item.iter_markers('notbuildconfigspec'):
+        option = options.args[0]
+        if ubconfig.buildconfig.get('config_' + option.lower(), None):
+            pytest.skip('.config feature "%s" enabled' % option.lower())
 
 def tool_is_in_path(tool):
     for path in os.environ["PATH"].split(os.pathsep):
@@ -487,10 +498,8 @@ def setup_requiredtool(item):
         Nothing.
     """
 
-    mark = item.get_marker('requiredtool')
-    if not mark:
-        return
-    for tool in mark.args:
+    for tools in item.iter_markers('requiredtool'):
+        tool = tools.args[0]
         if not tool_is_in_path(tool):
             pytest.skip('tool "%s" not in $PATH' % tool)
 

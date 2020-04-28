@@ -545,14 +545,13 @@ ap_i2c_audio: &i2c8 {
 
 &spi1 {
 	status = "okay";
-	u-boot,dm-pre-reloc;
 
 	pinctrl-names = "default", "sleep";
 	pinctrl-1 = <&spi1_sleep>;
 
 	spi_flash: spiflash@0 {
 		u-boot,dm-pre-reloc;
-		compatible = "jedec,spi-nor", "spi-flash";
+		compatible = "jedec,spi-nor";
 		reg = <0>;
 
 		/* May run faster once verified. */
@@ -630,7 +629,6 @@ ap_i2c_audio: &i2c8 {
 
 &uart2 {
 	status = "okay";
-	u-boot,dm-pre-reloc;
 };
 
 &usb_host0_ohci {

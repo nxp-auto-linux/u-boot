@@ -13,6 +13,7 @@
 #include <generic-phy.h>
 #include <regmap.h>
 #include <syscon.h>
+#include <linux/err.h>
 
 #define OMAP_USB2_CALIBRATE_FALSE_DISCONNECT	BIT(0)
 
@@ -26,6 +27,10 @@
 
 #define USB2PHY_DISCON_BYP_LATCH	BIT(31)
 #define USB2PHY_ANA_CONFIG1		(0x4c)
+
+#define AM654_USB2_OTG_PD		BIT(8)
+#define AM654_USB2_VBUS_DET_EN		BIT(5)
+#define AM654_USB2_VBUSVALID_DET_EN	BIT(4)
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -74,6 +79,15 @@ static const struct usb_phy_data am437x_usb2_data = {
 	.power_off = AM437X_USB2_PHY_PD | AM437X_USB2_OTG_PD,
 };
 
+static const struct usb_phy_data am654_usb2_data = {
+	.label = "am654_usb2",
+	.flags = OMAP_USB2_CALIBRATE_FALSE_DISCONNECT,
+	.mask = AM654_USB2_OTG_PD | AM654_USB2_VBUS_DET_EN |
+		AM654_USB2_VBUSVALID_DET_EN,
+	.power_on = AM654_USB2_VBUS_DET_EN | AM654_USB2_VBUSVALID_DET_EN,
+	.power_off = AM654_USB2_OTG_PD,
+};
+
 static const struct udevice_id omap_usb2_id_table[] = {
 	{
 		.compatible = "ti,omap5-usb2",
@@ -90,6 +104,10 @@ static const struct udevice_id omap_usb2_id_table[] = {
 	{
 		.compatible = "ti,am437x-usb2",
 		.data = (ulong)&am437x_usb2_data,
+	},
+	{
+		.compatible = "ti,am654-usb2",
+		.data = (ulong)&am654_usb2_data,
 	},
 	{},
 };
@@ -179,11 +197,10 @@ int omap_usb2_phy_probe(struct udevice *dev)
 		return -EINVAL;
 
 	if (data->flags & OMAP_USB2_CALIBRATE_FALSE_DISCONNECT) {
-		u32 base = dev_read_addr(dev);
+		priv->phy_base = dev_read_addr_ptr(dev);
 
-		if (base == FDT_ADDR_T_NONE)
+		if (!priv->phy_base)
 			return -EINVAL;
-		priv->phy_base = (void *)base;
 		priv->flags |= OMAP_USB2_CALIBRATE_FALSE_DISCONNECT;
 	}
 

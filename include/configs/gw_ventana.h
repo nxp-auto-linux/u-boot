@@ -36,7 +36,6 @@
 
 /* Driver Model */
 #ifndef CONFIG_SPL_BUILD
-#define CONFIG_DM_GPIO
 #define CONFIG_DM_THERMAL
 #endif
 
@@ -47,15 +46,7 @@
 #define CONFIG_MXC_UART
 #define CONFIG_MXC_UART_BASE	       UART2_BASE
 
-#ifdef CONFIG_SPI_FLASH
-
-/* SPI */
-#ifdef CONFIG_CMD_SF
-  #define CONFIG_SPI_FLASH_MTD
-					     /* GPIO 3-19 (21248) */
-#endif
-
-#elif defined(CONFIG_SPL_NAND_SUPPORT)
+#if !defined(CONFIG_SPI_FLASH) && defined(CONFIG_SPL_NAND_SUPPORT)
 /* Enable NAND support */
 #ifdef CONFIG_CMD_NAND
   #define CONFIG_SYS_MAX_NAND_DEVICE	1
@@ -80,9 +71,6 @@
 
 /* MMC Configs */
 #define CONFIG_SYS_FSL_ESDHC_ADDR      0
-
-/* eMMC Configs */
-#define CONFIG_SUPPORT_EMMC_BOOT
 
 /*
  * SATA Configs
@@ -132,7 +120,6 @@
 #define CONFIG_NETCONSOLE
 
 /* Framebuffer and LCD */
-#define CONFIG_VIDEO_IPUV3
 #define CONFIG_VIDEO_LOGO
 #define CONFIG_IMX_HDMI
 #define CONFIG_IMX_VIDEO_SKIP
@@ -142,7 +129,6 @@
 
 /* Miscellaneous configurable options */
 #define CONFIG_HWCONFIG
-#define CONFIG_PREBOOT
 
 /* Memory configuration */
 #define CONFIG_SYS_MEMTEST_START       0x10000000
@@ -168,19 +154,6 @@
 #if defined(CONFIG_ENV_IS_IN_MMC)
   #define CONFIG_SYS_MMC_ENV_DEV         0
   #define CONFIG_SYS_MMC_ENV_PART        1
-  #define CONFIG_ENV_OFFSET              (709 * SZ_1K)
-  #define CONFIG_ENV_SIZE                (128 * SZ_1K)
-  #define CONFIG_ENV_OFFSET_REDUND       (CONFIG_ENV_OFFSET + (128 * SZ_1K))
-#elif defined(CONFIG_ENV_IS_IN_NAND)
-  #define CONFIG_ENV_OFFSET              (16 * SZ_1M)
-  #define CONFIG_ENV_SECT_SIZE           (128 * SZ_1K)
-  #define CONFIG_ENV_SIZE                CONFIG_ENV_SECT_SIZE
-  #define CONFIG_ENV_OFFSET_REDUND       (CONFIG_ENV_OFFSET + (512 * SZ_1K))
-  #define CONFIG_ENV_SIZE_REDUND         CONFIG_ENV_SIZE
-#elif defined(CONFIG_ENV_IS_IN_SPI_FLASH)
-  #define CONFIG_ENV_OFFSET		(512 * SZ_1K)
-  #define CONFIG_ENV_SECT_SIZE		(64 * SZ_1K)
-  #define CONFIG_ENV_SIZE		(8 * SZ_1K)
 #endif
 
 /* Environment */

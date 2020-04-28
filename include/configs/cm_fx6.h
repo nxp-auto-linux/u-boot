@@ -38,17 +38,7 @@
 #define CONFIG_MXC_UART_BASE		UART4_BASE
 #define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
 
-/* SPI flash */
-
-/* MTD support */
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_SPI_FLASH_MTD
-#endif
-
 /* Environment */
-#define CONFIG_ENV_SECT_SIZE		(64 * 1024)
-#define CONFIG_ENV_SIZE			(8 * 1024)
-#define CONFIG_ENV_OFFSET		(768 * 1024)
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -144,8 +134,6 @@
 			"echo WARNING: Could not determine dtb to use; fi; \0" \
 	BOOTENV
 
-#define CONFIG_PREBOOT		"usb start;sf probe"
-
 #define BOOT_TARGET_DEVICES(func) \
 	func(USB, usb, 0) \
 	func(MMC, mmc, 2) \
@@ -163,6 +151,13 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_ONFI_DETECTION
 /* APBH DMA is required for NAND support */
+#endif
+
+/* SPI Flash Configs */
+#if defined(CONFIG_SPL_BUILD)
+#undef CONFIG_DM_SPI
+#undef CONFIG_DM_SPI_FLASH
+#undef CONFIG_SPI_FLASH_MTD
 #endif
 
 /* Ethernet */
@@ -209,10 +204,8 @@
 
 /* SPL */
 #include "imx6_spl.h"
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	(64 * 1024)
 
 /* Display */
-#define CONFIG_VIDEO_IPUV3
 #define CONFIG_IMX_HDMI
 
 #define CONFIG_SPLASH_SCREEN

@@ -19,13 +19,15 @@
  */
 
 #include <common.h>
+#include <acpi_s3.h>
 #include <command.h>
+#include <cpu_func.h>
 #include <dm.h>
 #include <errno.h>
+#include <init.h>
 #include <malloc.h>
 #include <syscon.h>
 #include <asm/acpi.h>
-#include <asm/acpi_s3.h>
 #include <asm/acpi_table.h>
 #include <asm/control_regs.h>
 #include <asm/coreboot_tables.h>
@@ -45,6 +47,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifndef CONFIG_TPL_BUILD
 static const char *const x86_vendor_name[] = {
 	[X86_VENDOR_INTEL]     = "Intel",
 	[X86_VENDOR_CYRIX]     = "Cyrix",
@@ -57,6 +60,7 @@ static const char *const x86_vendor_name[] = {
 	[X86_VENDOR_NSC]       = "NSC",
 	[X86_VENDOR_SIS]       = "SiS",
 };
+#endif
 
 int __weak x86_cleanup_before_linux(void)
 {
@@ -113,6 +117,7 @@ int icache_status(void)
 	return 1;
 }
 
+#ifndef CONFIG_TPL_BUILD
 const char *cpu_vendor_name(int vendor)
 {
 	const char *name;
@@ -123,6 +128,7 @@ const char *cpu_vendor_name(int vendor)
 
 	return name;
 }
+#endif
 
 char *cpu_get_name(char *name)
 {

@@ -11,17 +11,23 @@
 #include <binman_sym.h>
 #include <dm.h>
 #include <handoff.h>
+#include <hang.h>
+#include <irq_func.h>
+#include <serial.h>
 #include <spl.h>
 #include <asm/u-boot.h>
 #include <nand.h>
 #include <fat.h>
+#include <u-boot/crc.h>
 #include <version.h>
 #include <image.h>
 #include <malloc.h>
+#include <mapmem.h>
 #include <dm/root.h>
 #include <linux/compiler.h>
 #include <fdt_support.h>
 #include <bootcount.h>
+#include <wdt.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -37,6 +43,12 @@ u32 *boot_params_ptr = NULL;
 
 /* See spl.h for information about this */
 binman_sym_declare(ulong, u_boot_any, image_pos);
+binman_sym_declare(ulong, u_boot_any, size);
+
+#ifdef CONFIG_TPL
+binman_sym_declare(ulong, spl, image_pos);
+binman_sym_declare(ulong, spl, size);
+#endif
 
 /* Define board data structure */
 static bd_t bdata __attribute__ ((section(".data")));
@@ -113,6 +125,20 @@ void spl_fixup_fdt(void)
 		return;
 	}
 #endif
+}
+
+ulong spl_get_image_pos(void)
+{
+	return spl_phase() == PHASE_TPL ?
+		binman_sym(ulong, spl, image_pos) :
+		binman_sym(ulong, u_boot_any, image_pos);
+}
+
+ulong spl_get_image_size(void)
+{
+	return spl_phase() == PHASE_TPL ?
+		binman_sym(ulong, spl, size) :
+		binman_sym(ulong, u_boot_any, size);
 }
 
 /*
@@ -194,10 +220,12 @@ static int spl_load_fit_image(struct spl_image_info *spl_image,
 #ifdef CONFIG_SPL_FIT_SIGNATURE
 	images.verify = 1;
 #endif
-	fit_image_load(&images, (ulong)header,
+	ret = fit_image_load(&images, (ulong)header,
 		       &fit_uname_fdt, &fit_uname_config,
 		       IH_ARCH_DEFAULT, IH_TYPE_FLATDT, -1,
 		       FIT_LOAD_OPTIONAL, &dt_data, &dt_len);
+	if (ret >= 0)
+		spl_image->fdt_addr = (void *)dt_data;
 
 	conf_noffset = fit_conf_get_node((const void *)header,
 					 fit_uname_config);
@@ -257,9 +285,9 @@ int spl_parse_image_header(struct spl_image_info *spl_image,
 			spl_image->entry_point = image_get_ep(header);
 			spl_image->size = image_get_data_size(header);
 		} else {
-			spl_image->entry_point = image_get_load(header);
+			spl_image->entry_point = image_get_ep(header);
 			/* Load including the header */
-			spl_image->load_addr = spl_image->entry_point -
+			spl_image->load_addr = image_get_load(header) -
 				header_size;
 			spl_image->size = image_get_data_size(header) +
 				header_size;
@@ -353,17 +381,23 @@ static int setup_spl_handoff(void)
 	return 0;
 }
 
+__weak int handoff_arch_save(struct spl_handoff *ho)
+{
+	return 0;
+}
+
 static int write_spl_handoff(void)
 {
 	struct spl_handoff *ho;
+	int ret;
 
 	ho = bloblist_find(BLOBLISTT_SPL_HANDOFF, sizeof(struct spl_handoff));
 	if (!ho)
 		return -ENOENT;
 	handoff_save_dram(ho);
-#ifdef CONFIG_SANDBOX
-	ho->arch.magic = TEST_HANDOFF_MAGIC;
-#endif
+	ret = handoff_arch_save(ho);
+	if (ret)
+		return ret;
 	debug(SPL_TPL_PROMPT "Wrote SPL handoff\n");
 
 	return 0;
@@ -387,13 +421,25 @@ static int spl_common_init(bool setup_malloc)
 		gd->malloc_ptr = 0;
 	}
 #endif
-	ret = bootstage_init(true);
+	ret = bootstage_init(u_boot_first_phase());
 	if (ret) {
 		debug("%s: Failed to set up bootstage: ret=%d\n", __func__,
 		      ret);
 		return ret;
 	}
-	bootstage_mark_name(BOOTSTAGE_ID_START_SPL, "spl");
+#ifdef CONFIG_BOOTSTAGE_STASH
+	if (!u_boot_first_phase()) {
+		const void *stash = map_sysmem(CONFIG_BOOTSTAGE_STASH_ADDR,
+					       CONFIG_BOOTSTAGE_STASH_SIZE);
+
+		ret = bootstage_unstash(stash, CONFIG_BOOTSTAGE_STASH_SIZE);
+		if (ret)
+			debug("%s: Failed to unstash bootstage: ret=%d\n",
+			      __func__, ret);
+	}
+#endif /* CONFIG_BOOTSTAGE_STASH */
+	bootstage_mark_name(spl_phase() == PHASE_TPL ? BOOTSTAGE_ID_START_TPL :
+			    BOOTSTAGE_ID_START_SPL, SPL_TPL_NAME);
 #if CONFIG_IS_ENABLED(LOG)
 	ret = log_init();
 	if (ret) {
@@ -401,23 +447,6 @@ static int spl_common_init(bool setup_malloc)
 		return ret;
 	}
 #endif
-	if (CONFIG_IS_ENABLED(BLOBLIST)) {
-		ret = bloblist_init();
-		if (ret) {
-			debug("%s: Failed to set up bloblist: ret=%d\n",
-			      __func__, ret);
-			return ret;
-		}
-	}
-	if (CONFIG_IS_ENABLED(HANDOFF)) {
-		int ret;
-
-		ret = setup_spl_handoff();
-		if (ret) {
-			puts(SPL_TPL_PROMPT "Cannot set up SPL handoff\n");
-			hang();
-		}
-	}
 	if (CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)) {
 		ret = fdtdec_setup();
 		if (ret) {
@@ -426,7 +455,8 @@ static int spl_common_init(bool setup_malloc)
 		}
 	}
 	if (CONFIG_IS_ENABLED(DM)) {
-		bootstage_start(BOOTSTATE_ID_ACCUM_DM_SPL, "dm_spl");
+		bootstage_start(BOOTSTATE_ID_ACCUM_DM_SPL,
+				spl_phase() == PHASE_TPL ? "dm tpl" : "dm_spl");
 		/* With CONFIG_SPL_OF_PLATDATA, bring in all devices */
 		ret = dm_init_and_scan(!CONFIG_IS_ENABLED(OF_PLATDATA));
 		bootstage_accum(BOOTSTATE_ID_ACCUM_DM_SPL);
@@ -532,7 +562,7 @@ static int spl_load_image(struct spl_image_info *spl_image,
 }
 
 /**
- * boot_from_devices() - Try loading an booting U-Boot from a list of devices
+ * boot_from_devices() - Try loading a booting U-Boot from a list of devices
  *
  * @spl_image: Place to put the image details if successful
  * @spl_boot_list: List of boot devices to try
@@ -562,6 +592,24 @@ static int boot_from_devices(struct spl_image_info *spl_image,
 
 	return -ENODEV;
 }
+
+#if defined(CONFIG_SPL_FRAMEWORK_BOARD_INIT_F)
+void board_init_f(ulong dummy)
+{
+	if (CONFIG_IS_ENABLED(OF_CONTROL)) {
+		int ret;
+
+		ret = spl_early_init();
+		if (ret) {
+			debug("spl_early_init() failed: %d\n", ret);
+			hang();
+		}
+	}
+
+	if (CONFIG_IS_ENABLED(SERIAL_SUPPORT))
+		preloader_console_init();
+}
+#endif
 
 void board_init_r(gd_t *dummy1, ulong dummy2)
 {
@@ -595,9 +643,31 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	 */
 	timer_init();
 #endif
+	if (CONFIG_IS_ENABLED(BLOBLIST)) {
+		ret = bloblist_init();
+		if (ret) {
+			debug("%s: Failed to set up bloblist: ret=%d\n",
+			      __func__, ret);
+			puts(SPL_TPL_PROMPT "Cannot set up bloblist\n");
+			hang();
+		}
+	}
+	if (CONFIG_IS_ENABLED(HANDOFF)) {
+		int ret;
+
+		ret = setup_spl_handoff();
+		if (ret) {
+			puts(SPL_TPL_PROMPT "Cannot set up SPL handoff\n");
+			hang();
+		}
+	}
 
 #if CONFIG_IS_ENABLED(BOARD_INIT)
 	spl_board_init();
+#endif
+
+#if defined(CONFIG_SPL_WATCHDOG_SUPPORT) && CONFIG_IS_ENABLED(WDT)
+	initr_watchdog();
 #endif
 
 	if (IS_ENABLED(CONFIG_SPL_OS_BOOT) || CONFIG_IS_ENABLED(HANDOFF))
@@ -652,6 +722,12 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 				(void *)spl_image.entry_point);
 		break;
 #endif
+#if CONFIG_IS_ENABLED(OPENSBI)
+	case IH_OS_OPENSBI:
+		debug("Jumping to U-Boot via RISC-V OpenSBI\n");
+		spl_invoke_opensbi(&spl_image);
+		break;
+#endif
 #ifdef CONFIG_SPL_OS_BOOT
 	case IH_OS_LINUX:
 		debug("Jumping to Linux\n");
@@ -666,8 +742,9 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	debug("SPL malloc() used 0x%lx bytes (%ld KB)\n", gd->malloc_ptr,
 	      gd->malloc_ptr / 1024);
 #endif
+	bootstage_mark_name(spl_phase() == PHASE_TPL ? BOOTSTAGE_ID_END_TPL :
+			    BOOTSTAGE_ID_END_SPL, "end " SPL_TPL_NAME);
 #ifdef CONFIG_BOOTSTAGE_STASH
-	bootstage_mark_name(BOOTSTAGE_ID_END_SPL, "end_spl");
 	ret = bootstage_stash((void *)CONFIG_BOOTSTAGE_STASH_ADDR,
 			      CONFIG_BOOTSTAGE_STASH_SIZE);
 	if (ret)
@@ -703,6 +780,28 @@ void preloader_console_init(void)
 #endif
 
 /**
+ * This function is called before the stack is changed from initial stack to
+ * relocated stack. It tries to dump the stack size used
+ */
+__weak void spl_relocate_stack_check(void)
+{
+#if CONFIG_IS_ENABLED(SYS_REPORT_STACK_F_USAGE)
+	ulong init_sp = gd->start_addr_sp;
+	ulong stack_bottom = init_sp - CONFIG_VAL(SIZE_LIMIT_PROVIDE_STACK);
+	u8 *ptr = (u8 *)stack_bottom;
+	ulong i;
+
+	for (i = 0; i < CONFIG_VAL(SIZE_LIMIT_PROVIDE_STACK); i++) {
+		if (*ptr != CONFIG_VAL(SYS_STACK_F_CHECK_BYTE))
+			break;
+		ptr++;
+	}
+	printf("SPL initial stack usage: %lu bytes\n",
+	       CONFIG_VAL(SIZE_LIMIT_PROVIDE_STACK) - i);
+#endif
+}
+
+/**
  * spl_relocate_stack_gd() - Relocate stack ready for board_init_r() execution
  *
  * Sometimes board_init_f() runs with a stack in SRAM but we want to use SDRAM
@@ -726,6 +825,9 @@ ulong spl_relocate_stack_gd(void)
 	gd_t *new_gd;
 	ulong ptr = CONFIG_SPL_STACK_R_ADDR;
 
+	if (CONFIG_IS_ENABLED(SYS_REPORT_STACK_F_USAGE))
+		spl_relocate_stack_check();
+
 #if defined(CONFIG_SPL_SYS_MALLOC_SIMPLE) && CONFIG_VAL(SYS_MALLOC_F_LEN)
 	if (CONFIG_SPL_STACK_R_MALLOC_SIMPLE_LEN) {
 		debug("SPL malloc() before relocation used 0x%lx bytes (%ld KB)\n",
@@ -743,7 +845,7 @@ ulong spl_relocate_stack_gd(void)
 #if CONFIG_IS_ENABLED(DM)
 	dm_fixup_for_gd_move(new_gd);
 #endif
-#if !defined(CONFIG_ARM)
+#if !defined(CONFIG_ARM) && !defined(CONFIG_RISCV)
 	gd = new_gd;
 #endif
 	return ptr;
@@ -751,3 +853,14 @@ ulong spl_relocate_stack_gd(void)
 	return 0;
 #endif
 }
+
+#if defined(CONFIG_BOOTCOUNT_LIMIT) && !defined(CONFIG_SPL_BOOTCOUNT_LIMIT)
+void bootcount_store(ulong a)
+{
+}
+
+ulong bootcount_load(void)
+{
+	return 0;
+}
+#endif

@@ -11,9 +11,11 @@
 #include <command.h>
 #include <console.h>
 #include <g_dnl.h>
+#include <malloc.h>
 #include <part.h>
 #include <usb.h>
 #include <usb_mass_storage.h>
+#include <watchdog.h>
 
 static int ums_read_sector(struct ums *ums_dev,
 			   ulong start, lbaint_t blkcnt, void *buf)
@@ -226,6 +228,8 @@ static int do_usb_mass_storage(cmd_tbl_t *cmdtp, int flag,
 			rc = CMD_RET_SUCCESS;
 			goto cleanup_register;
 		}
+
+		WATCHDOG_RESET();
 	}
 
 cleanup_register:

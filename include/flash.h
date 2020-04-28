@@ -44,7 +44,7 @@ typedef struct {
 	uchar   sr_supported;		/* status register supported            */
 	const char *name;		/* human-readable name	                */
 #endif
-#ifdef CONFIG_MTD
+#ifdef CONFIG_DM_MTD
 	struct mtd_info *mtd;
 #endif
 #ifdef CONFIG_CFI_FLASH			/* DM-specific parts */
@@ -116,6 +116,13 @@ extern ulong board_flash_get_legacy(ulong base, int banknum, flash_info_t *info)
 extern int jedec_flash_match(flash_info_t *info, ulong base);
 #define CFI_CMDSET_AMD_LEGACY		0xFFF0
 #endif
+
+/**
+ * flash_perror() - Print a flash error
+ *
+ * @err: Error number of message to print (ERR_... as below)
+ */
+void flash_perror(int err);
 
 /*-----------------------------------------------------------------------
  * return codes from flash_write():

@@ -10,7 +10,6 @@
 #include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/power/rk3399-power.h>
 #include <dt-bindings/thermal/thermal.h>
-#define USB_CLASS_HUB			9
 
 / {
 	compatible = "rockchip,rk3399";
@@ -34,8 +33,6 @@
 		serial2 = &uart2;
 		serial3 = &uart3;
 		serial4 = &uart4;
-		mmc0 = &sdhci;
-		mmc1 = &sdmmc;
 	};
 
 	cpus {
@@ -275,7 +272,6 @@
 	};
 
 	sdhci: sdhci@fe330000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-sdhci-5.1", "arasan,sdhci-5.1";
 		reg = <0x0 0xfe330000 0x0 0x10000>;
 		interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH 0>;
@@ -1072,7 +1068,6 @@
 	};
 
 	pmugrf: syscon@ff320000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-pmugrf", "syscon", "simple-mfd";
 		reg = <0x0 0xff320000 0x0 0x1000>;
 
@@ -1080,12 +1075,6 @@
 			compatible = "rockchip,rk3399-pmu-io-voltage-domain";
 			status = "disabled";
 		};
-	};
-
-	pmusgrf: syscon@ff330000 {
-		u-boot,dm-pre-reloc;
-		compatible = "rockchip,rk3399-pmusgrf", "syscon";
-		reg = <0x0 0xff330000 0x0 0xe3d4>;
 	};
 
 	spi3: spi@ff350000 {
@@ -1203,38 +1192,6 @@
 		status = "disabled";
 	};
 
-	cic: syscon@ff620000 {
-		u-boot,dm-pre-reloc;
-		compatible = "rockchip,rk3399-cic", "syscon";
-		reg = <0x0 0xff620000 0x0 0x100>;
-	};
-
-	dfi: dfi@ff630000 {
-		reg = <0x00 0xff630000 0x00 0x4000>;
-		compatible = "rockchip,rk3399-dfi";
-		rockchip,pmu = <&pmugrf>;
-		clocks = <&cru PCLK_DDR_MON>;
-		clock-names = "pclk_ddr_mon";
-		status = "disabled";
-	};
-
-	dmc: dmc {
-		u-boot,dm-pre-reloc;
-		compatible = "rockchip,rk3399-dmc";
-		devfreq-events = <&dfi>;
-		interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH 0>;
-		clocks = <&cru SCLK_DDRCLK>;
-		clock-names = "dmc_clk";
-		reg = <0x0 0xffa80000 0x0 0x0800
-		       0x0 0xffa80800 0x0 0x1800
-		       0x0 0xffa82000 0x0 0x2000
-		       0x0 0xffa84000 0x0 0x1000
-		       0x0 0xffa88000 0x0 0x0800
-		       0x0 0xffa88800 0x0 0x1800
-		       0x0 0xffa8a000 0x0 0x2000
-		       0x0 0xffa8c000 0x0 0x1000>;
-	};
-
 	efuse0: efuse@ff690000 {
 		compatible = "rockchip,rk3399-efuse";
 		reg = <0x0 0xff690000 0x0 0x80>;
@@ -1268,7 +1225,6 @@
 	};
 
 	pmucru: pmu-clock-controller@ff750000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-pmucru";
 		reg = <0x0 0xff750000 0x0 0x1000>;
 		rockchip,grf = <&pmugrf>;
@@ -1279,7 +1235,6 @@
 	};
 
 	cru: clock-controller@ff760000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-cru";
 		reg = <0x0 0xff760000 0x0 0x1000>;
 		rockchip,grf = <&grf>;
@@ -1310,7 +1265,6 @@
 	};
 
 	grf: syscon@ff770000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-grf", "syscon", "simple-mfd";
 		reg = <0x0 0xff770000 0x0 0x10000>;
 		#address-cells = <1>;
@@ -1520,7 +1474,6 @@
 	};
 
 	vopl: vop@ff8f0000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-vop-lit";
 		reg = <0x0 0xff8f0000 0x0 0x3efc>;
 		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH 0>;
@@ -1578,7 +1531,6 @@
 	};
 
 	vopb: vop@ff900000 {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-vop-big";
 		reg = <0x0 0xff900000 0x0 0x3efc>;
 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH 0>;
@@ -1818,7 +1770,6 @@
 	};
 
 	pinctrl: pinctrl {
-		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-pinctrl";
 		rockchip,grf = <&grf>;
 		rockchip,pmu = <&pmugrf>;
@@ -2494,6 +2445,11 @@
 			pwm2_pin: pwm2-pin {
 				rockchip,pins =
 					<1 RK_PC3 RK_FUNC_1 &pcfg_pull_none>;
+			};
+
+			pwm2_pin_pull_down: pwm2-pin-pull-down {
+				rockchip,pins =
+					<1 RK_PC3 RK_FUNC_1 &pcfg_pull_down>;
 			};
 		};
 

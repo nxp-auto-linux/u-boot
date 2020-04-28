@@ -35,7 +35,16 @@
 #define BM_OUT_STATUS_LOCKED			0x00000800
 #define BM_OUT_STATUS_PROGFAIL			0x00001000
 #elif defined(CONFIG_IMX8M)
+#ifdef CONFIG_IMX8MP
+#undef BM_CTRL_ADDR
+#undef BM_CTRL_ERROR
+#undef BM_CTRL_BUSY
+#define BM_CTRL_ADDR			0x000001ff
+#define BM_CTRL_ERROR			0x00000400
+#define BM_CTRL_BUSY			0x00000200
+#else
 #define BM_CTRL_ADDR			0x000000ff
+#endif
 #else
 #define BM_CTRL_ADDR			0x0000007f
 #endif
@@ -82,7 +91,11 @@
 #define FUSE_BANKS	31
 #elif defined(CONFIG_IMX8M)
 #define FUSE_BANK_SIZE	0x40
+#ifdef CONFIG_IMX8MP
+#define FUSE_BANKS	96
+#else
 #define FUSE_BANKS	64
+#endif
 #else
 #error "Unsupported architecture\n"
 #endif
@@ -321,6 +334,11 @@ int fuse_sense(u32 bank, u32 word, u32 *val)
 	struct ocotp_regs *regs;
 	int ret;
 
+	if (is_imx8mq() && is_soc_rev(CHIP_REV_2_1)) {
+		printf("mxc_ocotp %s(): fuse sense is disabled\n", __func__);
+		return -EPERM;
+	}
+
 	ret = prepare_read(&regs, bank, word, val, __func__);
 	if (ret)
 		return ret;
@@ -354,13 +372,17 @@ static int prepare_write(struct ocotp_regs **regs, u32 bank, u32 word,
 
 	/* Only bank 0 and 1 are redundancy mode, others are ECC mode */
 	if (bank != 0 && bank != 1) {
-		ret = fuse_sense(bank, word, &val);
-		if (ret)
-			return ret;
+		if ((soc_rev() < CHIP_REV_2_0) ||
+		    ((soc_rev() >= CHIP_REV_2_0) &&
+		    bank != 9 && bank != 10 && bank != 28)) {
+			ret = fuse_sense(bank, word, &val);
+			if (ret)
+				return ret;
 
-		if (val != 0) {
-			printf("mxc_ocotp: The word has been programmed, no more write\n");
-			return -EPERM;
+			if (val != 0) {
+				printf("mxc_ocotp: The word has been programmed, no more write\n");
+				return -EPERM;
+			}
 		}
 	}
 #endif

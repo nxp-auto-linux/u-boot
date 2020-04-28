@@ -292,6 +292,10 @@ cmd_dt_S_dtb=						\
 $(obj)/%.dtb.S: $(obj)/%.dtb
 	$(call cmd,dt_S_dtb)
 
+ifeq ($(CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY),y)
+DTC_FLAGS += -@
+endif
+
 quiet_cmd_dtc = DTC     $@
 # Modified for U-Boot
 # Bring in any U-Boot-specific include at the end of the file
@@ -300,7 +304,9 @@ cmd_dtc = mkdir -p $(dir ${dtc-tmp}) ; \
 	$(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $(pre-tmp) ; \
 	$(DTC) -O dtb -o $@ -b 0 \
 		-i $(dir $<) $(DTC_FLAGS) \
-		-d $(depfile).dtc.tmp $(dtc-tmp) ; \
+		-d $(depfile).dtc.tmp $(dtc-tmp) || \
+		(echo "Check $(shell pwd)/$(pre-tmp) for errors" && false) \
+		; \
 	cat $(depfile).pre.tmp $(depfile).dtc.tmp > $(depfile) ; \
 	sed -i "s:$(pre-tmp):$(<):" $(depfile)
 
@@ -383,7 +389,7 @@ cmd_efi_ld = $(LD) -nostdlib -znocombreloc -T $(EFI_LDS_PATH) -shared \
 
 EFI_LDS_PATH = $(srctree)/arch/$(ARCH)/lib/$(EFI_LDS)
 
-$(obj)/efi_crt0.o: $(srctree)/arch/$(ARCH)/lib/$(EFI_CRT0:.o=.S)
+$(obj)/efi_crt0.o: $(srctree)/arch/$(ARCH)/lib/$(EFI_CRT0:.o=.S) FORCE
 	$(call if_changed_dep,as_o_S)
 
 $(obj)/efi_reloc.o: $(srctree)/arch/$(ARCH)/lib/$(EFI_RELOC:.o=.c) $(recordmcount_source) FORCE
@@ -395,11 +401,22 @@ $(obj)/%_efi.so: $(obj)/%.o $(obj)/efi_crt0.o $(obj)/efi_reloc.o $(obj)/efi_free
 
 # ACPI
 # ---------------------------------------------------------------------------
+#
+# This first sends the file (typically dsdt.asl) through the preprocessor
+# resolve includes and any CONFIG options used. This produces dsdt.asl.tmp
+# which is pure ASL code. The Intel ASL (ACPI (Advanced Configuration and Power
+# Interface) Source Language compiler (iasl) then converts this ASL code into a
+# C file containing the hex data to build into U-Boot. This file is called
+# dsdt.hex (despite us setting the prefix to .../dsdt.asl.tmp) so must be
+# renamed to dsdt.c for consumption by the build system.
+ASL_TMP = $(patsubst %.c,%.asl.tmp,$@)
+
 quiet_cmd_acpi_c_asl= ASL     $<
 cmd_acpi_c_asl=         \
-	$(CPP) -x assembler-with-cpp -D__ASSEMBLY__ -P $(UBOOTINCLUDE) -o $<.tmp $<; \
-	iasl -p $< -tc $<.tmp $(if $(KBUILD_VERBOSE:1=), >/dev/null) && \
-	mv $(patsubst %.asl,%.hex,$<) $@
+	$(CPP) -x assembler-with-cpp -D__ASSEMBLY__ -P $(UBOOTINCLUDE) \
+		-o $(ASL_TMP) $< && \
+	iasl -p $@ -tc $(ASL_TMP) $(if $(KBUILD_VERBOSE:1=), >/dev/null) && \
+	mv $(patsubst %.c,%.hex,$@) $@
 
 $(obj)/dsdt.c:    $(src)/dsdt.asl
 	$(call cmd,acpi_c_asl)
@@ -525,4 +542,13 @@ quiet_cmd_fdtgrep = FDTGREP $@
       cmd_fdtgrep = $(objtree)/tools/fdtgrep $(fdtgrep_props) -RT $< \
 		-n /chosen -n /config -O dtb | \
 	$(objtree)/tools/fdtgrep -r -O dtb - -o $@ \
+		-P u-boot,dm-pre-reloc -P u-boot,dm-spl -P u-boot,dm-tpl \
 		$(addprefix -P ,$(subst $\",,$(CONFIG_OF_SPL_REMOVE_PROPS)))
+
+# fdt_rm_props
+# ---------------------------------------------------------------------------
+# Pass the original device tree file through fdtgrep. This removes various
+# unused properties. The output is typically a smaller device tree file.
+quiet_cmd_fdt_rm_props = FDTGREP $@
+	cmd_fdt_rm_props = cat $< | $(objtree)/tools/fdtgrep -r -O dtb - -o $@ \
+			$(addprefix -P ,$(subst $\",,$(CONFIG_OF_REMOVE_PROPS)))

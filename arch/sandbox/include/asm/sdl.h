@@ -17,10 +17,13 @@
  * @height	Window height in pixels
  * @log2_bpp:	Log to base 2 of the number of bits per pixel. So a 32bpp
  *		display will pass 5, since 2*5 = 32
+ * @double_size: true to double the visible size in each direction for high-DPI
+ *		displays
  * @return 0 if OK, -ENODEV if no device, -EIO if SDL failed to initialize
  *		and -EPERM if the video failed to come up.
  */
-int sandbox_sdl_init_display(int width, int height, int log2_bpp);
+int sandbox_sdl_init_display(int width, int height, int log2_bpp,
+			     bool double_size);
 
 /**
  * sandbox_sdl_sync() - Sync current U-Boot LCD frame buffer to SDL
@@ -78,8 +81,8 @@ int sandbox_sdl_sound_stop(void);
 int sandbox_sdl_sound_init(int rate, int channels);
 
 #else
-static inline int sandbox_sdl_init_display(int width, int height,
-					    int log2_bpp)
+static inline int sandbox_sdl_init_display(int width, int height, int log2_bpp,
+					   bool double_size)
 {
 	return -ENODEV;
 }
@@ -104,7 +107,7 @@ static inline int sandbox_sdl_sound_start(uint frequency)
 	return -ENODEV;
 }
 
-int sandbox_sdl_sound_play(const void *data, uint count)
+static inline int sandbox_sdl_sound_play(const void *data, uint count)
 {
 	return -ENODEV;
 }
@@ -114,7 +117,7 @@ static inline int sandbox_sdl_sound_stop(void)
 	return -ENODEV;
 }
 
-int sandbox_sdl_sound_init(int rate, int channels)
+static inline int sandbox_sdl_sound_init(int rate, int channels)
 {
 	return -ENODEV;
 }

@@ -10,8 +10,13 @@
  * Steve Sakoman  <steve@sakoman.com>
  */
 #include <common.h>
+#include <env.h>
+#include <fdt_support.h>
+#include <init.h>
+#include <spl.h>
 #include <palmas.h>
 #include <sata.h>
+#include <serial.h>
 #include <linux/string.h>
 #include <asm/gpio.h>
 #include <usb.h>
@@ -24,11 +29,10 @@
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/mmc_host_def.h>
 #include <asm/arch/sata.h>
-#include <environment.h>
 #include <dwc3-uboot.h>
 #include <dwc3-omap-uboot.h>
+#include <i2c.h>
 #include <ti-usb-phy-uboot.h>
-#include <miiphy.h>
 
 #include "mux_data.h"
 #include "../common/board_detect.h"
@@ -44,16 +48,16 @@
 #define board_ti_get_emif_size()	board_ti_get_emif1_size() +	\
 					board_ti_get_emif2_size()
 
-#ifdef CONFIG_DRIVER_TI_CPSW
-#include <cpsw.h>
-#endif
-
 DECLARE_GLOBAL_DATA_PTR;
 
 /* GPIO 7_11 */
 #define GPIO_DDR_VTT_EN 203
 
 #define SYSINFO_BOARD_NAME_MAX_LEN	37
+
+/* I2C I/O Expander */
+#define NAND_PCF8575_ADDR	0x21
+#define NAND_PCF8575_I2C_BUS_NUM	0
 
 const struct omap_sysinfo sysinfo = {
 	"Board: UNKNOWN(DRA7 EVM) REV UNKNOWN\n"
@@ -777,6 +781,44 @@ void set_muxconf_regs(void)
 		     early_padconf, ARRAY_SIZE(early_padconf));
 }
 
+#if defined(CONFIG_MTD_RAW_NAND)
+static int nand_sw_detect(void)
+{
+	int rc;
+	uchar data[2];
+	struct udevice *dev;
+
+	rc = i2c_get_chip_for_busnum(NAND_PCF8575_I2C_BUS_NUM,
+				     NAND_PCF8575_ADDR, 0, &dev);
+	if (rc)
+		return -1;
+
+	rc = dm_i2c_read(dev, 0, (uint8_t *)&data, sizeof(data));
+	if (rc)
+		return -1;
+
+	/* We are only interested in P10 and P11 on PCF8575 which is equal to
+	 * bits 8 and 9.
+	 */
+	data[1] = data[1] & 0x3;
+
+	/* Ensure only P11 is set and P10 is cleared. This ensures only
+	 * NAND (P10) is configured and not NOR (P11) which are both low
+	 * true signals. NAND and NOR settings should not be enabled at
+	 * the same time.
+	 */
+	if (data[1] == 0x2)
+		return 0;
+
+	return -1;
+}
+#else
+int nand_sw_detect(void)
+{
+	return -1;
+}
+#endif
+
 #ifdef CONFIG_IODELAY_RECALIBRATION
 void recalibrate_iodelay(void)
 {
@@ -796,6 +838,19 @@ void recalibrate_iodelay(void)
 			npads = ARRAY_SIZE(dra71x_core_padconf_array);
 			iodelay = dra71_iodelay_cfg_array;
 			niodelays = ARRAY_SIZE(dra71_iodelay_cfg_array);
+			/* If SW8 on the EVM is set to enable NAND then
+			 * overwrite the pins used by VOUT3 with NAND.
+			 */
+			if (!nand_sw_detect()) {
+				delta_pads = dra71x_nand_padconf_array;
+				delta_npads =
+					ARRAY_SIZE(dra71x_nand_padconf_array);
+			} else {
+				delta_pads = dra71x_vout3_padconf_array;
+				delta_npads =
+					ARRAY_SIZE(dra71x_vout3_padconf_array);
+			}
+
 		} else if (board_is_dra72x_revc_or_later()) {
 			delta_pads = dra72x_rgmii_padconf_array_revc;
 			delta_npads =
@@ -930,106 +985,6 @@ int spl_start_uboot(void)
 #endif
 
 	return 0;
-}
-#endif
-
-#ifdef CONFIG_DRIVER_TI_CPSW
-extern u32 *const omap_si_rev;
-
-static void cpsw_control(int enabled)
-{
-	/* VTP can be added here */
-
-	return;
-}
-
-static struct cpsw_slave_data cpsw_slaves[] = {
-	{
-		.slave_reg_ofs	= 0x208,
-		.sliver_reg_ofs	= 0xd80,
-		.phy_addr	= 2,
-	},
-	{
-		.slave_reg_ofs	= 0x308,
-		.sliver_reg_ofs	= 0xdc0,
-		.phy_addr	= 3,
-	},
-};
-
-static struct cpsw_platform_data cpsw_data = {
-	.mdio_base		= CPSW_MDIO_BASE,
-	.cpsw_base		= CPSW_BASE,
-	.mdio_div		= 0xff,
-	.channels		= 8,
-	.cpdma_reg_ofs		= 0x800,
-	.slaves			= 2,
-	.slave_data		= cpsw_slaves,
-	.ale_reg_ofs		= 0xd00,
-	.ale_entries		= 1024,
-	.host_port_reg_ofs	= 0x108,
-	.hw_stats_reg_ofs	= 0x900,
-	.bd_ram_ofs		= 0x2000,
-	.mac_control		= (1 << 5),
-	.control		= cpsw_control,
-	.host_port_num		= 0,
-	.version		= CPSW_CTRL_VERSION_2,
-};
-
-int board_eth_init(bd_t *bis)
-{
-	int ret;
-	uint8_t mac_addr[6];
-	uint32_t mac_hi, mac_lo;
-	uint32_t ctrl_val;
-
-	/* try reading mac address from efuse */
-	mac_lo = readl((*ctrl)->control_core_mac_id_0_lo);
-	mac_hi = readl((*ctrl)->control_core_mac_id_0_hi);
-	mac_addr[0] = (mac_hi & 0xFF0000) >> 16;
-	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
-	mac_addr[2] = mac_hi & 0xFF;
-	mac_addr[3] = (mac_lo & 0xFF0000) >> 16;
-	mac_addr[4] = (mac_lo & 0xFF00) >> 8;
-	mac_addr[5] = mac_lo & 0xFF;
-
-	if (!env_get("ethaddr")) {
-		printf("<ethaddr> not set. Validating first E-fuse MAC\n");
-
-		if (is_valid_ethaddr(mac_addr))
-			eth_env_set_enetaddr("ethaddr", mac_addr);
-	}
-
-	mac_lo = readl((*ctrl)->control_core_mac_id_1_lo);
-	mac_hi = readl((*ctrl)->control_core_mac_id_1_hi);
-	mac_addr[0] = (mac_hi & 0xFF0000) >> 16;
-	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
-	mac_addr[2] = mac_hi & 0xFF;
-	mac_addr[3] = (mac_lo & 0xFF0000) >> 16;
-	mac_addr[4] = (mac_lo & 0xFF00) >> 8;
-	mac_addr[5] = mac_lo & 0xFF;
-
-	if (!env_get("eth1addr")) {
-		if (is_valid_ethaddr(mac_addr))
-			eth_env_set_enetaddr("eth1addr", mac_addr);
-	}
-
-	ctrl_val = readl((*ctrl)->control_core_control_io1) & (~0x33);
-	ctrl_val |= 0x22;
-	writel(ctrl_val, (*ctrl)->control_core_control_io1);
-
-	if (*omap_si_rev == DRA722_ES1_0)
-		cpsw_data.active_slave = 1;
-
-	if (board_is_dra72x_revc_or_later()) {
-		cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RGMII_ID;
-		cpsw_slaves[1].phy_if = PHY_INTERFACE_MODE_RGMII_ID;
-	}
-
-	ret = cpsw_register(&cpsw_data);
-	if (ret < 0)
-		printf("Error %d registering CPSW switch\n", ret);
-
-	return ret;
 }
 #endif
 

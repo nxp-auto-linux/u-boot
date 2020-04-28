@@ -18,6 +18,7 @@
 
 #include <common.h>
 #include <div64.h>
+#include <time.h>
 
 #ifdef CONFIG_ARCH_CINTEGRATOR
 #define DIV_CLOCK_INIT	1
@@ -152,7 +153,7 @@ unsigned long long get_ticks(void)
  * Return the timebase clock frequency
  * i.e. how often the timer decrements
  */
-ulong get_tbclk (void)
+ulong get_tbclk(void)
 {
 	unsigned long long tmp = CONFIG_SYS_HZ_CLOCK;
 

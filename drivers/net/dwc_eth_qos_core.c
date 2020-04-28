@@ -57,7 +57,7 @@ static int num_cards;
  */
 #if EQOS_DESCRIPTOR_SIZE < ARCH_DMA_MINALIGN
 #if !defined(CONFIG_SYS_NONCACHED_MEMORY) && \
-	!defined(CONFIG_SYS_DCACHE_OFF) && !defined(CONFIG_X86)
+	!CONFIG_IS_ENABLED(SYS_DCACHE_OFF) && !defined(CONFIG_X86)
 #warning Cache line size is larger than descriptor size
 #endif
 #endif
@@ -325,7 +325,6 @@ static int eqos_set_mii_speed_10(struct udevice *dev)
 
 	return 0;
 }
-
 
 static int eqos_adjust_link(struct udevice *dev)
 {
@@ -748,7 +747,7 @@ err:
 	return ret;
 }
 
-void eqos_stop(struct udevice *dev)
+static void eqos_stop(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	int i;
@@ -802,7 +801,7 @@ void eqos_stop(struct udevice *dev)
 	debug("%s: OK\n", __func__);
 }
 
-int eqos_send(struct udevice *dev, void *packet, int length)
+static int eqos_send(struct udevice *dev, void *packet, int length)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	struct eqos_desc *tx_desc;
@@ -843,7 +842,7 @@ int eqos_send(struct udevice *dev, void *packet, int length)
 	return -ETIMEDOUT;
 }
 
-int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
+static int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	struct eqos_desc *rx_desc;
@@ -867,7 +866,7 @@ int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
 	return length;
 }
 
-int eqos_free_pkt(struct udevice *dev, uchar *packet, int length)
+static int eqos_free_pkt(struct udevice *dev, uchar *packet, int length)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	uchar *packet_expected;

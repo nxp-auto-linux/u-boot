@@ -118,7 +118,7 @@ static inline ofnode offset_to_ofnode(int of_offset)
 	if (of_live_active())
 		node.np = NULL;
 	else
-		node.of_offset = of_offset;
+		node.of_offset = of_offset >= 0 ? of_offset : -1;
 
 	return node;
 }
@@ -224,7 +224,7 @@ static inline int ofnode_read_s32(ofnode node, const char *propname,
  * @def:	default value to return if the property has no value
  * @return property value, or @def if not found
  */
-int ofnode_read_u32_default(ofnode ref, const char *propname, u32 def);
+u32 ofnode_read_u32_default(ofnode ref, const char *propname, u32 def);
 
 /**
  * ofnode_read_s32_default() - Read a 32-bit integer from a property
@@ -254,12 +254,23 @@ int ofnode_read_u64(ofnode node, const char *propname, u64 *outp);
  * @def:	default value to return if the property has no value
  * @return property value, or @def if not found
  */
-int ofnode_read_u64_default(ofnode node, const char *propname, u64 def);
+u64 ofnode_read_u64_default(ofnode node, const char *propname, u64 def);
+
+/**
+ * ofnode_read_prop() - Read a property from a node
+ *
+ * @node:	valid node reference to read property from
+ * @propname:	name of the property to read
+ * @sizep:	if non-NULL, returns the size of the property, or an error code
+		if not found
+ * @return property value, or NULL if there is no such property
+ */
+const void *ofnode_read_prop(ofnode node, const char *propname, int *sizep);
 
 /**
  * ofnode_read_string() - Read a string from a property
  *
- * @ref:	valid node reference to read property from
+ * @node:	valid node reference to read property from
  * @propname:	name of the property to read
  * @return string from property value, or NULL if there is no such property
  */
@@ -353,6 +364,20 @@ ofnode ofnode_get_by_phandle(uint phandle);
  * @return size of property if present, or -EINVAL if not
  */
 int ofnode_read_size(ofnode node, const char *propname);
+
+/**
+ * ofnode_get_addr_size_index() - get an address/size from a node
+ *				  based on index
+ *
+ * This reads the register address/size from a node based on index
+ *
+ * @node: node to read from
+ * @index: Index of address to read (0 for first)
+ * @size: Pointer to size of the address
+ * @return address, or FDT_ADDR_T_NONE if not present or invalid
+ */
+phys_addr_t ofnode_get_addr_size_index(ofnode node, int index,
+				       fdt_size_t *size);
 
 /**
  * ofnode_get_addr_index() - get an address from a node
@@ -496,21 +521,37 @@ int ofnode_count_phandle_with_args(ofnode node, const char *list_name,
 ofnode ofnode_path(const char *path);
 
 /**
- * ofnode_get_chosen_prop() - get the value of a chosen property
+ * ofnode_read_chosen_prop() - get the value of a chosen property
  *
  * This looks for a property within the /chosen node and returns its value
  *
  * @propname: Property name to look for
+ * @sizep: Returns size of property, or FDT_ERR_... error code if function
+ *	returns NULL
  * @return property value if found, else NULL
  */
-const char *ofnode_get_chosen_prop(const char *propname);
+const void *ofnode_read_chosen_prop(const char *propname, int *sizep);
 
 /**
- * ofnode_get_chosen_node() - get the chosen node
+ * ofnode_read_chosen_string() - get the string value of a chosen property
  *
- * @return the chosen node if present, else ofnode_null()
+ * This looks for a property within the /chosen node and returns its value,
+ * checking that it is a valid nul-terminated string
+ *
+ * @propname: Property name to look for
+ * @return string value if found, else NULL
  */
-ofnode ofnode_get_chosen_node(const char *name);
+const char *ofnode_read_chosen_string(const char *propname);
+
+/**
+ * ofnode_get_chosen_node() - get a referenced node from the chosen node
+ *
+ * This looks up a named property in the chosen node and uses that as a path to
+ * look up a code.
+ *
+ * @return the referenced node if present, else ofnode_null()
+ */
+ofnode ofnode_get_chosen_node(const char *propname);
 
 struct display_timing;
 /**
@@ -662,12 +703,14 @@ int ofnode_read_simple_size_cells(ofnode node);
  * After relocation and jumping into the real U-Boot binary it is possible to
  * determine if a node was bound in one of SPL/TPL stages.
  *
- * There are 3 settings currently in use
- * -
+ * There are 4 settings currently in use
+ * - u-boot,dm-pre-proper: U-Boot proper pre-relocation only
  * - u-boot,dm-pre-reloc: legacy and indicates any of TPL or SPL
  *   Existing platforms only use it to indicate nodes needed in
  *   SPL. Should probably be replaced by u-boot,dm-spl for
  *   new platforms.
+ * - u-boot,dm-spl: SPL and U-Boot pre-relocation
+ * - u-boot,dm-tpl: TPL and U-Boot pre-relocation
  *
  * @node: node to check
  * @return true if node is needed in SPL/TL, false otherwise
@@ -751,7 +794,7 @@ ofnode ofnode_by_prop_value(ofnode from, const char *propname,
 	     node = ofnode_next_subnode(node))
 
 /**
- * ofnode_translate_address() - Tranlate a device-tree address
+ * ofnode_translate_address() - Translate a device-tree address
  *
  * Translate an address from the device-tree into a CPU physical address. This
  * function walks up the tree and applies the various bus mappings along the
@@ -763,6 +806,20 @@ ofnode ofnode_by_prop_value(ofnode from, const char *propname,
  * @return the translated address; OF_BAD_ADDR on error
  */
 u64 ofnode_translate_address(ofnode node, const fdt32_t *in_addr);
+
+/**
+ * ofnode_translate_dma_address() - Translate a device-tree DMA address
+ *
+ * Translate a DMA address from the device-tree into a CPU physical address.
+ * This function walks up the tree and applies the various bus mappings along
+ * the way.
+ *
+ * @ofnode: Device tree node giving the context in which to translate the
+ *          DMA address
+ * @in_addr: pointer to the DMA address to translate
+ * @return the translated DMA address; OF_BAD_ADDR on error
+ */
+u64 ofnode_translate_dma_address(ofnode node, const fdt32_t *in_addr);
 
 /**
  * ofnode_device_is_compatible() - check if the node is compatible with compat

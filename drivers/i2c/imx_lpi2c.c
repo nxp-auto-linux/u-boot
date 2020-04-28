@@ -13,6 +13,7 @@
 #include <dm.h>
 #include <fdtdec.h>
 #include <i2c.h>
+#include <dm/device_compat.h>
 
 #define LPI2C_FIFO_SIZE 4
 #define LPI2C_NACK_TOUT_MS 1
@@ -169,7 +170,7 @@ static int bus_i2c_start(struct udevice *bus, u8 addr, u8 dir)
 		debug("i2c: start check busy bus: 0x%x\n", result);
 
 		/* Try to init the lpi2c then check the bus busy again */
-		bus_i2c_init(bus, 100000);
+		bus_i2c_init(bus, I2C_SPEED_STANDARD_RATE);
 		result = imx_lpci2c_check_busy_bus(regs);
 		if (result) {
 			printf("i2c: Error check busy bus: 0x%x\n", result);
@@ -388,13 +389,13 @@ static int imx_lpi2c_probe_chip(struct udevice *bus, u32 chip,
 	result = bus_i2c_start(bus, chip, 0);
 	if (result) {
 		bus_i2c_stop(bus);
-		bus_i2c_init(bus, 100000);
+		bus_i2c_init(bus, I2C_SPEED_STANDARD_RATE);
 		return result;
 	}
 
 	result = bus_i2c_stop(bus);
 	if (result)
-		bus_i2c_init(bus, 100000);
+		bus_i2c_init(bus, I2C_SPEED_STANDARD_RATE);
 
 	return result;
 }
@@ -471,6 +472,17 @@ static int imx_lpi2c_probe(struct udevice *bus)
 			dev_err(bus, "Failed to enable per clk\n");
 			return ret;
 		}
+
+		ret = clk_get_by_name(bus, "ipg", &i2c_bus->ipg_clk);
+		if (ret) {
+			dev_err(bus, "Failed to get ipg clk\n");
+			return ret;
+		}
+		ret = clk_enable(&i2c_bus->ipg_clk);
+		if (ret) {
+			dev_err(bus, "Failed to enable ipg clk\n");
+			return ret;
+		}
 	} else {
 		/* To i.MX7ULP, only i2c4-7 can be handled by A7 core */
 		ret = enable_i2c_clk(1, bus->seq);
@@ -478,7 +490,7 @@ static int imx_lpi2c_probe(struct udevice *bus)
 			return ret;
 	}
 
-	ret = bus_i2c_init(bus, 100000);
+	ret = bus_i2c_init(bus, I2C_SPEED_STANDARD_RATE);
 	if (ret < 0)
 		return ret;
 

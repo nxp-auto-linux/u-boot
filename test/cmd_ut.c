@@ -11,17 +11,25 @@
 
 static int do_ut_all(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 
-int cmd_ut_category(const char *name, struct unit_test *tests, int n_ents,
+int cmd_ut_category(const char *name, const char *prefix,
+		    struct unit_test *tests, int n_ents,
 		    int argc, char * const argv[])
 {
 	struct unit_test_state uts = { .fail_count = 0 };
 	struct unit_test *test;
+	int prefix_len = prefix ? strlen(prefix) : 0;
 
 	if (argc == 1)
 		printf("Running %d %s tests\n", n_ents, name);
 
 	for (test = tests; test < tests + n_ents; test++) {
-		if (argc > 1 && strcmp(argv[1], test->name))
+		const char *test_name = test->name;
+
+		/* Remove the prefix */
+		if (prefix && !strncmp(test_name, prefix, prefix_len))
+			test_name += prefix_len;
+
+		if (argc > 1 && strcmp(argv[1], test_name))
 			continue;
 		printf("Test: %s\n", test->name);
 
@@ -42,6 +50,9 @@ static cmd_tbl_t cmd_ut_sub[] = {
 #endif
 #if defined(CONFIG_UT_ENV)
 	U_BOOT_CMD_MKENT(env, CONFIG_SYS_MAXARGS, 1, do_ut_env, "", ""),
+#endif
+#ifdef CONFIG_UT_OPTEE
+	U_BOOT_CMD_MKENT(optee, CONFIG_SYS_MAXARGS, 1, do_ut_optee, "", ""),
 #endif
 #ifdef CONFIG_UT_OVERLAY
 	U_BOOT_CMD_MKENT(overlay, CONFIG_SYS_MAXARGS, 1, do_ut_overlay, "", ""),
@@ -113,6 +124,9 @@ static char ut_help_text[] =
 #endif
 #ifdef CONFIG_UT_LIB
 	"ut lib [test-name] - test library functions\n"
+#endif
+#ifdef CONFIG_UT_OPTEE
+	"ut optee [test-name]\n"
 #endif
 #ifdef CONFIG_UT_OVERLAY
 	"ut overlay [test-name]\n"

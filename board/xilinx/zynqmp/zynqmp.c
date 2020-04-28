@@ -5,6 +5,9 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
+#include <env.h>
+#include <init.h>
 #include <sata.h>
 #include <ahci.h>
 #include <scsi.h>
@@ -20,13 +23,13 @@
 #include <usb.h>
 #include <dwc3-uboot.h>
 #include <zynqmppl.h>
+#include <zynqmp_firmware.h>
 #include <g_dnl.h>
+#include <linux/sizes.h>
+
+#include "pm_cfg_obj.h"
 
 DECLARE_GLOBAL_DATA_PTR;
-
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT)
-static struct udevice *watchdog_dev __attribute__((section(".data"))) = NULL;
-#endif
 
 #if defined(CONFIG_FPGA) && defined(CONFIG_FPGA_ZYNQMPPL) && \
     !defined(CONFIG_SPL_BUILD)
@@ -170,6 +173,18 @@ static const struct {
 		.id = 0x62,
 		.name = "29dr",
 	},
+	{
+		.id = 0x66,
+		.name = "39dr",
+	},
+	{
+		.id = 0x7b,
+		.name = "48dr",
+	},
+	{
+		.id = 0x7e,
+		.name = "49dr",
+	},
 };
 #endif
 
@@ -305,18 +320,6 @@ static char *zynqmp_get_silicon_idcode_name(void)
 int board_early_init_f(void)
 {
 	int ret = 0;
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_CLK_ZYNQMP)
-	u32 pm_api_version;
-
-	pm_api_version = zynqmp_pmufw_version();
-	printf("PMUFW:\tv%d.%d\n",
-	       pm_api_version >> ZYNQMP_PM_VERSION_MAJOR_SHIFT,
-	       pm_api_version & ZYNQMP_PM_VERSION_MINOR_MASK);
-
-	if (pm_api_version < ZYNQMP_PM_VERSION)
-		panic("PMUFW version error. Expected: v%d.%d\n",
-		      ZYNQMP_PM_VERSION_MAJOR, ZYNQMP_PM_VERSION_MINOR);
-#endif
 
 #if defined(CONFIG_ZYNQMP_PSU_INIT_ENABLED)
 	ret = psu_init();
@@ -327,6 +330,19 @@ int board_early_init_f(void)
 
 int board_init(void)
 {
+	struct udevice *dev;
+
+	uclass_get_device_by_name(UCLASS_FIRMWARE, "zynqmp-power", &dev);
+	if (!dev)
+		panic("PMU Firmware device not found - Enable it");
+
+#if defined(CONFIG_SPL_BUILD)
+	/* Check *at build time* if the filename is an non-empty string */
+	if (sizeof(CONFIG_ZYNQMP_SPL_PM_CFG_OBJ_FILE) > 1)
+		zynqmp_pmufw_load_config_object(zynqmp_pm_cfg_obj,
+						zynqmp_pm_cfg_obj_size);
+#endif
+
 	printf("EL Level:\tEL%d\n", current_el());
 
 #if defined(CONFIG_FPGA) && defined(CONFIG_FPGA_ZYNQMPPL) && \
@@ -340,43 +356,8 @@ int board_init(void)
 	}
 #endif
 
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT)
-	if (uclass_get_device_by_seq(UCLASS_WDT, 0, &watchdog_dev)) {
-		debug("Watchdog: Not found by seq!\n");
-		if (uclass_get_device(UCLASS_WDT, 0, &watchdog_dev)) {
-			puts("Watchdog: Not found!\n");
-			return 0;
-		}
-	}
-
-	wdt_start(watchdog_dev, 0, 0);
-	puts("Watchdog: Started\n");
-#endif
-
 	return 0;
 }
-
-#ifdef CONFIG_WATCHDOG
-/* Called by macro WATCHDOG_RESET */
-void watchdog_reset(void)
-{
-# if !defined(CONFIG_SPL_BUILD)
-	static ulong next_reset;
-	ulong now;
-
-	if (!watchdog_dev)
-		return;
-
-	now = timer_get_us();
-
-	/* Do not reset the watchdog too often */
-	if (now > next_reset) {
-		wdt_reset(watchdog_dev);
-		next_reset = now + 1000;
-	}
-# endif
-}
-#endif
 
 int board_early_init_r(void)
 {
@@ -482,18 +463,20 @@ static const struct {
 	{}
 };
 
-static u32 reset_reason(void)
+static int reset_reason(void)
 {
-	u32 ret;
-	int i;
+	u32 reg;
+	int i, ret;
 	const char *reason = NULL;
 
-	ret = readl(&crlapb_base->reset_reason);
+	ret = zynqmp_mmio_read((ulong)&crlapb_base->reset_reason, &reg);
+	if (ret)
+		return -EINVAL;
 
 	puts("Reset reason:\t");
 
 	for (i = 0; i < ARRAY_SIZE(reset_reasons); i++) {
-		if (ret & reset_reasons[i].bit) {
+		if (reg & reset_reasons[i].bit) {
 			reason = reset_reasons[i].name;
 			printf("%s ", reset_reasons[i].name);
 			break;
@@ -504,7 +487,9 @@ static u32 reset_reason(void)
 
 	env_set("reset_reason", reason);
 
-	writel(~0, &crlapb_base->reset_reason);
+	ret = zynqmp_mmio_write(~0, ~0, (ulong)&crlapb_base->reset_reason);
+	if (ret)
+		return -EINVAL;
 
 	return ret;
 }
@@ -551,6 +536,7 @@ int board_late_init(void)
 	char *new_targets;
 	char *env_targets;
 	int ret;
+	ulong initrd_hi;
 
 #if defined(CONFIG_USB_ETHER) && !defined(CONFIG_USB_GADGET_DOWNLOAD)
 	usb_ether_init();
@@ -583,7 +569,7 @@ int board_late_init(void)
 		break;
 	case JTAG_MODE:
 		puts("JTAG_MODE\n");
-		mode = "pxe dhcp";
+		mode = "jtag pxe dhcp";
 		env_set("modeboot", "jtagboot");
 		break;
 	case QSPI_MODE_24BIT:
@@ -594,8 +580,17 @@ int board_late_init(void)
 		break;
 	case EMMC_MODE:
 		puts("EMMC_MODE\n");
-		mode = "mmc0";
-		env_set("modeboot", "emmcboot");
+		if (uclass_get_device_by_name(UCLASS_MMC,
+					      "mmc@ff160000", &dev) &&
+		    uclass_get_device_by_name(UCLASS_MMC,
+					      "sdhci@ff160000", &dev)) {
+			puts("Boot from EMMC but without SD0 enabled!\n");
+			return -1;
+		}
+		debug("mmc0 device found at %p, seq %d\n", dev, dev->seq);
+
+		mode = "mmc";
+		bootseq = dev->seq;
 		break;
 	case SD_MODE:
 		puts("SD_MODE\n");
@@ -667,6 +662,12 @@ int board_late_init(void)
 			env_targets ? env_targets : "");
 
 	env_set("boot_targets", new_targets);
+
+	initrd_hi = gd->start_addr_sp - CONFIG_STACK_SIZE;
+	initrd_hi = round_down(initrd_hi, SZ_16M);
+	env_set_addr("initrd_high", (void *)initrd_hi);
+
+	env_set_hex("script_offset_f", CONFIG_BOOT_SCRIPT_OFFSET);
 
 	reset_reason();
 

@@ -154,8 +154,6 @@ config MACH_SUN4I
 	bool "sun4i (Allwinner A10)"
 	select CPU_V7A
 	select ARM_CORTEX_CPU_IS_UP
-	select DM_MMC if MMC
-	select DM_SCSI if SCSI
 	select PHY_SUN4I_USB
 	select DRAM_SUN4I
 	select SUNXI_GEN_SUN4I
@@ -165,7 +163,6 @@ config MACH_SUN5I
 	bool "sun5i (Allwinner A13)"
 	select CPU_V7A
 	select ARM_CORTEX_CPU_IS_UP
-	select DM_MMC if MMC
 	select DRAM_SUN4I
 	select PHY_SUN4I_USB
 	select SUNXI_GEN_SUN4I
@@ -178,7 +175,6 @@ config MACH_SUN6I
 	select CPU_V7_HAS_NONSEC
 	select CPU_V7_HAS_VIRT
 	select ARCH_SUPPORT_PSCI
-	select DM_MMC if MMC
 	select DRAM_SUN6I
 	select PHY_SUN4I_USB
 	select SUN6I_P2WI
@@ -205,7 +201,6 @@ config MACH_SUN8I_A23
 	select CPU_V7_HAS_NONSEC
 	select CPU_V7_HAS_VIRT
 	select ARCH_SUPPORT_PSCI
-	select DM_MMC if MMC
 	select DRAM_SUN8I_A23
 	select PHY_SUN4I_USB
 	select SUNXI_GEN_SUN6I
@@ -219,7 +214,6 @@ config MACH_SUN8I_A33
 	select CPU_V7_HAS_NONSEC
 	select CPU_V7_HAS_VIRT
 	select ARCH_SUPPORT_PSCI
-	select DM_MMC if MMC
 	select DRAM_SUN8I_A33
 	select PHY_SUN4I_USB
 	select SUNXI_GEN_SUN6I
@@ -230,7 +224,6 @@ config MACH_SUN8I_A33
 config MACH_SUN8I_A83T
 	bool "sun8i (Allwinner A83T)"
 	select CPU_V7A
-	select DM_MMC if MMC
 	select DRAM_SUN8I_A83T
 	select PHY_SUN4I_USB
 	select SUNXI_GEN_SUN6I
@@ -246,7 +239,6 @@ config MACH_SUN8I_H3
 	select ARCH_SUPPORT_PSCI
 	select MACH_SUNXI_H3_H5
 	select ARMV7_BOOT_SEC_DEFAULT if OLD_SUNXI_KERNEL_COMPAT
-	select DM_MMC if MMC
 
 config MACH_SUN8I_R40
 	bool "sun8i (Allwinner R40)"
@@ -258,6 +250,7 @@ config MACH_SUN8I_R40
 	select SUPPORT_SPL
 	select SUNXI_DRAM_DW
 	select SUNXI_DRAM_DW_32BIT
+	select PHY_SUN4I_USB
 
 config MACH_SUN8I_V3S
 	bool "sun8i (Allwinner V3s)"
@@ -265,7 +258,6 @@ config MACH_SUN8I_V3S
 	select CPU_V7_HAS_NONSEC
 	select CPU_V7_HAS_VIRT
 	select ARCH_SUPPORT_PSCI
-	select DM_MMC if MMC
 	select SUNXI_GEN_SUN6I
 	select SUNXI_DRAM_DW
 	select SUNXI_DRAM_DW_16BIT
@@ -280,13 +272,14 @@ config MACH_SUN9I
 	select SUNXI_GEN_SUN6I
 	select SUN8I_RSB
 	select SUPPORT_SPL
-	select DM_MMC if MMC
 
 config MACH_SUN50I
 	bool "sun50i (Allwinner A64)"
 	select ARM64
+	select SPI
 	select DM_I2C
-	select DM_MMC if MMC
+	select DM_SPI if SPI
+	select DM_SPI_FLASH
 	select PHY_SUN4I_USB
 	select SUN6I_PRCM
 	select SUNXI_DE2
@@ -303,7 +296,6 @@ config MACH_SUN50I_H5
 	bool "sun50i (Allwinner H5)"
 	select ARM64
 	select MACH_SUNXI_H3_H5
-	select DM_MMC if MMC
 	select FIT
 	select SPL_LOAD_FIT
 
@@ -311,8 +303,8 @@ config MACH_SUN50I_H6
 	bool "sun50i (Allwinner H6)"
 	select ARM64
 	select SUPPORT_SPL
-	select DM_MMC if MMC
 	select FIT
+	select PHY_SUN4I_USB
 	select SPL_LOAD_FIT
 	select DRAM_SUN50I_H6
 
@@ -353,7 +345,7 @@ config ARM_BOOT_HOOK_RMR
 	This allows both the SPL and the U-Boot proper to be entered in
 	either mode and switch to AArch64 if needed.
 
-if SUNXI_DRAM_DW
+if SUNXI_DRAM_DW || DRAM_SUN50I_H6
 config SUNXI_DRAM_DDR3
 	bool
 
@@ -382,6 +374,22 @@ config SUNXI_DRAM_LPDDR3_STOCK
 	---help---
 	This option is the LPDDR3 timing used by the stock boot0 by
 	Allwinner.
+
+config SUNXI_DRAM_H6_LPDDR3
+	bool "LPDDR3 DRAM chips on the H6 DRAM controller"
+	select SUNXI_DRAM_LPDDR3
+	depends on DRAM_SUN50I_H6
+	---help---
+	This option is the LPDDR3 timing used by the stock boot0 by
+	Allwinner.
+
+config SUNXI_DRAM_H6_DDR3_1333
+	bool "DDR3-1333 boot0 timings on the H6 DRAM controller"
+	select SUNXI_DRAM_DDR3
+	depends on DRAM_SUN50I_H6
+	---help---
+	This option is the DDR3 timing used by the boot0 on H6 TV boxes
+	which use a DDR3-1333 timing.
 
 config SUNXI_DRAM_DDR2_V3S
 	bool "DDR2 found in V3s chip"
@@ -426,10 +434,11 @@ endif
 
 config DRAM_ZQ
 	int "sunxi dram zq value"
-	default 123 if MACH_SUN4I || MACH_SUN5I || MACH_SUN6I || MACH_SUN8I
+	default 123 if MACH_SUN4I || MACH_SUN5I || MACH_SUN6I || \
+		       MACH_SUN8I_A23 || MACH_SUN8I_A33 || MACH_SUN8I_A83T
 	default 127 if MACH_SUN7I
 	default 14779 if MACH_SUN8I_V3S
-	default 3881979 if MACH_SUN8I_R40 || MACH_SUN50I_H6
+	default 3881979 if MACH_SUNXI_H3_H5 || MACH_SUN8I_R40 || MACH_SUN50I_H6
 	default 4145117 if MACH_SUN9I
 	default 3881915 if MACH_SUN50I
 	---help---
@@ -438,6 +447,7 @@ config DRAM_ZQ
 config DRAM_ODT_EN
 	bool "sunxi dram odt enable"
 	default y if MACH_SUN8I_A23
+	default y if MACH_SUNXI_H3_H5
 	default y if MACH_SUN8I_R40
 	default y if MACH_SUN50I
 	default y if MACH_SUN50I_H6
@@ -984,7 +994,7 @@ config SPL_STACK_R_ADDR
 
 config SPL_SPI_SUNXI
 	bool "Support for SPI Flash on Allwinner SoCs in SPL"
-	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUNXI_H3_H5 || MACH_SUN50I
+	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUNXI_H3_H5 || MACH_SUN50I || MACH_SUN8I_R40 || MACH_SUN50I_H6
 	help
 	  Enable support for SPI Flash. This option allows SPL to read from
 	  sunxi SPI Flash. It uses the same method as the boot ROM, so does

@@ -16,11 +16,7 @@
 
 	chosen {
 		stdout-path = &uart2;
-	};
-
-	config {
-		u-boot,dm-pre-reloc;
-		u-boot,boot0 = &spi_flash;
+		u-boot,spl-boot-order = &spi_flash;
 	};
 
 	firmware {
@@ -307,7 +303,7 @@
 
 	spi_flash: spiflash@0 {
 		u-boot,dm-pre-reloc;
-		compatible = "spidev", "spi-flash";
+		compatible = "spidev", "jedec,spi-nor";
 		spi-max-frequency = <20000000>; /* Reduce for Dediprog em100 pro */
 		reg = <0>;
 	};

@@ -8,6 +8,7 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <malloc.h>
 #include <netdev.h>
 #include <dm.h>
@@ -65,21 +66,6 @@ int board_init(void)
 			HSUSB_REG_UGCTRL2_USB0SEL_EHCI);
 	/* low power status */
 	setbits_le16(HSUSB_REG_LPSTS, HSUSB_REG_LPSTS_SUSPM_NORMAL);
-
-	return 0;
-}
-
-int dram_init(void)
-{
-	if (fdtdec_setup_mem_size_base() != 0)
-		return -EINVAL;
-
-	return 0;
-}
-
-int dram_init_banksize(void)
-{
-	fdtdec_setup_memory_banksize();
 
 	return 0;
 }

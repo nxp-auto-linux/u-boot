@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <asm/armv7.h>
 #include <asm/pl310.h>
 #include <asm/io.h>
@@ -37,7 +38,7 @@ static void enable_ca7_smp(void)
 	}
 }
 
-#ifndef CONFIG_SYS_DCACHE_OFF
+#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
 void enable_caches(void)
 {
 #if defined(CONFIG_SYS_ARM_CACHE_WRITETHROUGH)

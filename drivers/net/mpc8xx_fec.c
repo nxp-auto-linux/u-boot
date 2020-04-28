@@ -6,6 +6,7 @@
 
 #include <common.h>
 #include <command.h>
+#include <hang.h>
 #include <malloc.h>
 #include <net.h>
 #include <netdev.h>
@@ -13,6 +14,7 @@
 #include <asm/io.h>
 
 #include <phy.h>
+#include <linux/mii.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

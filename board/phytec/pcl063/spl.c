@@ -13,7 +13,8 @@
 #include <asm/arch/mx6-ddr.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/crm_regs.h>
-#include <fsl_esdhc.h>
+#include <asm/arch/sys_proto.h>
+#include <fsl_esdhc_imx.h>
 
 /* Configuration for Micron MT41K256M16TW-107 IT:P, 32M x 16 x 8 -> 256MiB */
 
@@ -100,7 +101,7 @@ static void spl_dram_init(void)
 	mx6_dram_cfg(&ddr_sysinfo, &mx6_mmcd_calib, &mem_ddr);
 }
 
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 
 #define USDHC_PAD_CTRL (PAD_CTL_PKE         | PAD_CTL_PUE       | \
 			PAD_CTL_PUS_22K_UP  | PAD_CTL_SPEED_LOW | \
@@ -117,11 +118,32 @@ static iomux_v3_cfg_t const usdhc1_pads[] = {
 	MX6_PAD_UART1_RTS_B__USDHC1_CD_B | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 };
 
+#ifndef CONFIG_NAND_MXS
+static iomux_v3_cfg_t const usdhc2_pads[] = {
+	MX6_PAD_NAND_RE_B__USDHC2_CLK    | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_WE_B__USDHC2_CMD    | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA00__USDHC2_DATA0 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA01__USDHC2_DATA1 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA02__USDHC2_DATA2 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA03__USDHC2_DATA3 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA04__USDHC2_DATA4 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA05__USDHC2_DATA5 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA06__USDHC2_DATA6 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX6_PAD_NAND_DATA07__USDHC2_DATA7 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+};
+#endif
+
 static struct fsl_esdhc_cfg usdhc_cfg[] = {
 	{
 		.esdhc_base = USDHC1_BASE_ADDR,
 		.max_bus_width = 4,
 	},
+#ifndef CONFIG_NAND_MXS
+	{
+		.esdhc_base = USDHC2_BASE_ADDR,
+		.max_bus_width = 8,
+	},
+#endif
 };
 
 int board_mmc_getcd(struct mmc *mmc)
@@ -131,13 +153,37 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
-	imx_iomux_v3_setup_multiple_pads(usdhc1_pads, ARRAY_SIZE(usdhc1_pads));
-	usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
+	int i, ret;
 
-	return fsl_esdhc_initialize(bis, &usdhc_cfg[0]);
+	for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
+		switch (i) {
+		case 0:
+			SETUP_IOMUX_PADS(usdhc1_pads);
+			usdhc_cfg[i].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
+			break;
+#ifndef CONFIG_NAND_MXS
+		case 1:
+			SETUP_IOMUX_PADS(usdhc2_pads);
+			usdhc_cfg[i].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
+			break;
+#endif
+		default:
+			printf("Warning - USDHC%d controller not supporting\n",
+			       i + 1);
+			return 0;
+		}
+
+		ret = fsl_esdhc_initialize(bis, &usdhc_cfg[i]);
+		if (ret) {
+			printf("Warning: failed to initialize mmc dev %d\n", i);
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
-#endif /* CONFIG_FSL_ESDHC */
+#endif /* CONFIG_FSL_ESDHC_IMX */
 
 void board_init_f(ulong dummy)
 {

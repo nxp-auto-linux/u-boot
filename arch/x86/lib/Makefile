@@ -4,9 +4,11 @@
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
 ifndef CONFIG_X86_64
+ifndef CONFIG_TPL_BUILD
 obj-y += bios.o
 obj-y += bios_asm.o
 obj-y += bios_interrupts.o
+endif
 obj-y += string.o
 endif
 ifndef CONFIG_SPL_BUILD
@@ -42,8 +44,18 @@ obj-y	+= tables.o
 ifndef CONFIG_SPL_BUILD
 obj-$(CONFIG_CMD_ZBOOT)	+= zimage.o
 endif
+obj-$(CONFIG_USE_HOB) += hob.o
 obj-$(CONFIG_HAVE_FSP) += fsp/
-obj-$(CONFIG_SPL_BUILD) += spl.o
+obj-$(CONFIG_FSP_VERSION1) += fsp1/
+obj-$(CONFIG_FSP_VERSION2) += fsp2/
+
+ifdef CONFIG_SPL_BUILD
+ifdef CONFIG_TPL_BUILD
+obj-y += tpl.o
+else
+obj-y += spl.o
+endif
+endif
 
 lib-$(CONFIG_USE_PRIVATE_LIBGCC) += div64.o
 

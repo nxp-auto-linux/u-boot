@@ -12,7 +12,7 @@ arch-$(CONFIG_CPU_ARM926EJS)	=-march=armv5te
 arch-$(CONFIG_CPU_ARM946ES)	=-march=armv5te
 arch-$(CONFIG_CPU_SA1100)	=-march=armv4
 arch-$(CONFIG_CPU_PXA)		=
-arch-$(CONFIG_CPU_ARM1136)	=-march=armv5
+arch-$(CONFIG_CPU_ARM1136)	=-march=armv5t
 arch-$(CONFIG_CPU_ARM1176)	=-march=armv5t
 arch-$(CONFIG_CPU_V7A)		=$(call cc-option, -march=armv7-a, \
 				 $(call cc-option, -march=armv7))
@@ -79,6 +79,7 @@ machine-$(CONFIG_ARCH_ROCKCHIP)		+= rockchip
 machine-$(CONFIG_STM32)			+= stm32
 machine-$(CONFIG_ARCH_STM32MP)		+= stm32mp
 machine-$(CONFIG_TEGRA)			+= tegra
+machine-$(CONFIG_ARCH_U8500)		+= u8500
 machine-$(CONFIG_ARCH_UNIPHIER)		+= uniphier
 machine-$(CONFIG_ARCH_ZYNQ)		+= zynq
 machine-$(CONFIG_ARCH_ZYNQMP)		+= zynqmp
@@ -104,11 +105,11 @@ libs-y += arch/arm/cpu/
 libs-y += arch/arm/lib/
 
 ifeq ($(CONFIG_SPL_BUILD),y)
-ifneq (,$(CONFIG_MX23)$(CONFIG_MX28)$(CONFIG_MX35)$(filter $(SOC), mx25 mx5 mx6 mx7 mx35 imx8m imx8))
+ifneq (,$(CONFIG_MX23)$(CONFIG_MX28)$(CONFIG_MX35)$(filter $(SOC), mx25 mx5 mx6 mx7 mx35 imx8m imx8 imxrt))
 libs-y += arch/arm/mach-imx/
 endif
 else
-ifneq (,$(filter $(SOC), mx25 mx27 mx5 mx6 mx7 mx7ulp mx31 mx35 mxs imx8m imx8 vf610))
+ifneq (,$(filter $(SOC), mx25 mx27 mx5 mx6 mx7 mx7ulp mx31 mx35 mxs imx8m imx8 imxrt vf610))
 libs-y += arch/arm/mach-imx/
 endif
 endif

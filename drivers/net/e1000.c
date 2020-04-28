@@ -30,8 +30,10 @@ tested on both gig copper and gig fiber boards
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <dm.h>
 #include <errno.h>
+#include <malloc.h>
 #include <memalign.h>
 #include <pci.h>
 #include "e1000.h"

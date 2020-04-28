@@ -49,6 +49,72 @@ static inline bool u_boot_first_phase(void)
 	return false;
 }
 
+enum u_boot_phase {
+	PHASE_TPL,	/* Running in TPL */
+	PHASE_SPL,	/* Running in SPL */
+	PHASE_BOARD_F,	/* Running in U-Boot before relocation */
+	PHASE_BOARD_R,	/* Running in U-Boot after relocation */
+};
+
+/**
+ * spl_phase() - Find out the phase of U-Boot
+ *
+ * This can be used to avoid #ifdef logic and use if() instead.
+ *
+ * For example, to include code only in TPL, you might do:
+ *
+ *    #ifdef CONFIG_TPL_BUILD
+ *    ...
+ *    #endif
+ *
+ * but with this you can use:
+ *
+ *    if (spl_phase() == PHASE_TPL) {
+ *       ...
+ *    }
+ *
+ * To include code only in SPL, you might do:
+ *
+ *    #if defined(CONFIG_SPL_BUILD) && !defined(CONFIG_TPL_BUILD)
+ *    ...
+ *    #endif
+ *
+ * but with this you can use:
+ *
+ *    if (spl_phase() == PHASE_SPL) {
+ *       ...
+ *    }
+ *
+ * To include code only in U-Boot proper, you might do:
+ *
+ *    #ifndef CONFIG_SPL_BUILD
+ *    ...
+ *    #endif
+ *
+ * but with this you can use:
+ *
+ *    if (spl_phase() == PHASE_BOARD_F) {
+ *       ...
+ *    }
+ *
+ * @return U-Boot phase
+ */
+static inline enum u_boot_phase spl_phase(void)
+{
+#ifdef CONFIG_TPL_BUILD
+	return PHASE_TPL;
+#elif CONFIG_SPL_BUILD
+	return PHASE_SPL;
+#else
+	DECLARE_GLOBAL_DATA_PTR;
+
+	if (!(gd->flags & GD_FLG_RELOC))
+		return PHASE_BOARD_F;
+	else
+		return PHASE_BOARD_R;
+#endif
+}
+
 /* A string name for SPL or TPL */
 #ifdef CONFIG_SPL_BUILD
 # ifdef CONFIG_TPL_BUILD
@@ -67,7 +133,7 @@ struct spl_image_info {
 	u8 os;
 	uintptr_t load_addr;
 	uintptr_t entry_point;
-#if CONFIG_IS_ENABLED(LOAD_FIT)
+#if CONFIG_IS_ENABLED(LOAD_FIT) || CONFIG_IS_ENABLED(LOAD_FIT_FULL)
 	void *fdt_addr;
 #endif
 	u32 boot_device;
@@ -103,10 +169,38 @@ struct spl_load_info {
  * We need to know the position of U-Boot in memory so we can jump to it. We
  * allow any U-Boot binary to be used (u-boot.bin, u-boot-nodtb.bin,
  * u-boot.img), hence the '_any'. These is no checking here that the correct
- * image is found. For * example if u-boot.img is used we don't check that
+ * image is found. For example if u-boot.img is used we don't check that
  * spl_parse_image_header() can parse a valid header.
+ *
+ * Similarly for SPL, so that TPL can jump to SPL.
  */
 binman_sym_extern(ulong, u_boot_any, image_pos);
+binman_sym_extern(ulong, u_boot_any, size);
+binman_sym_extern(ulong, spl, image_pos);
+binman_sym_extern(ulong, spl, size);
+
+/**
+ * spl_get_image_pos() - get the image position of the next phase
+ *
+ * This returns the image position to use to load the next phase of U-Boot
+ */
+ulong spl_get_image_pos(void);
+
+/**
+ * spl_get_image_size() - get the size of the next phase
+ *
+ * This returns the size to use to load the next phase of U-Boot
+ */
+ulong spl_get_image_size(void);
+
+/**
+ * spl_load_simple_fit_skip_processing() - Hook to allow skipping the FIT
+ *	image processing during spl_load_simple_fit().
+ *
+ * Return true to skip FIT processing, false to preserve the full code flow
+ * of spl_load_simple_fit().
+ */
+bool spl_load_simple_fit_skip_processing(void);
 
 /**
  * spl_load_simple_fit() - Loads a fit image from a device.
@@ -124,6 +218,18 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 
 #define SPL_COPY_PAYLOAD_ONLY	1
 #define SPL_FIT_FOUND		2
+
+/**
+ * spl_load_imx_container() - Loads a imx container image from a device.
+ * @spl_image:	Image description to set up
+ * @info:	Structure containing the information required to load data.
+ * @sector:	Sector number where container image is located in the device
+ *
+ * Reads the container image @sector in the device. Loads u-boot image to
+ * specified load address.
+ */
+int spl_load_imx_container(struct spl_image_info *spl_image,
+			   struct spl_load_info *info, ulong sector);
 
 /* SPL common functions */
 void preloader_console_init(void);
@@ -163,6 +269,7 @@ int spl_parse_image_header(struct spl_image_info *spl_image,
 void spl_board_prepare_for_linux(void);
 void spl_board_prepare_for_boot(void);
 int spl_board_ubi_load_image(u32 boot_device);
+int spl_board_boot_device(u32 boot_device);
 
 /**
  * jump_to_image_linux() - Jump to a Linux kernel from SPL
@@ -245,14 +352,14 @@ struct spl_image_loader {
  */
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 #define SPL_LOAD_IMAGE_METHOD(_name, _priority, _boot_device, _method) \
-	SPL_LOAD_IMAGE(_method ## _priority ## _boot_device) = { \
+	SPL_LOAD_IMAGE(_boot_device ## _priority ## _method) = { \
 		.name = _name, \
 		.boot_device = _boot_device, \
 		.load_image = _method, \
 	}
 #else
 #define SPL_LOAD_IMAGE_METHOD(_name, _priority, _boot_device, _method) \
-	SPL_LOAD_IMAGE(_method ## _priority ## _boot_device) = { \
+	SPL_LOAD_IMAGE(_boot_device ## _priority ## _method) = { \
 		.boot_device = _boot_device, \
 		.load_image = _method, \
 	}
@@ -331,9 +438,49 @@ int spl_mmc_load_image(struct spl_image_info *spl_image,
 		       struct spl_boot_device *bootdev);
 
 /**
+ * spl_mmc_load() - Load an image file from MMC/SD media
+ *
+ * @param spl_image	Image data filled in by loading process
+ * @param bootdev	Describes which device to load from
+ * @param filename	Name of file to load (in FS mode)
+ * @param raw_part	Partition to load from (in RAW mode)
+ * @param raw_sect	Sector to load from (in RAW mode)
+ *
+ * @return 0 on success, otherwise error code
+ */
+int spl_mmc_load(struct spl_image_info *spl_image,
+		 struct spl_boot_device *bootdev,
+		 const char *filename,
+		 int raw_part,
+		 unsigned long raw_sect);
+
+int spl_ymodem_load_image(struct spl_image_info *spl_image,
+			  struct spl_boot_device *bootdev);
+
+/**
  * spl_invoke_atf - boot using an ARM trusted firmware image
  */
 void spl_invoke_atf(struct spl_image_info *spl_image);
+
+/**
+ * bl2_plat_get_bl31_params() - prepare params for bl31.
+ * @bl32_entry	address of BL32 executable (secure)
+ * @bl33_entry	address of BL33 executable (non secure)
+ * @fdt_addr	address of Flat Device Tree
+ *
+ * This function assigns a pointer to the memory that the platform has kept
+ * aside to pass platform specific and trusted firmware related information
+ * to BL31. This memory is allocated by allocating memory to
+ * bl2_to_bl31_params_mem structure which is a superset of all the
+ * structure whose information is passed to BL31
+ * NOTE: This function should be called only once and should be done
+ * before generating params to BL31
+ *
+ * @return bl31 params structure pointer
+ */
+struct bl31_params *bl2_plat_get_bl31_params(uintptr_t bl32_entry,
+					     uintptr_t bl33_entry,
+					     uintptr_t fdt_addr);
 
 /**
  * spl_optee_entry - entry function for optee
@@ -349,6 +496,11 @@ void spl_invoke_atf(struct spl_image_info *spl_image);
 void spl_optee_entry(void *arg0, void *arg1, void *arg2, void *arg3);
 
 /**
+ * spl_invoke_opensbi - boot using a RISC-V OpenSBI image
+ */
+void spl_invoke_opensbi(struct spl_image_info *spl_image);
+
+/**
  * board_return_to_bootrom - allow for boards to continue with the boot ROM
  *
  * If a board (e.g. the Rockchip RK3368 boards) provide some
@@ -356,7 +508,8 @@ void spl_optee_entry(void *arg0, void *arg1, void *arg2, void *arg3);
  * stage wants to return to the ROM code to continue booting, boards
  * can implement 'board_return_to_bootrom'.
  */
-void board_return_to_bootrom(void);
+int board_return_to_bootrom(struct spl_image_info *spl_image,
+			    struct spl_boot_device *bootdev);
 
 /**
  * board_spl_fit_post_load - allow process images after loading finished

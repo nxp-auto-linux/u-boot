@@ -6,8 +6,10 @@
 
 #include <common.h>
 #include <command.h>
-#include <environment.h>
+#include <cpu_func.h>
+#include <env.h>
 #include <i2c.h>
+#include <init.h>
 #include <net.h>
 #include <linux/mtd/st_smi.h>
 #include <asm/io.h>

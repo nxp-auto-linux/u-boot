@@ -9,12 +9,14 @@
 #include <dm.h>
 #include <errno.h>
 #include <i2c.h>
+#include <malloc.h>
 
 #include <asm-generic/gpio.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 enum pca_type {
+	PCA9543,
 	PCA9544,
 	PCA9547,
 	PCA9548,
@@ -22,7 +24,7 @@ enum pca_type {
 };
 
 struct chip_desc {
-	u8 enable;
+	u8 enable; /* Enable mask in ctl register (used for muxes only) */
 	enum muxtype {
 		pca954x_ismux = 0,
 		pca954x_isswi,
@@ -37,6 +39,10 @@ struct pca954x_priv {
 };
 
 static const struct chip_desc chips[] = {
+	[PCA9543] = {
+		.muxtype = pca954x_isswi,
+		.width = 2,
+	},
 	[PCA9544] = {
 		.enable = 0x4,
 		.muxtype = pca954x_ismux,
@@ -48,12 +54,10 @@ static const struct chip_desc chips[] = {
 		.width = 8,
 	},
 	[PCA9548] = {
-		.enable = 0x8,
 		.muxtype = pca954x_isswi,
 		.width = 8,
 	},
 	[PCA9646] = {
-		.enable = 0x0,
 		.muxtype = pca954x_isswi,
 		.width = 4,
 	},
@@ -89,6 +93,7 @@ static const struct i2c_mux_ops pca954x_ops = {
 };
 
 static const struct udevice_id pca954x_ids[] = {
+	{ .compatible = "nxp,pca9543", .data = PCA9543 },
 	{ .compatible = "nxp,pca9544", .data = PCA9544 },
 	{ .compatible = "nxp,pca9547", .data = PCA9547 },
 	{ .compatible = "nxp,pca9548", .data = PCA9548 },
@@ -121,7 +126,7 @@ static int pca954x_ofdata_to_platdata(struct udevice *dev)
 
 static int pca954x_probe(struct udevice *dev)
 {
-	if (IS_ENABLED(CONFIG_DM_GPIO)) {
+	if (CONFIG_IS_ENABLED(DM_GPIO)) {
 		struct pca954x_priv *priv = dev_get_priv(dev);
 		int err;
 
@@ -142,7 +147,7 @@ static int pca954x_probe(struct udevice *dev)
 
 static int pca954x_remove(struct udevice *dev)
 {
-	if (IS_ENABLED(CONFIG_DM_GPIO)) {
+	if (CONFIG_IS_ENABLED(DM_GPIO)) {
 		struct pca954x_priv *priv = dev_get_priv(dev);
 
 		if (dm_gpio_is_valid(&priv->gpio_mux_reset))

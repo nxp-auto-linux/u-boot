@@ -13,6 +13,7 @@
 
 #include <common.h>
 #include <command.h>
+#include <init.h>
 #include <pci.h>
 #include <asm/processor.h>
 #include <asm/immap_86xx.h>
@@ -55,7 +56,7 @@ int dram_init(void)
 }
 
 #if defined(CONFIG_SYS_DRAM_TEST)
-int testdram (void)
+int testdram(void)
 {
 	uint *pstart = (uint *) CONFIG_SYS_MEMTEST_START;
 	uint *pend = (uint *) CONFIG_SYS_MEMTEST_END;

@@ -16,7 +16,7 @@ static void show_devices(struct udevice *dev, int depth, int last_flag)
 	struct udevice *child;
 
 	/* print the first 20 characters to not break the tree-format. */
-	printf(" %-10.10s  %2d  [ %c ]   %-20.20s  ", dev->uclass->uc_drv->name,
+	printf(" %-10.10s  %3d  [ %c ]   %-20.20s  ", dev->uclass->uc_drv->name,
 	       dev_get_uclass_index(dev, NULL),
 	       dev->flags & DM_FLAG_ACTIVATED ? '+' : ' ', dev->driver->name);
 
@@ -64,7 +64,7 @@ void dm_dump_all(void)
  */
 static void dm_display_line(struct udevice *dev, int index)
 {
-	printf("%i %c %s @ %08lx", index,
+	printf("%-3i %c %s @ %08lx", index,
 	       dev->flags & DM_FLAG_ACTIVATED ? '*' : ' ',
 	       dev->name, (ulong)map_to_sysmem(dev));
 	if (dev->seq != -1 || dev->req_seq != -1)
@@ -94,5 +94,29 @@ void dm_dump_uclass(void)
 			i++;
 		}
 		puts("\n");
+	}
+}
+
+void dm_dump_drivers(void)
+{
+	struct driver *d = ll_entry_start(struct driver, driver);
+	const int n_ents = ll_entry_count(struct driver, driver);
+	struct driver *entry;
+	const struct udevice_id *match;
+
+	puts("Driver                Compatible\n");
+	puts("--------------------------------\n");
+	for (entry = d; entry < d + n_ents; entry++) {
+		match = entry->of_match;
+
+		printf("%-20.20s", entry->name);
+		if (match) {
+			printf("  %s", match->compatible);
+			match++;
+		}
+		printf("\n");
+
+		for (; match && match->compatible; match++)
+			printf("%-20.20s  %s\n", "", match->compatible);
 	}
 }

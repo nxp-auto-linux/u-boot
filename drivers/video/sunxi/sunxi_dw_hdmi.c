@@ -10,6 +10,7 @@
 #include <dm.h>
 #include <dw_hdmi.h>
 #include <edid.h>
+#include <time.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/lcdc.h>
@@ -254,7 +255,7 @@ static void sunxi_dw_hdmi_lcdc_init(int mux, const struct display_timing *edid,
 {
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
-	int div = clock_get_pll3() / edid->pixelclock.typ;
+	int div = DIV_ROUND_UP(clock_get_pll3(), edid->pixelclock.typ);
 	struct sunxi_lcdc_reg *lcdc;
 
 	if (mux == 0) {
@@ -372,6 +373,9 @@ static int sunxi_dw_hdmi_probe(struct udevice *dev)
 	priv->hdmi.reg_io_width = 1;
 	priv->hdmi.phy_set = sunxi_dw_hdmi_phy_cfg;
 	priv->mux = uc_plat->source_id;
+
+	uclass_get_device_by_phandle(UCLASS_I2C, dev, "ddc-i2c-bus",
+				     &priv->hdmi.ddc_bus);
 
 	dw_hdmi_init(&priv->hdmi);
 

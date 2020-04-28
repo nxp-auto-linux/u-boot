@@ -23,15 +23,20 @@
  */
 typedef phys_addr_t fdt_addr_t;
 typedef phys_size_t fdt_size_t;
+
 #ifdef CONFIG_PHYS_64BIT
 #define FDT_ADDR_T_NONE (-1U)
 #define fdt_addr_to_cpu(reg) be64_to_cpu(reg)
 #define fdt_size_to_cpu(reg) be64_to_cpu(reg)
+#define cpu_to_fdt_addr(reg) cpu_to_be64(reg)
+#define cpu_to_fdt_size(reg) cpu_to_be64(reg)
 typedef fdt64_t fdt_val_t;
 #else
 #define FDT_ADDR_T_NONE (-1U)
 #define fdt_addr_to_cpu(reg) be32_to_cpu(reg)
 #define fdt_size_to_cpu(reg) be32_to_cpu(reg)
+#define cpu_to_fdt_addr(reg) cpu_to_be32(reg)
+#define cpu_to_fdt_size(reg) cpu_to_be32(reg)
 typedef fdt32_t fdt_val_t;
 #endif
 
@@ -49,7 +54,7 @@ struct bd_info;
 #define SPL_BUILD	0
 #endif
 
-#if CONFIG_IS_ENABLED(OF_PRIOR_STAGE)
+#ifdef CONFIG_OF_PRIOR_STAGE
 extern phys_addr_t prior_stage_fdt_address;
 #endif
 
@@ -105,6 +110,9 @@ struct fdt_pci_addr {
 	u32	phys_mid;
 	u32	phys_lo;
 };
+
+extern u8 __dtb_dt_begin[];	/* embedded device tree blob */
+extern u8 __dtb_dt_spl_begin[];	/* embedded device tree blob for SPL/TPL */
 
 /**
  * Compute the size of a resource.
@@ -412,23 +420,6 @@ fdt_addr_t fdtdec_get_addr_size(const void *blob, int node,
 		const char *prop_name, fdt_size_t *sizep);
 
 /**
- * Look at an address property in a node and return the pci address which
- * corresponds to the given type in the form of fdt_pci_addr.
- * The property must hold one fdt_pci_addr with a lengh.
- *
- * @param blob		FDT blob
- * @param node		node to examine
- * @param type		pci address type (FDT_PCI_SPACE_xxx)
- * @param prop_name	name of property to find
- * @param addr		returns pci address in the form of fdt_pci_addr
- * @return 0 if ok, -ENOENT if the property did not exist, -EINVAL if the
- *		format of the property was invalid, -ENXIO if the requested
- *		address type was not found
- */
-int fdtdec_get_pci_addr(const void *blob, int node, enum fdt_pci_space type,
-		const char *prop_name, struct fdt_pci_addr *addr);
-
-/**
  * Look at the compatible property of a device node that represents a PCI
  * device and extract pci vendor id and device id from it.
  *
@@ -450,7 +441,7 @@ int fdtdec_get_pci_vendev(const void *blob, int node,
  * @param bar		returns base address of the pci device's registers
  * @return 0 if ok, negative on error
  */
-int fdtdec_get_pci_bar32(struct udevice *dev, struct fdt_pci_addr *addr,
+int fdtdec_get_pci_bar32(const struct udevice *dev, struct fdt_pci_addr *addr,
 			 u32 *bar);
 
 /**
@@ -918,6 +909,26 @@ int fdtdec_decode_display_timing(const void *blob, int node, int index,
 				 struct display_timing *config);
 
 /**
+ * fdtdec_setup_mem_size_base_fdt() - decode and setup gd->ram_size and
+ * gd->ram_start
+ *
+ * Decode the /memory 'reg' property to determine the size and start of the
+ * first memory bank, populate the global data with the size and start of the
+ * first bank of memory.
+ *
+ * This function should be called from a boards dram_init(). This helper
+ * function allows for boards to query the device tree for DRAM size and start
+ * address instead of hard coding the value in the case where the memory size
+ * and start address cannot be detected automatically.
+ *
+ * @param blob		FDT blob
+ *
+ * @return 0 if OK, -EINVAL if the /memory node or reg property is missing or
+ * invalid
+ */
+int fdtdec_setup_mem_size_base_fdt(const void *blob);
+
+/**
  * fdtdec_setup_mem_size_base() - decode and setup gd->ram_size and
  * gd->ram_start
  *
@@ -936,6 +947,25 @@ int fdtdec_decode_display_timing(const void *blob, int node, int index,
 int fdtdec_setup_mem_size_base(void);
 
 /**
+ * fdtdec_setup_memory_banksize_fdt() - decode and populate gd->bd->bi_dram
+ *
+ * Decode the /memory 'reg' property to determine the address and size of the
+ * memory banks. Use this data to populate the global data board info with the
+ * phys address and size of memory banks.
+ *
+ * This function should be called from a boards dram_init_banksize(). This
+ * helper function allows for boards to query the device tree for memory bank
+ * information instead of hard coding the information in cases where it cannot
+ * be detected automatically.
+ *
+ * @param blob		FDT blob
+ *
+ * @return 0 if OK, -EINVAL if the /memory node or reg property is missing or
+ * invalid
+ */
+int fdtdec_setup_memory_banksize_fdt(const void *blob);
+
+/**
  * fdtdec_setup_memory_banksize() - decode and populate gd->bd->bi_dram
  *
  * Decode the /memory 'reg' property to determine the address and size of the
@@ -951,6 +981,174 @@ int fdtdec_setup_mem_size_base(void);
  * invalid
  */
 int fdtdec_setup_memory_banksize(void);
+
+/**
+ * fdtdec_set_ethernet_mac_address() - set MAC address for default interface
+ *
+ * Looks up the default interface via the "ethernet" alias (in the /aliases
+ * node) and stores the given MAC in its "local-mac-address" property. This
+ * is useful on platforms that store the MAC address in a custom location.
+ * Board code can call this in the late init stage to make sure that the
+ * interface device tree node has the right MAC address configured for the
+ * Ethernet uclass to pick it up.
+ *
+ * Typically the FDT passed into this function will be U-Boot's control DTB.
+ * Given that a lot of code may be holding offsets to various nodes in that
+ * tree, this code will only set the "local-mac-address" property in-place,
+ * which means that it needs to exist and have space for the 6-byte address.
+ * This ensures that the operation is non-destructive and does not invalidate
+ * offsets that other drivers may be using.
+ *
+ * @param fdt FDT blob
+ * @param mac buffer containing the MAC address to set
+ * @param size size of MAC address
+ * @return 0 on success or a negative error code on failure
+ */
+int fdtdec_set_ethernet_mac_address(void *fdt, const u8 *mac, size_t size);
+
+/**
+ * fdtdec_set_phandle() - sets the phandle of a given node
+ *
+ * @param blob		FDT blob
+ * @param node		offset in the FDT blob of the node whose phandle is to
+ *			be set
+ * @param phandle	phandle to set for the given node
+ * @return 0 on success or a negative error code on failure
+ */
+static inline int fdtdec_set_phandle(void *blob, int node, uint32_t phandle)
+{
+	return fdt_setprop_u32(blob, node, "phandle", phandle);
+}
+
+/**
+ * fdtdec_add_reserved_memory() - add or find a reserved-memory node
+ *
+ * If a reserved-memory node already exists for the given carveout, a phandle
+ * for that node will be returned. Otherwise a new node will be created and a
+ * phandle corresponding to it will be returned.
+ *
+ * See Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+ * for details on how to use reserved memory regions.
+ *
+ * As an example, consider the following code snippet:
+ *
+ *     struct fdt_memory fb = {
+ *         .start = 0x92cb3000,
+ *         .end = 0x934b2fff,
+ *     };
+ *     uint32_t phandle;
+ *
+ *     fdtdec_add_reserved_memory(fdt, "framebuffer", &fb, &phandle);
+ *
+ * This results in the following subnode being added to the top-level
+ * /reserved-memory node:
+ *
+ *     reserved-memory {
+ *         #address-cells = <0x00000002>;
+ *         #size-cells = <0x00000002>;
+ *         ranges;
+ *
+ *         framebuffer@92cb3000 {
+ *             reg = <0x00000000 0x92cb3000 0x00000000 0x00800000>;
+ *             phandle = <0x0000004d>;
+ *         };
+ *     };
+ *
+ * If the top-level /reserved-memory node does not exist, it will be created.
+ * The phandle returned from the function call can be used to reference this
+ * reserved memory region from other nodes.
+ *
+ * See fdtdec_set_carveout() for a more elaborate example.
+ *
+ * @param blob		FDT blob
+ * @param basename	base name of the node to create
+ * @param carveout	information about the carveout region
+ * @param phandlep	return location for the phandle of the carveout region
+ *			can be NULL if no phandle should be added
+ * @return 0 on success or a negative error code on failure
+ */
+int fdtdec_add_reserved_memory(void *blob, const char *basename,
+			       const struct fdt_memory *carveout,
+			       uint32_t *phandlep);
+
+/**
+ * fdtdec_get_carveout() - reads a carveout from an FDT
+ *
+ * Reads information about a carveout region from an FDT. The carveout is a
+ * referenced by its phandle that is read from a given property in a given
+ * node.
+ *
+ * @param blob		FDT blob
+ * @param node		name of a node
+ * @param name		name of the property in the given node that contains
+ *			the phandle for the carveout
+ * @param index		index of the phandle for which to read the carveout
+ * @param carveout	return location for the carveout information
+ * @return 0 on success or a negative error code on failure
+ */
+int fdtdec_get_carveout(const void *blob, const char *node, const char *name,
+			unsigned int index, struct fdt_memory *carveout);
+
+/**
+ * fdtdec_set_carveout() - sets a carveout region for a given node
+ *
+ * Sets a carveout region for a given node. If a reserved-memory node already
+ * exists for the carveout, the phandle for that node will be reused. If no
+ * such node exists, a new one will be created and a phandle to it stored in
+ * a specified property of the given node.
+ *
+ * As an example, consider the following code snippet:
+ *
+ *     const char *node = "/host1x@50000000/dc@54240000";
+ *     struct fdt_memory fb = {
+ *         .start = 0x92cb3000,
+ *         .end = 0x934b2fff,
+ *     };
+ *
+ *     fdtdec_set_carveout(fdt, node, "memory-region", 0, "framebuffer", &fb);
+ *
+ * dc@54200000 is a display controller and was set up by the bootloader to
+ * scan out the framebuffer specified by "fb". This would cause the following
+ * reserved memory region to be added:
+ *
+ *     reserved-memory {
+ *         #address-cells = <0x00000002>;
+ *         #size-cells = <0x00000002>;
+ *         ranges;
+ *
+ *         framebuffer@92cb3000 {
+ *             reg = <0x00000000 0x92cb3000 0x00000000 0x00800000>;
+ *             phandle = <0x0000004d>;
+ *         };
+ *     };
+ *
+ * A "memory-region" property will also be added to the node referenced by the
+ * offset parameter.
+ *
+ *     host1x@50000000 {
+ *         ...
+ *
+ *         dc@54240000 {
+ *             ...
+ *             memory-region = <0x0000004d>;
+ *             ...
+ *         };
+ *
+ *         ...
+ *     };
+ *
+ * @param blob		FDT blob
+ * @param node		name of the node to add the carveout to
+ * @param prop_name	name of the property in which to store the phandle of
+ *			the carveout
+ * @param index		index of the phandle to store
+ * @param name		base name of the reserved-memory node to create
+ * @param carveout	information about the carveout to add
+ * @return 0 on success or a negative error code on failure
+ */
+int fdtdec_set_carveout(void *blob, const char *node, const char *prop_name,
+			unsigned int index, const char *name,
+			const struct fdt_memory *carveout);
 
 /**
  * Set up the device tree ready for use

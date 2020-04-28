@@ -258,6 +258,7 @@ void mmu_change_region_attr(phys_addr_t start, size_t size, u64 attrs);
 void smc_call(struct pt_regs *args);
 
 void __noreturn psci_system_reset(void);
+void __noreturn psci_system_reset2(u32 reset_level, u32 cookie);
 void __noreturn psci_system_off(void);
 
 #ifdef CONFIG_ARMV8_PSCI
@@ -519,6 +520,21 @@ enum {
  * \param stop		stop address of update in page table
  */
 void mmu_page_table_flush(unsigned long start, unsigned long stop);
+
+#ifdef CONFIG_ARMV7_PSCI
+void psci_arch_cpu_entry(void);
+u32 psci_version(void);
+s32 psci_features(u32 function_id, u32 psci_fid);
+s32 psci_cpu_off(void);
+s32 psci_cpu_on(u32 function_id, u32 target_cpu, u32 pc,
+		u32 context_id);
+s32 psci_affinity_info(u32 function_id, u32 target_affinity,
+		       u32  lowest_affinity_level);
+u32 psci_migrate_info_type(void);
+void psci_system_off(void);
+void psci_system_reset(void);
+s32 psci_features(u32 function_id, u32 psci_fid);
+#endif
 
 #endif /* __ASSEMBLY__ */
 

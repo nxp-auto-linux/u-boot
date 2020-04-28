@@ -7,8 +7,11 @@
 
 #include <common.h>
 #include <charset.h>
+#include <malloc.h>
+#include <time.h>
 #include <dm/device.h>
 #include <efi_loader.h>
+#include <env.h>
 #include <stdio_dev.h>
 #include <video_console.h>
 
@@ -136,6 +139,11 @@ static efi_status_t EFIAPI efi_cout_output_string(
 
 	EFI_ENTRY("%p, %p", this, string);
 
+	if (!this || !string) {
+		ret = EFI_INVALID_PARAMETER;
+		goto out;
+	}
+
 	buf = malloc(utf16_utf8_strlen(string) + 1);
 	if (!buf) {
 		ret = EFI_OUT_OF_RESOURCES;
@@ -150,13 +158,14 @@ static efi_status_t EFIAPI efi_cout_output_string(
 	 * Update the cursor position.
 	 *
 	 * The UEFI spec provides advance rules for U+0000, U+0008, U+000A,
-	 * and U000D. All other characters, including control characters
-	 * U+0007 (BEL) and U+0009 (TAB), have to increase the column by one.
+	 * and U000D. All other control characters are ignored. Any non-control
+	 * character increase the column by one.
 	 */
 	for (p = string; *p; ++p) {
 		switch (*p) {
 		case '\b':	/* U+0008, backspace */
-			con->cursor_column = max(0, con->cursor_column - 1);
+			if (con->cursor_column)
+				con->cursor_column--;
 			break;
 		case '\n':	/* U+000A, newline */
 			con->cursor_column = 0;
@@ -172,14 +181,21 @@ static efi_status_t EFIAPI efi_cout_output_string(
 			 */
 			break;
 		default:
-			con->cursor_column++;
+			/* Exclude control codes */
+			if (*p > 0x1f)
+				con->cursor_column++;
 			break;
 		}
 		if (con->cursor_column >= mode->columns) {
 			con->cursor_column = 0;
 			con->cursor_row++;
 		}
-		con->cursor_row = min(con->cursor_row, (s32)mode->rows - 1);
+		/*
+		 * When we exceed the row count the terminal will scroll up one
+		 * line. We have to adjust the cursor position.
+		 */
+		if (con->cursor_row >= mode->rows && con->cursor_row)
+			con->cursor_row--;
 	}
 
 out:
@@ -205,9 +221,9 @@ static bool cout_mode_matches(struct cout_mode *mode, int rows, int cols)
 /**
  * query_console_serial() - query console size
  *
- * @rows	pointer to return number of rows
- * @columns	pointer to return number of columns
- * Returns	0 on success
+ * @rows:	pointer to return number of rows
+ * @cols:	pointer to return number of columns
+ * Returns:	0 on success
  */
 static int query_console_serial(int *rows, int *cols)
 {
@@ -311,23 +327,6 @@ static efi_status_t EFIAPI efi_cout_query_mode(
 	return EFI_EXIT(EFI_SUCCESS);
 }
 
-static efi_status_t EFIAPI efi_cout_set_mode(
-			struct efi_simple_text_output_protocol *this,
-			unsigned long mode_number)
-{
-	EFI_ENTRY("%p, %ld", this, mode_number);
-
-
-	if (mode_number > efi_con_mode.max_mode)
-		return EFI_EXIT(EFI_UNSUPPORTED);
-
-	efi_con_mode.mode = mode_number;
-	efi_con_mode.cursor_column = 0;
-	efi_con_mode.cursor_row = 0;
-
-	return EFI_EXIT(EFI_SUCCESS);
-}
-
 static const struct {
 	unsigned int fg;
 	unsigned int bg;
@@ -353,6 +352,7 @@ static efi_status_t EFIAPI efi_cout_set_attribute(
 
 	EFI_ENTRY("%p, %lx", this, attribute);
 
+	efi_con_mode.attribute = attribute;
 	if (attribute)
 		printf(ESC"[%u;%u;%um", bold, color[fg].fg, color[bg].bg);
 	else
@@ -361,14 +361,46 @@ static efi_status_t EFIAPI efi_cout_set_attribute(
 	return EFI_EXIT(EFI_SUCCESS);
 }
 
+/**
+ * efi_cout_clear_screen() - clear screen
+ *
+ * This function implements the ClearScreen service of the
+ * EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL. See the Unified Extensible Firmware
+ * Interface (UEFI) specification for details.
+ *
+ * @this:	pointer to the protocol instance
+ * Return:	status code
+ */
 static efi_status_t EFIAPI efi_cout_clear_screen(
 			struct efi_simple_text_output_protocol *this)
 {
 	EFI_ENTRY("%p", this);
 
-	printf(ESC"[2J");
+	/*
+	 * The Linux console wants both a clear and a home command. The video
+	 * uclass does not support <ESC>[H without coordinates, yet.
+	 */
+	printf(ESC "[2J" ESC "[1;1H");
 	efi_con_mode.cursor_column = 0;
 	efi_con_mode.cursor_row = 0;
+
+	return EFI_EXIT(EFI_SUCCESS);
+}
+
+static efi_status_t EFIAPI efi_cout_set_mode(
+			struct efi_simple_text_output_protocol *this,
+			unsigned long mode_number)
+{
+	EFI_ENTRY("%p, %ld", this, mode_number);
+
+	if (mode_number >= efi_con_mode.max_mode)
+		return EFI_EXIT(EFI_UNSUPPORTED);
+
+	if (!efi_cout_modes[mode_number].present)
+		return EFI_EXIT(EFI_UNSUPPORTED);
+
+	efi_con_mode.mode = mode_number;
+	EFI_CALL(efi_cout_clear_screen(this));
 
 	return EFI_EXIT(EFI_SUCCESS);
 }
@@ -382,6 +414,7 @@ static efi_status_t EFIAPI efi_cout_reset(
 	/* Clear screen */
 	EFI_CALL(efi_cout_clear_screen(this));
 	/* Set default colors */
+	efi_con_mode.attribute = 0x07;
 	printf(ESC "[0;37;40m");
 
 	return EFI_EXIT(EFI_SUCCESS);
@@ -425,6 +458,7 @@ static efi_status_t EFIAPI efi_cout_enable_cursor(
 	EFI_ENTRY("%p, %d", this, enable);
 
 	printf(ESC"[?25%c", enable ? 'h' : 'l');
+	efi_con_mode.cursor_visible = !!enable;
 
 	return EFI_EXIT(EFI_SUCCESS);
 }
@@ -446,7 +480,7 @@ struct efi_simple_text_output_protocol efi_con_out = {
  * struct efi_cin_notify_function - registered console input notify function
  *
  * @link:	link to list
- * @data:	key to notify
+ * @key:	key to notify
  * @function:	function to call
  */
 struct efi_cin_notify_function {
@@ -464,6 +498,7 @@ static LIST_HEAD(cin_notify_functions);
  * set_shift_mask() - set shift mask
  *
  * @mod:	Xterm shift mask
+ * @key_state:  receives the state of the shift, alt, control, and logo keys
  */
 void set_shift_mask(int mod, struct efi_key_state *key_state)
 {
@@ -476,10 +511,8 @@ void set_shift_mask(int mod, struct efi_key_state *key_state)
 			key_state->key_shift_state |= EFI_LEFT_ALT_PRESSED;
 		if (mod & 4)
 			key_state->key_shift_state |= EFI_LEFT_CONTROL_PRESSED;
-		if (mod & 8)
+		if (!mod || (mod & 8))
 			key_state->key_shift_state |= EFI_LEFT_LOGO_PRESSED;
-	} else {
-		key_state->key_shift_state |= EFI_LEFT_LOGO_PRESSED;
 	}
 }
 
@@ -488,7 +521,7 @@ void set_shift_mask(int mod, struct efi_key_state *key_state)
  *
  * This gets called when we have already parsed CSI.
  *
- * @modifiers:  bit mask (shift, alt, ctrl)
+ * @key_state:  receives the state of the shift, alt, control, and logo keys
  * @return:	the unmodified code
  */
 static int analyze_modifiers(struct efi_key_state *key_state)
@@ -558,10 +591,13 @@ static efi_status_t efi_cin_read_key(struct efi_key_data *key)
 		case cESC: /* ESC */
 			pressed_key.scan_code = 23;
 			break;
-		case 'O': /* F1 - F4 */
+		case 'O': /* F1 - F4, End */
 			ch = getc();
 			/* consider modifiers */
-			if (ch < 'P') {
+			if (ch == 'F') { /* End */
+				pressed_key.scan_code = 6;
+				break;
+			} else if (ch < 'P') {
 				set_shift_mask(ch - '0', &key->key_state);
 				ch = getc();
 			}
@@ -585,17 +621,20 @@ static efi_status_t efi_cin_read_key(struct efi_key_data *key)
 				case '1'...'5': /* F1 - F5 */
 					pressed_key.scan_code = ch - '1' + 11;
 					break;
-				case '7'...'9': /* F6 - F8 */
-					pressed_key.scan_code = ch - '7' + 16;
+				case '6'...'9': /* F5 - F8 */
+					pressed_key.scan_code = ch - '6' + 15;
 					break;
 				case 'A'...'D': /* up, down right, left */
 					pressed_key.scan_code = ch - 'A' + 1;
 					break;
-				case 'F':
-					pressed_key.scan_code = 6; /* End */
+				case 'F': /* End */
+					pressed_key.scan_code = 6;
 					break;
-				case 'H':
-					pressed_key.scan_code = 5; /* Home */
+				case 'H': /* Home */
+					pressed_key.scan_code = 5;
+					break;
+				case '~': /* Home */
+					pressed_key.scan_code = 5;
 					break;
 				}
 				break;
@@ -698,7 +737,7 @@ static void efi_cin_check(void)
 	efi_status_t ret;
 
 	if (key_available) {
-		efi_signal_event(efi_con_in.wait_for_key, true);
+		efi_signal_event(efi_con_in.wait_for_key);
 		return;
 	}
 
@@ -712,7 +751,7 @@ static void efi_cin_check(void)
 
 			/* Queue the wait for key event */
 			if (key_available)
-				efi_signal_event(efi_con_in.wait_for_key, true);
+				efi_signal_event(efi_con_in.wait_for_key);
 		}
 	}
 }
@@ -797,9 +836,26 @@ static efi_status_t EFIAPI efi_cin_read_key_stroke_ex(
 		ret = EFI_NOT_READY;
 		goto out;
 	}
+	/*
+	 * CTRL+A - CTRL+Z have to be signaled as a - z.
+	 * SHIFT+CTRL+A - SHIFT+CTRL+Z have to be signaled as A - Z.
+	 */
+	switch (next_key.key.unicode_char) {
+	case 0x01 ... 0x07:
+	case 0x0b ... 0x0c:
+	case 0x0e ... 0x1a:
+		if (!(next_key.key_state.key_toggle_state &
+		      EFI_CAPS_LOCK_ACTIVE) ^
+		    !(next_key.key_state.key_shift_state &
+		      (EFI_LEFT_SHIFT_PRESSED | EFI_RIGHT_SHIFT_PRESSED)))
+			next_key.key.unicode_char += 0x40;
+		else
+			next_key.key.unicode_char += 0x60;
+	}
 	*key_data = next_key;
 	key_available = false;
 	efi_con_in.wait_for_key->is_signaled = false;
+
 out:
 	return EFI_EXIT(ret);
 }
@@ -808,7 +864,7 @@ out:
  * efi_cin_set_state() - set toggle key state
  *
  * @this:		instance of the EFI_SIMPLE_TEXT_INPUT_PROTOCOL
- * @key_toggle_state:	key toggle state
+ * @key_toggle_state:	pointer to key toggle state
  * Return:		status code
  *
  * This function implements the SetState service of the
@@ -819,9 +875,9 @@ out:
  */
 static efi_status_t EFIAPI efi_cin_set_state(
 		struct efi_simple_text_input_ex_protocol *this,
-		u8 key_toggle_state)
+		u8 *key_toggle_state)
 {
-	EFI_ENTRY("%p, %u", this, key_toggle_state);
+	EFI_ENTRY("%p, %p", this, key_toggle_state);
 	/*
 	 * U-Boot supports multiple console input sources like serial and
 	 * net console for which a key toggle state cannot be set at all.

@@ -3,6 +3,9 @@
  * Copyright (C) 2016-2018 Toradex AG
  */
 
+#include <common.h>
+#include <cpu_func.h>
+#include <init.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/crm_regs.h>
 #include <asm/arch/imx-regs.h>
@@ -15,7 +18,7 @@
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
 #include <fdt_support.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <jffs2/load_kernel.h>
 #include <linux/sizes.h>
 #include <mmc.h>
@@ -159,50 +162,12 @@ void board_preboot_os(void)
 	gpio_direction_output(GPIO_BL_ON, 0);
 }
 
-#ifdef CONFIG_FEC_MXC
-static iomux_v3_cfg_t const fec1_pads[] = {
-#ifndef CONFIG_COLIBRI_IMX7_EXT_PHYCLK
-	MX7D_PAD_GPIO1_IO12__CCM_ENET_REF_CLK1 | MUX_PAD_CTRL(ENET_PAD_CTRL) | MUX_MODE_SION,
-#else
-	MX7D_PAD_GPIO1_IO12__CCM_ENET_REF_CLK1 | MUX_PAD_CTRL(ENET_PAD_CTRL),
-#endif
-	MX7D_PAD_SD2_CD_B__ENET1_MDIO | MUX_PAD_CTRL(ENET_PAD_CTRL_MII),
-	MX7D_PAD_SD2_WP__ENET1_MDC | MUX_PAD_CTRL(ENET_PAD_CTRL_MII),
-	MX7D_PAD_ENET1_RGMII_RD0__ENET1_RGMII_RD0 | MUX_PAD_CTRL(ENET_RX_PAD_CTRL),
-	MX7D_PAD_ENET1_RGMII_RD1__ENET1_RGMII_RD1 | MUX_PAD_CTRL(ENET_RX_PAD_CTRL),
-	MX7D_PAD_ENET1_RGMII_RXC__ENET1_RX_ER | MUX_PAD_CTRL(ENET_RX_PAD_CTRL),
-	MX7D_PAD_ENET1_RGMII_RX_CTL__ENET1_RGMII_RX_CTL	  | MUX_PAD_CTRL(ENET_RX_PAD_CTRL),
-	MX7D_PAD_ENET1_RGMII_TD0__ENET1_RGMII_TD0 | MUX_PAD_CTRL(ENET_PAD_CTRL),
-	MX7D_PAD_ENET1_RGMII_TD1__ENET1_RGMII_TD1 | MUX_PAD_CTRL(ENET_PAD_CTRL),
-	MX7D_PAD_ENET1_RGMII_TX_CTL__ENET1_RGMII_TX_CTL | MUX_PAD_CTRL(ENET_PAD_CTRL),
-};
-
-static void setup_iomux_fec(void)
-{
-	imx_iomux_v3_setup_multiple_pads(fec1_pads, ARRAY_SIZE(fec1_pads));
-}
-#endif
-
 static void setup_iomux_uart(void)
 {
 	imx_iomux_v3_setup_multiple_pads(uart1_pads, ARRAY_SIZE(uart1_pads));
 }
 
 #ifdef CONFIG_FEC_MXC
-int board_eth_init(bd_t *bis)
-{
-	int ret;
-
-	setup_iomux_fec();
-
-	ret = fecmxc_initialize_multi(bis, 0,
-		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
-	if (ret)
-		printf("FEC1 MXC: %s:failed\n", __func__);
-
-	return ret;
-}
-
 static int setup_fec(void)
 {
 	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
@@ -226,12 +191,6 @@ static int setup_fec(void)
 	return set_clk_enet(ENET_50MHZ);
 }
 
-int board_phy_config(struct phy_device *phydev)
-{
-	if (phydev->drv->config)
-		phydev->drv->config(phydev);
-	return 0;
-}
 #endif
 
 int board_early_init_f(void)
@@ -274,7 +233,7 @@ int power_init_board(void)
 	int ret;
 
 
-	ret = pmic_get("rn5t567", &dev);
+	ret = pmic_get("rn5t567@33", &dev);
 	if (ret)
 		return ret;
 	ver = pmic_reg_read(dev, RN5T567_LSIVER);
@@ -308,7 +267,7 @@ void reset_cpu(ulong addr)
 {
 	struct udevice *dev;
 
-	pmic_get("rn5t567", &dev);
+	pmic_get("rn5t567@33", &dev);
 
 	/* Use PMIC to reset, set REPWRTIM to 0 and REPWRON to 1 */
 	pmic_reg_write(dev, RN5T567_REPCNT, 0x1);
@@ -333,6 +292,43 @@ int checkboard(void)
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
 {
+#if defined(CONFIG_IMX_BOOTAUX) && defined(CONFIG_ARCH_FIXUP_FDT_MEMORY)
+	int up;
+
+	up = arch_auxiliary_core_check_up(0);
+	if (up) {
+		int ret;
+		int areas = 1;
+		u64 start[2], size[2];
+
+		/*
+		 * Reserve 1MB of memory for M4 (1MiB is also the minimum
+		 * alignment for Linux due to MMU section size restrictions).
+		 */
+		start[0] = gd->bd->bi_dram[0].start;
+		size[0] = SZ_256M - SZ_1M;
+
+		/* If needed, create a second entry for memory beyond 256M */
+		if (gd->bd->bi_dram[0].size > SZ_256M) {
+			start[1] = gd->bd->bi_dram[0].start + SZ_256M;
+			size[1] = gd->bd->bi_dram[0].size - SZ_256M;
+			areas = 2;
+		}
+
+		ret = fdt_set_usable_memory(blob, start, size, areas);
+		if (ret) {
+			eprintf("Cannot set usable memory\n");
+			return ret;
+		}
+	} else {
+		int off;
+
+		off = fdt_node_offset_by_compatible(blob, -1,
+						    "fsl,imx7d-rpmsg");
+		if (off > 0)
+			fdt_status_disabled(blob, off);
+	}
+#endif
 #if defined(CONFIG_FDT_FIXUP_PARTITIONS)
 	static const struct node_info nodes[] = {
 		{ "fsl,imx7d-gpmi-nand", MTD_DEV_TYPE_NAND, }, /* NAND flash */

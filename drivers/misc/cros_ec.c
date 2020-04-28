@@ -313,7 +313,7 @@ static int send_command(struct cros_ec_dev *dev, uint cmd, int cmd_version,
  * @param din_len       Maximum size of response in bytes
  * @return number of bytes in response, or -ve on error
  */
-static int ec_command_inptr(struct udevice *dev, uint8_t cmd,
+static int ec_command_inptr(struct udevice *dev, uint cmd,
 			    int cmd_version, const void *dout, int dout_len,
 			    uint8_t **dinp, int din_len)
 {
@@ -1482,7 +1482,7 @@ int cros_ec_set_lid_shutdown_mask(struct udevice *dev, int enable)
 
 UCLASS_DRIVER(cros_ec) = {
 	.id		= UCLASS_CROS_EC,
-	.name		= "cros_ec",
+	.name		= "cros-ec",
 	.per_device_auto_alloc_size = sizeof(struct cros_ec_dev),
 	.post_bind	= dm_scan_fdt_dev,
 	.flags		= DM_UC_FLAG_ALLOC_PRIV_DMA,

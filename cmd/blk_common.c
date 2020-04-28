@@ -11,7 +11,6 @@
 #include <common.h>
 #include <blk.h>
 
-#ifdef CONFIG_HAVE_BLOCK_DEVICE
 int blk_common_cmd(int argc, char * const argv[], enum if_type if_type,
 		   int *cur_devnump)
 {
@@ -33,7 +32,8 @@ int blk_common_cmd(int argc, char * const argv[], enum if_type if_type,
 			return 0;
 		} else if (strncmp(argv[1], "part", 4) == 0) {
 			if (blk_list_part(if_type))
-				printf("\nno %s devices available\n", if_name);
+				printf("\nno %s partition table available\n",
+				       if_name);
 			return 0;
 		}
 		return CMD_RET_USAGE;
@@ -96,4 +96,3 @@ int blk_common_cmd(int argc, char * const argv[], enum if_type if_type,
 		}
 	}
 }
-#endif

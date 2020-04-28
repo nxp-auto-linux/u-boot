@@ -11,6 +11,7 @@
 #include <clk.h>
 #include <errno.h>
 #include <timer.h>
+#include <linux/err.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -47,6 +48,10 @@ static int timer_pre_probe(struct udevice *dev)
 	struct clk timer_clk;
 	int err;
 	ulong ret;
+
+	/* It is possible that a timer device has a null ofnode */
+	if (!dev_of_valid(dev))
+		return 0;
 
 	err = clk_get_by_index(dev, 0, &timer_clk);
 	if (!err) {

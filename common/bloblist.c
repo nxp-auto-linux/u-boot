@@ -9,6 +9,7 @@
 #include <log.h>
 #include <mapmem.h>
 #include <spl.h>
+#include <u-boot/crc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -58,11 +59,10 @@ static int bloblist_addrec(uint tag, int size, struct bloblist_rec **recp)
 	struct bloblist_rec *rec;
 	int new_alloced;
 
-	new_alloced = hdr->alloced + sizeof(*rec) +
-			ALIGN(size, BLOBLIST_ALIGN);
+	new_alloced = hdr->alloced + sizeof(*rec) + ALIGN(size, BLOBLIST_ALIGN);
 	if (new_alloced >= hdr->size) {
 		log(LOGC_BLOBLIST, LOGL_ERR,
-		    "Failed to allocate %x bytes size=%x, need size>=%x\n",
+		    "Failed to allocate %x bytes size=%x, need size=%x\n",
 		    size, hdr->size, new_alloced);
 		return log_msg_ret("bloblist add", -ENOSPC);
 	}
@@ -73,6 +73,9 @@ static int bloblist_addrec(uint tag, int size, struct bloblist_rec **recp)
 	rec->hdr_size = sizeof(*rec);
 	rec->size = size;
 	rec->spare = 0;
+
+	/* Zero the record data */
+	memset(rec + 1, '\0', rec->size);
 	*recp = rec;
 
 	return 0;
@@ -84,8 +87,10 @@ static int bloblist_ensurerec(uint tag, struct bloblist_rec **recp, int size)
 
 	rec = bloblist_findrec(tag);
 	if (rec) {
-		if (size && size != rec->size)
+		if (size && size != rec->size) {
+			*recp = rec;
 			return -ESPIPE;
+		}
 	} else {
 		int ret;
 
@@ -142,6 +147,21 @@ void *bloblist_ensure(uint tag, int size)
 		return NULL;
 
 	return (void *)rec + rec->hdr_size;
+}
+
+int bloblist_ensure_size_ret(uint tag, int *sizep, void **blobp)
+{
+	struct bloblist_rec *rec;
+	int ret;
+
+	ret = bloblist_ensurerec(tag, &rec, *sizep);
+	if (ret == -ESPIPE)
+		*sizep = rec->size;
+	else if (ret)
+		return ret;
+	*blobp = (void *)rec + rec->hdr_size;
+
+	return 0;
 }
 
 static u32 bloblist_calc_chksum(struct bloblist_hdr *hdr)

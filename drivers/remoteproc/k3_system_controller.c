@@ -11,6 +11,7 @@
 #include <remoteproc.h>
 #include <errno.h>
 #include <mailbox.h>
+#include <dm/device_compat.h>
 #include <linux/soc/ti/k3-sec-proxy.h>
 
 #define K3_MSG_R5_TO_M3_M3FW			0x8105
@@ -301,7 +302,7 @@ static int k3_sysctrler_probe(struct udevice *dev)
 
 static const struct k3_sysctrler_desc k3_sysctrler_am654_desc = {
 	.host_id = 4,				/* HOST_ID_R5_1 */
-	.max_rx_timeout_us = 400000,
+	.max_rx_timeout_us = 800000,
 	.max_msg_size = 60,
 };
 

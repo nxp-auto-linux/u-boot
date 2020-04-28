@@ -11,6 +11,7 @@
 
 #include <common.h>
 #include <dm.h>
+#include <malloc.h>
 #include <dm/device-internal.h>
 #include <dm/lists.h>
 #include <dm/of_access.h>
@@ -136,7 +137,7 @@ static inline struct mvebu_pcie *hose_to_pcie(struct pci_controller *hose)
 	return container_of(hose, struct mvebu_pcie, hose);
 }
 
-static int mvebu_pcie_read_config(struct udevice *bus, pci_dev_t bdf,
+static int mvebu_pcie_read_config(const struct udevice *bus, pci_dev_t bdf,
 				  uint offset, ulong *valuep,
 				  enum pci_size_t size)
 {
@@ -313,10 +314,6 @@ static int mvebu_pcie_probe(struct udevice *dev)
 	reg |= BIT(10);		/* disable interrupts */
 	writel(reg, pcie->base + PCIE_CMD_OFF);
 
-	/* Set BAR0 to internal registers */
-	writel(SOC_REGS_PHY_BASE, pcie->base + PCIE_BAR_LO_OFF(0));
-	writel(0, pcie->base + PCIE_BAR_HI_OFF(0));
-
 	/* PCI memory space */
 	pci_set_region(hose->regions + 0, pcie->mem.start,
 		       pcie->mem.start, PCIE_MEM_SIZE, PCI_REGION_MEM);
@@ -325,6 +322,10 @@ static int mvebu_pcie_probe(struct udevice *dev)
 		       gd->ram_size,
 		       PCI_REGION_MEM | PCI_REGION_SYS_MEMORY);
 	hose->region_count = 2;
+
+	/* Set BAR0 to internal registers */
+	writel(SOC_REGS_PHY_BASE, pcie->base + PCIE_BAR_LO_OFF(0));
+	writel(0, pcie->base + PCIE_BAR_HI_OFF(0));
 
 	bus++;
 

@@ -12,6 +12,9 @@
 
 #include <common.h>
 #include <dm.h>
+#include <env.h>
+#include <hang.h>
+#include <init.h>
 #include <mmc.h>
 #include <axp_pmic.h>
 #include <generic-phy.h>
@@ -23,13 +26,14 @@
 #include <asm/arch/gpio.h>
 #include <asm/arch/mmc.h>
 #include <asm/arch/spl.h>
+#include <u-boot/crc.h>
 #ifndef CONFIG_ARM64
 #include <asm/armv7.h>
 #endif
 #include <asm/gpio.h>
 #include <asm/io.h>
 #include <u-boot/crc.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <linux/libfdt.h>
 #include <nand.h>
 #include <net.h>

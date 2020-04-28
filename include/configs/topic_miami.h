@@ -15,15 +15,9 @@
 #include "zynq-common.h"
 
 /* Fixup settings */
-#undef CONFIG_ENV_SIZE
-#define CONFIG_ENV_SIZE			0x8000
-#undef CONFIG_ENV_OFFSET
-#define CONFIG_ENV_OFFSET		0x80000
 
 /* SPL settings */
 #undef CONFIG_SPL_ETH_SUPPORT
-#undef CONFIG_SYS_SPI_U_BOOT_OFFS
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
 #undef CONFIG_SPL_MAX_FOOTPRINT
 #define CONFIG_SPL_MAX_FOOTPRINT	CONFIG_SYS_SPI_U_BOOT_OFFS
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
@@ -78,8 +72,6 @@
 #else
 # define EXTRA_ENV_USB
 #endif
-
-#undef CONFIG_PREBOOT
 
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS	\

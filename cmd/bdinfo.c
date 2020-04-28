@@ -9,6 +9,8 @@
  */
 #include <common.h>
 #include <command.h>
+#include <env.h>
+#include <vsprintf.h>
 #include <linux/compiler.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -321,14 +323,14 @@ static int do_bdinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 	print_eths();
 #endif
 	print_baudrate();
-#if !(defined(CONFIG_SYS_ICACHE_OFF) && defined(CONFIG_SYS_DCACHE_OFF))
+#if !(CONFIG_IS_ENABLED(SYS_ICACHE_OFF) && CONFIG_IS_ENABLED(SYS_DCACHE_OFF))
 	print_num("TLB addr", gd->arch.tlb_addr);
 #endif
 	print_num("relocaddr", gd->relocaddr);
 	print_num("reloc off", gd->reloc_off);
 	print_num("irq_sp", gd->irq_sp);	/* irq stack pointer */
 	print_num("sp start ", gd->start_addr_sp);
-#if defined(CONFIG_LCD) || defined(CONFIG_VIDEO)
+#if defined(CONFIG_LCD) || defined(CONFIG_VIDEO) || defined(CONFIG_DM_VIDEO)
 	print_num("FB base  ", gd->fb_base);
 #endif
 	/*
@@ -346,6 +348,9 @@ static int do_bdinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 #if CONFIG_VAL(SYS_MALLOC_F_LEN)
 	printf("Early malloc usage: %lx / %x\n", gd->malloc_ptr,
 	       CONFIG_VAL(SYS_MALLOC_F_LEN));
+#endif
+#if CONFIG_IS_ENABLED(MULTI_DTB_FIT)
+	print_num("multi_dtb_fit", (ulong)gd->multi_dtb_fit);
 #endif
 	if (gd->fdt_blob)
 		print_num("fdt_blob", (ulong)gd->fdt_blob);

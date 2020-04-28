@@ -8,6 +8,7 @@
 
 #include <common.h>
 #include <console.h>
+#include <cpu_func.h>
 #include <asm/io.h>
 #include <fs.h>
 #include <zynqpl.h>
@@ -408,6 +409,8 @@ static int zynq_load(xilinx_desc *desc, const void *buf, size_t bsize,
 	if (bstype != BIT_PARTIAL)
 		zynq_slcr_devcfg_enable();
 
+	puts("INFO:post config was not run, please run manually if needed\n");
+
 	return FPGA_SUCCESS;
 }
 
@@ -421,7 +424,8 @@ static int zynq_loadfs(xilinx_desc *desc, const void *buf, size_t bsize,
 	loff_t blocksize, actread;
 	loff_t pos = 0;
 	int fstype;
-	char *interface, *dev_part, *filename;
+	char *interface, *dev_part;
+	const char *filename;
 
 	blocksize = fsinfo->blocksize;
 	interface = fsinfo->interface;

@@ -6,6 +6,7 @@
 
 #include <altera.h>
 #include <common.h>
+#include <env.h>
 #include <errno.h>
 #include <fdtdec.h>
 #include <miiphy.h>
@@ -16,13 +17,11 @@
 #include <asm/arch/misc.h>
 #include <asm/pl310.h>
 #include <linux/libfdt.h>
+#include <asm/arch/mailbox_s10.h>
 
 #include <dt-bindings/reset/altr,rst-mgr-s10.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
-static struct socfpga_system_manager *sysmgr_regs =
-	(struct socfpga_system_manager *)SOCFPGA_SYSMGR_ADDRESS;
 
 /*
  * FPGA programming support for SoC FPGA Stratix 10
@@ -66,9 +65,9 @@ static u32 socfpga_phymode_setup(u32 gmac_index, const char *phymode)
 	else
 		return -EINVAL;
 
-	clrsetbits_le32(&sysmgr_regs->emac0 + gmac_index,
-			SYSMGR_EMACGRP_CTRL_PHYSEL_MASK,
-			modereg);
+	clrsetbits_le32(socfpga_get_sysmgr_addr() + SYSMGR_SOC64_EMAC0 +
+			gmac_index,
+			SYSMGR_EMACGRP_CTRL_PHYSEL_MASK, modereg);
 
 	return 0;
 }
@@ -150,7 +149,18 @@ int arch_early_init_r(void)
 	return 0;
 }
 
-void do_bridge_reset(int enable)
+void do_bridge_reset(int enable, unsigned int mask)
 {
+	/* Check FPGA status before bridge enable */
+	if (enable) {
+		int ret = mbox_get_fpga_config_status(MBOX_RECONFIG_STATUS);
+
+		if (ret && ret != MBOX_CFGSTAT_STATE_CONFIG)
+			ret = mbox_get_fpga_config_status(MBOX_CONFIG_STATUS);
+
+		if (ret)
+			return;
+	}
+
 	socfpga_bridges_reset(enable);
 }

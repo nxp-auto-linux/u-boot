@@ -12,6 +12,7 @@
 #include <clk.h>
 #include <wait_bit.h>
 #include <asm/io.h>
+#include <dm/device_compat.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -181,10 +182,9 @@ static int mvebu_spi_set_speed(struct udevice *bus, uint hz)
 	data = readl(&reg->cfg);
 
 	prescale = DIV_ROUND_UP(clk_get_rate(&plat->clk), hz);
-	if (prescale > 0x1f)
-		prescale = 0x1f;
-	else if (prescale > 0xf)
+	if (prescale > 0xf)
 		prescale = 0x10 + (prescale + 1) / 2;
+	prescale = min(prescale, 0x1fu);
 
 	data &= ~MVEBU_SPI_A3700_CLK_PRESCALE_MASK;
 	data |= prescale & MVEBU_SPI_A3700_CLK_PRESCALE_MASK;

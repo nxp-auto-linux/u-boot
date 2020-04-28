@@ -43,9 +43,6 @@
 #define CONFIG_EHCI_IS_TDI
 
 /* Environment in SPI NOR flash */
-#define CONFIG_ENV_OFFSET		(1 << 20) /* 1MiB in */
-#define CONFIG_ENV_SIZE			(64 << 10) /* 64KiB */
-#define CONFIG_ENV_SECT_SIZE		(256 << 10) /* 256KiB sectors */
 
 #define PHY_ANEG_TIMEOUT	8000	/* PHY needs a longer aneg time */
 
@@ -76,10 +73,8 @@
 #define CONFIG_SPL_SIZE			(160 << 10)
 
 #if defined(CONFIG_SECURED_MODE_IMAGE)
-#define CONFIG_SPL_TEXT_BASE		0x40002614
 #define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - 0x2614)
 #else
-#define CONFIG_SPL_TEXT_BASE		0x40000030
 #define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - 0x30)
 #endif
 
@@ -99,7 +94,6 @@
 
 #if CONFIG_SPL_BOOT_DEVICE == SPL_BOOT_SPI_NOR_FLASH
 /* SPL related SPI defines */
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x30000
 #define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
 #endif
 
@@ -125,8 +119,6 @@
 #define CONFIG_HOSTNAME		"ccdc"
 #define CONFIG_ROOTPATH		"/opt/nfsroot"
 #define CONFIG_BOOTFILE		"ccdc.img"
-
-#define CONFIG_PREBOOT		/* enable preboot variable */
 
 #define CONFIG_EXTRA_ENV_SETTINGS						\
 	"netdev=eth1\0"						\

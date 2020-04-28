@@ -66,9 +66,6 @@
 
 #ifdef CONFIG_SYS_USE_NANDFLASH
 /* bootstrap + u-boot + env + linux in nandflash */
-#define CONFIG_ENV_OFFSET           0xa0000
-#define CONFIG_ENV_OFFSET_REDUND    0xc0000
-#define CONFIG_ENV_SIZE             0x20000	/* 1 block = 128 kB */
 
 #define CONFIG_BOOTCOMMAND  "nand read 0x22000000 0xe0000 0x280000; " \
     "run _mtd; bootm"
@@ -110,7 +107,6 @@
 #define CONFIG_SYS_MALLOC_LEN       (512 * 1024 + 0x1000)
 
 /* SPL */
-#define CONFIG_SPL_TEXT_BASE        0x300000
 #define CONFIG_SPL_MAX_SIZE         0x6000
 #define CONFIG_SPL_STACK            0x308000
 
