@@ -1,0 +1,16 @@
+NXP SAF1508BET USB PHY
+
+This file documents the dt bindings for the usb SAF1508BET phy driver which is the PHY used on
+S32G274A-EVB board.
+
+Required properties:
+- compatible		: should be "nxp,saf1508bet"
+- reg			: address and length of the usb controller register set
+
+Example:
+
+saf1508_phy: usb_phy@44064000 {
+	compatible = "nxp,saf1508bet";
+	reg = <0x0 0x44064000 0x0 0x200>;
+	#phy-cells = <0>;
+};
