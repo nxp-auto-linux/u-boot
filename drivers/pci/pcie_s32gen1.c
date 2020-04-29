@@ -365,8 +365,8 @@ static int s32_pcie_addr_valid(struct s32_pcie *pcie, pci_dev_t bdf)
 	return 0;
 }
 
-int s32_pcie_conf_address(struct udevice *bus, pci_dev_t bdf,
-			 uint offset, void **paddress)
+int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
+			  uint offset, void **paddress)
 {
 	struct s32_pcie *pcie = dev_get_priv(bus);
 #ifdef PCIE_OVERCONFIG_BUS
@@ -408,9 +408,9 @@ int s32_pcie_conf_address(struct udevice *bus, pci_dev_t bdf,
 	return 0;
 }
 
-static int s32_pcie_read_config(struct udevice *bus, pci_dev_t bdf,
-			       uint offset, ulong *valuep,
-			       enum pci_size_t size)
+static int s32_pcie_read_config(const struct udevice *bus, pci_dev_t bdf,
+				uint offset, ulong *valuep,
+				enum pci_size_t size)
 {
 	return pci_generic_mmap_read_config(bus, s32_pcie_conf_address,
 					    bdf, offset, valuep, size);

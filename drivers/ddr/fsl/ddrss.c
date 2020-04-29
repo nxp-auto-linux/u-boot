@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2019 NXP */
+/* Copyright 2019-2020 NXP */
 
+#include <hang.h>
 #include <asm/arch/s32-gen1/ddrss.h>
 #include <linux/kernel.h>
 #include <linux/printk.h>

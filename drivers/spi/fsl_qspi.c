@@ -16,6 +16,7 @@
 #include <watchdog.h>
 #include <wait_bit.h>
 #include "fsl_qspi.h"
+#include <cpu_func.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

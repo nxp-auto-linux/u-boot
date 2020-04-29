@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * 2019-2020 NXP
+ * Copyright 2019-2020 NXP
  *
  */
 
@@ -19,6 +19,7 @@
 #include "pfe_hif_drv.h"
 
 #include <dm/platform_data/pfeng_dm_eth.h>
+#include <dm/device_compat.h>
 
 #include "pfeng.h"
 

@@ -10,6 +10,7 @@
 #include <mmc.h>
 #include <div64.h>
 #include <errno.h>
+#include <hang.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/s32-gen1/mc_me_regs.h>

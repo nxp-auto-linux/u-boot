@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <hang.h>
 #include <asm/io.h>
 #include <asm/arch/soc.h>
 #include <fsl_esdhc.h>
@@ -14,7 +15,6 @@
 #include <errno.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
-#include <environment.h>
 #ifdef CONFIG_FSL_DSPI
 #include <fsl_dspi.h>
 #endif
@@ -474,9 +474,9 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 	    (strncasecmp(mac_str, env_get("ethaddr"), 17) == 0)) {
 		printf("\nWarning: System is using default MAC address. ");
 		printf("Please set a new value\n");
-		eth_parse_enetaddr(mac_str, mac);
+		string_to_enetaddr(mac_str, mac);
 	} else {
-		eth_parse_enetaddr(env_get("ethdaddr"), mac);
+		string_to_enetaddr(env_get("ethdaddr"), mac);
 	}
 #endif
 }

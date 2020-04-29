@@ -4,6 +4,7 @@
  *-------------------------------------------------------------------
  *
  * Copyright 2007-2008,2010-2011 Freescale Semiconductor, Inc
+ * Copyright 2020 NXP
  */
 
 #ifndef  __FSL_ESDHC_H__
