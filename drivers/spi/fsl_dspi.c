@@ -7,7 +7,7 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
- * Copyright 2017, 2019 NXP
+ * Copyright 2017, 2019-2020 NXP
  */
 
 #include <common.h>
@@ -349,8 +349,6 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 					dspi_tx(priv, ctrl, *spi_wr16++);
 				else
 					dspi_tx(priv, ctrl, *spi_wr++);
-			} else {
-				dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 			}
 
 			else if (din != NULL) {
@@ -359,8 +357,6 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 					*spi_rd16++ = dspi_rx(priv);
 				else
 					*spi_rd++ = dspi_rx(priv);
-			} else {
-				dspi_rx(priv);
 			}
 		}
 
@@ -387,8 +383,6 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 				dspi_tx(priv, ctrl, *spi_wr16);
 			else
 				dspi_tx(priv, ctrl, *spi_wr);
-		} else {
-			dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 		}
 
 		else if (din != NULL) {
@@ -397,8 +391,6 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 				*spi_rd16 = dspi_rx(priv);
 			else
 				*spi_rd = dspi_rx(priv);
-		} else {
-			dspi_rx(priv);
 		}
 	} else {
 		/* dummy read */
