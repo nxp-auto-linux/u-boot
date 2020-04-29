@@ -296,6 +296,7 @@ struct eqos_priv {
 	struct mii_dev *mii;
 	struct phy_device *phy;
 	u32 phy_addr;
+	u32 max_speed;
 	void *descs;
 	struct eqos_desc *tx_descs;
 	struct eqos_desc *rx_descs;

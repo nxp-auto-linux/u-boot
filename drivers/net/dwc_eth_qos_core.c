@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * Portions based on U-Boot's rtl8169.c.
  */
@@ -24,8 +24,10 @@
 
 #include <common.h>
 #include <clk.h>
+#include <cpu_func.h>
 #include <dm.h>
 #include <errno.h>
+#include <malloc.h>
 #include <memalign.h>
 #include <miiphy.h>
 #include <net.h>
@@ -493,6 +495,13 @@ static int eqos_start(struct udevice *dev)
 		if (!eqos->phy) {
 			pr_err("phy_connect() failed");
 			goto err_stop_resets;
+		}
+		if (eqos->max_speed) {
+			ret = phy_set_supported(eqos->phy, eqos->max_speed);
+			if (ret) {
+				pr_err("phy_set_supported() failed: %d", ret);
+				goto err_shutdown_phy;
+			}
 		}
 		ret = phy_config(eqos->phy);
 		if (ret < 0) {
@@ -976,8 +985,8 @@ static int eqos_remove_resources_core(struct udevice *dev)
 }
 
 /* board-specific Ethernet Interface initializations. */
-__weak int board_interface_eth_init(int interface_type, bool eth_clk_sel_reg,
-				    bool eth_ref_clk_sel_reg)
+__weak int board_interface_eth_init(struct udevice *dev,
+				    phy_interface_t interface_type)
 {
 	return 0;
 }

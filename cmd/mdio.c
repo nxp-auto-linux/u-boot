@@ -2,7 +2,7 @@
 /*
  * (C) Copyright 2011 Freescale Semiconductor, Inc
  * Andy Fleming
- * Copyright 2017 NXP
+ * Copyright 2017-2020 NXP
  */
 
 /*
@@ -10,6 +10,7 @@
  */
 
 #include <common.h>
+#include <malloc.h>
 #include <command.h>
 #include <miiphy.h>
 #include <phy.h>
