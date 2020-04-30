@@ -39,7 +39,6 @@
 #define PHY_INTF_SEL_RMII	0x08
 #define PHY_INTF_SEL_MII	0x00
 #define S32CC_GMAC_0_CTRL_STS		0x4007C004
-#define GMAC_MAC_PHYIF_CTRL_STAT	0x4033C0F8
 
 static u32 mac_intf = PHY_INTERFACE_MODE_NONE;
 static u32 s32ccgmac_mode = S32CCGMAC_MODE_UNINITED;
@@ -218,24 +217,34 @@ static int eqos_disable_calibration_s32cc(struct udevice *dev)
 
 static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 {
-	u32 idx, speed;
+	u32 speed;
+	struct eqos_priv *eqos = dev_get_priv(dev);
 
-	idx = (readl(GMAC_MAC_PHYIF_CTRL_STAT)
-	       >> EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_SHIFT)
-	      & EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_MASK;
+	if (!eqos || !eqos->phy || !eqos->mac_regs)
+		return -ENODEV;
 
-	switch (idx) {
-	case 0:
-		speed = SPEED_10;
-		break;
-	case 1:
-		speed = SPEED_100;
-		break;
-	default:
-	case 2:
-		speed = SPEED_1000;
-		break;
-	}
+	if (eqos->phy->phy_id != PHY_FIXED_ID) {
+		/*Auto neg.*/
+		u32 idx = (eqos->mac_regs->phy_if_ctrl_status
+			   >> EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_SHIFT)
+			  & EQOS_MAC_PHYIF_CTRL_STAT_LNKSPEED_MASK;
+
+		switch (idx) {
+		case 0:
+			speed = SPEED_10;
+			break;
+		case 1:
+			speed = SPEED_100;
+			break;
+		default:
+		case 2:
+			speed = SPEED_1000;
+			break;
+		}
+	} else
+		/*No auto neg.*/
+		speed = eqos->phy->speed;
+
 	return set_tx_clk_enet_gmac(speed);
 }
 
