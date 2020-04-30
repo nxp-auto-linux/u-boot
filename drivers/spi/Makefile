@@ -31,9 +31,6 @@ obj-$(CONFIG_EXYNOS_SPI) += exynos_spi.o
 #obj-$(CONFIG_FSL_DSPI) += fsl_dspi.o
 obj-$(CONFIG_FSL_ESPI) += fsl_espi.o
 #obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
-#ifdef CONFIG_FSL_QSPI
-#obj-$(CONFIG_S32_GEN1) += s32gen1_qspi.o
-#endif
 obj-$(CONFIG_ICH_SPI) +=  ich.o
 obj-$(CONFIG_KIRKWOOD_SPI) += kirkwood_spi.o
 obj-$(CONFIG_LPC32XX_SSP) += lpc32xx_ssp.o
