@@ -240,6 +240,7 @@ void s32_serdes_phy_reg_write(struct s32_serdes *pcie, uint32_t addr,
 
 	W32(pcie->dbi + SS_PHY_REG_ADDR, (PHY_REG_ADDR_FIELD_VALUE(addr) |
 			PHY_REG_EN));
+	udelay(100);
 	if (wmask != 0xFFFF)
 		temp_data = in_le32(pcie->dbi + SS_PHY_REG_DATA);
 	else
@@ -247,12 +248,24 @@ void s32_serdes_phy_reg_write(struct s32_serdes *pcie, uint32_t addr,
 	temp_data &= 0x0000FFFF;
 	temp_data = (temp_data & (!wmask)) | (wdata & wmask);
 	W32(pcie->dbi + SS_PHY_REG_DATA, temp_data);
+	udelay(100);
 }
 
 void s32_serdes_force_rxdet_sim(struct s32_serdes *pcie)
 {
 	s32_serdes_phy_reg_write(pcie, 0x1006, 0x0c, 0xff);
 	s32_serdes_phy_reg_write(pcie, 0x1106, 0x0c, 0xff);
+}
+
+void s32_serdes_phy_init(struct s32_serdes *pcie)
+{
+	/* DELTA_IQ_OVRD_IN enable and overrides PCIe0.L0 */
+	s32_serdes_phy_reg_write(pcie, 0x3019, 0x03, 0xff);
+	s32_serdes_phy_reg_write(pcie, 0x3019, 0x13, 0xff);
+
+	/* DELTA_IQ_OVRD_IN enable and overrides PCIe0.L1 */
+	s32_serdes_phy_reg_write(pcie, 0x3119, 0x03, 0xff);
+	s32_serdes_phy_reg_write(pcie, 0x3119, 0x13, 0xff);
 }
 
 bool s32_serdes_init(struct s32_serdes *pcie)
@@ -307,6 +320,7 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 		/* Set PHY register access to CR interface */
 		BSET32(pcie->dbi + SS_SS_RW_REG_0, 0x200);
 		s32_serdes_force_rxdet_sim(pcie);
+		s32_serdes_phy_init(pcie);
 	}
 
 	return true;
