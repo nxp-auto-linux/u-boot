@@ -30,6 +30,10 @@
 #include <asm-generic/gpio.h>
 #include <dm/pinctrl.h>
 
+#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
+#define SDHC_REDUCED_MAP
+#endif
+
 #if !CONFIG_IS_ENABLED(BLK)
 #include "mmc_private.h"
 #endif
@@ -80,6 +84,7 @@ struct fsl_esdhc {
 	uint    vendorspec;
 	uint    mmcboot;
 	uint    vendorspec2;
+#ifndef SDHC_REDUCED_MAP
 	uint    tuning_ctrl;	/* on i.MX6/7/8/RT */
 	char	reserved5[44];
 	uint    hostver;	/* Host controller version register */
@@ -95,6 +100,7 @@ struct fsl_esdhc {
 	uint    sddirctl;	/* SD direction control register */
 	char    reserved11[712];/* reserved */
 	uint    scr;		/* eSDHC control register */
+#endif
 };
 
 struct fsl_esdhc_plat {
@@ -146,10 +152,12 @@ struct fsl_esdhc_priv {
 	int vs18_enable;
 	u32 flags;
 	u32 caps;
+#if !defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 	u32 tuning_step;
 	u32 tuning_start_tap;
 	u32 strobe_dll_delay_target;
 	u32 signal_voltage;
+#endif
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
 	struct udevice *vqmmc_dev;
 	struct udevice *vmmc_dev;
@@ -454,7 +462,11 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	 * Note: This is way more than 8 cycles, but 1ms seems to
 	 * resolve timing issues with some cards
 	 */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(1);
+#else
 	udelay(1000);
+#endif
 
 	/* Set up for a data transfer if we have one */
 	if (data) {
@@ -514,7 +526,11 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 
 		printf("Run CMD11 1.8V switch\n");
 		/* Sleep for 5 ms - max time for card to switch to 1.8V */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(5);
+#else
 		udelay(5000);
+#endif
 	}
 
 	/* Workaround for ESDHC errata ENGcm03648 */
@@ -659,7 +675,11 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 
 	esdhc_clrsetbits32(&regs->sysctl, SYSCTL_CLOCK_MASK, clk);
 
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	udelay(10);
+#else
 	udelay(10000);
+#endif
 
 #ifdef CONFIG_FSL_USDHC
 	esdhc_setbits32(&regs->vendorspec, VENDORSPEC_PEREN | VENDORSPEC_CKEN);
@@ -730,7 +750,11 @@ static void esdhc_set_strobe_dll(struct mmc *mmc)
 			 ESDHC_STROBE_DLL_CTRL_SLV_DLY_TARGET_SHIFT);
 		writel(val, &regs->strobe_dllctrl);
 		/* wait 1us to make sure strobe dll status register stable */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		mdelay(1);
+#endif
 		val = readl(&regs->strobe_dllstat);
 		if (!(val & ESDHC_STROBE_DLL_STS_REF_LOCK))
 			pr_warn("HS400 strobe DLL status REF not lock!\n");
@@ -803,7 +827,11 @@ static int esdhc_set_voltage(struct mmc *mmc)
 				return -EIO;
 			}
 			/* Wait for 5ms */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+			udelay(5);
+#else
 			mdelay(5);
+#endif
 		}
 #endif
 
@@ -916,13 +944,21 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 			 * response to any command when the card still out
 			 * put the tuning data.
 			 */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+			udelay(1);
+#else
 			mdelay(1);
+#endif
 			ret = 0;
 			break;
 		}
 
 		/* Add 1ms delay for SD and eMMC */
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		mdelay(1);
+#endif
 	}
 
 	writel(irqstaten, &regs->irqstaten);
@@ -992,20 +1028,31 @@ static int esdhc_set_ios_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	return 0;
 }
 
+static int esdhc_reset(struct fsl_esdhc *regs)
+{
+	ulong start;
+
+	/* reset the controller */
+	esdhc_setbits32(&regs->sysctl, SYSCTL_RSTA);
+
+	/* hardware clears the bit when it is done */
+	start = get_timer(0);
+	while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTA)) {
+		if (get_timer(start) > 1000) {
+			printf("MMC/SD: Reset never completed.\n");
+			return -ETIMEDOUT;
+		}
+	}
+
+	return 0;
+}
+
 static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 {
 	struct fsl_esdhc *regs = priv->esdhc_regs;
-	ulong start;
 
 	/* Reset the entire host controller */
-	esdhc_setbits32(&regs->sysctl, SYSCTL_RSTA);
-
-	/* Wait until the controller is available */
-	start = get_timer(0);
-	while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTA)) {
-		if (get_timer(start) > 1000)
-			return -ETIMEDOUT;
-	}
+	esdhc_reset(regs);
 
 #if defined(CONFIG_FSL_USDHC)
 	/* RSTA doesn't reset MMC_BOOT register, so manually reset it */
@@ -1081,28 +1128,13 @@ static int esdhc_getcd_common(struct fsl_esdhc_priv *priv)
 #endif
 
 	while (!(esdhc_read32(&regs->prsstat) & PRSSTAT_CINS) && --timeout)
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+		udelay(1);
+#else
 		udelay(1000);
+#endif
 
 	return timeout > 0;
-}
-
-static int esdhc_reset(struct fsl_esdhc *regs)
-{
-	ulong start;
-
-	/* reset the controller */
-	esdhc_setbits32(&regs->sysctl, SYSCTL_RSTA);
-
-	/* hardware clears the bit when it is done */
-	start = get_timer(0);
-	while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTA)) {
-		if (get_timer(start) > 100) {
-			printf("MMC/SD: Reset never completed.\n");
-			return -ETIMEDOUT;
-		}
-	}
-
-	return 0;
 }
 
 #if !CONFIG_IS_ENABLED(DM_MMC)
@@ -1258,11 +1290,13 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->host_caps |= priv->caps;
 
 	cfg->f_min = 400000;
-	cfg->f_max = min(priv->sdhc_clk, (u32)200000000);
+	priv->sdhc_clk = min(priv->sdhc_clk, (u32)200000000);
+	cfg->f_max = priv->sdhc_clk;
 
 	cfg->b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
 
 	writel(0, &regs->dllctrl);
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	if (priv->flags & ESDHC_FLAG_USDHC) {
 		if (priv->flags & ESDHC_FLAG_STD_TUNING) {
 			u32 val = readl(&regs->tuning_ctrl);
@@ -1276,6 +1310,7 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 		}
 	}
 
+#endif
 	return 0;
 }
 
