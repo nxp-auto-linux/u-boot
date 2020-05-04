@@ -1,14 +1,14 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2019 NXP
+ * Copyright 2016-2020 NXP
  */
 
 #include <common.h>
 #include <hang.h>
 #include <asm/io.h>
 #include <asm/arch/soc.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <mmc.h>
 #include <netdev.h>
 #include <div64.h>
@@ -609,7 +609,7 @@ static int detect_boot_interface(void)
 
 int get_clocks(void)
 {
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 	gd->arch.sdhc_clk = mxc_get_clock(MXC_USDHC_CLK);
 #endif
 	return 0;
@@ -881,7 +881,7 @@ __weak void setup_iomux_sdhc(void)
 	writel(0x3, SIUL2_MSCRn(910));
 }
 
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
 	{USDHC_BASE_ADDR},
 };

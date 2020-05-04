@@ -6,7 +6,7 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/soc.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <mmc.h>
 #include <div64.h>
 #include <errno.h>
@@ -459,20 +459,20 @@ int print_cpuinfo(void)
 }
 #endif
 
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 #define mmc_get_clock() mxc_get_clock(MXC_USDHC_CLK)
 #endif
 
 int get_clocks(void)
 {
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 	gd->arch.sdhc_clk = mmc_get_clock();
 	mxc_get_clock(MXC_USDHC_CLK);
 #endif
 	return 0;
 }
 
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
 	{USDHC_BASE_ADDR},
 };

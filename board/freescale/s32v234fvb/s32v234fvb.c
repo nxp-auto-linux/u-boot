@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -11,7 +11,7 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <mmc.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
@@ -81,7 +81,7 @@ void setup_iomux_nfc(void)
 #endif
 
 #if 0 /* Temporary disable until the clock are implemented */
-#ifdef CONFIG_FSL_ESDHC
+#ifdef CONFIG_FSL_ESDHC_IMX
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
 	{USDHC_BASE_ADDR},
 };
