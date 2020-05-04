@@ -3,7 +3,7 @@
  * FSL SD/MMC Defines
  *-------------------------------------------------------------------
  *
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
  * Copyright 2007-2008,2010-2011 Freescale Semiconductor, Inc
@@ -255,6 +255,11 @@ struct fsl_esdhc_cfg {
 #define esdhc_setbits32		setbits_be32
 #else
 #error "Endianess is not defined: please fix to continue"
+#endif
+
+#if defined(CONFIG_S32V234) || defined(CONFIG_IMX8) || \
+	defined(CONFIG_IMX8M)
+#define CORE_64BIT_PERIPHERALS_32BIT
 #endif
 
 #ifdef CONFIG_FSL_ESDHC_IMX
