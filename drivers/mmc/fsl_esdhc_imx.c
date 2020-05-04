@@ -1032,6 +1032,9 @@ static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	/* Set the initial clock speed */
 	mmc_set_clock(mmc, 400000, MMC_CLK_ENABLE);
 
+	/* Enable all events to be notified */
+	esdhc_write32(&regs->irqstaten, 0xFFFFFFFF);
+
 	/* Disable the BRR and BWR bits in IRQSTAT */
 	esdhc_clrbits32(&regs->irqstaten, IRQSTATEN_BRR | IRQSTATEN_BWR);
 
