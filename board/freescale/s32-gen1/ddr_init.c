@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2020 NXP
  *
@@ -30,15 +31,15 @@
 
 #include "ddr_init.h"
 
-static uint32_t ddrc_init_cfg(struct ddrss_config *config);
-static uint32_t execute_training(struct ddrss_config *config);
-static uint32_t load_register_cfg(size_t size, struct regconf cfg[]);
+static u32 ddrc_init_cfg(struct ddrss_config *config);
+static u32 execute_training(struct ddrss_config *config);
+static u32 load_register_cfg(size_t size, struct regconf cfg[]);
 static void set_optimal_pll(struct ddrss_config *config);
 
 /* Main method needed to initialize ddr subsystem. */
-uint32_t ddr_init(void)
+u32 ddr_init(void)
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 	size_t i = 0;
 
 	init_image_sizes();
@@ -68,18 +69,18 @@ uint32_t ddr_init(void)
 }
 
 /* Initialize ddr controller with given settings. */
-static uint32_t ddrc_init_cfg(struct ddrss_config *config)
+static u32 ddrc_init_cfg(struct ddrss_config *config)
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 
 	ret = load_register_cfg(config->ddrc_cfg_size, config->ddrc_cfg);
 	return ret;
 }
 
 /* Execute phy training with given settings. 2D training stage is optional. */
-static uint32_t execute_training(struct ddrss_config *config)
+static u32 execute_training(struct ddrss_config *config)
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 	/* Apply DQ swapping settings */
 	ret = load_register_cfg(config->dq_swap_cfg_size, config->dq_swap_cfg);
 	if (ret != NO_ERR)
@@ -119,7 +120,8 @@ static uint32_t execute_training(struct ddrss_config *config)
 	store_csr();
 
 	/* Check if 2d training images have been initialized before executing
-	 * the second training stage. */
+	 * the second training stage.
+	 */
 	if (config->imem_2d_size > 0 && config->dmem_2d_size > 0) {
 		/* Load 2d imem image */
 		UNLOCK_CSR_ACCESS;
@@ -157,9 +159,9 @@ static uint32_t execute_training(struct ddrss_config *config)
 }
 
 /* Load register array into memory. */
-static uint32_t load_register_cfg(size_t size, struct regconf cfg[])
+static u32 load_register_cfg(size_t size, struct regconf cfg[])
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 	size_t i;
 
 	for (i = 0; i < size; i++)

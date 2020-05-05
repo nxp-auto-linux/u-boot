@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2020 NXP
  *
@@ -30,15 +31,15 @@
 
 #include "ddr_utils.h"
 
-static uint32_t enable_axi_ports(void);
-static uint32_t get_mail(uint32_t *mail);
-static uint32_t ack_mail(void);
+static u32 enable_axi_ports(void);
+static u32 get_mail(u32 *mail);
+static u32 ack_mail(void);
 
 /* Sets default AXI parity. */
-uint32_t set_axi_parity(void)
+u32 set_axi_parity(void)
 {
-	uint32_t ret = NO_ERR;
-	uint32_t tmp32;
+	u32 ret = NO_ERR;
+	u32 tmp32;
 
 	/* Enable Parity For All AXI Interfaces */
 	writel(readl(DDR_SS_REG) | 0x1ff0, DDR_SS_REG);
@@ -93,9 +94,9 @@ uint32_t set_axi_parity(void)
 }
 
 /* Enables AXI port n. Programming Mode: Dynamic */
-static uint32_t enable_axi_ports(void)
+static u32 enable_axi_ports(void)
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 
 	/* Port 0 Control Register */
 	writel(0x00000001, DDRC_UMCTL2_MP_BASE_ADDR + OFFSET_DDRC_PCTRL_0);
@@ -111,10 +112,10 @@ static uint32_t enable_axi_ports(void)
  * Post PHY training setup - complementary settings that need to be
  * performed after running the firmware.
  */
-uint32_t post_train_setup(void)
+u32 post_train_setup(void)
 {
-	uint32_t ret = NO_ERR;
-	uint32_t tmp32;
+	u32 ret = NO_ERR;
+	u32 tmp32;
 
 	/*
 	 * CalBusy.0 = 1, indicates the calibrator is actively calibrating.
@@ -203,13 +204,13 @@ uint32_t post_train_setup(void)
 }
 
 /* Wait until firmware finishes execution and return training result */
-uint32_t wait_firmware_execution(void)
+u32 wait_firmware_execution(void)
 {
-	uint32_t mail = 0;
+	u32 mail = 0;
 
 	while (mail == 0) {
 		/* Obtain message from PHY (major message) */
-		uint32_t ret = get_mail(&mail);
+		u32 ret = get_mail(&mail);
 
 		if (ret != NO_ERR)
 			return ret;
@@ -228,15 +229,15 @@ uint32_t wait_firmware_execution(void)
 }
 
 /* Acknowledge received message */
-static uint32_t ack_mail(void)
+static u32 ack_mail(void)
 {
-	uint32_t timeout = DEFAULT_TIMEOUT;
+	u32 timeout = DEFAULT_TIMEOUT;
 	/* ACK message */
 	writel(0, DDR_PHYA_APBONLY_DCTWRITEPROT);
 
 	/* Wait firmware to respond to ACK (UctWriteProtShadow to be set) */
 	while (--timeout && !(readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS) &
-		   UCT_WRITE_PROT_SHADOW_MASK))
+				UCT_WRITE_PROT_SHADOW_MASK))
 		;
 
 	if (!timeout)
@@ -248,12 +249,12 @@ static uint32_t ack_mail(void)
 }
 
 /* Read available message from DDR PHY microcontroller */
-static uint32_t get_mail(uint32_t *mail)
+static u32 get_mail(u32 *mail)
 {
-	uint32_t timeout = DEFAULT_TIMEOUT;
+	u32 timeout = DEFAULT_TIMEOUT;
 
 	while (--timeout && (readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS) &
-		   UCT_WRITE_PROT_SHADOW_MASK))
+				UCT_WRITE_PROT_SHADOW_MASK))
 		;
 
 	if (!timeout)

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2020 NXP
  *
@@ -47,12 +48,12 @@ enum dram_type {
 };
 
 struct regconf {
-	uint32_t addr;
-	uint32_t data;
+	u32 addr;
+	u32 data;
 };
 
 struct ddrss_config {
-	uint8_t memory_type;
+	u8 memory_type;
 	struct regconf *ddrc_cfg;
 	size_t ddrc_cfg_size;
 	struct regconf *dq_swap_cfg;
@@ -90,7 +91,7 @@ extern size_t pie_cfg_size;
 extern struct ddrss_config configs[];
 extern size_t ddrss_config_size;
 
-uint32_t ddr_init(void);
+u32 ddr_init(void);
 void init_image_sizes(void);
 __attribute__ ((weak)) void store_csr(void) {}
 

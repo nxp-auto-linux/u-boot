@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2020 NXP
  *
@@ -76,16 +77,15 @@
 /**
  * @brief Set default AXI parity.
  */
-uint32_t set_axi_parity(void);
+u32 set_axi_parity(void);
 /**
  * @brief Post PHY train setup - complementary settings
  * that needs to be performed after running the firmware.
  */
-uint32_t post_train_setup(void);
+u32 post_train_setup(void);
 
-uint32_t wait_firmware_execution(void);
+u32 wait_firmware_execution(void);
 
-uint32_t load_register_array(uint32_t reg_writes,
-			     uint32_t array[reg_writes][2]);
+u32 load_register_array(u32 reg_writes, u32 array[reg_writes][2]);
 
 #endif /* DDR_UTILS_H_ */
