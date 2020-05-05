@@ -22,6 +22,47 @@
 #endif
 #include <fdt_support.h>
 
+static bool intf_is_xmii(u32 intf)
+{
+	return intf == PHY_INTERFACE_MODE_MII ||
+		intf == PHY_INTERFACE_MODE_RMII ||
+		intf == PHY_INTERFACE_MODE_RGMII;
+}
+
+static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
+{
+	int nlen = 0, nodeoff = -1;
+	char *ifname;
+	char reqname[8];
+
+	sprintf(reqname, "pfe%i", idx);
+
+	while (1) {
+
+		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff, "fsl,pfeng-logif");
+		if (nodeoff < 0)
+			return;
+
+		ifname = (char *)fdt_getprop(fdt, nodeoff, "fsl,pfeng-if-name", &nlen);
+		if (!ifname || !nlen)
+			continue;
+
+		if (strncmp(reqname, ifname, strlen(reqname)))
+			continue;
+
+		if (pfeng_cfg_emac_get_interface(idx) == PHY_INTERFACE_MODE_NONE) {
+			printf("DT: Disabling PFE_EMAC_%i\n", idx);
+			fdt_status_disabled(fdt, nodeoff);
+		} else {
+			printf("DT: Enabling PFE_EMAC_%i\n", idx);
+			fdt_status_okay(fdt, nodeoff);
+		}
+
+		/* We are done */
+		return;
+	}
+}
+
 /*
  * Ethernet DT fixup before OS load
  *
@@ -29,18 +70,53 @@
 void ft_enet_fixup(void *fdt)
 {
 	int __maybe_unused nodeoff;
+	bool __maybe_unused ena;
+
+	/* PFE */
+#if CONFIG_IS_ENABLED(FSL_PFENG)
+	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32g274a-pfeng");
+	if (nodeoff >= 0) {
+		if (!pfeng_cfg_get_mode()) {
+			/* Disable PFE in DT fully */
+			printf("DT: Disabling PFE\n");
+			fdt_status_disabled(fdt, nodeoff);
+		} else {
+			printf("DT: Enabling PFE\n");
+			fdt_status_okay(fdt, nodeoff);
+
+			/* Check for interfaces and manage accordingly */
+			ft_enet_pfe_emac_fixup(0, fdt);
+			ft_enet_pfe_emac_fixup(1, fdt);
+			ft_enet_pfe_emac_fixup(2, fdt);
+		}
+	}
+#endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
 
 	/* GMAC */
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32cc-dwmac");
 	if (nodeoff >= 0) {
+
 		if (s32ccgmac_cfg_get_mode() == S32CCGMAC_MODE_DISABLE) {
-			/* Disable GMAC in DT */
+			ena = false;
+#if CONFIG_IS_ENABLED(FSL_PFENG)
+		} else if (intf_is_xmii(s32ccgmac_cfg_get_interface()) &&
+			   intf_is_xmii(pfeng_cfg_emac_get_interface(1)) &&
+			   pfeng_cfg_get_mode()) {
+			ena = false;
+#endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
+		} else
+			ena = true;
+
+		if (!ena) {
 			printf("DT: Disabling GMAC\n");
 			fdt_status_disabled(fdt, nodeoff);
+		} else {
+			printf("DT: Enabling GMAC\n");
+			fdt_status_okay(fdt, nodeoff);
 		}
 	}
-#endif
+#endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
 }
 
 /*
