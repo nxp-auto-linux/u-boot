@@ -65,7 +65,7 @@ endchoice
 config FSL_PFENG_FW_NAME
 	string "PFE firmware filename"
 	depends on FSL_PFENG_FW_LOC_SDCARD
-	default "pfe-s32g-class.fw"
+	default "s32g_pfe_class.fw"
 	help
 	  The PFEng network controller firmware filename.
 
