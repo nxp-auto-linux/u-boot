@@ -30,7 +30,7 @@ void ft_enet_fixup(void *fdt);
 u32 s32ccgmac_cfg_get_mode(void);
 #endif
 
-#if defined(CONFIG_USB)
+#if defined(CONFIG_SAF1508BET_USB_PHY)
 void setup_iomux_usb(void);
 #endif
 
