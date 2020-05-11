@@ -36,8 +36,6 @@ pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
 	int ret;
 	void *addr = NULL;
 	loff_t length, read = 0;
-	char addr_str[32];
-	char *load_argv[] = { "fsload", iface, part, addr_str, fname, NULL };
 
 	debug("Loading PFEng fw from %s@%s:%s:%d\n", iface, part, fname, ftype);
 
@@ -55,14 +53,11 @@ pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
 		goto err;
 	}
 
-#if 0 /* TODO: fix usage of fs_read and get rid of do_load */
-	length = 0;
+	ret = fs_set_blk_dev(iface, part, ftype);
+	if (ret < 0)
+		goto err;
+
 	ret = fs_read(fname, (ulong)addr, 0, length, &read);
-#else
-	snprintf(addr_str, sizeof(addr_str) - 1, "0x%llx", (addr_t)addr);
-	ret = do_load(NULL, 0, ARRAY_SIZE(load_argv), load_argv, ftype);
-	read = length;
-#endif
 	if (ret < 0)
 		goto err;
 
