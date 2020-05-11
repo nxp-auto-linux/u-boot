@@ -15,6 +15,7 @@
 
 #include <malloc.h>
 #include <memalign.h>
+#include <cpu_func.h>
 
 #include "oal.h"
 #include "oal_mm.h"
@@ -124,11 +125,14 @@ errno_t oal_mm_dev_unmap(void *paddr, const addr_t len)
 
 void oal_mm_cache_inval(const void *vaddr, const void *paddr, const addr_t len)
 {
+	invalidate_dcache_range((unsigned long)paddr,
+				((unsigned long)paddr) + len);
 	return;
 }
 
 void oal_mm_cache_flush(const void *vaddr, const void *paddr, const addr_t len)
 {
+	flush_dcache_range((unsigned long)paddr, ((unsigned long)paddr) + len);
 	return;
 }
 
