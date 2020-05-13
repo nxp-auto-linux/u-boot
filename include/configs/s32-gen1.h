@@ -127,6 +127,8 @@
 #define FSL_QSPI_FLASH_SIZE            SZ_64M
 #endif
 
-
+#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
+#define SDHC_REDUCED_MAP
+#endif
 
 #endif

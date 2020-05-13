@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019 NXP Semiconductors
+ * Copyright 2019-2020 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
@@ -29,10 +29,6 @@
 #include <dm.h>
 #include <asm-generic/gpio.h>
 #include <dm/pinctrl.h>
-
-#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
-#define SDHC_REDUCED_MAP
-#endif
 
 #if !CONFIG_IS_ENABLED(BLK)
 #include "mmc_private.h"
@@ -152,7 +148,7 @@ struct fsl_esdhc_priv {
 	int vs18_enable;
 	u32 flags;
 	u32 caps;
-#if !defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
+#if !defined(SDHC_REDUCED_MAP)
 	u32 tuning_step;
 	u32 tuning_start_tap;
 	u32 strobe_dll_delay_target;
