@@ -874,8 +874,11 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
 		return 0;
 	} else if (!strcmp(argv[1], "stop")) {
-		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
-		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+		if (pfeng_cfg_get_mode() > PFENG_MODE_DISABLE) {
+			/* we emulate STOP by DISABLE/ENABLE */
+			pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
+			pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+		}
 		return 0;
 	} else if (!strcmp(argv[1], "emacs")) {
 		if (argc < 3) {
