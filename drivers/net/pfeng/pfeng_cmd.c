@@ -164,14 +164,75 @@ static void enable_partition_2(void)
 		;
 }
 
-int s32_serdes_wait_link(int idx, int xpcs_num)
+/* Get xpcs and SerDes from MAC*/
+int pfeng_map_emac_to_serdes_xpcs(int emac, int *serdes, int *xpcs)
 {
-	if (idx != 1) {
-		pr_err("Only SERDES 1 is supported\n");
-		return -1;
+	int emac_to_serdes[] = {1, 1, 0};
+	enum serdes_xpcs_mode mode;
+	int mac_serdes;
+
+	if (emac >= ARRAY_SIZE(emac_intf)) {
+		pr_err("invalid emac index %d\n", emac);
+		return -ENXIO;
 	}
 
-	return s32_serdes1_wait_link(xpcs_num);
+	mac_serdes = emac_to_serdes[emac];
+	mode = s32_get_xpcs_mode(mac_serdes);
+
+	if (mode == SGMII_INAVALID) {
+		pr_err("Emac %d not initialized\n", emac);
+		return -ENXIO;
+	}
+
+	if ((mac_serdes == 0 && emac == 2) ||
+	    (mac_serdes == 1 && emac == 1)) {
+		switch (mode) {
+		case SGMII_XPCS1:
+		case SGMII_XPCS0_XPCS1:
+			*xpcs = 1;
+			break;
+		default:
+			return -ENXIO;
+		}
+	} else if (mac_serdes == 1 && emac == 0) {
+		switch (mode) {
+		case SGMII_XPCS0:
+		case SGMII_XPCS0_XPCS1:
+		case SGMII_XPCS0_2G5:
+			*xpcs = 0;
+			break;
+		default:
+			return -ENXIO;
+		}
+	} else {
+		return -ENXIO;
+	}
+	*serdes = mac_serdes;
+
+	return 0;
+}
+
+/* Get link status for sgmii EMAC */
+int pfeng_serdes_wait_link(int emac)
+{
+	int serdes, xpcs;
+
+	if (!pfeng_map_emac_to_serdes_xpcs(emac, &serdes, &xpcs))
+		return s32_sgmii_wait_link(serdes, xpcs);
+
+	return -ENXIO;
+}
+
+/* Check if SerDes is initialized for emac operation */
+int pfeng_serdes_emac_is_init(int emac)
+{
+	int serdes, xpcs;
+
+	if (!pfeng_map_emac_to_serdes_xpcs(emac, &serdes, &xpcs))
+		return 0;
+
+	pr_err("Invalid sgmii configuration for emac index %d\n", emac);
+	return -ENXIO;
 }
 
 static void switch_pfe0_clock(int intf)

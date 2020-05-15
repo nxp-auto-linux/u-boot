@@ -102,7 +102,9 @@
 
 int serdes_xpcs_wait_for_power_good(void *base, uint32_t xpcs);
 int serdes_xpcs_set_sgmii_speed(void *base, uint32_t xpcs,
-				    uint32_t mbps, bool fduplex);
+				u32 mbps, bool fduplex);
+int serdes_xpcs_get_sgmii_speed(void *base, u32 xpcs, int *mbps,
+				bool *fduplex, bool *an);
 int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 			      enum serdes_clock clktype,
 			      enum serdes_clock_fmhz fmhz);
@@ -111,7 +113,11 @@ int serdes_xpcs_set_2500_mode(void *base, u32 xpcs,
 			      enum serdes_clock_fmhz fmhz);
 int serdes_xpcs_set_loopback(void *base, uint32_t xpcs, bool enable);
 int serdes_wait_for_link(void *base, uint32_t xpcs, uint8_t timeout);
+enum serdes_xpcs_mode s32_get_xpcs_mode(int serdes);
 
-int s32_serdes1_wait_link(int idx);
+int s32_sgmii_wait_link(int serdes, int xpcs);
+int s32_sgmii_get_speed(int serdes, int xpcs, int *mbps, bool *fd, bool *an);
+int s32_sgmii_set_speed(int serdes, int xpcs, int mbps, bool fd, bool an);
+
 #endif
 
