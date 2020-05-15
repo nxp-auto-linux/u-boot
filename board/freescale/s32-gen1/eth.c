@@ -22,6 +22,17 @@
 #endif
 #include <fdt_support.h>
 
+static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
+				       void *fdt, int nodeoff)
+{
+	u8 ea[ARP_HLEN];
+
+	if (eth_env_get_enetaddr_by_index(name, idx, ea)) {
+		fdt_setprop(fdt, nodeoff, "local-mac-address", ea, ARP_HLEN);
+		printf("DT: %s%i set to %pM\n", name, idx, ea);
+	}
+}
+
 static bool intf_is_xmii(u32 intf)
 {
 	return intf == PHY_INTERFACE_MODE_MII ||
@@ -56,6 +67,9 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 		} else {
 			printf("DT: Enabling PFE_EMAC_%i\n", idx);
 			fdt_status_okay(fdt, nodeoff);
+
+			/* sync MAC HW addr to DT [local-mac-address] */
+			ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
 		}
 
 		/* We are done */
@@ -114,6 +128,9 @@ void ft_enet_fixup(void *fdt)
 		} else {
 			printf("DT: Enabling GMAC\n");
 			fdt_status_okay(fdt, nodeoff);
+
+			/* sync MAC HW addr to DT [local-mac-address] */
+			ft_update_eth_addr_by_name("eth", 0, fdt, nodeoff);
 		}
 	}
 #endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */

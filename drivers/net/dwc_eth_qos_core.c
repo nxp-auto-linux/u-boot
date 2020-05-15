@@ -37,6 +37,7 @@
 #include <asm/gpio.h>
 #endif
 #include <asm/io.h>
+#include <environment.h>
 
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 
@@ -1114,6 +1115,10 @@ static int eqos_probe(struct udevice *dev)
 		pr_err("mdio_register() failed: %d", ret);
 		goto err_free_mdio;
 	}
+
+	/* Try to sync ethaddr to environment */
+	if (!env_get("ethaddr") && is_valid_ethaddr(pdata->eth.enetaddr))
+		eth_env_set_enetaddr("ethaddr", pdata->eth.enetaddr);
 
 	debug("%s: OK\n", __func__);
 	return 0;
