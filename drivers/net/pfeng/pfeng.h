@@ -114,8 +114,6 @@ struct pfeng_priv {
  */
 #define PFENG_ENV_VAR_FW_SOURCE	"pfengfw"
 
-#define REQUIRE_SERDES(n)  (pfeng_cfg_emac_get_interface(0) == PHY_INTERFACE_MODE_SGMII || \
-			    pfeng_cfg_emac_get_interface(1) == PHY_INTERFACE_MODE_SGMII)
 
 bool pfeng_cfg_set_mode(u32 mode);
 int pfeng_set_emacs_from_env(char *env_mode);
@@ -123,6 +121,10 @@ void pfeng_cfg_emacs_enable_all(void);
 void pfeng_cfg_emacs_disable_all(void);
 u32 pfeng_cfg_emac_get_interface(u32 idx);
 void pfeng_apply_clocks(void);
+
+/* SGMII/XPCS */
+int pfeng_serdes_wait_link(int emac);
+int pfeng_serdes_emac_is_init(int emac);
 
 /* cmd debug calls */
 int pfeng_debug_emac(u32 idx);

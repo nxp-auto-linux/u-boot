@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <linux/delay.h>
 #include <linux/printk.h>
+#include <linux/ethtool.h>
 #include <asm/io.h>
 
 
@@ -167,14 +168,14 @@ int serdes_xpcs_set_sgmii_speed(void *base, u32 xpcs, u32 mbps,
 		   | MII_CTRL_AN_ENABLE);
 
 	switch (mbps) {
-	case 10U:
+	case SPEED_10:
 		break;
 
-	case 100U:
+	case SPEED_100:
 		reg16 |= MII_CTRL_SS13;
 		break;
 
-	case 1000U:
+	case SPEED_1000:
 		reg16 |= MII_CTRL_SS6;
 		break;
 
@@ -188,6 +189,55 @@ int serdes_xpcs_set_sgmii_speed(void *base, u32 xpcs, u32 mbps,
 
 	/*	Write the control register */
 	serdes_xpcs_reg_write(base, xpcs, SR_MII_CTRL, reg16);
+
+	return 0;
+}
+
+/**
+ * @brief	Get SGMII speed
+ * @param[in]	base SerDes base address
+ * @param[in]	xpcs XPCS offset within SerDes memory space
+ *		SERDES_XPCS_0_BASE or SERDES_XPCS_1_BASE
+ * @param[in]	mbps Speed in [Mbps]
+ * @param[in]	duplex Full duplex = TRUE, Half duplex = FALSE
+ * @param[in]	an Auto-neg enabled = TRUE, Auto-neg disabled = FALSE
+ * @return	0 if success, error code otherwise
+ */
+int serdes_xpcs_get_sgmii_speed(void *base, u32 xpcs, int *mbps,
+				bool *fduplex, bool *an)
+{
+	u16 reg16;
+
+	if (xpcs != SERDES_XPCS_0_BASE && xpcs != SERDES_XPCS_1_BASE)
+		return -EINVAL;
+
+	serdes_xpcs_reg_read(base, xpcs, SR_MII_CTRL, &reg16);
+
+	*mbps = SPEED_10;
+	*fduplex = false;
+	*an = false;
+
+	if (reg16 & MII_CTRL_SS13)
+		*mbps = SPEED_100;
+
+	if (reg16 & MII_CTRL_SS6)
+		*mbps = SPEED_1000;
+
+	if ((reg16 & MII_CTRL_SS6) && (reg16 & MII_CTRL_SS13))
+		return -EINVAL;
+
+	if (reg16 & MII_CTRL_DUPLEX_MODE)
+		*fduplex = true;
+
+	if (reg16 & MII_CTRL_AN_ENABLE)
+		*an = true;
+
+	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
+	if (reg16 & EN_2_5G_MODE) {
+		*mbps = SPEED_2500;
+		/* Auto-neg not supported in 2.5G mode */
+		*an = false;
+	}
 
 	return 0;
 }
