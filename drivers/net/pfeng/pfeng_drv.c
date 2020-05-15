@@ -22,9 +22,6 @@
 #define HIF_HEADER_SIZE sizeof(pfe_ct_hif_rx_hdr_t)
 
 static struct pfeng_priv *pfeng_drv_priv = NULL;
-
-int s32_serdes1_wait_link(int idx);
-
 /* firmware */
 
 #if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
@@ -549,15 +546,8 @@ pfeng_start(struct udevice *dev)
 	priv->last_tx = NULL;
 
 	/* check if the interface is up */
-	if (pfeng_cfg_emac_get_interface(clid) == PHY_INTERFACE_MODE_SGMII) {
-		if (clid == 0 || clid == 1) {
-			s32_serdes1_wait_link(clid);
-		} else {
-			dev_err(dev, "PFE2 SGMII mode not supported\n");
-			ret = -ENODEV;
-			goto err;
-		}
-	}
+	if (pfeng_cfg_emac_get_interface(clid) == PHY_INTERFACE_MODE_SGMII)
+		pfeng_serdes_wait_link(clid);
 
 	/* Sanitize hwaddr */
 	pfeng_write_hwaddr(dev);
@@ -767,13 +757,11 @@ pfeng_probe(struct udevice *dev)
 	if (env_mode && ((env_mode = strchr(env_mode, ','))) && *env_mode)
 		pfeng_set_emacs_from_env(++env_mode);
 
-	/* TODO remove this */
-	if (REQUIRE_SERDES(1) &&
-	    !(hwconfig_subarg_cmp("pcie1", "mode", "sgmii") ||
-	    hwconfig_subarg_cmp("pcie1", "mode", "rc&sgmii") ||
-	    hwconfig_subarg_cmp("pcie1", "mode", "ep&sgmii"))) {
-		return -ENODEV;
-	}
+	/* Check if SerDes is configured for SGMII */
+	for (i = 0; i < PFENG_EMACS_COUNT; i++)
+		if (pfeng_cfg_emac_get_interface(i) == PHY_INTERFACE_MODE_SGMII)
+			if (pfeng_serdes_emac_is_init(i))
+				return -ENODEV;
 
 	/* enable PFE IP support */
 	pfeng_cfg_set_mode(PFENG_MODE_RUN);

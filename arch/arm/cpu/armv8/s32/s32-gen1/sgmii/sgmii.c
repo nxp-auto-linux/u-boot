@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <linux/delay.h>
 #include <linux/errno.h>
+#include <linux/ethtool.h>
 #include <asm/io.h>
 #include <stdlib.h>
 #include <linux/printk.h>
@@ -22,6 +23,7 @@
 #define S32G_SERDES_0_BASE			0x40400000U
 #define S32G_SERDES_1_BASE			0x44100000U
 #define S32G_SERDES_BASE_LEN			0x100000
+#define S32G_SERDES_COUNT			2
 
 /*
  * Auto-negotiation is currently not supported.
@@ -54,6 +56,14 @@
 #define SGMII_MIN_SOC_REV_SUPPORTED 0x1
 #endif /* CONFIG_TARGET_S32G274AEVB */
 
+struct s32_xpcs_cfg {
+	enum serdes_xpcs_mode xpcs_mode;
+	bool is_init;
+};
+
+static struct s32_xpcs_cfg xpcs_cfg[S32G_SERDES_COUNT] = { {.is_init = false},
+							   {.is_init = false} };
+
 static inline void *s32_get_serdes_base(int id)
 {
 	if (id == 0)
@@ -64,23 +74,37 @@ static inline void *s32_get_serdes_base(int id)
 		return NULL;
 }
 
-int s32_serdes1_wait_link(int id)
+static inline u32 s32_get_xpcs_base(int id)
 {
-	void *serdes1_base;
+	if (id == 0)
+		return SERDES_XPCS_0_BASE;
+	else if (id == 1)
+		return SERDES_XPCS_1_BASE;
+	else
+		return 0;
+}
+
+int s32_sgmii_wait_link(int serdes, int xpcs)
+{
+	void *serdes_base;
+	u32 xpcs_base;
 	int ret;
 
-	serdes1_base = s32_get_serdes_base(id);
-	if (!serdes1_base)
+	serdes_base = s32_get_serdes_base(serdes);
+	if (!serdes_base)
 		return -EINVAL;
 
-	debug("Waiting for link (XPCS%i)...\n", id);
-	ret = serdes_wait_for_link(serdes1_base,
-				   id ? SERDES_XPCS_1_BASE : SERDES_XPCS_0_BASE,
-				   1U);
+	xpcs_base = s32_get_xpcs_base(xpcs);
+	if (!xpcs_base)
+		return -EINVAL;
+
+	debug("Waiting for link (SerDes%d XPCS%i)...\n", serdes, xpcs);
+	ret = serdes_wait_for_link(serdes_base, xpcs_base, 1U);
+
 	if (ret)
-		printf("XPCS%i link timed-out\n", id);
+		printf("SerDes%d XPCS%i link timed-out\n", serdes, xpcs);
 	else
-		printf("XPCS%i link is up\n", id);
+		debug("SerDes%d XPCS%i link is up\n", serdes, xpcs);
 
 	return ret;
 }
@@ -89,8 +113,8 @@ int s32_serdes1_wait_link(int id)
 static int s32_serdes_verify_link(int serdes, int xpcs)
 {
 	void *serdes_base;
+	u32 xpcs_base;
 	int ret = 0;
-	u32 xpcs_base = xpcs ? SERDES_XPCS_1_BASE : SERDES_XPCS_0_BASE;
 
 	serdes_base = s32_get_serdes_base(serdes);
 	if (!serdes_base)
@@ -113,6 +137,75 @@ link_error:
 	return ret;
 }
 #endif /* SGMII_VERIFY_LINK_ON_STARTUP */
+
+/* WARNING: This function is only experimental and it is not tested*/
+/* Get SGMII speed/duplex/auto-neg */
+int s32_sgmii_get_speed(int serdes, int xpcs, int *mbps, bool *fd, bool *an)
+{
+	void *serdes_base;
+	u32 xpcs_base;
+	int ret;
+
+	serdes_base = s32_get_serdes_base(serdes);
+	if (!serdes_base)
+		return -EINVAL;
+
+	xpcs_base = s32_get_xpcs_base(xpcs);
+	if (!xpcs_base)
+		return -EINVAL;
+
+	ret = serdes_xpcs_get_sgmii_speed(serdes_base, xpcs_base,
+					  mbps, fd, an);
+	debug("SerDes%d XPCS%d is configured to %dMbs (AN %s, %s)",
+	      serdes, xpcs, *mbps,
+	      an ? "ON" : "OFF",
+	      fd ? "FD" : "HD");
+
+	return ret;
+}
+
+/* WARNING: This function is only experimental and it is not tested*/
+/* Set SGMII speed/duplex/auto-neg */
+int s32_sgmii_set_speed(int serdes, int xpcs, int mbps, bool fd, bool an)
+{
+	void *serdes_base;
+	u32 xpcs_base;
+	int ret;
+
+	/* SGMII auto-negotiation is currently not supported  */
+	(void)an;
+
+	serdes_base = s32_get_serdes_base(serdes);
+	if (!serdes_base)
+		return -EINVAL;
+
+	xpcs_base = s32_get_xpcs_base(xpcs);
+	if (!xpcs_base)
+		return -EINVAL;
+
+	ret = serdes_xpcs_set_sgmii_speed(serdes_base, xpcs_base,
+					  mbps, fd);
+	debug("SerDes%d XPCS%d config was updated to %dMbs (AN %s, %s)",
+	      serdes, xpcs, mbps,
+	      an ? "ON" : "OFF",
+	      fd ? "FD" : "HD");
+
+	return ret;
+}
+
+enum serdes_xpcs_mode s32_get_xpcs_mode(int serdes)
+{
+	if (serdes > S32G_SERDES_COUNT) {
+		printf("Invalid SerDes ID %d\n", serdes);
+		return SGMII_INAVALID;
+	}
+	if (!xpcs_cfg[serdes].is_init ||
+	    xpcs_cfg[serdes].xpcs_mode == SGMII_INAVALID) {
+		printf("SerDes %d was not initialized\n", serdes);
+		return SGMII_INAVALID;
+	}
+	return xpcs_cfg[serdes].xpcs_mode;
+}
 
 int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		      enum serdes_xpcs_mode xpcs_mode,
@@ -138,8 +231,25 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 	}
 #endif /* SGMII_MIN_SOC_REV_SUPPORTED */
 	int retval = 0;
+	u32 xpcs0_base;
+	u32 xpcs1_base;
 	bool xpcs0 = false;
 	bool xpcs1 = false;
+
+	xpcs0_base = s32_get_xpcs_base(0);
+	if (!xpcs0_base)
+		return -EINVAL;
+
+	xpcs1_base = s32_get_xpcs_base(1);
+	if (!xpcs1_base)
+		return -EINVAL;
+
+	if (id > S32G_SERDES_COUNT) {
+		printf("Invalid XPCS ID %d\n", id);
+		return false;
+	}
+
+	xpcs_cfg[id].xpcs_mode = SGMII_INAVALID;
 
 	/* Decode XPCS */
 	if (xpcs_mode == SGMII_XPCS0 || xpcs_mode == SGMII_XPCS0_2G5) {
@@ -169,7 +279,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 	if (xpcs0) {
 		debug("SerDes %d XPCS_0 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
-						   SERDES_XPCS_0_BASE,
+						   xpcs0_base,
 						   clktype, fmhz);
 		if (retval) {
 			printf("SerDes %d XPCS_0 init failed\n", id);
@@ -181,7 +291,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 	if (xpcs1) {
 		debug("SerDes %d XPCS_1 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
-						   SERDES_XPCS_1_BASE,
+						   xpcs1_base,
 						   clktype, fmhz);
 		if (retval) {
 			printf("SerDes %d XPCS_1 init failed\n", id);
@@ -193,8 +303,8 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 	if (xpcs0) {
 		/*	Configure XPCS_0 speed (1000Mpbs, Full duplex) */
 		retval = serdes_xpcs_set_sgmii_speed(serdes_base,
-						     SERDES_XPCS_0_BASE,
-						     1000U, true);
+						     xpcs0_base,
+						     SPEED_1000, true);
 		if (retval)
 			return retval;
 	}
@@ -202,15 +312,15 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 	if (xpcs1) {
 		/*	Configure XPCS_1 speed (1000Mpbs, Full duplex) */
 		retval = serdes_xpcs_set_sgmii_speed(serdes_base,
-						     SERDES_XPCS_1_BASE,
-						     1000U, true);
+						     xpcs1_base,
+						     SPEED_1000, true);
 		if (retval)
 			return retval;
 	}
 
 	if (xpcs_mode == SGMII_XPCS0_2G5) {
 		retval = serdes_xpcs_set_2500_mode(serdes_base,
-						   SERDES_XPCS_0_BASE,
+						   xpcs0_base,
 						   clktype, fmhz);
 		if (retval) {
 			printf("XPCS_0 init failed\n");
@@ -220,6 +330,9 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 	}
 
 	debug("SerDes Init Done.\n");
+
+	xpcs_cfg[id].xpcs_mode = xpcs_mode;
+	xpcs_cfg[id].is_init = true;
 
 #ifdef SGMII_VERIFY_LINK_ON_STARTUP
 	/* disabled by default */
