@@ -1,0 +1,152 @@
+About
+-----
+
+NXP's HSE provides Advanced Secure Boot (ASB), which uses
+Secure Memory Regions (SMR) and a device-specific key.
+
+The demo application in hse_adv_secboot.c is provided as a U-Boot command.
+The demo application demonstrates secure booting from an SD card,
+on the S32gen1 boards.
+
+Prerequisites
+-------------
+
+HSE FW must be on the SD card to be able to use the demo applications.
+
+Building U-Boot with HSE secure boot support
+--------------------------------------------
+
+If the CONFIG_S32_GEN1 option is set to 'y' in the .config file, the user
+can enable the CONFIG_CMD_HSE_ADVANCE_SECBOOT option in menuconfig, under
+'Command-line Interface'->'Boot commands'.
+
+Furthermore, the CONFIG_SYS_TEXT_BASE option must be set to 0x34080000.
+
+Generating RSA keys for ASB with openssl
+----------------------------------------
+
+The following instructions are provided as if running from the user's home
+directory, which contains the U-Boot repo.
+
+First, generate a private RSA2048 key:
+
+	openssl genrsa -out openssl_keys/bootprivate.pem 2048
+
+Separate the public key from the private key:
+
+	openssl rsa -in openssl_keys/bootprivate.pem -pubout > bootpublic.pem
+
+Signing u-boot code section with openssl
+----------------------------------------
+
+First, we need to separate the U-Boot code (including Application BL header)
+from the IVT and DCD:
+
+	dd if=u-boot/u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=17
+
+Next, we pad the extracted U-Boot code up to 1M. To find how many bytes need to
+be written at the end of u-boot-tosign.s32, we check its size (i.e. by using
+ls -l u-boot-tosign.s32), subtract it from 1M (1048576 bytes) and write the
+remaining bytes to its end.
+
+	dd if=/dev/zero bs=1 count=<remaining bytes to 1M> >> u-boot-tosign.s32
+
+Now we can sign the padded U-Boot code:
+
+	openssl dgst -sha1 -sign openssl_keys/bootprivate.pem -out u-boot.sign u-boot-tosign.s32
+
+The signature can be verified with:
+
+	openssl dgst -sha1 -verify openssl_keys/bootpublic.pem -signature u-boot.sign u-boot-tosign.s32
+
+Next, we need to modify the RSA public modulus and public exponent in
+include/hse/hse_abi.h with our generated keys. To view the public
+modulus and exponent:
+
+	openssl rsa -in bootpublic.pem -text -noout
+
+Overwrite the modulus and exponent under include/hse/hse_abi.h with
+your generated modulus and exponent.
+
+Adding everything to the SD card
+--------------------------------
+
+We suggest using the following SD card layout:
+
+-------------  0x0
+|    IVT    |
+-------------  0x100
+|    MBR    |
+-------------  0x200
+|  HSE FW   |
+-------------  0x70200
+|  SYS_IMG  |
+-------------  0x80200
+| SIGNATURE |
+-------------  0x80400
+|   U-Boot  |
+-------------  0x180400
+
+The following commands will be provided for the above layout. The partitions for
+Linux and the rootfs need to be moved further on the SD card, to leave sufficient
+space for the data required by HSE for secure boot.
+
+First, we need to modify u-boot.s32's IVT. We can do this using a hex editor, or
+simply by opening the file in vim, then running %!xxd in command mode. The IVT
+should look like this:
+
+00000000: d101 0060 0000 0000 0000 0000 0000 0000
+00000010: 0004 0800 0000 0000 0002 0000 0000 0000
+00000020: 0024 0800 0000 0000 0100 0000 0000 0000
+00000030: 0000 0000 0000 0000 0000 0000 0000 0000
+...
+00000100: 0000 0000 0000 0000 0000 0000 0000 0000
+
+To save our modifications, we run %!xxd -r in command mode, then save the file as
+binary.
+
+Next, identify your device in /dev, and copy the IVT to the SD card. We'll use 'sdb'
+in this example:
+
+	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 count=1 conv=notrunc,fsync
+
+Next is the HSE FW pink/blue image:
+
+	dd if=<hse_fw_binary> of=/dev/sdb bs=512 seek=1 conv=notrunc,fsync
+
+The signature;
+
+	dd if=u-boot.sign of=/dev/sdb bs=512 seek=1025 conv=notrunc,fsync
+
+We need the DCD from the original u-boot.s32, so:
+
+	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 skip=1 seek=1026 conv=notrunc,fsync
+
+Finally, we can copy the U-Boot we've signed:
+
+	dd if=u-boot-tosign.s32 of=/dev/sdb bs=512 seek=1042 conv=notrunc,fsync
+
+Booting in secure boot
+----------------------
+
+To activate secure boot, we first need to generate a SYS-IMG file for HSE, which
+will be signed with a device-specific key. Fortunately, this is handled by HSE
+itself, and is taken care of by the ASB demo application. Boot the board, and
+run the following in the U-Boot command line:
+
+	hse_adv_secboot_prep_demo
+
+After the command has run, you can reboot the board and it will boot securely. You
+can check by verifying the secure boot bit in the IVT:
+
+00000020: 0024 0800 0000 0000 0900 0000 0000 0000
+
+Turning off secure boot
+-----------------------
+
+To stop booting securely, the IVT must be rewritten and the SYS-IMG on the SD card
+must be deleted. The secure boot SDs layout need not be kept, so this can easily be
+done by overwriting the data on the SD card, though it is suggested to zero out the
+area needed before hand.
+
+	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 conv=notrunc,fsync
