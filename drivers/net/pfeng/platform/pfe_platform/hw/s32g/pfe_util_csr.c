@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
@@ -32,13 +32,13 @@ uint32_t pfe_util_cfg_get_text_stat(void *base_va, char_t *buf, uint32_t size, u
 {
 	uint32_t len = 0U, reg;
 
-#if defined(GLOBAL_CFG_NULL_ARG_CHECK)
+#if defined(PFE_CFG_NULL_ARG_CHECK)
 	if (unlikely(NULL == base_va))
 	{
 		NXP_LOG_ERROR("NULL argument received\n");
 		return 0U;
 	}
-#endif /* GLOBAL_CFG_NULL_ARG_CHECK */
+#endif /* PFE_CFG_NULL_ARG_CHECK */
 
 	/*	Get version */
 	if(verb_level >= 9U)

@@ -124,6 +124,9 @@ static void disable_partition_2(void)
 
 static void enable_partition_2(void)
 {
+	/* Setup PFE coherency to FULL */
+	writel(PFE_COH_PORTS_MASK_FULL, S32G_PFE_COH_EN);
+
 	/* Enabling PFE clocks (EMACs + TS) in partition 2 */
 	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO)) |
 	       MC_ME_PFE_REQ_GROUP, MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO));
@@ -874,8 +877,11 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
 		return 0;
 	} else if (!strcmp(argv[1], "stop")) {
-		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
-		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+		if (pfeng_cfg_get_mode() > PFENG_MODE_DISABLE) {
+			/* we emulate STOP by DISABLE/ENABLE */
+			pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
+			pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+		}
 		return 0;
 	} else if (!strcmp(argv[1], "emacs")) {
 		if (argc < 3) {

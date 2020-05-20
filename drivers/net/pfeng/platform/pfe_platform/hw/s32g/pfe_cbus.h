@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
@@ -18,42 +18,46 @@
 #ifndef PFE_CBUS_H_
 #define PFE_CBUS_H_
 
-#if !defined(GLOBAL_CFG_IP_VERSION) || !defined(IP_VERSION_FPGA_5_0_4) || !defined(IP_VERSION_NPU_7_14)
+#include "pfe_cfg.h"
+
+#if !defined(PFE_CFG_IP_VERSION) || !defined(PFE_CFG_IP_VERSION_FPGA_5_0_4) || \
+	!defined(PFE_CFG_IP_VERSION_NPU_7_14)
 #error Missing version define(s)
 #endif /* IP version checks */
 
-#if (GLOBAL_CFG_IP_VERSION == 0) /* Checks if the GLOBAL_CFG_IP_VERSION is undefined */
-#error GLOBAL_CFG_IP_VERSION shall not be empty
-#endif /* GLOBAL_CFG_IP_VERSION */
+#if (PFE_CFG_IP_VERSION == \
+     0) /* Checks if the PFE_CFG_IP_VERSION is undefined */
+#error PFE_CFG_IP_VERSION shall not be empty
+#endif /* PFE_CFG_IP_VERSION */
 
 /*	Addresses (offsets) within the CBUS memory space */
 
-#define CBUS_EMAC1_BASE_ADDR		(0xA0000U)
-#define CBUS_EGPI1_BASE_ADDR		(0xAC000U)
-#define CBUS_ETGPI1_BASE_ADDR		(0xB8000U)
-#define CBUS_EMAC2_BASE_ADDR		(0xA4000U)
-#define CBUS_EGPI2_BASE_ADDR		(0xB0000U)
-#define CBUS_ETGPI2_BASE_ADDR		(0xBC000U)
-#define CBUS_EMAC3_BASE_ADDR		(0xA8000U)
-#define CBUS_EGPI3_BASE_ADDR		(0xB4000U)
-#define CBUS_ETGPI3_BASE_ADDR		(0xC0000U)
-#define CBUS_BMU1_BASE_ADDR			(0x88000U)
-#define CBUS_BMU2_BASE_ADDR			(0x8C000U)
-#define CBUS_HIF_BASE_ADDR			(0x98000U)
-#define CBUS_HGPI_BASE_ADDR			(0x9C000U)
-#define CBUS_LMEM_BASE_ADDR			(0x00000U)
-#define CBUS_LMEM_SIZE				(0x20000U)
-#define CBUS_LMEM_END				(LMEM_BASE_ADDR + LMEM_SIZE - 1U)
-#define CBUS_TMU_CSR_BASE_ADDR		(0x80000U)
-#define CBUS_CLASS_CSR_BASE_ADDR	(0x90000U)
-#define CBUS_HIF_NOCPY_BASE_ADDR	(0xD0000U)
-#define CBUS_UTIL_CSR_BASE_ADDR		(0xCC000U)
-#define CBUS_GLOBAL_CSR_BASE_ADDR	(0x94000U)
+#define CBUS_EMAC1_BASE_ADDR	  (0xA0000U)
+#define CBUS_EGPI1_BASE_ADDR	  (0xAC000U)
+#define CBUS_ETGPI1_BASE_ADDR	  (0xB8000U)
+#define CBUS_EMAC2_BASE_ADDR	  (0xA4000U)
+#define CBUS_EGPI2_BASE_ADDR	  (0xB0000U)
+#define CBUS_ETGPI2_BASE_ADDR	  (0xBC000U)
+#define CBUS_EMAC3_BASE_ADDR	  (0xA8000U)
+#define CBUS_EGPI3_BASE_ADDR	  (0xB4000U)
+#define CBUS_ETGPI3_BASE_ADDR	  (0xC0000U)
+#define CBUS_BMU1_BASE_ADDR	  (0x88000U)
+#define CBUS_BMU2_BASE_ADDR	  (0x8C000U)
+#define CBUS_HIF_BASE_ADDR	  (0x98000U)
+#define CBUS_HGPI_BASE_ADDR	  (0x9C000U)
+#define CBUS_LMEM_BASE_ADDR	  (0x00000U)
+#define CBUS_LMEM_SIZE		  (0x20000U)
+#define CBUS_LMEM_END		  (LMEM_BASE_ADDR + LMEM_SIZE - 1U)
+#define CBUS_TMU_CSR_BASE_ADDR	  (0x80000U)
+#define CBUS_CLASS_CSR_BASE_ADDR  (0x90000U)
+#define CBUS_HIF_NOCPY_BASE_ADDR  (0xD0000U)
+#define CBUS_UTIL_CSR_BASE_ADDR	  (0xCC000U)
+#define CBUS_GLOBAL_CSR_BASE_ADDR (0x94000U)
 
 /* PFE cores states */
-#define PFE_CORE_DISABLE			0x00000000U
-#define PFE_CORE_ENABLE				0x00000001U
-#define PFE_CORE_SW_RESET			0x00000002U
+#define PFE_CORE_DISABLE  0x00000000U
+#define PFE_CORE_ENABLE	  0x00000001U
+#define PFE_CORE_SW_RESET 0x00000002U
 
 #include "pfe_global_wsp.h"
 #include "pfe_class_csr.h"

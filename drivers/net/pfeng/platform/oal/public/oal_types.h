@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
@@ -28,28 +28,28 @@
  * QNX
  *
  */
-#ifdef TARGET_OS_QNX
+#ifdef PFE_CFG_TARGET_OS_QNX
 #include "oal_types_qnx.h"
 
 /*
  * LINUX
  *
  */
-#elif defined(TARGET_OS_LINUX)
+#elif defined(PFE_CFG_TARGET_OS_LINUX)
 #include "oal_types_linux.h"
 
 /*
  * AUTOSAR
  *
  */
-#elif defined(TARGET_OS_AUTOSAR)
+#elif defined(PFE_CFG_TARGET_OS_AUTOSAR)
 #include "oal_types_autosar.h"
 
 /*
  * UBOOT
  *
  */
-#elif defined(TARGET_OS_UBOOT)
+#elif defined(PFE_CFG_TARGET_OS_UBOOT)
 #include "oal_types_uboot.h"
 
 /*
@@ -57,8 +57,8 @@
  *
  */
 #else
-#error "TARGET_OS_xx was not set!"
-#endif /* TARGET_OS */
+#error "PFE_CFG_TARGET_OS_xx was not set!"
+#endif /* PFE_CFG_TARGET_OS_xx */
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

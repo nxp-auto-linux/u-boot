@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018 NXP
+ *  Copyright 2018,2020 NXP
  */
 
 /**
@@ -44,6 +44,13 @@ oal_thread_t *oal_thread_create(oal_thread_func func, void *func_arg, const char
  * @return		EOK if success, error code otherwise
  */
 errno_t oal_thread_join(oal_thread_t *thread, void **retval);
+
+/**
+ * @brief		Cancel the thread
+ * @param[in]	thread The thread instance
+ * @return		EOK if success, error code otherwise
+ */
+errno_t oal_thread_cancel(oal_thread_t *thread);
 
 #endif /* PUBLIC_OAL_THREAD_H_ */
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
 #
-#  Copyright 2018-2019 NXP
+#  Copyright 2018-2020 NXP
 #
 
 ifndef KERNELRELEASE
@@ -24,20 +24,21 @@ INCLUDES += -I$(INC_PREFIX)src \
 			-I$(INC_PREFIX)oal/public \
 			-I$(INC_PREFIX)oal/public/$(shell echo $(TARGET_OS) | tr [A-Z] [a-z]) \
 			-I$(INC_PREFIX)hal/public \
-			-I$(INC_PREFIX)fifo/public
+			-I$(INC_PREFIX)fifo/public \
+			-I$(INC_PREFIX)
 
 #Dependencies
 DEPENDENCIES = $(subst -L,,$(subst $(EMPTY) $(EMPTY)-l:,/,$(LIBS)))
 
 #Compiler flags for build profiles
-CCFLAGS_release += -O2
+CCFLAGS_release += -O3
 CCFLAGS_debug += -g -O0 -fno-builtin
 CCFLAGS_coverage += -g -O0 -ftest-coverage -fprofile-arcs -nopipe -Wc,-auxbase-strip,$@
 LDFLAGS_coverage += -ftest-coverage -fprofile-arcs
 CCFLAGS_profile += -g -O0 -finstrument-functions
 LIBS_profile += -lprofilingS
 
-CCFLAGS_pfe += -D$(TARGET_ARCH_DEF) -D$(TARGET_OS_DEF) -D$(TARGET_ENDIAN_DEF) -D$(TARGET_HW_DEF) -D$(BUILD_PROFILE_DEF)
+CCFLAGS_pfe += -D$(PFE_CFG_TARGET_ARCH_DEF) -D$(PFE_CFG_TARGET_OS_DEF) -D$(PFE_CFG_BUILD_PROFILE_DEF)
 
 #Generic compiler flags (which include build type flags)
 CCFLAGS_all += -Wall -fmessage-length=0
@@ -53,7 +54,15 @@ DEPS = -Wp,-MMD,$(@:%.o=%.d),-MT,$@
 rwildcard = $(wildcard $(addprefix $1/*.,$2)) $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2))
 
 #Source list
-SRCS = $(call rwildcard, src, c)
+ifeq ($(PFE_CFG_MC_HIF),1)
+  SRCS=src/pfe_hif_drv.c
+else
+  ifeq ($(PFE_CFG_SC_HIF),1)
+    SRCS=src/pfe_hif_drv_sc.c
+  else
+    $(error No HIF driver variant selected)
+  endif
+endif
 
 #Object files list
 OBJS = $(addprefix $(OUTPUT_DIR)/,$(addsuffix .o, $(basename $(SRCS))))
@@ -97,7 +106,16 @@ ccflags-y += -Wno-date-time
 ccflags-y += $(CCFLAGS_pfe)
 ccflags-y += $(GLOBAL_CCFLAGS)
 
-pfe_hif_drv-y := src/pfe_hif_drv.o
+ifeq ($(PFE_CFG_MC_HIF),1)
+	pfe_hif_drv-y := src/pfe_hif_drv.o
+else
+	ifeq ($(PFE_CFG_SC_HIF),1)
+		pfe_hif_drv-y := src/pfe_hif_drv_sc.o
+	else
+		$(error No HIF driver variant selected)
+	endif
+endif
+
 #pfe_hif_drv-y := $(OBJS)
 
 obj-y += pfe_hif_drv.o

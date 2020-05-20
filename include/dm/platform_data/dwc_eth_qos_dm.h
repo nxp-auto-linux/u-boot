@@ -33,6 +33,7 @@ enum {
 };
 
 u32 s32ccgmac_cfg_get_mode(void);
+phy_interface_t s32ccgmac_cfg_get_interface(void);
 #endif
 
 /* Supported implementations */

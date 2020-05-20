@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
- *  Copyright 2018-2019 NXP
+ *  Copyright 2018-2020 NXP
  */
 
 /**
@@ -44,7 +44,7 @@
 #ifndef OAL_IRQ_H_
 #define OAL_IRQ_H_
 
-#ifdef TARGET_OS_AUTOSAR
+#ifdef PFE_CFG_TARGET_OS_AUTOSAR
 #include "oal_irq_autosar.h"
 #endif
 

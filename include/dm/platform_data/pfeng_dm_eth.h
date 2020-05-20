@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * 2019 NXP
+ * Copyright 2019-2020 NXP
  */
 
 #ifndef __PFENG_DM_ETH_H__
@@ -16,6 +16,9 @@ struct pfeng_pdata {
 
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 extern struct pfeng_config pfeng_s32g274a_config;
+
+u32 pfeng_cfg_get_mode(void);
+u32 pfeng_cfg_emac_get_interface(u32 idx);
 #endif
 
 #if CONFIG_IS_ENABLED(OF_CONTROL)

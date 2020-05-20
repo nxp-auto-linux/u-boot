@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
+/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
 /*
  * Copyright 2019-2020 NXP
  *
@@ -14,9 +14,23 @@
 #define S32G_PFE_REGS_BASE		0x46000000
 #define S32G_PFE_EMACn_MODE(n)		(S32G_PFE_REGS_BASE + 0xA0000 + \
 					 (0x4000 * n) + 0x1000)
+#define S32G_PFE_COH_EN			0x4007CA00
 #define S32G_PFE_EMACS_INTF_SEL		0x4007CA04
 #define S32G_PFE_PRW_CTRL		0x4007CA20
 #define S32G_MAIN_GENCTRL1		0x4007CAE4
+
+#define PFE_COH_PORT_MASK_DDR		BIT(0)
+#define PFE_COH_PORT_MASK_HIF0		BIT(1)
+#define PFE_COH_PORT_MASK_HIF1		BIT(2)
+#define PFE_COH_PORT_MASK_HIF2		BIT(3)
+#define PFE_COH_PORT_MASK_HIF3		BIT(4)
+#define PFE_COH_PORT_MASK_UTIL		BIT(5)
+#define PFE_COH_PORTS_MASK_FULL		(PFE_COH_PORT_MASK_DDR  | \
+					 PFE_COH_PORT_MASK_HIF0 | \
+					 PFE_COH_PORT_MASK_HIF1 | \
+					 PFE_COH_PORT_MASK_HIF2 | \
+					 PFE_COH_PORT_MASK_HIF3 | \
+					 PFE_COH_PORT_MASK_UTIL)
 
 #define SGMII_CSEL			(1U << 0)
 
@@ -49,13 +63,16 @@ struct pfeng_config {
 
 struct pfeng_priv {
 	/* pfe platform members */
-        pfe_platform_config_t pfe_cfg;
-        pfe_fw_t fw;
-        pfe_platform_t *pfe;
-        pfe_log_if_t *iface;
-        pfe_hif_drv_t *hif;
-        pfe_hif_chnl_t *channel;
-        pfe_hif_drv_client_t *client;
+	pfe_platform_config_t pfe_cfg;
+	pfe_fw_t fw;
+	pfe_platform_t *pfe;
+
+	pfe_hif_drv_t *hif;
+	pfe_hif_chnl_t *channel;
+
+	pfe_hif_drv_client_t *client;
+	pfe_log_if_t *logif_emac, *logif_hif;
+	pfe_phy_if_t *phyif_emac, *phyif_hif;
 
 	struct mii_dev *mii[PFENG_EMACS_COUNT];
 	struct phy_device *phy[PFENG_EMACS_COUNT];
@@ -63,8 +80,8 @@ struct pfeng_priv {
 	struct udevice *dev;
 	const struct pfeng_config *config;
 	u32 dev_index;
-	u32 emac_index;
-	int emac_changed;
+	u32 if_index;
+	int if_changed;
 
 	void *last_rx;
 	void *last_tx;
