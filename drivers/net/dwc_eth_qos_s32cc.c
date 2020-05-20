@@ -27,6 +27,9 @@
 #include <asm/arch/soc.h>
 #include <asm/io.h>
 
+#include "serdes_regs.h"
+#include "serdes_xpcs_regs.h"
+
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 
 #include "dwc_eth_qos.h"
@@ -248,6 +251,44 @@ static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 	return set_tx_clk_enet_gmac(speed);
 }
 
+static int check_sgmii_cfg(int gmac_no)
+{
+	int serdes = gmac_no;
+	int xpcs = 0;
+	enum serdes_xpcs_mode mode, desired_mode1, desired_mode2;
+
+#if defined(CONFIG_TARGET_S32G274AEVB) || \
+	defined(CONFIG_TARGET_S32G274ARDB) || \
+	defined(CONFIG_TARGET_S32G274ASIM) || \
+	defined(CONFIG_TARGET_S32G274AEMU)
+
+	desired_mode1 = SGMII_XPCS0;
+	desired_mode2 = SGMII_XPCS0_XPCS1;
+
+#elif defined(CONFIG_TARGET_S32R45XEVB) || \
+	defined(CONFIG_TARGET_S32R45XSIM) || \
+	defined(CONFIG_TARGET_S32R45XEMU)
+
+	desired_mode1 = SGMII_XPCS0;
+	desired_mode2 = SGMII_XPCS0_2G5;
+
+#else
+#error "Board not supported"
+#endif
+
+	mode = s32_get_xpcs_mode(serdes);
+
+	if (mode != desired_mode1 && mode != desired_mode2) {
+		printf("Invalid SGMII configuration for GMAC%d", gmac_no);
+		printf("Check hwconfig env. var.\n");
+		return -EINVAL;
+	}
+
+	s32_sgmii_wait_link(serdes, xpcs);
+
+	return 0;
+}
+
 static int eqos_probe_resources_s32cc(struct udevice *dev)
 {
 	struct eqos_pdata *pdata = dev_get_platdata(dev);
@@ -267,10 +308,18 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	if (env_mode && !strcmp(env_mode, "disable"))
+	if (env_mode && !strcmp(env_mode, "disable")) {
 		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_DISABLE);
-	else
+	} else {
+		if (eqos_get_interface_s32cc(dev) == PHY_INTERFACE_MODE_SGMII) {
+			int ret = check_sgmii_cfg(0);
+
+			if (ret)
+				return ret;
+		}
+
 		return s32ccgmac_cfg_set_mode(S32CCGMAC_MODE_ENABLE);
+	}
 
 	debug("%s: OK\n", __func__);
 	return 0;
