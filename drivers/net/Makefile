@@ -3,6 +3,8 @@
 # (C) Copyright 2006
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
+ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-gen1
+
 obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
 obj-$(CONFIG_AG7XXX) += ag7xxx.o
 obj-$(CONFIG_ARMADA100_FEC) += armada100_fec.o

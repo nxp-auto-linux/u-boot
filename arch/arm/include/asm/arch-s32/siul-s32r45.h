@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -266,6 +266,11 @@
 	 SIUL2_MSCR_S32_G1_IBE_EN | \
 	 SIUL2_MSCR_S32_G1_ODE_EN)
 #define SIUL2_IMCR_S32R45_PAD_CTRL_I2C1_SCLK (SIUL2_MSCR_MUX_MODE_ALT2)
+
+/* GMAC1 */
+#define SIUL2_MSCR_S32R45_G1_PH6          102
+#define SIUL2_MSCR_S32R45_G1_PH7          103
+#define SIUL2_MSCR_S32R45_G1_GMAC1_MDI_IN 659
 
 #endif /* SIUL_S32R45_H */
 

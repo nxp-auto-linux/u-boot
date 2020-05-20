@@ -175,6 +175,14 @@ void setup_iomux_enet_gmac(int intf)
 	/* configure interface specific pins */
 	switch (intf) {
 	case PHY_INTERFACE_MODE_SGMII:
+		/* GMAC_MDC */
+		writel(SIUL2_MSCR_S32_G1_ENET_MDC,
+		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD12));
+		/* GMAC_MDIO */
+		writel(SIUL2_MSCR_S32_G1_ENET_MDIO,
+		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD13));
+		writel(SIUL2_MSCR_S32_G1_ENET_RX_D3_IN,
+		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_MDI_IN));
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
@@ -261,7 +269,7 @@ static u32 gmac_calc_link_speed_divider(u32 speed)
 		div = 5 - 1;
 		break;
 	default:
-	case SPEED_1000: /* 125MHz */
+	case SPEED_1000: /* 125MHz (also 325MHz for 2.5G) */
 		div = 1 - 1;
 		break;
 	}
@@ -286,7 +294,18 @@ void setup_clocks_enet_gmac(int intf)
 	/* configure interface specific clocks */
 	switch (intf) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* TODO: clocks cfg for SGMII */
+		/* setup the mux clock divider for GMAC_0_TX_CLK
+		 * (325/125/25/2.5 MHz)
+		 */
+		mux_source_clk_config(MC_CGM0_BASE_ADDR, 10,
+				      MC_CGM_MUXn_CSC_SEL_GMAC_0_SERDES_TX_CLK);
+		set_tx_clk_enet_gmac(SPEED_1000);
+
+		/* setup the mux clock divider for GMAC_0_RX_CLK
+		 * (Ext source from PHY - RX)
+		 */
+		mux_source_clk_config(MC_CGM0_BASE_ADDR, 11,
+				      MC_CGM_MUXn_CSC_SEL_GMAC_RX_CLK);
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:

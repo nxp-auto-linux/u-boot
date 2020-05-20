@@ -191,6 +191,7 @@ config DWC_ETH_QOS_S32CC
 	select OF_EMBED
 	select OF_CONTROL
 	select PHYLIB
+	imply SERDES_S32GEN1
 	help
 	  This driver supports NXP S32G/R/V automotive chips.
 

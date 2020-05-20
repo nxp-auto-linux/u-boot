@@ -136,12 +136,12 @@ static void setup_mux_clocks(void)
 
 	/* ACCEL_3 Clock (600 MHz) */
 	mux_source_clk_config(MC_CGM2_BASE_ADDR, 0,
-			      MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI0_2);
+			      MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI0_CLK);
 	mux_div_clk_config(MC_CGM2_BASE_ADDR, 0, 0, 0);
 
 	/* ACCEL_4 Clock (600 MHz) */
 	mux_source_clk_config(MC_CGM2_BASE_ADDR, 1,
-			      MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS4_2);
+			MC_CGM_MUXn_CSC_SEL_CORE_DFS4_CLK);
 	mux_div_clk_config(MC_CGM2_BASE_ADDR, 1, 0, 0);
 
 	/* setup the mux clock divider for DSPI_CLK (100 MHz) */
