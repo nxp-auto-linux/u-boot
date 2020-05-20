@@ -3,6 +3,7 @@
 # Copyright 2018-2020 NXP
 #
 
+obj-$(CONFIG_CMD_HSE_ADVANCED_SECBOOT)	+= hse_adv_secboot.o
 obj-$(CONFIG_TARGET_S32G274ARDB)	+= cmu.o
 obj-$(CONFIG_TARGET_S32G274AEVB)	+= cmu.o
 obj-$(CONFIG_TARGET_S32R45EVB)		+= cmu.o

@@ -50,3 +50,9 @@ config SYS_FSL_SEC_COMPAT
 
 config SYS_FSL_SEC_LE
 	bool "Little-endian access to Freescale Secure Boot"
+
+config HSE_SECBOOT
+	bool "HSE Secure Boot"
+	depends on S32_GEN1
+	help
+		Enable HSE-provided Advanced Secure Boot
