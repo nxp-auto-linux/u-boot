@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * Portions based on U-Boot's rtl8169.c.
  */
@@ -57,7 +57,8 @@ static int num_cards;
  */
 #if EQOS_DESCRIPTOR_SIZE < ARCH_DMA_MINALIGN
 #if !defined(CONFIG_SYS_NONCACHED_MEMORY) && \
-	!defined(CONFIG_SYS_DCACHE_OFF) && !defined(CONFIG_X86)
+	!defined(CONFIG_SYS_DCACHE_OFF) && !defined(CONFIG_X86) && \
+	!defined(CONFIG_ARM)
 #warning Cache line size is larger than descriptor size
 #endif
 #endif
@@ -699,6 +700,7 @@ static int eqos_start(struct udevice *dev)
 		rx_desc->des0 = (u32)(ulong)(eqos->rx_dma_buf +
 					     (i * EQOS_MAX_PACKET_SIZE));
 		rx_desc->des3 |= EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
+		eqos->config->ops->eqos_flush_desc(rx_desc);
 	}
 	eqos->config->ops->eqos_flush_desc(eqos->descs);
 
@@ -838,7 +840,7 @@ int eqos_send(struct udevice *dev, void *packet, int length)
 		udelay(1);
 	}
 
-	debug("%s: TX timeout\n", __func__);
+	printf("%s: TX timeout\n", __func__);
 
 	return -ETIMEDOUT;
 }
@@ -852,6 +854,9 @@ int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
 	debug("%s(dev=%p, flags=%x):\n", __func__, dev, flags);
 
 	rx_desc = &(eqos->rx_descs[eqos->rx_desc_idx]);
+
+	eqos->config->ops->eqos_inval_desc(rx_desc);
+
 	if (rx_desc->des3 & EQOS_DESC3_OWN) {
 		debug("%s: RX packet not available\n", __func__);
 		return -EAGAIN;
