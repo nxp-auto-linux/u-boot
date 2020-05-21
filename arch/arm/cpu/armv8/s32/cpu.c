@@ -13,6 +13,7 @@
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/siul.h>
 #include "mp.h"
+#include "dma_mem.h"
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
@@ -171,13 +172,9 @@ static inline void early_mmu_setup(void)
 	u64 *level2_table2 = (u64 *)(IRAM_BASE_ADDR + 0xB000);
 	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
-	/* Invalidate all table entries */
-	memset(level0_table, 0, PGTABLE_SIZE);
-	memset(level1_table0, 0, PGTABLE_SIZE);
-	memset(level1_table1, 0, PGTABLE_SIZE);
-	memset(level2_table0, 0, PGTABLE_SIZE);
-	memset(level2_table1, 0, PGTABLE_SIZE);
-	memset(level2_table2, 0, PGTABLE_SIZE);
+	dma_mem_clr((uintptr_t)level0_table,
+		    ((uintptr_t)level2_table2) + PGTABLE_SIZE -
+			((uintptr_t)level0_table));
 
 
 	/* Fill in the table entries */
