@@ -35,7 +35,6 @@ static u32 emac_intf[PFENG_EMACS_COUNT] = {
 };
 
 static u32 pfeng_mode = PFENG_MODE_DISABLE;
-static bool serdes_enabled;
 
 static u32 pfeng_intf_to_s32g(u32 intf);
 static inline bool pfeng_emac_type_is_valid(u32 idx, u32 mode);
@@ -165,16 +164,6 @@ static void enable_partition_2(void)
 		;
 }
 
-int s32_serdes_setup(int idx, int serdes_mode)
-{
-	if (idx != 1) {
-		pr_err("Only SERDES 1 is supported\n");
-		return -1;
-	}
-
-	return s32_serdes1_setup(serdes_mode);
-}
-
 int s32_serdes_wait_link(int idx, int xpcs_num)
 {
 	if (idx != 1) {
@@ -269,6 +258,15 @@ static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
 
 	switch (intf1) {
 	case PHY_INTERFACE_MODE_SGMII:
+		/* setup the mux clock divider for PFE_MAC_1_RX_CLK
+		 * ( SERDES_1_LANE_1_CDR_CLK)
+		 */
+		mux_source_clk_config(MC_CGM2_BASE_ADDR, 5,
+				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_TX_CLK);
+
+		mux_div_clk_config(MC_CGM2_BASE_ADDR, 2, 0, 0);
+		mux_source_clk_config(MC_CGM2_BASE_ADDR, 2,
+				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1__CDR_CLK);
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
@@ -312,6 +310,15 @@ static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
 
 	switch (intf2) {
 	case PHY_INTERFACE_MODE_SGMII:
+		/* setup the mux clock divider for PFE_MAC_2_RX_CLK
+		 * ( SERDES_0_LANE_1_CDR_CLK)
+		 */
+		mux_source_clk_config(MC_CGM2_BASE_ADDR, 6,
+				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_TX_CLK);
+
+		mux_div_clk_config(MC_CGM2_BASE_ADDR, 3, 0, 0);
+		mux_source_clk_config(MC_CGM2_BASE_ADDR, 3,
+				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_CDR_CLK);
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
@@ -689,12 +696,6 @@ static int pfeng_cfg_mode_disable(void)
 
 static int pfeng_cfg_mode_enable(void)
 {
-	/* enable serdes_1 lanes */
-	if (!serdes_enabled && REQUIRE_SERDES(1)) {
-		s32_serdes_setup(1, SERDES_MODE_SGMII_SGMII);
-		serdes_enabled = 1;
-	}
-
 	/* enable partition 2 */
 	enable_partition_2();
 

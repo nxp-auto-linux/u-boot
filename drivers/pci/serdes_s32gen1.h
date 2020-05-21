@@ -46,11 +46,6 @@ enum serdes_link_width {
 	X2 = 0x2
 };
 
-enum serdes_clock {
-	CLK_EXT = 0,
-	CLK_INT
-};
-
 struct s32_serdes {
 	struct list_head list;
 	struct udevice *bus;
@@ -59,7 +54,9 @@ struct s32_serdes {
 
 	int id;
 	enum serdes_dev_type devtype;
+	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_clock clktype;
+	enum serdes_clock_fmhz fmhz;
 	enum serdes_link_width linkwidth;
 };
 

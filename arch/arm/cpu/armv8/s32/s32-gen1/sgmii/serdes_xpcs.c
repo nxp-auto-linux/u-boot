@@ -92,32 +92,48 @@ static void serdes_xpcs_reg_write(void *base, u32 xpcs, u32 reg, u16 val)
 }
 
 /**
- * @brief	Set SerDes functional mode
- * @param[in]	base SerDes base address
- * @param[in]	mode Mode
- * @return	0 if success, error code otherwise
- */
-int serdes_set_mode(void *base, int id, enum serdes_mode mode)
-{
-	return s32_serdes_set_mode(base, id, mode);
-}
-
-/**
- * @brief	Wait until XPCS power-up sequence state isn't "Power_Good"
+ * @brief	Wait until XPCS power-up sequence state "Power_Good"
  * @param[in]	base SerDes base address
  * @param[in]	xpcs XPCS offset within SerDes memory space
  * @return	0 Power-up sequence state is "Power_Good"
  */
 int serdes_xpcs_wait_for_power_good(void *base, u32 xpcs)
 {
+	u16 reg16;
+	u8 pseq;
+	int timeout = 1000U;
+
+	do {
+		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_STS, &reg16);
+		pseq = (reg16 >> 2) & 0x7U;
+		if (pseq == 0x4U)
+			break;
+		timeout--;
+		udelay(1000U);
+	} while (timeout > 0);
+
+	if (timeout > 0U)
+		return 0;
+
+	return -ETIMEDOUT;
+}
+
+/**
+ * @brief	Wait until XPCS reset is cleared
+ * @param[in]	base SerDes base address
+ * @param[in]	xpcs XPCS offset within SerDes memory space
+ * @return	0 Power-up sequence state is "Power_Good"
+ */
+static int serdes_xpcs_wait_for_reset(void *base, u32 xpcs)
+{
 	volatile u16 reg16;
 	u8 pseq;
 	u32 timeout = 1000U;
 
 	do {
-		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_STS, &reg16);
-		pseq = (reg16 >> 2) & 0x7U;
-		if (0x4U == pseq)
+		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
+		pseq = reg16 & VR_RST;
+		if (pseq == 0x0U)
 			break;
 		timeout--;
 		udelay(1000U);
@@ -134,11 +150,11 @@ int serdes_xpcs_wait_for_power_good(void *base, u32 xpcs)
  * @param[in]	base SerDes base address
  * @param[in]	xpcs XPCS offset within SerDes memory space
  * @param[in]	mbps Speed in [Mbps]
- * @param[in]	duplex Full duplex = TRUE, Half duplex = FALSE
+ * @param[in]	fduplex Full duplex = TRUE, Half duplex = FALSE
  * @return	0 if success, error code otherwise
  */
 int serdes_xpcs_set_sgmii_speed(void *base, u32 xpcs, u32 mbps,
-				    bool fduplex)
+				bool fduplex)
 {
 	u16 reg16;
 
@@ -234,8 +250,9 @@ int serdes_wait_for_link(void *base, u32 xpcs, u8 timeout)
  * @param[in]	ref_mhz Reference clock frequency in [MHz]. 100 or 125.
  * @return	0 if success, error code otherwise
  */
-int serdes_xpcs_set_1000_mode(void *base, u32 xpcs, bool ext_ref,
-				  u8 ref_mhz)
+int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
+			      enum serdes_clock clktype,
+			      enum serdes_clock_fmhz fmhz)
 {
 	int retval;
 	u16 reg16, use_pad = 0U;
@@ -243,12 +260,16 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs, bool ext_ref,
 	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
 		return -EINVAL;
 
-	if ((100U != ref_mhz) && (125U != ref_mhz))
-		return -EINVAL;
-
-	if (ext_ref)
+	if (clktype == CLK_EXT) {
 		/*	Using external clock reference */
 		use_pad = REF_CLK_CTRL_REF_USE_PAD;
+	}
+
+	/* Set bypass flag in case of internal clocks */
+	if (clktype == CLK_INT)
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
+				      EN_VSMMD1 | BYP_PWRUP);
+
 
 	/*	Wait for XPCS power up */
 	retval = serdes_xpcs_wait_for_power_good(base, xpcs);
@@ -268,14 +289,19 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs, bool ext_ref,
 		return -EINVAL;
 
 	/*	(Switch to 1G mode: #1) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, EN_VSMMD1);
+	if (clktype == CLK_INT)
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
+				      EN_VSMMD1 | BYP_PWRUP);
+	else
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
+				      EN_VSMMD1);
 	/*	(Switch to 1G mode: #2) */
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_DBG_CTRL, 0U);
 	/*	(Switch to 1G mode: #3) */
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL,
 			      MPLL_CMN_CTRL_MPLL_EN_0);
 
-	if (100U == ref_mhz) {
+	if (fmhz == CLK_100MHZ) {
 		/*	RefClk = 100MHz */
 		/*	(Switch to 1G mode: #4) */
 		serdes_xpcs_reg_write(base, xpcs,
@@ -310,7 +336,7 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs, bool ext_ref,
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL2,
 			      MPLLA_TX_CLK_DIV(1U) | MPLLA_DIV10_CLK_EN);
 
-	if (100U == ref_mhz) {
+	if (fmhz == CLK_100MHZ) {
 		/*	RefClk = 100MHz */
 		/*	(Switch to 1G mode: #8) */
 		serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3,
@@ -350,13 +376,18 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs, bool ext_ref,
 
 	/*	(Switch to 1G mode: #15) */
 	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16 | VR_RST);
-			      /* Issue reset */
 
+	/* Clear bypass flag in case of internal clocks */
+	if (clktype == CLK_INT) {
+		reg16 &= ~BYP_PWRUP;
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16);
+	}
+	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16 | VR_RST);
+
+	/* Issue reset */
 	/*	(Switch to 1G mode: #16) */
-	do
-		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-	while (0U != (reg16 & VR_RST));
+	if (serdes_xpcs_wait_for_reset(base, xpcs))
+		pr_err("XPCS pre power-up soft reset failed\n");
 
 	/*	Wait for XPCS power up */
 	pr_debug("Waiting for XPCS power-up\n");
@@ -398,13 +429,13 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs, bool ext_ref,
  * @brief	Configure XPCS to 2.5G mode with respect to reference clock
  * @param[in]	base SerDes base address
  * @param[in]	xpcs XPCS offset within SerDes memory space
- * @param[in]	ext_ref If reference clock is taken via pads then this
- *		shall be TRUE. If internal ref clock is used then use FALSE.
- * @param[in]	ref_mhz Reference clock frequency in [MHz]. Valid is only 125.
+ * @param[in]	clktype If reference clock external/internal
+ * @param[in]	fmhz Reference clock frequency
  * @return	0 if success, error code otherwise
  */
-int serdes_xpcs_set_2500_mode(void *base, u32 xpcs, bool ext_ref,
-				  u8 ref_mhz)
+int serdes_xpcs_set_2500_mode(void *base, u32 xpcs,
+			      enum serdes_clock clktype,
+			      enum serdes_clock_fmhz fmhz)
 {
 	int retval;
 	u16 reg16, use_pad = 0U;
@@ -412,12 +443,18 @@ int serdes_xpcs_set_2500_mode(void *base, u32 xpcs, bool ext_ref,
 	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
 		return -EINVAL;
 
-	if (125U != ref_mhz)
+	if (fmhz != CLK_125MHZ)
 		return -EINVAL;
 
-	if (ext_ref)
+	if (clktype == CLK_EXT) {
 		/*	Using external clock reference */
 		use_pad = REF_CLK_CTRL_REF_USE_PAD;
+	}
+
+	/* Set bypass flag in case of internal clocks */
+	if (clktype == CLK_INT)
+		serdes_xpcs_reg_write(base, xpcs,
+				      VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
 
 	/*	Wait for XPCS power up */
 	retval = serdes_xpcs_wait_for_power_good(base, xpcs);
@@ -437,8 +474,12 @@ int serdes_xpcs_set_2500_mode(void *base, u32 xpcs, bool ext_ref,
 		return -EINVAL;
 
 	/*	(Switch to 2.5G mode: #1) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-			      EN_VSMMD1 | EN_2_5G_MODE);
+	if (clktype == CLK_INT)
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
+				      EN_VSMMD1 | EN_2_5G_MODE | BYP_PWRUP);
+	else
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
+				      EN_VSMMD1 | EN_2_5G_MODE);
 	/*	(Switch to 2.5G mode: #2) */
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_DBG_CTRL, 0U);
 	/*	(Switch to 2.5G mode: #3) */
@@ -482,13 +523,18 @@ int serdes_xpcs_set_2500_mode(void *base, u32 xpcs, bool ext_ref,
 			      /* MPPLA_MULTIPLIER=default */
 	/*	(Switch to 2.5G mode: #15) */
 	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
+
+	/* Clear bypass flag in case of internal clocks */
+	if (clktype == CLK_INT) {
+		reg16 &= ~BYP_PWRUP;
+		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16);
+	}
 	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16 | VR_RST);
 		/* Issue reset */
 
 	/*	(Switch to 2.5G mode: #16) */
-	do
-		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-	while (0U != (reg16 & VR_RST));
+	if (serdes_xpcs_wait_for_reset(base, xpcs))
+		pr_err("XPCS pre power-up soft reset failed\n");
 
 	/*	Wait for XPCS power up */
 	pr_debug("Waiting for XPCS power-up\n");
