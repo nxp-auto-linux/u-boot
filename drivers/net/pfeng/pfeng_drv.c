@@ -767,9 +767,13 @@ pfeng_probe(struct udevice *dev)
 	if (env_mode && ((env_mode = strchr(env_mode, ','))) && *env_mode)
 		pfeng_set_emacs_from_env(++env_mode);
 
-	/* check if pcie is not using serdes_1 */
-	if (REQUIRE_SERDES(1) && !hwconfig_subarg_cmp("pcie1", "mode", "sgmii"))
+	/* TODO remove this */
+	if (REQUIRE_SERDES(1) &&
+	    !(hwconfig_subarg_cmp("pcie1", "mode", "sgmii") ||
+	    hwconfig_subarg_cmp("pcie1", "mode", "rc&sgmii") ||
+	    hwconfig_subarg_cmp("pcie1", "mode", "ep&sgmii"))) {
 		return -ENODEV;
+	}
 
 	/* enable PFE IP support */
 	pfeng_cfg_set_mode(PFENG_MODE_RUN);

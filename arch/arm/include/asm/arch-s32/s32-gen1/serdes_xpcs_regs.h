@@ -8,6 +8,7 @@
 #ifndef SERDES_XPCS_REGS_H
 #define SERDES_XPCS_REGS_H
 
+#include <common.h>
 #include "linux/types.h"
 #include "linux/errno.h"
 
@@ -17,13 +18,12 @@
  *		XPCS registers
  */
 #define SERDES_XPCS_0_BASE			0x82000U
-#define SERDES_XPCS_0_OFFSET			0x0U
 #define SERDES_XPCS_0_ADDR1			0x823fcU
 #define SERDES_XPCS_0_ADDR2			0x82000U
+
 #define SERDES_XPCS_1_BASE			0x82800U
-#define SERDES_XPCS_1_OFFSET			0x800U
-#define SERDES_XPCS_1_ADDR1			0x827fcU
-#define SERDES_XPCS_1_ADDR2			0x82400U
+#define SERDES_XPCS_1_ADDR1			0x82bfcU
+#define SERDES_XPCS_1_ADDR2			0x82800U
 
 #define VR_MII_DIG_CTRL1			0x1f8000U
 #define VR_MII_AN_CTRL				0x1f8001U
@@ -78,6 +78,7 @@
 
 /* Field definitions for VR MII MMD Digital Control1 Register */
 
+#define BYP_PWRUP				BIT(1)
 #define EN_2_5G_MODE				(1U << 2)
 #define MAC_AUTO_SW				(1U << 9)
 #define CS_EN					(1U << 10)
@@ -99,19 +100,18 @@
 #define CDR_CTRL_VCO_LOW_FREQ_0			(1U << 8)
 
 
-int serdes_set_mode(void *base, int id, enum serdes_mode mode);
 int serdes_xpcs_wait_for_power_good(void *base, uint32_t xpcs);
 int serdes_xpcs_set_sgmii_speed(void *base, uint32_t xpcs,
 				    uint32_t mbps, bool fduplex);
-int serdes_xpcs_set_1000_mode(void *base, uint32_t xpcs, bool ext_ref,
-				  uint8_t ref_mhz);
-int serdes_xpcs_set_2500_mode(void *base, uint32_t xpcs, bool ext_ref,
-				  uint8_t ref_mhz);
+int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
+			      enum serdes_clock clktype,
+			      enum serdes_clock_fmhz fmhz);
+int serdes_xpcs_set_2500_mode(void *base, u32 xpcs,
+			      enum serdes_clock clktype,
+			      enum serdes_clock_fmhz fmhz);
 int serdes_xpcs_set_loopback(void *base, uint32_t xpcs, bool enable);
 int serdes_wait_for_link(void *base, uint32_t xpcs, uint8_t timeout);
 
 int s32_serdes1_wait_link(int idx);
-int s32_serdes1_setup(int mode);
-
 #endif
 

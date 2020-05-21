@@ -13,53 +13,65 @@
 #include <linux/printk.h>
 #include <log.h>
 
+#include <asm/arch-s32/siul.h>
 #include <asm/arch-s32/mc_rgm_regs.h>
 
 #include <serdes_regs.h>
 #include <serdes_xpcs_regs.h>
-
-#define S32G_MAIN_GPR_BASE			0x4007ca00U
-#define S32G_MAIN_GPR_LEN			0x1000U
-#define S32G_MC_RGM_BASE			0x40078000U
-#define S32G_MC_RGM_LEN				0x200
-#define S32G_RDC_BASE				0x40080000U
-#define S32G_RDC_LEN				0x100U
-#define GENCTRL0				0xe0U
-#define GENCTRL1				0xe4U
-#define PFE_EMACX_INTF_SEL			0x04U
-#define PFE_PWR_CTRL				0x20U
-#define SGMII_CSEL				(1U << 0)
 
 #define S32G_SERDES_0_BASE			0x40400000U
 #define S32G_SERDES_1_BASE			0x44100000U
 #define S32G_SERDES_BASE_LEN			0x100000
 
 /*
- * When this is not defined, both SerDes1 lanes are configured in 1G mode
- * and PFE_MAC0 and PFE_MAC1 can be configured to use SGMII.
+ * Auto-negotiation is currently not supported.
  *
- * Define this if you want use PFE_EMAC0 in 2.5G mode. In that case the
- * SerDes Lane1 is unusable and PFE_EMAC1 must not use SGMII.
+ * Only limited number of configurations were tested (Only on SerDes1).
+ * You should take care and check, if everything works in your configuration.
+ *
+ * Tested configurations (of hwconfig):
+ * Board s32g274ardb:
+ *	-Default - MAC0 2.5G to sja1110 switch
+ *		pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5
+ *	-MAC0 1G to the sja1110 switch/PCIeX1 on lane 0
+ *		pcie1:mode=rc&sgmii,clock=int,fmhz=100,xpcs_mode=0
+ *	-MAC1 1G to the sja1110 switch/PCIeX1 on lane 0
+ *		pcie1:mode=rc&sgmii,clock=int,fmhz=100,xpcs_mode=1
+ *
+ * Board s32g274aevb:
+ *	-Default - MAC0 1G to Aqauntia (CPU board)
+ *		pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0 or
+ *		pcie1:mode=sgmii,clock=ext,fmhz=100,xpcs_mode=0 or
+ *		pcie1:mode=sgmii,clock=int,fmhz=100,xpcs_mode=0
+ *
+ * Warning: Currently only internal clocks are supported in rc&sgmii
+ * and ep&sgmii modes.
+ *
  */
-#if CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
-#define USE_2500_EMAC0_MODE
-#endif
 
-/*
- * Demo feature
- *
- * When defined, the Serdes1.Lane1 is uses internal PLL clocking.
- * Tested only on S32G-VNP-PROC EVB.
- *
- * WARNING: can be enabled only for SGMII 1.25G mode
- *
- */
-/* #define USE_INTERNAL_SERDES_CLOCK */
+#ifdef CONFIG_TARGET_S32G274AEVB
+/* rev. 1.0.1*/
+#define SGMII_MIN_SOC_REV_SUPPORTED 0x1
+#endif /* CONFIG_TARGET_S32G274AEVB */
+
+static inline void *s32_get_serdes_base(int id)
+{
+	if (id == 0)
+		return (void *)(phys_addr_t)S32G_SERDES_0_BASE;
+	else if (id == 1)
+		return (void *)(phys_addr_t)S32G_SERDES_1_BASE;
+	else
+		return NULL;
+}
 
 int s32_serdes1_wait_link(int id)
 {
-	void *serdes1_base = (void *)(phys_addr_t)S32G_SERDES_1_BASE;
+	void *serdes1_base;
 	int ret;
+
+	serdes1_base = s32_get_serdes_base(id);
+	if (!serdes1_base)
+		return -EINVAL;
 
 	debug("Waiting for link (XPCS%i)...\n", id);
 	ret = serdes_wait_for_link(serdes1_base,
@@ -68,129 +80,155 @@ int s32_serdes1_wait_link(int id)
 	if (ret)
 		printf("XPCS%i link timed-out\n", id);
 	else
-		debug("XPCS%i link is up\n", id);
+		printf("XPCS%i link is up\n", id);
 
 	return ret;
 }
 
-int s32_serdes1_setup(int mode)
+#ifdef SGMII_VERIFY_LINK_ON_STARTUP
+static int s32_serdes_verify_link(int serdes, int xpcs)
 {
-	int retval;
-	void *serdes1_base = (void *)(phys_addr_t)S32G_SERDES_1_BASE;
+	void *serdes_base;
+	int ret = 0;
+	u32 xpcs_base = xpcs ? SERDES_XPCS_1_BASE : SERDES_XPCS_0_BASE;
 
-	/* Configure SERDES
-	 * Is SERDES already configured?
-	 * TODO: Unify this with code in SerDes driver.
-	 */
-	if (!s32_get_serdes_mode_from_target(serdes1_base,
-			SERDES_MODE_SGMII_SGMII)) {
+	serdes_base = s32_get_serdes_base(serdes);
+	if (!serdes_base)
+		return -EINVAL;
 
-		/* Configure SERDES */
+	xpcs_base = s32_get_xpcs_base(xpcs);
+	if (!xpcs_base)
+		return -EINVAL;
 
-		/*	Issue SERDES_1 reset */
-		if (rgm_issue_reset(PRST_PCIE_1_SERDES)) {
-			printf("PCIE reset failed\n");
-			return -EXIT_FAILURE;
-		}
-
-		if (rgm_issue_reset(PRST_PCIE_1_FUNC)) {
-			printf("PCIE reset failed\n");
-			return -EXIT_FAILURE;
-		}
-
-		/*	Set pipeP_pclk */
-		writel(EXT_PCLK_REQ, serdes1_base + SS_PHY_GEN_CTRL);
-
-		/*	PFE_MAC0 = Lane0 = SGMII && PFE_MAC1 = Lane1 = SGMII */
-		if (serdes_set_mode(serdes1_base, 1, SERDES_MODE_SGMII_SGMII)) {
-			printf("SerDes1 PHY mode selection failed\n");
-			return -EXIT_FAILURE;
-		}
-
-		udelay(50); /* At least 10us */
-
-		/*	Release PCIE_1 reset */
-		if (rgm_release_reset(PRST_PCIE_1_SERDES)) {
-			printf("PCIE reset failed\n");
-			return -EXIT_FAILURE;
-		}
-
-		if (rgm_release_reset(PRST_PCIE_1_FUNC)) {
-			printf("PCIE reset failed\n");
-			return -EXIT_FAILURE;
-		}
+	if (serdes_xpcs_set_loopback(serdes_base, xpcs_base, true)) {
+		ret = -EINVAL;
+		goto link_error;
 	}
 
-	/*	Set SerDes reference clock from external pads.
-	 *	See HW connections for reference clock frequency.
-	 *	TODO: Use 'hwconfig' for setting the clock.
-	 */
-	writel(PHY_GEN_CTRL_REF_USE_PAD, serdes1_base + SS_PHY_GEN_CTRL);
+	if (s32_sgmii_wait_link(serdes, xpcs))
+		ret = -ETIMEDOUT;
 
-#ifdef USE_INTERNAL_SERDES_CLOCK
-	/*	1Gbps */
-	/*	Configure XPCS_0 (internal 100 MHz reference clock) */
-	retval = serdes_xpcs_set_1000_mode(serdes1_base, SERDES_XPCS_0_BASE,
-					   true, 100U);
-#else
-	/*	1Gbps */
-	/*	Configure XPCS_0 (external 125 MHz reference clock) */
-	retval = serdes_xpcs_set_1000_mode(serdes1_base, SERDES_XPCS_0_BASE,
-					   true, 125U);
+link_error:
+	serdes_xpcs_set_loopback(serdes_base, xpcs, false);
+	return ret;
+}
+#endif /* SGMII_VERIFY_LINK_ON_STARTUP */
+
+int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
+		      enum serdes_xpcs_mode xpcs_mode,
+		      enum serdes_clock clktype,
+		      enum serdes_clock_fmhz fmhz)
+{
+#ifdef SGMII_MIN_SOC_REV_SUPPORTED
+	u32 raw_rev = 0;
+
+	/* construct a revision number based on major, minor and subminor,
+	 * each part using one hex digit
+	 */
+	raw_rev = (get_siul2_midr1_major() << 8) |
+		  (get_siul2_midr1_minor() << 4) |
+		  (get_siul2_midr2_subminor());
+
+	if (raw_rev < SGMII_MIN_SOC_REV_SUPPORTED) {
+		printf("SGMII not supported on rev.");
+		printf("%d.%d.%d\n", get_siul2_midr1_major() + 1,
+		       get_siul2_midr1_minor(),
+		       get_siul2_midr2_subminor());
+		return -ENXIO;
+	}
+#endif /* SGMII_MIN_SOC_REV_SUPPORTED */
+	int retval = 0;
+	bool xpcs0 = false;
+	bool xpcs1 = false;
+
+	/* Decode XPCS */
+	if (xpcs_mode == SGMII_XPCS0 || xpcs_mode == SGMII_XPCS0_2G5) {
+		xpcs0 = true;
+		xpcs1 = false;
+	} else if (xpcs_mode == SGMII_XPCS1) {
+#if CONFIG_TARGET_S32R45XEVB
+		printf("Configuration not supported");
+		printf(" on this platform for SerDes %d\n", id);
+		return -EINVAL;
 #endif
-	if (retval) {
-		printf("XPCS_0 init failed\n");
-		return -EXIT_FAILURE;
+		xpcs0 = false;
+		xpcs1 = true;
+	} else if (xpcs_mode == SGMII_XPCS0_XPCS1) {
+#if CONFIG_TARGET_S32R45XEVB
+		printf("Configuration not supported");
+		printf(" on this platform for SerDes %d\n", id);
+		return -EINVAL;
+#endif
+		xpcs0 = true;
+		xpcs1 = true;
+	} else {
+		printf("Invalid XPCS mode on SerDes %d\n", id);
+		return -EINVAL;
 	}
-	debug("XPCS_0 in 1G mode\n");
 
-	/*	Configure XPCS_1 (external reference clock) */
-	retval = serdes_xpcs_set_1000_mode(serdes1_base, SERDES_XPCS_1_BASE,
-					   true, 125U);
-	if (retval) {
-		printf("XPCS_1 init failed\n");
-		return -EXIT_FAILURE;
+	if (xpcs0) {
+		debug("SerDes %d XPCS_0 init to 1G mode started\n", id);
+		retval = serdes_xpcs_set_1000_mode(serdes_base,
+						   SERDES_XPCS_0_BASE,
+						   clktype, fmhz);
+		if (retval) {
+			printf("SerDes %d XPCS_0 init failed\n", id);
+			return retval;
+		}
+		debug("SerDes %d XPCS_0 init to 1G mode successful\n", id);
 	}
-	debug("XPCS_1 in 1G mode\n");
 
-	/*	Configure XPCS_0 speed (1000Mpbs, Full duplex) */
-	retval = serdes_xpcs_set_sgmii_speed(serdes1_base, SERDES_XPCS_0_BASE,
-					     1000U, true);
-	if (retval)
-		/*	Unable to set speed */
-		return -EXIT_FAILURE;
-
-	/*	Configure XPCS_1 speed (1000Mpbs, Full duplex) */
-	retval = serdes_xpcs_set_sgmii_speed(serdes1_base, SERDES_XPCS_1_BASE,
-					     1000U, true);
-	if (retval)
-		/*	Unable to set speed */
-		return -EXIT_FAILURE;
-
-#ifdef USE_2500_EMAC0_MODE
-	/*	2.5Gbps */
-	/*	Configure XPCS_0 (external reference clock) */
-	retval = serdes_xpcs_set_2500_mode(serdes1_base, SERDES_XPCS_0_BASE,
-					   true, 125U);
-	if (retval) {
-		printf("XPCS_0 init failed\n");
-		return -EXIT_FAILURE;
+	if (xpcs1) {
+		debug("SerDes %d XPCS_1 init to 1G mode started\n", id);
+		retval = serdes_xpcs_set_1000_mode(serdes_base,
+						   SERDES_XPCS_1_BASE,
+						   clktype, fmhz);
+		if (retval) {
+			printf("SerDes %d XPCS_1 init failed\n", id);
+			return retval;
+		}
+		debug("SerDes %d XPCS_1 init to 1G mode successful\n", id);
 	}
-	debug("XPCS_0 in 2.5G mode\n");
-#endif /* 0 */
+
+	if (xpcs0) {
+		/*	Configure XPCS_0 speed (1000Mpbs, Full duplex) */
+		retval = serdes_xpcs_set_sgmii_speed(serdes_base,
+						     SERDES_XPCS_0_BASE,
+						     1000U, true);
+		if (retval)
+			return retval;
+	}
+
+	if (xpcs1) {
+		/*	Configure XPCS_1 speed (1000Mpbs, Full duplex) */
+		retval = serdes_xpcs_set_sgmii_speed(serdes_base,
+						     SERDES_XPCS_1_BASE,
+						     1000U, true);
+		if (retval)
+			return retval;
+	}
+
+	if (xpcs_mode == SGMII_XPCS0_2G5) {
+		retval = serdes_xpcs_set_2500_mode(serdes_base,
+						   SERDES_XPCS_0_BASE,
+						   clktype, fmhz);
+		if (retval) {
+			printf("XPCS_0 init failed\n");
+			return retval;
+		}
+		debug("XPCS_0 in 2.5G mode\n");
+	}
 
 	debug("SerDes Init Done.\n");
 
 #ifdef SGMII_VERIFY_LINK_ON_STARTUP
 	/* disabled by default */
-	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_0_BASE, true);
-	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_1_BASE, true);
-
-	s32_serdes1_wait_link(0);
-	s32_serdes1_wait_link(1);
-
-	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_0_BASE, false);
-	serdes_xpcs_set_loopback(serdes1_base, SERDES_XPCS_1_BASE, false);
+	if (xpcs0)
+		if (s32_serdes_verify_link(id, 0))
+			printf("SerDes%d XPCS_%d link up failed\n", id, 0);
+	if (xpcs1)
+		if (s32_serdes_verify_link(id, 1))
+			printf("SerDes%d XPCS_%d link up failed\n", id, 1);
 #endif
 
 	return 0;
