@@ -76,6 +76,26 @@ enum serdes_dev_type {
 	PCIE_EP_SGMII = PCIE_EP | SGMII,
 	PCIE_RC_SGMII = PCIE_RC | SGMII
 };
+
+enum serdes_clock {
+	CLK_EXT = 0,
+	CLK_INT
+};
+
+enum serdes_clock_fmhz {
+	CLK_100MHZ = 0,		/* Default */
+	CLK_125MHZ		/* For 2.5G mode */
+};
+
+enum serdes_xpcs_mode {
+	SGMII_INAVALID = 0,
+	SGMII_XPCS0,		/* Combo mode PCIex1/SGMII(XPCS0) */
+	SGMII_XPCS1,		/* Combo mode PCIex1/SGMII(XPCS1) */
+	SGMII_XPCS0_XPCS1,	/* SGMII 2 x 1G mode */
+	SGMII_XPCS0_2G5,	/* SGMII 2.5G mode */
+	SGMII_XPCS_LAST = SGMII_XPCS0_2G5,
+};
+
 /* use a mask to fix DEVICE_TYPE for EP */
 #define SERDES_MODE(mode) (mode & 0xe)
 #define IS_SERDES_PCIE(mode) (mode & (PCIE_EP | PCIE_RC))
