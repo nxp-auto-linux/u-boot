@@ -24,7 +24,11 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static void setup_iomux_gpio(void)
 {
-	/* Only Device ID pin configuration. */
+	/* Only Device ID pin configuration.
+	 * To release the slave V2s out of reset, the output buffers will not be
+	 * configured now, but in release_slaves(), after setting the data
+	 * registers.
+	 */
 	static const u8 id_pins[] = {
 		SIUL2_MSCR_PF11,
 		SIUL2_MSCR_PF12,
@@ -44,6 +48,33 @@ static int get_device_id(void)
 	return (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF11)) >> 4 |
 	       (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF12)) >> 2 |
 	       (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF13));
+}
+
+static void release_slaves(void)
+{
+	static const u8 reset_pins[] = {
+		SIUL2_PK12_MSCR,
+		SIUL2_PK15_MSCR,
+		SIUL2_PL0_MSCR,
+		SIUL2_PL1_MSCR,
+		SIUL2_PL2_MSCR
+	};
+	u8 i, data = 0, size = ARRAY_SIZE(reset_pins);
+	unsigned long reg, old_reg = 0;
+
+	for (i = 0; i < size; i++, old_reg = reg) {
+		reg = SIUL2_PPDO_BYTE(reset_pins[i]);
+		if (i && reg != old_reg) {
+			writeb(data | readb(old_reg), old_reg);
+			data = 0;
+		}
+		data |= SIUL2_PPDIO_BIT(reset_pins[i]);
+	}
+
+	writeb(data | readb(old_reg), old_reg);
+
+	for (i = 0; i < size; i++)
+		writel(SIUL2_MSCR_GPO, SIUL2_MSCRn(reset_pins[i]));
 }
 
 #ifdef CONFIG_FSL_DSPI
@@ -151,6 +182,9 @@ int board_early_init_f(void)
 	mscm_init();
 
 	setup_iomux_gpio();
+	if (get_device_id() == 1)
+		release_slaves();
+
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
