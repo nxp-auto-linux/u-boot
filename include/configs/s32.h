@@ -193,8 +193,8 @@
 #endif
 
 /* Size of malloc() pool */
-#ifdef CONFIG_RUN_FROM_IRAM_ONLY
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 1 * 1024 * 1024)
+#if defined(CONFIG_RUN_FROM_IRAM_ONLY) || defined(CONFIG_S32_SKIP_RELOC)
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 512 * 1024)
 #else
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 #endif
@@ -545,8 +545,14 @@
 #endif
 
 /* Physical memory map */
+#ifdef CONFIG_S32_SKIP_RELOC
+#define PHYS_SDRAM			(IRAM_BASE_ADDR)
+#define PHYS_SDRAM_SIZE			(IRAM_SIZE)
+#else
 #define PHYS_SDRAM			(DDR_BASE_ADDR)
 #define PHYS_SDRAM_SIZE			(CONFIG_SYS_DDR_SIZE)
+#endif
+
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
 #define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR

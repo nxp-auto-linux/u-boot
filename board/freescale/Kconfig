@@ -53,4 +53,11 @@ config EXTRA_KERNEL_BOOT_ARGS
 	string "Additional boot arguments for Linux kernel"
 	default ""
 
+config S32_SKIP_RELOC
+	bool "Skip code relocation on NXP S32 platforms"
+	help
+		This allows to run U-Boot in SRAM, without touching the DDR
+		memory. It's very useful for bring-up activities or when the DDR
+		memory is not stable.
+
 endif

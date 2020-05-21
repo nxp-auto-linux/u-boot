@@ -984,6 +984,7 @@ void ddr_check_post_func_reset(uint8_t module)
 
 __weak int dram_init(void)
 {
+#ifndef CONFIG_S32_SKIP_RELOC
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
 	uint32_t enabled_hs_events, func_event;
 
@@ -1022,6 +1023,9 @@ __weak int dram_init(void)
 	ddr_ctrl_init();
 
 	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
+#else
+	gd->ram_size = PHYS_SDRAM_SIZE;
+#endif
 
 	return 0;
 }

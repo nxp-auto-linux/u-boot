@@ -17,6 +17,9 @@
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
+#ifdef CONFIG_S32_SKIP_RELOC
+#include <asm-generic/sections.h>
+#endif
 
 #define S32_MMU_TABLE(BASE, IDX) ((BASE) + (IDX) * PGTABLE_SIZE)
 
@@ -241,12 +244,19 @@ static inline void final_mmu_setup(void)
 	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
 	/* Invalidate all table entries */
+
+#ifdef CONFIG_S32_SKIP_RELOC
+	dma_mem_clr((uintptr_t)level0_table,
+		    ((uintptr_t)level2_table2) + PGTABLE_SIZE -
+			((uintptr_t)level0_table));
+#else
 	memset(level0_table, 0, PGTABLE_SIZE);
 	memset(level1_table0, 0, PGTABLE_SIZE);
 	memset(level1_table1, 0, PGTABLE_SIZE);
 	memset(level2_table0, 0, PGTABLE_SIZE);
 	memset(level2_table1, 0, PGTABLE_SIZE);
 	memset(level2_table2, 0, PGTABLE_SIZE);
+#endif
 
 	/* Fill in the table entries */
 	set_pgtable_table(level0_table, 0, level1_table0);
@@ -297,6 +307,22 @@ static inline void final_mmu_setup(void)
 
 int arch_cpu_init(void)
 {
+#ifdef CONFIG_S32_SKIP_RELOC
+	int ret;
+	int base, size;
+
+	gd->flags |= GD_FLG_SKIP_RELOC;
+
+	/*
+	 * Assumption: lowlevel.S will clear at least [__bss_start - __bss_end]
+	 */
+	base = (uintptr_t)&__bss_end;
+	size = IRAM_SIZE + IRAM_BASE_ADDR - base;
+	ret = dma_mem_clr(base, size);
+	if (!ret)
+		return ret;
+#endif
+
 #if defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	/* Platforms with Concerto/Ncore have to explicitly initialize
 	 * the interconnect before any cache operations are performed.

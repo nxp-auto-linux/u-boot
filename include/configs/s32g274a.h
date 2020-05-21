@@ -14,7 +14,7 @@
 
 #include <configs/s32-gen1.h>
 
-#ifndef CONFIG_PRAM
+#if !defined(CONFIG_PRAM) && !defined(CONFIG_S32_SKIP_RELOC)
 #define CONFIG_PRAM	2048	/* 2MB */
 #endif
 

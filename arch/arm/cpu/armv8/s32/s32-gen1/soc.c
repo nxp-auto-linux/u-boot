@@ -471,6 +471,13 @@ extern struct ddrss_conf ddrss_conf;
 extern struct ddrss_firmware ddrss_firmware;
 #endif
 
+#ifdef CONFIG_S32_SKIP_RELOC
+__weak int dram_init(void)
+{
+	gd->ram_size = PHYS_SDRAM_SIZE;
+	return 0;
+}
+#else
 __weak int dram_init(void)
 {
 #if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
@@ -487,6 +494,7 @@ __weak int dram_init(void)
 
 	return 0;
 }
+#endif
 
 static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
