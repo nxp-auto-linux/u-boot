@@ -326,11 +326,11 @@ static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
 		 * ( SERDES_1_LANE_1_CDR_CLK)
 		 */
 		mux_source_clk_config(MC_CGM2_BASE_ADDR, 5,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_TX_CLK);
+				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_CDR_CLK);
 
 		mux_div_clk_config(MC_CGM2_BASE_ADDR, 2, 0, 0);
 		mux_source_clk_config(MC_CGM2_BASE_ADDR, 2,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1__CDR_CLK);
+				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_TX_CLK);
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
@@ -378,11 +378,11 @@ static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
 		 * ( SERDES_0_LANE_1_CDR_CLK)
 		 */
 		mux_source_clk_config(MC_CGM2_BASE_ADDR, 6,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_TX_CLK);
+				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_CDR_CLK);
 
 		mux_div_clk_config(MC_CGM2_BASE_ADDR, 3, 0, 0);
 		mux_source_clk_config(MC_CGM2_BASE_ADDR, 3,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_CDR_CLK);
+				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_TX_CLK);
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
