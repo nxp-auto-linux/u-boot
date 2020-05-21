@@ -43,7 +43,7 @@ static struct program_image image_layout = {
 	.dcd = {
 		.offset = S32GEN1_AUTO_OFFSET,
 		.alignment = 0x200U,
-		.size = sizeof(struct dcd),
+		.size = DCD_MAXIMUM_SIZE,
 	},
 	.app_code = {
 		.offset = S32GEN1_AUTO_OFFSET,
@@ -52,18 +52,12 @@ static struct program_image image_layout = {
 	},
 };
 
-static struct dcd_command *last_command;
-
-static table_entry_t dcd_commands[] = {
-	{WRITE_DATA,			"WRITE_DATA",			"",},
-	{WRITE_SET_BITMASK,		"WRITE_SET_BITMASK",		"",},
-	{WRITE_CLEAR_BITMASK,		"WRITE_CLEAR_BITMASK",		"",},
-	{CHECK_BITS_ARE_SET,		"CHECK_BITS_ARE_SET",		"",},
-	{CHECK_BITS_ARE_CLEAR,		"CHECK_BITS_ARE_CLEAR",		"",},
-	{CHECK_ANY_BIT_IS_SET,		"CHECK_ANY_BIT_IS_SET",		"",},
-	{CHECK_ANY_BIT_IS_CLEAR,	"CHECK_ANY_BIT_IS_CLEAR",	"",},
-	{NOP,				"NOP",				"",},
-	{INVALID,			"",				"",},
+static uint32_t dcd_data[] = {
+	DCD_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
 };
 
 static struct ivt *get_ivt(struct program_image *image)
@@ -71,189 +65,14 @@ static struct ivt *get_ivt(struct program_image *image)
 	return (struct ivt *)image->ivt.data;
 }
 
-static struct dcd *get_dcd(struct program_image *image)
+static uint8_t *get_dcd(struct program_image *image)
 {
-	return (struct dcd *)image->dcd.data;
+	return image->dcd.data;
 }
 
 static struct application_boot_code *get_app_code(struct program_image *image)
 {
 	return (struct application_boot_code *)image->app_code.data;
-}
-
-static void s32gen1_add_dcd_command_header(__u8 tag, __u8 params)
-{
-	size_t length = be16_to_cpu(last_command->length);
-
-	if (tag == DCD_WRITE_COMMAND_TAG &&
-	    last_command->tag == tag &&
-	    last_command->params == params)
-		return;
-
-	last_command = (struct dcd_command *)((__u8 *)last_command + length);
-
-	last_command->tag = tag;
-	last_command->length = cpu_to_be16(4);
-	last_command->params = params;
-}
-
-static void s32gen1_add_dcd_command(int command_type, int access_width,
-				    int register_address, int register_data,
-				    int count,
-				    struct program_image *program_image)
-{
-	size_t length = 0;
-	unsigned int offset;
-	struct dcd *dcd;
-	__u8 tag = 0;
-	__u8 params = 0;
-	size_t dcd_length;
-
-	switch (command_type) {
-	case WRITE_DATA:
-		tag = DCD_WRITE_COMMAND_TAG;
-		params = access_width;
-		break;
-	case WRITE_SET_BITMASK:
-		tag = DCD_WRITE_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 DCD_COMMAND_PARAMS_DATA_SET	|
-			 access_width;
-		break;
-	case WRITE_CLEAR_BITMASK:
-		tag = DCD_WRITE_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 access_width;
-		break;
-	case CHECK_BITS_ARE_SET:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_SET	|
-			 access_width;
-		break;
-	case CHECK_BITS_ARE_CLEAR:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = access_width;
-		break;
-	case CHECK_ANY_BIT_IS_SET:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 DCD_COMMAND_PARAMS_DATA_SET	|
-			 access_width;
-		break;
-	case CHECK_ANY_BIT_IS_CLEAR:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 access_width;
-		break;
-	case NOP:
-		tag = DCD_NOP_COMMAND_TAG;
-		break;
-	}
-
-	s32gen1_add_dcd_command_header(tag, params);
-
-	switch (tag) {
-	case DCD_WRITE_COMMAND_TAG:
-		offset = (be16_to_cpu(last_command->length) - 4) / 8;
-		last_command->s.write[offset].addr =
-						cpu_to_le32(register_address);
-		last_command->s.write[offset].data =
-						cpu_to_le32(register_data);
-		length = be16_to_cpu(last_command->length) + 8;
-		last_command->length = cpu_to_be16(length);
-		break;
-
-	case DCD_CHECK_COMMAND_TAG:
-		last_command->s.check.address = cpu_to_le32(register_address);
-		last_command->s.check.mask = cpu_to_le32(register_data);
-		length = be16_to_cpu(last_command->length) + 8;
-
-		if (count != UNSPECIFIED) {
-			last_command->s.check.count = count;
-			length = length + 4;
-		}
-
-		last_command->length = cpu_to_be16(length);
-		break;
-
-	case DCD_NOP_COMMAND_TAG:
-		break;
-	}
-
-	dcd = get_dcd(program_image);
-	dcd_length = (__u8 *)last_command +
-		     be16_to_cpu(last_command->length) -
-		     (__u8 *)dcd;
-
-	if (dcd_length > DCD_MAXIMUM_SIZE) {
-		fprintf(stderr, "DCD length of %zu exceeds the maximum of %d\n",
-			dcd_length, DCD_MAXIMUM_SIZE);
-		exit(EXIT_FAILURE);
-	}
-
-	dcd->length = cpu_to_be16(dcd_length);
-}
-
-static void s32gen1_parse_configuration_file(const char *filename,
-					     struct program_image *program_image)
-{
-	FILE *f = NULL;
-	char *line = NULL;
-	char *token = NULL;
-	size_t line_length;
-
-	int command_type;
-	int access_width;
-	int register_address;
-	int register_data;
-	int count;
-
-	f = fopen(filename, "r");
-	if (f == NULL) {
-		fprintf(stderr, "Can't open file %s: %s\n", filename,
-			strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-
-	while ((getline(&line, &line_length, f)) > 0) {
-
-		command_type = INVALID;
-		access_width = 0;
-		register_address = 0;
-		register_data = 0;
-		count = UNSPECIFIED;
-
-		token = strtok(line, " \r\n");
-		if (token != NULL)
-			command_type = get_table_entry_id(dcd_commands, "",
-							  token);
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			access_width = strtoul(token, NULL, 0);
-
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			register_address = strtoul(token, NULL, 16);
-
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			register_data = strtoul(token, NULL, 16);
-
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			count = strtoul(token, NULL, 0);
-
-
-		if (command_type != INVALID)
-			s32gen1_add_dcd_command(command_type,
-						access_width,
-						register_address,
-						register_data,
-						count,
-						program_image);
-	}
-
-	fclose(f);
 }
 
 static void s32gen1_print_header(const void *header)
@@ -363,19 +182,23 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
 	size_t code_length;
-	struct dcd *dcd;
+	uint8_t *dcd;
 	struct ivt *ivt;
 	struct application_boot_code *app_code;
 
 	set_data_pointers(&image_layout, header);
 
 	dcd = get_dcd(&image_layout);
+	if (sizeof(dcd_data) > DCD_MAXIMUM_SIZE) {
+		fprintf(stderr, "DCD exceeds the maximum size\n");
+		exit(EXIT_FAILURE);
+	}
+	memcpy(dcd, &dcd_data[0], sizeof(dcd_data));
+	*(uint16_t *)(dcd + DCD_HEADER_LENGTH_OFFSET) =
+						cpu_to_be16(sizeof(dcd_data));
+
 	ivt = get_ivt(&image_layout);
 	app_code = get_app_code(&image_layout);
-
-	last_command = (struct dcd_command *)&dcd->commands[0];
-	s32gen1_parse_configuration_file(tool_params->imagename,
-					 &image_layout);
 
 	ivt->tag = IVT_TAG;
 	ivt->length = cpu_to_be16(sizeof(struct ivt));
@@ -384,9 +207,6 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->dcd_pointer = image_layout.dcd.offset;
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
-
-	dcd->tag = DCD_TAG;
-	dcd->version = DCD_VERSION;
 
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
