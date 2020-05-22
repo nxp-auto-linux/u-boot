@@ -226,15 +226,19 @@ int checkboard(void)
 void board_net_init(void)
 {
 #ifdef CONFIG_SJA1105
-	/* Only probe the switch if we are going to use networking.
-	 * The probe has a self check so it will quietly exit if we call it
-	 * twice.
-	 */
-	sja1105_probe(SJA_1_CS, SJA_1_BUS);
-	/* The SJA switch can have its ports RX lines go out of sync. They need
-	 * to be reseted in order to allow network traffic.
-	 */
-	sja1105_reset_ports(SJA_1_CS, SJA_1_BUS);
+	if (get_device_id() == 1) {
+		/* Only probe the switches if we are going to use networking.
+		 * The probe has a self check so it will quietly exit if we call
+		 * it twice.
+		 */
+		sja1105_probe(SJA_1_CS, SJA_1_BUS);
+		sja1105_probe(SJA_2_CS, SJA_2_BUS);
+		/* SJA switches can have their ports' RX lines go out of sync.
+		 * They need to be reset in order to allow network traffic.
+		 */
+		sja1105_reset_ports(SJA_1_CS, SJA_1_BUS);
+		sja1105_reset_ports(SJA_2_CS, SJA_2_BUS);
+	}
 #endif
 }
 

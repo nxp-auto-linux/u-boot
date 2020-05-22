@@ -48,6 +48,8 @@
 #ifdef CONFIG_SJA1105
 #define SJA_1_BUS	0
 #define SJA_1_CS	0
+#define SJA_2_BUS	0
+#define SJA_2_CS	1
 #endif /* CONFIG_SJA1105 */
 
 /* we include this file here because it depends on the above definitions */
