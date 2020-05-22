@@ -1,7 +1,5 @@
 if TARGET_S32V234EVB ||		\
-   TARGET_S32V234FVB ||		\
    TARGET_S32V234PCIE ||	\
-   TARGET_S32V234TMDP ||	\
    TARGET_S32V234CCPB ||	\
    TARGET_S32V344EVB ||		\
    TARGET_S32V344SIM ||		\
@@ -15,11 +13,7 @@ if TARGET_S32V234EVB ||		\
 
 source "board/freescale/s32v234evb/Kconfig"
 
-source "board/freescale/s32v234fvb/Kconfig"
-
 source "board/freescale/s32v234pcie/Kconfig"
-
-source "board/freescale/s32v234tmdp/Kconfig"
 
 source "board/freescale/s32v234ccpb/Kconfig"
 
@@ -31,20 +25,22 @@ config SYS_VENDOR
 
 config SYS_DATA_BASE
 	hex "Data Base"
-	default 0x3E800000 if TARGET_S32V234EVB || TARGET_S32V234FVB ||	TARGET_S32V234PCIE || \
-	                      TARGET_S32V234TMDP ||	TARGET_S32V234CCPB
-	default 0x34000000 if TARGET_S32V344EVB ||	TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
-	                      TARGET_S32R45XEVB || TARGET_TYPE_S32GEN1_EMULATOR || \
+	default 0x3E800000 if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
+	                      TARGET_S32V234CCPB
+	default 0x34000000 if TARGET_S32V344EVB || TARGET_S32G274AEVB || \
+			      TARGET_S32G274ARDB || TARGET_S32R45XEVB || \
+			      TARGET_TYPE_S32GEN1_EMULATOR || \
 	                      TARGET_TYPE_S32GEN1_SIMULATOR
 	help
 	  U-boot data base address (normally SRAM base address)
 
 config SYS_MEM_SIZE
 	hex "RAM Memory Size"
-	default 0x00400000 if TARGET_S32V234EVB || TARGET_S32V234FVB ||	TARGET_S32V234PCIE || \
-	                      TARGET_S32V234TMDP ||	TARGET_S32V234CCPB
-	default 0x00800000 if TARGET_S32V344EVB ||	TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
-	                      TARGET_S32R45XEVB || TARGET_TYPE_S32GEN1_EMULATOR || \
+	default 0x00400000 if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
+	                      TARGET_S32V234CCPB
+	default 0x00800000 if TARGET_S32V344EVB || TARGET_S32G274AEVB || \
+			      TARGET_S32G274ARDB || TARGET_S32R45XEVB || \
+			      TARGET_TYPE_S32GEN1_EMULATOR || \
 	                      TARGET_TYPE_S32GEN1_SIMULATOR
 	help
 	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)

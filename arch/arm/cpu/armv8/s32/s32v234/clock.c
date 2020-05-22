@@ -233,15 +233,6 @@ static void setup_aux_clocks( void )
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 3, MC_CGM_ACn_SEL_PERPLLDIVX );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 3, 0, 1 );
 
-#if defined(CONFIG_TARGET_S32V234FVB)
-	/* setup the aux clock divider for ENET_TIME_CLK (50MHz) */
-	aux_source_clk_config( MC_CGM0_BASE_ADDR, 7, MC_CGM_ACn_SEL_ENETPLL );
-	aux_div_clk_config( MC_CGM0_BASE_ADDR, 7, 1, 9 );
-
-	/* setup the aux clock divider for ENET_CLK (50MHz) */
-	aux_source_clk_config( MC_CGM2_BASE_ADDR, 2, MC_CGM_ACn_SEL_ENETPLL );
-	aux_div_clk_config( MC_CGM2_BASE_ADDR, 2, 0, 9 );
-#else
 	/* setup the aux clock divider for ENET_TIME_CLK (125MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 7, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM0_BASE_ADDR, 7, 1, 3 );
@@ -249,7 +240,6 @@ static void setup_aux_clocks( void )
 	/* setup the aux clock divider for ENET_CLK (125MHz) */
 	aux_source_clk_config( MC_CGM2_BASE_ADDR, 2, MC_CGM_ACn_SEL_ENETPLL );
 	aux_div_clk_config( MC_CGM2_BASE_ADDR, 2, 0, 3 );
-#endif
 
 	/* setup the aux clock divider for H264_DEC_CLK  (350MHz) */
 	aux_source_clk_config( MC_CGM0_BASE_ADDR, 12, MC_CGM_ACn_SEL_ENETPLL );

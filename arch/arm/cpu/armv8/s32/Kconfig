@@ -22,14 +22,8 @@ config TARGET_S32V234EVB
 	bool "Support s32v234evb"
 	select SYS_FSL_ERRATUM_ESDHC111
 
-config TARGET_S32V234FVB
-	bool "Support s32v234fvb"
-
 config TARGET_S32V234PCIE
 	bool "Support s32v234pcie"
-
-config TARGET_S32V234TMDP
-	bool "Support s32v234tmdp"
 
 config TARGET_MPXS32V234
 	bool "Support s32v234sbc"
