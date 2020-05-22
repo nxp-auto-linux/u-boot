@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * Copyright 2014, Freescale Semiconductor
- * (C) Copyright 2017-2018 NXP
+ * Copyright 2017-2018, 2020 NXP
  */
 
 #ifndef _S32_MP_H
@@ -30,7 +30,9 @@
 #define S32_A53_GP06_OFF	0x18
 #endif
 
-#ifndef __ASSEMBLY__
+#ifdef __ASSEMBLY__
+#define PGTABLE_SIZE		(4096 * 4)
+#else
 extern u64 __spin_table[];
 extern u64 __real_cntfrq;
 extern u64 *secondary_boot_page;

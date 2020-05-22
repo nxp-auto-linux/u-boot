@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2014 Freescale Semiconductor
- * (C) Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * Extracted from armv8/start.S
  */
@@ -193,7 +193,7 @@ start_slave_cores:
 	isb
 
 	ldr	x0, =CPU_RELEASE_ADDR
-	ldr	x1, =0x1000
+	ldr	x1, =PGTABLE_SIZE
 	add	x0, x0, x1
 	msr	ttbr0_el3, x0
 	msr	ttbr0_el2, x0

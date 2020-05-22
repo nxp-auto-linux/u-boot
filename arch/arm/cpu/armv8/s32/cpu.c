@@ -18,6 +18,8 @@
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
 
+#define S32_MMU_TABLE(BASE, IDX) ((BASE) + (IDX) * PGTABLE_SIZE)
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
@@ -154,9 +156,6 @@ static int find_table(const struct sys_mmu_table *list,
  * The base address of SRAM is IRAM_BASE_ADDR. We use three
  * levels of translation tables here to cover 40-bit address space.
  * We use 4KB granule size, with 40 bits physical address, T0SZ=24
- * Level 0 IA[39], table address @0x6000
- * Level 1 IA[38:30], table address @0x7000, 0x8000
- * Level 2 IA[29:21], table address @0x9000, 0xA000, 0xB000
  */
 static inline void early_mmu_setup(void)
 {
@@ -164,12 +163,12 @@ static inline void early_mmu_setup(void)
 #ifdef CONFIG_S32V234
 	volatile struct ccsr_cci400 *cci = (struct ccsr_cci400 *)CCI400_BASE_ADDR;
 #endif
-	u64 *level0_table = (u64 *) (IRAM_BASE_ADDR + 0x6000);
-	u64 *level1_table0 = (u64 *)(IRAM_BASE_ADDR + 0x7000);
-	u64 *level1_table1 = (u64 *)(IRAM_BASE_ADDR + 0x8000);
-	u64 *level2_table0 = (u64 *)(IRAM_BASE_ADDR + 0x9000);
-	u64 *level2_table1 = (u64 *)(IRAM_BASE_ADDR + 0xA000);
-	u64 *level2_table2 = (u64 *)(IRAM_BASE_ADDR + 0xB000);
+	u64 *level0_table =  (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 0);
+	u64 *level1_table0 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 1);
+	u64 *level1_table1 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 2);
+	u64 *level2_table0 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 3);
+	u64 *level2_table1 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 4);
+	u64 *level2_table2 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 5);
 	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
 	dma_mem_clr((uintptr_t)level0_table,
@@ -233,12 +232,12 @@ static inline void early_mmu_setup(void)
 static inline void final_mmu_setup(void)
 {
 	unsigned int el, i;
-	u64 *level0_table = (u64 *) (CPU_RELEASE_ADDR + 0x1000);
-	u64 *level1_table0 = (u64 *)(CPU_RELEASE_ADDR + 0x2000);
-	u64 *level1_table1 = (u64 *)(CPU_RELEASE_ADDR + 0x3000);
-	u64 *level2_table0 = (u64 *)(CPU_RELEASE_ADDR + 0x4000);
-	u64 *level2_table1 = (u64 *)(CPU_RELEASE_ADDR + 0x5000);
-	u64 *level2_table2 = (u64 *)(CPU_RELEASE_ADDR + 0x6000);
+	u64 *level0_table =  (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 0);
+	u64 *level1_table0 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 1);
+	u64 *level1_table1 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 2);
+	u64 *level2_table0 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 3);
+	u64 *level2_table1 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 4);
+	u64 *level2_table2 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 5);
 	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
 	/* Invalidate all table entries */
@@ -279,14 +278,10 @@ static inline void final_mmu_setup(void)
 	}
 
 	/* flush new MMU table */
-	flush_dcache_range(gd->arch.tlb_addr,
-			   gd->arch.tlb_addr +  gd->arch.tlb_size);
 
-#ifdef CONFIG_S32_GEN1
 	/* Disable cache and MMU */
 	dcache_disable();   /* TLBs are invalidated */
 	invalidate_icache_all();
-#endif
 
 	/* point TTBR to the new table */
 	el = current_el();
@@ -297,9 +292,7 @@ static inline void final_mmu_setup(void)
 	 * MMU somehow walks through the new table before invalidation TLB,
 	 * it still works. So we don't need to turn off MMU here.
 	 */
-#ifdef CONFIG_S32_GEN1
 	set_sctlr(get_sctlr() | CR_M);
-#endif
 }
 
 int arch_cpu_init(void)
