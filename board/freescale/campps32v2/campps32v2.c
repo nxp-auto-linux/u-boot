@@ -84,10 +84,9 @@ static void setup_iomux_dspi(void)
 
 	/* Configure Chip Select Pins */
 	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS0_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB8));
-	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS4_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC0));
-	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS5_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC1));
-	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS6_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC2));
-	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS7_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC3));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS1_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB13));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS2_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB14));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS3_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB15));
 
 	/* MSCR */
 	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SOUT_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB6));
@@ -178,18 +177,22 @@ int board_phy_config(struct phy_device *phydev)
 
 int board_early_init_f(void)
 {
+	u8 id;
+
 	clock_init();
 	mscm_init();
 
 	setup_iomux_gpio();
-	if (get_device_id() == 1)
+	id = get_device_id();
+	if (id == 1)
 		release_slaves();
 
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
 #ifdef CONFIG_FSL_DSPI
-	setup_iomux_dspi();
+	if (id == 1)
+		setup_iomux_dspi();
 #endif
 	return 0;
 }
