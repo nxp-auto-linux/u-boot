@@ -59,11 +59,6 @@
 
 #define	FDT_FILE fsl-s32v234sbc.dtb
 
-#define CONFIG_SYS_INIT_SP_OFFSET	\
-	(CONFIG_SYS_INIT_RAM_SIZE -	\
-	 GENERATED_GBL_DATA_SIZE -	\
-	 CONFIG_SYS_TEXT_OFFSET)
-
 #define CONFIG_BOARD_EXTRA_ENV_SETTINGS "dvi_on=i2c dev 2; i2c mw 3f 8 35\0"
 
 #define CONFIG_PCI

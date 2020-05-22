@@ -1,8 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -32,9 +32,6 @@
 
 #define FDT_FILE		fsl-s32v234-fvb.dtb
 
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
 
 /* #define CONFIG_CMD_PCI */
 

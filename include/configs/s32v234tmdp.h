@@ -37,10 +37,6 @@
 
 #define FDT_FILE		fsl-s32v234-tmdp.dtb
 
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE - CONFIG_SYS_TEXT_OFFSET)
-
 /* #define CONFIG_CMD_PCI */
 
 /* we include this file here because it depends on the above definitions */

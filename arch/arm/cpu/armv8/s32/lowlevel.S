@@ -135,6 +135,12 @@ watchdog_cortexm_disable:
 #endif
 
 sram_init:
+	/* Clear stack region */
+	ldr x0,  =CONFIG_SYS_INIT_SP_ADDR
+	ldr x1,  =CONFIG_SYS_INIT_SP_OFFSET
+	sub x0, x0, x1
+	bl dma_mem_clr
+
 	/* Start address of the SRAM memory to init */
 	ldr x0,  =__bss_start
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
