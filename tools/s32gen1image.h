@@ -7,6 +7,23 @@
 #include <asm/types.h>
 #include <generated/autoconf.h>
 
+#define FIP_TOC_HEADER_NAME		(0xaa640001)
+#define FIP_BL2_UUID			{0x5f, 0xf9, 0xec, 0x0b, \
+					0x4d, 0x22, 0x3e, 0x4d, \
+					0xa5, 0x44, 0xc3, 0x9d, \
+					0x81, 0xc7, 0x3f, 0x0a}
+#define FIP_BL2_OFFSET			(0x200)
+
+struct fip_image_data {
+	__u32		toc_header_name;
+	__u32		dont_care1;
+	__u64		dont_care2;
+	__u8		uuid[16];
+	__u64		offset;
+	__u64		size;
+	__u8		dont_care3[0];
+};
+
 #define BCW_BOOT_SEQ			(1 << 3)
 #define BCW_SWT				(1 << 2)
 #define BCW_BOOT_TARGET_M7_0		(0)
