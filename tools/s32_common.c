@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /* Copyright 2019-2020 NXP */
 
+#include <image.h>
 #include <generated/autoconf.h>
 #include <config.h>
 #include "s32_common.h"
@@ -43,8 +44,6 @@ void check_overlap(struct image_comp *comp1,
 void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 {
 	size_t i;
-	size_t align_mask;
-	size_t rem;
 
 	for (i = 0U; i < n_parts; i++) {
 		if (parts[i]->offset == S32_AUTO_OFFSET) {
@@ -58,14 +57,9 @@ void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 		}
 
 		/* Apply alignment constraints */
-		if (parts[i]->alignment != 0U) {
-			align_mask = parts[i]->alignment - 1U;
-			rem = parts[i]->offset & align_mask;
-			if (rem != 0U) {
-				parts[i]->offset -= rem;
-				parts[i]->offset += parts[i]->alignment;
-			}
-		}
+		if (parts[i]->alignment != 0U)
+			parts[i]->offset = ROUND(parts[i]->offset,
+						 parts[i]->alignment);
 
 		if (i != 0)
 			check_overlap(parts[i - 1], parts[i]);
