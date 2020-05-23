@@ -16,43 +16,17 @@
 #define LCCW_OEM_PROD			(1 << 0)
 
 #define DCD_HEADER			(0x600000d2)
-#define DCD_MAXIMUM_SIZE		(8192)
-#define DCD_HEADER_LENGTH_OFFSET	(1)
 
-#define DCD_COMMAND_HEADER(tag, len, params) ((tag) | \
-					      (cpu_to_be16((len)) << 8) | \
-					      (params) << 24)
-#define DCD_WRITE_TAG	(0xcc)
-#define DCD_CHECK_TAG	(0xcf)
-#define DCD_NOP_TAG	(0xc0)
+#define IVT_VERSION			(0x60)
+#define APPLICATION_BOOT_CODE_TAG	(0xd5)
+#define APPLICATION_BOOT_CODE_VERSION	(0x60)
 
-#define PARAMS_DATA_SET		BIT(4)
-#define PARAMS_DATA_MASK	BIT(3)
-#define PARAMS_BYTES(x)		((x) & 0x7)
+#define SRAM_RESERVED_0_START		(0x34008050)
+#define SRAM_RESERVED_0_END		(0x34008200)
+#define SRAM_RESERVED_1_START		(0x38008050)
+#define SRAM_RESERVED_1_END		(0x38008200)
 
-#define DCD_WRITE_HEADER(n, params)	DCD_COMMAND_HEADER(DCD_WRITE_TAG, \
-							   4 + (n) * 8, \
-							   (params))
-#define DCD_CHECK_HEADER(params)	DCD_COMMAND_HEADER(DCD_CHECK_TAG, \
-							   16, \
-							   (params))
-#define DCD_CHECK_HEADER_NO_COUNT(params) \
-					DCD_COMMAND_HEADER(DCD_CHECK_TAG, \
-							   12, \
-							   (params))
-#define DCD_NOP_HEADER			DCD_COMMAND_HEADER(DCD_NOP_TAG, 4, 0)
-
-#define IVT_TAG				0xd1
-#define IVT_VERSION			0x60
-#define APPLICATION_BOOT_CODE_TAG	0xd5
-#define APPLICATION_BOOT_CODE_VERSION	0x60
-
-#define SRAM_RESERVED_0_START		0x34008050
-#define SRAM_RESERVED_0_END		0x34008200
-#define SRAM_RESERVED_1_START		0x38008050
-#define SRAM_RESERVED_1_END		0x38008200
-
-#define S32GEN1_QSPI_PARAMS_SIZE	0x200
+#define S32GEN1_QSPI_PARAMS_SIZE	(0x200)
 
 struct ivt {
 	__u8		tag;
@@ -86,13 +60,6 @@ struct application_boot_code {
 	__u8		reserved2[44];
 	__u8		code[0];
 } __attribute__((packed));
-
-struct image_comp {
-	size_t offset;
-	size_t size;
-	size_t alignment;
-	uint8_t *data;
-};
 
 #ifdef CONFIG_FLASH_BOOT
 struct flash_write {

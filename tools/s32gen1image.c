@@ -5,6 +5,7 @@
 #include <generated/autoconf.h>
 #include <config.h>
 #include "imagetool.h"
+#include "s32_common.h"
 #include "s32gen1image.h"
 
 #define UNSPECIFIED	-1
@@ -12,8 +13,6 @@
 #ifdef CONFIG_FLASH_BOOT
 #  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
 #endif
-
-#define S32GEN1_AUTO_OFFSET ((size_t)(-1))
 
 #ifdef CONFIG_FLASH_BOOT
 #  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
@@ -41,12 +40,12 @@ static struct program_image image_layout = {
 	},
 #endif
 	.dcd = {
-		.offset = S32GEN1_AUTO_OFFSET,
+		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
 		.size = DCD_MAXIMUM_SIZE,
 	},
 	.app_code = {
-		.offset = S32GEN1_AUTO_OFFSET,
+		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
 		.size = sizeof(struct application_boot_code),
 	},
@@ -73,11 +72,6 @@ static uint8_t *get_dcd(struct program_image *image)
 static struct application_boot_code *get_app_code(struct program_image *image)
 {
 	return (struct application_boot_code *)image->app_code.data;
-}
-
-static void s32gen1_print_header(const void *header)
-{
-	return;
 }
 
 #ifndef CONFIG_FLASH_BOOT
@@ -252,68 +246,6 @@ static int s32gen1_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
-static int image_parts_comp(const void *p1, const void *p2)
-{
-	const struct image_comp **part1 = (typeof(part1))p1;
-	const struct image_comp **part2 = (typeof(part2))p2;
-
-	if ((*part2)->offset > (*part1)->offset)
-		return -1;
-
-	if ((*part2)->offset < (*part1)->offset)
-		return 1;
-
-	return 0;
-}
-
-static void check_overlap(struct image_comp *comp1,
-			  struct image_comp *comp2)
-{
-	size_t end1 = comp1->offset + comp1->size;
-	size_t end2 = comp2->offset + comp2->size;
-
-	if (end1 > comp2->offset && end2 > comp1->offset) {
-		fprintf(stderr, "Detected overlap between 0x%zx@0x%zx and "
-				"0x%zx@0x%zx\n",
-				comp1->size, comp1->offset,
-				comp2->size, comp2->offset);
-		exit(EXIT_FAILURE);
-	}
-}
-
-static void s32g2xx_compute_dyn_offsets(struct image_comp **parts,
-					size_t n_parts)
-{
-	size_t i;
-	size_t align_mask;
-	size_t rem;
-
-	for (i = 0U; i < n_parts; i++) {
-		if (parts[i]->offset == S32GEN1_AUTO_OFFSET) {
-			if (i == 0) {
-				parts[i]->offset = 0U;
-				continue;
-			}
-
-			parts[i]->offset = parts[i - 1]->offset +
-			    parts[i - 1]->size;
-		}
-
-		/* Apply alignment constraints */
-		if (parts[i]->alignment != 0U) {
-			align_mask = (parts[i]->alignment << 1U) - 1U;
-			rem = parts[i]->offset & align_mask;
-			if (rem != 0U) {
-				parts[i]->offset -= rem;
-				parts[i]->offset += parts[i]->alignment;
-			}
-		}
-
-		if (i != 0)
-			check_overlap(parts[i - 1], parts[i]);
-	}
-}
-
 static int s32g2xx_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
@@ -330,7 +262,7 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	qsort(&parts[0], ARRAY_SIZE(parts), sizeof(parts[0]), image_parts_comp);
 
 	/* Compute auto-offsets */
-	s32g2xx_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
+	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
 
 	*header_size = parts[last_comp]->offset + parts[last_comp]->size;
 
@@ -364,7 +296,7 @@ U_BOOT_IMAGE_TYPE(
 	NULL,
 	NULL,
 	NULL,
-	s32gen1_print_header,
+	s32_print_header,
 	s32gen1_set_header,
 	NULL,
 	s32gen1_check_image_type,
