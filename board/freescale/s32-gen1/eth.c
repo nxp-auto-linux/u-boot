@@ -77,6 +77,16 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 	}
 }
 
+static bool pfeng_drv_status_active(void)
+{
+	struct udevice *dev;
+
+	if (uclass_get_device_by_name(UCLASS_ETH, "eth_pfeng", &dev))
+		return false;
+
+	return dev->flags & DM_FLAG_ACTIVATED;
+}
+
 /*
  * Ethernet DT fixup before OS load
  *
@@ -90,7 +100,7 @@ void ft_enet_fixup(void *fdt)
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32g274a-pfeng");
 	if (nodeoff >= 0) {
-		if (!pfeng_cfg_get_mode()) {
+		if (!pfeng_drv_status_active()) {
 			/* Disable PFE in DT fully */
 			printf("DT: Disabling PFE\n");
 			fdt_status_disabled(fdt, nodeoff);
@@ -116,7 +126,7 @@ void ft_enet_fixup(void *fdt)
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 		} else if (intf_is_xmii(s32ccgmac_cfg_get_interface()) &&
 			   intf_is_xmii(pfeng_cfg_emac_get_interface(1)) &&
-			   pfeng_cfg_get_mode()) {
+			   pfeng_drv_status_active()) {
 			ena = false;
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
 		} else
