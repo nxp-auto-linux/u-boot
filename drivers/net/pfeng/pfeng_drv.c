@@ -765,7 +765,7 @@ pfeng_probe(struct udevice *dev)
 				return -ENODEV;
 
 	/* enable PFE IP support */
-	pfeng_cfg_set_mode(PFENG_MODE_RUN);
+	pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
 
 	/* fw: parse location and load it */
 	ret = pfeng_set_fw_from_env(priv);
@@ -776,6 +776,9 @@ pfeng_probe(struct udevice *dev)
 	ret = pfeng_driver_init(priv);
 	if (ret)
 		return ret;
+
+	/* signalize RUNning state */
+	pfeng_cfg_set_mode(PFENG_MODE_RUN);
 
 	/* register mdios */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++)
