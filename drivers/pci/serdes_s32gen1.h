@@ -6,6 +6,7 @@
 
 #ifndef SERDES_S32GEN1_H
 #define SERDES_S32GEN1_H
+
 #include <pci.h>
 #include <dm.h>
 #include <asm/io.h>
@@ -19,6 +20,9 @@
 #define PCIE_MPLL_LOCK_COUNT 10
 #define PCIE_RESET_COUNT 50
 #define DELAY_QUANTUM 1000
+
+
+#define LTSSM_STATE_L0		0x11 /* L0 state */
 
 #define SERDES_LINKUP_MASK	(SMLH_LINK_UP | RDLH_LINK_UP | \
 			SMLH_LTSSM_STATE)
@@ -60,7 +64,15 @@ struct s32_serdes {
 	enum serdes_link_width linkwidth;
 };
 
-int wait_read32(void *address, uint32_t expect_data,
-		uint32_t mask, int read_attempts);
+bool s32_pcie_wait_link_up(void __iomem *dbi);
+bool s32_pcie_set_link_width(void __iomem *dbi,
+		int id, enum serdes_link_width linkwidth);
+bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
+		enum serdes_link_width linkwidth);
+
+int s32_eth_xpcs_init(void __iomem *dbi, int id,
+			     enum serdes_xpcs_mode xpcs_mode,
+			     enum serdes_clock clktype,
+			     enum serdes_clock_fmhz fmhz);
 
 #endif /* PCIE_S32GEN1_H */
