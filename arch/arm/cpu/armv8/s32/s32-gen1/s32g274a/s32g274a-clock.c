@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  */
 #include <asm/arch/clock.h>
 #include <asm/arch/mc_cgm_regs.h>
@@ -110,6 +110,16 @@ static void setup_mux_clocks(void)
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 3,
 			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI1);
 	mux_div_clk_config(MC_CGM0_BASE_ADDR, 3, 0, 0);
+
+	/* FTM 0 (40MHz) */
+	mux_source_clk_config(MC_CGM0_BASE_ADDR, 4,
+			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI1);
+	mux_div_clk_config(MC_CGM0_BASE_ADDR, 4, 0, 1);
+
+	/* FTM 1 (40MHz) */
+	mux_source_clk_config(MC_CGM0_BASE_ADDR, 5,
+			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI1);
+	mux_div_clk_config(MC_CGM0_BASE_ADDR, 5, 0, 1);
 
 	/* setup the mux clock divider for CAN_CLK (80 MHz) */
 	mux_source_clk_config(MC_CGM0_BASE_ADDR, 7,
