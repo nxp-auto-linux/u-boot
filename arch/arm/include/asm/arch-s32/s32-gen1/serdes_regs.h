@@ -73,8 +73,6 @@ enum serdes_dev_type {
 	/* TODO: If both PCIe/SGMII bifurcation modes are used, we may
 	 * need to use 2 SGMII modes - SGMII0 and SGMII1
 	 */
-	PCIE_EP_SGMII = PCIE_EP | SGMII,
-	PCIE_RC_SGMII = PCIE_RC | SGMII
 };
 
 enum serdes_clock {

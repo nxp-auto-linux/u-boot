@@ -62,22 +62,24 @@ static inline int get_serdes_mode_str(enum serdes_dev_type mode,
 	if (mode & PCIE_EP)
 		start += sprintf(start, SERDES_EP_MODE_STR);
 	if (mode & SGMII) {
-		if (xpcs_mode == SGMII_XPCS0 || xpcs_mode == SGMII_XPCS1)
-			start += sprintf(start, "(x1)&" SERDES_SGMII_MODE_STR);
-		else
+		if (xpcs_mode == SGMII_XPCS0 || xpcs_mode == SGMII_XPCS1) {
+			if (start != buf)
+				start += sprintf(start, "(x1)&");
+			start += sprintf(start, SERDES_SGMII_MODE_STR);
+		} else
 			start += sprintf(start, SERDES_SGMII_MODE_STR "(x2)");
 
 		start += sprintf(start, " %s",  get_serdes_xpcs_str(xpcs_mode));
 	} else if (start != buf) {
 		start += sprintf(start, "(x2)");
 	} else {
-		start += sprintf(start, "SERDES_SGMII_MODE_NONE_STR");
+		start += sprintf(start, "Not configured");
 	}
 
 	return start - buf;
 }
 
-int wait_read32(void *address, uint32_t expect_data,
+static int wait_read32(void *address, uint32_t expect_data,
 		uint32_t mask, int read_attempts)
 {
 	uint32_t tmp;
@@ -93,6 +95,14 @@ int wait_read32(void *address, uint32_t expect_data,
 	}
 
 	return 0;
+}
+
+bool s32_pcie_wait_link_up(void __iomem *dbi)
+{
+	int count = PCIE_LINK_UP_COUNT;
+
+	return (wait_read32((void *)(dbi + SS_PE0_LINK_DBG_2),
+			SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK, count) == 0);
 }
 
 enum serdes_mode s32_get_serdes_mode_from_target(void *dbi, int id)
@@ -367,6 +377,13 @@ __weak bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	return false;
 }
 
+__weak bool s32_pcie_set_link_width(void __iomem *dbi,
+		int id, enum serdes_link_width linkwidth)
+{
+	printf("PCIe%d disabled\n", id);
+	return false;
+}
+
 __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     enum serdes_clock clktype,
@@ -583,20 +600,50 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	if (IS_SERDES_PCIE(pcie->devtype)) {
 		char mode[SERDES_MODE_SIZE];
-		enum serdes_link_width pcie_linkwidth = pcie->linkwidth;
+
+		/* Update the max link depending on other factors */
 
 		get_serdes_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
-		debug("Configure SerDes%d as %s\n", pcie->id, mode);
+		debug("SerDes%d: Configure as %s\n", pcie->id, mode);
 		if (IS_SERDES_SGMII(pcie->devtype))
-			pcie_linkwidth = X1;
+			pcie->linkwidth = X1;
+
+		/* Restrict EP to X1, since we don't always habe link
+		 * in case of EP (RC may start after the EP)
+		 */
+		if (!(pcie->devtype & PCIE_RC))
+			pcie->linkwidth = X1;
 
 		if (!s32_pcie_init(pcie->dbi, pcie->id,
-				pcie->devtype & PCIE_RC,
-				pcie_linkwidth))
+					pcie->devtype & PCIE_RC,
+					pcie->linkwidth) ||
+			!s32_pcie_set_link_width(pcie->dbi, pcie->id,
+					pcie->linkwidth))
 			return -EIO;
-	}
 
-	s32_serdes_enable_ltssm(pcie->dbi);
+		s32_serdes_enable_ltssm(pcie->dbi);
+
+		if (s32_pcie_wait_link_up(pcie->dbi)) {
+			debug("SerDes%d: link is up (X%d)\n", pcie->id,
+					pcie->linkwidth);
+		} else {
+			if (pcie->linkwidth > X1) {
+				/* Attempt to link at X1 */
+				pcie->linkwidth = X1;
+				s32_serdes_disable_ltssm(pcie->dbi);
+
+				if (!s32_pcie_set_link_width(pcie->dbi,
+						pcie->id,
+						pcie->linkwidth))
+					return -EIO;
+
+				s32_serdes_enable_ltssm(pcie->dbi);
+				if (s32_pcie_wait_link_up(pcie->dbi))
+					debug("SerDes%d: link is up (X%d)\n",
+						pcie->id, pcie->linkwidth);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -615,6 +662,8 @@ int initr_pci(void)
 	/*
 	 * Enumerate all known UCLASS_PCI_GENERIC devices. This will
 	 * also probe them, so the SerDes devices will be enumerated too.
+	 * TODO: Enumerate first the EPs, so that loopback between
+	 * the two PCIe interfaces will also work if PCIe1 is EP.
 	 */
 	for (uclass_first_device(UCLASS_PCI_GENERIC, &bus);
 	     bus;

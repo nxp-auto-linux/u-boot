@@ -67,8 +67,6 @@
 #define LTSSM_STATE_MASK	0x3f
 #define LTSSM_STATE_OFF		0
 
-#define LTSSM_STATE_L0		0x11 /* L0 state */
-
 /* Debug Register 1 (PL_DEBUG1_OFF) */
 #define PCIE_PL_DEBUG1(dbi_base)	((uint64_t)(dbi_base) + 0x72C)
 
