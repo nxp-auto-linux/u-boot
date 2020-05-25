@@ -7,11 +7,13 @@
  *
  * (C) Copyright 2012
  * Albert ARIBAUD <albert.u.boot@aribaud.net>
+ * Copyright 2020 NXP
  */
 
 #include <config.h>
 #include <asm-offsets.h>
 #include <asm/macro.h>
+#include <asm-generic/global_data.h>
 #include <linux/linkage.h>
 
 /*
@@ -97,6 +99,12 @@ ENTRY(_main)
  */
 	ldr	x0, [x18, #GD_START_ADDR_SP]	/* x0 <- gd->start_addr_sp */
 	bic	sp, x0, #0xf	/* 16-byte alignment for ABI compliance */
+
+	/* Check for GD_FLG_SKIP_RELOC flag */
+	ldr	x0, [x18, #GD_FLAGS]
+	and	x0, x0, #GD_FLG_SKIP_RELOC
+	cbnz	x0, skip_reloc
+
 	ldr	x18, [x18, #GD_NEW_GD]		/* x18 <- gd->new_gd */
 
 	adr	lr, relocation_return
@@ -147,6 +155,7 @@ clear_loop:
 	cmp	x0, x1
 	b.lo	clear_loop
 
+skip_reloc:
 	/* call board_init_r(gd_t *id, ulong dest_addr) */
 	mov	x0, x18				/* gd_t */
 	ldr	x1, [x18, #GD_RELOCADDR]	/* dest_addr */
