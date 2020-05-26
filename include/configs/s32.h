@@ -331,8 +331,8 @@
 	"fatload mmc 0 ${dom0_addr} Image; "
 #endif
 #define XEN_EXTRA_ENV_SETTINGS \
-	"dom0_addr=0xbe800000\0" \
-	"bootargs=dom0_mem=384M bootscrub=0\0" \
+	"dom0_addr=0x90000000\0" \
+	"bootargs=dom0_mem=192M bootscrub=0\0" \
 	"updatexenfdt=fdt addr ${fdt_addr} 0x40000; fdt resize; fdt chosen; " \
 		"fdt set /chosen \\\\\#address-cells <1>; " \
 		"fdt set /chosen \\\\\#size-cells <1>; " \
