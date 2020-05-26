@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <linux/printk.h>
 #include <log.h>
+#include <dm.h>
 
 #include <asm/arch-s32/siul.h>
 #include <asm/arch-s32/mc_rgm_regs.h>
@@ -45,9 +46,6 @@
  *		pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0 or
  *		pcie1:mode=sgmii,clock=ext,fmhz=100,xpcs_mode=0 or
  *		pcie1:mode=sgmii,clock=int,fmhz=100,xpcs_mode=0
- *
- * Warning: Currently only internal clocks are supported in rc&sgmii
- * and ep&sgmii modes.
  *
  */
 
@@ -193,12 +191,41 @@ int s32_sgmii_set_speed(int serdes, int xpcs, int mbps, bool fd, bool an)
 	return ret;
 }
 
+/* Function used to probe the SerDes in case the PCIe is disabled */
+#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(SERDES_S32GEN1)
+static void s32_serdes_no_pcie_init(void)
+{
+	struct udevice *bus;
+
+	debug("%s\n", __func__);
+
+	/*
+	 * Enumerate all known UCLASS_PCI_GENERIC devices. This will
+	 * also probe them, so the SerDes devices will be enumerated too.
+	 */
+	for (uclass_first_device(UCLASS_PCI_GENERIC, &bus);
+	     bus;
+	     uclass_next_device(&bus)) {
+		;
+	}
+}
+#endif
+
 enum serdes_xpcs_mode s32_get_xpcs_mode(int serdes)
 {
 	if (serdes > S32G_SERDES_COUNT) {
 		printf("Invalid SerDes ID %d\n", serdes);
 		return SGMII_INAVALID;
 	}
+
+/* In case PCIe is disabled probe serdes drivers */
+#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(SERDES_S32GEN1)
+	if (!xpcs_cfg[serdes].is_init)
+		s32_serdes_no_pcie_init();
+#elif !CONFIG_IS_ENABLED(SERDES_S32GEN1)
+	printf("SGMII is not supported in this configuration");
+#endif
+
 	if (!xpcs_cfg[serdes].is_init ||
 	    xpcs_cfg[serdes].xpcs_mode == SGMII_INAVALID) {
 		printf("SerDes %d was not initialized\n", serdes);
@@ -208,6 +235,7 @@ enum serdes_xpcs_mode s32_get_xpcs_mode(int serdes)
 }
 
 int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
+		      bool combo,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      enum serdes_clock clktype,
 		      enum serdes_clock_fmhz fmhz)
@@ -280,7 +308,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		debug("SerDes %d XPCS_0 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
 						   xpcs0_base,
-						   clktype, fmhz);
+						   clktype, fmhz, combo);
 		if (retval) {
 			printf("SerDes %d XPCS_0 init failed\n", id);
 			return retval;
@@ -292,7 +320,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		debug("SerDes %d XPCS_1 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
 						   xpcs1_base,
-						   clktype, fmhz);
+						   clktype, fmhz, combo);
 		if (retval) {
 			printf("SerDes %d XPCS_1 init failed\n", id);
 			return retval;
@@ -346,4 +374,12 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 
 	return 0;
 }
+
+/* Provide UCLASS DRV so SerDes driver can bind to it*/
+#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(SERDES_S32GEN1)
+UCLASS_DRIVER(pci_uc_gen) = {
+	.id		= UCLASS_PCI_GENERIC,
+	.name		= "sgmii_s32gen1",
+};
+#endif
 

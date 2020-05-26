@@ -66,7 +66,7 @@ static inline int get_serdes_mode_str(enum serdes_dev_type mode,
 			if (start != buf)
 				start += sprintf(start, "(x1)&");
 			start += sprintf(start, SERDES_SGMII_MODE_STR);
-		} else
+		} else if (xpcs_mode != SGMII_INAVALID)
 			start += sprintf(start, SERDES_SGMII_MODE_STR "(x2)");
 
 		start += sprintf(start, " %s",  get_serdes_xpcs_str(xpcs_mode));
@@ -313,7 +313,11 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 		    pcie->xpcs_mode != SGMII_XPCS1) {
 			printf("ERROR: Invalid XPCS config on PCIe%d\n",
 			       pcie->id);
-			return false;
+
+			/* Fall back to mode compatible with PCIe */
+			if (s32_serdes_set_mode(pcie->dbi, pcie->id,
+						SERDES_MODE_PCIE_SGMII0))
+				return false;
 		}
 		/*	Set pipeP_pclk */
 		W32(pcie->dbi + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
@@ -385,6 +389,7 @@ __weak bool s32_pcie_set_link_width(void __iomem *dbi,
 }
 
 __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
+			     bool combo,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     enum serdes_clock clktype,
 			     enum serdes_clock_fmhz fmhz)
@@ -469,33 +474,30 @@ enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 
 static bool s32_serdes_is_xpcs_cfg_valid(struct s32_serdes *pcie)
 {
+	bool ret = true;
+
+	if (IS_SERDES_PCIE(pcie->devtype) && pcie->fmhz == CLK_125MHZ) {
+		printf("Invalid \"hwconfig\": In PCIe/SGMII combo");
+		printf(" reference clock has to be 100Mhz\n");
+		/* SGMII configuration fail */
+		ret = false;
+	}
+
 	if (pcie->xpcs_mode == SGMII_INAVALID) {
 		printf("Invalid \"hwconfig\": \"xpcs_mode\" is missing\n");
-		return false;
+		/* SGMII configuration fail */
+		ret = false;
 	}
 
 	if (pcie->xpcs_mode == SGMII_XPCS0_2G5 &&
 	    pcie->fmhz == CLK_100MHZ) {
 		printf("Invalid \"hwconfig\": In SGMII 2.5G frequency");
 		printf("has to be 125MHz\n");
-		return false;
+		/* We just fail in this case user has to reconfigure */
+		ret = false;
 	}
 
-	if (IS_SERDES_PCIE(pcie->devtype) && pcie->fmhz == CLK_125MHZ) {
-		printf("Invalid \"hwconfig\": In PCIe/SGMII combo");
-		printf(" reference clock has to be 100Mhz\n");
-		return false;
-	}
-
-	if (IS_SERDES_PCIE(pcie->devtype) &&
-	    IS_SERDES_SGMII(pcie->devtype) &&
-	    pcie->clktype == CLK_EXT) {
-		printf("Invalid \"hwconfig\": In PCIe/SGMII combo external");
-		printf(" reference clock is currently not supported\n");
-		return false;
-	}
-
-	return true;
+	return ret;
 }
 
 static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
@@ -533,6 +535,7 @@ static int s32_serdes_probe(struct udevice *dev)
 	struct s32_serdes *pcie = dev_get_priv(dev);
 	char mode[SERDES_MODE_SIZE];
 	int ret = 0;
+	bool combo_mode;
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
@@ -549,26 +552,27 @@ static int s32_serdes_probe(struct udevice *dev)
 		return ret;
 
 	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
-	if (pcie->devtype == SERDES_INVALID) {
-		printf("Not configuring SerDes%d,", pcie->id);
-		printf(" no RC/EP/SGMII configuration selected\n");
-		return -ENXIO;
-	}
-
 	pcie->clktype = s32_serdes_get_clock_from_hwconfig(pcie->id);
 	/* Get XPCS configuration */
 	pcie->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(pcie->id);
 	pcie->fmhz = s32_serdes_get_clock_fmhz_from_hwconfig(pcie->id);
 
+	if (pcie->devtype == SERDES_INVALID) {
+		printf("Not configuring SerDes%d,", pcie->id);
+		printf(" no RC/EP/SGMII configuration selected\n");
+		return 0;
+	}
+
 	/* In case of sgmii mode check xpcs configuration */
 	if (IS_SERDES_SGMII(pcie->devtype) &&
 	    !s32_serdes_is_xpcs_cfg_valid(pcie))
-		return -EINVAL;
+		pcie->xpcs_mode = SGMII_INAVALID;
 
 	printf("Using %s clock for PCIe%d\n",
 	       SERDES_CLK_MODE(pcie->clktype),
 	       pcie->id);
-	if (IS_SERDES_SGMII(pcie->devtype))
+	if (IS_SERDES_SGMII(pcie->devtype) &&
+	    pcie->xpcs_mode != SGMII_INAVALID)
 		printf("Frequency %s configured for PCIe%d\n",
 		       SERDES_CLK_FMHZ(pcie->fmhz),
 		       pcie->id);
@@ -576,25 +580,29 @@ static int s32_serdes_probe(struct udevice *dev)
 	get_serdes_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
 	printf("Configuring PCIe%d as %s\n", pcie->id, mode);
 
+
 	/* Keep ltssm_enable =0 to disable link  training for programming
 	 * the DBI.
 	 * Note: ltssm_enable is set to 1 from the PCIe driver.
 	 */
 	s32_serdes_disable_ltssm(pcie->dbi);
 
-	/* apply the base SerDes/PHY settings */
+	/* Apply the base SerDes/PHY settings */
 	if (!s32_serdes_init(pcie))
 		return -EIO;
 
-	if (IS_SERDES_SGMII(pcie->devtype)) {
+	if (IS_SERDES_SGMII(pcie->devtype) &&
+	    pcie->xpcs_mode != SGMII_INAVALID) {
+		combo_mode = (IS_SERDES_SGMII(pcie->devtype) &&
+			      IS_SERDES_PCIE(pcie->devtype));
 		ret = s32_eth_xpcs_init(pcie->dbi, pcie->id,
+					combo_mode,
 					pcie->xpcs_mode,
 					pcie->clktype,
 					pcie->fmhz);
 		if (ret) {
 			printf("Error during configuration of SGMII on");
 			printf(" PCIe%d\n", pcie->id);
-			return ret;
 		}
 	}
 
