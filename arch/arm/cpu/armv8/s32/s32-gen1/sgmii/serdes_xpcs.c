@@ -298,11 +298,13 @@ int serdes_wait_for_link(void *base, u32 xpcs, u8 timeout)
  * @param[in]	ext_ref If reference clock is taken via pads then this shall be
  *		TRUE. If internal reference clock is used then use FALSE.
  * @param[in]	ref_mhz Reference clock frequency in [MHz]. 100 or 125.
+ * @param[in]	bypass If true bypass initialization checks in case of ext_ref
  * @return	0 if success, error code otherwise
  */
 int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 			      enum serdes_clock clktype,
-			      enum serdes_clock_fmhz fmhz)
+			      enum serdes_clock_fmhz fmhz,
+			      bool bypass)
 {
 	int retval;
 	u16 reg16, use_pad = 0U;
@@ -320,23 +322,27 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
 				      EN_VSMMD1 | BYP_PWRUP);
 
+	if (!(bypass && clktype == CLK_EXT)) {
+		/*	Wait for XPCS power up */
+		retval = serdes_xpcs_wait_for_power_good(base,
+							 xpcs);
+		if (retval)
+			/*	XPCS power-up failed */
+			return retval;
 
-	/*	Wait for XPCS power up */
-	retval = serdes_xpcs_wait_for_power_good(base, xpcs);
-	if (retval)
-		/*	XPCS power-up failed */
-		return retval;
+		/*	Compatibility check */
+		serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID1,
+				     &reg16);
+		if (reg16 != 0x7996U)
+			/*	Unexpected XPCS ID */
+			return -EINVAL;
 
-	/*	Compatibility check */
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID1, &reg16);
-	if (0x7996U != reg16)
-		/*	Unexpected XPCS ID */
-		return -EINVAL;
-
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID2, &reg16);
-	if (0xced0U != reg16)
-		/*	Unexpected XPCS ID */
-		return -EINVAL;
+		serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID2,
+				     &reg16);
+		if (reg16 != 0xced0U)
+			/*	Unexpected XPCS ID */
+			return -EINVAL;
+	}
 
 	/*	(Switch to 1G mode: #1) */
 	if (clktype == CLK_INT)

@@ -389,6 +389,7 @@ __weak bool s32_pcie_set_link_width(void __iomem *dbi,
 }
 
 __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
+			     bool combo,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     enum serdes_clock clktype,
 			     enum serdes_clock_fmhz fmhz)
@@ -496,15 +497,6 @@ static bool s32_serdes_is_xpcs_cfg_valid(struct s32_serdes *pcie)
 		ret = false;
 	}
 
-	if (IS_SERDES_PCIE(pcie->devtype) &&
-	    IS_SERDES_SGMII(pcie->devtype) &&
-	    pcie->clktype == CLK_EXT) {
-		printf("Invalid \"hwconfig\": In PCIe/SGMII combo external");
-		printf(" reference clock is currently not supported\n");
-		/* SGMII will fail PCIe probe can be performed */
-		ret = false;
-	}
-
 	return ret;
 }
 
@@ -543,6 +535,7 @@ static int s32_serdes_probe(struct udevice *dev)
 	struct s32_serdes *pcie = dev_get_priv(dev);
 	char mode[SERDES_MODE_SIZE];
 	int ret = 0;
+	bool combo_mode;
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
@@ -600,7 +593,10 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	if (IS_SERDES_SGMII(pcie->devtype) &&
 	    pcie->xpcs_mode != SGMII_INAVALID) {
+		combo_mode = (IS_SERDES_SGMII(pcie->devtype) &&
+			      IS_SERDES_PCIE(pcie->devtype));
 		ret = s32_eth_xpcs_init(pcie->dbi, pcie->id,
+					combo_mode,
 					pcie->xpcs_mode,
 					pcie->clktype,
 					pcie->fmhz);
