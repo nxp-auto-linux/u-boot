@@ -28,6 +28,7 @@ config FSL_PFENG
 	depends on NET && DM_ETH && S32_GEN1
 	select OF_EMBED
 	select OF_CONTROL
+	imply SERDES_S32GEN1
 	default n
 	help
 	  Enables support for PFEng on S32G.
