@@ -107,7 +107,8 @@ int serdes_xpcs_get_sgmii_speed(void *base, u32 xpcs, int *mbps,
 				bool *fduplex, bool *an);
 int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 			      enum serdes_clock clktype,
-			      enum serdes_clock_fmhz fmhz);
+			      enum serdes_clock_fmhz fmhz,
+			      bool bypass);
 int serdes_xpcs_set_2500_mode(void *base, u32 xpcs,
 			      enum serdes_clock clktype,
 			      enum serdes_clock_fmhz fmhz);

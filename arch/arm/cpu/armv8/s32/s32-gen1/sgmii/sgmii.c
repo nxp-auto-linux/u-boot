@@ -235,6 +235,7 @@ enum serdes_xpcs_mode s32_get_xpcs_mode(int serdes)
 }
 
 int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
+		      bool combo,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      enum serdes_clock clktype,
 		      enum serdes_clock_fmhz fmhz)
@@ -307,7 +308,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		debug("SerDes %d XPCS_0 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
 						   xpcs0_base,
-						   clktype, fmhz);
+						   clktype, fmhz, combo);
 		if (retval) {
 			printf("SerDes %d XPCS_0 init failed\n", id);
 			return retval;
@@ -319,7 +320,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		debug("SerDes %d XPCS_1 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
 						   xpcs1_base,
-						   clktype, fmhz);
+						   clktype, fmhz, combo);
 		if (retval) {
 			printf("SerDes %d XPCS_1 init failed\n", id);
 			return retval;
