@@ -70,9 +70,10 @@ bool s32_pcie_set_link_width(void __iomem *dbi,
 bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		enum serdes_link_width linkwidth);
 
-int s32_eth_xpcs_init(void __iomem *dbi, int id,
-			     enum serdes_xpcs_mode xpcs_mode,
-			     enum serdes_clock clktype,
-			     enum serdes_clock_fmhz fmhz);
+int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
+		      bool combo,
+		      enum serdes_xpcs_mode xpcs_mode,
+		      enum serdes_clock clktype,
+		      enum serdes_clock_fmhz fmhz);
 
 #endif /* PCIE_S32GEN1_H */
