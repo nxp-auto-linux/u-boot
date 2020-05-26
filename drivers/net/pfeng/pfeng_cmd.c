@@ -900,6 +900,17 @@ static void print_emacs_mode(char *label)
 	       pfeng_emac_get_interface_type_str(2));
 }
 
+const char *pfeng_cfg_get_mode_str(void)
+{
+	static const char *modes[3] = {
+		"disable",
+		"enable",
+		"enable/run"
+	};
+
+	return modes[pfeng_cfg_get_mode()];
+}
+
 static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		       int argc, char * const argv[])
 {
@@ -916,9 +927,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 	if (!strcmp(argv[1], "info")) {
 		char *env_fw = env_get(PFENG_ENV_VAR_FW_SOURCE);
 
-		printf("PFE mode: %s\n",
-				pfeng_cfg_get_mode() == PFENG_MODE_DISABLE ?
-				"disabled" : "enabled");
+		printf("PFE mode: %s\n", pfeng_cfg_get_mode_str());
 		print_emacs_mode("  ");
 		if (env_fw)
 			printf("  fw: '%s' (from env)\n", env_fw);
