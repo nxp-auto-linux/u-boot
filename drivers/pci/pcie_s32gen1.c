@@ -51,6 +51,19 @@ DECLARE_GLOBAL_DATA_PTR;
 
 LIST_HEAD(s32_pcie_list);
 
+static inline void s32_pcie_enable_dbi_rw(void __iomem *dbi)
+{
+	/* Enable writing dbi registers */
+	BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(dbi),
+		PCIE_DBI_RO_WR_EN);
+}
+
+static inline void s32_pcie_disable_dbi_rw(void __iomem *dbi)
+{
+	BCLR32(PCIE_PORT_LOGIC_MISC_CONTROL_1(dbi),
+		PCIE_DBI_RO_WR_EN);
+}
+
 static void s32_get_link_status(struct s32_pcie *, u32 *, u32 *, bool);
 
 static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
@@ -344,8 +357,7 @@ static int s32_pcie_setup_ctrl(struct s32_pcie *pcie)
 	bool ret = 0;
 
 	/* Enable writing dbi registers */
-	BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
-			PCIE_DBI_RO_WR_EN);
+	s32_pcie_enable_dbi_rw(pcie->dbi);
 
 	s32_pcie_rc_setup_atu(pcie);
 
@@ -354,8 +366,8 @@ static int s32_pcie_setup_ctrl(struct s32_pcie *pcie)
 	s32_pcie_clear_multifunction(pcie);
 	s32_pcie_drop_msg_tlp(pcie);
 
-	BCLR32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi),
-			PCIE_DBI_RO_WR_EN);
+	/* Disable writing dbi registers */
+	s32_pcie_disable_dbi_rw(pcie->dbi);
 
 	return ret;
 }
@@ -476,7 +488,7 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	int ret = 0;
 
 	/* Enable writing dbi registers */
-	BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(pcie->dbi), PCIE_DBI_RO_WR_EN);
+	s32_pcie_enable_dbi_rw(pcie->dbi);
 
 	s32_serdes_delay_cfg(pcie, true);
 
@@ -502,8 +514,8 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 
 	s32_serdes_delay_cfg(pcie, false);
 
-	/* Enable writing dbi registers */
-	BCLR32(PCIE_PORT_LOGIC_MISC_CONTROL_1((pcie->dbi)), PCIE_DBI_RO_WR_EN);
+	/* Disable writing dbi registers */
+	s32_pcie_disable_dbi_rw(pcie->dbi);
 
 	return ret;
 }
@@ -536,6 +548,8 @@ void s32_pcie_change_mstr_ace_cache(void __iomem *dbi, uint32_t arcache,
 bool s32_pcie_set_link_width(void __iomem *dbi,
 		int id, enum serdes_link_width linkwidth)
 {
+	s32_pcie_enable_dbi_rw(dbi);
+
 	/* Set link width */
 	RMW32(PCIE_PORT_LOGIC_GEN2_CTRL(dbi),
 			PCIE_NUM_OF_LANES_VALUE(linkwidth),
@@ -553,6 +567,8 @@ bool s32_pcie_set_link_width(void __iomem *dbi,
 				PCIE_LINK_CAPABLE);
 	}
 
+	s32_pcie_disable_dbi_rw(dbi);
+
 	return true;
 }
 
@@ -568,8 +584,7 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		W32(dbi + SS_PE0_GEN_CTRL_1, DEVICE_TYPE_VALUE(PCIE_EP));
 
 	/* Enable writing dbi registers */
-	BSET32(PCIE_PORT_LOGIC_MISC_CONTROL_1(dbi),
-			PCIE_DBI_RO_WR_EN);
+	s32_pcie_enable_dbi_rw(dbi);
 
 	/* Enable direct speed change */
 	BSET32(PCIE_PORT_LOGIC_GEN2_CTRL(dbi),
@@ -598,8 +613,8 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 				PCIE_IO_EN | PCIE_MSE | PCIE_BME);
 	}
 
-	BCLR32(PCIE_PORT_LOGIC_MISC_CONTROL_1(dbi),
-			PCIE_DBI_RO_WR_EN);
+	/* Disable writing dbi registers */
+	s32_pcie_disable_dbi_rw(dbi);
 
 	return true;
 }
@@ -728,6 +743,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	struct uclass *uc = dev->uclass;
 	int ret = 0;
 	bool ltssm_en = false;
+	pcie->enabled = false;
 
 #ifdef PCIE_MIN_SOC_REV_SUPPORTED
 	uint32_t raw_rev = 0;
@@ -763,8 +779,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	if (!ltssm_en) {
 		printf("PCIe%d: Not configuring PCIe, PHY not configured\n",
 			pcie->id);
-		pcie->enabled = false;
-		return -ENXIO;
+		return ret;
 	}
 
 	if (s32_pcie_wait_link_up(pcie->dbi)) {
@@ -777,24 +792,26 @@ static int s32_pcie_probe(struct udevice *dev)
 		pcie->linkspeed = speed;
 		printf("PCIe%d: Link up! X%d, Gen%d\n", pcie->id,
 				pcie->linkwidth, pcie->linkspeed);
+		pcie->enabled = true;
 	} else {
 		printf("PCIe%d: Failed to get link up\n", pcie->id);
 		s32_pcie_show_link_err_status(pcie);
 	}
 
-	pcie->enabled = true;
 	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
 
 	/* apply other custom settings (bars, iATU etc.) */
-	if (!pcie->ep_mode)
+	if (!pcie->ep_mode) {
+		if (!pcie->enabled)
+			return ret;
 		ret = s32_pcie_setup_ctrl(pcie);
-	else
+	} else {
+		/* We don't need link up to configure EP */
+		pcie->enabled = true;
 		ret = s32_pcie_setup_ep(pcie);
+	}
 
-	if (ret)
-		return ret;
-
-	if (uc) {
+	if (!ret && uc) {
 		struct uclass_driver *uc_drv = uc->uc_drv;
 
 		/* for EP mode, skip postprobing functions since

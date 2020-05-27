@@ -281,12 +281,6 @@ void s32_serdes_phy_reg_write(struct s32_serdes *pcie, uint32_t addr,
 	udelay(100);
 }
 
-void s32_serdes_force_rxdet_sim(struct s32_serdes *pcie)
-{
-	s32_serdes_phy_reg_write(pcie, 0x1006, 0x0c, 0xff);
-	s32_serdes_phy_reg_write(pcie, 0x1106, 0x0c, 0xff);
-}
-
 void s32_serdes_phy_init(struct s32_serdes *pcie)
 {
 	/* DELTA_IQ_OVRD_IN enable and overrides PCIe0.L0 */
@@ -319,8 +313,6 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 						SERDES_MODE_PCIE_SGMII0))
 				return false;
 		}
-		/*	Set pipeP_pclk */
-		W32(pcie->dbi + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
 
 		/* Configure SS mode based on XPCS */
 		if (pcie->xpcs_mode == SGMII_XPCS0)
@@ -355,7 +347,7 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 		BCLR32(pcie->dbi + SS_SS_RW_REG_0, 1 << 23);
 	}
 
-	if (IS_SERDES_PCIE(pcie->devtype) && !IS_SERDES_SGMII(pcie->devtype)) {
+	if (IS_SERDES_PCIE(pcie->devtype)) {
 
 		/* Monitor Serdes MPLL state */
 		if (wait_read32((void *)(pcie->dbi + SS_PHY_MPLLA_CTRL),
@@ -367,7 +359,6 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 
 		/* Set PHY register access to CR interface */
 		BSET32(pcie->dbi + SS_SS_RW_REG_0, 0x200);
-		s32_serdes_force_rxdet_sim(pcie);
 		s32_serdes_phy_init(pcie);
 	}
 
@@ -552,16 +543,16 @@ static int s32_serdes_probe(struct udevice *dev)
 		return ret;
 
 	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
+	if (pcie->devtype == SERDES_INVALID) {
+		printf("Not configuring SerDes%d,", pcie->id);
+		printf(" no RC/EP/SGMII configuration selected\n");
+		return ret;
+	}
+
 	pcie->clktype = s32_serdes_get_clock_from_hwconfig(pcie->id);
 	/* Get XPCS configuration */
 	pcie->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(pcie->id);
 	pcie->fmhz = s32_serdes_get_clock_fmhz_from_hwconfig(pcie->id);
-
-	if (pcie->devtype == SERDES_INVALID) {
-		printf("Not configuring SerDes%d,", pcie->id);
-		printf(" no RC/EP/SGMII configuration selected\n");
-		return 0;
-	}
 
 	/* In case of sgmii mode check xpcs configuration */
 	if (IS_SERDES_SGMII(pcie->devtype) &&
@@ -589,7 +580,7 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	/* Apply the base SerDes/PHY settings */
 	if (!s32_serdes_init(pcie))
-		return -EIO;
+		return ret;
 
 	if (IS_SERDES_SGMII(pcie->devtype) &&
 	    pcie->xpcs_mode != SGMII_INAVALID) {
@@ -627,7 +618,7 @@ static int s32_serdes_probe(struct udevice *dev)
 					pcie->linkwidth) ||
 			!s32_pcie_set_link_width(pcie->dbi, pcie->id,
 					pcie->linkwidth))
-			return -EIO;
+			return ret;
 
 		s32_serdes_enable_ltssm(pcie->dbi);
 
@@ -643,7 +634,7 @@ static int s32_serdes_probe(struct udevice *dev)
 				if (!s32_pcie_set_link_width(pcie->dbi,
 						pcie->id,
 						pcie->linkwidth))
-					return -EIO;
+					return ret;
 
 				s32_serdes_enable_ltssm(pcie->dbi);
 				if (s32_pcie_wait_link_up(pcie->dbi))
@@ -653,7 +644,7 @@ static int s32_serdes_probe(struct udevice *dev)
 		}
 	}
 
-	return 0;
+	return ret;
 }
 
 __weak void show_pcie_devices(void)
