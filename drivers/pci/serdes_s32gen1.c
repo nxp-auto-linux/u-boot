@@ -244,7 +244,7 @@ int s32_deassert_serdes_reset(struct s32_serdes *pcie)
 
 bool s32_assert_serdes_reset(struct s32_serdes *pcie)
 {
-	debug("%s: SertDes%d\n", __func__, pcie->id);
+	debug("%s: SerDes%d\n", __func__, pcie->id);
 
 	/* Assert SerDes reset */
 	if (pcie->id == 0)
