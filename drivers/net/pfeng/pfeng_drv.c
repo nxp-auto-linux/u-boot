@@ -776,9 +776,6 @@ pfeng_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	/* signalize RUNning state */
-	pfeng_cfg_set_mode(PFENG_MODE_RUN);
-
 	/* register mdios */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++)
 		if (priv->config->config_mac_mask & (1 << i))

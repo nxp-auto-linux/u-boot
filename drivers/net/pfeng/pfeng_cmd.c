@@ -769,16 +769,6 @@ static int pfeng_cfg_mode_enable(void)
 	return 0;
 }
 
-static int pfeng_cfg_mode_run(void)
-{
-	/* reset PFE IP */
-	pfeng_cfg_mode_disable();
-	/* enable pin/clock muxing */
-	pfeng_cfg_mode_enable();
-
-	return 0;
-}
-
 bool pfeng_cfg_set_mode(u32 mode)
 {
 	int ret = EINVAL;
@@ -793,11 +783,6 @@ bool pfeng_cfg_set_mode(u32 mode)
 		break;
 	case PFENG_MODE_ENABLE:
 		ret = pfeng_cfg_mode_enable();
-		break;
-	case PFENG_MODE_RUN:
-		if (pfeng_mode == PFENG_MODE_DISABLE)
-			pfeng_cfg_mode_enable();
-		ret = pfeng_cfg_mode_run();
 		break;
 	}
 
