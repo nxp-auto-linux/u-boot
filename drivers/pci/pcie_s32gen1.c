@@ -619,7 +619,9 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	int node = dev_of_offset(dev);
 	int ret = 0;
 
-	debug("PCIe%d: dt node: %d\n", pcie->id, node);
+	debug("%s: dt node: %d\n", __func__, node);
+
+	pcie->id = fdtdec_get_int(fdt, node, "device_id", -1);
 
 	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
 				     "dbi", &pcie->dbi_res);
@@ -652,9 +654,6 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	debug("PCIe%d: %s: cfg: 0x%p (0x%p)\n", pcie->id,
 			__func__, (void *)pcie->cfg_res.start,
 			pcie->cfg0);
-
-	pcie->id = fdtdec_get_int(fdt, node, "device_id", -1);
-
 	/* get supported speed (Gen1/Gen2/Gen3) from device tree */
 	pcie->linkspeed = fdtdec_get_int(fdt, node, "link-speed", GEN1);
 
@@ -746,7 +745,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	}
 #endif
 
-	debug("PCIe%d: %s: probing %s\n", pcie->id, __func__, dev->name);
+	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
 		printf("PCIe%d: invalid internal data\n", pcie->id);
 		return -EINVAL;
