@@ -51,7 +51,6 @@ enum {
 	PFENG_MODE_ENABLE,		/* PFE/EMACs out of reset,
 					 * pin/clocks muxing enabled
 					 */
-	PFENG_MODE_RUN,			/* PFE fully functional */
 };
 
 #define PFENG_MODE_DEFAULT PFENG_MODE_ENABLE
