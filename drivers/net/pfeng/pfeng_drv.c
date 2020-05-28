@@ -13,6 +13,7 @@
 #include <net.h>
 #include <elf.h>
 #include <hwconfig.h>
+#include <spi_flash.h>
 
 #include "pfeng.h"
 
@@ -37,70 +38,167 @@ pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
 
 	ret = fs_set_blk_dev(iface, part, ftype);
 	if (ret < 0)
-		goto err;
+		goto exit;
 
 	ret = fs_size(fname, &length);
 	if (ret)
-		goto err;
+		goto exit;
 
 	addr = valloc(length);
 	if (!addr) {
 		ret = -ENOMEM;
-		goto err;
+		goto exit;
 	}
 
 	ret = fs_set_blk_dev(iface, part, ftype);
 	if (ret < 0)
-		goto err;
+		goto exit;
 
 	ret = fs_read(fname, (ulong)addr, 0, length, &read);
 	if (ret < 0)
-		goto err;
+		goto exit;
 
 	priv->fw.class_data = addr;
 	priv->fw.class_size = read;
 
-	debug("Found PFEng firmware: %s@%s:%s size %lld\n", iface, part, fname,
-	      read);
+	debug("Found PFEng firmware: %s@%s:%s size %lld\n",
+	      iface, part, fname, read);
 
-	return 0;
+exit:
+	if (ret) {
+		if (addr)
+			free(addr);
 
-err:
-	dev_err(priv->dev,
-		"PFEng firmware file '%s@%s:%s' loading failed: %d\n", iface,
-		part, fname, ret);
-	priv->fw.class_data = NULL;
-	priv->fw.class_size = 0;
+		dev_err(priv->dev, "PFEng firmware file '%s@%s:%s' loading failed: %d\n",
+			iface, part, fname, ret);
+		priv->fw.class_data = NULL;
+		priv->fw.class_size = 0;
+	}
 	return ret;
 }
 #endif /* FSL_PFENG_FW_LOC_SDCARD */
 
 #if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_QSPI)
+static int setup_flash_device(struct spi_flash **flash)
+{
+	struct udevice *new;
+	int	ret;
+
+	/* Use default QSPI device. Speed and mode will be read from DT */
+	ret = spi_flash_probe_bus_cs(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
+				     CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE,
+				     &new);
+	if (ret) {
+		log_err("spi_flash_probe_bus_cs() failed", 0);
+		return ret;
+	}
+
+	*flash = dev_get_uclass_priv(new);
+	return 0;
+}
+
+static void swab_elf_hdr(Elf32_Ehdr *elf_hdr)
+{
+	elf_hdr->e_type = swab16(elf_hdr->e_type);
+	elf_hdr->e_machine = swab16(elf_hdr->e_machine);
+	elf_hdr->e_version = swab32(elf_hdr->e_version);
+	elf_hdr->e_entry = swab32(elf_hdr->e_entry);
+	elf_hdr->e_phoff = swab32(elf_hdr->e_phoff);
+	elf_hdr->e_shoff = swab32(elf_hdr->e_shoff);
+	elf_hdr->e_flags = swab32(elf_hdr->e_flags);
+	elf_hdr->e_ehsize = swab16(elf_hdr->e_ehsize);
+	elf_hdr->e_phentsize = swab16(elf_hdr->e_phentsize);
+	elf_hdr->e_phnum = swab16(elf_hdr->e_phnum);
+	elf_hdr->e_shentsize = swab16(elf_hdr->e_shentsize);
+	elf_hdr->e_shnum = swab16(elf_hdr->e_shnum);
+	elf_hdr->e_shstrndx = swab16(elf_hdr->e_shstrndx);
+}
+
+static int load_pfe_fw(struct spi_flash *flash, unsigned long qspi_addr,
+		       void **fw_buffer, size_t *elf_size)
+{
+	int ret;
+	Elf32_Ehdr elf_hdr;
+
+	ret = spi_flash_read(flash, qspi_addr, sizeof(elf_hdr), &elf_hdr);
+	if (ret) {
+		log_err("Failed to read PFE FW Header from QSPI\n");
+		return -EIO;
+	}
+	swab_elf_hdr(&elf_hdr);
+
+	*elf_size = elf_hdr.e_shoff + (elf_hdr.e_shentsize * elf_hdr.e_shnum);
+
+	if (!valid_elf_image((unsigned long)&elf_hdr)) {
+		log_err(dev, "PFEng firmware is not valid at qspi@%p\n",
+			priv->fw.class_data);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	*fw_buffer = valloc(*elf_size);
+	if (!*fw_buffer) {
+		log_err("Failed to allocate 0x%x bytes for PFE FW\n", length);
+		ret = -ENOMEM;
+		goto exit;
+	}
+
+	ret = spi_flash_read(flash, qspi_addr, *elf_size, *fw_buffer);
+	if (ret) {
+		log_err("Failed to load PFE FW from QSPI\n");
+		goto exit;
+	}
+
+exit:
+	if (ret && *fw_buffer)
+		free(*fw_buffer);
+
+	return ret;
+}
+
 static int
 pfeng_fw_load(char *fname, char *iface, const char *part, int ftype,
 	      struct pfeng_priv *priv)
 {
 	int ret = 0;
+	void *fw_buffer = NULL;
+	struct spi_flash *flash;
+	unsigned long qspi_addr;
+	size_t elf_size;
 
-	/* point to the embedded fw array */
-	priv->fw.class_data = (void *)simple_strtoul(part, NULL, 16);
-	if (priv->fw.class_data) {
-		if (!valid_elf_image((addr_t)priv->fw.class_data)) {
-			dev_err(dev, "PFEng firmware is not valid at qspi@%p\n",
-				priv->fw.class_data);
-			return -EINVAL;
-		} else
-			priv->fw.class_size =
-				0x200000; //FIXME: parse elf for size
-	}
+	qspi_addr = simple_strtoul(part, NULL, 16);
+
+	ret = setup_flash_device(&flash);
+	if (ret)
+		goto exit;
+
+	ret = load_pfe_fw(flash, qspi_addr, &fw_buffer, &elf_size);
+	if (ret)
+		goto exit;
+
+	priv->fw.class_data = fw_buffer;
+	priv->fw.class_size = elf_size;
 
 	if (!priv->fw.class_data) {
 		dev_err(dev, "PFEng firmware not found at qspi@%p\n",
 			priv->fw.class_data);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto exit;
 	}
 
 	debug("Found PFEng firmware: qspi@%p\n", priv->fw.class_data);
+
+exit:
+
+	if (ret) {
+		if (fw_buffer)
+			free(fw_buffer);
+
+		dev_err(priv->dev, "PFEng firmware file '%s@%s:%s' loading failed: %d\n",
+			iface, part, fname, ret);
+		priv->fw.class_data = NULL;
+		priv->fw.class_size = 0;
+	}
 
 	return ret;
 }
