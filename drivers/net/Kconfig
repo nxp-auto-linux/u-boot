@@ -112,7 +112,7 @@ config FSL_PFENG_FW_NAME
 config FSL_PFENG_FW_PART
 	string "PFE firmware partition"
 	default "0:1" if FSL_PFENG_FW_LOC_SDCARD
-	default "0x00800000"
+	default "0x02000000"
 	help
 	  Partition containing the firmware file.
 	  For "sdcard", it is usually the first device's first (boot) partition, so "0:1".
