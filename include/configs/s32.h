@@ -142,6 +142,22 @@
 
 #endif
 
+#ifdef CONFIG_S32_GEN1
+#define S32_LOAD_FLASH_IMAGES_CMD\
+	"sf probe 6:0;"\
+	"sf read ${loadaddr} ${kernel_flashaddr} ${kernel_maxsize};"\
+	"sf read ${fdt_addr} ${fdt_flashaddr} ${fdt_maxsize};"\
+	"sf read ${ramdisk_addr} ${ramdisk_flashaddr} "\
+	" ${ramdisk_maxsize};"
+
+#else
+#define S32_LOAD_FLASH_IMAGES_CMD\
+	"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
+	"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
+	"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"
+
+#endif
+
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
 
 /* Flash booting */
@@ -468,10 +484,8 @@
 				__stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
-		"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
-		"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
+		S32_LOAD_FLASH_IMAGES_CMD\
 		LIMIT_DDR\
-		"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
