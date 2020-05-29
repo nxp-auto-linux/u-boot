@@ -366,13 +366,15 @@ pfeng_write_hwaddr(struct udevice *dev)
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 	uchar ea[ARP_HLEN];
 
-	if (!priv)
+	if (!priv || !pdata)
 		return 0;
 
 	/* Use 'pfe%daddr' for hwaddr */
 	if (eth_env_get_enetaddr_by_index("pfe", priv->if_index, ea)) {
 		if (memcmp(pdata->eth.enetaddr, ea, ARP_HLEN))
 			memcpy(pdata->eth.enetaddr, ea, ARP_HLEN);
+		if (!priv->logif_emac)
+			return 0;
 		return pfe_log_if_set_mac_addr(priv->logif_emac, ea);
 	}
 
