@@ -32,10 +32,10 @@ static inline int get_siul2_midr2_speed(void)
 #define SIUL2_IMCRn(i)			(SIUL2_IMCR_BASE +  4 * (i))
 
 #define SIUL2_GPDO_BASE			(SIUL2_BASE_ADDR + 0x00001300)
-#define SIUL2_GPDOn(i)			(SIUL2_GPDO_BASE + (i))
+#define SIUL2_GPDO_N(i)			(SIUL2_GPDO_BASE + 4 * (i))
 
 #define SIUL2_GPDI_BASE			(SIUL2_BASE_ADDR + 0x00001500)
-#define SIUL2_GPDIn(i)			(SIUL2_GPDI_BASE + (i))
+#define SIUL2_GPDI_N(i)			(SIUL2_GPDI_BASE + 4 * (i))
 
 #define SIUL2_PGPDO_BASE		(SIUL2_BASE_ADDR + 0x00001700)
 #define SIUL2_PGPDOn(i)			(SIUL2_PGPDO_BASE + \
@@ -52,10 +52,12 @@ static inline int get_siul2_midr2_speed(void)
 
 /* GPIO */
 /* 163 GPIOs in output mode, we assume the GPIO number is in range */
-#define SIUL2_GPDO_for_GPIO(i)		(((i) & (~0x3)) >> 2)
-#define SIUL2_GPDO_PDO_off_for_GPIO(i)	(((i) & (0x3))
-#define SIUL2_PDOn(i)			(SIUL2_GPDOn(SIUL2_GPDO_for_GPIO(i) + \
-						SIUL2_GPDO_PDO_off_for_GPIO(i))
+#define SIUL2_GPDO_FOR_GPIO(i)		(((i) & (~0x3)) >> 2)
+#define SIUL2_GPDO_PDO_OFF_FOR_GPIO(i)	(~(i) & (0x3))
+#define SIUL2_PDO_N(i) \
+	(SIUL2_GPDO_N(SIUL2_GPDO_FOR_GPIO(i)) + \
+	 SIUL2_GPDO_PDO_OFF_FOR_GPIO(i))
+
 #define SIUL2_PGPDO_FOR_GPIO(i)		((i) >> 4)
 #define SIUL2_PGPDO_PPDO_OFF_FOR_GPIO(i)	((i) & BIT(3) ? 0 : 1)
 #define SIUL2_PPDO_BYTE(i) \
@@ -692,6 +694,7 @@ static inline int get_siul2_midr2_speed(void)
 
 /* GPIO Settings */
 
+#define SIUL2_MSCR_PF9  89
 #define SIUL2_MSCR_PF11 91
 #define SIUL2_MSCR_PF12 92
 #define SIUL2_MSCR_PF13 93

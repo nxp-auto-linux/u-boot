@@ -25,8 +25,9 @@ DECLARE_GLOBAL_DATA_PTR;
 static void setup_iomux_gpio(void)
 {
 	/* Only Device ID pin configuration.
-	 * To release the slave V2s out of reset, the output buffers will not be
-	 * configured now, but in release_slaves(), after setting the data
+	 * To release the slave V2s out of reset and power up the GMSL
+	 * deserializers, the output buffers will not be configured now, but in
+	 * release_slaves()/power_up_deserializer(), after setting the data
 	 * registers.
 	 */
 	static const u8 id_pins[] = {
@@ -75,6 +76,12 @@ static void release_slaves(void)
 
 	for (i = 0; i < size; i++)
 		writel(SIUL2_MSCR_GPO, SIUL2_MSCRn(reset_pins[i]));
+}
+
+static void power_up_deserializer(void)
+{
+	writeb(SIUL2_GPIO_VALUE1, SIUL2_PDO_N(SIUL2_MSCR_PF9));
+	writel(SIUL2_MSCR_GPO, SIUL2_MSCRn(SIUL2_MSCR_PF9));
 }
 
 #ifdef CONFIG_FSL_DSPI
@@ -186,6 +193,10 @@ int board_early_init_f(void)
 	id = get_device_id();
 	if (id == 1)
 		release_slaves();
+
+	/* Only SoCs with ID 1, 3 and 5 can power up a deserializer. */
+	if (id & 1)
+		power_up_deserializer();
 
 	setup_iomux_uart();
 	setup_iomux_enet();
