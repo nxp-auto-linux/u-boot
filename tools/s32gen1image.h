@@ -130,6 +130,7 @@ struct program_image {
 #endif
 	struct image_comp dcd;
 	struct image_comp app_code;
+	struct image_comp code;
 	__u8 *header;
 };
 

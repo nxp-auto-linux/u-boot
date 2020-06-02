@@ -49,6 +49,11 @@ static struct program_image image_layout = {
 		.alignment = 0x200U,
 		.size = sizeof(struct application_boot_code),
 	},
+	.code = {
+		.offset = S32_AUTO_OFFSET,
+		.alignment = 0x200U,
+		.size = 0,
+	},
 };
 
 static uint32_t dcd_data[] = {
@@ -211,6 +216,7 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
 	size_t code_length;
+	size_t pre_code_padding;
 	uint8_t *dcd;
 	struct ivt *ivt;
 	struct application_boot_code *app_code;
@@ -241,22 +247,32 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
 
+	pre_code_padding = image_layout.code.offset
+				- image_layout.app_code.offset
+				- image_layout.app_code.size;
+
 	if (read_fip_image(tool_params, &fip_data)) {
 		code_length = sbuf->st_size
 				- image_layout.app_code.offset
 				- offsetof(struct application_boot_code, code);
+		code_length += pre_code_padding;
 		code_length = ROUND(code_length, 0x40);
 
-		app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE;
+		app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE
+							- pre_code_padding;
 		app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
 		app_code->code_length = code_length;
 	} else {
 		printf("mkimage: s32gen1image: %s is a FIP image\n",
 		       tool_params->datafile);
 		app_code->ram_start_pointer =
-					tool_params->addr - FIP_BL2_OFFSET;
+					tool_params->addr
+					- FIP_BL2_OFFSET
+					- pre_code_padding;
 		app_code->ram_entry_pointer = tool_params->ep;
-		app_code->code_length = fip_data.size + FIP_BL2_OFFSET;
+		app_code->code_length = fip_data.size
+					+ FIP_BL2_OFFSET
+					+ pre_code_padding;
 	}
 
 #ifndef CONFIG_FLASH_BOOT
@@ -298,6 +314,7 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		&program_image->qspi_params,
 #endif
 		&program_image->app_code,
+		&program_image->code,
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
