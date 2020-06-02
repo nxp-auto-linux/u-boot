@@ -123,8 +123,8 @@ static void disable_partition_2(void)
 
 static void enable_partition_2(void)
 {
-	/* Setup PFE coherency to FULL */
-	writel(PFE_COH_PORTS_MASK_FULL, S32G_PFE_COH_EN);
+	/* Setup PFE coherency for all HIFs */
+	writel(PFE_COH_PORTS_MASK_HIF_0_3, S32G_PFE_COH_EN);
 
 	/* Enabling PFE clocks (EMACs + TS) in partition 2 */
 	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO)) |
