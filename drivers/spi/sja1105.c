@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2018,2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -21,6 +21,10 @@
 
 #define sja_debug(fmt, ...) \
 	debug("[SJA1105]%s:%d " fmt, __func__, __LINE__, ##__VA_ARGS__);
+
+#ifdef CONFIG_DM_SPI
+#define SPI_NAME_PRINT_TEMPLATE "generic_%d:%d"
+#endif
 
 #define NUM_MAC_LVL_COUNTERS1 4
 static char *mac_lvl_counters1[NUM_MAC_LVL_COUNTERS1] = {
@@ -80,14 +84,42 @@ struct sja_parms {
 	u8 *cfg_bin;
 };
 
+static struct spi_slave *get_spi_slave(struct sja_parms *sjap)
+{
+	struct spi_slave *slave;
+#ifdef CONFIG_DM_SPI
+#define MAX_ARRAY_SIZE 30
+	int ret;
+	char name[MAX_ARRAY_SIZE + 1];
+	struct udevice *dev;
+
+	name[MAX_ARRAY_SIZE] = 0;
+	ret = snprintf(name, sizeof(name) - 1, SPI_NAME_PRINT_TEMPLATE,
+		       sjap->bus, sjap->cs);
+	if (ret > MAX_ARRAY_SIZE)
+		return NULL;
+
+	ret = spi_get_bus_and_cs(sjap->bus, sjap->cs, SJA_DSPI_HZ,
+				 SJA_DSPI_MODE, "spi_generic_drv",
+				 name, &dev, &slave);
+	if (ret)
+		return NULL;
+
+#else
+	slave = spi_setup_slave(sjap->bus, sjap->cs, SJA_DSPI_HZ,
+				SJA_DSPI_MODE);
+
+#endif
+	return slave;
+}
+
 static int sja1105_write(struct sja_parms *sjap, u32 *cmd, u8 nb_words)
 {
 	struct spi_slave *slave;
 	int bitlen = (nb_words << 3) << 2;
 	int ret = 0;
 
-	slave = spi_setup_slave(sjap->bus, sjap->cs, SJA_DSPI_HZ,
-		SJA_DSPI_MODE);
+	slave = get_spi_slave(sjap);
 	if (!slave) {
 		printf("Invalid device %d:%d\n", sjap->bus, sjap->cs);
 		return -EINVAL;
@@ -107,7 +139,9 @@ static int sja1105_write(struct sja_parms *sjap, u32 *cmd, u8 nb_words)
 
 done:
 	spi_release_bus(slave);
+#ifndef CONFIG_DM_SPI
 	spi_free_slave(slave);
+#endif
 
 	return ret;
 }
@@ -146,8 +180,7 @@ static u32 sja1105_read_reg32(struct sja_parms *sjap, u32 reg_addr)
 	sja_debug("reading 4bytes @0x%08x tlen %d t.bits_per_word %d\n",
 		  reg_addr, 8, 64);
 
-	slave = spi_setup_slave(sjap->bus, sjap->cs, SJA_DSPI_HZ,
-				SJA_DSPI_MODE);
+	slave = get_spi_slave(sjap);
 	if (!slave) {
 		printf("Invalid device %d:%d\n", sjap->bus, sjap->cs);
 		return -EINVAL;
@@ -170,7 +203,9 @@ static u32 sja1105_read_reg32(struct sja_parms *sjap, u32 reg_addr)
 	if (rc)
 		printf("Error %d during SPI transaction\n", rc);
 	spi_release_bus(slave);
+#ifndef CONFIG_DM_SPI
 	spi_free_slave(slave);
+#endif
 
 	upper = (resp[1] & 0x0000FFFF) << 16;
 	down = (resp[1] & 0xFFFF0000) >> 16;
@@ -191,8 +226,7 @@ static u32 sja1105_write_reg32(struct sja_parms *sjap, u32 reg_addr, u32 val)
 	sja_debug("writing 4bytes @0x%08x tlen %d t.bits_per_word %d\n",
 		  reg_addr, 8, 64);
 
-	slave = spi_setup_slave(sjap->bus, sjap->cs, SJA_DSPI_HZ,
-				SJA_DSPI_MODE);
+	slave = get_spi_slave(sjap);
 	if (!slave) {
 		printf("Invalid device %d:%d\n", sjap->bus, sjap->cs);
 		return -EINVAL;
@@ -218,7 +252,9 @@ static u32 sja1105_write_reg32(struct sja_parms *sjap, u32 reg_addr, u32 val)
 	if (rc)
 		printf("Error %d during SPI transaction\n", rc);
 	spi_release_bus(slave);
+#ifndef CONFIG_DM_SPI
 	spi_free_slave(slave);
+#endif
 
 	upper = (resp[1] & 0x0000FFFF) << 16;
 	down = (resp[1] & 0xFFFF0000) >> 16;
