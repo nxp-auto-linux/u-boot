@@ -202,9 +202,19 @@ void clock_init(void)
 	s32gen1_enable_partition_blocks(MC_ME_USDHC_PRTN, &part0_blocks[0],
 					ARRAY_SIZE(part0_blocks));
 
+/**
+ * this check is required for secure boot with hse
+ * in secure mode, the bootrom does not switch away from the CORE_PLL
+ * clock, and this function call would attempt to disable that clock,
+ * resetting the board
+ *
+ * skip it for now, if using secure boot
+ */
+#if !defined(CONFIG_HSE_SECBOOT)
 	s32gen1_program_pll(ARM_PLL, XOSC_CLK_FREQ, ARM_PLL_PHI_Nr, arm_phi,
 			    ARM_PLL_DFS_Nr, arm_dfs, ARM_PLL_PLLDV_RDIV,
 			    ARM_PLL_PLLDV_MFI, ARM_PLL_PLLFD_MFN);
+#endif
 
 	s32gen1_program_pll(PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI_Nr,
 			    periph_phi, PERIPH_PLL_DFS_Nr, periph_dfs,
