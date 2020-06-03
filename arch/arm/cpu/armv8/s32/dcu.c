@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * (C) Copyright 2017-2018 NXP
+ * (C) Copyright 2017-2018,2020 NXP
  *
  * FSL DCU Framebuffer driver
  */
@@ -38,8 +38,11 @@ unsigned int dcu_set_pixel_clock(unsigned int pixclock)
 	return div;
 }
 
-int platform_dcu_init(unsigned int xres, unsigned int yres,
-		      const char *port, struct fb_videomode *dcu_fb_videomode)
+int platform_dcu_init(struct fb_info *fbinfo,
+		      unsigned int xres,
+		      unsigned int yres,
+		      const char *port,
+		      struct fb_videomode *dcu_fb_videomode)
 {
 	const char *name;
 	unsigned int pixel_format;
@@ -56,7 +59,7 @@ int platform_dcu_init(unsigned int xres, unsigned int yres,
 	printf("DCU: Switching to %s monitor @ %ux%u\n", name, xres, yres);
 
 	pixel_format = 32;
-	fsl_dcu_init(xres, yres, pixel_format);
+	fsl_dcu_init(fbinfo, xres, yres, pixel_format);
 
 	return 0;
 }
