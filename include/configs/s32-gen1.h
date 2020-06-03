@@ -33,7 +33,6 @@
 /* System Timer */
 /* #define CONFIG_SYS_PIT_TIMER */
 
-#define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 
 /* #define CONFIG_CMD_EXT2 EXT2 Support */

@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2018 NXP
+ * Copyright 2016-2019,2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -18,7 +18,6 @@
 
 #define CONFIG_DDR_INIT_DELAY 100
 
-#define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 
 /* HDMI configs */

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2018-2019 NXP
+ * (C) Copyright 2018-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -23,7 +23,6 @@
 
 #define CONFIG_DDR_INIT_DELAY 100
 
-#define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 
 /* HDMI configs */
