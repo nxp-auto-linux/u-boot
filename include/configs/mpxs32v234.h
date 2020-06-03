@@ -1,7 +1,7 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -22,8 +22,6 @@
 
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
-
-#define CONFIG_CMD_DATE
 
 /* Config DCU */
 #define CONFIG_FSL_DCU_FB
