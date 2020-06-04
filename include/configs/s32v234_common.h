@@ -42,6 +42,11 @@
 /* Flash related definitions */
 #define CONFIG_S32V234_USES_FLASH
 
+#if !defined(CONFIG_TARGET_CAMPPS32V2)
+/* Enable DCU QoS fix */
+#define CONFIG_DCU_QOS_FIX
+#endif
+
 #include <configs/s32.h>
 
 /* Config DCU */

@@ -34,6 +34,12 @@ config TARGET_MPXS32V234
 	bool "Support s32v234sbc"
 	select S32V234EVB_29288
 
+config TARGET_CAMPPS32V2
+	bool "Support campps32v2"
+	help
+	  Enable Camera card V2 target.
+	  Camera card V2 is a developemnt board with 6x S32V.
+
 config TARGET_S32V344EVB
 	bool "Support s32v344evb"
 

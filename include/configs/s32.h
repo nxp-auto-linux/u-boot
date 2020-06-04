@@ -28,9 +28,6 @@
 /* Config CACHE */
 #define CONFIG_CMD_CACHE
 
-/* Enable DCU QoS fix */
-#define CONFIG_DCU_QOS_FIX
-
 /* Flat device tree definitions */
 #define CONFIG_OF_FDT
 #define CONFIG_OF_BOARD_SETUP
