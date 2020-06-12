@@ -56,6 +56,7 @@ static inline int get_siul2_midr2_speed(void)
 #define SIUL2_GPDO_PDO_off_for_GPIO(i)	(((i) & (0x3))
 #define SIUL2_PDOn(i)			(SIUL2_GPDOn(SIUL2_GPDO_for_GPIO(i) + \
 						SIUL2_GPDO_PDO_off_for_GPIO(i))
+#define SIUL2_PPDIO_BIT(i)		BIT(~(i) & 0x7)
 #define SIUL2_GPIO_VALUE0		(0x00)
 #define SIUL2_GPIO_VALUE1		(0x01)
 
@@ -670,5 +671,18 @@ static inline int get_siul2_midr2_speed(void)
 	 SIUL2_MSCR_MUX_MODE_ALT1)
 
 #endif /* CONFIG_FSL_DCU_FB */
+
+/* GPIO Settings */
+
+#define SIUL2_MSCR_PF11 91
+#define SIUL2_MSCR_PF12 92
+#define SIUL2_MSCR_PF13 93
+
+/* SIUL2 - General Purpose Input */
+#define SIUL2_MSCR_GPI \
+	(SIUL2_MSCR_MUX_MODE_ALT0 | \
+	 SIUL2_MSCR_IBE_EN | \
+	 SIUL2_MSCR_PKE_EN | \
+	 SIUL2_MSCR_PUE_EN)
 
 #endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */

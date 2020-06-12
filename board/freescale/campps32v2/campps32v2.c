@@ -22,6 +22,30 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+static void setup_iomux_gpio(void)
+{
+	/* Only Device ID pin configuration. */
+	static const u8 id_pins[] = {
+		SIUL2_MSCR_PF11,
+		SIUL2_MSCR_PF12,
+		SIUL2_MSCR_PF13,
+	};
+	u8 i, size = ARRAY_SIZE(id_pins);
+
+	for (i = 0; i < size; i++)
+		writel(SIUL2_MSCR_GPI, SIUL2_MSCRn(id_pins[i]));
+}
+
+static int get_device_id(void)
+{
+	/* SIUL2_PGPDI5 lsbyte provides the values of all the three ID pins. */
+	u8 values = readb(SIUL2_PGPDIn(5));
+
+	return (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF11)) >> 4 |
+	       (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF12)) >> 2 |
+	       (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF13));
+}
+
 #ifdef CONFIG_FSL_DSPI
 static void setup_iomux_dspi(void)
 {
@@ -126,6 +150,7 @@ int board_early_init_f(void)
 	clock_init();
 	mscm_init();
 
+	setup_iomux_gpio();
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
@@ -145,7 +170,7 @@ int board_init(void)
 
 int checkboard(void)
 {
-	printf("Board: %s\n", CONFIG_SYS_CONFIG_NAME);
+	printf("Board: %s (V2-%d)\n", CONFIG_SYS_CONFIG_NAME, get_device_id());
 
 	return 0;
 }
