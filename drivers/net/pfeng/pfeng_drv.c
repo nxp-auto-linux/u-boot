@@ -90,7 +90,7 @@ static int setup_flash_device(struct spi_flash **flash)
 				     CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE,
 				     &new);
 	if (ret) {
-		log_err("spi_flash_probe_bus_cs() failed", 0);
+		log_err("spi_flash_probe_bus_cs() failed\n");
 		return ret;
 	}
 
@@ -131,15 +131,15 @@ static int load_pfe_fw(struct spi_flash *flash, unsigned long qspi_addr,
 	*elf_size = elf_hdr.e_shoff + (elf_hdr.e_shentsize * elf_hdr.e_shnum);
 
 	if (!valid_elf_image((unsigned long)&elf_hdr)) {
-		log_err(dev, "PFEng firmware is not valid at qspi@%p\n",
-			priv->fw.class_data);
+		log_err("PFEng firmware is not valid\n");
 		ret = -EINVAL;
 		goto exit;
 	}
 
 	*fw_buffer = valloc(*elf_size);
 	if (!*fw_buffer) {
-		log_err("Failed to allocate 0x%x bytes for PFE FW\n", length);
+		log_err("Failed to allocate 0x%lx bytes for PFE FW\n",
+			*elf_size);
 		ret = -ENOMEM;
 		goto exit;
 	}
