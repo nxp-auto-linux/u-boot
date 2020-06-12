@@ -349,6 +349,7 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 					dspi_tx(priv, ctrl, *spi_wr16++);
 				else
 					dspi_tx(priv, ctrl, *spi_wr++);
+				dspi_rx(priv);
 			}
 
 			else if (din != NULL) {
@@ -383,6 +384,7 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 				dspi_tx(priv, ctrl, *spi_wr16);
 			else
 				dspi_tx(priv, ctrl, *spi_wr);
+			dspi_rx(priv);
 		}
 
 		else if (din != NULL) {
