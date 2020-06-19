@@ -13,12 +13,16 @@ Prerequisites
 
 HSE FW must be on the SD card to be able to use the demo applications.
 
+HSE is a separate NXP product, available through Flexera. To find out
+how to obtain HSE, please address our marketing department.
+
 Building U-Boot with HSE secure boot support
 --------------------------------------------
 
-If the CONFIG_S32_GEN1 option is set to 'y' in the .config file, the user
-can enable the CONFIG_CMD_HSE_ADVANCE_SECBOOT option in menuconfig, under
-'Command-line Interface'->'Boot commands'.
+If the CONFIG_S32_GEN1 option is set to 'y' in the .config file, the
+CONFIG_HSE_SECBOOT option must be enabled, as well as the
+CONFIG_CMD_HSE_ADVANCED_SECBOOT option, to enable the secboot prepare
+command in the u-boot command line.
 
 Furthermore, the CONFIG_SYS_TEXT_BASE option must be set to 0x34080000.
 
@@ -42,7 +46,7 @@ Signing u-boot code section with openssl
 First, we need to separate the U-Boot code (including Application BL header)
 from the IVT and DCD:
 
-	dd if=u-boot/u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=17
+	dd if=u-boot/u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=1042
 
 Next, we pad the extracted U-Boot code up to 1M. To find how many bytes need to
 be written at the end of u-boot-tosign.s32, we check its size (i.e. by using
@@ -91,21 +95,7 @@ The following commands will be provided for the above layout. The partitions for
 Linux and the rootfs need to be moved further on the SD card, to leave sufficient
 space for the data required by HSE for secure boot.
 
-First, we need to modify u-boot.s32's IVT. We can do this using a hex editor, or
-simply by opening the file in vim, then running %!xxd in command mode. The IVT
-should look like this:
-
-00000000: d101 0060 0000 0000 0000 0000 0000 0000
-00000010: 0004 0800 0000 0000 0002 0000 0000 0000
-00000020: 0024 0800 0000 0000 0100 0000 0000 0000
-00000030: 0000 0000 0000 0000 0000 0000 0000 0000
-...
-00000100: 0000 0000 0000 0000 0000 0000 0000 0000
-
-To save our modifications, we run %!xxd -r in command mode, then save the file as
-binary.
-
-Next, identify your device in /dev, and copy the IVT to the SD card. We'll use 'sdb'
+Identify your device in /dev, and copy the IVT to the SD card. We'll use 'sdb'
 in this example:
 
 	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 count=1 conv=notrunc,fsync
@@ -120,9 +110,9 @@ The signature;
 
 We need the DCD from the original u-boot.s32, so:
 
-	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 skip=1 seek=1026 conv=notrunc,fsync
+	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 skip=1026 seek=1026 count=16 conv=notrunc,fsync
 
-Finally, we can copy the U-Boot we've signed:
+Finally, we can copy the modified U-Boot that we've signed:
 
 	dd if=u-boot-tosign.s32 of=/dev/sdb bs=512 seek=1042 conv=notrunc,fsync
 
@@ -145,7 +135,7 @@ Turning off secure boot
 -----------------------
 
 To stop booting securely, the IVT must be rewritten and the SYS-IMG on the SD card
-must be deleted. The secure boot SDs layout need not be kept, so this can easily be
+must be deleted. The secure boot SD layout need not be kept, so this can easily be
 done by overwriting the data on the SD card, though it is suggested to zero out the
 area needed before hand.
 

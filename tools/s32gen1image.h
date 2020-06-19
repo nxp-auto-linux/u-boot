@@ -124,6 +124,9 @@ struct program_image {
 	struct image_comp qspi_params;
 #endif
 	struct image_comp ivt_duplicate;
+#ifdef CONFIG_HSE_SECBOOT
+	struct image_comp hse_reserved;
+#endif
 	struct image_comp dcd;
 	struct image_comp app_code;
 	struct image_comp code;
