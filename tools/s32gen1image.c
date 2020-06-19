@@ -9,6 +9,11 @@
 
 #define UNSPECIFIED	-1
 
+#ifdef CONFIG_HSE_SECBOOT
+#  define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80200u
+#  define S32GEN1_HSE_FW_OFFSET 0x200u
+#endif
+
 #ifdef CONFIG_FLASH_BOOT
 #  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
 #endif
@@ -38,6 +43,13 @@ static struct program_image image_layout = {
 	.qspi_params = {
 		.offset = S32GEN1_QSPI_PARAMS_OFFSET,
 		.size = S32GEN1_QSPI_PARAMS_SIZE,
+	},
+#endif
+#ifdef CONFIG_HSE_SECBOOT
+	.hse_reserved = {
+		.offset = S32GEN1_AUTO_OFFSET,
+		.alignment = 0x200U,
+		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
 	},
 #endif
 	.dcd = {
@@ -385,6 +397,10 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
+#ifdef CONFIG_HSE_SECBOOT
+	ivt->hse_h_firmware_pointer = S32GEN1_HSE_FW_OFFSET;
+#endif
+
 	dcd->tag = DCD_TAG;
 	dcd->version = DCD_VERSION;
 
@@ -499,6 +515,9 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 {
 	uint8_t *image_layout;
 	struct image_comp *parts[] = {&program_image->ivt,
+#ifdef CONFIG_HSE_SECBOOT
+		&program_image->hse_reserved,
+#endif
 		&program_image->dcd,
 #ifdef CONFIG_FLASH_BOOT
 		&program_image->qspi_params,

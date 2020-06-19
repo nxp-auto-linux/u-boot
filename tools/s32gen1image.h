@@ -165,6 +165,9 @@ struct program_image {
 #ifdef CONFIG_FLASH_BOOT
 	struct image_comp qspi_params;
 #endif
+#ifdef CONFIG_HSE_SECBOOT
+	struct image_comp hse_reserved;
+#endif
 	struct image_comp dcd;
 	struct image_comp app_code;
 	__u8 *header;
