@@ -84,7 +84,8 @@ struct pfeng_priv {
 	const struct pfeng_config *config;
 	u32 dev_index;
 	u32 if_index;
-	int if_changed;
+	bool if_changed;
+	bool clocks_done;
 
 	void *last_rx;
 	void *last_tx;
@@ -118,12 +119,12 @@ struct pfeng_priv {
 #define PFENG_ENV_VAR_FW_SOURCE	"pfengfw"
 
 
-bool pfeng_cfg_set_mode(u32 mode);
+bool pfeng_cfg_set_mode(u32 mode, struct udevice *pfe_dev);
 int pfeng_set_emacs_from_env(char *env_mode);
 void pfeng_cfg_emacs_enable_all(void);
 void pfeng_cfg_emacs_disable_all(void);
 u32 pfeng_cfg_emac_get_interface(u32 idx);
-void pfeng_apply_clocks(void);
+void pfeng_apply_clocks(struct udevice *pfe_dev);
 
 /* SGMII/XPCS */
 int pfeng_serdes_wait_link(int emac);

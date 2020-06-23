@@ -1,6 +1,6 @@
 # SPDX-License-Identifier:GPL-2.0+
 #
-# Copyright 2019 NXP
+# Copyright 2019-2020 NXP
 #
 
 # S32G PFEng driver
@@ -43,3 +43,5 @@ ccflags-y += $(INCLUDES)
 ccflags-y += $(CCFLAGS_pfe)
 ccflags-y += $(GLOBAL_CCFLAGS)
 ccflags-y += -Wno-date-time
+ccflags-y += -I./arch/arm/include/asm/arch-s32/s32-gen1
+ccflags-y += -I./drivers/clk/s32/include
