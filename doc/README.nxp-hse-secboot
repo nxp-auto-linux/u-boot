@@ -19,63 +19,39 @@ how to obtain HSE, please address our marketing department.
 Building U-Boot with HSE secure boot support
 --------------------------------------------
 
-If the CONFIG_S32_GEN1 option is set to 'y' in the .config file, the
-CONFIG_HSE_SECBOOT option must be enabled, as well as the
-CONFIG_CMD_HSE_ADVANCED_SECBOOT option, to enable the secboot prepare
-command in the u-boot command line.
+The follow config options must be set:
+
+    CONFIG_S32_GEN1="y"
+    CONFIG_HSE_SECBOOT="y" (depends on CONFIG_S32_GEN1)
+    CONFIG_CMD_HSE_ADVANCED_SECBOOT="y" (depends on CONFIG_HSE_SECBOOT)
 
 Furthermore, the CONFIG_SYS_TEXT_BASE option must be set to 0x34080000.
 
-Generating RSA keys for ASB with openssl
-----------------------------------------
+Preparing U-Boot for secure booting
+-----------------------------------
 
-The following instructions are provided as if running from the user's home
-directory, which contains the U-Boot repo.
+The script "tools/s32gen1_secboot.sh" is provided to easily configure
+and sign U-Boot for secure booting.
 
-First, generate a private RSA2048 key:
+Please note that, for the moment, the script uses a fixed key pair,
+stored in clear in the script. Support for user-generated RSA key
+pairs will be added in BSP26.
 
-	openssl genrsa -out openssl_keys/bootprivate.pem 2048
+The following steps are taken by the script to configure, sign and
+write the signed U-Boot image to the SD card:
 
-Separate the public key from the private key:
+    1. Generate a RSA2048 key pair;
+    2. Extract application code and application header from u-boot.s32;
+    3. Pad extracted image to 1M;
+    4. Sign the extracted image with the generated private key;
+    5. Verify the signed image with the generated public key;
+    6. Write IVT to SD card;
+    7. Write HSE FW to SD card;
+    8. Write signature to SD card;
+    9. Write DCD to SD card;
+    10. Write signed and padded image to SD card.
 
-	openssl rsa -in openssl_keys/bootprivate.pem -pubout > bootpublic.pem
-
-Signing u-boot code section with openssl
-----------------------------------------
-
-First, we need to separate the U-Boot code (including Application BL header)
-from the IVT and DCD:
-
-	dd if=u-boot/u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=1042
-
-Next, we pad the extracted U-Boot code up to 1M. To find how many bytes need to
-be written at the end of u-boot-tosign.s32, we check its size (i.e. by using
-ls -l u-boot-tosign.s32), subtract it from 1M (1048576 bytes) and write the
-remaining bytes to its end.
-
-	dd if=/dev/zero bs=1 count=<remaining bytes to 1M> >> u-boot-tosign.s32
-
-Now we can sign the padded U-Boot code:
-
-	openssl dgst -sha1 -sign openssl_keys/bootprivate.pem -out u-boot.sign u-boot-tosign.s32
-
-The signature can be verified with:
-
-	openssl dgst -sha1 -verify openssl_keys/bootpublic.pem -signature u-boot.sign u-boot-tosign.s32
-
-Next, we need to modify the RSA public modulus and public exponent in
-include/hse/hse_abi.h with our generated keys. To view the public
-modulus and exponent:
-
-	openssl rsa -in bootpublic.pem -text -noout
-
-Overwrite the modulus and exponent under include/hse/hse_abi.h with
-your generated modulus and exponent.
-
-Adding everything to the SD card
---------------------------------
-
-We suggest using the following SD card layout:
+The following SD card layout is used for secure boot:
 
 -------------  0x0
 |    IVT    |
@@ -90,31 +66,6 @@ We suggest using the following SD card layout:
 -------------  0x80400
 |   U-Boot  |
 -------------  0x180400
-
-The following commands will be provided for the above layout. The partitions for
-Linux and the rootfs need to be moved further on the SD card, to leave sufficient
-space for the data required by HSE for secure boot.
-
-Identify your device in /dev, and copy the IVT to the SD card. We'll use 'sdb'
-in this example:
-
-	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 count=1 conv=notrunc,fsync
-
-Next is the HSE FW pink/blue image:
-
-	dd if=<hse_fw_binary> of=/dev/sdb bs=512 seek=1 conv=notrunc,fsync
-
-The signature;
-
-	dd if=u-boot.sign of=/dev/sdb bs=512 seek=1025 conv=notrunc,fsync
-
-We need the DCD from the original u-boot.s32, so:
-
-	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 skip=1026 seek=1026 count=16 conv=notrunc,fsync
-
-Finally, we can copy the modified U-Boot that we've signed:
-
-	dd if=u-boot-tosign.s32 of=/dev/sdb bs=512 seek=1042 conv=notrunc,fsync
 
 Booting in secure boot
 ----------------------
