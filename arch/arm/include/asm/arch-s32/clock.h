@@ -10,6 +10,7 @@
 
 #include <common.h>
 
+#if defined(CONFIG_S32V234)
 enum mxc_clock {
 	MXC_ARM_CLK = 0,
 	MXC_BUS_CLK,
@@ -25,12 +26,8 @@ enum mxc_clock {
 	MXC_DSPI_CLK,
 	MXC_XBAR_CLK,
 	MXC_DDR_CLK,
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-	MXC_PFE_CLK,
-#endif
 };
 
-#if defined(CONFIG_S32V234)
 enum pll_type {
 	ARM_PLL = 0,
 	PERIPH_PLL,
@@ -38,22 +35,21 @@ enum pll_type {
 	DDR_PLL,
 	VIDEO_PLL,
 };
-#elif defined(CONFIG_S32_GEN1)
-enum pll_type {
-	ARM_PLL = 0,
-	PERIPH_PLL,
-	ACCEL_PLL,
-	DDR_PLL,
+
+void clock_init(void);
+#endif
+
+#ifdef CONFIG_S32_GEN1
+enum mxc_clock {
+	MXC_UART_CLK,
+	MXC_ESDHC_CLK,
+	MXC_I2C_CLK,
+	MXC_DSPI_CLK,
 };
 #endif
 
 unsigned int mxc_get_clock(enum mxc_clock clk);
-void clock_init(void);
 void entry_to_target_mode( u32 mode );
-
-int mux_source_clk_config(uintptr_t cgm_addr, u8 mux, u8 source);
-void mux_div_clk_config(uintptr_t cgm_addr, u8 mux, u8 dc, u8 divider);
-u32 get_xbar_clk(void);
 
 #define imx_get_fecclk() mxc_get_clock(MXC_FEC_CLK)
 
