@@ -18,7 +18,7 @@
 #define CONFIG_PRAM	2048	/* 2MB */
 #endif
 
-#ifdef CONFIG_TARGET_S32G274AEVB
+#if defined(CONFIG_TARGET_S32G274AEVB) && defined(CONFIG_USB)
 #define CONFIG_USB_EHCI_MX6
 #define CONFIG_MXC_USB_PORTSC        PORT_PTS_ULPI
 #endif
