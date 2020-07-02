@@ -7,9 +7,6 @@
 #ifndef _IMXIMAGE_H_
 #define _IMXIMAGE_H_
 
-#include <asm/types.h>
-
-#define MAX_HW_CFG_SIZE_V3 220 /* Max number of registers imx can set for v3 */
 #define MAX_HW_CFG_SIZE_V2 220 /* Max number of registers imx can set for v2 */
 #define MAX_PLUGIN_CODE_SIZE (64 * 1024)
 #define MAX_HW_CFG_SIZE_V1 60  /* Max number of registers imx can set for v1 */
@@ -29,7 +26,6 @@
 /* Initial Vector Table Offset */
 #define FLASH_OFFSET_UNDEFINED	0xFFFFFFFF
 #define FLASH_OFFSET_STANDARD	0x400
-#define FLASH_OFFSET_STANDARD_V3	0x1000
 #define FLASH_OFFSET_NAND	FLASH_OFFSET_STANDARD
 #define FLASH_OFFSET_SD		FLASH_OFFSET_STANDARD
 #define FLASH_OFFSET_SPI	FLASH_OFFSET_STANDARD
@@ -42,7 +38,6 @@
 /* Initial Load Region Size */
 #define FLASH_LOADSIZE_UNDEFINED	0xFFFFFFFF
 #define FLASH_LOADSIZE_STANDARD		0x1000
-#define FLASH_LOADSIZE_STANDARD_V3	0x2000
 #define FLASH_LOADSIZE_NAND		FLASH_LOADSIZE_STANDARD
 #define FLASH_LOADSIZE_SD		FLASH_LOADSIZE_STANDARD
 #define FLASH_LOADSIZE_SPI		FLASH_LOADSIZE_STANDARD
@@ -54,10 +49,9 @@
 /* Command tags and parameters */
 #define IVT_HEADER_TAG			0xD1
 #define IVT_VERSION			0x40
-#define IVT_VERSION_V3			0x50
+#define IVT_VERSION_V3			0x41
 #define DCD_HEADER_TAG			0xD2
 #define DCD_VERSION			0x40
-#define DCD_VERSION_V3			0x50
 #define DCD_WRITE_DATA_COMMAND_TAG	0xCC
 #define DCD_WRITE_DATA_PARAM		0x4
 #define DCD_WRITE_CLR_BIT_PARAM		0xC
@@ -67,7 +61,6 @@
 #define DCD_CHECK_BITS_CLR_PARAM	0x04
 
 #ifndef __ASSEMBLY__
-
 enum imximage_cmd {
 	CMD_INVALID,
 	CMD_IMAGE_VERSION,
@@ -80,7 +73,6 @@ enum imximage_cmd {
 	CMD_CHECK_BITS_CLR,
 	CMD_CSF,
 	CMD_PLUGIN,
-	CMD_SECURE_CALLBACK,
 	/* Following on i.MX8MQ/MM */
 	CMD_FIT,
 	CMD_SIGNED_HDMI,
@@ -195,27 +187,6 @@ typedef struct {
 	} data;
 } imx_header_v2_t;
 
-struct flash_header_v3 {
-	ivt_header_t header;
-	__u32 entry;
-	__u32 reserved1;
-	__u32 dcd_ptr;
-	__u32 boot_data_ptr;
-	__u32 self;
-	__u32 secure_callback;
-	__u32 self_test;
-	__u32 auth_length;
-	__u32 reserved2;
-};
-
-struct imx_header_v3 {
-	struct flash_header_v3 fhdr;
-	boot_data_t boot_data;
-
-	/* BootROM assumes that the DCD table address is 8-byte aligned */
-	dcd_v2_t dcd_table __attribute__((aligned(8)));
-};
-
 typedef struct {
 	flash_header_v2_t fhdr;
 	boot_data_t boot_data;
@@ -227,7 +198,6 @@ struct imx_header {
 	union {
 		imx_header_v1_t hdr_v1;
 		imx_header_v2_t hdr_v2;
-		struct imx_header_v3 hdr_v3;
 	} header;
 };
 
