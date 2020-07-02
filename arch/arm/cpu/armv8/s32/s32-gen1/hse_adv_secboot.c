@@ -257,6 +257,12 @@ int hse_install_smr_entry(struct hse_srv_desc *srv_desc, u32 *recv_buf,
 	srv_desc->smr_install_req.smr_auth_tag_len_addr =
 					(uintptr_t)sign_len_ram_cpy;
 
+	flush_dcache_range((u64)sign_ram_cpy,
+			   (u64)sign_ram_cpy + HSE_UBOOT_AUTH_LEN);
+	flush_dcache_range((u64)uboot_ram_cpy,
+			   (u64)uboot_ram_cpy + HSE_UBOOT_MAX_SIZE);
+	flush_dcache_range((u64)sign_len_ram_cpy,
+			   (u64)sign_len_ram_cpy + sizeof(u32));
 	flush_dcache_range((u64)smr_entry,
 			   (u64)smr_entry + sizeof(struct hse_smr_entry));
 	flush_dcache_range((u64)srv_desc,
@@ -348,7 +354,8 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	/* check if hse has been initialised */
 	hse_status_ret = hse_mu_check_status();
 	if (!(hse_status_ret & HSE_STATUS_INIT_OK)) {
-		log_err("ERROR: HSE not initialised!\n");
+		/* keep printf to warn user if hse is missing all the time */
+		printf("ERROR: HSE not initialised or missing firmware!\n");
 		ret = CMD_RET_FAILURE;
 		goto ret_general;
 	}
@@ -399,19 +406,19 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 		goto srv_desc_alloc_fail;
 	}
 
-	hse_import_key(srv_desc, &recv_buf);
+	ret = hse_import_key(srv_desc, &recv_buf);
 	if (ret) {
 		ret = CMD_RET_FAILURE;
 		goto srv_desc_alloc_fail;
 	}
 
-	hse_install_cr_entry(srv_desc, &recv_buf);
+	ret = hse_install_cr_entry(srv_desc, &recv_buf);
 	if (ret) {
 		ret = CMD_RET_FAILURE;
 		goto srv_desc_alloc_fail;
 	}
 
-	hse_install_smr_entry(srv_desc, &recv_buf, (u32)(ivt->app_boot));
+	ret = hse_install_smr_entry(srv_desc, &recv_buf, (u32)(ivt->app_boot));
 	if (ret) {
 		ret = CMD_RET_FAILURE;
 		goto srv_desc_alloc_fail;
@@ -424,7 +431,7 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 		goto srv_desc_alloc_fail;
 	}
 
-	hse_generate_sys_img(srv_desc, &recv_buf, sys_img_buf);
+	ret = hse_generate_sys_img(srv_desc, &recv_buf, sys_img_buf);
 	if (ret) {
 		ret = CMD_RET_FAILURE;
 		goto sys_img_alloc_fail;
