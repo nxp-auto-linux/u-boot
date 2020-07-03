@@ -28,6 +28,6 @@ F:	drivers/ddr/fsl/ddrss.c
 S32R45X BOARD
 M:	-
 S:	Maintained
-F:	configs/s32r45x_defconfig
-F:	include/configs/s32r45x.h
+F:	configs/s32r45_defconfig
+F:	include/configs/s32r45.h
 

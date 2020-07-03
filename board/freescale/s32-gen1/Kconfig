@@ -37,7 +37,7 @@ config SYS_CONFIG_NAME
 	default "s32v344" if TARGET_S32V344EVB || TARGET_S32V344SIM
 	default "s32g274a" if TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
 			   TARGET_S32G274ASIM || TARGET_S32G274AEMU
-	default "s32r45x" if TARGET_S32R45XEVB || TARGET_S32R45XSIM || \
+	default "s32r45" if TARGET_S32R45XEVB || TARGET_S32R45XSIM || \
 			  TARGET_S32R45XEMU
 
 # Size of SRAM area used by U-boot during the first boot stage. This includes

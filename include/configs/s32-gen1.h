@@ -51,7 +51,7 @@
 #elif defined(CONFIG_TARGET_S32G274ARDB)
 #define FDT_FILE fsl-s32g274a-rdb.dtb
 #elif defined(CONFIG_TARGET_S32R45XEVB)
-#define FDT_FILE fsl-s32r45x-evb.dtb
+#define FDT_FILE fsl-s32r45-evb.dtb
 #endif
 
 #define CONFIG_LOADADDR		LOADADDR
