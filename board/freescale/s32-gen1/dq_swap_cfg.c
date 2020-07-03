@@ -31,7 +31,7 @@
 
 #include "ddr_init.h"
 
-#if defined(CONFIG_TARGET_S32R45XEVB)
+#if defined(CONFIG_TARGET_S32R45EVB)
 struct regconf dq_swap_cfg[] = {
 	{0x40394830, 0x00000002},
 	{0x40394834, 0x00000005},

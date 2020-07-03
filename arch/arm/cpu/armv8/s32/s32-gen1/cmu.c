@@ -154,7 +154,7 @@ struct cmu {
 	bool fc;
 };
 
-#if defined(CONFIG_TARGET_S32R45XEVB)
+#if defined(CONFIG_TARGET_S32R45EVB)
 static struct cmu cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC_CLK, FXOSC_FREQ),
 	FXOSC_PERIPH_CMU_FM(1, FIRC_CLK, FIRC_FREQ),

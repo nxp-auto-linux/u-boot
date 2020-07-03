@@ -284,7 +284,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		xpcs0 = true;
 		xpcs1 = false;
 	} else if (xpcs_mode == SGMII_XPCS1) {
-#if CONFIG_TARGET_S32R45XEVB
+#if CONFIG_TARGET_S32R45EVB
 		printf("Configuration not supported");
 		printf(" on this platform for SerDes %d\n", id);
 		return -EINVAL;
@@ -292,7 +292,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		xpcs0 = false;
 		xpcs1 = true;
 	} else if (xpcs_mode == SGMII_XPCS0_XPCS1) {
-#if CONFIG_TARGET_S32R45XEVB
+#if CONFIG_TARGET_S32R45EVB
 		printf("Configuration not supported");
 		printf(" on this platform for SerDes %d\n", id);
 		return -EINVAL;

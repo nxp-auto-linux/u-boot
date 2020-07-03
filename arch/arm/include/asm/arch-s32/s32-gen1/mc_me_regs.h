@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2019 NXP
+ * (C) Copyright 2017-2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -82,11 +82,11 @@
 #define MC_ME_FLEXCAN6_REQ	(13)
 #define MC_ME_FLEXCAN7_REQ	(14)
 
-/* S32R45X partition 2 */
+/* S32R45 partition 2 */
 #define MC_ME_LAX1_REQ		(0)
 #define MC_ME_LAX2_REQ		(1)
 
-/* S32R45X partition 3 */
+/* S32R45 partition 3 */
 #define MC_ME_CTE_XBAR3_REQ	(2)
 #define MC_ME_EIM_DSP_REQ	(3)
 #define MC_ME_BBE32EP_REQ	(4)

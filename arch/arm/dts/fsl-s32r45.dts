@@ -11,8 +11,8 @@
 /dts-v1/;
 #include "fsl-s32-gen1.dtsi"
 / {
-	model = "NXP S32R45X";
-	compatible = "fsl,s32r45x", "arm,vexpress,v2p-aarch64", "arm,vexpress";
+	model = "NXP S32R45";
+	compatible = "fsl,s32r45", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
 	signature {
 		key-boot_key {

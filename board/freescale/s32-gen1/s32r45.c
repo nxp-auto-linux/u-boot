@@ -8,7 +8,7 @@
 #include <asm/arch/soc.h>
 #include <asm/arch/siul-s32r45.h>
 
-#if defined(CONFIG_TARGET_S32R45XEVB) || defined(CONFIG_TARGET_S32R45XSIM)
+#if defined(CONFIG_TARGET_S32R45EVB) || defined(CONFIG_TARGET_S32R45SIM)
 void setup_iomux_i2c(void)
 {
 	/* I2C0 - Serial Data Input */
@@ -37,7 +37,7 @@ void setup_iomux_i2c(void)
 }
 #endif
 
-#if defined(CONFIG_TARGET_S32R45XEVB)
+#if defined(CONFIG_TARGET_S32R45EVB)
 void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */

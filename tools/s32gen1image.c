@@ -18,7 +18,7 @@
 #  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
 #endif
 
-#if defined(CONFIG_S32R45X) || defined(CONFIG_S32V344)
+#if defined(CONFIG_S32R45) || defined(CONFIG_S32V344)
 #  ifdef CONFIG_FLASH_BOOT
 #    define S32GEN1_IVT_OFFSET	0x0U
 #  else

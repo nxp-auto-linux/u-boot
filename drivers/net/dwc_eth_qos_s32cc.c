@@ -265,9 +265,9 @@ static int check_sgmii_cfg(int gmac_no)
 	desired_mode1 = SGMII_XPCS0;
 	desired_mode2 = SGMII_XPCS0_XPCS1;
 
-#elif defined(CONFIG_TARGET_S32R45XEVB) || \
-	defined(CONFIG_TARGET_S32R45XSIM) || \
-	defined(CONFIG_TARGET_S32R45XEMU)
+#elif defined(CONFIG_TARGET_S32R45EVB) || \
+	defined(CONFIG_TARGET_S32R45SIM) || \
+	defined(CONFIG_TARGET_S32R45EMU)
 
 	desired_mode1 = SGMII_XPCS0;
 	desired_mode2 = SGMII_XPCS0_2G5;

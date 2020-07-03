@@ -455,8 +455,8 @@ int print_cpuinfo(void)
 		   get_siul2_midr1_minor(),
 		   get_siul2_midr2_subminor());
 	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
-#elif defined(CONFIG_S32R45X)
-	printf("CPU:\tNXP S32R45X\n");
+#elif defined(CONFIG_S32R45)
+	printf("CPU:\tNXP S32R45\n");
 #elif defined(CONFIG_S32V344)
 	printf("CPU:\tNXP S32V344\n");
 #endif

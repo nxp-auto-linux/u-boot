@@ -50,7 +50,7 @@
 #define FDT_FILE fsl-s32g274a-evb.dtb
 #elif defined(CONFIG_TARGET_S32G274ARDB)
 #define FDT_FILE fsl-s32g274a-rdb.dtb
-#elif defined(CONFIG_TARGET_S32R45XEVB)
+#elif defined(CONFIG_TARGET_S32R45EVB)
 #define FDT_FILE fsl-s32r45-evb.dtb
 #endif
 

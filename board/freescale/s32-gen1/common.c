@@ -161,11 +161,11 @@ int checkboard(void)
 	puts("Board:\tVDK for NXP S32G274A VP\n");
 #elif defined(CONFIG_TARGET_S32G274AEMU)
 	puts("Board:\tZeBu model for NXP S32G274A\n");
-#elif defined(CONFIG_TARGET_S32R45XEVB)
-	puts("Board:\tNXP S32R45X-EVB\n");
-#elif defined(CONFIG_TARGET_S32R45XSIM)
+#elif defined(CONFIG_TARGET_S32R45EVB)
+	puts("Board:\tNXP S32R45-EVB\n");
+#elif defined(CONFIG_TARGET_S32R45SIM)
 	puts("Board:\tVDK for NXP S32R45 VP\n");
-#elif defined(CONFIG_TARGET_S32R45XEMU)
+#elif defined(CONFIG_TARGET_S32R45EMU)
 	puts("Board:\tZeBu model for NXP S32R45\n");
 #elif defined(CONFIG_TARGET_S32V344EVB)
 	puts("Board:\tNXP S32V344-EVB\n");
@@ -211,7 +211,7 @@ void setup_iomux_uart0_pc09_pc10(void)
 	writel(SIUL2_IMCR_S32G_G1_UART0_RXD_to_pad,
 	       SIUL2_0_IMCRn(SIUL2_PC10_IMCR_S32_G1_UART0));
 }
-#elif defined(CONFIG_S32R45X)
+#elif defined(CONFIG_S32R45)
 void setup_iomux_uart0_pc09_pc10(void)
 {
 	/* Muxing for linflex0 */

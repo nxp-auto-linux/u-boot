@@ -35,14 +35,14 @@ config TARGET_S32V344EVB
 config TARGET_S32V344SIM
 	bool "Support s32v344 VDK"
 
-config TARGET_S32R45XEVB
-	bool "Support s32r45xevb"
+config TARGET_S32R45EVB
+	bool "Support s32r45evb"
 
-config TARGET_S32R45XSIM
-	bool "Support s32r45x VDK"
+config TARGET_S32R45SIM
+	bool "Support s32r45 VDK"
 
-config TARGET_S32R45XEMU
-	bool "Support s32r45x ZeBu"
+config TARGET_S32R45EMU
+	bool "Support s32r45 ZeBu"
 
 config TARGET_S32G274AEVB
 	bool "Support s32g274aevb"
