@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2018 NXP
+ * (C) Copyright 2017-2018,2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -215,6 +215,9 @@
 #define DFS_MAXNUMBER			(4)
 
 #define DFS_PARAMS_Nr			(3)
+
+#define FXOSC_CTL			(MC_CGM0_BASE_ADDR + 0x280)
+#define FXOSC_CTL_FASTBOOT_VALUE	(0x018020f0)
 
 /* Frequencies are in Hz */
 #define FIRC_CLK_FREQ			(48000000)

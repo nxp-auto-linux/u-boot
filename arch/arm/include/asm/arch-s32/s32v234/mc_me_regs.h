@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017,2020 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -94,6 +94,10 @@
 #define MC_ME_RUNMODE_MC_PWRLVL0		(1 << 28)
 #define MC_ME_RUNMODE_MC_PWRLVL1		(1 << 29)
 #define MC_ME_RUNMODE_MC_PWRLVL2		(1 << 30)
+
+#define DRUN_MC_RESETVAL			(0x00100010)
+#define SYSCLK_FXOSC				(1 << 0)
+#define SYSCLK_ARM_PLL_DFS_1			BIT(1)
 
 /* MC_ME_DRUN_SEC_CC_I */
 #define MC_ME_DRUN_SEC_CC_I			(MC_ME_BASE_ADDR + 0x260)

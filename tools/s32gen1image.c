@@ -5,6 +5,7 @@
 #include <generated/autoconf.h>
 #include <config.h>
 #include "imagetool.h"
+#include "s32_common.h"
 #include "s32gen1image.h"
 
 #define UNSPECIFIED	-1
@@ -12,8 +13,6 @@
 #ifdef CONFIG_FLASH_BOOT
 #  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
 #endif
-
-#define S32GEN1_AUTO_OFFSET ((size_t)(-1))
 
 #ifdef CONFIG_FLASH_BOOT
 #  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
@@ -41,29 +40,28 @@ static struct program_image image_layout = {
 	},
 #endif
 	.dcd = {
-		.offset = S32GEN1_AUTO_OFFSET,
+		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
-		.size = sizeof(struct dcd),
+		.size = DCD_MAXIMUM_SIZE,
 	},
 	.app_code = {
-		.offset = S32GEN1_AUTO_OFFSET,
+		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
 		.size = sizeof(struct application_boot_code),
 	},
+	.code = {
+		.offset = S32_AUTO_OFFSET,
+		.alignment = 0x200U,
+		.size = 0,
+	},
 };
 
-static struct dcd_command *last_command;
-
-static table_entry_t dcd_commands[] = {
-	{WRITE_DATA,			"WRITE_DATA",			"",},
-	{WRITE_SET_BITMASK,		"WRITE_SET_BITMASK",		"",},
-	{WRITE_CLEAR_BITMASK,		"WRITE_CLEAR_BITMASK",		"",},
-	{CHECK_BITS_ARE_SET,		"CHECK_BITS_ARE_SET",		"",},
-	{CHECK_BITS_ARE_CLEAR,		"CHECK_BITS_ARE_CLEAR",		"",},
-	{CHECK_ANY_BIT_IS_SET,		"CHECK_ANY_BIT_IS_SET",		"",},
-	{CHECK_ANY_BIT_IS_CLEAR,	"CHECK_ANY_BIT_IS_CLEAR",	"",},
-	{NOP,				"NOP",				"",},
-	{INVALID,			"",				"",},
+static uint32_t dcd_data[] = {
+	DCD_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
 };
 
 static struct ivt *get_ivt(struct program_image *image)
@@ -71,194 +69,14 @@ static struct ivt *get_ivt(struct program_image *image)
 	return (struct ivt *)image->ivt.data;
 }
 
-static struct dcd *get_dcd(struct program_image *image)
+static uint8_t *get_dcd(struct program_image *image)
 {
-	return (struct dcd *)image->dcd.data;
+	return image->dcd.data;
 }
 
 static struct application_boot_code *get_app_code(struct program_image *image)
 {
 	return (struct application_boot_code *)image->app_code.data;
-}
-
-static void s32gen1_add_dcd_command_header(__u8 tag, __u8 params)
-{
-	size_t length = be16_to_cpu(last_command->length);
-
-	if (tag == DCD_WRITE_COMMAND_TAG &&
-	    last_command->tag == tag &&
-	    last_command->params == params)
-		return;
-
-	last_command = (struct dcd_command *)((__u8 *)last_command + length);
-
-	last_command->tag = tag;
-	last_command->length = cpu_to_be16(4);
-	last_command->params = params;
-}
-
-static void s32gen1_add_dcd_command(int command_type, int access_width,
-				    int register_address, int register_data,
-				    int count,
-				    struct program_image *program_image)
-{
-	size_t length = 0;
-	unsigned int offset;
-	struct dcd *dcd;
-	__u8 tag = 0;
-	__u8 params = 0;
-	size_t dcd_length;
-
-	switch (command_type) {
-	case WRITE_DATA:
-		tag = DCD_WRITE_COMMAND_TAG;
-		params = access_width;
-		break;
-	case WRITE_SET_BITMASK:
-		tag = DCD_WRITE_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 DCD_COMMAND_PARAMS_DATA_SET	|
-			 access_width;
-		break;
-	case WRITE_CLEAR_BITMASK:
-		tag = DCD_WRITE_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 access_width;
-		break;
-	case CHECK_BITS_ARE_SET:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_SET	|
-			 access_width;
-		break;
-	case CHECK_BITS_ARE_CLEAR:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = access_width;
-		break;
-	case CHECK_ANY_BIT_IS_SET:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 DCD_COMMAND_PARAMS_DATA_SET	|
-			 access_width;
-		break;
-	case CHECK_ANY_BIT_IS_CLEAR:
-		tag = DCD_CHECK_COMMAND_TAG;
-		params = DCD_COMMAND_PARAMS_DATA_MASK	|
-			 access_width;
-		break;
-	case NOP:
-		tag = DCD_NOP_COMMAND_TAG;
-		break;
-	}
-
-	s32gen1_add_dcd_command_header(tag, params);
-
-	switch (tag) {
-	case DCD_WRITE_COMMAND_TAG:
-		offset = (be16_to_cpu(last_command->length) - 4) / 8;
-		last_command->s.write[offset].addr =
-						cpu_to_le32(register_address);
-		last_command->s.write[offset].data =
-						cpu_to_le32(register_data);
-		length = be16_to_cpu(last_command->length) + 8;
-		last_command->length = cpu_to_be16(length);
-		break;
-
-	case DCD_CHECK_COMMAND_TAG:
-		last_command->s.check.address = cpu_to_le32(register_address);
-		last_command->s.check.mask = cpu_to_le32(register_data);
-		length = be16_to_cpu(last_command->length) + 8;
-
-		if (count != UNSPECIFIED) {
-			last_command->s.check.count = count;
-			length = length + 4;
-		}
-
-		last_command->length = cpu_to_be16(length);
-		break;
-
-	case DCD_NOP_COMMAND_TAG:
-		break;
-	}
-
-	dcd = get_dcd(program_image);
-	dcd_length = (__u8 *)last_command +
-		     be16_to_cpu(last_command->length) -
-		     (__u8 *)dcd;
-
-	if (dcd_length > DCD_MAXIMUM_SIZE) {
-		fprintf(stderr, "DCD length of %zu exceeds the maximum of %d\n",
-			dcd_length, DCD_MAXIMUM_SIZE);
-		exit(EXIT_FAILURE);
-	}
-
-	dcd->length = cpu_to_be16(dcd_length);
-}
-
-static void s32gen1_parse_configuration_file(const char *filename,
-					     struct program_image *program_image)
-{
-	FILE *f = NULL;
-	char *line = NULL;
-	char *token = NULL;
-	size_t line_length;
-
-	int command_type;
-	int access_width;
-	int register_address;
-	int register_data;
-	int count;
-
-	f = fopen(filename, "r");
-	if (f == NULL) {
-		fprintf(stderr, "Can't open file %s: %s\n", filename,
-			strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-
-	while ((getline(&line, &line_length, f)) > 0) {
-
-		command_type = INVALID;
-		access_width = 0;
-		register_address = 0;
-		register_data = 0;
-		count = UNSPECIFIED;
-
-		token = strtok(line, " \r\n");
-		if (token != NULL)
-			command_type = get_table_entry_id(dcd_commands, "",
-							  token);
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			access_width = strtoul(token, NULL, 0);
-
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			register_address = strtoul(token, NULL, 16);
-
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			register_data = strtoul(token, NULL, 16);
-
-		token = strtok(NULL, " \r\n");
-		if (token != NULL)
-			count = strtoul(token, NULL, 0);
-
-
-		if (command_type != INVALID)
-			s32gen1_add_dcd_command(command_type,
-						access_width,
-						register_address,
-						register_data,
-						count,
-						program_image);
-	}
-
-	fclose(f);
-}
-
-static void s32gen1_print_header(const void *header)
-{
-	return;
 }
 
 #ifndef CONFIG_FLASH_BOOT
@@ -359,23 +177,64 @@ static void set_data_pointers(struct program_image *layout, void *header)
 	layout->app_code.data = data + layout->app_code.offset;
 }
 
+static int read_fip_image(struct image_tool_params *tool_params,
+			  struct fip_image_data *fip_data)
+{
+	FILE *f;
+	uint8_t bl2_uuid[] = FIP_BL2_UUID;
+
+	f = fopen(tool_params->datafile, "rb");
+	if (!f) {
+		fprintf(stderr, "Cannot open %s\n", tool_params->datafile);
+		exit(EXIT_FAILURE);
+	}
+
+	if (fread(fip_data, sizeof(struct fip_image_data), 1, f) != 1) {
+		fprintf(stderr, "Cannot read from %s\n", tool_params->datafile);
+		exit(EXIT_FAILURE);
+	}
+
+	if (fip_data->toc_header_name != FIP_TOC_HEADER_NAME) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	if (fip_data->offset != FIP_BL2_OFFSET ||
+	    memcmp(&fip_data->uuid[0], &bl2_uuid[0], sizeof(bl2_uuid))) {
+		fprintf(stderr,
+			"s32gen1image: FIP image does not have a BL2"
+			" at offset %x\n",
+		FIP_BL2_OFFSET);
+		exit(EXIT_FAILURE);
+	}
+
+	fclose(f);
+	return 0;
+}
+
 static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
 	size_t code_length;
-	struct dcd *dcd;
+	size_t pre_code_padding;
+	uint8_t *dcd;
 	struct ivt *ivt;
 	struct application_boot_code *app_code;
+	struct fip_image_data fip_data;
 
 	set_data_pointers(&image_layout, header);
 
 	dcd = get_dcd(&image_layout);
+	if (sizeof(dcd_data) > DCD_MAXIMUM_SIZE) {
+		fprintf(stderr, "DCD exceeds the maximum size\n");
+		exit(EXIT_FAILURE);
+	}
+	memcpy(dcd, &dcd_data[0], sizeof(dcd_data));
+	*(uint16_t *)(dcd + DCD_HEADER_LENGTH_OFFSET) =
+						cpu_to_be16(sizeof(dcd_data));
+
 	ivt = get_ivt(&image_layout);
 	app_code = get_app_code(&image_layout);
-
-	last_command = (struct dcd_command *)&dcd->commands[0];
-	s32gen1_parse_configuration_file(tool_params->imagename,
-					 &image_layout);
 
 	ivt->tag = IVT_TAG;
 	ivt->length = cpu_to_be16(sizeof(struct ivt));
@@ -385,23 +244,36 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
-	dcd->tag = DCD_TAG;
-	dcd->version = DCD_VERSION;
-
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
-	app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE;
-	app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
 
-	code_length = sbuf->st_size
-			- image_layout.app_code.offset
-			- offsetof(struct application_boot_code, code);
+	pre_code_padding = image_layout.code.offset
+				- image_layout.app_code.offset
+				- image_layout.app_code.size;
 
-	if (code_length % 0x40) {
-		code_length &= ~0x3f;
-		code_length += 0x40;
+	if (read_fip_image(tool_params, &fip_data)) {
+		code_length = sbuf->st_size
+				- image_layout.app_code.offset
+				- offsetof(struct application_boot_code, code);
+		code_length += pre_code_padding;
+		code_length = ROUND(code_length, 0x40);
+
+		app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE
+							- pre_code_padding;
+		app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
+		app_code->code_length = code_length;
+	} else {
+		printf("mkimage: s32gen1image: %s is a FIP image\n",
+		       tool_params->datafile);
+		app_code->ram_start_pointer =
+					tool_params->addr
+					- FIP_BL2_OFFSET
+					- pre_code_padding;
+		app_code->ram_entry_pointer = tool_params->ep;
+		app_code->code_length = fip_data.size
+					+ FIP_BL2_OFFSET
+					+ pre_code_padding;
 	}
-	app_code->code_length = code_length;
 
 #ifndef CONFIG_FLASH_BOOT
 	enforce_reserved_range((void*)(__u64)
@@ -432,68 +304,6 @@ static int s32gen1_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
-static int image_parts_comp(const void *p1, const void *p2)
-{
-	const struct image_comp **part1 = (typeof(part1))p1;
-	const struct image_comp **part2 = (typeof(part2))p2;
-
-	if ((*part2)->offset > (*part1)->offset)
-		return -1;
-
-	if ((*part2)->offset < (*part1)->offset)
-		return 1;
-
-	return 0;
-}
-
-static void check_overlap(struct image_comp *comp1,
-			  struct image_comp *comp2)
-{
-	size_t end1 = comp1->offset + comp1->size;
-	size_t end2 = comp2->offset + comp2->size;
-
-	if (end1 > comp2->offset && end2 > comp1->offset) {
-		fprintf(stderr, "Detected overlap between 0x%zx@0x%zx and "
-				"0x%zx@0x%zx\n",
-				comp1->size, comp1->offset,
-				comp2->size, comp2->offset);
-		exit(EXIT_FAILURE);
-	}
-}
-
-static void s32g2xx_compute_dyn_offsets(struct image_comp **parts,
-					size_t n_parts)
-{
-	size_t i;
-	size_t align_mask;
-	size_t rem;
-
-	for (i = 0U; i < n_parts; i++) {
-		if (parts[i]->offset == S32GEN1_AUTO_OFFSET) {
-			if (i == 0) {
-				parts[i]->offset = 0U;
-				continue;
-			}
-
-			parts[i]->offset = parts[i - 1]->offset +
-			    parts[i - 1]->size;
-		}
-
-		/* Apply alignment constraints */
-		if (parts[i]->alignment != 0U) {
-			align_mask = (parts[i]->alignment << 1U) - 1U;
-			rem = parts[i]->offset & align_mask;
-			if (rem != 0U) {
-				parts[i]->offset -= rem;
-				parts[i]->offset += parts[i]->alignment;
-			}
-		}
-
-		if (i != 0)
-			check_overlap(parts[i - 1], parts[i]);
-	}
-}
-
 static int s32g2xx_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
@@ -504,13 +314,14 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		&program_image->qspi_params,
 #endif
 		&program_image->app_code,
+		&program_image->code,
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
 	qsort(&parts[0], ARRAY_SIZE(parts), sizeof(parts[0]), image_parts_comp);
 
 	/* Compute auto-offsets */
-	s32g2xx_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
+	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
 
 	*header_size = parts[last_comp]->offset + parts[last_comp]->size;
 
@@ -544,7 +355,7 @@ U_BOOT_IMAGE_TYPE(
 	NULL,
 	NULL,
 	NULL,
-	s32gen1_print_header,
+	s32_print_header,
 	s32gen1_set_header,
 	NULL,
 	s32gen1_check_image_type,

@@ -150,6 +150,12 @@ ifdef CONFIG_EFI_LOADER
 OBJCOPYFLAGS += -j .efi_runtime -j .efi_runtime_rel
 endif
 
+ifeq ($(CONFIG_OF_SEPARATE),y)
+ALL-y += u-boot-dtb.s32
+else
+ALL-y += u-boot.s32
+endif
+
 ifneq ($(CONFIG_IMX_CONFIG),)
 ifdef CONFIG_SPL
 ifndef CONFIG_SPL_BUILD
@@ -157,17 +163,9 @@ ALL-y += SPL
 endif
 else
 ifeq ($(CONFIG_OF_SEPARATE),y)
-ifneq ($(CONFIG_ARCH_S32),)
-ALL-y += u-boot-dtb.s32
-else
 ALL-y += u-boot-dtb.imx
-endif
-else
-ifneq ($(CONFIG_ARCH_S32),)
-ALL-y += u-boot.s32
 else
 ALL-y += u-boot.imx
-endif
 endif
 endif
 ifneq ($(CONFIG_VF610),)
