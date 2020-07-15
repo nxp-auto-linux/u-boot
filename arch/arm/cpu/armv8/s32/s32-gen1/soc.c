@@ -38,11 +38,13 @@ DECLARE_GLOBAL_DATA_PTR;
 
 u32 cpu_mask(void)
 {
+	u32 rgm_stat = readl(RGM_PSTAT(MC_RGM_BASE_ADDR,
+				       RGM_CORES_RESET_GROUP));
 	/* 0 means out of reset. */
 	/* Bit 0 corresponds to cluster reset and is 0 if any
 	 * of the other bits 1-4 are 0.
 	 */
-	return ((~(readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)))) >> 1) & 0xf;
+	return ((~(rgm_stat)) >> 1) & 0xf;
 }
 
 /*
@@ -86,30 +88,30 @@ static const char *get_reset_cause(void)
 {
 	u32 val;
 
-	val = readl(RGM_DES);
+	val = readl(RGM_DES(MC_RGM_BASE_ADDR));
 	if (val & RGM_DES_POR) {
 		/* Clear bit */
-		writel(RGM_DES_POR, RGM_DES);
+		writel(RGM_DES_POR, RGM_DES(MC_RGM_BASE_ADDR));
 		return "Power-On Reset";
 	}
 
 	if (val) {
-		writel(~RGM_DES_POR, RGM_DES);
+		writel(~RGM_DES_POR, RGM_DES(MC_RGM_BASE_ADDR));
 		return "Destructive Reset";
 	}
 
-	val = readl(RGM_FES);
+	val = readl(RGM_FES(MC_RGM_BASE_ADDR));
 	if (val & RGM_FES_EXT) {
-		writel(RGM_FES_EXT, RGM_FES);
+		writel(RGM_FES_EXT, RGM_FES(MC_RGM_BASE_ADDR));
 		return "External Reset";
 	}
 
 	if (val) {
-		writel(~RGM_FES_EXT, RGM_FES);
+		writel(~RGM_FES_EXT, RGM_FES(MC_RGM_BASE_ADDR));
 		return "Functional Reset";
 	}
 
-	val = readl(MC_ME_MODE_STAT);
+	val = readl(MC_ME_MODE_STAT(MC_ME_BASE_ADDR));
 	if ((val & MC_ME_MODE_STAT_PREVMODE) == 0)
 		return "Reset";
 
@@ -118,12 +120,12 @@ static const char *get_reset_cause(void)
 
 void reset_cpu(ulong addr)
 {
-	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF);
+	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF(MC_ME_BASE_ADDR));
 
-	writel(MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD);
+	writel(MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD(MC_ME_BASE_ADDR));
 
-	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* If we get there, we are not in good shape */
 	mdelay(1000);
@@ -206,9 +208,10 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	printf("Starting CM7_%d core at SRAM address 0x%08lX ... ",
 	       coreid, addr);
 
-	writel(readl(RGM_PRST(MC_RGM_PRST_CM7)) | PRST_PERIPH_CM7n_RST(coreid),
-	       RGM_PRST(MC_RGM_PRST_CM7));
-	while (!(readl(RGM_PSTAT(MC_RGM_PSTAT_CM7)) &
+	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7)) |
+	       PRST_PERIPH_CM7n_RST(coreid),
+	       RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7));
+	while (!(readl(RGM_PSTAT(MC_RGM_BASE_ADDR, MC_RGM_PSTAT_CM7)) &
 		 PSTAT_PERIPH_CM7n_STAT(coreid)))
 		;
 
@@ -225,10 +228,10 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		 MC_ME_PRTN_N_CORE_M_STAT_CCS))
 		;
 
-	writel(readl(RGM_PRST(MC_RGM_PRST_CM7)) &
+	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7)) &
 	       (~PRST_PERIPH_CM7n_RST(coreid)),
-	       RGM_PRST(MC_RGM_PRST_CM7));
-	while (readl(RGM_PSTAT(MC_RGM_PSTAT_CM7)) &
+	       RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7));
+	while (readl(RGM_PSTAT(MC_RGM_BASE_ADDR, MC_RGM_PSTAT_CM7)) &
 	       PSTAT_PERIPH_CM7n_STAT(coreid))
 		;
 

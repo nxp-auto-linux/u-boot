@@ -90,8 +90,8 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 	       MC_ME_PRTN_N_CORE_M_PUPD(prtn, core & ~1));
 
 	/* Write valid key sequence to trigger the update. */
-	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* Wait for core clock enable status bit. */
 	while ((readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, core & ~1)) &
@@ -100,11 +100,12 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 		;
 
 	/* Deassert core reset */
-	reset = readl(RGM_PRST(RGM_CORES_RESET_GROUP));
+	reset = readl(RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
 	resetc = RGM_CORE_RST(core);
 	reset &= ~resetc;
-	writel(reset, RGM_PRST(RGM_CORES_RESET_GROUP));
-	while ((readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)) & resetc) != 0)
+	writel(reset, RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
+	while ((readl(RGM_PSTAT(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP))
+				& resetc) != 0)
 		;
 
 	printf("CA53 core %d running.\n", core);
@@ -124,12 +125,14 @@ int fsl_s32_wake_secondary_cores(void)
 			   (unsigned long)boot_loc + *boot_page_size);
 
 	/* Enable partition clock */
-	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(MC_ME_CORES_PRTN));
-	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PUPD(MC_ME_CORES_PRTN));
+	writel(MC_ME_PRTN_N_PCE,
+	       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, MC_ME_CORES_PRTN));
+	writel(MC_ME_PRTN_N_PCE,
+	       MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, MC_ME_CORES_PRTN));
 
 	/* Write valid key sequence to trigger the update. */
-	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* Cluster 0, core 0 is already enabled by BootROM.
 	 * We should enable core 1 from cluster 0 and
