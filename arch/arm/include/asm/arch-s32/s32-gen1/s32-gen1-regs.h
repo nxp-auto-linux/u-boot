@@ -10,6 +10,10 @@
 #include <config.h>
 
 #if !defined(__ASSEMBLER__)
+#include <inttypes.h>
+
+#define UPTR(PTR)				((uintptr_t)(PTR))
+
 #define PER_GROUP0_BASE				(0x40000000UL)
 #define PER_GROUP1_BASE				(0x40100000UL)
 #define PER_GROUP2_BASE				(0x40200000UL)
