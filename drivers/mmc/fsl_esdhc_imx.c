@@ -293,7 +293,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		else
 			esdhc_write32(&regs->dsaddr, lower_32_bits(addr));
 #else
-		esdhc_write32(&regs->dsaddr, (u32)data->dest);
+		esdhc_write32(&regs->dsaddr, (u32)(uintptr_t)data->dest);
 #endif
 #endif
 	} else {
@@ -330,7 +330,7 @@ static int esdhc_setup_data(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		else
 			esdhc_write32(&regs->dsaddr, lower_32_bits(addr));
 #else
-		esdhc_write32(&regs->dsaddr, (u32)data->src);
+		esdhc_write32(&regs->dsaddr, (u32)(uintptr_t)data->src);
 #endif
 #endif
 	}
@@ -397,7 +397,7 @@ static void check_and_invalidate_dcache_range
 	else
 		start = lower_32_bits(addr);
 #else
-	start = (unsigned)data->dest;
+	start = (unsigned)(uintptr_t)data->dest;
 #endif
 	end = start + size;
 	invalidate_dcache_range(start, end);
