@@ -256,12 +256,11 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 				- image_layout.app_code.offset
 				- offsetof(struct application_boot_code, code);
 		code_length += pre_code_padding;
-		code_length = ROUND(code_length, 0x40);
+		app_code->code_length = code_length;
 
 		app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE
 							- pre_code_padding;
 		app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
-		app_code->code_length = code_length;
 	} else {
 		printf("mkimage: s32gen1image: %s is a FIP image\n",
 		       tool_params->datafile);
@@ -274,6 +273,10 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 					+ FIP_BL2_OFFSET
 					+ pre_code_padding;
 	}
+	/* The ' code_length', like plenty of entries in the Program
+	 * Image structure, must be 512 bytes aligned.
+	 */
+	app_code->code_length = ROUND(app_code->code_length, 512);
 
 #ifndef CONFIG_FLASH_BOOT
 	enforce_reserved_range((void*)(__u64)
