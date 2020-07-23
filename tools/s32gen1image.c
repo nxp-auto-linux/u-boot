@@ -308,7 +308,7 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 #endif
 #endif
 
-	return;
+	s32_check_env_overlap(sbuf->st_size);
 }
 
 static int s32gen1_check_image_type(uint8_t type)

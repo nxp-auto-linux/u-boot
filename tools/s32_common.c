@@ -65,3 +65,16 @@ void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 			check_overlap(parts[i - 1], parts[i]);
 	}
 }
+
+void s32_check_env_overlap(size_t image_size)
+{
+#ifdef CONFIG_ENV_OFFSET
+	if (image_size > CONFIG_ENV_OFFSET) {
+		fprintf(stderr, "This image of size 0x%x would be overwritten"
+				" by environment at 0x%p\n",
+			(unsigned int)(image_size),
+			(void *)CONFIG_ENV_OFFSET);
+		exit(EXIT_FAILURE);
+	}
+#endif
+}

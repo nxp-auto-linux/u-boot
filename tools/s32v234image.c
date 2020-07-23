@@ -111,6 +111,8 @@ static void s32v234_set_header(void *header, struct stat *sbuf, int unused,
 	boot_data->start = ivt->entry - S32V234_INITLOAD_SIZE;
 	boot_data->length = ROUND(sbuf->st_size + S32V234_INITLOAD_SIZE,
 				  0x1000);
+
+	s32_check_env_overlap(sbuf->st_size);
 }
 
 static int s32v234_check_image_type(uint8_t type)
