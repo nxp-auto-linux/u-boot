@@ -30,6 +30,8 @@
 #include <dm/uclass.h>
 #include <generic-phy.h>
 #endif
+#include <dt-bindings/clock/s32gen1-clock.h>
+#include <s32gen1_clk_utils.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -49,6 +51,14 @@ u32 cpu_mask(void)
 int cpu_numcores(void)
 {
 	return hweight32(cpu_mask());
+}
+
+int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
+{
+	if (enable)
+		return s32gen1_enable_plat_clk(S32GEN1_CLK_XBAR_DIV3);
+
+	return 0;
 }
 
 /* There are 3 possible ranges for selected_output:

@@ -17,9 +17,12 @@
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
+#include <s32gen1_clk_utils.h>
 #ifdef CONFIG_S32_SKIP_RELOC
 #include <asm-generic/sections.h>
 #endif
+#include <clk.h>
+#include <dm/uclass.h>
 
 #define S32_MMU_TABLE(BASE, IDX) ((BASE) + (IDX) * PGTABLE_SIZE)
 
@@ -305,10 +308,48 @@ static inline void final_mmu_setup(void)
 	set_sctlr(get_sctlr() | CR_M);
 }
 
+#ifdef CONFIG_S32_GEN1
+/*
+ * This function is a temporary fix for drivers without clock bindings.
+ *
+ * It should be removed once Linux kernel is able to enable all
+ * needed clocks and all U-Boot drivers have clock bindings.
+ *
+ * E.g. QSPI, FTM, etc.
+ */
+static int enable_periph_clocks(void)
+{
+	struct udevice *dev;
+	struct clk_bulk bulk;
+	int ret;
+
+	ret = uclass_get_device_by_name(UCLASS_CLK, "clks", &dev);
+	if (ret) {
+		pr_err("Failed to get 'clk' device\n");
+		return ret;
+	}
+
+	ret = clk_get_bulk(dev, &bulk);
+	if (ret == -EINVAL)
+		return 0;
+
+	if (ret)
+		return ret;
+
+	ret = clk_enable_bulk(&bulk);
+	if (ret) {
+		clk_release_bulk(&bulk);
+		return ret;
+	}
+
+	return 0;
+}
+#endif
+
 int arch_cpu_init(void)
 {
+	int ret = 0;
 #ifdef CONFIG_S32_SKIP_RELOC
-	int ret;
 	int base, size;
 
 	gd->flags |= GD_FLG_SKIP_RELOC;
@@ -331,9 +372,13 @@ int arch_cpu_init(void)
 	 * Note: TF-A has already initialized these, so don't do it again if
 	 * we're running at EL2.
 	 */
-	clock_init();
+	ret = enable_early_clocks();
+	if (ret)
+		return ret;
+
 	ncore_init(0x1);
 #endif
+
 	icache_enable();
 	__asm_invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
@@ -342,7 +387,7 @@ int arch_cpu_init(void)
 #if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	s32_gentimer_init();
 #endif
-	return 0;
+	return ret;
 }
 
 /*
@@ -362,10 +407,10 @@ void enable_caches(void)
 #endif
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
-#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 int arch_early_init_r(void)
 {
 	int rv;
+#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	asm volatile("dsb sy");
 	rv = fsl_s32_wake_secondary_cores();
 
@@ -376,21 +421,19 @@ int arch_early_init_r(void)
 	/* Reconfigure Concerto before actually waking the cores */
 	ncore_init(0xf);
 #endif
-
 	asm volatile("sev");
+#endif
+
+#ifdef CONFIG_S32_GEN1
+	rv = enable_periph_clocks();
+
+	if (rv)
+		return rv;
+#endif
 
 	return 0;
 }
-#else
-/* With TF-A, practically we should do nothing of the above; define an empty
- * stub to appease the compiler.
- */
-int arch_early_init_r(void)
-{
-	return 0;
-}
-#endif
-#endif
+#endif /* CONFIG_ARCH_EARLY_INIT_R */
 
 /* For configurations with U-Boot *not* at EL3, it is presumed that
  * the EL3 software (e.g. the TF-A) will initialize the generic timer.
