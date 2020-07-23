@@ -80,18 +80,38 @@ static struct application_boot_code *get_app_code(struct program_image *image)
 }
 
 #ifndef CONFIG_FLASH_BOOT
-static void enforce_reserved_range(void *image_start, int image_length,
-				   void *reserved_start, void *reserved_end)
+
+/* Areas of SRAM reserved by BootROM according to the
+ * Reset and Boot: Boot: Program Image section of the Reference Manual,
+ * while taking into account the fact that SRAM is mirrored at 0x3800_0000.
+ */
+
+struct reserved_range {
+	void *start;
+	void *end;
+};
+
+static struct reserved_range reserved_sram[] = {
+	{.start = (void *)0x34008000, .end = (void *)0x34078000},
+	{.start = (void *)0x38008000, .end = (void *)0x38078000},
+	{.start = (void *)0x343ff000, .end = (void *)0x34400000},
+	{.start = (void *)0x383ff000, .end = (void *)0x38400000},
+};
+
+static void enforce_reserved_ranges(void *image_start, int image_length)
 {
 	void *image_end = (void*)((__u8*)image_start + image_length);
+	int i;
 
-	if (image_start < reserved_end && image_end > reserved_start) {
-		fprintf(stderr, "Loading data of size 0x%x at 0x%p forbidden.",
-			image_length, image_end);
-		fprintf(stderr, " Range 0x%p --- 0x%p is reserved!\n",
-			reserved_start, reserved_end);
-		exit(EXIT_FAILURE);
-	}
+	for (i = 0; i < ARRAY_SIZE(reserved_sram); i++)
+		if (image_start < reserved_sram[i].end &&
+		    image_end > reserved_sram[i].start) {
+			fprintf(stderr, "Loading data of size 0x%x at 0x%p "
+				"forbidden.", image_length, image_start);
+			fprintf(stderr, " Range 0x%p --- 0x%p is reserved!\n",
+				reserved_sram[i].start, reserved_sram[i].end);
+			exit(EXIT_FAILURE);
+		}
 }
 
 #else
@@ -279,17 +299,9 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	app_code->code_length = ROUND(app_code->code_length, 512);
 
 #ifndef CONFIG_FLASH_BOOT
-	enforce_reserved_range((void*)(__u64)
-			       app_code->ram_start_pointer,
-			       app_code->code_length,
-			       (void*)SRAM_RESERVED_0_START,
-			       (void*)SRAM_RESERVED_0_END);
-
-	enforce_reserved_range((void*)(__u64)
-			       app_code->ram_start_pointer,
-			       app_code->code_length,
-			       (void*)SRAM_RESERVED_1_START,
-			       (void*)SRAM_RESERVED_1_END);
+	enforce_reserved_ranges((void *)(__u64)
+				app_code->ram_start_pointer,
+				app_code->code_length);
 #else
 #ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	s32gen1_set_qspi_params(get_qspi_params(&image_layout));
