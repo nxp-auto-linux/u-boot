@@ -220,6 +220,7 @@ config PHY_MTK_TPHY
 config SAF1508BET_USB_PHY
 	bool "NXP SAF1508BET USB PHY support"
 	depends on PHY
+	depends on USB
 	help
 	  Support for the S32G274A-EVB's USB PHY.
 
