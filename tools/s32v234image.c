@@ -80,7 +80,7 @@ static void set_data_pointers(struct program_image *layout, void *header)
 	layout->dcd.data = data + layout->dcd.offset;
 }
 
-static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
+static void s32v234_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
 	uint8_t *dcd;
@@ -113,7 +113,7 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 				  0x1000);
 }
 
-static int s32gen1_check_image_type(uint8_t type)
+static int s32v234_check_image_type(uint8_t type)
 {
 	if (type == IH_TYPE_S32V234IMAGE)
 		return EXIT_SUCCESS;
@@ -121,7 +121,7 @@ static int s32gen1_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
-static int s32g2xx_build_layout(struct program_image *program_image,
+static int s32v234_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
 	uint8_t *image_layout;
@@ -154,13 +154,13 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	return 0;
 }
 
-static int s32gen1_vrec_header(struct image_tool_params *tool_params,
+static int s32v234_vrec_header(struct image_tool_params *tool_params,
 			       struct image_type_params *type_params)
 {
 	size_t header_size;
 	void *image = NULL;
 
-	s32g2xx_build_layout(&image_layout, &header_size, &image);
+	s32v234_build_layout(&image_layout, &header_size, &image);
 	type_params->header_size = header_size;
 	type_params->hdr = image;
 
@@ -175,9 +175,9 @@ U_BOOT_IMAGE_TYPE(
 	NULL,
 	NULL,
 	s32_print_header,
-	s32gen1_set_header,
+	s32v234_set_header,
 	NULL,
-	s32gen1_check_image_type,
+	s32v234_check_image_type,
 	NULL,
-	s32gen1_vrec_header
+	s32v234_vrec_header
 );
