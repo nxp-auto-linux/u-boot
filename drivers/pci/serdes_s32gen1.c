@@ -13,8 +13,10 @@
 #include <asm/arch/clock.h>
 #include <linux/sizes.h>
 #include <dm/device-internal.h>
+#include <dm/device_compat.h>
 #include <asm/arch-s32/siul.h>
 #include <hwconfig.h>
+#include <clk.h>
 
 #include "serdes_s32gen1.h"
 #include "mc_rgm_regs.h"
@@ -163,17 +165,17 @@ static void s32_serdes_enable_ltssm(void __iomem *dbi)
 static int rgm_get_regs(u32 id, phys_addr_t *prst, phys_addr_t *pstat)
 {
 	if (id <= 17U) {
-		*prst = RGM_PRST(0);
-		*pstat = RGM_PSTAT(0);
+		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 0);
+		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 0);
 	} else if ((id >= 64U) && (id <= 68U)) {
-		*prst = RGM_PRST(1);
-		*pstat = RGM_PSTAT(1);
+		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 1);
+		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 1);
 	} else if ((id >= 128U) && (id <= 130)) {
-		*prst = RGM_PRST(2);
-		*pstat = RGM_PSTAT(2);
+		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 2);
+		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 2);
 	} else if ((id >= 192U) && (id <= 194U)) {
-		*prst = RGM_PRST(3);
-		*pstat = RGM_PSTAT(3);
+		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 3);
+		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 3);
 	} else {
 		printf("error: Reset of unknown peripheral");
 		printf(" or domain requested (%d)\n", id);
@@ -521,6 +523,25 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 	return ret;
 }
 
+static int enable_serdes_clocks(struct udevice *dev)
+{
+	struct clk_bulk bulk;
+	int ret;
+
+	ret = clk_get_bulk(dev, &bulk);
+	if (ret == -ENOSYS)
+		return 0;
+	if (ret)
+		return ret;
+
+	ret = clk_enable_bulk(&bulk);
+	if (ret) {
+		clk_release_bulk(&bulk);
+		return ret;
+	}
+	return 0;
+}
+
 static int s32_serdes_probe(struct udevice *dev)
 {
 	struct s32_serdes *pcie = dev_get_priv(dev);
@@ -541,6 +562,12 @@ static int s32_serdes_probe(struct udevice *dev)
 	ret = s32_serdes_get_config_from_device_tree(pcie);
 	if (ret)
 		return ret;
+
+	ret = enable_serdes_clocks(dev);
+	if (ret) {
+		dev_err(dev, "Failed to enable SERDES clocks\n");
+		return ret;
+	}
 
 	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
 	if (pcie->devtype == SERDES_INVALID) {

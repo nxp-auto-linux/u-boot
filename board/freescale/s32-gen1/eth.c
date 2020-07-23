@@ -2,7 +2,6 @@
 /*
  * Copyright 2019-2020 NXP
  */
-
 #include <common.h>
 #include <dm.h>
 #include <asm/io.h>
@@ -21,6 +20,11 @@
 #include <dm/platform_data/pfeng_dm_eth.h>
 #endif
 #include <fdt_support.h>
+#include <clk.h>
+#include <dt-bindings/clock/s32gen1-clock.h>
+#include <s32gen1_clk_utils.h>
+#include <s32gen1_gmac_utils.h>
+#include <dm/device_compat.h>
 
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 				       void *fdt, int nodeoff)
@@ -33,6 +37,7 @@ static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 	}
 }
 
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 static bool intf_is_xmii(u32 intf)
 {
 	return intf == PHY_INTERFACE_MODE_MII ||
@@ -71,7 +76,6 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 			/* sync MAC HW addr to DT [local-mac-address] */
 			ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
 		}
-
 		/* We are done */
 		return;
 	}
@@ -86,6 +90,7 @@ static bool pfeng_drv_status_active(void)
 
 	return dev->flags & DM_FLAG_ACTIVATED;
 }
+#endif
 
 /*
  * Ethernet DT fixup before OS load
@@ -257,70 +262,59 @@ void setup_iomux_enet_gmac(int intf)
 	}
 }
 
-static u32 gmac_calc_link_speed_divider(u32 speed)
+static ulong gmac_calc_link_speed(u32 speed)
 {
-	u32 div;
-
 	switch (speed) {
 	case SPEED_10:   /* 2.5MHz */
-		div = 50 - 1;
-		break;
+		return 2500000UL;
 	case SPEED_100:  /* 25MHz */
-		div = 5 - 1;
-		break;
+		return 25000000UL;
 	default:
 	case SPEED_1000: /* 125MHz (also 325MHz for 2.5G) */
-		div = 1 - 1;
-		break;
+		return 125000000UL;
 	}
-
-	return div;
 }
 
-int set_tx_clk_enet_gmac(u32 speed)
+int set_tx_clk_enet_gmac(struct udevice *gmac_dev, u32 speed)
 {
-	mux_div_clk_config(MC_CGM0_BASE_ADDR, 10, 0,
-			   gmac_calc_link_speed_divider(speed));
+	ulong freq = gmac_calc_link_speed(speed);
+
+	if (s32gen1_set_dev_clk_rate("tx", gmac_dev, freq) != freq)
+		return -EINVAL;
+
+	if (s32gen1_enable_dev_clk("tx", gmac_dev)) {
+		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
+		return -EINVAL;
+	}
 
 	return 0;
 }
 
-void setup_clocks_enet_gmac(int intf)
+void setup_clocks_enet_gmac(int intf, struct udevice *gmac_dev)
 {
-	/* setup the mux clock divider for GMAC_TS_CLK (200 MHz) */
-	mux_source_clk_config(MC_CGM0_BASE_ADDR, 9,
-			      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI4);
+	int ret;
+	u32 tx_id, rx_id;
+
+	ret = s32gen1_set_parent_clk_id(S32GEN1_CLK_MC_CGM0_MUX9,
+					S32GEN1_CLK_PERIPH_PLL_PHI4);
+	if (ret) {
+		dev_err(gmac_dev, "Failed to set cgm0_mux9 source\n");
+		return;
+	}
+
+	rx_id = S32GEN1_CLK_FIRC;
+	tx_id = rx_id;
 
 	/* configure interface specific clocks */
 	switch (intf) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* setup the mux clock divider for GMAC_0_TX_CLK
-		 * (325/125/25/2.5 MHz)
-		 */
-		mux_source_clk_config(MC_CGM0_BASE_ADDR, 10,
-				      MC_CGM_MUXn_CSC_SEL_GMAC_0_SERDES_TX_CLK);
-		set_tx_clk_enet_gmac(SPEED_1000);
-
-		/* setup the mux clock divider for GMAC_0_RX_CLK
-		 * (Ext source from PHY - RX)
-		 */
-		mux_source_clk_config(MC_CGM0_BASE_ADDR, 11,
-				      MC_CGM_MUXn_CSC_SEL_GMAC_RX_CLK);
+		tx_id = S32GEN1_CLK_SERDES0_LANE0_TX;
+		rx_id = S32GEN1_CLK_GMAC0_EXT_RX;
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
-		/* setup the mux clock divider for GMAC_0_TX_CLK
-		 * (125/25/2.5 MHz)
-		 */
-		mux_source_clk_config(MC_CGM0_BASE_ADDR, 10,
-				      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI5);
-		set_tx_clk_enet_gmac(SPEED_1000);
-
-		/* setup the mux clock divider for GMAC_0_RX_CLK
-		 * (Ext source from PHY - RX)
-		 */
-		mux_source_clk_config(MC_CGM0_BASE_ADDR, 11,
-				      MC_CGM_MUXn_CSC_SEL_GMAC_RX_CLK);
+		tx_id = S32GEN1_CLK_PERIPH_PLL_PHI5;
+		rx_id = S32GEN1_CLK_GMAC0_EXT_RX;
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
@@ -334,6 +328,38 @@ void setup_clocks_enet_gmac(int intf)
 	default:
 		break;
 	}
+
+	ret = s32gen1_set_parent_clk_id(S32GEN1_CLK_MC_CGM0_MUX10, tx_id);
+	if (ret) {
+		dev_err(gmac_dev, "Failed to set cgm0_mux10 source\n");
+		return;
+	}
+
+	ret = s32gen1_set_parent_clk_id(S32GEN1_CLK_MC_CGM0_MUX11, rx_id);
+	if (ret) {
+		dev_err(gmac_dev, "Failed to set cgm0_mux11 source\n");
+		return;
+	}
+
+	if (rx_id == S32GEN1_CLK_FIRC && tx_id == S32GEN1_CLK_FIRC)
+		return;
+
+	if (set_tx_clk_enet_gmac(gmac_dev, SPEED_1000)) {
+		dev_err(gmac_dev, "Failed to set GMAC TX frequency\n");
+		return;
+	}
+
+	ret = s32gen1_enable_dev_clk("rx", gmac_dev);
+	if (ret)
+		dev_err(gmac_dev, "Failed to enable gmac_rx clock\n");
+
+	ret = s32gen1_enable_dev_clk("tx", gmac_dev);
+	if (ret)
+		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
+
+	ret = s32gen1_enable_dev_clk("ts", gmac_dev);
+	if (ret)
+		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
 }
 
 #endif /* CONFIG_DWC_ETH_QOS_S32CC */

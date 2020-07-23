@@ -25,6 +25,7 @@ if TARGET_S32V344EVB || TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
 	default y
+	select CLK
 	help
 	  Platform Selection
 

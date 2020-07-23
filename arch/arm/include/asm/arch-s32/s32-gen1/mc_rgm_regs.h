@@ -7,20 +7,22 @@
 
 #ifndef __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__
 #define __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__
+#include "s32-gen1-regs.h"
 
-#define RGM_DES				(MC_RGM_BASE_ADDR + 0x0)
+#define RGM_DES(MC_RGM)			(UPTR(MC_RGM) + 0x0)
 #define RGM_DES_POR			(0x00000001)
 
-#define RGM_FES				(MC_RGM_BASE_ADDR + 0x8)
+#define RGM_FES(MC_RGM)			(UPTR(MC_RGM) + 0x8)
 #define RGM_FES_EXT			(0x00000001)
 
-#define RGM_PRST(per)			(MC_RGM_BASE_ADDR + 0x40 + \
+#define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
 					 ((per) * 0x8))
+
 #define MC_RGM_PRST_CM7			(0)
 #define PRST_PERIPH_n_RST(n)		BIT(n)
 #define PRST_PERIPH_CM7n_RST(n)		PRST_PERIPH_n_RST(n)
 
-#define RGM_PSTAT(per)			(MC_RGM_BASE_ADDR + 0x140 + \
+#define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
 					 ((per) * 0x8))
 #define MC_RGM_PSTAT_CM7		(0)
 #define PSTAT_PERIPH_n_STAT(n)		BIT(n)

@@ -14,6 +14,7 @@
 #include <elf.h>
 #include <hwconfig.h>
 #include <spi_flash.h>
+#include <clk.h>
 
 #include "pfeng.h"
 
@@ -466,7 +467,7 @@ pfeng_driver_init(struct pfeng_priv *priv)
 	int ret;
 
 	/* CFG setup */
-	priv->pfe_cfg.common_irq_mode = FALSE; /* don't use common irq mode */
+	priv->pfe_cfg.common_irq_mode = false; /* don't use common irq mode */
 	priv->pfe_cfg.irq_vector_hif_chnls[0] = 0x0; /* no IRQ used */
 	priv->pfe_cfg.cbus_base = (addr_t)S32G_PFE_REGS_BASE;
 	priv->pfe_cfg.cbus_len = 0x0; /* not used */
@@ -605,7 +606,7 @@ pfeng_start(struct udevice *dev)
 	printf("Attached to %s\n", devname);
 
 	/* Update clocks */
-	pfeng_apply_clocks();
+	pfeng_apply_clocks(dev);
 
 	/* Retrieve PHYIF */
 	priv->phyif_emac = pfe_platform_get_phy_if_by_id(
@@ -845,7 +846,8 @@ pfeng_probe(struct udevice *dev)
 	priv->dev = dev;
 	priv->dev_index = eth_get_dev_index();
 	priv->if_index = 0;
-	priv->if_changed = 1;
+	priv->if_changed = true;
+	priv->clocks_done = false;
 
 	priv->config = pdata->config;
 	if (!priv->config) {
@@ -865,7 +867,7 @@ pfeng_probe(struct udevice *dev)
 				return -ENODEV;
 
 	/* enable PFE IP support */
-	pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+	pfeng_cfg_set_mode(PFENG_MODE_ENABLE, dev);
 
 	/* fw: parse location and load it */
 	ret = pfeng_set_fw_from_env(priv);

@@ -13,7 +13,7 @@
 #ifndef __ASSEMBLY__
 
 /* FXOSC registers. */
-#define FXOSC_CTRL			(XOSC_BASE_ADDR)
+#define FXOSC_CTRL(FXOSC)		(UPTR(FXOSC) + 0x0)
 #define FXOSC_CTRL_OSC_BYP		(1 << 31)
 #define FXOSC_CTRL_COMP_EN		(1 << 24)
 
@@ -29,12 +29,13 @@
 
 #define FXOSC_CTRL_OSCON		(1 << 0)
 
-#define FXOSC_STAT			(XOSC_BASE_ADDR + 0x4)
+#define FXOSC_STAT(FXOSC)		(UPTR(FXOSC) + 0x4)
 #define FXOSC_STAT_OSC_STAT		(1 << 31)
 
 /* MC_CGM registers definitions */
 /* MC_CGM_MUX_n_CSC */
-#define CGM_MUXn_CSC(cgm_addr, mux)	(((cgm_addr) + 0x300 + (mux) * 0x40))
+#define CGM_MUXn_CSC(cgm_addr, mux)	((UPTR(cgm_addr) + 0x300 + \
+					 (mux) * 0x40))
 #define MC_CGM_MUXn_CSC_SELCTL(val)	(MC_CGM_MUXn_CSC_SELCTL_MASK & ((val) \
 					 << MC_CGM_MUXn_CSC_SELCTL_OFFSET))
 #define MC_CGM_MUXn_CSC_SELCTL_MASK	(0x3F000000)
@@ -43,7 +44,8 @@
 #define MC_CGM_MUXn_CSC_CLK_SW		(1 << 2)
 
 /* MC_CGM_MUX_n_CSS */
-#define CGM_MUXn_CSS(cgm_addr, mux)	(((cgm_addr) + 0x304 + (mux) * 0x40))
+#define CGM_MUXn_CSS(cgm_addr, mux)	((UPTR(cgm_addr) + 0x304 + \
+					 (mux) * 0x40))
 #define MC_CGM_MUXn_CSS_SELSTAT(css)	((MC_CGM_MUXn_CSS_SELSTAT_MASK & (css))\
 					 >> MC_CGM_MUXn_CSS_SELSTAT_OFFSET)
 #define MC_CGM_MUXn_CSS_SELSTAT_MASK	(0x3F000000)
@@ -57,27 +59,29 @@
 #define MC_CGM_MUXn_CSS_SWTRG_SUCCESS	(0x1)
 
 /* MC_CGM_SC_DCn */
-#define CGM_MUXn_DCm(cgm_addr, mux, dc)	(((cgm_addr) + 0x308) + ((mux) * 0x40))
+#define CGM_MUXn_DCm(cgm_addr, mux, dc)	((UPTR(cgm_addr) + 0x308) + \
+					 ((mux) * 0x40))
 #define MC_CGM_MUXn_DCm_DIV(val)	(MC_CGM_MUXn_DCm_DIV_MASK & ((val) \
 					 << MC_CGM_MUXn_DCm_DIV_OFFSET))
-#define MC_CGM_MUXn_DCm_DIV_MASK	(0x00070000)
+#define MC_CGM_MUXn_DCm_DIV_VAL(val)	(MC_CGM_MUXn_DCm_DIV_MASK & ((val) \
+					 >> MC_CGM_MUXn_DCm_DIV_OFFSET))
+#define MC_CGM_MUXn_DCm_DIV_MASK	(0x00FF0000)
 #define MC_CGM_MUXn_DCm_DIV_OFFSET	(16)
 #define MC_CGM_MUXn_DCm_DE		(1 << 31)
 #define MC_CGM_MUXn_CSC_SEL_MASK	(0x0F000000)
 #define MC_CGM_MUXn_CSC_SEL_OFFSET	(24)
 
 /* DIV_UPD_STAT */
-#define CGM_MUXn_DIV_UPD_STAT(cgm_addr, mux)	(((cgm_addr) + 0x33C + (mux) \
-						  * 0x40))
+#define CGM_MUXn_DIV_UPD_STAT(cgm_addr, mux)	((UPTR(cgm_addr) + 0x33C + \
+						 (mux) * 0x40))
 #define MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT(css)	((MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_MASK \
 						  & (css)) \
 						  >> MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_OFFSET)
 #define MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_MASK	(0x00000001)
 #define MC_CGM_MUXn_DIV_UPD_STAT_DIVSTAT_OFFSET	(0)
 
-
-#define pll_addr(pll)			(ARM_PLL_BASE_ADDR + (pll) * 0x4000)
-#define dfs_addr(pll)			(ARM_DFS_BASE_ADDR + (pll) * 0x4000)
+#define pll_addr(pll)			UPTR(pll)
+#define dfs_addr(pll)			UPTR(pll)
 
 /* PLLDIG PLL Control Register (PLLDIG_PLLCR) */
 #define PLLDIG_PLLCR(pll)		(pll_addr(pll))
@@ -112,9 +116,15 @@
 #define PLLDIG_PLLDV_RDIV_MASK		(0x00007000)
 #define PLLDIG_PLLDV_RDIV_MAXVALUE	(0x7)
 #define PLLDIG_PLLDV_RDIV_OFFSET	(12)
+#define PLLDIG_PLLDV_RDIV(val)		(((val) & PLLDIG_PLLDV_RDIV_MASK) >> \
+					 PLLDIG_PLLDV_RDIV_OFFSET)
 
 /* PLL Frequency Modulation (PLLFM) */
 #define PLLDIG_PLLFM(pll)		((pll_addr(pll)) + 0x0000000C)
+#define PLLDIG_PLLFM_SSCGBYP_OFFSET	(30)
+#define PLLDIG_PLLFM_SSCGBYP_MASK	(0x40000000)
+#define PLLDIG_PLLFM_SSCGBYP(val)	(((val) & PLLDIG_PLLFM_SSCGBYP_MASK) >>\
+					 PLLDIG_PLLFM_SSCGBYP_OFFSET)
 
 /* PLLDIG PLL Fractional  Divide Register (PLLDIG_PLLFD) */
 #define PLLDIG_PLLFD(pll)		((pll_addr(pll)) + 0x00000010)
@@ -133,7 +143,7 @@
 #define PLLDIG_PLLCAL2(pll)		((pll_addr(pll)) + 0x00000018)
 
 /* PLL Clock Mux (PLLCLKMUX) */
-#define PLLDIG_PLLCLKMUX(pll)			((pll_addr(pll)) + 0x00000020)
+#define PLLDIG_PLLCLKMUX(pll)			(UPTR(pll) + 0x00000020)
 #define PLLDIG_PLLCLKMUX_REFCLKSEL_SET(val)	((val) & \
 						PLLDIG_PLLCLKMUX_REFCLKSEL_MASK)
 #define PLLDIG_PLLCLKMUX_REFCLKSEL_MASK		(0x3)
@@ -147,6 +157,8 @@
 					 ((val) << PLLDIG_PLLODIV_DIV_OFFSET))
 #define PLLDIG_PLLODIV_DIV_MASK		(0x00FF0000)
 #define PLLDIG_PLLODIV_DIV_OFFSET	(16)
+#define PLLDIG_PLLODIV_DIV(val)		(((val) & PLLDIG_PLLODIV_DIV_MASK) >> \
+					 PLLDIG_PLLODIV_DIV_OFFSET)
 
 #define PLLDIG_PLLODIV_DE		(1 << 31)
 
@@ -154,13 +166,15 @@
 /* According to the manual there are DFS modules for ARM_PLL, PERIPH_PLL */
 
 /* DFS Control Register (DFS_CTL) */
-#define DFS_CTL(pll)			((dfs_addr(pll)) + 0x00000018)
+#define DFS_CTL(dfs)			((dfs_addr(dfs)) + 0x00000018)
 #define DFS_CTL_RESET			(1 << 1)
 
+#define PLL2DFS(pll)			(pll_addr(pll) + 0x1C000)
+
 /* DFS Port Status Register (DFS_PORTSR) */
-#define DFS_PORTSR(pll)			((dfs_addr(pll)) + 0x0000000C)
+#define DFS_PORTSR(dfs)			((dfs_addr(dfs)) + 0x0000000C)
 /* DFS Port Reset Register (DFS_PORTRESET) */
-#define DFS_PORTRESET(pll)			((dfs_addr(pll)) + 0x00000014)
+#define DFS_PORTRESET(dfs)			((dfs_addr(dfs)) + 0x00000014)
 #define DFS_PORTRESET_PORTRESET_SET(val)	\
 			(((val) & DFS_PORTRESET_PORTRESET_MASK) \
 			<< DFS_PORTRESET_PORTRESET_OFFSET)
@@ -169,8 +183,12 @@
 #define DFS_PORTRESET_PORTRESET_OFFSET		(0)
 
 /* DFS Divide Register Portn (DFS_DVPORTn) */
-#define DFS_DVPORTn(pll, n)			((dfs_addr(pll)) + \
+#define DFS_DVPORTn(dfs, n)			((dfs_addr(dfs)) + \
 						 (0x1C + ((n) * 0x4)))
+
+/* Port Loss of Lock Status (PORTLOLSR) */
+#define DFS_PORTOLSR(dfs)			((dfs_addr(dfs)) + 0x00000010)
+#define DFS_PORTOLSR_LOL(n)			(BIT(n) & 0x3FU)
 
 /*
  * The mathematical formula for fdfs_clockout is the following:
@@ -180,6 +198,10 @@
 		(((val) & DFS_DVPORTn_MFI_MAXVAL) << DFS_DVPORTn_MFI_OFFSET))
 #define DFS_DVPORTn_MFN_SET(val)	(DFS_DVPORTn_MFN_MASK & \
 		(((val) & DFS_DVPORTn_MFN_MAXVAL) << DFS_DVPORTn_MFN_OFFSET))
+#define DFS_DVPORTn_MFI(val)		(((val) & DFS_DVPORTn_MFI_MASK) >> \
+					 DFS_DVPORTn_MFI_OFFSET)
+#define DFS_DVPORTn_MFN(val)		(((val) & DFS_DVPORTn_MFN_MASK) >> \
+					 DFS_DVPORTn_MFN_OFFSET)
 #define DFS_DVPORTn_MFI_MASK		(0x0000FF00)
 #define DFS_DVPORTn_MFN_MASK		(0x000000FF)
 #define DFS_DVPORTn_MFI_MAXVAL		(0xFF)
@@ -198,123 +220,6 @@
 
 #define PLL_MIN_FREQ			(1300000000)
 #define PLL_MAX_FREQ			(5000000000)
-
-/* Clock source mapping on MC_CGM clock selectors. */
-/* Clock source / Clock selector index */
-#define MC_CGM_MUXn_CSC_SEL_FIRC			0
-#define MC_CGM_MUXn_CSC_SEL_SIRC			1
-#define MC_CGM_MUXn_CSC_SEL_FXOSC			2
-#define MC_CGM_MUXn_CSC_SEL_SXOSC			3
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI0		4
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI1		5
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI2		6
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI3		7
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI4		8
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI5		9
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI6		10
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_PHI7		11
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1		12
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS2		13
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS3		14
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS4		15
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS5		16
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS6		17
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI0		18
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI1		19
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI2		20
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI3		21
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI4		22
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI5		23
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI6		24
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI7		25
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1		26
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS2		27
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3		28
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS4		29
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS5		30
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS6		31
-#define MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI0		32
-#define MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI1		33
-#define MC_CGM_MUXn_CSC_SEL_FTM0_EXT_REF		34
-#define MC_CGM_MUXn_CSC_SEL_FTM1_EXT_REF		35
-#define MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0		36
-#define MC_CGM_MUXn_CSC_SEL_GMAC_TX_CLK			37
-#define MC_CGM_MUXn_CSC_SEL_GMAC_RX_CLK			38
-#define MC_CGM_MUXn_CSC_SEL_GMAC_REF_CLK		39
-
-#if	(!defined(CONFIG_TARGET_S32R45EVB)) && \
-		(!defined(CONFIG_TARGET_S32R45SIM))
-#define MC_CGM_MUXn_CSC_SEL_SERDES_TX_CLK		40
-#define MC_CGM_MUXn_CSC_SEL_SERDES_CDR_CLK		41
-#define MC_CGM_MUXn_CSC_SEL_LFAST_EXT_REF		42
-#define MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI8		43
-#define MC_CGM_MUXn_CSC_SEL_GMAC_TS_CLK			44
-#define MC_CGM_MUXn_CSC_SEL_GMAC_0_REF_DIV_CLK		45
-
-#define MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_1_TX_CLK	46
-#define MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_TX_CLK \
-	MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_1_TX_CLK
-#define MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_1_CDR_CLK	47
-#define MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_CDR_CLK \
-	MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_1_CDR_CLK
-
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_0_EXT_TX_CLK	48
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_0_EXT_RX_CLK	49
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_0_EXT_REF_CLK	50
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_1_EXT_TX_CLK	51
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_1_EXT_RX_CLK	52
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_1_EXT_REF_CLK	53
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_2_EXT_TX_CLK	54
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_2_EXT_RX_CLK	55
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_2_EXT_REF_CLK	56
-
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_TX_CLK	57
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_CDR_CLK	58
-
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_0_REF_DIV_CLK	59
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_1_REF_DIV_CLK	60
-#define MC_CGM_MUXn_CSC_SEL_PFE_MAC_2_REF_DIV_CLK	61
-#define MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI0_2		62
-#define MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS4_2		63
-
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_1_TX_CLK	62
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_TX_CLK \
-	MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_1_TX_CLK
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_1_CDR_CLK	63
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_CDR_CLK \
-	MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_1_CDR_CLK
-
-#define MC_CGM_MUXn_CSC_SEL_GMAC_0_SERDES_TX_CLK    \
-	MC_CGM_MUXn_CSC_SEL_SERDES_TX_CLK
-#define MC_CGM_MUXn_CSC_SEL_GMAC_0_SERDES_CDR_CLK    \
-	MC_CGM_MUXn_CSC_SEL_SERDES_CDR_CLK
-
-#else
-/* On S32R45 */
-#define MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_0_TX_CLK  40
-#define MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_0_CDR_CLK 41
-#define MC_CGM_MUXn_CSC_SEL_GMAC_EXT_TS_CLK         44
-#define MC_CGM_MUXn_CSC_SEL_GMAC_0_REF_DIV_CLK      45
-#define MC_CGM_MUXn_CSC_SEL_GMAC_1_REF_DIV_CLK      54
-#define MC_CGM_MUXn_CSC_SEL_GMAC_1_EXT_TX_CLK       56
-#define MC_CGM_MUXn_CSC_SEL_GMAC_1_EXT_RX_CLK       57
-#define MC_CGM_MUXn_CSC_SEL_GMAC_1_EXT_REF_CLK      58
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_TX_CLK  59
-#define MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_CDR_CLK 60
-#define MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI0_CLK      62
-#define MC_CGM_MUXn_CSC_SEL_CORE_DFS4_CLK           63
-
-#define MC_CGM_MUXn_CSC_SEL_GMAC_0_SERDES_TX_CLK    \
-	MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_0_TX_CLK
-#define MC_CGM_MUXn_CSC_SEL_GMAC_0_SERDES_CDR_CLK    \
-	MC_CGM_MUXn_CSC_SEL_SERDES_0_LANE_0_CDR_CLK
-#define MC_CGM_MUXn_CSC_SEL_GMAC_1_SERDES_TX_CLK    \
-	MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_TX_CLK
-#define MC_CGM_MUXn_CSC_SEL_GMAC_1_SERDES_CDR_CLK    \
-	MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_CDR_CLK
-
-#endif /*#ifndef CONFIG_TARGET_S32R45EVB*/
-
 #endif
 
 #endif /*__ARCH_ARM_MACH_S32GEN1_MCCGM_REGS_H__ */
