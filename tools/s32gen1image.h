@@ -123,6 +123,7 @@ struct program_image {
 #ifdef CONFIG_FLASH_BOOT
 	struct image_comp qspi_params;
 #endif
+	struct image_comp ivt_duplicate;
 	struct image_comp dcd;
 	struct image_comp app_code;
 	struct image_comp code;
