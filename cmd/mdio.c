@@ -2,7 +2,7 @@
 /*
  * (C) Copyright 2011 Freescale Semiconductor, Inc
  * Andy Fleming
- * Copyright 2017-2020 NXP
+ * Copyright 2017 NXP
  */
 
 /*
@@ -10,7 +10,6 @@
  */
 
 #include <common.h>
-#include <malloc.h>
 #include <command.h>
 #include <miiphy.h>
 #include <phy.h>
@@ -274,12 +273,6 @@ static int do_mdio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (!bus) {
 		puts("No MDIO bus found\n");
 		return CMD_RET_FAILURE;
-	}
-
-	if (op[0] == 'l') {
-		mdio_list_devices();
-
-		return 0;
 	}
 
 	/* Save the chosen bus */
