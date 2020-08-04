@@ -333,11 +333,13 @@
 #define PFE_INIT_CMD ""
 #endif
 
+#if !defined(PCIE_EXTRA_ENV_SETTINGS)
 #if defined(CONFIG_PCIE_S32GEN1) || defined(CONFIG_FSL_PFENG)
 #define PCIE_EXTRA_ENV_SETTINGS \
 	"hwconfig=" CONFIG_S32GEN1_HWCONFIG "\0"
 #else
 #define PCIE_EXTRA_ENV_SETTINGS ""
+#endif
 #endif
 
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "

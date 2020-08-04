@@ -45,6 +45,8 @@
 #define CONFIG_CMD_IRQ
 #endif
 
+#define PCIE_EXTRA_ENV_SETTINGS "hwconfig=pcie:mode=ep,clock=ext"
+
 #ifdef CONFIG_SJA1105
 #define SJA_1_BUS	0
 #define SJA_1_CS	0
