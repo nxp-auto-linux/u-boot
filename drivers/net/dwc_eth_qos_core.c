@@ -708,7 +708,7 @@ static int eqos_start(struct udevice *dev)
 		struct eqos_desc *rx_desc = &(eqos->rx_descs[i]);
 		rx_desc->des0 = (u32)(ulong)(eqos->rx_dma_buf +
 					     (i * EQOS_MAX_PACKET_SIZE));
-		rx_desc->des3 |= EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
+		rx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
 		eqos->config->ops->eqos_flush_desc(rx_desc);
 	}
 	eqos->config->ops->eqos_flush_desc(eqos->descs);
@@ -840,7 +840,8 @@ static int eqos_send(struct udevice *dev, void *packet, int length)
 	tx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_FD | EQOS_DESC3_LD | length;
 	eqos->config->ops->eqos_flush_desc(tx_desc);
 
-	writel((ulong)(tx_desc + 1), &eqos->dma_regs->ch0_txdesc_tail_pointer);
+	writel((ulong)(&(eqos->tx_descs[eqos->tx_desc_idx])),
+		&eqos->dma_regs->ch0_txdesc_tail_pointer);
 
 	for (i = 0; i < 1000000; i++) {
 		eqos->config->ops->eqos_inval_desc(tx_desc);
@@ -867,8 +868,17 @@ static int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
 	eqos->config->ops->eqos_inval_desc(rx_desc);
 
 	if (rx_desc->des3 & EQOS_DESC3_OWN) {
-		debug("%s: RX packet not available\n", __func__);
-		return -EAGAIN;
+		int n = (eqos->rx_desc_idx + 1) % EQOS_DESCRIPTORS_RX;
+
+		rx_desc = &eqos->rx_descs[n];
+		eqos->config->ops->eqos_inval_desc(rx_desc);
+
+		if (rx_desc->des3 & EQOS_DESC3_OWN) {
+			debug("%s: RX packet not available\n", __func__);
+			return -EAGAIN;
+		}
+
+		eqos->rx_desc_idx = n;
 	}
 
 	*packetp = eqos->rx_dma_buf +
@@ -915,7 +925,7 @@ static int eqos_free_pkt(struct udevice *dev, uchar *packet, int length)
 	 * writes to the rest of the descriptor too.
 	 */
 	mb();
-	rx_desc->des3 |= EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
+	rx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
 	eqos->config->ops->eqos_flush_desc(rx_desc);
 
 	writel((ulong)rx_desc, &eqos->dma_regs->ch0_rxdesc_tail_pointer);
