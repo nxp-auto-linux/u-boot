@@ -12,6 +12,10 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+/* 256 MB x 2 banks */
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x10000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x10000000
+
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32v234_common.h */
 

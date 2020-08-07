@@ -25,6 +25,10 @@
 #define CONFIG_SYS_I2C_DVI_BUS_NUM      1
 #define CONFIG_SYS_I2C_DVI_ADDR         0x39
 
+/* 256 MB x 2 banks */
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x10000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x10000000
+
 /* Ethernet config */
 
 #define CONFIG_FEC_XCV_TYPE     RGMII

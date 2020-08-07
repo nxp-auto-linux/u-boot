@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2019 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2016-2020 NXP
  */
 
 /*
@@ -19,6 +18,9 @@
 #else
 #define LINFLEXUART_BASE	LINFLEXD1_BASE_ADDR
 #endif
+
+#define CONFIG_SYS_FSL_DRAM_BASE1	0x80000000
+#define CONFIG_SYS_FSL_DRAM_BASE2	0xC0000000
 
 /* memory mapped external flash */
 #define CONFIG_SYS_FSL_FLASH0_BASE      0x20000000

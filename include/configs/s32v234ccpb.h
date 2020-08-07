@@ -13,8 +13,11 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-
 #define	FDT_FILE fsl-s32v234-ccpb.dtb
+
+/* 512 MB x 2 banks */
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x20000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x20000000
 
 #define CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
 

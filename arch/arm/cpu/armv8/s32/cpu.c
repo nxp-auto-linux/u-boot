@@ -484,3 +484,21 @@ static int s32_gentimer_init(void)
 #error "S32 platform should provide ARMv8 generic timer initialization"
 #endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
+
+int dram_init_banksize(void)
+{
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	gd->bd->bi_dram[0].start = IRAM_BASE_ADDR;
+	gd->bd->bi_dram[0].size = IRAM_SIZE;
+
+	gd->bd->bi_dram[1].start = 0x0;
+	gd->bd->bi_dram[1].size = 0x0;
+#else
+	gd->bd->bi_dram[0].start = CONFIG_SYS_FSL_DRAM_BASE1;
+	gd->bd->bi_dram[0].size = CONFIG_SYS_FSL_DRAM_SIZE1;
+
+	gd->bd->bi_dram[1].start = CONFIG_SYS_FSL_DRAM_BASE2;
+	gd->bd->bi_dram[1].size = CONFIG_SYS_FSL_DRAM_SIZE2;
+#endif
+	return 0;
+}
