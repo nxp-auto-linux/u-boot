@@ -146,16 +146,48 @@
 
 #endif
 
+/* Note: The *_FLASH_ADDR and *_FLASH_MAXSIZE macros are used
+ * with the 'setexpr' command. Therefore ensure none of them expand
+ * into operations with more than two operands and avoid unnecessary
+ * parantheses. Also these should be kept in sync with
+ * 'conf/machine/include/s32*flashmap.inc'.
+ */
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
-
-/* Flash booting */
-#define UBOOT_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0x0
-#define KERNEL_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0x100000
-#define KERNEL_FLASH_MAXSIZE		0xA00000
-#define FDT_FLASH_ADDR			CONFIG_SYS_FSL_FLASH0_BASE + 0xB00000
+#define KERNEL_FLASH_MAXSIZE		0xa00000
 #define FDT_FLASH_MAXSIZE		0x100000
-#define RAMDISK_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0xC00000
 #define RAMDISK_FLASH_MAXSIZE		0x2000000
+#define UBOOT_FLASH_ADDR		(CONFIG_SYS_FSL_FLASH0_BASE + 0x0)
+
+#ifdef CONFIG_S32_GEN1
+#  define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x1f0000)
+#  define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xbf0000)
+#  define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xcf0000)
+#else
+#  define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x100000)
+#  define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xb00000)
+#  define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xc00000)
+#endif
+
+#if defined(CONFIG_ENV_IS_IN_FLASH) || defined(CONFIG_ENV_IS_IN_SPI_FLASH)
+
+#if defined(CONFIG_ENV_OFFSET)
+#define ENV_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + CONFIG_ENV_OFFSET)
+#else
+#define ENV_FLASH_ADDR	(CONFIG_ENV_ADDR)
+#endif
+
+#if (ENV_FLASH_ADDR + CONFIG_ENV_SIZE > KERNEL_FLASH_ADDR)
+#  error "Environment and Kernel would overlap in flash memory"
+#endif
+
+#endif
+
+#if (KERNEL_FLASH_ADDR + KERNEL_FLASH_MAXSIZE > FDT_FLASH_ADDR)
+#error "Kernel and FDT would overlap in flash memory"
+#endif
+#if (FDT_FLASH_ADDR + FDT_FLASH_MAXSIZE > RAMDISK_FLASH_ADDR)
+#error "FDT and Ramdisk would overlap in flash memory"
+#endif
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_ARCH_TIMER)
@@ -562,20 +594,6 @@
 #else
 #define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */
 #endif
-
-#if defined(CONFIG_ENV_IS_IN_SPI_FLASH) || defined(CONFIG_ENV_IS_IN_FLASH)
-#if defined(CONFIG_S32_GEN1) && defined(CONFIG_SPI_FLASH_MACRONIX)
-#if CONFIG_ENV_OFFSET != (KERNEL_FLASH_ADDR - CONFIG_ENV_SECT_SIZE)
-#error "CONFIG_ENV_OFFSET should be in the flash sector before \
-	  KERNEL_FLASH_ADDR"
-#endif
-#else /* CONFIG_S32_GEN1 && CONFIG_SPI_FLASH_MACRONIX */
-#if CONFIG_ENV_ADDR != (UBOOT_FLASH_ADDR + 2 * FLASH_SECTOR_SIZE)
-#error "CONFIG_ENV_ADDR should be UBOOT_FLASH_ADDR + 2 * FLASH_SECTOR_SIZE"
-#endif
-#endif
-#endif
-
 
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
