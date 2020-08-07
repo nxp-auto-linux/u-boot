@@ -13,7 +13,6 @@
 #include <linux/ethtool.h>
 #include <asm/io.h>
 
-
 /**
  * @brief	Variables for XPCS indirect access
  */
@@ -322,6 +321,8 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
 				      EN_VSMMD1 | BYP_PWRUP);
 
+/* Currently this can't be enabled due to issue in bifurcation modes */
+#ifdef S32G_XPCS_ENABLE_PRECHECKS
 	if (!(bypass && clktype == CLK_EXT)) {
 		/*	Wait for XPCS power up */
 		retval = serdes_xpcs_wait_for_power_good(base,
@@ -343,6 +344,7 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 			/*	Unexpected XPCS ID */
 			return -EINVAL;
 	}
+#endif
 
 	/*	(Switch to 1G mode: #1) */
 	if (clktype == CLK_INT)
