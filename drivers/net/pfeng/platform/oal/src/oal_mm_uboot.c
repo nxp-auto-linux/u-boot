@@ -122,16 +122,23 @@ errno_t oal_mm_dev_unmap(void *paddr, const addr_t len)
 	return 0;
 }
 
-void oal_mm_cache_inval(const void *vaddr, const void *paddr, const addr_t len)
+void oal_mm_cache_inval(const void *vad, const void *paddr, const addr_t len)
 {
-	invalidate_dcache_range((unsigned long)paddr,
-				((unsigned long)paddr) + len);
+	unsigned long start = rounddown((unsigned long)vad, ARCH_DMA_MINALIGN);
+	unsigned long end = roundup((unsigned long)vad + (unsigned long)len,
+				    ARCH_DMA_MINALIGN);
+
+	invalidate_dcache_range(start, end);
 	return;
 }
 
-void oal_mm_cache_flush(const void *vaddr, const void *paddr, const addr_t len)
+void oal_mm_cache_flush(const void *vad, const void *paddr, const addr_t len)
 {
-	flush_dcache_range((unsigned long)paddr, ((unsigned long)paddr) + len);
+	unsigned long start = rounddown((unsigned long)vad, ARCH_DMA_MINALIGN);
+	unsigned long end = roundup((unsigned long)vad + (unsigned long)len,
+				    ARCH_DMA_MINALIGN);
+
+	flush_dcache_range(start, end);
 	return;
 }
 

@@ -613,6 +613,11 @@ pfe_hif_ring_enqueue_buf_std(pfe_hif_ring_t *ring, void *buf_pa,
 	}
 #endif /* PFE_CFG_NULL_ARG_CHECK */
 
+	oal_mm_cache_inval(ring->base_va, ring->base_va,
+			   sizeof(pfe_hif_bd_t) * PFE_HIF_RING_CFG_LENGTH);
+	oal_mm_cache_inval(ring->wb_tbl_base_va, ring->wb_tbl_base_va,
+			   sizeof(pfe_hif_wb_bd_t) * PFE_HIF_RING_CFG_LENGTH);
+
 	if (unlikely(ring->wr_bd->desc_en != 0U)) {
 		NXP_LOG_ERROR(
 			"Can't insert buffer since the BD entry is already used\n");
@@ -649,10 +654,17 @@ pfe_hif_ring_enqueue_buf_std(pfe_hif_ring_t *ring, void *buf_pa,
 		}
 #endif /* EQ_DQ_RX_DEBUG */
 
+
 		/*	Write the BD 'enable' bit */
 		ring->wr_wb_bd->desc_en = 1U;
+		oal_mm_cache_flush(ring->wr_wb_bd, ring->wr_wb_bd,
+				   sizeof(pfe_hif_wb_bd_t));
+		oal_mm_cache_flush(ring->wr_bd, ring->wr_bd,
+				   sizeof(pfe_hif_bd_t));
 		hal_wmb();
 		ring->wr_bd->desc_en = 1U;
+		oal_mm_cache_flush(ring->wr_bd, ring->wr_bd,
+				   sizeof(pfe_hif_bd_t));
 
 		/*	Increment the write pointer */
 		inc_write_index_std(ring);
@@ -753,6 +765,11 @@ pfe_hif_ring_dequeue_buf_std(pfe_hif_ring_t *ring, void **buf_pa,
 	}
 #endif /* PFE_CFG_NULL_ARG_CHECK */
 
+	oal_mm_cache_inval(ring->base_va, ring->base_va,
+			   sizeof(pfe_hif_bd_t) * PFE_HIF_RING_CFG_LENGTH);
+	oal_mm_cache_inval(ring->wb_tbl_base_va, ring->wb_tbl_base_va,
+			   sizeof(pfe_hif_wb_bd_t) * PFE_HIF_RING_CFG_LENGTH);
+
 	if ((0U == ring->rd_bd->desc_en) || (0U != ring->rd_wb_bd->desc_en)
 #ifdef PFE_CFG_HIF_SEQNUM_CHECK
 	    || (ring->rd_bd->seqnum != ring->rd_wb_bd->seqnum)
@@ -766,6 +783,10 @@ pfe_hif_ring_dequeue_buf_std(pfe_hif_ring_t *ring, void **buf_pa,
 		ring->rd_bd->desc_en = 0U;
 		ring->rd_wb_bd->desc_en = 1U;
 		hal_wmb();
+		oal_mm_cache_flush(ring->rd_bd, ring->rd_bd,
+				   sizeof(pfe_hif_bd_t));
+		oal_mm_cache_flush(ring->rd_wb_bd, ring->rd_wb_bd,
+				   sizeof(pfe_hif_wb_bd_t));
 
 		*buf_pa = (void *)(addr_t)(ring->rd_bd->data);
 
@@ -912,6 +933,11 @@ pfe_hif_ring_dequeue_plain_std(pfe_hif_ring_t *ring, bool_t *lifm)
 	}
 #endif /* PFE_CFG_NULL_ARG_CHECK */
 
+	oal_mm_cache_inval(ring->rd_bd, ring->rd_bd,
+			   sizeof(pfe_hif_bd_t));
+	oal_mm_cache_inval(ring->rd_wb_bd, ring->rd_wb_bd,
+			   sizeof(pfe_hif_wb_bd_t));
+
 	if ((0U == ring->rd_bd->desc_en) || (0U != ring->rd_wb_bd->desc_en)
 #ifdef PFE_CFG_HIF_SEQNUM_CHECK
 	    || (ring->rd_bd->seqnum != ring->rd_wb_bd->seqnum)
@@ -933,6 +959,10 @@ pfe_hif_ring_dequeue_plain_std(pfe_hif_ring_t *ring, bool_t *lifm)
 		ring->rd_bd->desc_en = 0U;
 		ring->rd_wb_bd->desc_en = 1U;
 		hal_wmb();
+		oal_mm_cache_flush(ring->rd_bd, ring->rd_bd,
+				   sizeof(pfe_hif_bd_t));
+		oal_mm_cache_flush(ring->rd_wb_bd, ring->rd_wb_bd,
+				   sizeof(pfe_hif_wb_bd_t));
 
 		/*	Increment the read pointer */
 		inc_read_index_std(ring);
@@ -993,11 +1023,20 @@ pfe_hif_ring_drain_buf(pfe_hif_ring_t *ring, void **buf_pa)
 				the new ones will be enqueued with sequence number not matching
 				the current HW one. We need to adjust the SW value when draining
 				non-processed BDs. */
+			oal_mm_cache_inval(ring->wr_wb_bd, ring->wr_wb_bd,
+					   sizeof(pfe_hif_wb_bd_t));
 			if (ring->wr_wb_bd->desc_en != 0U) {
 				/*	This BD has not been processed yet. Revert the enqueue. */
 				*buf_pa = (void *)(addr_t)ring->wr_bd->data;
 				ring->wr_bd->desc_en = 0U;
 				ring->wr_wb_bd->desc_en = 1U;
+
+				oal_mm_cache_flush(ring->wr_bd,
+						   ring->wr_bd,
+						   sizeof(pfe_hif_bd_t));
+				oal_mm_cache_flush(ring->wr_wb_bd,
+						   ring->wr_wb_bd,
+						   sizeof(pfe_hif_wb_bd_t));
 #ifdef PFE_CFG_HIF_SEQNUM_CHECK
 				ring->seqnum--;
 #endif /* PFE_CFG_HIF_SEQNUM_CHECK */
@@ -1007,8 +1046,17 @@ pfe_hif_ring_drain_buf(pfe_hif_ring_t *ring, void **buf_pa)
 				*buf_pa = (void *)(addr_t)ring->rd_bd->data;
 				ring->rd_bd->desc_en = 0U;
 				ring->rd_wb_bd->desc_en = 1U;
+
+				oal_mm_cache_flush(ring->rd_bd,
+						   ring->rd_bd,
+						   sizeof(pfe_hif_bd_t));
+				oal_mm_cache_flush(ring->rd_wb_bd,
+						   ring->rd_wb_bd,
+						   sizeof(pfe_hif_wb_bd_t));
+
 				inc_read_index_std(ring);
 			}
+
 		}
 	} else {
 		return ENOENT;
@@ -1071,6 +1119,13 @@ pfe_hif_ring_invalidate_nocpy(pfe_hif_ring_t *ring)
 }
 #endif /* PFE_CFG_HIF_NOCPY_SUPPORT */
 
+static inline void pfe_hif_bd_fl(pfe_hif_bd_t *bd, pfe_hif_wb_bd_t *wr_bd)
+{
+	oal_mm_cache_flush(bd, bd, sizeof(pfe_hif_bd_t));
+	oal_mm_cache_flush(wr_bd, wr_bd, sizeof(pfe_hif_wb_bd_t));
+}
+
+
 /**
  * @brief		The "standard" HIF variant
  */
@@ -1097,6 +1152,9 @@ pfe_hif_ring_invalidate_std(pfe_hif_ring_t *ring)
 		(((pfe_hif_wb_bd_t *)ring->wb_tbl_base_va)[ii]).seqnum =
 			0xffffU;
 		(((pfe_hif_wb_bd_t *)ring->wb_tbl_base_va)[ii]).desc_en = 1U;
+
+		pfe_hif_bd_fl(&(((pfe_hif_bd_t *)ring->base_va)[ii]),
+			      &(((pfe_hif_wb_bd_t *)ring->wb_tbl_base_va)[ii]));
 	}
 }
 
@@ -1470,12 +1528,16 @@ pfe_hif_ring_create_std(u16 seqnum, bool_t rx)
 		hw_desc_va[ii].cbd_int_en = 1U;
 		hw_desc_va[ii].next =
 			(uint32_t)((addr_t)&hw_desc_pa[ii + 1U] & 0xffffffffU);
+		oal_mm_cache_flush(&hw_desc_va[ii], &hw_desc_va[ii],
+				   sizeof(pfe_hif_bd_t));
 	}
 
 	/*	Chain last one with the first one */
 	hw_desc_va[ii - 1].next =
 		(uint32_t)((addr_t)&hw_desc_pa[0] & 0xffffffffU);
 	hw_desc_va[ii - 1].last_bd = 1U;
+	oal_mm_cache_flush(&hw_desc_va[ii - 1], &hw_desc_va[ii - 1],
+			   sizeof(pfe_hif_bd_t));
 
 	/*	Initialize write-back descriptors */
 	{
@@ -1495,6 +1557,8 @@ pfe_hif_ring_create_std(u16 seqnum, bool_t rx)
 				the PFE HW will clear it. */
 			wb_bd_va->desc_en = 1U;
 			wb_bd_va++;
+			oal_mm_cache_flush(wb_bd_va, wb_bd_va,
+					   sizeof(pfe_hif_wb_bd_t));
 		}
 	}
 
