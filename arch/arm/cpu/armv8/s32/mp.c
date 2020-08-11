@@ -28,11 +28,6 @@ void *get_spin_tbl_addr(void)
 	return ptr;
 }
 
-phys_addr_t determine_mp_bootpg(void)
-{
-	return (phys_addr_t)SECONDARY_CPU_BOOT_PAGE;
-}
-
 #ifdef CONFIG_S32V234
 int fsl_s32_wake_secondary_cores(void)
 {
