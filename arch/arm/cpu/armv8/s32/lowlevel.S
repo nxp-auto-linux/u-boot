@@ -134,11 +134,12 @@ watchdog_cortexm_disable:
 	str x1, [x0]
 #endif
 
+/* Skip SRAM initialization if running with ATF and U-Boot in DDR */
+#if !(defined(CONFIG_S32_ATF_BOOT_FLOW) && defined(CONFIG_S32_SKIP_RELOC))
 sram_init:
 	/* Clear stack region */
-	ldr x0,  =CONFIG_SYS_INIT_SP_ADDR
+	ldr x0,  =(CONFIG_SYS_INIT_SP_ADDR - CONFIG_SYS_INIT_SP_OFFSET)
 	ldr x1,  =CONFIG_SYS_INIT_SP_OFFSET
-	sub x0, x0, x1
 	bl dma_mem_clr
 
 	/* Start address of the SRAM memory to init */
@@ -158,6 +159,7 @@ sram_init:
 
 	/* turn on a53 slave cores from a53 master */
 	/* deassert cores on reset */
+#endif
 
 start_slave_cores:
 
@@ -198,18 +200,13 @@ start_slave_cores:
 	isb
 	isb
 
-	ldr	x0, =CPU_RELEASE_ADDR
-	ldr	x1, =PGTABLE_SIZE
-	add	x0, x0, x1
+	ldr	x0, =s32_tlb_addr
+	ldr	x0, [x0]
 	msr	ttbr0_el3, x0
 	msr	ttbr0_el2, x0
 
-	/* PS = 40 bits, 1 Tbyte; SH0 = 2 (Outer shareable);
-	 * ORGN0 = 1 - Normal memory, outer write-back write-allocate cacheable
-	 * IRGN0 = 1 - Normal memory, inner write-back write-allocate cacheable
-	 * T0SZ=24
-	 */
-	ldr	x0, =(2<<16) | (2<<12) | (1<<10) | (1<<8) | (24 << 0)
+	ldr	x0, =s32_tcr
+	ldr	x0, [x0]
 	msr	tcr_el3, x0
 	msr	tcr_el2, x0
 
