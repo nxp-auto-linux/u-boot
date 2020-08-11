@@ -284,29 +284,11 @@ ENDPROC(lowlevel_init)
 	/* Keep literals not used by the secondary boot page outside it */
 	.ltorg
 
-	.align 4
-	.global secondary_boot_page
-secondary_boot_page:
-	.global __spin_table
-__spin_table:
-	.space CONFIG_MAX_CPUS*ENTRY_SIZE
-
-	/* Ensure that the literals used by the secondary boot page are
-	 * assembled within it
-	 */
-	.ltorg
-
 	/* 64 bit alignment for elements accessed as data */
 	.align 4
 	.global __real_cntfrq
 __real_cntfrq:
 	.quad COUNTER_FREQUENCY
-	.globl __secondary_boot_page_size
-	.type __secondary_boot_page_size, %object
-	/* Secondary Boot Page ends here */
-__secondary_boot_page_size:
-	.quad .-secondary_boot_page
-
 	.data
 initvar:
 	.quad 0x0

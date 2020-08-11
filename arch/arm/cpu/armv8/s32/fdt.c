@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017,2019 NXP
+ * (C) Copyright 2017,2019-2020 NXP
  */
 
 #include <common.h>
@@ -29,42 +29,6 @@ static void ft_fixup_enable_method(void *blob, int off, u64 __always_unused reg)
 	}
 	if (ovr)
 		fdt_setprop_string(blob, off, "enable-method", "psci");
-}
-#else
-/* Standalone U-Boot, no TF-A; default cpu enable method will be spin-table */
-static void ft_fixup_enable_method(void *blob, int off, u64 reg)
-{
-	__maybe_unused u64 spin_tbl_addr = (u64)get_spin_tbl_addr();
-	u64 val = spin_tbl_addr;
-	const char *prop_method;
-	const u64 *prop_addr;
-	bool ovr;
-
-#ifndef CONFIG_FSL_SMP_RELEASE_ALL
-	val += id_to_core(fdt64_to_cpu(reg)) * SIZE_BOOT_ENTRY;
-#endif
-	val = cpu_to_fdt64(val);
-
-	prop_method = fdt_getprop(blob, off, "enable-method", NULL);
-	ovr = (prop_method == NULL);
-	if (prop_method && strcmp(prop_method, "spin-table")) {
-		printf("enable-method found: %s, overwriting with spin-table\n",
-		       prop_method);
-		ovr = true;
-	}
-	if (ovr)
-		fdt_setprop_string(blob, off, "enable-method", "spin-table");
-
-	prop_addr = fdt_getprop(blob, off, "cpu-release-addr", NULL);
-	ovr = (prop_addr == NULL);
-	if (prop_addr && (*prop_addr != val)) {
-		ovr = true;
-		printf("cpu-release-addr found: %llx, "
-		       "overwriting with %llx\n",
-		       fdt64_to_cpu(*prop_addr), fdt64_to_cpu(val));
-	}
-	if (ovr)
-		fdt_setprop(blob, off, "cpu-release-addr", &val, sizeof(val));
 }
 #endif
 
@@ -135,7 +99,9 @@ void ft_fixup_cpu(void *blob)
 			puts("cpu NULL\n");
 			continue;
 		}
+#if CONFIG_S32_ATF_BOOT_FLOW
 		ft_fixup_enable_method(blob, off, *reg);
+#endif
 		off = fdt_node_offset_by_prop_value(blob, off, "device_type",
 						    "cpu", 4);
 	}

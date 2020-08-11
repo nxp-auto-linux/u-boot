@@ -164,6 +164,7 @@
 
 /* Core status register */
 #define MC_ME_CS               (MC_ME_BASE_ADDR + 0x000001C0)
+#define MC_ME_CS_A53(n)		BIT((n) + 1)
 
 /* Cortex-M4 Core Control Register */
 #define MC_MC_CCTL0            (MC_ME_BASE_ADDR + 0x000001C6)
@@ -182,17 +183,19 @@
 #define MC_ME_CCTL_DEASSERT_CORE       (0xFA)
 
 /* Cortex-M4 Core Address Register */
-#define MC_ME_CADDR0   (MC_ME_BASE_ADDR + 0x000001E0)
+#define MC_ME_CADDR0		(MC_ME_BASE_ADDR + 0x000001E0)
 /* Cortex-A53 Core 0 - Core Address Register */
-#define MC_ME_CADDR1   (MC_ME_BASE_ADDR + 0x000001E4)
+#define MC_ME_CADDR1		(MC_ME_BASE_ADDR + 0x000001E4)
 /* Cortex-A53 Core 1 - Core Address Register */
-#define MC_ME_CADDR2   (MC_ME_BASE_ADDR + 0x000001E8)
+#define MC_ME_CADDR2		(MC_ME_BASE_ADDR + 0x000001E8)
 /* Cortex-A53 Core 2 - Core Address Register */
-#define MC_ME_CADDR3   (MC_ME_BASE_ADDR + 0x000001EC)
+#define MC_ME_CADDR3		(MC_ME_BASE_ADDR + 0x000001EC)
 /* Cortex-A53 Core 3 - Core Address Register */
-#define MC_ME_CADDR4   (MC_ME_BASE_ADDR + 0x000001F0)
+#define MC_ME_CADDR4		(MC_ME_BASE_ADDR + 0x000001F0)
+#define MC_ME_CADDR_A53(n)	(MC_ME_CADDR1 + (n) * 4)
 
 #define MC_ME_CADDRn_ADDR_EN	(1 << 0)
+#define MC_ME_CADDRn_ADDR_MASK	(0xFFFFFFFC)
 
 /* Default used values */
 #define CFG_RUN_PC	MC_ME_PCTLn_RUNPCm(1)
