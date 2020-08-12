@@ -169,6 +169,36 @@ static int s32v234_vrec_header(struct image_tool_params *tool_params,
 	return 0;
 }
 
+static void s32v234_print_header(const void *header)
+{
+	struct boot_data *boot_data;
+
+	boot_data = get_boot_data(&image_layout);
+
+	fprintf(stderr, "\nNote: The following offsets are absolute offsets "
+			"within the persistent storage\n");
+
+	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.ivt.offset + S32V234_IVT_OFFSET),
+		(unsigned int)image_layout.ivt.size);
+	fprintf(stderr, "Boot Data:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.boot_data.offset +
+							S32V234_IVT_OFFSET),
+		(unsigned int)image_layout.boot_data.size);
+	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.dcd.offset + S32V234_IVT_OFFSET),
+		(unsigned int)image_layout.dcd.size);
+	fprintf(stderr, "U-Boot:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(S32V234_INITLOAD_SIZE),
+		(unsigned int)boot_data->length);
+#if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
+	fprintf(stderr, "U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",
+		(unsigned int)CONFIG_ENV_OFFSET,
+		(unsigned int)CONFIG_ENV_SIZE);
+#endif
+	fprintf(stderr, "\n");
+}
+
 U_BOOT_IMAGE_TYPE(
 	s32v2image,
 	"NXP S32V234 Boot Image",
@@ -176,7 +206,7 @@ U_BOOT_IMAGE_TYPE(
 	NULL,
 	NULL,
 	NULL,
-	s32_print_header,
+	s32v234_print_header,
 	s32v234_set_header,
 	NULL,
 	s32v234_check_image_type,

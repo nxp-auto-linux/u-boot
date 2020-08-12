@@ -315,6 +315,8 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 #endif
 #endif
 
+	image_layout.code.size = sbuf->st_size - image_layout.app_code.offset -
+		image_layout.app_code.size;
 	s32_check_env_overlap(sbuf->st_size);
 }
 
@@ -371,6 +373,37 @@ static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 	return 0;
 }
 
+static void s32gen1_print_header(const void *header)
+{
+	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.ivt.offset,
+		(unsigned int)image_layout.ivt.size);
+#ifdef CONFIG_FLASH_BOOT
+	fprintf(stderr, "QSPI Parameters:\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.qspi_params.offset,
+		(unsigned int)image_layout.qspi_params.size);
+#endif
+	fprintf(stderr, "IVT (duplicate):\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.ivt_duplicate.offset,
+		(unsigned int)image_layout.ivt_duplicate.size);
+	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.dcd.offset,
+		(unsigned int)image_layout.dcd.size);
+	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.app_code.offset,
+		(unsigned int)image_layout.app_code.size);
+	fprintf(stderr, "U-Boot/FIP:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.app_code.offset +
+			offsetof(struct application_boot_code, code)),
+		(unsigned int)image_layout.code.size);
+#if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
+	fprintf(stderr, "U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",
+		(unsigned int)CONFIG_ENV_OFFSET,
+		(unsigned int)CONFIG_ENV_SIZE);
+#endif
+	fprintf(stderr, "\n");
+}
+
 U_BOOT_IMAGE_TYPE(
 	s32gen1_image,
 	"NXP S32GEN1 Boot Image",
@@ -378,7 +411,7 @@ U_BOOT_IMAGE_TYPE(
 	NULL,
 	NULL,
 	NULL,
-	s32_print_header,
+	s32gen1_print_header,
 	s32gen1_set_header,
 	NULL,
 	s32gen1_check_image_type,

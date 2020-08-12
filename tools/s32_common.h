@@ -47,7 +47,6 @@ struct image_comp {
 	uint8_t *data;
 };
 
-void s32_print_header(const void *header);
 int image_parts_comp(const void *p1, const void *p2);
 void check_overlap(struct image_comp *comp1, struct image_comp *comp2);
 void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts);

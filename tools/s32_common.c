@@ -8,10 +8,6 @@
 
 #define S32_AUTO_OFFSET ((size_t)(-1))
 
-void s32_print_header(const void *header)
-{
-}
-
 int image_parts_comp(const void *p1, const void *p2)
 {
 	const struct image_comp **part1 = (typeof(part1))p1;
