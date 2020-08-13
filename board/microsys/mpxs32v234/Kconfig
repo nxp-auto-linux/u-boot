@@ -14,17 +14,6 @@ config SYS_CONFIG_NAME
 	string
 	default "s32v234sbc"
 
-# S32V234EVB rev. A board with DDR3 has 4x512 MB DDR chips
-# DDR0(512MB) and DDR1(512MB).
-# S32V234EVB rev. D board with LPDDR2 has 2x256 MB DDR chips
-# DDR0(256MB) and DDR1(256MB).
-# U-boot uses only one DDR slot.
-
-config SYS_DDR_SIZE
-	hex
-	default 0x80000000 if S32_DDR3
-	default 0x10000000 if S32_LPDDR2
-
 config SYS_DATA_BASE
 	hex "Data Base"
 	default 0x3E800000

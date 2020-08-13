@@ -164,7 +164,6 @@ extern struct ddrss_firmware ddrss_firmware;
 #ifdef CONFIG_S32_SKIP_RELOC
 __weak int dram_init(void)
 {
-	gd->ram_size = PHYS_SDRAM_SIZE;
 	return 0;
 }
 #else
@@ -180,7 +179,6 @@ __weak int dram_init(void)
 		return ret;
 	}
 #endif
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
 
 	return 0;
 }

@@ -1021,10 +1021,6 @@ __weak int dram_init(void)
 	setup_iomux_ddr();
 
 	ddr_ctrl_init();
-
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
-#else
-	gd->ram_size = PHYS_SDRAM_SIZE;
 #endif
 
 	return 0;

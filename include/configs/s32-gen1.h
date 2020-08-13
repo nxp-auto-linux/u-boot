@@ -103,15 +103,6 @@
 #define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
 #define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
 
-#ifndef CONFIG_SYS_DDR_SIZE
-#warn CONFIG_SYS_DDR_SIZE should be already defined in the defconfig
-#define CONFIG_SYS_DDR_SIZE 0x20000000
-#endif
-
-#define IS_ADDR_IN_DDR(addr) \
-	((addr) >= (DDR_BASE_ADDR) && \
-	(addr) <= (DDR_BASE_ADDR) + (CONFIG_SYS_DDR_SIZE))
-
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 #define CONFIG_SYS_FSL_QSPI_AHB
 

@@ -8,10 +8,10 @@
 #include <cpu_func.h>
 #include <asm/io.h>
 #include <asm/system.h>
-#include <asm/armv8/mmu.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/siul.h>
+#include <asm-generic/sections.h>
 #include "mp.h"
 #include "dma_mem.h"
 #include <asm/arch/soc.h>
@@ -21,6 +21,7 @@
 #include <asm-generic/sections.h>
 #include <clk.h>
 #include <dm/uclass.h>
+#include <linux/sizes.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -457,6 +458,28 @@ static int s32_gentimer_init(void)
 #endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 
+static void s32_init_ram_size(void)
+{
+	int i;
+	unsigned long start, size;
+
+	if (!gd->bd) {
+		pr_err("gd->bd isn't initialized\n");
+		return;
+	}
+
+	gd->ram_size = 0;
+	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+		start = gd->bd->bi_dram[i].start;
+		size = gd->bd->bi_dram[i].size;
+
+		if (!start && !size)
+			continue;
+
+		gd->ram_size += get_ram_size((long *)start, size);
+	}
+}
+
 int dram_init_banksize(void)
 {
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
@@ -472,5 +495,25 @@ int dram_init_banksize(void)
 	gd->bd->bi_dram[1].start = CONFIG_SYS_FSL_DRAM_BASE2;
 	gd->bd->bi_dram[1].size = CONFIG_SYS_FSL_DRAM_SIZE2;
 #endif
+	s32_init_ram_size();
 	return 0;
+}
+
+phys_size_t __weak get_effective_memsize(void)
+{
+	phys_size_t size;
+	/*
+	 * Restrict U-Boot area to the first bank of the DDR memory.
+	 * Note: gd->bd isn't initialized yet
+	 */
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	size = IRAM_SIZE;
+#else
+	size = CONFIG_SYS_FSL_DRAM_SIZE1;
+#ifdef CONFIG_PRAM
+	/* ATF space */
+	size -= CONFIG_PRAM * SZ_1K;
+#endif
+#endif
+	return size;
 }

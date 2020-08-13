@@ -7,6 +7,7 @@
 #ifndef _FSL_S32_CPU_H
 #define _FSL_S32_CPU_H
 
+#include <asm/armv8/mmu.h>
 #include <config.h>
 
 #ifndef CONFIG_SYS_DCACHE_OFF

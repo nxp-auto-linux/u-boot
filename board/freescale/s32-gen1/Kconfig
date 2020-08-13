@@ -50,13 +50,6 @@ config UBOOT_SRAM_FOOTPRINT
 	hex
 	default 0x200000
 
-# DDR0(256MB) and DDR1(256MB).
-# U-boot uses only one DDR slot.
-
-config SYS_DDR_SIZE
-	hex "DDR Size"
-	default 0x10000000
-
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
 	default n

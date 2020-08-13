@@ -10,19 +10,6 @@ config SYS_CONFIG_NAME
 	default "s32v234evb29288" if S32V234EVB_29288
 	default "s32v234evb28899" if S32V234EVB_28899
 
-# S32V234EVB rev. A board with DDR3 has 4x512 MB DDR chips
-# DDR0(1024MB) and DDR1(1024MB).
-# S32V234EVB rev. D board with LPDDR2 has 2x256 MB DDR chips
-# DDR0(256MB) and DDR1(256MB).
-# U-boot uses only one DDR slot for the boards which don't have
-# the DDR slots mapped as contiguous memory, otherwise uses
-# both DDR slots.
-
-config SYS_DDR_SIZE
-	hex
-	default 0x80000000 if S32_DDR3
-	default 0x10000000 if S32_LPDDR2
-
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
 	default n
