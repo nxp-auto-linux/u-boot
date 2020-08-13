@@ -745,6 +745,13 @@ static int sja1105_print_regs(struct sja_parms *sjap)
 		}
 	}
 
+	printf("\nInternal delay status\n");
+	for (i = 0; i < SJA1105_PORT_NB; i++) {
+		val32 = sja1105_read_reg32(sjap,
+					   SJA1105_CFG_PAD_MIIX_ID_PORT(i));
+		printf("CFG_PAD_MII%d_ID 0x%x\n", i, val32);
+	}
+
 	return 0;
 }
 
