@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017 NXP
+ * Copyright 2017, 2020 NXP
  *
  * Contains firmware in octet string format for SJA1105.
  */
