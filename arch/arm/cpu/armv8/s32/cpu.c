@@ -463,6 +463,10 @@ static void s32_init_ram_size(void)
 		start = gd->bd->bi_dram[i].start;
 		size = gd->bd->bi_dram[i].size;
 
+		/* Don't advertise SRAM */
+		if (start == S32_SRAM_BASE)
+			continue;
+
 		if (!start && !size)
 			continue;
 
@@ -478,12 +482,18 @@ int dram_init_banksize(void)
 
 	gd->bd->bi_dram[1].start = 0x0;
 	gd->bd->bi_dram[1].size = 0x0;
+
+	gd->bd->bi_dram[2].start = 0x0;
+	gd->bd->bi_dram[2].size = 0x0;
 #else
 	gd->bd->bi_dram[0].start = CONFIG_SYS_FSL_DRAM_BASE1;
 	gd->bd->bi_dram[0].size = CONFIG_SYS_FSL_DRAM_SIZE1;
 
 	gd->bd->bi_dram[1].start = CONFIG_SYS_FSL_DRAM_BASE2;
 	gd->bd->bi_dram[1].size = CONFIG_SYS_FSL_DRAM_SIZE2;
+
+	gd->bd->bi_dram[2].start = S32_SRAM_BASE;
+	gd->bd->bi_dram[2].size = S32_SRAM_SIZE;
 #endif
 	s32_init_ram_size();
 	return 0;

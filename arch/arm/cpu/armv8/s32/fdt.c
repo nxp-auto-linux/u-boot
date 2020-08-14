@@ -160,6 +160,20 @@ void ft_fixup_clock_frequency(void *blob)
 }
 #endif
 
+static void hide_sram(bd_t *bd)
+{
+	int bank;
+
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (bd->bi_dram[bank].start == S32_SRAM_BASE) {
+			bd->bi_dram[bank].start = 0;
+			bd->bi_dram[bank].size = 0;
+			break;
+		}
+	}
+}
+
+#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
 /* Fixup the DDR node in order to reserve "pram" amount of KB somewhere in the
  * available physical memory. This would typically be used by TF-A as a secure
  * memory, and enforced through XRDC. Making it "invisible" to Linux is only a
@@ -167,93 +181,49 @@ void ft_fixup_clock_frequency(void *blob)
  * The point is, u-boot may not be able to probe the whole DRAM (and may not
  * care about all of it anyway), so using "mem=" bootargs would not be enough.
  */
-#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
-static void ft_fixup_ddr_pram(void *blob)
+static void exclude_pram(bd_t *bd)
 {
-	int off = -1, maxoff = -1;
-	fdt32_t *reg;
-	fdt_addr_t rambase, maxbase = 0;
-	fdt_size_t ramsize, maxsize = 0;
-	ulong pram_size;
-	const void *val;
-	void *newval;
-	int len;
+	int bank;
 
-	while (1) {
-		off = fdt_node_offset_by_prop_value(blob, off, "device_type",
-						    "memory", 7);
-		if (off == -FDT_ERR_NOTFOUND)
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (bd->bi_dram[bank].start == CONFIG_SYS_FSL_DRAM_BASE1) {
+			bd->bi_dram[bank].size -= CONFIG_PRAM * SZ_1K;
 			break;
-
-		reg = (fdt32_t *)fdt_getprop(blob, off, "reg", 0);
-		if (!reg) {
-			puts("Warning: memory node with no reg property\n");
-			continue;
-		}
-		rambase = fdtdec_get_addr_size(blob, off, "reg", &ramsize);
-		if (rambase == FDT_ADDR_T_NONE || !ramsize) {
-			puts("Warning: Can't get baseaddr/size\n");
-			continue;
-		}
-		/* Only take into account nodes that declare memory below the
-		 * 2GB mark. In the SoC's memory map, these are guaranteed to
-		 * reside in the 32-bit physical address space, so all we need
-		 * to check is the start address of the region.
-		 */
-		if (rambase >> 32)
-			continue;
-		if (rambase + ramsize > maxbase + maxsize) {
-			maxbase = rambase;
-			maxsize = ramsize;
-			maxoff = off;
 		}
 	}
-
-	if (maxoff == -1) {
-		puts("Error finding top memory node, needed for PRAM\n");
-		return;
-	}
-
-	pram_size = env_get_ulong("pram", 10, CONFIG_PRAM) * SZ_1K;
-	if (pram_size >= maxsize) {
-		printf("Warning: PRAM larger than phys mem @0x%llx " \
-		       "which is 0x%llx\n",
-		       maxbase, maxsize);
-		return;
-	}
-	maxsize -= pram_size;
-	val = fdt_getprop(blob, maxoff, "reg", &len);
-	if (len < sizeof(maxsize)) {
-		puts("Error: invalid memory size\n");
-		return;
-	}
-
-	printf("Reserving %ldk off the top of [%llx-%llx] for protected RAM\n",
-	       pram_size >> 10, maxbase, maxbase + maxsize + pram_size - 1);
-	switch (sizeof(maxsize)) {
-	case 8:
-		maxsize = cpu_to_be64(maxsize);
-		break;
-	case 4:
-		maxsize = cpu_to_be32(maxsize);
-		break;
-	default:
-		printf("Unexpected fdt_size_t=%ld\n", sizeof(maxsize));
-		return;
-	}
-
-	newval = malloc(len);
-	if (!newval) {
-		printf("Error allocating %d bytes for new reg property\n", len);
-		return;
-	}
-	memcpy(newval, val, len);
-	*(fdt_size_t *)((char *)newval + len - sizeof(maxsize)) = maxsize;
-	fdt_setprop(blob, maxoff, "reg", newval, len);
-	/* It's safe to free the buffer now that it's been copied to the blob */
-	free(newval);
 }
-#endif /* CONFIG_S32G274A && CONFIG_PRAM */
+#endif
+
+static void apply_memory_fixups(void *blob, bd_t *bd)
+{
+	u64 start[CONFIG_NR_DRAM_BANKS];
+	u64 size[CONFIG_NR_DRAM_BANKS];
+	int ret, bank, banks = 0;
+
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (!bd->bi_dram[bank].start && !bd->bi_dram[bank].size)
+			continue;
+
+		start[banks] = bd->bi_dram[bank].start;
+		size[banks] = bd->bi_dram[bank].size;
+		banks++;
+	}
+
+	ret = fdt_fixup_memory_banks(blob, start, size, banks);
+	if (ret)
+		pr_err("s32-fdt: Failed to set memory banks\n");
+}
+
+static void ft_fixup_memory(void *blob, bd_t *bd)
+{
+	hide_sram(bd);
+
+#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
+	exclude_pram(bd);
+#endif
+	apply_memory_fixups(blob, bd);
+
+}
 
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
@@ -265,8 +235,5 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	ft_fixup_soc_revision(blob);
 	ft_fixup_clock_frequency(blob);
 #endif
-
-#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
-	ft_fixup_ddr_pram(blob);
-#endif
+	ft_fixup_memory(blob, bd);
 }
