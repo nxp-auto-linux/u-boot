@@ -290,6 +290,8 @@
 #define FEC_EXTRA_ENV_SETTINGS	""
 #endif
 
+#define S32_DEFAULT_IP "10.0.0.100\0"
+
 /*
  * Enable CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT if u-boot should use a ramdisk
  * for nfsbooting.
@@ -381,7 +383,7 @@
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
 	DDR_LIMIT0 \
-	"ipaddr=10.0.0.100\0" \
+	"ipaddr=" S32_DEFAULT_IP \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \

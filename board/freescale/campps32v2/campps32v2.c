@@ -20,6 +20,8 @@
 #include "sja1105.h"
 #endif
 
+#define MAC_ADDR_STR_LEN   17
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static void setup_iomux_gpio(void)
@@ -240,6 +242,44 @@ void board_net_init(void)
 		sja1105_reset_ports(SJA_2_CS, SJA_2_BUS);
 	}
 #endif
+}
+
+#ifdef CONFIG_FEC_MXC
+void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
+{
+	char *mac_str = S32V234_FEC_DEFAULT_ADDR;
+
+	if ((!env_get("ethaddr")) ||
+	    (strncasecmp(mac_str, env_get("ethaddr"), MAC_ADDR_STR_LEN) == 0)) {
+		printf("\nWarning: System is using default MAC address. ");
+		printf("Please set a new value\n");
+		mac_str[MAC_ADDR_STR_LEN - 1] += get_device_id();
+		string_to_enetaddr(mac_str, mac);
+	} else {
+		string_to_enetaddr(env_get("ethdaddr"), mac);
+	}
+}
+#endif
+
+int board_late_init(void)
+{
+	char *env_var;
+
+	env_var = env_get("ipaddr");
+	if (env_var) {
+		if (!strcmp(S32_DEFAULT_IP, env_var)) {
+			env_var[strlen(env_var) - 1] += get_device_id();
+			env_set("ipaddr", env_var);
+		}
+	}
+
+	env_var = env_get("fdt_file");
+	if ((env_var) && get_device_id() > 1) {
+		if (!strcmp(__stringify(FDT_FILE), env_var))
+			env_set("fdt_file", __stringify(FDT_FILE_SEC));
+	}
+
+	return 0;
 }
 
 #if defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP)
