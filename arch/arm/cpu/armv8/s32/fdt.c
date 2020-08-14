@@ -14,6 +14,8 @@
 #include <linux/sizes.h>
 #include "mp.h"
 
+#define S32_DDR_LIMIT_VAR "ddr_limitX"
+
 #ifdef CONFIG_MP
 
 #if CONFIG_S32_ATF_BOOT_FLOW
@@ -214,6 +216,36 @@ static void apply_memory_fixups(void *blob, bd_t *bd)
 		pr_err("s32-fdt: Failed to set memory banks\n");
 }
 
+static void apply_ddr_limits(bd_t *bd)
+{
+	u64 start, end, limit;
+	static const size_t var_len = sizeof(S32_DDR_LIMIT_VAR);
+	static const size_t digit_pos = var_len - 2;
+	char ddr_limit[var_len];
+	char *var_val;
+	int bank;
+
+	memcpy(ddr_limit, S32_DDR_LIMIT_VAR, var_len);
+
+	ddr_limit[digit_pos] = '0';
+	while ((var_val = env_get(ddr_limit))) {
+		limit = simple_strtoull(var_val, NULL, 16);
+
+		for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+			start = bd->bi_dram[bank].start;
+			end = start + bd->bi_dram[bank].size;
+
+			if (limit >= start && limit < end)
+				bd->bi_dram[bank].size = limit - start;
+		}
+
+		if (ddr_limit[digit_pos] >= '9')
+			break;
+
+		ddr_limit[digit_pos]++;
+	};
+}
+
 static void ft_fixup_memory(void *blob, bd_t *bd)
 {
 	hide_sram(bd);
@@ -221,6 +253,8 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 #if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
 	exclude_pram(bd);
 #endif
+	apply_ddr_limits(bd);
+
 	apply_memory_fixups(blob, bd);
 
 }

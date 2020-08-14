@@ -388,17 +388,16 @@
 #endif
 
 #ifdef CONFIG_S32_GEN1
-#define LIMIT_DDR " run limit_ddr; "
-#define LIMIT_DDR_CMD "limit_ddr=fdt addr ${fdt_addr} && fdt set /memory_DDR1 reg <0 0xc0000000 0 0x20000000>;\0"
+/* Limit DDR0 to 1.5 GB due to HSE driver limitation */
+#define DDR_LIMIT0 "ddr_limit0=0xE0000000;\0"
 #else
-#define LIMIT_DDR ""
-#define LIMIT_DDR_CMD ""
+#define DDR_LIMIT0 ""
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
-	LIMIT_DDR_CMD \
+	DDR_LIMIT0 \
 	"ipaddr=10.0.0.100\0" \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
@@ -410,7 +409,7 @@
 		PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
-	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; " NFSRAMFS_TFTP_CMD "run loadtftpfdt;"\
@@ -454,7 +453,7 @@
 		"source\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file};\0" \
 	"jtagboot=echo Booting using jtag...; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
@@ -509,7 +508,6 @@
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
 		S32_LOAD_FLASH_IMAGES_CMD\
-		LIMIT_DDR\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
