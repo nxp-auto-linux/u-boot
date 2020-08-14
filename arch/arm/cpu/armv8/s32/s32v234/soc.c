@@ -1040,7 +1040,7 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 	if (ep == argv[1] || *ep != '\0')
 		return CMD_RET_USAGE;
 
-	if (!IS_ADDR_IN_IRAM(addr)) {
+	if (!is_addr_in_sram(addr)) {
 		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n",
 		       addr);
 		return CMD_RET_USAGE;

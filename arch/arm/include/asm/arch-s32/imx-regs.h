@@ -1,12 +1,12 @@
+/* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2019 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2020 NXP
  */
 
 #ifndef __ASM_ARCH_IMX_REGS_H__
 #define __ASM_ARCH_IMX_REGS_H__
+#include <config.h>
 
 #define ARCH_MXC
 
@@ -17,10 +17,6 @@
 #else
 #error "Incomplete platform definition"
 #endif
-
-#define IS_ADDR_IN_IRAM(addr) \
-	((addr) >= (IRAM_BASE_ADDR) && \
-	(addr) <= (IRAM_BASE_ADDR) + (IRAM_SIZE))
 
 #define CCI400_BASE_ADDR			(0x7E090000)
 

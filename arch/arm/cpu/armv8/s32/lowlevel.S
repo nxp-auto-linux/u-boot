@@ -150,8 +150,8 @@ sram_init:
 	ldr x1, =CONFIG_SYS_TEXT_BASE
 	add x1, x1, #CONFIG_UBOOT_SRAM_FOOTPRINT
 #else	/* S32V234 */
-	ldr x1, = IRAM_BASE_ADDR
-	add x1, x1, IRAM_SIZE
+	ldr x1, = S32_SRAM_BASE
+	add x1, x1, S32_SRAM_SIZE
 #endif
 	sub x1, x1, x0
 

@@ -52,12 +52,12 @@ static struct mm_region early_map[] = {
 	},
 #endif
 #endif
-#ifdef CONFIG_S32_GEN1
 	{
-	  IRAM_BASE_ADDR, IRAM_BASE_ADDR,
-	  IRAM_SIZE,
+	  S32_SRAM_BASE, S32_SRAM_BASE,
+	  S32_SRAM_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
+#ifdef CONFIG_S32_GEN1
 	{
 	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
 	  CONFIG_SYS_FSL_PERIPH_SIZE,
@@ -65,11 +65,6 @@ static struct mm_region early_map[] = {
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 #else	/* S32V234 */
-	{
-	  IRAM_BASE_ADDR, IRAM_BASE_ADDR,
-	  IRAM_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
-	},
 	{
 	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
 	  CONFIG_SYS_FSL_PERIPH_SIZE,
@@ -115,12 +110,12 @@ static struct mm_region final_map[] = {
 	},
 #endif
 #endif
-#ifdef CONFIG_S32_GEN1
 	{
-	  IRAM_BASE_ADDR, IRAM_BASE_ADDR,
-	  IRAM_SIZE,
+	  S32_SRAM_BASE, S32_SRAM_BASE,
+	  S32_SRAM_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
+#ifdef CONFIG_S32_GEN1
 	{
 	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
 	  CONFIG_SYS_FSL_PERIPH_SIZE,
@@ -128,11 +123,6 @@ static struct mm_region final_map[] = {
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 #else
-	{
-	  IRAM_BASE_ADDR, IRAM_BASE_ADDR,
-	  IRAM_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
-	},
 	{
 	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
 	  CONFIG_SYS_FSL_PERIPH_SIZE,
@@ -309,7 +299,7 @@ static inline int clear_after_bss(void)
 	 * Assumption: lowlevel.S will clear at least [__bss_start - __bss_end]
 	 */
 	base = (uintptr_t)&__bss_end;
-	size = IRAM_SIZE + IRAM_BASE_ADDR - base;
+	size = S32_SRAM_BASE + S32_SRAM_SIZE - base;
 	ret = dma_mem_clr(base, size);
 	if (!ret)
 		return ret;
@@ -483,8 +473,8 @@ static void s32_init_ram_size(void)
 int dram_init_banksize(void)
 {
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	gd->bd->bi_dram[0].start = IRAM_BASE_ADDR;
-	gd->bd->bi_dram[0].size = IRAM_SIZE;
+	gd->bd->bi_dram[0].start = S32_SRAM_BASE;
+	gd->bd->bi_dram[0].size = S32_SRAM_SIZE;
 
 	gd->bd->bi_dram[1].start = 0x0;
 	gd->bd->bi_dram[1].size = 0x0;
@@ -507,7 +497,7 @@ phys_size_t __weak get_effective_memsize(void)
 	 * Note: gd->bd isn't initialized yet
 	 */
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	size = IRAM_SIZE;
+	size = S32_SRAM_SIZE;
 #else
 	size = CONFIG_SYS_FSL_DRAM_SIZE1;
 #ifdef CONFIG_PRAM

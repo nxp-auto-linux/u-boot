@@ -1,11 +1,12 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2018,2020 NXP
  */
 
 #include <asm/io.h>
 #include <asm/arch/cse.h>
+#include <asm/arch-s32/soc.h>
 #include <common.h>
 #include <malloc.h>
 #include <linux/libfdt.h>
@@ -104,7 +105,7 @@ cse_firmware_loading:
 
 	/* check if CSE_BLOB_BASE is in SRAM and if it is, clear the area
 	 * between CSE_BLOB_BASE and CSE_BLOB_BASE + CSE_BLOB_SIZE */
-	if (IS_ADDR_IN_IRAM(CSE_BLOB_BASE))
+	if (is_addr_in_sram(CSE_BLOB_BASE))
 		dma_mem_clr((void *)CSE_BLOB_BASE, CSE_BLOB_SIZE);
 
 	if (mmc_load_cse_blob()) {
