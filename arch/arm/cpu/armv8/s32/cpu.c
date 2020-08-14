@@ -486,6 +486,13 @@ int dram_init_banksize(void)
 	gd->bd->bi_dram[2].start = 0x0;
 	gd->bd->bi_dram[2].size = 0x0;
 #else
+#ifdef CONFIG_S32_GEN1
+	int ret;
+
+	ret = fdtdec_setup_memory_banksize();
+	if (ret)
+		return ret;
+#else
 	gd->bd->bi_dram[0].start = CONFIG_SYS_FSL_DRAM_BASE1;
 	gd->bd->bi_dram[0].size = CONFIG_SYS_FSL_DRAM_SIZE1;
 
@@ -494,6 +501,7 @@ int dram_init_banksize(void)
 
 	gd->bd->bi_dram[2].start = S32_SRAM_BASE;
 	gd->bd->bi_dram[2].size = S32_SRAM_SIZE;
+#endif
 #endif
 	s32_init_ram_size();
 	return 0;

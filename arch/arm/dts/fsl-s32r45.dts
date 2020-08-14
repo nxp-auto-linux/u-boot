@@ -15,27 +15,27 @@
 	model = "NXP S32R45";
 	compatible = "fsl,s32r45", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
+	sram@34000000 {
+		device_type = "memory";
+		reg = <0 0x34000000 0 0x800000>;
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x80000000>;
+	};
+
+	memory@880000000 {
+		device_type = "memory";
+		reg = <0x8 0x80000000 0 0x80000000>;
+	};
+
 	signature {
 		key-boot_key {
 			required = "conf";
 			algo = "sha1,rsa2048";
 			key-name-hint = "boot_key";
 		};
-	};
-
-	memory_DDR0@800000000 {
-		device_type = "memory";
-		reg = <0x8 0x0 0 0x40000000>, /* 0 - 1 GB */
-		      <0x8 0x40000000 0 0x40000000>, /* 1 - 2 GB */
-		      <0x8 0x80000000 0 0x80000000>; /* 2 - 4 GB */
-		      /* extended DDR from 4 to 32 GB should go elsewhere */
-	};
-
-	memory_DDR1@8800000000 {
-		device_type = "memory";
-		reg = <0x88 0x0 0 0x40000000>, /* 0 - 1 GB */
-		      <0x88 0x40000000 0 0xC0000000>; /* 1 - 4 GB */
-		      /* extended DDR from 4 to 32 GB should go elsewhere */
 	};
 
 	gmac1_ext_rx: gmac1_ext_rx@0 {
