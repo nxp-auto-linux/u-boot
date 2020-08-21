@@ -8,7 +8,9 @@
 #ifndef __ASM_ARCH_CLOCK_H
 #define __ASM_ARCH_CLOCK_H
 
+#ifdef __KERNEL__
 #include <common.h>
+#endif
 
 #if defined(CONFIG_S32V234)
 enum mxc_clock {
@@ -35,8 +37,6 @@ enum pll_type {
 	DDR_PLL,
 	VIDEO_PLL,
 };
-
-void clock_init(void);
 #endif
 
 #ifdef CONFIG_S32_GEN1
@@ -48,9 +48,15 @@ enum mxc_clock {
 };
 #endif
 
+#ifdef __KERNEL__
+#if defined(CONFIG_S32V234)
+void clock_init(void);
+#endif
+
 unsigned int mxc_get_clock(enum mxc_clock clk);
 void entry_to_target_mode( u32 mode );
 
 #define imx_get_fecclk() mxc_get_clock(MXC_FEC_CLK)
+#endif /* __KERNEL__ */
 
 #endif /* __ASM_ARCH_CLOCK_H */
