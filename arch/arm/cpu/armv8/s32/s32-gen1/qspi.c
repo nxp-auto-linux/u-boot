@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2018 NXP
+ * Copyright 2018,2020 NXP
  */
 
 #include <common.h>
@@ -68,16 +68,6 @@ void qspi_iomux(void)
 	       SIUL2_MSCRn(SIUL2_MSCR_S32_G1_PF12__QSPI_A_DATA7_IN));
 #endif
 }
-
-#ifndef CONFIG_S32_FLASH
-int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
-		     char * const argv[])
-{
-	printf("SD/eMMC is disabled. SPI flash is active and can be used!\n");
-	qspi_iomux();
-	return 0;
-}
-#endif
 
 /* qspinor setup */
 U_BOOT_CMD(

@@ -116,16 +116,6 @@
 
 #else
 
-#ifndef CONFIG_S32_GEN1
-/* S32V234 flash driver */
-#define CONFIG_S32_FLASH
-#endif
-
-/* QSPI/hyperflash configs */
-
-/* Debug stuff for qspi/hyperflash */
-#undef CONFIG_DEBUG_S32_QSPI_QSPI
-
 /* Flash comand disabled until implemented */
 #undef CONFIG_CMD_FLASH
 

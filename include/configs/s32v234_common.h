@@ -28,6 +28,11 @@
 #define CONFIG_SYS_FSL_DRAM_BASE1	0x80000000
 #define CONFIG_SYS_FSL_DRAM_BASE2	0xC0000000
 
+/* S32V234 flash driver */
+#define CONFIG_S32_FLASH
+/* Debug stuff for qspi/hyperflash */
+#undef CONFIG_DEBUG_S32_QSPI_QSPI
+
 /* memory mapped external flash */
 #define CONFIG_SYS_FSL_FLASH0_BASE      0x20000000
 #define CONFIG_SYS_FSL_FLASH0_SIZE      0x10000000
