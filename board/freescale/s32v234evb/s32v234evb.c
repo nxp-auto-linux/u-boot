@@ -5,13 +5,16 @@
  */
 
 #include <common.h>
-#include <asm/io.h>
-#include <asm/arch/soc.h>
+#include <init.h>
+#include <i2c.h>
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <miiphy.h>
 #include <netdev.h>
-#include <i2c.h>
+#include <asm/io.h>
+#include <asm/arch/siul.h>
+#include <asm/arch/xrdc.h>
+#include <asm/arch/soc.h>
 
 #ifdef CONFIG_PHY_MICREL
 #include <micrel.h>
@@ -23,7 +26,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef CONFIG_FSL_DSPI
 static void setup_iomux_dspi(void)
 {
 	/* Muxing for DSPI0 */
@@ -46,7 +48,6 @@ static void setup_iomux_dspi(void)
 	writel(SIUL2_PAD_CTRL_DSPI0_IMCR_SIN_IN,
 	       SIUL2_IMCRn(SIUL2_PB7_IMCR_SPI0_SIN));
 }
-#endif
 
 static void setup_iomux_uart(void)
 {
@@ -108,13 +109,6 @@ static void setup_iomux_i2c(void)
 	       SIUL2_IMCRn(SIUL2_IMCR_I2C2_CLK));
 }
 
-#ifdef CONFIG_SYS_USE_NAND
-void setup_iomux_nfc(void)
-{
-	/*TODO: Implement nfc iomux when it is activated.*/
-}
-#endif
-
 static void mscm_init(void)
 {
 	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_BASE_ADDR;
@@ -126,7 +120,7 @@ static void mscm_init(void)
 
 int board_phy_config(struct phy_device *phydev)
 {
-#ifdef CONFIG_PHY_MICREL
+#if defined(CONFIG_PHY_MICREL) && !defined(CONFIG_PHY_RGMII_DIRECT_CONNECTED)
 	/* Enable all AutoNeg capabilities */
 	ksz9031_phy_extended_write(phydev, 0x02,
 				   MII_KSZ9031_EXT_OP_MODE_STRAP_OVRD,
@@ -170,12 +164,7 @@ int board_early_init_f(void)
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
-#ifdef CONFIG_FSL_DSPI
 	setup_iomux_dspi();
-#endif
-#ifdef CONFIG_SYS_USE_NAND
-	setup_iomux_nfc();
-#endif
 #ifdef CONFIG_FSL_DCU_FB
 	setup_iomux_dcu();
 #endif
