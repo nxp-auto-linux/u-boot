@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017,2020 NXP
  */
 
 #include <common.h>
@@ -108,17 +108,25 @@ void config_mmdc(uint8_t module)
 	switch(module) {
 		case MMDC0:
 			writel(MMDC_MDASP_MODULE0_VALUE, mmdc_addr + MMDC_MDASP);
-			writel(MMDC_MPRDDLCTL_MODULE0_VALUE, mmdc_addr + MMDC_MPRDDLCTL);
-			writel(MMDC_MPWRDLCTL_MODULE0_VALUE, mmdc_addr + MMDC_MPWRDLCTL);
-			writel(MMDC_MPDGCTRL0_MODULE0_VALUE, mmdc_addr + MMDC_MPDGCTRL0);
-			writel(MMDC_MPDGCTRL1_MODULE0_VALUE, mmdc_addr + MMDC_MPDGCTRL1);
+		writel(MMDC_MPRDDLCTL_MODULE0_VALUE,
+		       mmdc_addr + MMDC_MPRDDLCTL);
+		writel(MMDC_MPWRDLCTL_MODULE0_VALUE,
+		       mmdc_addr + MMDC_MPWRDLCTL);
+		writel(MMDC_MPDGCTRL0_MODULE0_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL0);
+		writel(MMDC_MPDGCTRL1_MODULE0_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL1);
 			break;
 		case MMDC1:
 			writel(MMDC_MDASP_MODULE1_VALUE, mmdc_addr + MMDC_MDASP);
-			writel(MMDC_MPRDDLCTL_MODULE1_VALUE, mmdc_addr + MMDC_MPRDDLCTL);
-			writel(MMDC_MPWRDLCTL_MODULE1_VALUE, mmdc_addr + MMDC_MPWRDLCTL);
-			writel(MMDC_MPDGCTRL0_MODULE1_VALUE, mmdc_addr + MMDC_MPDGCTRL0);
-			writel(MMDC_MPDGCTRL1_MODULE1_VALUE, mmdc_addr + MMDC_MPDGCTRL1);
+		writel(MMDC_MPRDDLCTL_MODULE1_VALUE,
+		       mmdc_addr + MMDC_MPRDDLCTL);
+		writel(MMDC_MPWRDLCTL_MODULE1_VALUE,
+		       mmdc_addr + MMDC_MPWRDLCTL);
+		writel(MMDC_MPDGCTRL0_MODULE1_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL0);
+		writel(MMDC_MPDGCTRL1_MODULE1_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL1);
 			break;
 	}
 
