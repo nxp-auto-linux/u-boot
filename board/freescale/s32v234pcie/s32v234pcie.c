@@ -5,13 +5,15 @@
  */
 
 #include <common.h>
-#include <asm/io.h>
-#include <asm/arch/soc.h>
 #include <fdt_support.h>
-#include <linux/libfdt.h>
+#include <i2c.h>
 #include <miiphy.h>
 #include <netdev.h>
-#include <i2c.h>
+#include <asm/io.h>
+#include <asm/arch/soc.h>
+#include <asm/arch/siul.h>
+#include <asm/arch/xrdc.h>
+#include <linux/libfdt.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -40,7 +42,8 @@ void setup_iomux_enet(void)
 #endif
 
 	/* set PC15 - MSCR[47] - for TX CLK SWITCH */
-	writel(SIUL2_MSCR_ENET_TX_CLK_SWITCH, SIUL2_MSCRn(SIUL2_MSCR_PC15_SWITCH));
+	writel(SIUL2_MSCR_ENET_TX_CLK_SWITCH,
+	       SIUL2_MSCRn(SIUL2_MSCR_PC15_SWITCH));
 	writel(SIUL2_MSCR_ENET_TX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PC15_IN));
 
 	/* set PD0 - MSCR[48] - for RX_CLK */
@@ -118,12 +121,6 @@ static void setup_iomux_i2c(void)
 	       SIUL2_IMCRn(SIUL2_IMCR_I2C2_CLK));
 }
 
-#ifdef CONFIG_SYS_USE_NAND
-void setup_iomux_nfc(void)
-{
-	/*TODO: Implement nfc iomux when it is activated.*/
-}
-#endif
 
 static void mscm_init(void)
 {
@@ -169,9 +166,6 @@ int board_early_init_f(void)
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
-#ifdef CONFIG_SYS_USE_NAND
-	setup_iomux_nfc();
-#endif
 #ifdef CONFIG_FSL_DCU_FB
 	setup_iomux_dcu();
 #endif
