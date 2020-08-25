@@ -5,6 +5,7 @@
 
 #include <asm/arch-s32/soc.h>
 #include <common.h>
+#include <cpu_func.h>
 #include <linux/kernel.h>
 
 int dma_mem_clr(int addr, int size);
@@ -51,6 +52,7 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 		size = max_size;
 	}
 
+	invalidate_dcache_range(addr, addr + size);
 	ret_size = dma_mem_clr(addr, size);
 
 	if (!ret_size) {
