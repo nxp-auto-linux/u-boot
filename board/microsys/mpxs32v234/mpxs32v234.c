@@ -142,8 +142,12 @@ int board_early_init_f(void)
 	setup_iomux_enet();
 	setup_iomux_i2c();
 
+#ifdef CONFIG_FSL_DCU_FB
 	setup_iomux_dcu();
+#endif
+#ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
+#endif
 	setup_xrdc();
 
 	return 0;
