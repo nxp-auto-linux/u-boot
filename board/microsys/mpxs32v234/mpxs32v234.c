@@ -5,20 +5,21 @@
  * Copyright 2018,2020 NXP
  */
 
-#include <common.h>
 #include <command.h>
+#include <common.h>
+#include <fdt_support.h>
+#include <i2c.h>
+#include <miiphy.h>
+#include <net.h>
+#include <netdev.h>
+#include <rtc.h>
 #include <asm/io.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/xrdc.h>
-#include <asm/arch/cse.h>
-#include <fdt_support.h>
 #include <asm/arch/soc.h>
-#include <miiphy.h>
-#include <netdev.h>
-#include <net.h>
-#include <i2c.h>
+#include <asm/arch/xrdc.h>
 #include "s32v_ocotp.h"
 
 #undef	CONFIG_MPXS32V234_R1
@@ -26,8 +27,6 @@
 #define MAC_ADDR_STR_LEN	17
 
 DECLARE_GLOBAL_DATA_PTR;
-
-void rtc_init(void);
 
 static void setup_iomux_uart(void)
 {
