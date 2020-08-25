@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -235,27 +234,17 @@
  * enable them later (e.g CONFIG_FEC_MXC/MII or CONFIG_CMD_I2C)
  */
 #ifndef CONFIG_S32_GEN1
-#ifndef CONFIG_FLASH_BOOT
-#define CONFIG_SD_BOOT
-#endif
 
+#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 #define CONFIG_SYS_FSL_ESDHC_NUM	1
 
-#define CONFIG_CMD_MMC
-#define CONFIG_GENERIC_MMC
-
 /* Ethernet config */
-#define CONFIG_FEC_MXC
-#define CONFIG_MII
-
 #ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 #define CONFIG_FEC_MXC_PHYADDR (0x484a53)
 #define CONFIG_BCM_DUPLEX_MODE	DUPLEX_FULL
 #endif
 
 /* I2C Configs */
-#define CONFIG_CMD_I2C
-
 #ifndef CONFIG_DM_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
@@ -263,7 +252,6 @@
 #define CONFIG_SYS_I2C_MXC_I2C2	/* enable I2C bus 2 */
 #define CONFIG_SYS_I2C_MXC_I2C3	/* enable I2C bus 3 */
 #define CONFIG_SYS_I2C_SPEED	100000
-#define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
 #endif
 
@@ -280,7 +268,6 @@
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "," __stringify(CONFIG_BAUDRATE) \
 	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL " earlycon " \
 	CONFIG_EXTRA_KERNEL_BOOT_ARGS
-#define CONFIG_CMD_ENV
 
 #define CONFIG_HWCONFIG
 
@@ -535,7 +522,6 @@
 #endif
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_PROMPT		"=> "
 #define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
@@ -555,12 +541,6 @@
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
 #define CONFIG_SYS_MALLOC_BASE		(CONFIG_SYS_FSL_DRAM_BASE1)
 #endif
-
-/*
- * Stack sizes
- * The stack sizes are set up in start.S using the settings below
- */
-#define CONFIG_STACKSIZE		(128 * 1024)	/* regular stack */
 
 #ifdef CONFIG_S32_SKIP_RELOC
 #define CONFIG_SYS_SDRAM_BASE		S32_SRAM_BASE
@@ -584,10 +564,6 @@
 #define S32_SDRAM_MMU_TABLES_BASE	(CPU_RELEASE_ADDR + PGTABLE_SIZE)
 #endif
 
-#if (defined(CONFIG_FLASH_BOOT) && defined(CONFIG_SD_BOOT))
-#error "CONFIG_FLASH_BOOT and CONFIG_SD_BOOT both defined"
-#endif
-
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_MMC_PART			1
 
@@ -609,6 +585,8 @@
  * to all S32's or find a smarter way to make S32G and S32V PCI coexist
  */
 #ifdef CONFIG_CMD_PCI
+#define CONFIG_GICSUPPORT
+#define CONFIG_CMD_IRQ
 #define CONFIG_PCIE_S32V234
 #define CONFIG_PCI
 #define CONFIG_PCI_PNP

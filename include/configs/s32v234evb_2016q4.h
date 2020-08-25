@@ -18,8 +18,6 @@
 
 #define CONFIG_DDR_INIT_DELAY 100
 
-#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
-
 /* HDMI configs */
 #define CONFIG_FSL_DCU_SII9022A
 #define CONFIG_SYS_I2C_MXC_I2C2         /* enable I2C bus 2 */
@@ -27,18 +25,8 @@
 #define CONFIG_SYS_I2C_DVI_ADDR         0x39
 
 /* Ethernet config */
-
 #define CONFIG_FEC_XCV_TYPE     RGMII
-
 #define CONFIG_FEC_MXC_PHYADDR  3
-
-#define CONFIG_CMD_PCI
-
-#ifdef CONFIG_CMD_PCI
-#define CONFIG_GICSUPPORT
-#define CONFIG_USE_IRQ
-#define CONFIG_CMD_IRQ
-#endif
 
 #ifdef CONFIG_SJA1105
 #define SJA_1_BUS	0
