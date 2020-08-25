@@ -30,6 +30,7 @@
 #define VIDEO_PLL_PHI0_DIV2	2
 
 #define MHZ	1000000
+#define MAC_ADDR_STR_LEN	17
 
 #ifdef CONFIG_DCU_QOS_FIX
 #define S32V234_NIC_FASTDMA1_IB_READ_QOS	(0x40012380)
@@ -480,35 +481,18 @@ U_BOOT_CMD(clocks, CONFIG_SYS_MAXARGS, 1, do_s32_showclocks,
 	 );
 
 #ifdef CONFIG_FEC_MXC
-void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
+__weak void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
-#if 0 /* This feature will be implemented in ALB-123 */
-	struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
-	struct fuse_bank *bank = &ocotp->bank[4];
-	struct fuse_bank4_regs *fuse =
-		(struct fuse_bank4_regs *)bank->fuse_regs;
-
-	u32 value = readl(&fuse->mac_addr0);
-	mac[0] = (value >> 8);
-	mac[1] = value;
-
-	value = readl(&fuse->mac_addr1);
-	mac[2] = value >> 24;
-	mac[3] = value >> 16;
-	mac[4] = value >> 8;
-	mac[5] = value;
-#else
-	const char *mac_str = "00:1b:c3:12:34:22";
+	const char *mac_str = S32V234_FEC_DEFAULT_ADDR;
 
 	if ((!env_get("ethaddr")) ||
-	    (strncasecmp(mac_str, env_get("ethaddr"), 17) == 0)) {
+	    (strncasecmp(mac_str, env_get("ethaddr"), MAC_ADDR_STR_LEN) == 0)) {
 		printf("\nWarning: System is using default MAC address. ");
 		printf("Please set a new value\n");
 		string_to_enetaddr(mac_str, mac);
 	} else {
 		string_to_enetaddr(env_get("ethdaddr"), mac);
 	}
-#endif
 }
 #endif
 
