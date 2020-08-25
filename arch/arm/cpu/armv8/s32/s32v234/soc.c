@@ -579,8 +579,11 @@ int cpu_eth_init(bd_t *bis)
 			0);
 #endif
 
+#ifdef CONFIG_FEC_MXC_PHYADDR
 	rc = fecmxc_initialize(bis);
-#endif
+#endif /* CONFIG_FEC_MXC_PHYADDR */
+
+#endif /* CONFIG_FEC_MXC */
 
 	return rc;
 }
