@@ -582,9 +582,9 @@ static int detect_boot_interface(void)
 	value = reg_val & SRC_BMR1_CFG1_MASK;
 	value = value >> SRC_BMR1_CFG1_BOOT_SHIFT;
 
-	if ((value != SRC_BMR1_CFG1_QuadSPI) &&
-	    (value != SRC_BMR1_CFG1_SD) &&
-	    (value != SRC_BMR1_CFG1_eMMC)) {
+	if (value != SRC_BMR1_CFG1_QuadSPI &&
+	    value != SRC_BMR1_CFG1_SD &&
+	    value != SRC_BMR1_CFG1_eMMC) {
 		printf("Unknown booting environment\n");
 		value = -1;
 	}
@@ -900,11 +900,11 @@ static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
 	int ret;
-	printf("Hyperflash is disabled. SD/eMMC is active and can be used\n");
-
 	struct mmc *mmc = find_mmc_device(0);
 
-	if (mmc == NULL)
+	printf("Hyperflash is disabled. SD/eMMC is active and can be used\n");
+
+	if (!mmc)
 		return sdhc_setup(gd->bd);
 
 	/* set the sdhc pinmuxing */
@@ -919,12 +919,11 @@ static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 /* sdhc setup */
-U_BOOT_CMD(
-		sdhcsetup, 1, 1, do_sdhc_setup,
-		"setup sdhc pinmuxing and sdhc registers for access to SD",
-		"\n"
-		"Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
-		"and disconnect from the Hyperflash.\n"
+U_BOOT_CMD(sdhcsetup, 1, 1, do_sdhc_setup,
+	   "setup sdhc pinmuxing and sdhc registers for access to SD",
+	   "\n"
+	   "Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
+	   "and disconnect from the Hyperflash.\n"
 	 );
 #endif
 
@@ -943,7 +942,7 @@ void ddr_ctrl_init(void)
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
 void ddr_check_post_func_reset(uint8_t module)
 {
-	uint32_t ddr_self_ref_clr, mmdc_mapsr;
+	u32 ddr_self_ref_clr, mmdc_mapsr;
 	unsigned long mmdc_addr;
 	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
 
@@ -957,8 +956,8 @@ void ddr_check_post_func_reset(uint8_t module)
 		writel(mmdc_mapsr | MMDC_MAPSR_EN_SLF_REF,
 		       mmdc_addr + MMDC_MAPSR);
 
-		src->ddr_self_ref_ctrl = src->ddr_self_ref_ctrl |
-			ddr_self_ref_clr;
+		src->ddr_self_ref_ctrl =
+			src->ddr_self_ref_ctrl | ddr_self_ref_clr;
 
 		mmdc_mapsr = readl(mmdc_addr + MMDC_MAPSR);
 		writel(mmdc_mapsr & ~MMDC_MAPSR_EN_SLF_REF,
@@ -971,7 +970,7 @@ __weak int dram_init(void)
 {
 #ifndef CONFIG_S32_SKIP_RELOC
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
-	uint32_t enabled_hs_events, func_event;
+	u32 enabled_hs_events, func_event;
 
 	if (readl(MC_RGM_DDR_HE) & MC_RGM_DDR_HE_EN) {
 		/* Enable DDR handshake for all functional events */
@@ -983,7 +982,7 @@ __weak int dram_init(void)
 		/* If reset event was received, check DDR state */
 		func_event = readl(MC_RGM_FES);
 		enabled_hs_events = readl(MC_RGM_FRHE);
-		if (func_event & enabled_hs_events)
+		if (func_event & enabled_hs_events) {
 			if (func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
 				/* Check if DDR handshake was done */
 				while (!(readl(MC_RGM_DDR_HS) &
@@ -993,6 +992,7 @@ __weak int dram_init(void)
 				ddr_check_post_func_reset(DDR0);
 				ddr_check_post_func_reset(DDR1);
 			}
+		}
 	} else {
 		/*
 		 * First boot so the handshake isn't necessary.
@@ -1012,8 +1012,8 @@ __weak int dram_init(void)
 }
 
 /* start M4 core */
-static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
-		int argc, char * const argv[])
+static int do_start_m4(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
 {
 	unsigned long addr;
 	char *ep;
@@ -1033,8 +1033,9 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 
 	printf("Starting core M4 at SRAM address 0x%08lX ...\n", addr);
 
-	/* write the M4 core's start address
-	   address is required by the hardware to be odd */
+	/* Write the M4 core's start address
+	 * address is required by the hardware to be odd
+	 */
 	writel(addr | 0x1, MC_ME_CADDR0);
 
 	/* enable CM4 to be active during all modes of operation */
@@ -1042,7 +1043,8 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 
 	/* mode_enter(DRUN_M) */
 	writel(MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL);
-	writel(MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL);
+	writel(MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL)
+		;
 
 	printf("Wait while mode entry is in progress ...\n");
 
@@ -1061,11 +1063,10 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 	return CMD_RET_SUCCESS;
 }
 
-U_BOOT_CMD(
-		startm4,	2,	1,	do_start_m4,
-		"start M4 core from SRAM address",
-		"startAddress"
-	 );
+U_BOOT_CMD(startm4,	2,	1,	do_start_m4,
+	   "start M4 core from SRAM address",
+	   "startAddress"
+	   );
 
 #ifdef CONFIG_ARCH_MISC_INIT
 int arch_misc_init(void)

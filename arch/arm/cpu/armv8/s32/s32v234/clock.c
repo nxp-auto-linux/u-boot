@@ -25,8 +25,7 @@ static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
 	volatile struct src * src = (struct src *)SRC_SOC_BASE_ADDR;
 
 	/* select the pll clock source */
-	switch( refclk_freq )
-	{
+	switch (refclk_freq) {
 		case FIRC_CLK_FREQ:
 			clk_src = SRC_GPR1_FIRC_CLK_SOURCE;
 			break;
@@ -41,8 +40,7 @@ static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
 	 * The hardware definition is not uniform, it has to calculate again
 	 * the recurrence formula.
 	 */
-	switch( pll )
-	{
+	switch (pll) {
 		case PERIPH_PLL:
 			pll_idx = 3;
 			break;
@@ -50,13 +48,14 @@ static int select_pll_source_clk( enum pll_type pll, u32 refclk_freq )
 			pll_idx = 1;
 			break;
 		case DDR_PLL:
-			pll_idx = 2;;
+		pll_idx = 2;
 			break;
 		default:
 			pll_idx = pll;
 	}
 
-	writel( readl(&src->gpr1) | SRC_GPR1_PLL_SOURCE(pll_idx, clk_src), &src->gpr1);
+	writel(readl(&src->gpr1) | SRC_GPR1_PLL_SOURCE(pll_idx, clk_src),
+	       &src->gpr1);
 
 	return 0;
 }
@@ -90,8 +89,8 @@ void entry_to_target_mode( u32 mode )
  *)
  */
 static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1,
-						u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr], u32 plldv_prediv, u32 plldv_mfd,
-						u32 pllfd_mfn )
+		       u32 dfs_nr, u32 dfs[][DFS_PARAMS_Nr], u32 plldv_prediv,
+		       u32 plldv_mfd, u32 pllfd_mfn)
 {
 	u32 i, rfdphi1, rfdphi, dfs_on = 0, fvco;
 
@@ -106,24 +105,23 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 	 * the platform DataSheet in order to determine the allowed values.
 	 */
 
-	if( fvco < PLL_MIN_FREQ || fvco > PLL_MAX_FREQ )
-	{
+	if (fvco < PLL_MIN_FREQ || fvco > PLL_MAX_FREQ)
 		return -1;
-	}
 
-	if( select_pll_source_clk( pll, refclk_freq ) < 0 )
-	{
+	if (select_pll_source_clk(pll, refclk_freq) < 0)
 		return -1;
-	}
 
 	rfdphi = fvco/freq0;
 
 	rfdphi1 = (freq1 == 0) ? 0 : fvco/freq1;
 
-	writel( PLLDIG_PLLDV_RFDPHI1_SET(rfdphi1) | PLLDIG_PLLDV_RFDPHI_SET(rfdphi) |
-			PLLDIG_PLLDV_PREDIV_SET(plldv_prediv) | PLLDIG_PLLDV_MFD(plldv_mfd), PLLDIG_PLLDV(pll) );
+	writel(PLLDIG_PLLDV_RFDPHI1_SET(rfdphi1) |
+	       PLLDIG_PLLDV_RFDPHI_SET(rfdphi) |
+	       PLLDIG_PLLDV_PREDIV_SET(plldv_prediv) |
+	       PLLDIG_PLLDV_MFD(plldv_mfd), PLLDIG_PLLDV(pll));
 
-	writel( readl(PLLDIG_PLLFD(pll)) | PLLDIG_PLLFD_MFN_SET(pllfd_mfn) | PLLDIG_PLLFD_SMDEN, PLLDIG_PLLFD(pll) );
+	writel(readl(PLLDIG_PLLFD(pll)) | PLLDIG_PLLFD_MFN_SET(pllfd_mfn) |
+	       PLLDIG_PLLFD_SMDEN, PLLDIG_PLLFD(pll));
 
 	writel(PLLDIG_PLLCAL1_ADVISED_VALUE, PLLDIG_PLLCAL1(pll));
 	writel(PLLDIG_PLLCAL2_ADVISED_VALUE, PLLDIG_PLLCAL2(pll));
@@ -135,26 +133,27 @@ static int program_pll( enum pll_type pll, u32 refclk_freq, u32 freq0, u32 freq1
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
 	/* Only ARM_PLL, ENET_PLL and DDR_PLL */
-	if( (pll == ARM_PLL) || (pll == ENET_PLL) || (pll == DDR_PLL) )
-	{
+	if (pll == ARM_PLL || pll == ENET_PLL || pll == DDR_PLL) {
 		/* DFS clk enable programming */
 		writel( DFS_CTRL_DLL_RESET, DFS_CTRL(pll) );
 
-		writel( DFS_DLLPRG1_CPICTRL_SET(0x7) | DFS_DLLPRG1_VSETTLCTRL_SET(0x1) |
-			DFS_DLLPRG1_CALBYPEN_SET(0x0) | DFS_DLLPRG1_DACIN_SET(0x1) |
-			DFS_DLLPRG1_LCKWT_SET(0x0) | DFS_DLLPRG1_V2IGC_SET(0x5),
-			DFS_DLLPRG1(pll) );
+		writel(DFS_DLLPRG1_CPICTRL_SET(0x7) |
+		       DFS_DLLPRG1_VSETTLCTRL_SET(0x1) |
+		       DFS_DLLPRG1_CALBYPEN_SET(0x0) |
+		       DFS_DLLPRG1_DACIN_SET(0x1) | DFS_DLLPRG1_LCKWT_SET(0x0) |
+		       DFS_DLLPRG1_V2IGC_SET(0x5), DFS_DLLPRG1(pll));
 
-		for( i = 0; i < dfs_nr; i++ )
-		{
-			if(dfs[i][0])
-			{
-				writel( DFS_DVPORTn_MFI_SET(dfs[i][2]) | DFS_DVPORTn_MFN_SET(dfs[i][1]), DFS_DVPORTn(pll, i) );
+		for (i = 0; i < dfs_nr; i++) {
+			if (dfs[i][0]) {
+				writel(DFS_DVPORTn_MFI_SET(dfs[i][2]) |
+				       DFS_DVPORTn_MFN_SET(dfs[i][1]),
+				       DFS_DVPORTn(pll, i));
 				dfs_on |= (dfs[i][0] << i);
 			}
 		}
 
-		writel( readl(DFS_CTRL(pll)) & ~DFS_CTRL_DLL_RESET, DFS_CTRL(pll) );
+		writel(readl(DFS_CTRL(pll)) & ~DFS_CTRL_DLL_RESET,
+		       DFS_CTRL(pll));
 		writel( readl(DFS_PORTRESET(pll)) &
 				~DFS_PORTRESET_PORTRESET_SET(dfs_on),
 				DFS_PORTRESET(pll) );
@@ -189,29 +188,25 @@ static void setup_sys_clocks( void )
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
 	/* select sysclks  ARMPLL, ARMPLLDFS2, ARMPLLDFS3 */
-	writel( MC_ME_RUNMODE_SEC_CC_I_SYSCLK(0x2, MC_ME_RUNMODE_SEC_CC_I_SYSCLK1_OFFSET) |
-			MC_ME_RUNMODE_SEC_CC_I_SYSCLK(0x2, MC_ME_RUNMODE_SEC_CC_I_SYSCLK2_OFFSET) |
-			MC_ME_RUNMODE_SEC_CC_I_SYSCLK(0x2, MC_ME_RUNMODE_SEC_CC_I_SYSCLK3_OFFSET),
-			MC_ME_RUNn_SEC_CC_I(0) );
+	writel(MC_ME_RUNMODE_SEC_CC_I_SYSCLK(0x2, MC_ME_RUNMODE_SEC_CC_I_SYSCLK1_OFFSET)
+	       | MC_ME_RUNMODE_SEC_CC_I_SYSCLK(0x2, MC_ME_RUNMODE_SEC_CC_I_SYSCLK2_OFFSET)
+	       | MC_ME_RUNMODE_SEC_CC_I_SYSCLK(0x2, MC_ME_RUNMODE_SEC_CC_I_SYSCLK3_OFFSET),
+	       MC_ME_RUNn_SEC_CC_I(0));
 
 	/* setup the sys clock divider for CORE_CLK (1000MHz)*/
-	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0), CGM_SC_DCn(MC_CGM1_BASE_ADDR, 0) );
+	writel(MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0),
+	       CGM_SC_DCn(MC_CGM1_BASE_ADDR, 0));
 
 	/* setup the sys clock divider for CORE2_CLK (500MHz)*/
-	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), CGM_SC_DCn(MC_CGM1_BASE_ADDR, 1) );
+	writel(MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1),
+	       CGM_SC_DCn(MC_CGM1_BASE_ADDR, 1));
 	/* setup the sys clock divider for SYS3_CLK (266 MHz)*/
-	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0), CGM_SC_DCn(MC_CGM0_BASE_ADDR, 0) );
+	writel(MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0),
+	       CGM_SC_DCn(MC_CGM0_BASE_ADDR, 0));
 
 	/* setup the sys clock divider for SYS6_CLK (133 Mhz)*/
-	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1), CGM_SC_DCn(MC_CGM0_BASE_ADDR, 1) );
-
-#if 0 /* Disable until the modules will be implemented and activated */
-	/* setup the sys clock divider for GPU_CLK (600 MHz)*/
-	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0), CGM_SC_DCn(MC_CGM2_BASE_ADDR, 0) );
-
-	/* setup the sys clock divider for GPU_SHD_CLK (600 MHz)*/
-	writel( MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x0), CGM_SC_DCn(MC_CGM3_BASE_ADDR, 0) );
-#endif
+	writel(MC_CGM_SC_DCn_DE | MC_CGM_SC_DCn_PREDIV(0x1),
+	       CGM_SC_DCn(MC_CGM0_BASE_ADDR, 1));
 
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 
@@ -370,97 +365,104 @@ static void enable_modules_clock( void )
 void clock_init(void)
 {
 	unsigned int arm_1ghz_dfs[ARM_1GHZ_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ ARM_1GHZ_PLL_PHI1_DFS1_EN, ARM_1GHZ_PLL_PHI1_DFS1_MFN, ARM_1GHZ_PLL_PHI1_DFS1_MFI },
-			{ ARM_1GHZ_PLL_PHI1_DFS2_EN, ARM_1GHZ_PLL_PHI1_DFS2_MFN, ARM_1GHZ_PLL_PHI1_DFS2_MFI },
-			{ ARM_1GHZ_PLL_PHI1_DFS3_EN, ARM_1GHZ_PLL_PHI1_DFS3_MFN, ARM_1GHZ_PLL_PHI1_DFS3_MFI }
+		{ARM_1GHZ_PLL_PHI1_DFS1_EN, ARM_1GHZ_PLL_PHI1_DFS1_MFN,
+		 ARM_1GHZ_PLL_PHI1_DFS1_MFI},
+		{ARM_1GHZ_PLL_PHI1_DFS2_EN, ARM_1GHZ_PLL_PHI1_DFS2_MFN,
+		 ARM_1GHZ_PLL_PHI1_DFS2_MFI},
+		{ARM_1GHZ_PLL_PHI1_DFS3_EN, ARM_1GHZ_PLL_PHI1_DFS3_MFN,
+		 ARM_1GHZ_PLL_PHI1_DFS3_MFI}
 		};
 
 	unsigned int arm_800mhz_dfs[ARM_800MHZ_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ ARM_800MHZ_PLL_PHI1_DFS1_EN, ARM_800MHZ_PLL_PHI1_DFS1_MFN, ARM_800MHZ_PLL_PHI1_DFS1_MFI },
-			{ ARM_800MHZ_PLL_PHI1_DFS2_EN, ARM_800MHZ_PLL_PHI1_DFS2_MFN, ARM_800MHZ_PLL_PHI1_DFS2_MFI },
-			{ ARM_800MHZ_PLL_PHI1_DFS3_EN, ARM_800MHZ_PLL_PHI1_DFS3_MFN, ARM_800MHZ_PLL_PHI1_DFS3_MFI }
+		{ARM_800MHZ_PLL_PHI1_DFS1_EN, ARM_800MHZ_PLL_PHI1_DFS1_MFN,
+		 ARM_800MHZ_PLL_PHI1_DFS1_MFI},
+		{ARM_800MHZ_PLL_PHI1_DFS2_EN, ARM_800MHZ_PLL_PHI1_DFS2_MFN,
+		 ARM_800MHZ_PLL_PHI1_DFS2_MFI},
+		{ARM_800MHZ_PLL_PHI1_DFS3_EN, ARM_800MHZ_PLL_PHI1_DFS3_MFN,
+		 ARM_800MHZ_PLL_PHI1_DFS3_MFI}
 		};
 
 	unsigned int enet_dfs[ENET_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ ENET_PLL_PHI1_DFS1_EN, ENET_PLL_PHI1_DFS1_MFN, ENET_PLL_PHI1_DFS1_MFI },
-			{ ENET_PLL_PHI1_DFS2_EN, ENET_PLL_PHI1_DFS2_MFN, ENET_PLL_PHI1_DFS2_MFI },
-			{ ENET_PLL_PHI1_DFS3_EN, ENET_PLL_PHI1_DFS3_MFN, ENET_PLL_PHI1_DFS3_MFI },
-			{ ENET_PLL_PHI1_DFS4_EN, ENET_PLL_PHI1_DFS4_MFN, ENET_PLL_PHI1_DFS4_MFI }
+		{ENET_PLL_PHI1_DFS1_EN, ENET_PLL_PHI1_DFS1_MFN,
+		 ENET_PLL_PHI1_DFS1_MFI},
+		{ENET_PLL_PHI1_DFS2_EN, ENET_PLL_PHI1_DFS2_MFN,
+		 ENET_PLL_PHI1_DFS2_MFI},
+		{ENET_PLL_PHI1_DFS3_EN, ENET_PLL_PHI1_DFS3_MFN,
+		 ENET_PLL_PHI1_DFS3_MFI},
+		{ENET_PLL_PHI1_DFS4_EN, ENET_PLL_PHI1_DFS4_MFN,
+		 ENET_PLL_PHI1_DFS4_MFI}
 		};
 
 	unsigned int ddr_dfs[DDR_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
-			{ DDR_PLL_PHI1_DFS1_EN, DDR_PLL_PHI1_DFS1_MFN, DDR_PLL_PHI1_DFS1_MFI },
-			{ DDR_PLL_PHI1_DFS2_EN, DDR_PLL_PHI1_DFS2_MFN, DDR_PLL_PHI1_DFS2_MFI },
-			{ DDR_PLL_PHI1_DFS3_EN, DDR_PLL_PHI1_DFS3_MFN, DDR_PLL_PHI1_DFS3_MFI }
+		{DDR_PLL_PHI1_DFS1_EN, DDR_PLL_PHI1_DFS1_MFN,
+		 DDR_PLL_PHI1_DFS1_MFI},
+		{DDR_PLL_PHI1_DFS2_EN, DDR_PLL_PHI1_DFS2_MFN,
+		 DDR_PLL_PHI1_DFS2_MFI},
+		{DDR_PLL_PHI1_DFS3_EN, DDR_PLL_PHI1_DFS3_MFN,
+		 DDR_PLL_PHI1_DFS3_MFI}
 		};
 
 	writel( MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
 		MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3,
 		MC_ME_RUN_PCn(CFG_RUN_PC) );
 
-	writel( !(MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
-		MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3),
-		MC_ME_RUN_PCn(0) );
+	writel(!(MC_ME_RUN_PCn_DRUN | MC_ME_RUN_PCn_RUN0 | MC_ME_RUN_PCn_RUN1 |
+	       MC_ME_RUN_PCn_RUN2 | MC_ME_RUN_PCn_RUN3),
+	       MC_ME_RUN_PCn(0));
 
 	/* turn on FXOSC */
 
 #if defined(CONFIG_S32V234_FAST_BOOT)
 	writel(MC_ME_RUNMODE_MC_PLL(ARM_PLL) | MC_ME_RUNMODE_MC_PLL(ENET_PLL) |
-			MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_XOSCON |
-			MC_ME_RUNMODE_MC_FIRCON | MC_ME_RUNMODE_MC_SYSCLK(0x1),
-			MC_ME_RUNn_MC(0));
+	       MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_XOSCON |
+	       MC_ME_RUNMODE_MC_FIRCON | MC_ME_RUNMODE_MC_SYSCLK(0x1),
+	       MC_ME_RUNn_MC(0));
 #else
-	writel( MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_XOSCON |
-			MC_ME_RUNMODE_MC_FIRCON | MC_ME_RUNMODE_MC_SYSCLK(0x1),
-			MC_ME_RUNn_MC(0) );
+	writel(MC_ME_RUNMODE_MC_MVRON | MC_ME_RUNMODE_MC_XOSCON |
+	       MC_ME_RUNMODE_MC_FIRCON | MC_ME_RUNMODE_MC_SYSCLK(0x1),
+	       MC_ME_RUNn_MC(0));
 #endif
 
-	entry_to_target_mode( MC_ME_MCTL_RUN0 );
+	entry_to_target_mode(MC_ME_MCTL_RUN0);
 
 	if (get_siul2_midr2_speed() == SIUL2_MIDR2_SPEED_800MHZ)
-		program_pll(
-				ARM_PLL, XOSC_CLK_FREQ, ARM_800MHZ_PLL_PHI0_FREQ, ARM_800MHZ_PLL_PHI1_FREQ,
-				ARM_800MHZ_PLL_PHI1_DFS_Nr, arm_800mhz_dfs, ARM_800MHZ_PLL_PLLDV_PREDIV,
-				ARM_800MHZ_PLL_PLLDV_MFD, ARM_800MHZ_PLL_PLLDV_MFN
-				);
+		program_pll(ARM_PLL, XOSC_CLK_FREQ, ARM_800MHZ_PLL_PHI0_FREQ,
+			    ARM_800MHZ_PLL_PHI1_FREQ,
+			    ARM_800MHZ_PLL_PHI1_DFS_Nr, arm_800mhz_dfs,
+			    ARM_800MHZ_PLL_PLLDV_PREDIV,
+			    ARM_800MHZ_PLL_PLLDV_MFD, ARM_800MHZ_PLL_PLLDV_MFN
+			    );
 	else
 		/* If the speed grading is unsupported or unrecognized, fall
-		 * back to 1 GHz. */
-		program_pll(
-				ARM_PLL, XOSC_CLK_FREQ, ARM_1GHZ_PLL_PHI0_FREQ,
-				ARM_1GHZ_PLL_PHI1_FREQ,
-				ARM_1GHZ_PLL_PHI1_DFS_Nr, arm_1ghz_dfs,
-				ARM_1GHZ_PLL_PLLDV_PREDIV,
-				ARM_1GHZ_PLL_PLLDV_MFD, ARM_1GHZ_PLL_PLLDV_MFN
-				);
+		 * back to 1 GHz.
+		 */
+		program_pll(ARM_PLL, XOSC_CLK_FREQ, ARM_1GHZ_PLL_PHI0_FREQ,
+			    ARM_1GHZ_PLL_PHI1_FREQ,
+			    ARM_1GHZ_PLL_PHI1_DFS_Nr, arm_1ghz_dfs,
+			    ARM_1GHZ_PLL_PLLDV_PREDIV,
+			    ARM_1GHZ_PLL_PLLDV_MFD, ARM_1GHZ_PLL_PLLDV_MFN
+			    );
 
 	setup_sys_clocks();
 
-	program_pll(
-				PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI0_FREQ,
-				PERIPH_PLL_PHI1_FREQ, PERIPH_PLL_PHI1_DFS_Nr, NULL,
-				PERIPH_PLL_PLLDV_PREDIV, PERIPH_PLL_PLLDV_MFD,
-				PERIPH_PLL_PLLDV_MFN
-				);
+	program_pll(PERIPH_PLL, XOSC_CLK_FREQ, PERIPH_PLL_PHI0_FREQ,
+		    PERIPH_PLL_PHI1_FREQ, PERIPH_PLL_PHI1_DFS_Nr, NULL,
+		    PERIPH_PLL_PLLDV_PREDIV, PERIPH_PLL_PLLDV_MFD,
+		    PERIPH_PLL_PLLDV_MFN);
 
-	program_pll(
-				ENET_PLL, XOSC_CLK_FREQ, ENET_PLL_PHI0_FREQ, ENET_PLL_PHI1_FREQ,
-				ENET_PLL_PHI1_DFS_Nr, enet_dfs, ENET_PLL_PLLDV_PREDIV,
-				ENET_PLL_PLLDV_MFD, ENET_PLL_PLLDV_MFN
-				);
+	program_pll(ENET_PLL, XOSC_CLK_FREQ, ENET_PLL_PHI0_FREQ,
+		    ENET_PLL_PHI1_FREQ, ENET_PLL_PHI1_DFS_Nr, enet_dfs,
+		    ENET_PLL_PLLDV_PREDIV, ENET_PLL_PLLDV_MFD,
+		    ENET_PLL_PLLDV_MFN);
 
-	program_pll(
-				DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ, DDR_PLL_PHI1_FREQ,
-				DDR_PLL_PHI1_DFS_Nr, ddr_dfs, DDR_PLL_PLLDV_PREDIV,
-				DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN
-				);
+	program_pll(DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ,
+		    DDR_PLL_PHI1_FREQ, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
+		    DDR_PLL_PLLDV_PREDIV, DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN);
 
-	program_pll(
-				VIDEO_PLL, XOSC_CLK_FREQ, VIDEO_PLL_PHI0_FREQ,
-				VIDEO_PLL_PHI1_FREQ, VIDEO_PLL_PHI1_DFS_Nr, NULL,
-				VIDEO_PLL_PLLDV_PREDIV, VIDEO_PLL_PLLDV_MFD,
-				VIDEO_PLL_PLLDV_MFN
-				);
+	program_pll(VIDEO_PLL, XOSC_CLK_FREQ, VIDEO_PLL_PHI0_FREQ,
+		    VIDEO_PLL_PHI1_FREQ, VIDEO_PLL_PHI1_DFS_Nr, NULL,
+		    VIDEO_PLL_PLLDV_PREDIV, VIDEO_PLL_PLLDV_MFD,
+		    VIDEO_PLL_PLLDV_MFN);
 
 	setup_aux_clocks();
 	enable_modules_clock();
