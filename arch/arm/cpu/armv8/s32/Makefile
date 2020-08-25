@@ -3,6 +3,7 @@
 # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
 # (C) Copyright 2016-2018, 2020 NXP
 #
+ccflags-y += -I./board/freescale/common/
 
 obj-$(CONFIG_S32V234)		+= s32v234/
 obj-$(CONFIG_S32_GEN1)		+= s32-gen1/

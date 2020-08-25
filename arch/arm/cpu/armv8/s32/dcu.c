@@ -8,7 +8,7 @@
 #include <asm/arch/clock.h>
 #include <common.h>
 #include <fsl_dcu_fb.h>
-#include "../../../../../board/freescale/common/dcu_sii9022a.h"
+#include "dcu_sii9022a.h"
 #include "div64.h"
 
 struct fb_videomode fsl_dcu_mode_1920_1080 = {
