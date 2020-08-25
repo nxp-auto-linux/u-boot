@@ -34,6 +34,14 @@ static const pfe_ct_hif_tx_hdr_t header[PFENG_EMACS_COUNT] = {
 static struct pfeng_priv *pfeng_drv_priv = NULL;
 /* firmware */
 
+void pfeng_debug(void)
+{
+	if (!pfeng_drv_priv || !pfeng_drv_priv->pfe)
+		return;
+
+	pfeng_hw_debug(pfeng_drv_priv->pfe);
+}
+
 #if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
 static int pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
 			 struct pfeng_priv *priv)

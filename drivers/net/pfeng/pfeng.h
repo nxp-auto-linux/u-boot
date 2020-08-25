@@ -128,7 +128,6 @@ int pfeng_serdes_wait_link(int emac);
 int pfeng_serdes_emac_is_init(int emac);
 
 /* cmd debug calls */
-int pfeng_debug_emac(u32 idx);
-int pfeng_debug_class(void);
+void pfeng_debug(void);
 
 #endif

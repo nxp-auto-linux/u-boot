@@ -99,6 +99,7 @@ int pfeng_hw_init(struct pfe_platform_config *config);
 int pfeng_hw_soft_reset(struct pfe_platform *platform);
 int pfeng_hw_remove(void);
 struct pfe_platform *pfeng_hw_get_instance(void);
+int pfeng_hw_debug(struct pfe_platform *platform);
 
 #endif /* SRC_PFE_PLATFORM_H_ */
 

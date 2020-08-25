@@ -1043,7 +1043,8 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		return 0;
 	/* for development only */
 	} else if (!strcmp(argv[1], "debug")) {
-		return CMD_RET_USAGE;
+		pfeng_debug();
+		return 0;
 	} else if (!strcmp(argv[1], "help")) {
 	}
 
