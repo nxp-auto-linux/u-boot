@@ -23,6 +23,8 @@
 
 #undef	CONFIG_MPXS32V234_R1
 
+#define MAC_ADDR_STR_LEN	17
+
 DECLARE_GLOBAL_DATA_PTR;
 
 void rtc_init(void);
@@ -176,7 +178,7 @@ int board_early_init_f(void)
 
 int board_get_mac(struct eth_device *dev, unsigned char *mac)
 {
-	if (!dev || !mac)
+	if (!mac)
 		return CMD_RET_FAILURE;
 
 	u32 ocotp_mac0 = readl(OCOTP_MAC0_REG);
@@ -193,43 +195,22 @@ int board_get_mac(struct eth_device *dev, unsigned char *mac)
 	return CMD_RET_SUCCESS;
 }
 
-int board_eth_init(bd_t *bis)
+#ifdef CONFIG_FEC_MXC
+void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
-	/*
-	 * cpu_eth_init() is implemented in arch/arm/cpu/armv8/s23v234/soc.c
-	 * It calls fecmxc_initialize(bis).
-	 */
+	char buf[MAC_ADDR_STR_LEN];
 
-	if (cpu_eth_init(bis) < 0)
-		printf("CPU Net Initialization Failed\n");
-
-	/*
-	 * After the call above the MAC can now be manipulated ...
-	 */
-
-	struct eth_device *dev = eth_get_dev_by_name("FEC");
-
-	if (dev) {
-		unsigned char mac[6];
-
-		board_get_mac(dev, mac);
-
+	board_get_mac(NULL, mac);
 		if (!is_zero_ethaddr(mac)) {
-			if (!env_get("ethaddr")) {
-				char buf[20];
 				sprintf(buf, "%pM", mac);
 				env_set("ethaddr", buf);
 			}
-		} else {
-			printf("Note: no MAC for %s in SROM programmed!\n"
-				, dev->name);
-		}
 
-		memcpy(dev->enetaddr, mac, 6);
-	}
-
-	return 0;
+	debug("%s: MAC%d: %02x.%02x.%02x.%02x.%02x.%02x\n",
+	      __func__, dev_id, mac[0], mac[1], mac[2], mac[3],
+	      mac[4], mac[5]);
 }
+#endif
 
 int board_init(void)
 {
