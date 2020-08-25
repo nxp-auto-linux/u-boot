@@ -19,6 +19,16 @@
 #include <fsl_dspi.h>
 #endif
 
+#define DFS_NONE	0
+#define DFS0		1
+#define DFS1		2
+#define DFS2		3
+#define DFS3		4
+
+#define PERIPH_PLL_PHI0_DIV3	3
+#define PERIPH_PLL_PHI0_DIV5	5
+#define VIDEO_PLL_PHI0_DIV2	2
+
 #define MHZ	1000000
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -65,8 +75,8 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	if (selected_output > DFS_MAXNUMBER)
 		return -1;
 
-	plldv_prediv = (plldv & PLLDIG_PLLDV_PREDIV_MASK) >>
-		PLLDIG_PLLDV_PREDIV_OFFSET;
+	plldv_prediv =
+	    (plldv & PLLDIG_PLLDV_PREDIV_MASK) >> PLLDIG_PLLDV_PREDIV_OFFSET;
 	plldv_mfd = (plldv & PLLDIG_PLLDV_MFD_MASK);
 
 	pllfd_mfn = (pllfd & PLLDIG_PLLFD_MFN_MASK);
@@ -77,17 +87,20 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	vco = (refclk_freq / (double)plldv_prediv) *
 		(plldv_mfd + pllfd_mfn / (double)20480);
 
-	if (selected_output != 0) {
+	if (selected_output != DFS_NONE) {
 		/* Determine the RFDPHI for PHI1 */
-		plldv_rfdphi_div = (plldv & PLLDIG_PLLDV_RFDPHI1_MASK) >>
+		plldv_rfdphi_div =
+		    (plldv & PLLDIG_PLLDV_RFDPHI1_MASK) >>
 			PLLDIG_PLLDV_RFDPHI1_OFFSET;
 		plldv_rfdphi_div = plldv_rfdphi_div == 0 ? 1 : plldv_rfdphi_div;
 		if (pll == ARM_PLL || pll == ENET_PLL || pll == DDR_PLL) {
-			dfs_portn = readl(DFS_DVPORTn(pll,
-						selected_output - 1));
-			dfs_mfi = (dfs_portn & DFS_DVPORTn_MFI_MASK) >>
+			dfs_portn =
+			    readl(DFS_DVPORTn(pll, selected_output - 1));
+			dfs_mfi =
+			    (dfs_portn & DFS_DVPORTn_MFI_MASK) >>
 				DFS_DVPORTn_MFI_OFFSET;
-			dfs_mfn = (dfs_portn & DFS_DVPORTn_MFN_MASK) >>
+			dfs_mfn =
+			    (dfs_portn & DFS_DVPORTn_MFN_MASK) >>
 				DFS_DVPORTn_MFN_OFFSET;
 
 			dfs_mfi <<= 8;
@@ -100,7 +113,8 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 		}
 	} else {
 		/* Determine the RFDPHI for PHI0 */
-		plldv_rfdphi_div = (plldv & PLLDIG_PLLDV_RFDPHI_MASK) >>
+		plldv_rfdphi_div =
+		    (plldv & PLLDIG_PLLDV_RFDPHI_MASK) >>
 			PLLDIG_PLLDV_RFDPHI_OFFSET;
 		fout = vco / plldv_rfdphi_div;
 	}
@@ -120,19 +134,34 @@ static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
 	return freq  < 0 ? 0 : freq;
 }
 
+static u32 sys_source_clk_get(uintptr_t cgm_addr)
+{
+	return MC_CGM_SC_SEL_GET(readl(CGM_SC_SS(cgm_addr)));
+}
+
+static u32 sys_div_clk_get(uintptr_t cgm_addr, u8 dc)
+{
+	return MC_CGM_SC_DIV_GET(readl(CGM_SC_DCn(cgm_addr, dc)));
+}
+
+static u32 aux_source_clk_get(uintptr_t cgm_addr, u8 ac)
+{
+	return MC_CGM_ACn_SEL_GET(readl(CGM_ACn_SS(cgm_addr, ac)));
+}
+
+static u32 aux_div_clk_get(uintptr_t cgm_addr, u8 ac, u8 dc)
+{
+	return MC_CGM_ACn_DIV_GET(readl(CGM_ACn_DCm(cgm_addr, ac, dc)));
+}
+
 static u32 get_mcu_main_clk(void)
 {
 	u32 coreclk_div;
 	u32 sysclk_sel;
 	u32 freq = 0;
 
-	sysclk_sel = readl(CGM_SC_SS(MC_CGM1_BASE_ADDR)) & MC_CGM_SC_SEL_MASK;
-	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
-
-	coreclk_div = readl(CGM_SC_DCn(MC_CGM1_BASE_ADDR, 0)) &
-		MC_CGM_SC_DCn_PREDIV_MASK;
-	coreclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
-	coreclk_div += 1;
+	sysclk_sel = sys_source_clk_get(MC_CGM1_BASE_ADDR);
+	coreclk_div = sys_div_clk_get(MC_CGM1_BASE_ADDR, CGM_SCn_DC0);
 
 	switch (sysclk_sel) {
 	case MC_CGM_SC_SEL_FIRC:
@@ -142,10 +171,8 @@ static u32 get_mcu_main_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_SC_SEL_ARMPLL:
-		/* ARMPLL has as source XOSC and CORE_CLK has as input
-		 * PHI0
-		 */
-		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 0);
+		/* ARMPLL has as source XOSC and CORE_CLK has as input PHI0 */
+		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, DFS_NONE);
 		break;
 	case MC_CGM_SC_SEL_CLKDISABLE:
 		printf("Sysclk is disabled\n");
@@ -165,24 +192,18 @@ static u32 get_sys_clk(u32 number)
 	u32 freq = 0;
 
 	switch (number) {
-	case 3:
-		sysclk_div_number = 0;
+	case MXC_SYS3_CLK:
+		sysclk_div_number = CGM_SCn_DC0;
 		break;
-	case 6:
-		sysclk_div_number = 1;
+	case MXC_SYS6_CLK:
+		sysclk_div_number = CGM_SCn_DC1;
 		break;
 	default:
 		printf("unsupported system clock\n");
 		sysclk_div_number = 0;
 	}
-	sysclk_sel = readl(CGM_SC_SS(MC_CGM0_BASE_ADDR)) & MC_CGM_SC_SEL_MASK;
-	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
-
-
-	sysclk_div = readl(CGM_SC_DCn(MC_CGM0_BASE_ADDR, sysclk_div_number)) &
-		MC_CGM_SC_DCn_PREDIV_MASK;
-	sysclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
-	sysclk_div += 1;
+	sysclk_sel = sys_source_clk_get(MC_CGM0_BASE_ADDR);
+	sysclk_div = sys_div_clk_get(MC_CGM0_BASE_ADDR, sysclk_div_number);
 
 	switch (sysclk_sel) {
 	case MC_CGM_SC_SEL_FIRC:
@@ -192,10 +213,8 @@ static u32 get_sys_clk(u32 number)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_SC_SEL_ARMPLL:
-		/* ARMPLL has as source XOSC and SYSn_CLK has as
-		 * input DFS1
-		 */
-		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 1);
+		/* ARMPLL has as source XOSC and SYSn_CLK has as input DFS1 */
+		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, DFS0);
 		break;
 	case MC_CGM_SC_SEL_CLKDISABLE:
 		printf("Sysclk is disabled\n");
@@ -211,16 +230,10 @@ static u32 get_sys_clk(u32 number)
 static u32 get_peripherals_clk(void)
 {
 	u32 auxclk5_div, auxclk5_sel, freq = 0;
-#define SOURCE_CLK_DIV (5)
 
-	auxclk5_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, 5)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk5_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk5_div = readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 5, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk5_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk5_div += 1;
+	auxclk5_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC5_SC);
+	auxclk5_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC5_SC,
+				      CGM_ACn_DC0);
 
 	switch (auxclk5_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -230,8 +243,8 @@ static u32 get_peripherals_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_PERPLLDIVX:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 0) /
-			SOURCE_CLK_DIV;
+		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, DFS_NONE) /
+				  PERIPH_PLL_PHI0_DIV5;
 		break;
 	default:
 		printf("unsupported source clock\n");
@@ -239,22 +252,15 @@ static u32 get_peripherals_clk(void)
 	}
 
 	return freq / auxclk5_div;
-#undef SOURCE_CLK_DIV
 }
 
 static u32 get_uart_clk(void)
 {
 	u32 auxclk3_div, auxclk3_sel, freq = 0;
-#define SOURCE_CLK_DIV (3)
 
-	auxclk3_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, 3)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk3_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk3_div = readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 3, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk3_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk3_div += 1;
+	auxclk3_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC3_SC);
+	auxclk3_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC3_SC,
+				      CGM_ACn_DC0);
 
 	switch (auxclk3_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -264,11 +270,11 @@ static u32 get_uart_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_PERPLLDIVX:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 0) /
-			SOURCE_CLK_DIV;
+		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, DFS_NONE) /
+			PERIPH_PLL_PHI0_DIV3;
 		break;
 	case MC_CGM_ACn_SEL_SYSCLK:
-		freq = get_sys_clk(6);
+		freq = get_sys_clk(MXC_SYS6_CLK);
 		break;
 	default:
 		printf("unsupported system clock select\n");
@@ -276,7 +282,6 @@ static u32 get_uart_clk(void)
 	}
 
 	return freq/auxclk3_div;
-#undef SOURCE_CLK_DIV
 }
 
 static u32 get_fec_clk(void)
@@ -284,12 +289,10 @@ static u32 get_fec_clk(void)
 	u32 auxclk2_div;
 	u32 freq = 0;
 
-	auxclk2_div =  readl(CGM_ACn_DCm(MC_CGM2_BASE_ADDR, 2, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk2_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk2_div += 1;
+	auxclk2_div = aux_div_clk_get(MC_CGM2_BASE_ADDR, CGM_AC2_SC,
+				      CGM_ACn_DC0);
 
-	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 0);
+	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, DFS_NONE);
 
 	return freq / auxclk2_div;
 }
@@ -299,12 +302,10 @@ static u32 get_usdhc_clk(void)
 	u32 auxclk15_div;
 	u32 freq = 0;
 
-	auxclk15_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 15, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk15_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk15_div += 1;
+	auxclk15_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC15_SC,
+				       CGM_ACn_DC0);
 
-	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 4);
+	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, DFS3);
 
 	return freq / auxclk15_div;
 }
@@ -319,16 +320,10 @@ static u32 get_i2c_clk(void)
 static u32 get_qspi_clk(void)
 {
 	u32 auxclk14_div, auxclk14_sel, freq = 0;
-#define AUXn 14
 
-	auxclk14_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, AUXn)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk14_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk14_div = readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, AUXn, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk14_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk14_div += 1;
+	auxclk14_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC14_SC);
+	auxclk14_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC14_SC,
+				       CGM_ACn_DC0);
 
 	switch (auxclk14_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -338,7 +333,7 @@ static u32 get_qspi_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_ENETPLL:
-		freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 3);
+		freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, DFS2);
 		break;
 	default:
 		printf("unsupported system clock select\n");
@@ -346,7 +341,6 @@ static u32 get_qspi_clk(void)
 	}
 
 	return freq/auxclk14_div;
-#undef AUXn
 }
 
 static u32 get_dcu_pix_clk(void)
@@ -354,15 +348,9 @@ static u32 get_dcu_pix_clk(void)
 	u32 auxclk9_div, auxclk9_sel;
 	u32 freq = 0;
 
-#define SOURCE_CLK_DIV (2)
-	auxclk9_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, 9)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk9_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk9_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 9, 1)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk9_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk9_div += 1;
+	auxclk9_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC9_SC);
+	auxclk9_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC9_SC,
+				      CGM_ACn_DC1);
 
 	switch (auxclk9_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -372,8 +360,8 @@ static u32 get_dcu_pix_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_VIDEOPLLDIV2:
-		freq = decode_pll(VIDEO_PLL, XOSC_CLK_FREQ, 0) /
-			SOURCE_CLK_DIV;
+		freq = decode_pll(VIDEO_PLL, XOSC_CLK_FREQ, DFS_NONE) /
+				VIDEO_PLL_PHI0_DIV2;
 		break;
 	default:
 		printf("unsupported source clock select\n");
@@ -381,12 +369,11 @@ static u32 get_dcu_pix_clk(void)
 	}
 
 	return freq/auxclk9_div;
-#undef SOURCE_CLK_DIV
 }
 
 static u32 get_dspi_clk(void)
 {
-	return get_sys_clk(6);
+	return get_sys_clk(MXC_SYS6_CLK);
 }
 
 /* return clocks in Hz */
@@ -420,33 +407,31 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	return 0;
 }
 
-/* Dump some core clocks */
 int do_s32_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
 	printf("Root clocks:\n");
 	printf("CPU clock:%5d MHz\n",
-	       mxc_get_clock(MXC_ARM_CLK) / 1000000);
+	       mxc_get_clock(MXC_ARM_CLK) / MHZ);
 	printf("PERIPHERALS clock: %5d MHz\n",
-	       mxc_get_clock(MXC_PERIPHERALS_CLK) / 1000000);
+	       mxc_get_clock(MXC_PERIPHERALS_CLK) / MHZ);
 	printf("uSDHC clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_USDHC_CLK) / 1000000);
+	       mxc_get_clock(MXC_USDHC_CLK) / MHZ);
 	printf("FEC clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_FEC_CLK) / 1000000);
+	       mxc_get_clock(MXC_FEC_CLK) / MHZ);
 	printf("UART clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_UART_CLK) / 1000000);
+	       mxc_get_clock(MXC_UART_CLK) / MHZ);
 	printf("QSPI clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_QSPI_CLK) / 1000000);
+	       mxc_get_clock(MXC_QSPI_CLK) / MHZ);
 	printf("DSPI clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_DSPI_CLK) / 1000000);
+	       mxc_get_clock(MXC_DSPI_CLK) / MHZ);
 
 	return 0;
 }
 
-U_BOOT_CMD(
-		clocks, CONFIG_SYS_MAXARGS, 1, do_s32_showclocks,
-		"display clocks",
-		""
+U_BOOT_CMD(clocks, CONFIG_SYS_MAXARGS, 1, do_s32_showclocks,
+	   "display clocks",
+	   ""
 	 );
 
 #ifdef CONFIG_FEC_MXC
@@ -536,7 +521,7 @@ int print_cpuinfo(void)
 			osc_freq = XOSC_CLK_FREQ;
 		else
 			osc_freq = FIRC_CLK_FREQ;
-		printf("ARM-PLL frequency was configured to %d MHz\n",
+		printf("ARM-PLL frequency was configured to %u MHz\n",
 		       decode_pll(ARM_PLL, osc_freq, 0) / MHZ);
 	}
 
