@@ -7,9 +7,8 @@
 #ifndef _PFENG_H_
 #define _PFENG_H_
 
-#include "oal.h"
-#include "pfe_platform.h"
-#include "pfe_hif_drv.h"
+#include "pfe_hif_ring.h"
+#include "pfeng_hw.h"
 
 #define S32G_PFE_REGS_BASE		0x46000000
 #define S32G_PFE_EMACn_MODE(n)		(S32G_PFE_REGS_BASE + 0xA0000 + \
@@ -59,6 +58,8 @@ enum {
 
 #define PFENG_MODE_DEFAULT PFENG_MODE_ENABLE
 
+struct pfe_hif_ring_my;
+
 struct pfeng_config {
 	u32 config_mac_mask;
 	u32 config_phy_addr[PFENG_EMACS_COUNT];
@@ -66,16 +67,9 @@ struct pfeng_config {
 
 struct pfeng_priv {
 	/* pfe platform members */
-	pfe_platform_config_t pfe_cfg;
-	pfe_fw_t fw;
-	pfe_platform_t *pfe;
-
-	pfe_hif_drv_t *hif;
-	pfe_hif_chnl_t *channel;
-
-	pfe_hif_drv_client_t *client;
-	pfe_log_if_t *logif_emac, *logif_hif;
-	pfe_phy_if_t *phyif_emac, *phyif_hif;
+	struct pfe_platform_config pfe_cfg;
+	struct pfe_fw fw;
+	struct pfe_platform *pfe;
 
 	struct mii_dev *mii[PFENG_EMACS_COUNT];
 	struct phy_device *phy[PFENG_EMACS_COUNT];
@@ -86,6 +80,9 @@ struct pfeng_priv {
 	u32 if_index;
 	bool if_changed;
 	bool clocks_done;
+
+	struct pfe_hif_ring *tx_ring;
+	struct pfe_hif_ring *rx_ring;
 
 	void *last_rx;
 	void *last_tx;
@@ -131,8 +128,6 @@ int pfeng_serdes_wait_link(int emac);
 int pfeng_serdes_emac_is_init(int emac);
 
 /* cmd debug calls */
-int pfeng_debug_emac(u32 idx);
-int pfeng_debug_hif(void);
-int pfeng_debug_class(void);
+void pfeng_debug(void);
 
 #endif

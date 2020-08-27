@@ -779,7 +779,7 @@ void pfeng_cfg_emacs_disable_all(void)
 	writel(GPR_PFE_EMACn_PWR_DWN(0) |
 	       GPR_PFE_EMACn_PWR_DWN(1) |
 	       GPR_PFE_EMACn_PWR_DWN(2),
-	       (addr_t)S32G_PFE_PRW_CTRL);
+	       S32G_PFE_PRW_CTRL);
 }
 
 /* enable power for EMACs */
@@ -792,16 +792,17 @@ void pfeng_cfg_emacs_enable_all(void)
 	writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
 		(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
 		(pfeng_intf_to_s32g(emac_intf[0])),
-		(addr_t)S32G_PFE_EMACS_INTF_SEL);
+		(unsigned long)S32G_PFE_EMACS_INTF_SEL);
 	udelay(100);
-	writel(0, (addr_t)S32G_PFE_PRW_CTRL);
+	writel(0, S32G_PFE_PRW_CTRL);
 
 	/* reset all EMACs */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++) {
-		writel(readl((addr_t)S32G_PFE_EMACn_MODE(i))
-		       | EMAC_MODE_SWR_MASK, (addr_t)S32G_PFE_EMACn_MODE(i));
+		writel(readl((unsigned long)S32G_PFE_EMACn_MODE(i))
+		       | EMAC_MODE_SWR_MASK,
+		       (unsigned long)S32G_PFE_EMACn_MODE(i));
 		udelay(10);
-		while (readl((addr_t)S32G_PFE_EMACn_MODE(i))
+		while (readl((unsigned long)S32G_PFE_EMACn_MODE(i))
 		       & EMAC_MODE_SWR_MASK)
 			udelay(10);
 	}
@@ -907,7 +908,7 @@ int pfeng_set_emacs_from_env(char *env_mode)
 	writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
 		(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
 		(pfeng_intf_to_s32g(emac_intf[0])),
-		(addr_t)S32G_PFE_EMACS_INTF_SEL);
+		S32G_PFE_EMACS_INTF_SEL);
 
 	return 0;
 }
@@ -1042,17 +1043,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		return 0;
 	/* for development only */
 	} else if (!strcmp(argv[1], "debug")) {
-		if (!strcmp(argv[2], "emac")) {
-			u32 i = 0;
-			if (argc > 2)
-				i = simple_strtoul(argv[3], NULL, 10);
-			pfeng_debug_emac(i);
-		} else if (!strcmp(argv[2], "class")) {
-			pfeng_debug_class();
-		} else if (!strcmp(argv[2], "hif")) {
-			pfeng_debug_hif();
-		} else
-			return CMD_RET_USAGE;
+		pfeng_debug();
 		return 0;
 	} else if (!strcmp(argv[1], "help")) {
 	}
