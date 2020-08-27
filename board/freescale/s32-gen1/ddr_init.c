@@ -31,15 +31,18 @@
 
 #include "ddr_init.h"
 
-static u32 ddrc_init_cfg(struct ddrss_config *config);
-static u32 execute_training(struct ddrss_config *config);
-static u32 load_register_cfg(size_t size, struct regconf cfg[]);
+static uint32_t ddrc_init_cfg(struct ddrss_config *config);
+static uint32_t execute_training(struct ddrss_config *config);
+static uint32_t load_register_cfg(size_t size, struct regconf cfg[]);
 static void set_optimal_pll(struct ddrss_config *config);
+static uint32_t load_image(uint32_t start_addr, size_t size, uint32_t image[]);
+
+__attribute__ ((weak)) void store_csr(void) {}
 
 /* Main method needed to initialize ddr subsystem. */
-u32 ddr_init(void)
+uint32_t ddr_init(void)
 {
-	u32 ret = NO_ERR;
+	uint32_t ret = NO_ERR;
 	size_t i = 0;
 
 	init_image_sizes();
@@ -69,18 +72,18 @@ u32 ddr_init(void)
 }
 
 /* Initialize ddr controller with given settings. */
-static u32 ddrc_init_cfg(struct ddrss_config *config)
+static uint32_t ddrc_init_cfg(struct ddrss_config *config)
 {
-	u32 ret = NO_ERR;
+	uint32_t ret = NO_ERR;
 
 	ret = load_register_cfg(config->ddrc_cfg_size, config->ddrc_cfg);
 	return ret;
 }
 
 /* Execute phy training with given settings. 2D training stage is optional. */
-static u32 execute_training(struct ddrss_config *config)
+static uint32_t execute_training(struct ddrss_config *config)
 {
-	u32 ret = NO_ERR;
+	uint32_t ret = NO_ERR;
 	/* Apply DQ swapping settings */
 	ret = load_register_cfg(config->dq_swap_cfg_size, config->dq_swap_cfg);
 	if (ret != NO_ERR)
@@ -93,14 +96,16 @@ static u32 execute_training(struct ddrss_config *config)
 
 	/* Load 1D imem image */
 	UNLOCK_CSR_ACCESS;
-	ret = load_register_cfg(config->imem_1d_size, config->imem_1d);
+	ret = load_image(IMEM_START_ADDR, config->imem_1d_size,
+			 config->imem_1d);
 	if (ret != NO_ERR)
 		return ret;
 	LOCK_CSR_ACCESS;
 
 	/* Load 1D imem image */
 	UNLOCK_CSR_ACCESS;
-	ret = load_register_cfg(config->dmem_1d_size, config->dmem_1d);
+	ret = load_image(DMEM_START_ADDR, config->dmem_1d_size,
+			 config->dmem_1d);
 	if (ret != NO_ERR)
 		return ret;
 	LOCK_CSR_ACCESS;
@@ -119,20 +124,23 @@ static u32 execute_training(struct ddrss_config *config)
 		return ret;
 	store_csr();
 
-	/* Check if 2d training images have been initialized before executing
+	/*
+	 * Check if 2d training images have been initialized before executing
 	 * the second training stage.
 	 */
 	if (config->imem_2d_size > 0 && config->dmem_2d_size > 0) {
 		/* Load 2d imem image */
 		UNLOCK_CSR_ACCESS;
-		ret = load_register_cfg(config->imem_2d_size, config->imem_2d);
+		ret = load_image(IMEM_START_ADDR, config->imem_2d_size,
+				 config->imem_2d);
 		if (ret != NO_ERR)
 			return ret;
 		LOCK_CSR_ACCESS;
 
 		/* Load 2d dmem image */
 		UNLOCK_CSR_ACCESS;
-		ret = load_register_cfg(config->dmem_2d_size, config->dmem_2d);
+		ret = load_image(DMEM_START_ADDR, config->dmem_2d_size,
+				 config->dmem_2d);
 		if (ret != NO_ERR)
 			return ret;
 		LOCK_CSR_ACCESS;
@@ -159,13 +167,26 @@ static u32 execute_training(struct ddrss_config *config)
 }
 
 /* Load register array into memory. */
-static u32 load_register_cfg(size_t size, struct regconf cfg[])
+static uint32_t load_register_cfg(size_t size, struct regconf cfg[])
 {
-	u32 ret = NO_ERR;
+	uint32_t ret = NO_ERR;
 	size_t i;
 
 	for (i = 0; i < size; i++)
 		writel(cfg[i].data, (uintptr_t)cfg[i].addr);
+	return ret;
+}
+
+/* Load image into memory at consecutive addresses */
+static uint32_t load_image(uint32_t start_addr, size_t size, uint32_t image[])
+{
+	uint32_t ret = NO_ERR;
+	size_t i;
+
+	for (i = 0; i < size; i++) {
+		writel(image[i], (uintptr_t)start_addr);
+		start_addr += sizeof(uint32_t);
+	}
 	return ret;
 }
 
@@ -185,4 +206,5 @@ static void set_optimal_pll(struct ddrss_config *config)
 		break;
 	}
 	writel(0x0000017f, 0x4038171c);
+	writel(0x00000019, 0x403816dc);
 }

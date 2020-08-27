@@ -13,7 +13,7 @@
  * and/or other materials provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its
- * contributors may be used to endorse or promote products derived from this
+ * contributors may be used to endorse or promote products derived from this 
  * software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -32,16 +32,18 @@
 #include "ddr_init.h"
 
 struct regconf ddrc_cfg[] = {
+	{0x4007c604, 0x00000000},
+	{0x4007c608, 0x00000000},
 	{0x403c0000, 0x83080020},
 	{0x403c0010, 0x00000030},
 	{0x403c0014, 0x00000000},
 	{0x403c001c, 0x00000000},
-	{0x403c0020, 0x00000203},
-	{0x403c0024, 0x01450320},
+	{0x403c0020, 0x00000202},
+	{0x403c0024, 0x01457080},
 	{0x403c002c, 0x00000001},
 	{0x403c0030, 0x00000020},
 	{0x403c0034, 0x00402010},
-	{0x403c0038, 0x00000003},
+	{0x403c0038, 0x00000000},
 	{0x403c0050, 0x00210070},
 	{0x403c0054, 0x00000000},
 	{0x403c0060, 0x00000000},
@@ -54,8 +56,8 @@ struct regconf ddrc_cfg[] = {
 	{0x403c00bc, 0x00000000},
 	{0x403c00c0, 0x00000000},
 	{0x403c00c4, 0x00001000},
-	{0x403c00d0, 0xc0030514},
-	{0x403c00d4, 0x00830000},
+	{0x403c00d0, 0xc0030517},
+	{0x403c00d4, 0x00840000},
 	{0x403c00d8, 0x00000d05},
 	{0x403c00dc, 0x0054002d},
 	{0x403c00e0, 0x00330008},
@@ -80,8 +82,8 @@ struct regconf ddrc_cfg[] = {
 	{0x403c0134, 0x0c100002},
 	{0x403c0138, 0x000000c0},
 	{0x403c013c, 0x00000000},
-	{0x403c0180, 0xc29a0014},
-	{0x403c0184, 0x02205140},
+	{0x403c0180, 0xc29b0014},
+	{0x403c0184, 0x0220515d},
 	{0x403c0188, 0x00000000},
 	{0x403c0190, 0x0497820a},
 	{0x403c0194, 0x00080303},
@@ -103,7 +105,7 @@ struct regconf ddrc_cfg[] = {
 	{0x403c0214, 0x07070707},
 	{0x403c0218, 0x07070707},
 	{0x403c021c, 0x0000000f},
-	{0x403c0220, 0x00000000},
+	{0x403c0220, 0x00003f3f},
 	{0x403c0224, 0x00000000},
 	{0x403c0228, 0x00000000},
 	{0x403c022c, 0x00000000},
