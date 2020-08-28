@@ -60,7 +60,7 @@ struct pfe_platform_config {
 struct pfe_platform {
 	bool probed;
 	void *cbus_baseaddr;
-	pfe_ct_pe_mmap_t *memmap;
+	struct pfe_ct_pe_mmap *memmap;
 	void *bmu_buffers_va;
 	u64 bmu_buffers_size;
 	u32 hif_chnl_count; /* Number of HIF channels */

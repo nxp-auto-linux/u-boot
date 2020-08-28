@@ -23,9 +23,9 @@
 #include <dm/device_compat.h>
 
 #define HIF_QUEUE_ID	0
-#define HIF_HEADER_SIZE sizeof(pfe_ct_hif_rx_hdr_t)
+#define HIF_HEADER_SIZE sizeof(struct pfe_ct_hif_rx_hdr)
 
-static const pfe_ct_hif_tx_hdr_t header[PFENG_EMACS_COUNT] = {
+static const struct pfe_ct_hif_tx_hdr header[PFENG_EMACS_COUNT] = {
 	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(1)},
 	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(2)},
 	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(4)},
@@ -597,7 +597,7 @@ static int pfeng_send(struct udevice *dev, void *packet, int length)
 
 	/* Fill header */
 	bd_hd->data = (u64)&header[priv->if_index];
-	bd_hd->buflen = (u16)sizeof(pfe_ct_hif_tx_hdr_t);
+	bd_hd->buflen = (u16)sizeof(struct pfe_ct_hif_tx_hdr);
 	bd_hd->status = 0U;
 	bd_hd->lifm = 0;
 	wb_bd_hd->desc_en = 1U;

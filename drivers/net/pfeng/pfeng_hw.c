@@ -506,7 +506,7 @@ static s32 pfeng_hw_pe_get_elf_sect_load_addr(Elf32_Phdr *phdr, s32 phdr_cnt,
 }
 
 static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
-				     pfe_ct_pe_mmap_t **memmap)
+				     struct pfe_ct_pe_mmap **memmap)
 {
 	s32 ii;
 	s32 l_addr;
@@ -517,7 +517,7 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 	Elf32_Ehdr *ehdr = (Elf32_Ehdr *)fw;
 	Elf32_Shdr *shdr = (Elf32_Shdr *)((int64_t)fw + ehdr->e_shoff);
 	Elf32_Phdr *phdr = (Elf32_Phdr *)((int64_t)fw + ehdr->e_phoff);
-	pfe_ct_pe_mmap_t *fw_mmap = NULL;
+	struct pfe_ct_pe_mmap *fw_mmap = NULL;
 	static const char mmap_version_str[] = TOSTRING(PFE_CFG_PFE_CT_H_MD5);
 
 	names = (char *)((int64_t)fw + shdr[ehdr->e_shstrndx].sh_offset);
@@ -529,12 +529,12 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 	}
 
 	if (map_found) {
-		fw_mmap = (pfe_ct_pe_mmap_t *)malloc(sizeof(pfe_ct_pe_mmap_t));
+		fw_mmap = malloc(sizeof(struct pfe_ct_pe_mmap));
 		if (!fw_mmap)
 			return -ENOMEM;
 
 		memcpy(fw_mmap, ((unsigned char *)fw + shdr[ii].sh_offset),
-		       sizeof(pfe_ct_pe_mmap_t));
+		       sizeof(struct pfe_ct_pe_mmap));
 		if (strcmp(mmap_version_str, fw_mmap->version.cthdr) != 0) {
 			pr_err("PFE: Unsupported CLASS firmware detected\n");
 			pr_err("PFE: FW %d.%d.%d fwAPI:%s, required fwAPI %s\n",
@@ -577,20 +577,20 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 	return 0;
 }
 
-int pfeng_hw_pe_check_mmap(pfe_ct_pe_mmap_t *pfe_pe_mmap)
+int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
 {
-	if (ntohl(pfe_pe_mmap->size) != sizeof(pfe_ct_pe_mmap_t)) {
+	if (ntohl(pfe_pe_mmap->size) != sizeof(struct pfe_ct_pe_mmap)) {
 		pr_err("Structure length mismatch: found %u required %u\n",
 		       (u32)ntohl(pfe_pe_mmap->size),
-		       (u32)sizeof(pfe_ct_pe_mmap_t));
+		       (u32)sizeof(struct pfe_ct_pe_mmap));
 		return -EINVAL;
 	}
 
 	pr_info("PFE [FW VERSION] %d.%d.%d, Build: %s, %s (%s), ID: 0x%x\n",
 		pfe_pe_mmap->version.major, pfe_pe_mmap->version.minor,
 		pfe_pe_mmap->version.patch,
-		(char_t *)pfe_pe_mmap->version.date,
-		(char_t *)pfe_pe_mmap->version.time,
+		(char_t *)pfe_pe_mmap->version.build_date,
+		(char_t *)pfe_pe_mmap->version.build_time,
 		(char_t *)pfe_pe_mmap->version.vctrl,
 		pfe_pe_mmap->version.id);
 
@@ -1076,7 +1076,7 @@ pfeng_hw_init_tmu(struct pfe_platform *platform)
 	u32 ii, queue, cnt;
 	void *qos_base;
 	void *base = platform->cbus_baseaddr;
-	static const pfe_ct_phy_if_id_t phys[] = {
+	static const int phys[] = {
 		PFE_PHY_IF_ID_EMAC0, PFE_PHY_IF_ID_EMAC1, PFE_PHY_IF_ID_EMAC2,
 		PFE_PHY_IF_ID_HIF_NOCPY, PFE_PHY_IF_ID_HIF
 	};
@@ -1124,7 +1124,7 @@ pfeng_hw_init_tmu(struct pfe_platform *platform)
 			    base + TMU_PHY3_INQ_ADDR); /* HGPI */
 
 	/*	Context memory initialization */
-	for (ii = 0U; ii < (sizeof(phys) / sizeof(pfe_ct_phy_if_id_t)); ii++) {
+	for (ii = 0U; ii < ARRAY_SIZE(phys); ii++) {
 		/*	Initialize queues */
 		for (queue = 0U; queue < TLITE_PHY_QUEUES_CNT; queue++) {
 			/*	Set direct context memory access */
@@ -1337,7 +1337,7 @@ static int pfeng_hw_init_ifaces(struct pfe_platform *platform)
 	}
 
 	for (ii = 0; ii != PFE_PHY_IF_ID_INVALID; ii++) {
-		pfe_ct_phy_if_t phy = { 0 };
+		struct pfe_ct_phy_if phy = { 0 };
 
 		phy.id = ii;
 		phy.mode = IF_OP_DEFAULT;
@@ -1346,10 +1346,10 @@ static int pfeng_hw_init_ifaces(struct pfe_platform *platform)
 
 		/* Prepare logical interfaces for EMACs */
 		if (ii <= PFE_PHY_IF_ID_EMAC2) {
-			pfe_ct_log_if_t log = { 0 };
+			struct pfe_ct_log_if log = { 0 };
 
 			heap_base = ntohl(platform->memmap->dmem_heap_base) +
-					  (ii * sizeof(pfe_ct_log_if_t));
+					  (ii * sizeof(struct pfe_ct_log_if));
 			log.e_phy_ifs = htonl(1U << (platform->hif_chnl +
 					      PFE_PHY_IF_ID_HIF0));
 			log.mode = IF_OP_DEFAULT;
@@ -1360,7 +1360,8 @@ static int pfeng_hw_init_ifaces(struct pfe_platform *platform)
 			for (pe = 0; pe < platform->class_pe_count; pe++) {
 				pfeng_hw_pe_memcpy(pe, PFE_PE_DMEM,
 						   heap_base, (u8 *)&log,
-						   sizeof(pfe_ct_log_if_t));
+						   sizeof(struct
+							  pfe_ct_log_if));
 			}
 
 			pr_info("log if stored at %8x\n", heap_base);
@@ -1373,12 +1374,12 @@ static int pfeng_hw_init_ifaces(struct pfe_platform *platform)
 		phy.log_ifs = htonl((u32)heap_base);
 
 		dmem_base = ntohl(platform->memmap->dmem_phy_if_base) +
-				  (ii * sizeof(pfe_ct_phy_if_t));
+				  (ii * sizeof(struct pfe_ct_phy_if));
 
 		for (pe = 0; pe < platform->class_pe_count; pe++) {
 			pfeng_hw_pe_memcpy(pe, PFE_PE_DMEM,
 					   dmem_base, (u8 *)&phy,
-					   sizeof(pfe_ct_phy_if_t));
+					   sizeof(struct pfe_ct_phy_if));
 		}
 	}
 
