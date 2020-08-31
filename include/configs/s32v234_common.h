@@ -29,7 +29,7 @@
 #define CONFIG_SYS_FSL_DRAM_BASE2	0xC0000000
 
 /* S32V234 flash driver */
-#define CONFIG_S32_FLASH
+#define CONFIG_S32V234_FLASH
 /* Debug stuff for qspi/hyperflash */
 #undef CONFIG_DEBUG_S32_QSPI_QSPI
 

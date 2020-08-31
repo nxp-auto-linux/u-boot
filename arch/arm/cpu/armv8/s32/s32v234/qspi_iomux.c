@@ -5,7 +5,7 @@
  */
 
 #include <common.h>
-#include <asm/arch/qspi_common.h>
+#include <asm/arch/qspi_s32v234.h>
 #include <asm/arch/siul.h>
 #include <asm/io.h>
 
@@ -22,7 +22,7 @@ void qspi_iomux(void)
 	writel(SIUL2_PK6_MSCR_MUX_MODE_QSPI_A_SCK |
 	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK6_MSCR));
 
-#ifdef CONFIG_S32_FLASH
+#ifdef CONFIG_S32V234_FLASH
 	/*
 	 * XXX: This signal should not be needed with hyperflash powered at 3V,
 	 * but it seems the AHB access blocks without it
@@ -75,7 +75,7 @@ void qspi_iomux(void)
 	writel(SIUL2_PORT_IMCR_MUX_MODE_QSPI_A_DATA0_7,
 	       SIUL2_IMCRn(SIUL2_PK8_IMCR_QSPI_A_DATA0));
 
-#ifdef CONFIG_S32_FLASH
+#ifdef CONFIG_S32V234_FLASH
 	/* A_DATA 4-7 */
 	/* QSPI0_A_DATA7 - R21 - PL2 */
 	writel(SIUL2_PORT_MSCR_CTRL_QSPI_A_DATA4_7,

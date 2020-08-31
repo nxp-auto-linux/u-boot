@@ -7,7 +7,7 @@
 #include <common.h>
 #include <vsprintf.h>
 #include <cpu_func.h>
-#include <asm/arch/qspi_common.h>
+#include <asm/arch/qspi_s32v234.h>
 #include <asm/arch/siul.h>
 #include <asm/io.h>
 

@@ -9,7 +9,7 @@
 
 void qspi_iomux(void);
 
-#ifdef CONFIG_S32_FLASH
+#ifdef CONFIG_S32V234_FLASH
 int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 		     char * const argv[]);
 #else

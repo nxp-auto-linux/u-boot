@@ -5,4 +5,5 @@
 
 obj-y					+= clock.o
 obj-y					+= soc.o
-obj-$(CONFIG_S32V234_USES_FLASH)	+= qspi_s32v234.o
+obj-$(CONFIG_S32V234_FLASH)		+= qspi_driver.o
+obj-$(CONFIG_S32V234_USES_FLASH)	+= qspi_iomux.o
