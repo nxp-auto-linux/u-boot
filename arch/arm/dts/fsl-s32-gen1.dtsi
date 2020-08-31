@@ -523,6 +523,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x401E4000 0x0 0x10000>;
+		clocks = <&clks S32GEN1_CLK_XBAR_DIV3>;
 		status = "disabled";
 	};
 
@@ -531,6 +532,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x401E8000 0x0 0x10000>;
+		clocks = <&clks S32GEN1_CLK_XBAR_DIV3>;
 		status = "disabled";
 	};
 
@@ -539,6 +541,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x401EC000 0x0 0x10000>;
+		clocks = <&clks S32GEN1_CLK_XBAR_DIV3>;
 		status = "disabled";
 	};
 
@@ -547,6 +550,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x402D8000 0x0 0x10000>;
+		clocks = <&clks S32GEN1_CLK_XBAR_DIV3>;
 		status = "disabled";
 	};
 
@@ -555,6 +559,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x402DC000 0x0 0x10000>;
+		clocks = <&clks S32GEN1_CLK_XBAR_DIV3>;
 		status = "disabled";
 	};
 };
