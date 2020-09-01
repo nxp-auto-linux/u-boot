@@ -424,8 +424,20 @@ static struct pfe_hif_ring *pfeng_init_ring(bool is_rx)
 	size = roundup(RING_LEN * sizeof(struct pfe_hif_bd), page_size);
 	ring->bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
 
+	if (!ring->bd)
+		return NULL;
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
+					size, DCACHE_OFF);
+
 	size = roundup(RING_LEN * sizeof(struct pfe_hif_wb_bd), page_size);
 	ring->wb_bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
+
+	if (!ring->wb_bd)
+		return NULL;
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
+					size, DCACHE_OFF);
 
 	ring->is_rx = is_rx;
 
