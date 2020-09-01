@@ -242,6 +242,9 @@ static inline void final_mmu_setup(void)
 			  MEMORY_ATTRIBUTES);
 	__asm_invalidate_tlb_all();
 
+	/* gd->arch.tlb_emerg is used by mmu_set_region_dcache_behaviour */
+	gd->arch.tlb_emerg = gd->arch.tlb_addr;
+
 	save_tlb();
 
 	/*
