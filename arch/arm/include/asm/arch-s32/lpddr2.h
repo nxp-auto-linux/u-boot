@@ -34,34 +34,14 @@
 	 SIUL2_MSCR_DSE_48ohm | SIUL2_MSCR_DDR_DO_TRIM_50PS | SIUL2_MSCR_DCYCLE_TRIM_LEFT		|	\
 	 SIUL2_MSCR_PUS_100K_UP)
 
-#define _MDCTL 0x03010000
-
 /* Set MDSCR[CON_REQ] (configuration request) */
 #define MMDC_MDSCR_CFG_VALUE		0x00008000
 /* Precharge-all command CS0 */
 #define MMDC_MDSCR_CS0_VALUE				0x00008010
 /* Precharge-all command CS1 */
 #define MMDC_MDSCR_CS1_VALUE				0x00008018
-/* tRFCab=70 (=130ns),tXSR=80 (=tRFCab+10ns),tXP=4 (=7.5ns),
- * tXPDLL=n/a,tFAW=27 (50 ns),tCL(RL)=8
- */
-#define MMDC_MDCFG0_VALUE		0x464F61A5
-/* tRCD=n/a,tRPpb=n/a,tRC=n/a ,tRAS=25 (=47ns),
- * tRPA=n/a,tWR=8 (=15.0ns),tMRD=3,tWL=4
- */
-#define MMDC_MDCFG1_VALUE		0x00180E63
-/* tDLLK=n/a,tRTP=4 (=7.5ns),tWTR=4 (=7.5ns),tRRD=6 (=10ns) */
-#define MMDC_MDCFG2_VALUE		0x000000DD
-/* RC_LP=tRAS+tRPab=32 (>60ns), tRCD_LP=10 (18ns),
- * tRPpb_LP=10 (18ns), tRPab_LP=12 (21ns)
- */
-#define MMDC_MDCFG3LP_VALUE		0x001F099B
 /* tAOFPD=n/a,tAONPD=n/a,tANPD=n/a,tAXPD=n/a,tODTLon=n/a,tODT_idle_off=n/a */
 #define MMDC_MDOTC_VALUE		0x00000000
-/* WALAT=0, BI bank interleave on, LPDDR2_S2=0, MIF3=3,
- * RALAT=5, 8 banks, LPDDR2
- */
-#define MMDC_MDMISC_VALUE		0x000017C8
 /* tXPR=n/a , SDE_to_RST=n/a, RST_to_CKE=14 */
 #define MMDC_MDOR_VALUE			0x00000010
 /* Force delay line initialisation */
@@ -80,28 +60,14 @@
  * wrap control no wrap, tWR cycles 8
  */
 #define MMDC_MDSCR_MR1_VALUE		0xC2018030
-/* Configure MR2: RL=8, WL=4 */
-#define MMDC_MDSCR_MR2_VALUE		0x06028030
 /* Configure MR3: DS=34R */
 #define MMDC_MDSCR_MR3_VALUE		0x01038030
 /* Configure MR10: Calibration at init */
 #define MMDC_MDSCR_MR10_VALUE		0xFF0A8030
-/* 2Gb, 256 MB memory so CS0 is 256 MB  (0x90000000) */
-#define MMDC_MDASP_MODULE0_VALUE	0x00000048
-/* Read delay line offsets */
-#define MMDC_MPRDDLCTL_MODULE0_VALUE	0x4D4B4F4B
-/* Write delay line offsets */
-#define MMDC_MPWRDLCTL_MODULE0_VALUE	0x38383737
 /* Read DQS gating control 0 (disabled) */
 #define MMDC_MPDGCTRL0_MODULE0_VALUE	0x20000000
 /* Read DQS gating control 1 */
 #define MMDC_MPDGCTRL1_MODULE0_VALUE	0x00000000
-/* 2Gb, 256 MB memory so CS0 is 256 MB  (0xD0000000) */
-#define MMDC_MDASP_MODULE1_VALUE	0x00000068
-/* Read delay line offsets */
-#define MMDC_MPRDDLCTL_MODULE1_VALUE	0x49484848
-/* Write delay line offsets */
-#define MMDC_MPWRDLCTL_MODULE1_VALUE	0x3E403E3F
 /* Read DQS gating control 0 (disabled) */
 #define MMDC_MPDGCTRL0_MODULE1_VALUE	0x20000000
 /* Read DQS gating control 1 */
@@ -118,6 +84,24 @@
 #define MMDC_MDSCR_DEASSERT_VALUE	0x00000000
 /* DVFS and LPMD request */
 #define MMDC_MAPSR_EN_SLF_REF		0x00300000
+
+struct lpddr2_config {
+	u32 mdasp_module0;
+	u32 mdasp_module1;
+	u32 mdcfg0;
+	u32 mdcfg1;
+	u32 mdcfg2;
+	u32 mdcfg3lp;
+	u32 mdctl;
+	u32 mdmisc;
+	u32 mdscr_mr2;
+	u32 mprddlctl_module0;
+	u32 mprddlctl_module1;
+	u32 mpwrdlctl_module0;
+	u32 mpwrdlctl_module1;
+};
+
+const struct lpddr2_config *s32_get_lpddr2_config(void);
 
 /* set I/O pads for DDR */
 void ddr_config_iomux(uint8_t module);

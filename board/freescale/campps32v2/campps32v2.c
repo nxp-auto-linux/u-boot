@@ -6,6 +6,7 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/soc.h>
+#include <campps32v2.h>
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <miiphy.h>
@@ -24,7 +25,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static void setup_iomux_gpio(void)
+static inline void setup_iomux_gpio(void)
 {
 	/* Only Device ID pin configuration.
 	 * To release the slave V2s out of reset and power up the GMSL
@@ -43,10 +44,12 @@ static void setup_iomux_gpio(void)
 		writel(SIUL2_MSCR_GPI, SIUL2_MSCRn(id_pins[i]));
 }
 
-static int get_device_id(void)
+int campps32v2_get_device_id(void)
 {
 	/* SIUL2_PGPDI5 lsbyte provides the values of all the three ID pins. */
-	u8 values = readb(SIUL2_PGPDIn(5));
+	u8 values;
+
+	values = readb(SIUL2_PGPDIn(5));
 
 	return (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF11)) >> 4 |
 	       (values & SIUL2_PPDIO_BIT(SIUL2_MSCR_PF12)) >> 2 |
@@ -188,11 +191,11 @@ int board_early_init_f(void)
 {
 	u8 id;
 
+	setup_iomux_gpio();
 	clock_init();
 	mscm_init();
 
-	setup_iomux_gpio();
-	id = get_device_id();
+	id = campps32v2_get_device_id();
 	if (id == 1)
 		release_slaves();
 
@@ -220,7 +223,8 @@ int board_init(void)
 
 int checkboard(void)
 {
-	printf("Board: %s (V2-%d)\n", CONFIG_SYS_CONFIG_NAME, get_device_id());
+	printf("Board: %s (V2-%d)\n", CONFIG_SYS_CONFIG_NAME,
+	       campps32v2_get_device_id());
 
 	return 0;
 }
@@ -228,7 +232,7 @@ int checkboard(void)
 void board_net_init(void)
 {
 #ifdef CONFIG_SJA1105
-	if (get_device_id() == 1) {
+	if (campps32v2_get_device_id() == 1) {
 		/* Only probe the switches if we are going to use networking.
 		 * The probe has a self check so it will quietly exit if we call
 		 * it twice.
@@ -250,10 +254,11 @@ void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 	char *mac_str = S32V234_FEC_DEFAULT_ADDR;
 
 	if ((!env_get("ethaddr")) ||
-	    (strncasecmp(mac_str, env_get("ethaddr"), MAC_ADDR_STR_LEN) == 0)) {
+	    (strncasecmp(mac_str, env_get("ethaddr"),
+			 MAC_ADDR_STR_LEN) == 0)) {
 		printf("\nWarning: System is using default MAC address. ");
 		printf("Please set a new value\n");
-		mac_str[MAC_ADDR_STR_LEN - 1] += get_device_id();
+		mac_str[MAC_ADDR_STR_LEN - 1] += campps32v2_get_device_id();
 		string_to_enetaddr(mac_str, mac);
 	} else {
 		string_to_enetaddr(env_get("ethdaddr"), mac);
@@ -268,13 +273,14 @@ int board_late_init(void)
 	env_var = env_get("ipaddr");
 	if (env_var) {
 		if (!strcmp(S32_DEFAULT_IP, env_var)) {
-			env_var[strlen(env_var) - 1] += get_device_id();
+			env_var[strlen(env_var) - 1] +=
+				campps32v2_get_device_id();
 			env_set("ipaddr", env_var);
 		}
 	}
 
 	env_var = env_get("fdt_file");
-	if ((env_var) && get_device_id() > 1) {
+	if ((env_var) && campps32v2_get_device_id() > 1) {
 		if (!strcmp(__stringify(FDT_FILE), env_var))
 			env_set("fdt_file", __stringify(FDT_FILE_SEC));
 	}
