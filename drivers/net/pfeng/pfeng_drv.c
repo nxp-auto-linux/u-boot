@@ -424,8 +424,27 @@ static struct pfe_hif_ring *pfeng_init_ring(bool is_rx)
 	size = roundup(RING_LEN * sizeof(struct pfe_hif_bd), page_size);
 	ring->bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
 
+	if (!ring->bd) {
+		pr_warn("HIF ring couldn't be allocated.\n");
+		return NULL;
+	}
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
+					size, DCACHE_OFF);
+
 	size = roundup(RING_LEN * sizeof(struct pfe_hif_wb_bd), page_size);
 	ring->wb_bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
+
+	if (!ring->wb_bd) {
+		pr_warn("HIF ring couldn't be allocated.\n");
+		return NULL;
+	}
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
+					size, DCACHE_OFF);
+
+	/* Flushe cache to update MMU mapings */
+	flush_dcache_all();
 
 	ring->is_rx = is_rx;
 
@@ -601,10 +620,8 @@ static int pfeng_send(struct udevice *dev, void *packet, int length)
 	bd_hd->status = 0U;
 	bd_hd->lifm = 0;
 	wb_bd_hd->desc_en = 1U;
-	pfeng_flush_d(wb_bd_hd, sizeof(struct pfe_hif_wb_bd));
 	dmb();
 	bd_hd->desc_en = 1U;
-	pfeng_flush_d(bd_hd, sizeof(struct pfe_hif_bd));
 
 	/* Fill packet */
 	bd_pkt->data = (u32)(u64)packet;
@@ -612,10 +629,8 @@ static int pfeng_send(struct udevice *dev, void *packet, int length)
 	bd_pkt->status = 0U;
 	bd_pkt->lifm = 1;
 	wb_bd_pkt->desc_en = 1U;
-	pfeng_flush_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
 	dmb();
 	bd_pkt->desc_en = 1U;
-	pfeng_flush_d(bd_pkt, sizeof(struct pfe_hif_bd));
 
 	/* Increment index for next buffer descriptor */
 	ring->write_idx += 2;
@@ -671,9 +686,7 @@ static int pfeng_recv(struct udevice *dev, int flags, uchar **packetp)
 
 	/* Give the data to u-boot stack */
 	bd_pkt->desc_en = 0U;
-	pfeng_flush_d(bd_pkt, sizeof(struct pfe_hif_bd));
 	wb_bd_pkt->desc_en = 1U;
-	pfeng_flush_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
 	dmb();
 	*packetp = ((void *)((u64)(bd_pkt->data) + HIF_HEADER_SIZE));
 	priv->last_rx = *packetp;
@@ -725,10 +738,8 @@ static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 	bd_pkt->status = 0U;
 	bd_pkt->lifm = 1U;
 	wb_bd_pkt->desc_en = 1U;
-	pfeng_flush_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
 	dmb();
 	bd_pkt->desc_en = 1U;
-	pfeng_flush_d(bd_pkt, sizeof(struct pfe_hif_bd));
 
 	/* This has to be here for correct HW functionality */
 	pfeng_flush_d(packet, length);
