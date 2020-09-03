@@ -13,7 +13,8 @@
  * the ones in the header included at the end, configs/s32v234_common.h
  */
 
-#define	FDT_FILE fsl-s32v234-campp.dtb
+#define	FDT_FILE fsl-s32v234-campp-primary.dtb
+#define FDT_FILE_SEC fsl-s32v234-campp-secondary.dtb
 
 #define CONFIG_SYS_FSL_DRAM_SIZE1	0x20000000
 #define CONFIG_SYS_FSL_DRAM_SIZE2	0x20000000
