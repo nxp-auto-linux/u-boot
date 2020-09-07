@@ -18,38 +18,7 @@
 #ifndef HW_S32G_PFE_CT_H_
 #define HW_S32G_PFE_CT_H_
 
-#include "pfe_compiler.h"
-#if (!defined(PFE_COMPILER_BITFIELD_BEHAVIOR))
-#error PFE_COMPILER_BITFIELD_BEHAVIOR is not defined
-#endif
-#if (!defined(PFE_COMPILER_BITFIELD_HIGH_FIRST))
-#error PFE_COMPILER_BITFIELD_HIGH_FIRST is not defined
-#endif
-#if (!defined(PFE_COMPILER_BITFIELD_HIGH_LAST))
-#error PFE_COMPILER_BITFIELD_HIGH_LAST is not defined
-#endif
-#if (PFE_COMPILER_BITFIELD_HIGH_LAST == PFE_COMPILER_BITFIELD_HIGH_FIRST)
-#error PFE_COMPILER_BITFIELD_HIGH_LAST == PFE_COMPILER_BITFIELD_HIGH_FIRST
-#endif
-#if (!defined(PFE_COMPILER_RESULT))
-#error PFE_COMPILER_RESULT is not defined
-#endif
-#if (!defined(PFE_COMPILER_RESULT_FW))
-#error PFE_COMPILER_RESULT_FW is not defined
-#endif
-#if (!defined(PFE_COMPILER_RESULT_DRV))
-#error PFE_COMPILER_RESULT_DRV is not defined
-#endif
-#if (PFE_COMPILER_RESULT_DRV == PFE_COMPILER_RESULT_FW)
-#error PFE_COMPILER_RESULT_DRV is equal to PFE_COMPILER_RESULT_FW
-#endif
-
-#if PFE_COMPILER_RESULT == PFE_COMPILER_RESULT_DRV
-/* Compiling for the driver */
 #include "oal_types.h"
-#else
-#error Ambiguous value of PFE_COMPILER_RESULT
-#endif
 
 /* Interfaces */
 #define PFE_PHY_IF_ID_EMAC0	0
@@ -130,9 +99,9 @@ struct pfe_ct_version {
 	u8 build_date[16];
 	u8 build_time[16];
 	/*	Version control ID (e.g. GIT commit) */
-	char_t vctrl[16];
+	char vctrl[16];
 	/*  This header version */
-	char_t cthdr[36];
+	char cthdr[36];
 } __packed;
 
 _ct_assert(sizeof(struct pfe_ct_version) == 96);

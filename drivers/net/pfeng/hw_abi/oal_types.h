@@ -16,9 +16,6 @@
 #include <asm/types.h>
 #include <asm/byteorder.h>
 
-/* Required by pfe_ct.h*/
-typedef char char_t;
-
 #define _ct_assert(param) _Static_assert(param, "Error in " __FILE__)
 #define STRINGIFY(data) (# data)
 #define TOSTRING(data) (STRINGIFY(data))
