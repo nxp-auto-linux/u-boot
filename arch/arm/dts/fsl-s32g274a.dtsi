@@ -16,11 +16,6 @@
 	compatible = "fsl,s32g275-simu", "fsl,s32g275", "fsl,s32gen1",
 				 "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
-	sram@34000000 {
-		device_type = "memory";
-		reg = <0 0x34000000 0 0x800000>;
-	};
-
 	aliases {
 		pcie1 = &pcie1;
 	};
