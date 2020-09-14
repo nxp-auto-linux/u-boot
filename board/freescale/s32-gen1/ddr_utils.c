@@ -35,7 +35,15 @@ static uint32_t enable_axi_ports(void);
 static uint32_t get_mail(uint32_t *mail);
 static uint32_t ack_mail(void);
 
-static uint8_t polling_needed;
+/*
+ * Do not deinitialize this variable.
+ * We want this variable to be stored in .data section.
+ * If left un-initialized, or if initialized with value 0,
+ * it will be stored in .bss section and therefore not be
+ * available after u-boot is relocated into DRAM, when its
+ * value will be used.
+ */
+uint8_t polling_needed = 2;
 
 /*
  * Set the ddr clock source, FIRC or DDR_PLL_PHI0.

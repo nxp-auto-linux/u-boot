@@ -41,6 +41,18 @@ config SYS_CONFIG_NAME
 	default "s32r45" if TARGET_S32R45EVB || TARGET_S32R45SIM || \
 			   TARGET_S32R45EMU
 
+config SYS_ERRATUM_ERR050543
+	bool "Workaround for NXP Erratum ERR050543"
+	default y if S32_LPDDR4 || TARGET_S32G274AEVB || \
+		TARGET_S32G274ARDB || TARGET_S32R45EVB
+	help
+	  This option enables a workaround for NXP Erratum ERR050543
+	  (This erratum applies for LPDDR4 memories only. The memories require
+	  a periodic refresh to maintain memory contents and the refresh rate
+	  has to vary over temperature and S32G contains an hardware-based
+	  automatism to carry this dynamic adjustment out. This automatism however
+	  does not work under all conditions.)
+
 # Size of SRAM area used by U-boot during the first boot stage. This includes
 # all of the sections in the System.map, plus the runtime stack which
 # is constructed starting from this offset downwards. Note this has nothing

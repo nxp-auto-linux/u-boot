@@ -20,6 +20,10 @@
 
 #define S32_DDR_LIMIT_VAR "ddr_limitX"
 
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
+extern uint8_t polling_needed;
+#endif
+
 #ifdef CONFIG_MP
 
 #if CONFIG_S32_ATF_BOOT_FLOW
@@ -166,6 +170,28 @@ void ft_fixup_clock_frequency(void *blob)
 }
 #endif
 
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
+static void ft_fixup_ddr_polling(void *blob)
+{
+	int off, ret;
+
+	if (polling_needed != 1)
+		return;
+
+	off = fdt_path_offset(blob, "/ddr");
+	if (off < 0) {
+		printf("%s: error at \"ddr\" node: %s\n", __func__,
+				fdt_strerror(off));
+		return;
+	}
+
+	ret = fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
+	if (ret)
+		printf("WARNING: Could not fix up the S32GEN1 device-tree ddr, err=%s\n",
+				fdt_strerror(ret));
+}
+#endif
+
 static void hide_sram(bd_t *bd)
 {
 	int bank;
@@ -294,5 +320,8 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	ft_fixup_memory(blob, bd);
 #if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
 	ft_fixup_qspi_frequency(blob);
+#endif
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
+	ft_fixup_ddr_polling(blob);
 #endif
 }
