@@ -99,10 +99,10 @@ struct scmi_shm_buf {
 
 static int get_shm_buffer(struct udevice *dev, struct scmi_shm_buf *shm)
 {
-	int rc;
+	int rc, len;
 	struct ofnode_phandle_args args;
 	struct resource resource;
-	fdt32_t faddr;
+	const fdt32_t *faddr;
 	phys_addr_t paddr;
 
 	rc = dev_read_phandle_with_args(dev, "shmem", NULL, 0, 0, &args);
@@ -113,8 +113,12 @@ static int get_shm_buffer(struct udevice *dev, struct scmi_shm_buf *shm)
 	if (rc)
 		return rc;
 
-	faddr = cpu_to_fdt32(resource.start);
-	paddr = ofnode_translate_address(args.node, &faddr);
+	faddr = fdt_getprop(gd->fdt_blob, ofnode_to_offset(args.node),
+			    "reg", &len);
+	if (!faddr)
+		return len;
+
+	paddr = ofnode_translate_address(args.node, faddr);
 
 	shm->size = resource_size(&resource);
 	if (shm->size < sizeof(struct scmi_smt_header)) {
@@ -129,7 +133,6 @@ static int get_shm_buffer(struct udevice *dev, struct scmi_shm_buf *shm)
 	if (dcache_status())
 		mmu_set_region_dcache_behaviour((uintptr_t)shm->buf,
 						shm->size, DCACHE_OFF);
-
 	return 0;
 }
 
