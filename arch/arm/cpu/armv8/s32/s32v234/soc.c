@@ -63,7 +63,7 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	double vco = 0;
 
 	if (selected_output > DFS_MAXNUMBER)
-		return -1;
+		return 0;
 
 	plldv_prediv = (plldv & PLLDIG_PLLDV_PREDIV_MASK) >>
 		PLLDIG_PLLDV_PREDIV_OFFSET;
@@ -111,13 +111,12 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
 		u32 selected_output)
 {
-	u32 plldv, pllfd, freq;
+	u32 plldv, pllfd;
 
 	plldv = readl(PLLDIG_PLLDV(pll));
 	pllfd = readl(PLLDIG_PLLFD(pll));
 
-	freq = get_pllfreq(pll, refclk_freq, plldv, pllfd, selected_output);
-	return freq  < 0 ? 0 : freq;
+	return get_pllfreq(pll, refclk_freq, plldv, pllfd, selected_output);
 }
 
 static u32 get_mcu_main_clk(void)
