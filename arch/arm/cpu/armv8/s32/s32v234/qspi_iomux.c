@@ -1,18 +1,19 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2015, 2016, Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2018, NXP
+ * (C) Copyright 2016-2018,2020 NXP
  */
 
 #include <common.h>
-#include <asm/arch/qspi_common.h>
+#include <asm/arch/qspi_s32v234.h>
 #include <asm/arch/siul.h>
 #include <asm/io.h>
 
-void qspi_iomux()
+void qspi_iomux(void)
 {
 	/* CS0, SCK and CK2 use the same base pinmux settings
-	 * 0x0020d700 - SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE */
+	 * 0x0020d700 - SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE
+	 */
 
 	/* QSPI0_A_CS0 - U25 - PK5 */
 	writel(SIUL2_PK5_MSCR_MUX_MODE_QSPI_A_CS0 |
@@ -21,7 +22,7 @@ void qspi_iomux()
 	writel(SIUL2_PK6_MSCR_MUX_MODE_QSPI_A_SCK |
 	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK6_MSCR));
 
-	#ifdef CONFIG_S32_FLASH
+#ifdef CONFIG_S32V234_FLASH
 	/*
 	 * XXX: This signal should not be needed with hyperflash powered at 3V,
 	 * but it seems the AHB access blocks without it
@@ -35,16 +36,18 @@ void qspi_iomux()
 	writel(SIUL2_PORT_MSCR_CTRL_QSPI_A_DQS, SIUL2_MSCRn(SIUL2_PK7_MSCR));
 	writel(SIUL2_PK7_IMCR_MUX_MODE_QSPI_A_DQS,
 	       SIUL2_IMCRn(SIUL2_PK7_IMCR_QSPI_A_DQS));
-	#else
+#else
 
 	/* QSPI0_B_CS0 - W25 - PK12 */
 	writel(SIUL2_PK12_MSCR_MUX_MODE_QSPI_B_CS0 |
-	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK12_MSCR));
+	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE,
+	       SIUL2_MSCRn(SIUL2_PK12_MSCR));
 	/* QSPI0_B_SCK - V24 - PK13 */
 	writel(SIUL2_PK13_MSCR_MUX_MODE_QSPI_B_SCK |
-	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE, SIUL2_MSCRn(SIUL2_PK13_MSCR));
+	       SIUL2_PORT_MSCR_CTRL_QSPI_CLK_BASE,
+	       SIUL2_MSCRn(SIUL2_PK13_MSCR));
 
-	#endif
+#endif
 
 	/* note: an alternative A_DATA0_3/4_7 CTRL is 0x0028C301/0x0028C302 */
 	/* A_DATA 0-3 */
@@ -72,7 +75,7 @@ void qspi_iomux()
 	writel(SIUL2_PORT_IMCR_MUX_MODE_QSPI_A_DATA0_7,
 	       SIUL2_IMCRn(SIUL2_PK8_IMCR_QSPI_A_DATA0));
 
-	#ifdef CONFIG_S32_FLASH
+#ifdef CONFIG_S32V234_FLASH
 	/* A_DATA 4-7 */
 	/* QSPI0_A_DATA7 - R21 - PL2 */
 	writel(SIUL2_PORT_MSCR_CTRL_QSPI_A_DATA4_7,
@@ -98,7 +101,7 @@ void qspi_iomux()
 	writel(SIUL2_PORT_IMCR_MUX_MODE_QSPI_A_DATA0_7,
 	       SIUL2_IMCRn(SIUL2_PK15_IMCR_QSPI_A_DATA4));
 
-	#else
+#else
 	/* B_DATA 0-3 */
 	/* QSPI0_B_DATA7 - R21 - PL2 */
 	writel(SIUL2_PORT_MSCR_CTRL_QSPI_B_DATA0_3,
@@ -123,26 +126,13 @@ void qspi_iomux()
 	       SIUL2_MSCRn(SIUL2_PK15_MSCR));
 	writel(SIUL2_PORT_IMCR_MUX_MODE_QSPI_B_DATA0_3,
 	       SIUL2_IMCRn(SIUL2_PK15_IMCR_QSPI_B_DATA0));
-	#endif
-
-
-}				/* qspi_iomux */
-
-#ifndef CONFIG_S32_FLASH
-int do_qspinor_setup(cmd_tbl_t *cmdtp, int flag, int argc,
-			    char * const argv[])
-{
-	printf("SD/eMMC is disabled. SPI flash is active and can be used!\n");
-	qspi_iomux();
-	return 0;
-}
 #endif
+}
 
 /* qspinor setup */
-U_BOOT_CMD(
-	flsetup, 1, 1, do_qspinor_setup,
-	"setup qspi pinmuxing and qspi registers for access to flash",
-	"\n"
-	"Set up the pinmuxing and qspi registers to access the flash\n"
-	"    and disconnect from the SD/eMMC.\n"
-);
+U_BOOT_CMD(flsetup, 1, 1, do_qspinor_setup,
+	   "setup qspi pinmuxing and qspi registers for access to flash",
+	   "\n"
+	   "Set up the pinmuxing and qspi registers to access the flash\n"
+	   "    and disconnect from the SD/eMMC.\n"
+	  );

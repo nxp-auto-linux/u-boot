@@ -31,19 +31,10 @@ void setup_iomux_enet(void);
 
 #ifdef CONFIG_FSL_DCU_FB
 void setup_iomux_dcu(void);
-#else
-static inline void setup_iomux_dcu(void)
-{
-}
 #endif
 
 #ifdef CONFIG_DCU_QOS_FIX
 int board_dcu_qos(void);
-#else
-static inline int board_dcu_qos(void)
-{
-	return 0;
-}
 #endif
 
 static inline bool is_addr_in_sram(uintptr_t addr)
