@@ -1,15 +1,16 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_S32_SIUL_H__
 #define __ARCH_ARM_MACH_S32_SIUL_H__
 
 #include <asm/io.h>
+#include <asm/arch/imx-regs.h>
 #include "ddr.h"
 
 #if defined(CONFIG_S32_GEN1) && !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
@@ -88,5 +89,14 @@ static inline int get_siul2_midr2_subminor(void)
 }
 
 #endif  /* CONFIG_S32_GEN1 */
+
+#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+/* If SOC REV < 2, QSPI clock max frequency should be 133,33MHz. */
+static inline bool is_s32gen1_soc_rev1(void)
+{
+	return (get_siul2_midr1_major() < 1);
+}
+
+#endif
 
 #endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */

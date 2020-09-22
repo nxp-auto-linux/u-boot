@@ -194,7 +194,7 @@ void *get_base_addr(enum s32gen1_clk_source id, struct s32gen1_clk_priv *priv)
 static struct clk_ops s32gen1_clk_ops = {
 	.request = s32gen1_request,
 	.get_rate = s32gen1_get_rate,
-	.set_rate = s32gen1_set_rate,
+	.set_rate = s32gen1_plat_set_rate,
 	.set_parent = s32gen1_set_parent,
 	.enable = s32gen1_enable,
 	.disable = s32gen1_disable,

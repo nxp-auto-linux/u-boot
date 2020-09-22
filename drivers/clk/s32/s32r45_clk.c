@@ -193,3 +193,8 @@ struct s32gen1_clk *get_plat_clock(uint32_t id)
 
 	return s32r45_clocks[id];
 }
+
+ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
+{
+	return s32gen1_set_rate(c, rate);
+}

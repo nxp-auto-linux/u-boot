@@ -12,6 +12,7 @@ struct s32gen1_clk *get_clock(uint32_t id);
 struct s32gen1_clk *get_plat_clock(uint32_t id);
 struct s32gen1_clk *get_plat_cc_clock(uint32_t id);
 ulong s32gen1_set_rate(struct clk *c, ulong rate);
+ulong s32gen1_plat_set_rate(struct clk *c, ulong rate);
 int s32gen1_set_parent(struct clk *c, struct clk *p);
 int s32gen1_enable(struct clk *c);
 
