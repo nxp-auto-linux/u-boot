@@ -13,7 +13,7 @@
  * and/or other materials provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its
- * contributors may be used to endorse or promote products derived from this
+ * contributors may be used to endorse or promote products derived from this 
  * software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -60,22 +60,22 @@ struct regconf phy_cfg[] = {
 	{0x40381618, 0x00000212},
 	{0x40381608, 0x00000061},
 	{0x40381530, 0x00000007},
-	{0x403945a0, 0x00000e00},
-	{0x403945a4, 0x00000e00},
-	{0x403965a0, 0x00000e00},
-	{0x403965a4, 0x00000e00},
-	{0x403985a0, 0x00000e00},
-	{0x403985a4, 0x00000e00},
-	{0x4039a5a0, 0x00000e00},
-	{0x4039a5a4, 0x00000e00},
-	{0x4039454c, 0x0000ffff},
-	{0x40394550, 0x0000ffff},
-	{0x4039654c, 0x0000ffff},
-	{0x40396550, 0x0000ffff},
-	{0x4039854c, 0x0000ffff},
-	{0x40398550, 0x0000ffff},
-	{0x4039a54c, 0x0000ffff},
-	{0x4039a550, 0x0000ffff},
+	{0x403945a0, 0x00000600},
+	{0x403945a4, 0x00000600},
+	{0x403965a0, 0x00000600},
+	{0x403965a4, 0x00000600},
+	{0x403985a0, 0x00000600},
+	{0x403985a4, 0x00000600},
+	{0x4039a5a0, 0x00000600},
+	{0x4039a5a4, 0x00000600},
+	{0x4039454c, 0x00000e3f},
+	{0x40394550, 0x00000e3f},
+	{0x4039654c, 0x00000e3f},
+	{0x40396550, 0x00000e3f},
+	{0x4039854c, 0x00000e3f},
+	{0x40398550, 0x00000e3f},
+	{0x4039a54c, 0x00000e3f},
+	{0x4039a550, 0x00000e3f},
 	{0x403803e0, 0x0000007f},
 	{0x403823e0, 0x0000007f},
 	{0x403843e0, 0x0000007f},
