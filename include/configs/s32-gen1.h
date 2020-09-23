@@ -53,8 +53,14 @@
 
 #if defined(CONFIG_TARGET_S32G274AEVB)
 #define FDT_FILE fsl-s32g274a-evb.dtb
+
 #elif defined(CONFIG_TARGET_S32G274ARDB)
-#define FDT_FILE fsl-s32g274a-rdb.dtb
+#ifdef CONFIG_S32G274ARDB
+#define FDT_FILE fsl-s32g274a-revb.dtb
+#else
+#define FDT_FILE fsl-s32g274a-rdb2.dtb
+#endif /* CONFIG_TARGET_S32G274ARDB */
+
 #elif defined(CONFIG_TARGET_S32R45EVB)
 #define FDT_FILE fsl-s32r45-evb.dtb
 #endif
