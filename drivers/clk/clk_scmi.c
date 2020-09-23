@@ -101,8 +101,8 @@ static ulong scmi_clk_get_rate(struct clk *clk)
 }
 
 struct scmi_clk_rate_set_in {
-	u32 clock_id;
 	u32 flags;
+	u32 clock_id;
 	u32 rate_lsb;
 	u32 rate_msb;
 };
