@@ -161,15 +161,15 @@
 		assigned-clock-parents =
 			<&clks S32G274A_CLK_ACCEL_PLL_PHI1>,
 			/* PFE MAC0 */
-			<&clks S32G274A_CLK_PFE_MAC0_EXT_REF>,
+			<&pfe_mac0_ext_ref 0>,
 			<&clks S32G274A_CLK_SERDES1_LANE0_CDR>,
 			<&clks S32G274A_CLK_SERDES1_LANE0_TX>,
 			/* PFE MAC1 */
-			<&clks S32G274A_CLK_PFE_MAC1_EXT_REF>,
+			<&pfe_mac1_ext_ref 0>,
 			<&clks S32G274A_CLK_SERDES1_LANE1_CDR>,
 			<&clks S32G274A_CLK_SERDES1_LANE1_TX>,
 			/* PFE MAC2 */
-			<&clks S32G274A_CLK_PFE_MAC2_EXT_REF>,
+			<&pfe_mac2_ext_ref 0>,
 			<&clks S32G274A_CLK_SERDES0_LANE1_CDR>,
 			<&clks S32G274A_CLK_SERDES0_LANE1_TX>;
 		assigned-clock-rates =
