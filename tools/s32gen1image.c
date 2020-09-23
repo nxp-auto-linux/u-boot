@@ -124,7 +124,7 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	.mcr      = 0x030f00cc,
 	.flshcr   = 0x00010303,
 	.bufgencr = 0x00000000,
-	.dllcr    = 0x8280000c,
+	.dllcr    = 0xc280000c,
 	.paritycr = 0x00000000,
 	.sfacr    = 0x00020000,
 	.smpr     = 0x44000000,
@@ -136,10 +136,10 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	.ipcr = 0x00000000,
 	.tbdr = 0x00000000,
 	.dll_bypass_en   = 0x00,
-	.dll_slv_upd_en  = 0x01,
+	.dll_slv_upd_en  = 0x00,
 	.dll_auto_upd_en = 0x01,
 	.ipcr_trigger_en = 0x00,
-	.sflash_clk_freq = 133,
+	.sflash_clk_freq = 200,
 	.reserved = {0x00, 0x00, 0x00},
 	/* Macronix read - 8DTRD */
 	.command_seq = {0x471147ee,
@@ -175,6 +175,15 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	},
 };
 
+#ifdef CONFIG_S32G274ARDB
+static void adjust_qspi_params(struct qspi_params *qspi_params)
+{
+	qspi_params->dllcr = 0x8280000c;
+	qspi_params->dll_slv_upd_en = 0x01;
+	qspi_params->sflash_clk_freq = 133;
+}
+#endif
+
 static struct qspi_params *get_qspi_params(struct program_image *image)
 {
 	return (struct qspi_params *)image->qspi_params.data;
@@ -183,6 +192,9 @@ static struct qspi_params *get_qspi_params(struct program_image *image)
 static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 {
 	memcpy(qspi_params, &s32g2xx_qspi_conf, sizeof(*qspi_params));
+#ifdef CONFIG_S32G274ARDB
+	adjust_qspi_params(qspi_params);
+#endif
 }
 #endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 #endif
