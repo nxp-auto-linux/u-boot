@@ -5,3 +5,18 @@
 
 /dts-v1/;
 #include "fsl-s32g274ardb.dtsi"
+
+/* PMIC */
+&i2c4 {
+	pf5020_a {
+		compatible = "nxp,pf5020";
+		reg = <0x9>;
+		status = "okay";
+	};
+
+	pf5020_b {
+		compatible = "nxp,pf5020";
+		reg = <0x8>;
+		status = "okay";
+	};
+};
