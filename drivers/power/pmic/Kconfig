@@ -311,3 +311,10 @@ config DM_PMIC_VR5510
 	This config enables implementation of driver-model pmic uclass features
 	for PMIC VR5510. The driver implements read/write operations.
 
+config DM_PMIC_PF5020
+	bool "Enable Driver Model for PMIC PF5020"
+	depends on DM_PMIC
+	help
+	This config enables implementation of driver-model pmic uclass features
+	for PMIC PF5020. The driver implements read/write operations.
+
