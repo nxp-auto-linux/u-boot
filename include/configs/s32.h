@@ -179,6 +179,13 @@
 #error "FDT and Ramdisk would overlap in flash memory"
 #endif
 
+#if defined(CONFIG_S32_GEN1)
+#define ENV_FDTCONTROLADDR \
+			"fdtcontroladdr=" __stringify(CONFIG_DTB_SRAM_ADDR) "\0"
+#else
+#define ENV_FDTCONTROLADDR ""
+#endif
+
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_ARCH_TIMER)
 /* COUNTER_FREQUENCY value will be used at startup but will be replaced
@@ -384,6 +391,7 @@
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
 	DDR_LIMIT0 \
 	"ipaddr=" S32_DEFAULT_IP \
+	ENV_FDTCONTROLADDR \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \

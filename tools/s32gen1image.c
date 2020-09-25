@@ -312,7 +312,11 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		code_length += pre_code_padding;
 		app_code->code_length = code_length;
 
-		app_code->ram_start_pointer = CONFIG_SYS_TEXT_BASE
+#if CONFIG_SYS_TEXT_BASE < CONFIG_DTB_SRAM_ADDR
+#error "mkimage: CONFIG_DTB_SRAM_ADDR is higher than CONFIG_SYS_TEXT_BASE"
+#endif
+
+		app_code->ram_start_pointer = CONFIG_DTB_SRAM_ADDR
 							- pre_code_padding;
 		app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
 	} else {

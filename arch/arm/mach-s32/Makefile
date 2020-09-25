@@ -8,9 +8,18 @@
 MKIMAGEFLAGS_u-boot.s32 = -T $(CONFIG_MKIMAGE_T)
 u-boot.s32: MKIMAGEOUTPUT = u-boot.s32.log
 u-boot.s32: u-boot.bin FORCE
-	$(call if_changed,mkimage)
+	$(eval DTB_RSRVD_SIZE = $(shell \
+		echo $$((${CONFIG_SYS_TEXT_BASE} - ${CONFIG_DTB_SRAM_ADDR}))))
+	$(eval DTB_SIZE = $(shell stat --printf="%s" u-boot.dtb))
 
-MKIMAGEFLAGS_u-boot-dtb.s32 = -T $(CONFIG_MKIMAGE_T)
-u-boot-dtb.s32: MKIMAGEOUTPUT = u-boot-dtb.s32.log
-u-boot-dtb.s32: u-boot-dtb.bin FORCE
+	@if [ ${DTB_SIZE} -gt ${DTB_RSRVD_SIZE} ]; then \
+		echo "DTB exceeds the reserved space of" \
+		"${DTB_RSRVD_SIZE} bytes between CONFIG_SYS_TEXT_BASE" \
+		"and CONFIG_DTB_SRAM_ADDR"; \
+		false; \
+	fi
+
+	@dd if=u-boot.dtb of=u-boot-with-dtb.bin bs=${DTB_RSRVD_SIZE} count=1
+	@dd if=u-boot.bin of=u-boot-with-dtb.bin bs=${DTB_RSRVD_SIZE} seek=1
+	@mv u-boot-with-dtb.bin u-boot.bin
 	$(call if_changed,mkimage)

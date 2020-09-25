@@ -26,6 +26,7 @@ config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
 	default y
 	select CLK
+	select OF_SEPARATE
 	help
 	  Platform Selection
 
@@ -61,6 +62,10 @@ config SYS_ERRATUM_ERR050543
 config UBOOT_SRAM_FOOTPRINT
 	hex
 	default 0x200000
+
+config DTB_SRAM_ADDR
+	hex "SRAM address at which the dtb will be found"
+	default 0x34090000
 
 config PHY_RGMII_DIRECT_CONNECTED
 	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"

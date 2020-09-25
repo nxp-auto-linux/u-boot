@@ -1176,7 +1176,7 @@ endif
 %.vyb: %.imx
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
-%.s32: %.bin
+%.s32: %.bin u-boot.dtb
 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32 $@
 
 quiet_cmd_copy = COPY    $@
