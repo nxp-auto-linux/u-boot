@@ -1,0 +1,26 @@
+NXP PF5020 pmic
+
+This file describes the binding info for the PMIC driver:
+- drivers/power/pmic/pf5020.c
+
+Required properties:
+- compatible: "nxp,pf5020"
+- reg:
+	* 0x8 - pf5020 unit b
+	* 0x9 - pf5020 unit a
+
+With those two properties, the pmic device can be used for read/write only.
+
+Example:
+
+pf5020_a {
+	compatible = "nxp,pf5020";
+	reg = <0x9>;
+	status = "okay";
+};
+
+pf5020_b {
+	compatible = "nxp,pf5020";
+	reg = <0x8>;
+	status = "okay";
+};
