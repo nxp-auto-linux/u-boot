@@ -91,6 +91,29 @@ endchoice
 
 endif
 
+if TARGET_S32G274ARDB
+
+choice
+	prompt "S32V234G274ARDB Revision"
+	default S32G274ARDB2
+	help
+	  S32V234G274ARDB Revision.
+	  Default selection is S32G274ARDB2
+
+config S32G274ARDB
+	bool "S32G274ARDB (Rev B)"
+	help
+	  S32G274ARDB Revision B SCH-46384.
+
+config S32G274ARDB2
+	bool "S32G274ARDB2 (Rev C)"
+	help
+	  S32G274ARDB Revision C SCH-47440.
+
+endchoice
+
+endif
+
 choice
 	prompt "Select DDR type"
 	default S32_LPDDR2

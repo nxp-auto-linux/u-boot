@@ -1,0 +1,85 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright 2019-2020 NXP
+ */
+
+/dts-v1/;
+#include "fsl-s32g274a.dtsi"
+
+/ {
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x80000000>;
+	};
+
+	memory@880000000 {
+		device_type = "memory";
+		reg = <0x8 0x80000000 0 0x80000000>;
+	};
+
+	sram@34000000 {
+		device_type = "memory";
+		reg = <0 0x34000000 0 0x800000>;
+	};
+};
+
+&usdhc0 {
+	status = "okay";
+};
+
+&dspi1 {
+	status = "okay";
+};
+
+&dspi5 {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+	phy-mode = "rgmii";
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
+};
+
+&pfe {
+	status = "okay";
+};
+
+/* IO Expander  */
+&i2c0 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* PCIe X1 Connector  */
+&i2c1 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* FLEXRAY_LIN  */
+&i2c2 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+/* PMIC */
+&i2c4 {
+	clock-frequency=<100000>;
+	status = "okay";
+
+	vr5510 {
+		compatible = "fsl,vr5510";
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	vr5510_fsu {
+		compatible = "fsl,vr5510";
+		reg = <0x21>;
+		status = "okay";
+	};
+};
