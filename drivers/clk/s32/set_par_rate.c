@@ -263,15 +263,9 @@ int s32gen1_set_parent(struct clk *c, struct clk *p)
 		return -EINVAL;
 
 	clk = get_clock(c->id);
-	parent = get_clock(p->id);
 
 	if (!clk) {
 		pr_err("Invalid clock\n");
-		return -EINVAL;
-	}
-
-	if (!parent) {
-		pr_err("Invalid parent\n");
 		return -EINVAL;
 	}
 
@@ -281,6 +275,12 @@ int s32gen1_set_parent(struct clk *c, struct clk *p)
 		if (ret)
 			return ret;
 		return 0;
+	}
+
+	parent = get_clock(p->id);
+	if (!parent) {
+		pr_err("Invalid parent\n");
+		return -EINVAL;
 	}
 
 	if (!is_mux(clk)) {

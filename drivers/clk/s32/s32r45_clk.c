@@ -148,17 +148,17 @@ static struct s32gen1_clk gmac1_rx_clk =
 		S32GEN1_FREQ_MODULE_CLK(cgm2_mux4_clk, 2500000, 125 * MHZ);
 
 static struct s32gen1_clk *s32r45_cc_clocks[] = {
-	[S32GEN1_CLK_PER] = &per_clk,
-	[S32GEN1_CLK_CAN_PE] = &can_pe_clk,
-	[S32R45_CLK_ACCEL_PLL_PHI0] = &accel_pll_phi0_clk,
-	[S32GEN1_CLK_ARM_PLL_DFS4] = &arm_dfs4_clk,
-	[S32R45_CLK_ARM_PLL_DFS4_2] = &arm_dfs4_2_clk,
-	[S32R45_CLK_GMAC1_EXT_TX] = &gmac1_ext_tx_clk,
-	[S32R45_CLK_GMAC1_EXT_RX] = &gmac1_ext_rx_clk,
-	[S32R45_CLK_GMAC1_EXT_REF] = &gmac1_ext_ref_clk,
-	[S32R45_CLK_SERDES1_LANE1_TX] = &serdes1_lane1_tx_clk,
-	[S32R45_CLK_SERDES1_LANE1_CDR] = &serdes1_lane1_cdr_clk,
-	[S32R45_CLK_GMAC1_REF_DIV] = &gmac1_ref_div_clk,
+	[CC_ARR_CLK(S32GEN1_CLK_PER)] = &per_clk,
+	[CC_ARR_CLK(S32GEN1_CLK_CAN_PE)] = &can_pe_clk,
+	[CC_ARR_CLK(S32R45_CLK_ACCEL_PLL_PHI0)] = &accel_pll_phi0_clk,
+	[CC_ARR_CLK(S32GEN1_CLK_ARM_PLL_DFS4)] = &arm_dfs4_clk,
+	[CC_ARR_CLK(S32R45_CLK_ARM_PLL_DFS4_2)] = &arm_dfs4_2_clk,
+	[CC_ARR_CLK(S32R45_CLK_GMAC1_EXT_TX)] = &gmac1_ext_tx_clk,
+	[CC_ARR_CLK(S32R45_CLK_GMAC1_EXT_RX)] = &gmac1_ext_rx_clk,
+	[CC_ARR_CLK(S32R45_CLK_GMAC1_EXT_REF)] = &gmac1_ext_ref_clk,
+	[CC_ARR_CLK(S32R45_CLK_SERDES1_LANE1_TX)] = &serdes1_lane1_tx_clk,
+	[CC_ARR_CLK(S32R45_CLK_SERDES1_LANE1_CDR)] = &serdes1_lane1_cdr_clk,
+	[CC_ARR_CLK(S32R45_CLK_GMAC1_REF_DIV)] = &gmac1_ref_div_clk,
 };
 
 static struct s32gen1_clk *s32r45_clocks[] = {
@@ -176,6 +176,8 @@ static struct s32gen1_clk *s32r45_clocks[] = {
 
 struct s32gen1_clk *get_plat_cc_clock(uint32_t id)
 {
+	id -= S32GEN1_CLK_ID_BASE;
+
 	if (id >= ARRAY_SIZE(s32r45_cc_clocks))
 		return NULL;
 
@@ -184,10 +186,10 @@ struct s32gen1_clk *get_plat_cc_clock(uint32_t id)
 
 struct s32gen1_clk *get_plat_clock(uint32_t id)
 {
-	if (id < S32GEN1_PLAT_CLK_OFFSET)
+	if (id < S32GEN1_PLAT_CLK_ID_BASE)
 		return NULL;
 
-	id -= S32GEN1_PLAT_CLK_OFFSET;
+	id -= S32GEN1_PLAT_CLK_ID_BASE;
 
 	if (id >= ARRAY_SIZE(s32r45_clocks))
 		return NULL;

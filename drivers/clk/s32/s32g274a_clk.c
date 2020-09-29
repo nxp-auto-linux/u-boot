@@ -280,32 +280,34 @@ static struct s32gen1_clk *s32g274a_clocks[] = {
 };
 
 static struct s32gen1_clk *s32g274a_cc_clocks[] = {
-	[S32GEN1_CLK_PER] = &per_clk,
-	[S32GEN1_CLK_CAN_PE] = &can_pe_clk,
-	[S32G274A_CLK_ACCEL_PLL_PHI0] = &accel_pll_phi0_clk,
-	[S32G274A_CLK_ACCEL_PLL_PHI1] = &accel_pll_phi1_clk,
-	[S32G274A_CLK_SERDES0_LANE1_CDR] = &serdes0_lane1_cdr_clk,
-	[S32G274A_CLK_SERDES0_LANE1_TX] = &serdes0_lane1_tx_clk,
-	[S32G274A_CLK_PFE_MAC0_EXT_TX] = &pfe_mac0_ext_tx_clk,
-	[S32G274A_CLK_PFE_MAC0_EXT_RX] = &pfe_mac0_ext_rx_clk,
-	[S32G274A_CLK_PFE_MAC0_EXT_REF] = &pfe_mac0_ext_ref_clk,
-	[S32G274A_CLK_PFE_MAC1_EXT_TX] = &pfe_mac1_ext_tx_clk,
-	[S32G274A_CLK_PFE_MAC1_EXT_RX] = &pfe_mac1_ext_rx_clk,
-	[S32G274A_CLK_PFE_MAC1_EXT_REF] = &pfe_mac1_ext_ref_clk,
-	[S32G274A_CLK_PFE_MAC2_EXT_TX] = &pfe_mac2_ext_tx_clk,
-	[S32G274A_CLK_PFE_MAC2_EXT_RX] = &pfe_mac2_ext_rx_clk,
-	[S32G274A_CLK_PFE_MAC2_EXT_REF] = &pfe_mac2_ext_ref_clk,
-	[S32G274A_CLK_SERDES1_LANE0_TX] = &serdes1_lane0_ext_tx_clk,
-	[S32G274A_CLK_SERDES1_LANE0_CDR] = &serdes1_lane0_cdr_clk,
-	[S32G274A_CLK_PFE_MAC0_REF_DIV] = &pfe_mac0_ref_div_clk,
-	[S32G274A_CLK_PFE_MAC1_REF_DIV] = &pfe_mac1_ref_div_clk,
-	[S32G274A_CLK_PFE_MAC2_REF_DIV] = &pfe_mac2_ref_div_clk,
-	[S32G274A_CLK_SERDES1_LANE1_TX] = &serdes1_lane1_tx_clk,
-	[S32G274A_CLK_SERDES1_LANE1_CDR] = &serdes1_lane1_cdr_clk,
+	[CC_ARR_CLK(S32GEN1_CLK_PER)] = &per_clk,
+	[CC_ARR_CLK(S32GEN1_CLK_CAN_PE)] = &can_pe_clk,
+	[CC_ARR_CLK(S32G274A_CLK_ACCEL_PLL_PHI0)] = &accel_pll_phi0_clk,
+	[CC_ARR_CLK(S32G274A_CLK_ACCEL_PLL_PHI1)] = &accel_pll_phi1_clk,
+	[CC_ARR_CLK(S32G274A_CLK_SERDES0_LANE1_CDR)] = &serdes0_lane1_cdr_clk,
+	[CC_ARR_CLK(S32G274A_CLK_SERDES0_LANE1_TX)] = &serdes0_lane1_tx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC0_EXT_TX)] = &pfe_mac0_ext_tx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC0_EXT_RX)] = &pfe_mac0_ext_rx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC0_EXT_REF)] = &pfe_mac0_ext_ref_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC1_EXT_TX)] = &pfe_mac1_ext_tx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC1_EXT_RX)] = &pfe_mac1_ext_rx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC1_EXT_REF)] = &pfe_mac1_ext_ref_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC2_EXT_TX)] = &pfe_mac2_ext_tx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC2_EXT_RX)] = &pfe_mac2_ext_rx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC2_EXT_REF)] = &pfe_mac2_ext_ref_clk,
+	[CC_ARR_CLK(S32G274A_CLK_SERDES1_LANE0_TX)] = &serdes1_lane0_ext_tx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_SERDES1_LANE0_CDR)] = &serdes1_lane0_cdr_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC0_REF_DIV)] = &pfe_mac0_ref_div_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC1_REF_DIV)] = &pfe_mac1_ref_div_clk,
+	[CC_ARR_CLK(S32G274A_CLK_PFE_MAC2_REF_DIV)] = &pfe_mac2_ref_div_clk,
+	[CC_ARR_CLK(S32G274A_CLK_SERDES1_LANE1_TX)] = &serdes1_lane1_tx_clk,
+	[CC_ARR_CLK(S32G274A_CLK_SERDES1_LANE1_CDR)] = &serdes1_lane1_cdr_clk,
 };
 
 struct s32gen1_clk *get_plat_cc_clock(uint32_t id)
 {
+	id = s32gen1_platclk2mux(id);
+
 	if (id >= ARRAY_SIZE(s32g274a_cc_clocks))
 		return NULL;
 
@@ -314,10 +316,10 @@ struct s32gen1_clk *get_plat_cc_clock(uint32_t id)
 
 struct s32gen1_clk *get_plat_clock(uint32_t id)
 {
-	if (id < S32GEN1_PLAT_CLK_OFFSET)
+	if (id < S32GEN1_PLAT_CLK_ID_BASE)
 		return NULL;
 
-	id -= S32GEN1_PLAT_CLK_OFFSET;
+	id -= S32GEN1_PLAT_CLK_ID_BASE;
 
 	if (id >= ARRAY_SIZE(s32g274a_clocks))
 		return NULL;

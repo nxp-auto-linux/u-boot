@@ -2,17 +2,26 @@
 /*
  * Copyright 2020 NXP
  */
+#include <dt-bindings/clock/s32gen1-clock.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
 #include <linux/printk.h>
 #include <s32gen1_clk_funcs.h>
 #include <s32gen1_scmi_clk.h>
+
+static bool is_scmi_clk(uint32_t id)
+{
+	if (id >= S32GEN1_SCMI_CLK_BASE_ID && id < S32GEN1_CLK_ID_BASE)
+		return true;
+
+	return false;
+}
 
 int s32gen1_scmi_request(struct clk *clk)
 {
 	int ret;
 	u32 clk_id;
 
-	if (clk->id >= S32GEN1_SCMI_CLK_BASE_ID) {
+	if (is_scmi_clk(clk->id)) {
 		ret = cc_scmi_id2clk(clk->id, &clk_id);
 		if (ret) {
 			pr_err("Clock with ID %ld isn't covered by this driver\n",
@@ -24,6 +33,8 @@ int s32gen1_scmi_request(struct clk *clk)
 			return cc_compound_clk_get(clk);
 
 		clk->id = clk_id;
+	} else {
+		clk_id = clk->id;
 	}
 
 	if (!get_clock(clk_id)) {
@@ -39,7 +50,7 @@ ulong s32gen1_scmi_get_rate(struct clk *clk)
 	int ret;
 	u32 clk_id;
 
-	if (clk->id >= S32GEN1_SCMI_CLK_BASE_ID) {
+	if (is_scmi_clk(clk->id)) {
 		ret = cc_scmi_id2clk(clk->id, &clk_id);
 		if (ret) {
 			pr_err("Clock with ID %ld isn't covered by this driver\n",
@@ -61,7 +72,7 @@ ulong s32gen1_scmi_set_rate(struct clk *clk, ulong rate)
 	int ret;
 	u32 clk_id;
 
-	if (clk->id >= S32GEN1_SCMI_CLK_BASE_ID) {
+	if (is_scmi_clk(clk->id)) {
 		ret = cc_scmi_id2clk(clk->id, &clk_id);
 		if (ret) {
 			pr_err("Clock with ID %ld isn't covered by this driver\n",
@@ -80,7 +91,7 @@ ulong s32gen1_scmi_set_rate(struct clk *clk, ulong rate)
 
 int s32gen1_scmi_set_parent(struct clk *clk, struct clk *parent)
 {
-	if (clk->id >= S32GEN1_SCMI_CLK_BASE_ID) {
+	if (is_scmi_clk(clk->id)) {
 		pr_err("Is not allowed to set parents for SCMI clocks\n");
 		return -EINVAL;
 	}
@@ -93,7 +104,7 @@ int s32gen1_scmi_enable(struct clk *clk)
 	int ret;
 	u32 clk_id;
 
-	if (clk->id >= S32GEN1_SCMI_CLK_BASE_ID) {
+	if (is_scmi_clk(clk->id)) {
 		ret = cc_scmi_id2clk(clk->id, &clk_id);
 		if (ret) {
 			pr_err("Clock with ID %ld isn't covered by this driver\n",

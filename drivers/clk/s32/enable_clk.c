@@ -185,11 +185,19 @@ static int enable_part_block(struct s32gen1_clk_obj *module,
 	return enable_module(block->parent, priv);
 }
 
+uint32_t s32gen1_platclk2mux(uint32_t clk_id)
+{
+	return clk_id - S32GEN1_CLK_ID_BASE;
+}
+
 static int cgm_mux_clk_config(void *cgm_addr, u32 mux, u32 source)
 {
 	u32 css, csc;
 
 	css = readl(CGM_MUXn_CSS(cgm_addr, mux));
+
+	/* Platform ID translation */
+	source = s32gen1_platclk2mux(source);
 
 	/* Already configured */
 	if (MC_CGM_MUXn_CSS_SELSTAT(css) == source &&
@@ -252,10 +260,17 @@ static int enable_cgm_mux(struct s32gen1_mux *mux,
 static int enable_mux(struct s32gen1_clk_obj *module,
 		      struct s32gen1_clk_priv *priv)
 {
+	int ret;
 	struct s32gen1_mux *mux = obj2mux(module);
 	struct s32gen1_clk *clk = get_clock(mux->source_id);
 
-	int ret = enable_module(&clk->desc, priv);
+	if (!clk) {
+		pr_err("Invalid parent (%d) for mux %d\n",
+		       mux->source_id, mux->index);
+		return -EINVAL;
+	}
+
+	ret = enable_module(&clk->desc, priv);
 
 	if (ret)
 		return ret;

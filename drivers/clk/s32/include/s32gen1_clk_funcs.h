@@ -24,5 +24,6 @@ void *get_base_addr(enum s32gen1_clk_source id, struct s32gen1_clk_priv *priv);
 
 int pllclk2clk(u32 pll_clk_id, u32 *clk_id);
 int get_pll_mfi_mfn(ulong pll_vco, ulong ref_freq, u32 *mfi, u32 *mfn);
+uint32_t s32gen1_platclk2mux(uint32_t clk_id);
 
 #endif /* S32GEN1_CLK_FUNCS_H */
