@@ -63,8 +63,8 @@
 					 ((mux) * 0x40))
 #define MC_CGM_MUXn_DCm_DIV(val)	(MC_CGM_MUXn_DCm_DIV_MASK & ((val) \
 					 << MC_CGM_MUXn_DCm_DIV_OFFSET))
-#define MC_CGM_MUXn_DCm_DIV_VAL(val)	(MC_CGM_MUXn_DCm_DIV_MASK & ((val) \
-					 >> MC_CGM_MUXn_DCm_DIV_OFFSET))
+#define MC_CGM_MUXn_DCm_DIV_VAL(val)	((MC_CGM_MUXn_DCm_DIV_MASK & (val)) \
+					 >> MC_CGM_MUXn_DCm_DIV_OFFSET)
 #define MC_CGM_MUXn_DCm_DIV_MASK	(0x00FF0000)
 #define MC_CGM_MUXn_DCm_DIV_OFFSET	(16)
 #define MC_CGM_MUXn_DCm_DE		(1 << 31)
