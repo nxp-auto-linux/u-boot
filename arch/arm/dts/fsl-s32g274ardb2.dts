@@ -26,3 +26,25 @@
 		status = "okay";
 	};
 };
+
+&gmac0 {
+    status = "okay";
+    phy-mode = "rgmii";
+    /* Connected to KSZ9031 MDIO_A */
+    phy-handle = <&mdio_a_phy1>;
+};
+
+&gmac0_mdio {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    /* KSZ9031 GMAC */
+    mdio_a_phy1: ethernet-phy@1 {
+        max-speed = <1000>;
+        reg = <1>;
+    };
+    /* ARQ107 */
+    mdio_a_phy3: ethernet-phy@3 {
+        compatible = "ethernet-phy-ieee802.3-c45";
+        reg = <3>;
+    };
+};
