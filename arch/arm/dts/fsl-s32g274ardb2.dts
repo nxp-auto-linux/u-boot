@@ -19,4 +19,10 @@
 		reg = <0x8>;
 		status = "okay";
 	};
+
+	fs5600 {
+		compatible = "nxp,fs5600";
+		reg = <0x18>;
+		status = "okay";
+	};
 };
