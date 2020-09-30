@@ -1,0 +1,17 @@
+NXP FS5600 pmic
+
+This file describes the binding info for the PMIC driver:
+- drivers/power/pmic/fs5600.c
+
+Required properties:
+- compatible: "nxp,fs5600"
+- reg: 0x18
+
+With those two properties, the pmic device can be used for read/write only.
+
+Example:
+fs5600 {
+	compatible = "nxp,fs5600";
+	reg = <0x18>;
+	status = "okay";
+};
