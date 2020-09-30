@@ -129,7 +129,7 @@ phy_interface_t s32ccgmac_cfg_get_interface(void)
 	return mac_intf;
 }
 
-static phy_interface_t eqos_get_interface_s32cc(struct udevice *dev)
+phy_interface_t eqos_get_interface_s32cc(struct udevice *dev)
 {
 	return s32ccgmac_cfg_get_interface();
 }

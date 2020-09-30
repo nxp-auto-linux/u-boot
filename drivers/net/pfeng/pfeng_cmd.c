@@ -224,218 +224,157 @@ static void switch_pfe0_clock(int intf)
 	writel(csel, S32G_MAIN_GENCTRL1);
 }
 
-static int set_mac0_rx_tx_clk(struct udevice *pfe_dev, ulong mux4, ulong mux1)
+static void set_clock_freq(const char *tx, const char *rx,
+			   ulong tx_freq, ulong rx_freq,
+			   struct udevice *pfe_dev)
 {
-	int ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX4, mux4);
+	ulong rate;
 
-	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux4 source\n");
+	rate = s32gen1_set_dev_clk_rate(tx, pfe_dev, tx_freq);
+	if (rate != tx_freq)
+		dev_err(pfe_dev, "Failed to set the frequency of %s\n", tx);
 
-	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX1, mux1);
-	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux1 source\n");
-
-	return 0;
+	rate = s32gen1_set_dev_clk_rate(rx, pfe_dev, rx_freq);
+	if (rate != rx_freq)
+		dev_err(pfe_dev, "Failed to set the frequency of %s\n", rx);
 }
 
-static int set_mac1_rx_tx_clk(struct udevice *pfe_dev, ulong mux5, ulong mux2)
+static void enable_clocks(const char *tx, const char *rx,
+			  struct udevice *pfe_dev)
 {
 	int ret;
 
-	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX5, mux5);
+	ret = s32gen1_enable_dev_clk(rx, pfe_dev);
 	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux5 source\n");
+		dev_err(pfe_dev, "Failed to enable %s clock\n", rx);
 
-	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX2, mux2);
+	ret = s32gen1_enable_dev_clk(tx, pfe_dev);
 	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux2 source\n");
-
-	return 0;
-}
-
-static int set_mac2_rx_tx_clk(struct udevice *pfe_dev, ulong mux6, ulong mux3)
-{
-	int ret;
-
-	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX6, mux6);
-	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux6 source\n");
-
-	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX3, mux3);
-	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux2 source\n");
-
-	return 0;
+		dev_err(pfe_dev, "Failed to enable %s clock\n", tx);
 }
 
 static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
 {
-	int ret;
+	const char *rx, *tx;
+
+	rx = NULL;
+	tx = NULL;
 
 	switch (intf0) {
 	case PHY_INTERFACE_MODE_SGMII:
 		switch_pfe0_clock(PHY_INTERFACE_MODE_SGMII);
-
-		ret = set_mac0_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_SERDES1_LANE0_CDR,
-					 S32G274A_CLK_SERDES1_LANE0_TX);
+		rx = "mac0_rx_sgmii";
+		tx = "mac0_tx_sgmii";
 		break;
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
-		ret = set_mac0_rx_tx_clk(pfe_dev, S32G274A_CLK_PFE_MAC0_EXT_RX,
-					 S32GEN1_CLK_PERIPH_PLL_PHI5);
+		rx = "mac0_rx_rgmii";
+		tx = "mac0_tx_rgmii";
 #endif
 #endif
 		break;
 	case PHY_INTERFACE_MODE_RMII:
-		ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX7,
-						S32G274A_CLK_PFE_MAC0_EXT_REF);
-		if (ret)
-			dev_err(pfe_dev, "Failed to set cgm2_mux7 source\n");
-
-		ret = s32gen1_enable_dev_clk("pfe_mac0_ref_div", pfe_dev);
-		if (ret)
-			dev_err(pfe_dev, "Failed to enable pfe_mac0_ref_div clock\n");
-
-		ret = set_mac0_rx_tx_clk(pfe_dev, S32G274A_CLK_PFE_MAC0_EXT_RX,
-					 S32GEN1_CLK_PERIPH_PLL_PHI5);
-		break;
 	case PHY_INTERFACE_MODE_MII:
-		/* TODO */
-		break;
 	case PHY_INTERFACE_MODE_NONE:
-		/* Don't set tx/rx clocks */
-		return;
 	default:
-		ret = set_mac0_rx_tx_clk(pfe_dev,
-					 S32GEN1_CLK_FIRC,
-					 S32GEN1_CLK_FIRC);
 		break;
 	}
 
-	ret = s32gen1_enable_dev_clk("pfe_mac0_rx", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_mac0_rx clock\n");
+	if (!rx || !tx) {
+		if (intf0 == PHY_INTERFACE_MODE_NONE)
+			return;
 
-	ret = s32gen1_enable_dev_clk("pfe_mac0_tx", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_mac0_tx clock\n");
+		pr_err("pfe_mac0: Invalid operation mode: %s (%d)\n",
+		       phy_string_for_interface(intf0), intf0);
+		return;
+	}
+
+	set_clock_freq(tx, rx, 125000000UL, 125000000UL, pfe_dev);
+	enable_clocks(tx, rx, pfe_dev);
 }
 
 static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
 {
-	int ret;
+	const char *rx, *tx;
+
+	rx = NULL;
+	tx = NULL;
 
 	switch (intf1) {
 	case PHY_INTERFACE_MODE_SGMII:
-		ret = set_mac1_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_SERDES1_LANE1_CDR,
-					 S32G274A_CLK_SERDES1_LANE1_TX);
+		rx = "mac1_rx_sgmii";
+		tx = "mac1_tx_sgmii";
 		break;
-
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_1_RGMII)
-		ret = set_mac1_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_PFE_MAC1_EXT_RX,
-					 S32GEN1_CLK_PERIPH_PLL_PHI5);
+		rx = "mac1_rx_rgmii";
+		tx = "mac1_tx_rgmii";
 #endif
 #endif
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
-		ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX8,
-						S32G274A_CLK_PFE_MAC1_EXT_REF);
-		if (ret)
-			dev_err(pfe_dev, "Failed to set cgm2_mux8 source\n");
-
-		ret = s32gen1_enable_dev_clk("pfe_mac1_ref_div", pfe_dev);
-		if (ret)
-			dev_err(pfe_dev, "Failed to enable pfe_mac1_ref_div clock\n");
-
-		ret = set_mac1_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_PFE_MAC1_EXT_RX,
-					 S32GEN1_CLK_PERIPH_PLL_PHI5);
-		break;
 	case PHY_INTERFACE_MODE_MII:
-		/* TODO */
-		break;
 	case PHY_INTERFACE_MODE_NONE:
-		/* Don't set tx/rx clocks */
-		return;
 	default:
-		ret = set_mac1_rx_tx_clk(pfe_dev,
-					 S32GEN1_CLK_FIRC,
-					 S32GEN1_CLK_FIRC);
 		break;
 	}
 
-	ret = s32gen1_enable_dev_clk("pfe_mac1_rx", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_mac1_rx clock\n");
 
-	ret = s32gen1_enable_dev_clk("pfe_mac1_tx", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_mac1_tx clock\n");
+	if (!rx || !tx) {
+		if (intf1 == PHY_INTERFACE_MODE_NONE)
+			return;
+
+		pr_err("pfe_mac1: Invalid operation mode: %s (%d)\n",
+		       phy_string_for_interface(intf1), intf1);
+		return;
+	}
+
+	set_clock_freq(tx, rx, 125000000UL, 125000000UL, pfe_dev);
+	enable_clocks(tx, rx, pfe_dev);
 }
 
 static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
 {
-	int ret;
+	const char *rx, *tx;
+
+	rx = NULL;
+	tx = NULL;
 
 	switch (intf2) {
 	case PHY_INTERFACE_MODE_SGMII:
-		ret = set_mac2_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_SERDES0_LANE1_CDR,
-					 S32G274A_CLK_SERDES0_LANE1_TX);
+		rx = "mac2_rx_sgmii";
+		tx = "mac2_tx_sgmii";
 		break;
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if !CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
-		ret = set_mac2_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_PFE_MAC2_EXT_RX,
-					 S32GEN1_CLK_PERIPH_PLL_PHI5);
+		rx = "mac2_rx_rgmii";
+		tx = "mac2_tx_rgmii";
 #endif
 #endif
 		break;
 	case PHY_INTERFACE_MODE_RMII:
-		ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX9,
-						S32G274A_CLK_PFE_MAC2_EXT_REF);
-		if (ret)
-			dev_err(pfe_dev, "Failed to set cgm2_mux8 source\n");
-
-		ret = s32gen1_enable_dev_clk("pfe_mac2_ref_div", pfe_dev);
-		if (ret)
-			dev_err(pfe_dev, "Failed to enable pfe_mac2_ref_div clock\n");
-
-		ret = set_mac2_rx_tx_clk(pfe_dev,
-					 S32G274A_CLK_PFE_MAC2_EXT_RX,
-					 S32GEN1_CLK_PERIPH_PLL_PHI5);
-		break;
 	case PHY_INTERFACE_MODE_MII:
-		/* TODO */
-		break;
 	case PHY_INTERFACE_MODE_NONE:
-		/* Don't set tx/rx clocks */
-		return;
 	default:
-		ret = set_mac2_rx_tx_clk(pfe_dev,
-					 S32GEN1_CLK_FIRC,
-					 S32GEN1_CLK_FIRC);
 		break;
 	}
 
-	ret = s32gen1_enable_dev_clk("pfe_mac2_rx", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_mac2_rx clock\n");
 
-	if (ret && intf2 == PHY_INTERFACE_MODE_RMII)
-		dev_err(pfe_dev, "Failed to switch PFE2 RX clock, check the external PHY\n");
+	if (!rx || !tx) {
+		if (intf2 == PHY_INTERFACE_MODE_NONE)
+			return;
 
-	ret = s32gen1_enable_dev_clk("pfe_mac2_tx", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_mac2_tx clock\n");
+		pr_err("pfe_mac2: Invalid operation mode: %s (%d)\n",
+		       phy_string_for_interface(intf2), intf2);
+		return;
+	}
+
+	set_clock_freq(tx, rx, 125000000UL, 125000000UL, pfe_dev);
+	enable_clocks(tx, rx, pfe_dev);
 }
 
 static void setup_pfe_clocks(int intf0, int intf1, int intf2,
@@ -455,12 +394,7 @@ static void setup_pfe_clocks(int intf0, int intf1, int intf2,
 		return;
 	}
 
-	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX0,
-					S32G274A_CLK_ACCEL_PLL_PHI1);
-	if (ret)
-		dev_err(pfe_dev, "Failed to set cgm2_mux0 source\n");
-
-	ret = s32gen1_enable_dev_clk("pfe_pe", pfe_dev);
+	ret = s32gen1_enable_dev_clk("pe", pfe_dev);
 	if (ret)
 		dev_err(pfe_dev, "Failed to enable pfe_pe clock\n");
 

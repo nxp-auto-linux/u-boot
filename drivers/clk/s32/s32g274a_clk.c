@@ -4,8 +4,10 @@
  */
 #include <asm/arch/siul.h>
 #include <dt-bindings/clock/s32g274a-clock.h>
+#include <dt-bindings/clock/s32gen1-scmi-clock.h>
 #include <s32gen1_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
+#include <s32gen1_scmi_clk.h>
 #include <s32gen1_shared_clks.h>
 
 #define ARR_CLK(N)	S32G274A_CLK_INDEX(N)
@@ -323,20 +325,37 @@ struct s32gen1_clk *get_plat_clock(uint32_t id)
 	return s32g274a_clocks[id];
 }
 
+static bool is_qspi1x_clk(uint32_t id)
+{
+	return id == S32GEN1_SCMI_CLK_QSPI_FLASH1X || id == S32GEN1_CLK_QSPI;
+}
+
+static bool is_qspi2x_clk(uint32_t id)
+{
+	return id == S32GEN1_SCMI_CLK_QSPI_FLASH2X || id == S32GEN1_CLK_QSPI_2X;
+}
+
+static bool is_qspi_clk(uint32_t id)
+{
+	return is_qspi1x_clk(id) || is_qspi2x_clk(id);
+}
+
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
 {
-	struct s32gen1_clk *clk;
-	ulong qspi_2x_max_rate;
+	ulong qspi_max_rate;
 
-	clk = get_clock(c->id);
-	if (!clk)
+	if (s32gen1_scmi_request(c))
 		return 0;
 
-	if (c->id == S32GEN1_CLK_QSPI_2X) {
-		qspi_2x_max_rate = S32G274A_REV1_QSPI_MAX_FREQ * 2;
-		if (is_s32gen1_soc_rev1() && rate > qspi_2x_max_rate)
-			rate = qspi_2x_max_rate;
+	if (is_qspi_clk(c->id)) {
+		if (is_qspi2x_clk(c->id))
+			qspi_max_rate = S32G274A_REV1_QSPI_MAX_FREQ * 2;
+		else
+			qspi_max_rate = S32G274A_REV1_QSPI_MAX_FREQ;
+
+		if (is_s32gen1_soc_rev1() && rate > qspi_max_rate)
+			rate = qspi_max_rate;
 	}
 
-	return s32gen1_set_rate(c, rate);
+	return s32gen1_scmi_set_rate(c, rate);
 }

@@ -5,6 +5,7 @@
 #include <dt-bindings/clock/s32r45-clock.h>
 #include <s32gen1_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
+#include <s32gen1_scmi_clk.h>
 #include <s32gen1_shared_clks.h>
 
 #define ARR_CLK(N)	S32R45_CLK_INDEX(N)
@@ -196,5 +197,5 @@ struct s32gen1_clk *get_plat_clock(uint32_t id)
 
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
 {
-	return s32gen1_set_rate(c, rate);
+	return s32gen1_scmi_set_rate(c, rate);
 }

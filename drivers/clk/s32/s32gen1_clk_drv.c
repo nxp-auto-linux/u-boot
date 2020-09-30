@@ -14,22 +14,7 @@
 #include <log.h>
 #include <s32gen1_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
-
-static int s32gen1_request(struct clk *clock)
-{
-	if (!get_clock(clock->id)) {
-		pr_err("Clock %ld is not part of the clock tree\n", clock->id);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-static int s32gen1_disable(struct clk *clk)
-{
-	/* Not implemented */
-	return 0;
-}
+#include <s32gen1_scmi_clk.h>
 
 static int bind_clk_provider(struct udevice *pdev, const char *compatible,
 			     void **base_addr)
@@ -192,12 +177,12 @@ void *get_base_addr(enum s32gen1_clk_source id, struct s32gen1_clk_priv *priv)
 }
 
 static struct clk_ops s32gen1_clk_ops = {
-	.request = s32gen1_request,
-	.get_rate = s32gen1_get_rate,
+	.request = s32gen1_scmi_request,
+	.get_rate = s32gen1_scmi_get_rate,
 	.set_rate = s32gen1_plat_set_rate,
-	.set_parent = s32gen1_set_parent,
-	.enable = s32gen1_enable,
-	.disable = s32gen1_disable,
+	.set_parent = s32gen1_scmi_set_parent,
+	.enable = s32gen1_scmi_enable,
+	.disable = s32gen1_scmi_disable,
 };
 
 static const struct udevice_id s32gen1_clk_ids[] = {

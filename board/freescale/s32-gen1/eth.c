@@ -275,14 +275,52 @@ static ulong gmac_calc_link_speed(u32 speed)
 	}
 }
 
+static int get_gmac_clocks(u32 mode, const char **rx,
+			   const char **tx, const char **ts)
+{
+	switch (mode) {
+	case PHY_INTERFACE_MODE_SGMII:
+		if (rx)
+			*rx = "rx_sgmii";
+		if (tx)
+			*tx = "tx_sgmii";
+		if (ts)
+			*ts = "ts_sgmii";
+		break;
+	case PHY_INTERFACE_MODE_RGMII:
+		if (rx)
+			*rx = "rx_rgmii";
+		if (tx)
+			*tx = "tx_rgmii";
+		if (ts)
+			*ts = "ts_rgmii";
+		break;
+	case PHY_INTERFACE_MODE_RMII:
+	case PHY_INTERFACE_MODE_MII:
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int set_tx_clk_enet_gmac(struct udevice *gmac_dev, u32 speed)
 {
+	const char *tx;
 	ulong freq = gmac_calc_link_speed(speed);
+	u32 mode = eqos_get_interface_s32cc(gmac_dev);
+	int ret = get_gmac_clocks(mode, NULL, &tx, NULL);
 
-	if (s32gen1_set_dev_clk_rate("tx", gmac_dev, freq) != freq)
+	if (ret) {
+		dev_err(gmac_dev, "Invalid GMAC interface: %s\n",
+			phy_string_for_interface(mode));
+		return -EINVAL;
+	}
+
+	if (s32gen1_set_dev_clk_rate(tx, gmac_dev, freq) != freq)
 		return -EINVAL;
 
-	if (s32gen1_enable_dev_clk("tx", gmac_dev)) {
+	if (s32gen1_enable_dev_clk(tx, gmac_dev)) {
 		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
 		return -EINVAL;
 	}
@@ -292,74 +330,28 @@ int set_tx_clk_enet_gmac(struct udevice *gmac_dev, u32 speed)
 
 void setup_clocks_enet_gmac(int intf, struct udevice *gmac_dev)
 {
+	const char *rx, *tx, *ts;
 	int ret;
-	u32 tx_id, rx_id;
 
-	ret = s32gen1_set_parent_clk_id(S32GEN1_CLK_MC_CGM0_MUX9,
-					S32GEN1_CLK_PERIPH_PLL_PHI4);
-	if (ret) {
-		dev_err(gmac_dev, "Failed to set cgm0_mux9 source\n");
-		return;
-	}
-
-	rx_id = S32GEN1_CLK_FIRC;
-	tx_id = rx_id;
-
-	/* configure interface specific clocks */
-	switch (intf) {
-	case PHY_INTERFACE_MODE_SGMII:
-		tx_id = S32GEN1_CLK_SERDES0_LANE0_TX;
-		rx_id = S32GEN1_CLK_GMAC0_EXT_RX;
-		break;
-
-	case PHY_INTERFACE_MODE_RGMII:
-		tx_id = S32GEN1_CLK_PERIPH_PLL_PHI5;
-		rx_id = S32GEN1_CLK_GMAC0_EXT_RX;
-		break;
-
-	case PHY_INTERFACE_MODE_RMII:
-		/* TODO: clocks cfg for RMII */
-		break;
-
-	case PHY_INTERFACE_MODE_MII:
-		/* TODO: clocks cfg for MII */
-		break;
-
-	default:
-		break;
-	}
-
-	ret = s32gen1_set_parent_clk_id(S32GEN1_CLK_MC_CGM0_MUX10, tx_id);
-	if (ret) {
-		dev_err(gmac_dev, "Failed to set cgm0_mux10 source\n");
-		return;
-	}
-
-	ret = s32gen1_set_parent_clk_id(S32GEN1_CLK_MC_CGM0_MUX11, rx_id);
-	if (ret) {
-		dev_err(gmac_dev, "Failed to set cgm0_mux11 source\n");
-		return;
-	}
-
-	if (rx_id == S32GEN1_CLK_FIRC && tx_id == S32GEN1_CLK_FIRC)
+	ret = get_gmac_clocks(intf, &rx, &tx, &ts);
+	/* Do nothing for the interfaces that are not supported */
+	if (ret)
 		return;
 
-	if (set_tx_clk_enet_gmac(gmac_dev, SPEED_1000)) {
+	if (set_tx_clk_enet_gmac(gmac_dev, SPEED_1000))
 		dev_err(gmac_dev, "Failed to set GMAC TX frequency\n");
-		return;
-	}
 
-	ret = s32gen1_enable_dev_clk("rx", gmac_dev);
+	ret = s32gen1_enable_dev_clk(rx, gmac_dev);
 	if (ret)
-		dev_err(gmac_dev, "Failed to enable gmac_rx clock\n");
+		dev_err(gmac_dev, "Failed to enable %s clock\n", rx);
 
-	ret = s32gen1_enable_dev_clk("tx", gmac_dev);
+	ret = s32gen1_enable_dev_clk(tx, gmac_dev);
 	if (ret)
-		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
+		dev_err(gmac_dev, "Failed to enable %s clock\n", tx);
 
-	ret = s32gen1_enable_dev_clk("ts", gmac_dev);
+	ret = s32gen1_enable_dev_clk(ts, gmac_dev);
 	if (ret)
-		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
+		dev_err(gmac_dev, "Failed to enable %s clock\n", ts);
 }
 
 #endif /* CONFIG_DWC_ETH_QOS_S32CC */
