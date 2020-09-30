@@ -268,26 +268,26 @@ int pfeng_hw_emac_set_speed(void *base_va, u32 speed)
 	return 0;
 }
 
-int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, u8 dev, uint16_t ra,
+int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, s32 dev, uint16_t ra,
 			    uint16_t *val)
 {
-	u32 reg;
+	u32 reg = 0U;
 	u32 retries = 500U;
 
 	if (dev == MDIO_DEVAD_NONE) {
 		/* C22 */
-		reg |= REG_DEV_ADDR(ra);
+		reg = REG_DEV_ADDR(ra);
 	} else {
 		/* C45 */
 		reg = GMII_REGISTER_ADDRESS(ra);
 		writel(reg, base_va + MAC_MDIO_DATA);
-		reg |= CLAUSE45_ENABLE | REG_DEV_ADDR(dev);
+		reg = CLAUSE45_ENABLE | REG_DEV_ADDR(dev);
 	}
 
-	reg = GMII_BUSY |
-	      GMII_OPERATION_CMD(GMII_READ) |
-	      CSR_CLOCK_RANGE(CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204) |
-	      PHYS_LAYER_ADDR(pa);
+	reg |=	GMII_BUSY |
+		GMII_OPERATION_CMD(GMII_READ) |
+		CSR_CLOCK_RANGE(CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204) |
+		PHYS_LAYER_ADDR(pa);
 
 	/*	Start a read operation */
 	writel(reg, base_va + MAC_MDIO_ADDRESS);
@@ -307,25 +307,27 @@ int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, u8 dev, uint16_t ra,
 	return 0;
 }
 
-int pfeng_hw_emac_mdio_write(void *base_va, u8 pa, u8 dev, uint16_t ra,
+int pfeng_hw_emac_mdio_write(void *base_va, u8 pa, s32 dev, uint16_t ra,
 			     uint16_t val)
 {
-	u32 reg;
+	u32 reg = 0U;
 	u32 retries = 500U;
 
 	if (dev == MDIO_DEVAD_NONE) {
 		/* C22 */
-		reg |= REG_DEV_ADDR(ra);
+		reg = GMII_DATA(val);
+		writel(reg, base_va + MAC_MDIO_DATA);
+		reg = REG_DEV_ADDR(ra);
 	} else {
 		/* C45 */
 		reg = GMII_DATA(val) | GMII_REGISTER_ADDRESS(ra);
 		writel(reg, base_va + MAC_MDIO_DATA);
-		reg |= CLAUSE45_ENABLE | REG_DEV_ADDR(dev);
+		reg = CLAUSE45_ENABLE | REG_DEV_ADDR(dev);
 	}
 
-	reg = GMII_BUSY | GMII_OPERATION_CMD(GMII_WRITE) |
-	      CSR_CLOCK_RANGE(CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204) |
-	      PHYS_LAYER_ADDR(pa);
+	reg |=	GMII_BUSY | GMII_OPERATION_CMD(GMII_WRITE) |
+		CSR_CLOCK_RANGE(CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204) |
+		PHYS_LAYER_ADDR(pa);
 
 	/*	Start a write operation */
 	writel(reg, base_va + MAC_MDIO_ADDRESS);

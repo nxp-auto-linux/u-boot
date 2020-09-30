@@ -91,8 +91,8 @@ int pfeng_hw_attach_ring(struct pfe_platform *platform,
 			 void *rx_ring, void *rx_ring_wb);
 
 /* Mdio functionality */
-int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, u8 dev, u16 ra, u16 *val);
-int pfeng_hw_emac_mdio_write(void *base_va, u8 pa, u8 dev, u16 ra, u16 val);
+int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, s32 dev, u16 ra, u16 *val);
+int pfeng_hw_emac_mdio_write(void *base_va, u8 pa, s32 dev, u16 ra, u16 val);
 
 /* Init functionality */
 int pfeng_hw_init(struct pfe_platform_config *config);
