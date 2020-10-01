@@ -53,7 +53,7 @@ struct pfe_fw {
 struct pfe_platform_config {
 	u64 cbus_base;	/* PFE control bus base address */
 	u64 cbus_len;	/* PFE control bus size */
-	char_t *fw_name;	/* FW name */
+	char *fw_name;	/* FW name */
 	struct pfe_fw *fw;		/* Required firmware, embedded */
 };
 

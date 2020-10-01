@@ -591,9 +591,9 @@ int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
 	pr_info("PFE [FW VERSION] %d.%d.%d, Build: %s, %s (%s), ID: 0x%x\n",
 		pfe_pe_mmap->version.major, pfe_pe_mmap->version.minor,
 		pfe_pe_mmap->version.patch,
-		(char_t *)pfe_pe_mmap->version.build_date,
-		(char_t *)pfe_pe_mmap->version.build_time,
-		(char_t *)pfe_pe_mmap->version.vctrl,
+		(char *)pfe_pe_mmap->version.build_date,
+		(char *)pfe_pe_mmap->version.build_time,
+		(char *)pfe_pe_mmap->version.vctrl,
 		pfe_pe_mmap->version.id);
 
 	pr_info("[PE MMAP]\n DMEM Heap Base: 0x%08x (%d bytes)\n"
