@@ -12,6 +12,10 @@
 #include <asm/arch/clock.h>
 #include <asm/arch-s32/siul.h>
 
+#ifdef CONFIG_TARGET_CAMPPS32V2
+#include <campps32v2.h>
+#endif
+
 /* System Reset Controller is not yet available on VirtualPlatform */
 /*
  * Select the clock reference for required pll.
@@ -362,6 +366,49 @@ static void enable_modules_clock( void )
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
 
+void ddr_program_pll(u32 ddr_dfs[][DFS_PARAMS_Nr])
+{
+#ifdef CONFIG_TARGET_CAMPPS32V2
+
+	int prediv;
+	int mfd;
+	int mfn;
+	int phi0_freq;
+	int phi1_freq;
+
+	switch (campps32v2_get_device_id()) {
+	case 2:
+	case 3:
+	case 4:
+		printf("DDR: Frequency: 400\n");
+		prediv = 1;
+		mfd  = 20;
+		mfn = 0;
+		phi0_freq = 400000000;
+		phi1_freq = 800000000;
+		break;
+	default:
+		printf("DDR: Frequency: 533\n");
+		prediv = DDR_PLL_PLLDV_PREDIV;
+		mfd = DDR_PLL_PLLDV_MFD;
+		mfn = DDR_PLL_PLLDV_MFN;
+		phi0_freq = DDR_PLL_PHI0_FREQ;
+		phi1_freq = DDR_PLL_PHI1_FREQ;
+	}
+
+	program_pll(DDR_PLL, XOSC_CLK_FREQ, phi0_freq,
+		    phi1_freq, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
+		    prediv, mfd, mfn);
+
+#else
+
+	program_pll(DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ,
+		    DDR_PLL_PHI1_FREQ, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
+		    DDR_PLL_PLLDV_PREDIV, DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN);
+
+#endif
+}
+
 void clock_init(void)
 {
 	unsigned int arm_1ghz_dfs[ARM_1GHZ_PLL_PHI1_DFS_Nr][DFS_PARAMS_Nr] = {
@@ -455,9 +502,7 @@ void clock_init(void)
 		    ENET_PLL_PLLDV_PREDIV, ENET_PLL_PLLDV_MFD,
 		    ENET_PLL_PLLDV_MFN);
 
-	program_pll(DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ,
-		    DDR_PLL_PHI1_FREQ, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
-		    DDR_PLL_PLLDV_PREDIV, DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN);
+	ddr_program_pll(ddr_dfs);
 
 	program_pll(VIDEO_PLL, XOSC_CLK_FREQ, VIDEO_PLL_PHI0_FREQ,
 		    VIDEO_PLL_PHI1_FREQ, VIDEO_PLL_PHI1_DFS_Nr, NULL,

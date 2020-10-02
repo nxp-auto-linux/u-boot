@@ -28,9 +28,6 @@
 /* Config CACHE */
 #define CONFIG_CMD_CACHE
 
-/* Enable DCU QoS fix */
-#define CONFIG_DCU_QOS_FIX
-
 /* Flat device tree definitions */
 #define CONFIG_OF_FDT
 #define CONFIG_OF_BOARD_SETUP
@@ -293,6 +290,8 @@
 #define FEC_EXTRA_ENV_SETTINGS	""
 #endif
 
+#define S32_DEFAULT_IP "10.0.0.100\0"
+
 /*
  * Enable CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT if u-boot should use a ramdisk
  * for nfsbooting.
@@ -336,11 +335,13 @@
 #define PFE_INIT_CMD ""
 #endif
 
+#if !defined(PCIE_EXTRA_ENV_SETTINGS)
 #if defined(CONFIG_PCIE_S32GEN1) || defined(CONFIG_FSL_PFENG)
 #define PCIE_EXTRA_ENV_SETTINGS \
 	"hwconfig=" CONFIG_S32GEN1_HWCONFIG "\0"
 #else
 #define PCIE_EXTRA_ENV_SETTINGS ""
+#endif
 #endif
 
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
@@ -382,7 +383,7 @@
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
 	DDR_LIMIT0 \
-	"ipaddr=10.0.0.100\0" \
+	"ipaddr=" S32_DEFAULT_IP \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
