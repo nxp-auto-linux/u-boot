@@ -10,6 +10,10 @@
 
 #define UNSPECIFIED	-1
 
+#ifdef CONFIG_HSE_SECBOOT
+#  define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80200u
+#endif
+
 #ifdef CONFIG_FLASH_BOOT
 #  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
 #endif
@@ -36,6 +40,13 @@ static struct program_image image_layout = {
 		.offset = S32GEN1_IVT_OFFSET_1000,
 		.size = sizeof(struct ivt),
 	},
+#ifdef CONFIG_HSE_SECBOOT
+	.hse_reserved = {
+		.offset = S32_AUTO_OFFSET,
+		.alignment = 0x200U,
+		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
+	},
+#endif
 	.dcd = {
 		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
@@ -280,6 +291,10 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
+#ifdef CONFIG_HSE_SECBOOT
+	ivt->hse_h_firmware_pointer = image_layout.hse_reserved.offset;
+#endif
+
 	ivt_duplicate = get_ivt_duplicate(&image_layout);
 	memcpy(ivt_duplicate, ivt, sizeof(struct ivt));
 
@@ -349,6 +364,9 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		&program_image->qspi_params,
 #endif
 		&program_image->ivt_duplicate,
+#ifdef CONFIG_HSE_SECBOOT
+		&program_image->hse_reserved,
+#endif
 		&program_image->dcd,
 		&program_image->app_code,
 		&program_image->code,
@@ -398,6 +416,11 @@ static void s32gen1_print_header(const void *header)
 	fprintf(stderr, "IVT (duplicate):\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.ivt_duplicate.offset,
 		(unsigned int)image_layout.ivt_duplicate.size);
+#ifdef CONFIG_HSE_SECBOOT
+	fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.hse_reserved.offset,
+		(unsigned int)image_layout.hse_reserved.size);
+#endif
 	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.dcd.offset,
 		(unsigned int)image_layout.dcd.size);

@@ -12,6 +12,7 @@
 /* Frequencies */
 #define S32GEN1_PERIPH_PLL_VCO_FREQ		(2000 * MHZ)
 #define S32GEN1_FXOSC_FREQ			(40 * MHZ)
+#define S32GEN1_FIRC_FREQ			(48 * MHZ)
 #define S32GEN1_XBAR_2X_FREQ			(800 * MHZ)
 #define S32GEN1_LIN_BAUD_CLK_FREQ		(125 * MHZ)
 
