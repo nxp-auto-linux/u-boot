@@ -1,5 +1,0 @@
-config CMD_HSE_ADVANCED_SECBOOT
-	bool "HSE - Advanced Secure Boot"
-	depends on HSE_SECBOOT
-	help
-	  Use HSE-provided advanced secure boot, SMR-based

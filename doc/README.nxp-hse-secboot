@@ -25,8 +25,6 @@ The follow config options must be set:
     CONFIG_HSE_SECBOOT="y" (depends on CONFIG_S32_GEN1)
     CONFIG_CMD_HSE_ADVANCED_SECBOOT="y" (depends on CONFIG_HSE_SECBOOT)
 
-Furthermore, the CONFIG_SYS_TEXT_BASE option must be set to 0x34080000.
-
 Preparing U-Boot for secure booting
 -----------------------------------
 

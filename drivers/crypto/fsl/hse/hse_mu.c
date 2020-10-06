@@ -223,11 +223,11 @@ int hse_send_recv(u8 channel, u32 send_buf, u32 *recv_buf)
 	if (ret)
 		return CMD_RET_FAILURE;
 
-	ret = -ENOMSG;
-	while (ret == -ENOMSG)
+	do {
 		ret = hse_mu_msg_recv(channel, recv_buf);
+	} while (ret == -ENOMSG);
 	if (ret)
 		return CMD_RET_FAILURE;
-	else
-		return hse_err_decode(recv_buf);
+
+	return hse_err_decode(recv_buf);
 }

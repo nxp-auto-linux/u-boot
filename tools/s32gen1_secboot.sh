@@ -6,7 +6,7 @@
 set -o errexit -o pipefail -o noclobber -o nounset
 
 usage() {
-	echo "Usage: $(basename $0) -k <key_path> -d <device> --hse <hse_fw>"
+	echo "Usage: $(basename "$0") -k <key_path> -d <device> --hse <hse_fw>"
 	echo
 	echo "    -k|--key    Full path key pair directory"
 	echo "                NOTE: A new key pair will be created in the"
@@ -41,10 +41,12 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
+UBOOT_MAX_SIZE=1048576 
+
 # switch to script dir
 SCRIPT_PATH=${0%/*}
 if [ "$0" != "$SCRIPT_PATH" ] && [ "$SCRIPT_PATH" != "" ]; then
-	cd $SCRIPT_PATH/..
+	cd "$SCRIPT_PATH/.."
 fi
 
 # create the keys - fixed key pair for demo
@@ -88,16 +90,16 @@ fi
 dd if=u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=1051
 
 # find necessary padding for u-boot
-PAD=$((1048576 - $(wc -c < u-boot-tosign.s32)))
+PAD=$((UBOOT_MAX_SIZE - $(wc -c < u-boot-tosign.s32)))
 dd if=/dev/zero bs=1 count="$PAD" >> u-boot-tosign.s32
 
 # sign extracted app code after padding
 openssl dgst -sha1 -sign "$KEY_PATH"/private.pem \
--out u-boot.sign u-boot-tosign.s32
+	-out u-boot.sign u-boot-tosign.s32
 
 # verify the signature
 openssl dgst -sha1 -verify "$KEY_PATH"/public.pem \
--signature u-boot.sign u-boot-tosign.s32
+	-signature u-boot.sign u-boot-tosign.s32
 
 # add everything to the sdcard
 # write primary ivt and duplicate ivt

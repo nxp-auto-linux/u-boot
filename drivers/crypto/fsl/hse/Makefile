@@ -2,5 +2,4 @@
 #
 # Copyright 2020 NXP
 
-obj-$(CONFIG_HSE_SECBOOT) += hse_mu.o
-obj-$(CONFIG_HSE_SECBOOT) += hse_mmc.o
+obj-$(CONFIG_HSE_SECBOOT) += hse_mu.o hse_mmc.o

@@ -148,6 +148,5 @@ config DDR_HANDSHAKE_AT_RESET
 
 source "board/freescale/Kconfig"
 source "board/microsys/mpxs32v234/Kconfig"
-source "arch/arm/cpu/armv8/s32/s32-gen1/Kconfig"
 
 endif

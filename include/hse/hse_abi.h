@@ -19,13 +19,19 @@
 #define HSE_SRV_RSP_INVALID_PARAM 0x55A5AA56ul
 #define HSE_SRV_RSP_KEY_INVALID   0xA5AA5527ul
 
-#define HSE_READ_LOC 0xa0000000ul
+#define HSE_RESERVED_MEM 0x80000000ul
 
 #define HSE_UBOOT_MAX_SIZE   0x100000u
 #define HSE_SYS_IMG_MAX_SIZE 0x10000u
 #define HSE_UBOOT_AUTH_LEN   0x200u
-#define HSE_SYS_IMG_SD       0x70200u
-#define HSE_AUTH_TAG_SD      0x80200u
+#define HSE_SYS_IMG_SD       0x71200u
+#define HSE_AUTH_TAG_SD      0x81200u
+
+#define HSE_PIVT_BLK       0
+#define HSE_DIVT_BLK       8
+#define HSE_SYS_IMG_BLK    905
+#define HSE_UBOOT_SIGN_BLK 1033
+#define HSE_UBOOT_BIN_BLK  1051
 
 #define HSE_EXT_FLASH_SD   2u
 #define HSE_EXT_FLASH_PAGE 512u
@@ -33,7 +39,8 @@
 #define HSE_CHANNEL_ADMIN   0u
 #define HSE_CHANNEL_GENERAL 1u
 
-#define HSE_STATUS_INIT_OK BIT(8)
+#define HSE_STATUS_INIT_OK  BIT(8)
+#define HSE_IVT_BOOTSEQ_BIT BIT(3)
 
 #define HSE_SRV_ID_PUBLISH_SYS_IMAGE        0x00000011ul
 #define HSE_SRV_ID_FORMAT_KEY_CATALOGS      0x00000101ul
@@ -50,19 +57,15 @@
 #define HSE_SMR_CFG_FLAG_SD_FLASH     0x2u
 #define HSE_SMR_CFG_FLAG_INSTALL_AUTH BIT(2)
 #define HSE_SMR_ENTRY_1               BIT(1)
-#define HSE_SMR_VERIF_PRE_BOOT_MASK   0xAAu
+#define HSE_SMR_VERIF_PRE_BOOT_MASK   0x56u
 
 #define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 1u
 
 #define HSE_SIGN_RSASSA_PKCS1_V15 0x93u
 #define HSE_HASH_ALGO_SHA_1       2u
 
-#define HSE_INVALID_KEY_HANDLE               0xFFFFFFFFul
-#define HSE_KEY_CATALOG_ID_NVM               1u
-#define GET_KEY_HANDLE(catalog, group, slot) ((((u32)(catalog)) << 16u) | \
-					     (((u32)(group)) << 8u) | \
-					     ((u32)(slot)))
-#define HSE_BOOT_KEY_HANDLE        GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, 7, 0)
+#define HSE_INVALID_KEY_HANDLE 0xFFFFFFFFul
+#define HSE_BOOT_KEY_HANDLE    0x010700
 
 #define HSE_MU0_MASK    BIT(0)
 #define HSE_MU1_MASK    BIT(1)
@@ -94,72 +97,6 @@
 #define HSE_KEY638_BITS  638u
 #define HSE_KEY1024_BITS 1024u
 #define HSE_KEY4096_BITS 4096u
-
-/* hse nvm key catalog configuration */
-#define HSE_NVM_KEY_CATALOG_CFG \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY128_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_HMAC, 5U, HSE_KEY1024_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PUB, 4U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 5U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PAIR, 3U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PUB, 3U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 5U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY128_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_HMAC, 10U, HSE_KEY1024_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB, 3U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 5U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PAIR, 2U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PUB, 3U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 5U, HSE_KEY4096_BITS }, \
-{ HSE_MU0_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB, 1U, HSE_KEY521_BITS }, \
-{ 0U, 0U, 0U, 0U, 0U }
-
-/* hse ram key catalog configuration */
-#define HSE_RAM_KEY_CATALOG_CFG \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_AES, 20U, HSE_KEY128_BITS }, \
-{ HSE_MU0_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_AES, 20U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_HMAC, 10U, HSE_KEY1024_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PUB, 6U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 10U, HSE_KEY521_BITS  }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_RSA_PUB, 6U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 10U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_SHARED_SECRET, 10U, HSE_KEY638_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_SHARED_SECRET, 5U, HSE_KEY4096_BITS }, \
-{ 0U, 0U, 0U, 0U, 0U }
 
 /* see include/mmc.h */
 struct mmc *hse_init_mmc_device(int dev, bool force_init);
@@ -224,6 +161,7 @@ struct hse_key_group_cfg_entry {
 	u8 key_type;
 	u8 num_key_slots;
 	u16 max_key_bit_len;
+	u8 reserved[2];
 } __packed;
 
 /**
@@ -271,11 +209,11 @@ struct hse_import_key_srv {
 	u64 key_info_addr;
 	u64 key_addr[3];
 	u16 key_len[3];
-	u8 reserved2[2];
+	u8 reserved1[2];
 	u32 cipher_key;
-	u8 reserved3[40];
+	u8 reserved2[48];
 	u32 auth_key;
-	u8 reserved4[36];
+	u8 reserved3[36];
 } __packed;
 
 /**
@@ -307,6 +245,7 @@ struct hse_sign_scheme {
  * @smr_size: size in bytes of SMR to be loaded
  * @config_flags: config flags for SMR entry
  * @verif_method: specified when SMR verification takes places
+ * @check_period: required by hse, must be 0
  * @key_handle: key from key catalog used to authenticate SMR
  * @sign_sch: auth scheme used to verify the SMR
  * @auth_tag: location of SMR signature in flash
@@ -318,6 +257,7 @@ struct hse_smr_entry {
 	u8 config_flags;
 	u8 verif_method;
 	u8 reserved1[2];
+	u32 check_period;
 	u32 key_handle;
 	struct hse_sign_scheme sign_sch;
 	u32 auth_tag;
@@ -327,21 +267,17 @@ struct hse_smr_entry {
 /**
  * struct hse_cr_entry - core reset entry
  * @core_id: core to be un-gated once SMR authentication is successful
- * @fail_verify_flag: specify action taken if SMR authentication failed
  * @cr_sanction: sanction to apply if SMR authentication fails
- * @pass_reset: first instruction to jump to if authentication is successful
- * @smr_entries_bits: indicate which SMR must be authenticated
- * @fail_reset: instruction to jump to if authentication fails
- *              and fail_verify_flag is set
+ * @smr_verif_map: smr entries which need to be verified to ungate core
+ * @pass_reset: first instruction to jump to if verification is successful
  */
 struct hse_cr_entry {
 	u8 core_id;
-	u8 fail_verify_flag;
 	u8 cr_sanction;
-	u8 reserved1;
+	u8 reserved1[2];
+	u32 smr_verif_map;
 	u32 pass_reset;
-	u32 smr_entries_bits;
-	u32 fail_reset;
+	u8 reserved2[20];
 } __packed;
 
 /**
@@ -382,7 +318,6 @@ struct hse_cr_install_srv {
 /**
  * struct hse_publish_sys_img_srv - SYS-IMG publish service
  * @publish_options: specify which data sets to publish in SYS-IMG
- * @publish_state_addr: ptr to store execution state, unused
  * @publish_offset_addr: ptr to store SYS-IMG offset in flash, unused
  * @buff_length_addr: as input, specify length of output buffer
  *                    as output, number of bytes written by HSE into buffer
@@ -391,7 +326,6 @@ struct hse_cr_install_srv {
 struct hse_publish_sys_img_srv {
 	u8 publish_options;
 	u8 reserved1[3];
-	u64 publish_state_addr;
 	u64 publish_offset_addr;
 	u64 buff_length_addr;
 	u64 buff_addr;
@@ -413,5 +347,42 @@ struct hse_srv_desc {
 		struct hse_publish_sys_img_srv publish_sys_img_req;
 	};
 } __packed;
+
+/**
+ * struct hse_private - hse required data, stored at start of ddr
+ * @ivt: ivt stored for modifications required for secboot
+ * @srv_desc: service descriptor
+ * @key_info: key data for insertion into catalog
+ * @cr_entry: core reset entry data
+ * @smr_entry: secure memory region data
+ * @rsa2048_pub_modulus: public modulus of u-boot signature key
+ * @rsa2048_pub_exponent: public exponent of u-boot signature key
+ * @uboot_sign: copy of u-boot signature in ddr
+ * @uboot_copy: copy of u-boot binary in ddr
+ * @sys_img: hse-generated system image
+ * @uboot_sign_len: u-boot signature length
+ * @sys_img_len: system image length
+ * @nvm_catalog: nvm key catalog
+ * @ram_catalog: ram key catalog
+ */
+struct hse_private {
+	struct ivt ivt;
+	struct hse_srv_desc srv_desc;
+	struct hse_key_info key_info;
+	struct hse_cr_entry cr_entry;
+	struct hse_smr_entry smr_entry;
+	u8 rsa2048_pub_modulus[256];
+	u8 rsa2048_pub_exponent[3];
+	u8 reserved1;
+	u8 uboot_sign[HSE_UBOOT_AUTH_LEN];
+	u8 uboot_copy[HSE_UBOOT_MAX_SIZE];
+	u8 sys_img[HSE_SYS_IMG_MAX_SIZE];
+	u32 uboot_sign_len;
+	u32 sys_img_len;
+	struct hse_key_group_cfg_entry nvm_catalog[20];
+	struct hse_key_group_cfg_entry ram_catalog[11];
+	/* unused, but required by hse */
+	u32 publish_offset;
+};
 
 #endif /* HSE_ABI_H */

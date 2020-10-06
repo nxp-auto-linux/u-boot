@@ -44,6 +44,9 @@ static struct clk mc_cgm1_mux0 = CLK_INIT(S32GEN1_CLK_MC_CGM1_MUX0);
 static struct clk a53_clk = CLK_INIT(S32GEN1_CLK_A53_CORE);
 
 /* XBAR clock */
+#ifdef CONFIG_HSE_SECBOOT
+static struct clk firc = CLK_INIT(S32GEN1_CLK_FIRC);
+#endif
 static struct clk arm_dfs1 = CLK_INIT(S32GEN1_CLK_ARM_PLL_DFS1);
 static struct clk mc_cgm0_mux0 = CLK_INIT(S32GEN1_CLK_MC_CGM0_MUX0);
 static struct clk xbar_2x = CLK_INIT(S32GEN1_CLK_XBAR_2X);
@@ -61,6 +64,19 @@ static struct clk ddr_pll_vco = CLK_INIT(S32GEN1_CLK_DDR_PLL_VCO);
 static struct clk ddr_pll_phi0 = CLK_INIT(S32GEN1_CLK_DDR_PLL_PHI0);
 static struct clk mc_cgm5_mux0 = CLK_INIT(S32GEN1_CLK_MC_CGM5_MUX0);
 static struct clk ddr = CLK_INIT(S32GEN1_CLK_DDR);
+
+#ifdef CONFIG_HSE_SECBOOT
+static int secboot_xbar_to_firc(void)
+{
+	int ret;
+
+	ret = s32gen1_set_parent(&mc_cgm0_mux0, &firc);
+	if (ret)
+		return ret;
+
+	return s32gen1_enable(&xbar_2x);
+}
+#endif
 
 static int enable_a53_clock(void)
 {
@@ -159,6 +175,12 @@ static int enable_ddr_clock(void)
 int enable_early_clocks(void)
 {
 	int ret;
+
+#ifdef CONFIG_HSE_SECBOOT
+	ret = secboot_xbar_to_firc();
+	if (ret)
+		return ret;
+#endif
 
 	ret = enable_a53_clock();
 	if (ret)
