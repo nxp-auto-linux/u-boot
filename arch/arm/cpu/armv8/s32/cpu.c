@@ -22,6 +22,8 @@
 #include <clk.h>
 #include <dm/uclass.h>
 #include <linux/sizes.h>
+#include <power/pmic.h>
+#include <power/vr5510.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -311,6 +313,90 @@ static inline int clear_after_bss(void)
 }
 #endif
 
+#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+static int watchdog_refresh(struct udevice *pmic)
+{
+	uint seed, wd_cfg;
+	int ret;
+
+	seed = pmic_reg_read(pmic, VR5510_FS_WD_SEED);
+
+	/* Challenger watchdog refresh */
+	seed = ((~(seed * 4 + 2) & 0xFFFFFFFFU) / 4) & 0xFFFFU;
+
+	ret = pmic_reg_write(pmic, VR5510_FS_WD_ANSWER, seed);
+	if (ret) {
+		pr_err("Failed to write VR5510 WD answer\n");
+		return ret;
+	}
+
+	wd_cfg = pmic_reg_read(pmic, VR5510_FS_I_WD_CFG);
+	if (VR5510_ERR_CNT(wd_cfg)) {
+		pr_err("Failed to refresh watchdog\n");
+		return -EIO;
+	}
+
+	return 0;
+}
+
+static int disable_vr5510_wdg(void)
+{
+	struct udevice *pmic;
+	uint wd_window, safe_input, fs_states, diag;
+	int ret;
+
+	ret = pmic_get(VR5510_FSU_NAME, &pmic);
+	if (ret)
+		return ret;
+
+	fs_states = pmic_reg_read(pmic, VR5510_FS_STATES);
+	if (VR5510_STATE(fs_states) != INIT_FS) {
+		pr_err("VR5510 is not in INIT_FS state\n");
+		return -EIO;
+	}
+
+	/* Disable watchdog */
+	wd_window = pmic_reg_read(pmic, VR5510_FS_WD_WINDOW);
+	wd_window &= ~VR5510_WD_WINDOW_MASK;
+	ret = pmic_reg_write(pmic, VR5510_FS_WD_WINDOW, wd_window);
+	if (ret) {
+		pr_err("Failed write watchdog window\n");
+		return ret;
+	}
+
+	wd_window = ~wd_window & 0xFFFFU;
+	ret = pmic_reg_write(pmic, VR5510_FS_NOT_WD_WINDOW, wd_window);
+	if (ret) {
+		pr_err("Failed write watchdog window\n");
+		return ret;
+	}
+
+	diag = pmic_reg_read(pmic, VR5510_FS_DIAG_SAFETY);
+	if (!VR5510_ABIST1_OK(diag)) {
+		pr_err("VR5510 is not in ABIST1 state\n");
+		return ret;
+	}
+
+	/* Disable FCCU monitoring */
+	safe_input = pmic_reg_read(pmic, VR5510_FS_I_SAFE_INPUTS);
+	safe_input &= ~VR5510_FCCU_CFG_MASK;
+	ret = pmic_reg_write(pmic, VR5510_FS_I_SAFE_INPUTS, safe_input);
+	if (ret) {
+		pr_err("Failed to disable FCCU\n");
+		return ret;
+	}
+
+	safe_input = ~safe_input & 0xFFFFU;
+	ret = pmic_reg_write(pmic, VR5510_FS_I_NOT_SAFE_INPUTS, safe_input);
+	if (ret) {
+		pr_err("Failed to disable FCCU\n");
+		return ret;
+	}
+
+	return watchdog_refresh(pmic);
+}
+#endif
+
 int arch_cpu_init(void)
 {
 	int ret = 0;
@@ -376,6 +462,13 @@ void enable_caches(void)
 int arch_early_init_r(void)
 {
 	int rv;
+
+#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+	rv = disable_vr5510_wdg();
+	if (rv)
+		return rv;
+#endif
+
 #if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	asm volatile("dsb sy");
 	rv = fsl_s32_wake_secondary_cores();
