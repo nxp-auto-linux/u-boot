@@ -307,6 +307,96 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 
 }
 
+#ifdef CONFIG_S32_ATF_BOOT_FLOW
+static int disable_clk_node(void *blob, uint32_t *phandle)
+{
+	const char *clk_path;
+	int nodeoff, ret;
+
+	clk_path = fdt_get_alias(blob, "clks");
+	if (!clk_path) {
+		pr_err("Failed to get path of 'clks' alias\n");
+		return -EIO;
+	}
+
+	nodeoff = fdt_path_offset(blob, clk_path);
+	if (nodeoff < 0) {
+		pr_err("Failed to get offset of '%s' node\n", clk_path);
+		return nodeoff;
+	}
+
+	*phandle = fdt_get_phandle(blob, nodeoff);
+	if (*phandle < 0) {
+		pr_err("Failed to get phandle of '%s' node\n", clk_path);
+		return *phandle;
+	}
+
+	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_DISABLED, 0);
+	if (ret) {
+		pr_err("Failed to disable '%s' node\n", clk_path);
+		return ret;
+	}
+
+	ret = fdt_delprop(blob, nodeoff, "phandle");
+	if (ret) {
+		pr_err("Failed to remove phandle property of '%s' node\n",
+		       clk_path);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int enable_scmi_clk_node(void *blob, uint32_t phandle)
+{
+	int nodeoff, ret;
+
+	nodeoff = fdt_path_offset(blob, "/firmware/scmi/protocol@14");
+	if (nodeoff < 0) {
+		pr_err("Failed to get offset of '/firmware/scmi/protocol@14' node\n");
+		return nodeoff;
+	}
+
+	ret = fdt_set_phandle(blob, nodeoff, phandle);
+	if (ret) {
+		pr_err("Failed to set phandle property of '/firmware/scmi/protocol@14' node\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static void enable_scmi_mbox(void *blob)
+{
+	int nodeoff, ret;
+
+	nodeoff = fdt_node_offset_by_compatible(blob, -1, "arm,smc-mbox");
+	if (nodeoff < 0) {
+		pr_err("Failed to get offset of 'arm,smc-mbox' node\n");
+		return;
+	}
+
+	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_OKAY, 0);
+	if (ret) {
+		pr_err("Failed to enable 'arm,smc-mbox' node\n");
+		return;
+	}
+}
+
+static void ft_fixup_scmi_clks(void *blob)
+{
+	u32 phandle;
+
+	if (disable_clk_node(blob, &phandle))
+		return;
+
+	if (enable_scmi_clk_node(blob, phandle))
+		return;
+
+	enable_scmi_mbox(blob);
+}
+#endif
+
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
 #ifdef CONFIG_MP
@@ -323,5 +413,8 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #endif
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 	ft_fixup_ddr_polling(blob);
+#endif
+#ifdef CONFIG_S32_ATF_BOOT_FLOW
+	ft_fixup_scmi_clks(blob);
 #endif
 }
