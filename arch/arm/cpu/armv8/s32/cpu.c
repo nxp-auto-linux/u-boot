@@ -258,7 +258,7 @@ static inline void final_mmu_setup(void)
 	set_sctlr(get_sctlr() | CR_M);
 }
 
-#ifdef CONFIG_S32_GEN1
+#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 /*
  * This function is a temporary fix for drivers without clock bindings.
  *
@@ -483,11 +483,8 @@ int arch_early_init_r(void)
 	asm volatile("sev");
 #endif
 
-#ifdef CONFIG_S32_GEN1
-	rv = enable_periph_clocks();
-
-	if (rv)
-		return rv;
+#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	return enable_periph_clocks();
 #endif
 
 	return rv;
