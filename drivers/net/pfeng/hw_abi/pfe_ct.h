@@ -76,10 +76,11 @@ struct pfe_ct_phy_if {
 	u8 block_state;
 	u8 mirror;
 	u8 reserved[3];
+	u32 spd;
 	u32 phy_stats[4] __aligned(4);
 } __packed __aligned(4);
 
-_ct_assert(sizeof(struct pfe_ct_phy_if) == 32);
+_ct_assert(sizeof(struct pfe_ct_phy_if) == 36);
 
 
 /**
@@ -123,10 +124,10 @@ struct pfe_ct_pe_mmap {
 	u32 dmem_phy_if_base;
 	/*	Physical interfaces memory space size in number of bytes */
 	u32 dmem_phy_if_size;
-	u8 fill[48];
+	u8 fill[52];
 } __packed __aligned(4);
 
-_ct_assert(sizeof(struct pfe_ct_pe_mmap) == 164);
+_ct_assert(sizeof(struct pfe_ct_pe_mmap) == 168);
 
 /**
  * @brief	HIF RX packet header
