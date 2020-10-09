@@ -313,7 +313,7 @@ static inline int clear_after_bss(void)
 }
 #endif
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+#if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 static int watchdog_refresh(struct udevice *pmic)
 {
 	uint seed, wd_cfg;
@@ -461,9 +461,9 @@ void enable_caches(void)
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
 int arch_early_init_r(void)
 {
-	int rv;
+	int rv = 0;
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+#if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	rv = disable_vr5510_wdg();
 	if (rv)
 		return rv;
@@ -490,7 +490,7 @@ int arch_early_init_r(void)
 		return rv;
 #endif
 
-	return 0;
+	return rv;
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
 
