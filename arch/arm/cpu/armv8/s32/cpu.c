@@ -351,8 +351,8 @@ static int disable_vr5510_wdg(void)
 
 	fs_states = pmic_reg_read(pmic, VR5510_FS_STATES);
 	if (VR5510_STATE(fs_states) != INIT_FS) {
-		pr_err("VR5510 is not in INIT_FS state\n");
-		return -EIO;
+		pr_warn("VR5510 is not in INIT_FS state\n");
+		return 0;
 	}
 
 	/* Disable watchdog */
