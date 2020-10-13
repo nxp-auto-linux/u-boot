@@ -266,22 +266,24 @@ bool s32_assert_serdes_reset(struct s32_serdes *pcie)
 	return 0;
 }
 
-void s32_serdes_phy_reg_write(struct s32_serdes *pcie, uint32_t addr,
-		uint32_t wdata, uint32_t wmask)
+/**
+ * @brief	Indirect write PHY register.
+ * @param[in]	addr	Indirect PHY address (16bit).
+ * @param[in]	wdata	Indirect PHY data to be written (16 bit).
+ */
+void s32_serdes_phy_reg_write(struct s32_serdes *pcie, u16 addr, u16 wdata,
+			      u16 wmask)
 {
-	uint32_t temp_data;
+	u32 temp_data = wdata & wmask;
 
 	W32(pcie->dbi + SS_PHY_REG_ADDR,
 	    BUILD_MASK_VALUE(PHY_REG_ADDR_FIELD, addr) | PHY_REG_EN);
-
 	udelay(100);
-	if (wmask != 0xFFFF)
-		temp_data = in_le32(pcie->dbi + SS_PHY_REG_DATA);
+	if (wmask == 0xFFFF)
+		W32(pcie->dbi + SS_PHY_REG_DATA, temp_data);
 	else
-		temp_data = 0;
-	temp_data &= 0x0000FFFF;
-	temp_data = (temp_data & (!wmask)) | (wdata & wmask);
-	W32(pcie->dbi + SS_PHY_REG_DATA, temp_data);
+		RMW32(pcie->dbi + SS_PHY_REG_DATA, temp_data, wmask);
+
 	udelay(100);
 }
 
