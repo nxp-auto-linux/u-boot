@@ -64,6 +64,8 @@ struct s32_serdes {
 	enum serdes_link_width linkwidth;
 };
 
+void s32_serdes_disable_ltssm(void __iomem *dbi);
+void s32_serdes_enable_ltssm(void __iomem *dbi);
 bool s32_pcie_wait_link_up(void __iomem *dbi);
 bool s32_pcie_set_link_width(void __iomem *dbi,
 		int id, enum serdes_link_width linkwidth);

@@ -487,11 +487,6 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	uint32_t class;
 	int ret = 0;
 
-	/* Enable writing dbi registers */
-	s32_pcie_enable_dbi_rw(pcie->dbi);
-
-	s32_serdes_delay_cfg(pcie, true);
-
 	/* Set the CLASS_REV of EP CFG header to something that
 	 * makes sense for this SoC by itself. For a product,
 	 * the class setting should be board/product specific,
@@ -511,11 +506,6 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 
 	s32_pcie_ep_setup_bars(pcie);
 	s32_pcie_ep_setup_atu(pcie);
-
-	s32_serdes_delay_cfg(pcie, false);
-
-	/* Disable writing dbi registers */
-	s32_pcie_disable_dbi_rw(pcie->dbi);
 
 	return ret;
 }
@@ -725,8 +715,11 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	debug("PCIe%d: %s: cfg: 0x%p (0x%p)\n", pcie->id,
 			__func__, (void *)pcie->cfg_res.start,
 			pcie->cfg0);
+
 	/* get supported speed (Gen1/Gen2/Gen3) from device tree */
 	pcie->linkspeed = fdtdec_get_int(fdt, node, "link-speed", GEN1);
+	/* get supported width (X1/X2) from device tree */
+	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
 
 	return ret;
 }
@@ -774,6 +767,85 @@ static bool is_s32gen1_pcie_ltssm_enabled(struct s32_pcie *pcie)
 	return (in_le32(pcie->dbi + SS_PE0_GEN_CTRL_3) & LTSSM_EN);
 }
 
+static u32 s32_get_pcie_width(struct s32_pcie *pcie)
+{
+	return (in_le32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi)) >>
+		PCIE_NUM_OF_LANES_LSB) & PCIE_NUM_OF_LANES_MASK;
+}
+
+static int s32_pcie_probe_rc(struct s32_pcie *pcie)
+{
+	u32 speed, width;
+
+	if (s32_pcie_wait_link_up(pcie->dbi)) {
+		s32_get_link_status(pcie, &width, &speed, true);
+		pcie->linkwidth = width;
+		pcie->linkspeed = speed;
+		printf("PCIe%d: Link up! X%d, Gen%d\n", pcie->id,
+		       pcie->linkwidth, pcie->linkspeed);
+		pcie->enabled = true;
+
+		s32_pcie_setup_ctrl(pcie);
+	} else {
+		printf("PCIe%d: Failed to get link up\n", pcie->id);
+		s32_pcie_show_link_err_status(pcie);
+	}
+
+	return 0;
+}
+
+static int s32_pcie_probe_ep(struct s32_pcie *pcie, struct uclass *uc)
+{
+	u32 width;
+	int ret;
+
+	/* Enable writing dbi registers */
+	s32_pcie_enable_dbi_rw(pcie->dbi);
+
+	s32_serdes_delay_cfg(pcie, true);
+
+	/* In EP mode, validate existing width (from SerDes)
+	 * with the one from PCIe device tree node
+	 */
+	width = s32_get_pcie_width(pcie);
+
+	if (width > pcie->linkwidth) {
+		/* Supported value in dtb is smaller */
+		/* Set new link width */
+		s32_serdes_disable_ltssm(pcie->dbi);
+		s32_pcie_set_link_width(pcie->dbi, pcie->id, pcie->linkwidth);
+
+		s32_serdes_enable_ltssm(pcie->dbi);
+	}
+
+	/* apply other custom settings (bars, iATU etc.) */
+	ret = s32_pcie_setup_ep(pcie);
+
+	if (!ret && uc) {
+		struct uclass_driver *uc_drv = uc->uc_drv;
+
+		/* for EP mode, skip postprobing functions
+		 * since it corrupts configuration
+		 */
+		if (uc_drv && uc_drv->post_probe)
+			uc_drv->post_probe = NULL;
+
+		/* We don't need link up to configure EP */
+		pcie->enabled = true;
+	}
+
+	s32_serdes_delay_cfg(pcie, false);
+
+	/* Disable writing dbi registers */
+	s32_pcie_disable_dbi_rw(pcie->dbi);
+
+	/* Even if we fail to apply config, return 0 so that
+	 * another PCIe controller can be probed
+	 */
+
+	return 0;
+}
+
 static int s32_pcie_probe(struct udevice *dev)
 {
 	struct s32_pcie *pcie = dev_get_priv(dev);
@@ -819,46 +891,12 @@ static int s32_pcie_probe(struct udevice *dev)
 		return ret;
 	}
 
-	if (s32_pcie_wait_link_up(pcie->dbi)) {
-		u32 speed, width;
-
-		s32_get_link_status(pcie, &width, &speed, true);
-		printf("PCIe%d: Link established at X%d, Gen%d\n",
-				pcie->id, width, speed);
-		pcie->linkwidth = width;
-		pcie->linkspeed = speed;
-		printf("PCIe%d: Link up! X%d, Gen%d\n", pcie->id,
-				pcie->linkwidth, pcie->linkspeed);
-		pcie->enabled = true;
-	} else {
-		printf("PCIe%d: Failed to get link up\n", pcie->id);
-		s32_pcie_show_link_err_status(pcie);
-	}
-
 	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
 
-	/* apply other custom settings (bars, iATU etc.) */
-	if (!pcie->ep_mode) {
-		if (!pcie->enabled)
-			return ret;
-		ret = s32_pcie_setup_ctrl(pcie);
-	} else {
-		/* We don't need link up to configure EP */
-		pcie->enabled = true;
-		ret = s32_pcie_setup_ep(pcie);
-	}
-
-	if (!ret && uc) {
-		struct uclass_driver *uc_drv = uc->uc_drv;
-
-		/* for EP mode, skip postprobing functions since
-		 * it corrupts configuration
-		 */
-		if (pcie->ep_mode && uc_drv && (uc_drv->post_probe))
-			uc_drv->post_probe = NULL;
-	}
-
-	return 0;
+	if (pcie->ep_mode)
+		return s32_pcie_probe_ep(pcie, uc);
+	else
+		return s32_pcie_probe_rc(pcie);
 }
 
 static void show_pci_devices(struct udevice *bus, struct udevice *dev,

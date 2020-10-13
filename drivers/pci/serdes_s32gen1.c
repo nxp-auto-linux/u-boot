@@ -149,12 +149,12 @@ int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
 	return 0;
 }
 
-static void s32_serdes_disable_ltssm(void __iomem *dbi)
+void s32_serdes_disable_ltssm(void __iomem *dbi)
 {
 	BCLR32(dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
-static void s32_serdes_enable_ltssm(void __iomem *dbi)
+void s32_serdes_enable_ltssm(void __iomem *dbi)
 {
 	BSET32(dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
@@ -537,7 +537,8 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 
 	pcie->id = fdtdec_get_int(fdt, node, "device_id", -1);
 
-	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", 0);
+	/* get supported width (X1/X2) from device tree */
+	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
 
 	return ret;
 }
@@ -620,7 +621,6 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	/* Keep ltssm_enable =0 to disable link  training for programming
 	 * the DBI.
-	 * Note: ltssm_enable is set to 1 from the PCIe driver.
 	 */
 	s32_serdes_disable_ltssm(pcie->dbi);
 
@@ -647,16 +647,12 @@ static int s32_serdes_probe(struct udevice *dev)
 		char mode[SERDES_MODE_SIZE];
 
 		/* Update the max link depending on other factors */
-
+		/* Use by default the width from the serdes node
+		 * in the device tree
+		 */
 		get_serdes_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
 		debug("SerDes%d: Configure as %s\n", pcie->id, mode);
 		if (IS_SERDES_SGMII(pcie->devtype))
-			pcie->linkwidth = X1;
-
-		/* Restrict EP to X1, since we don't always have link
-		 * in case of EP (RC may start after the EP)
-		 */
-		if (!(pcie->devtype & PCIE_RC))
 			pcie->linkwidth = X1;
 
 		if (!s32_pcie_init(pcie->dbi, pcie->id,
@@ -665,7 +661,13 @@ static int s32_serdes_probe(struct udevice *dev)
 			return ret;
 
 		s32_serdes_enable_ltssm(pcie->dbi);
+	}
 
+	/*
+	 * it makes sense to link up only as RC, as the EP
+	 * may boot earlier
+	 */
+	if (pcie->devtype & PCIE_RC) {
 		if (s32_pcie_wait_link_up(pcie->dbi)) {
 			debug("SerDes%d: link is up (X%d)\n", pcie->id,
 					pcie->linkwidth);

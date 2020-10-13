@@ -66,7 +66,8 @@
 		device_type = "pci";
 		serdes-handle = <&serdes1>;
 		device_id = <1>;
-		num-lanes = <1>;
+		num-lanes = <1>; /* supports max 1 pcie lane */
+		link-speed = <3>; /* supports Gen3 speed */
 		bus-range = <0x0 0xff>;
 		ranges =
 			/* downstream I/O */
