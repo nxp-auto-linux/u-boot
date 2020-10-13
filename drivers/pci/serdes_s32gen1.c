@@ -109,7 +109,8 @@ bool s32_pcie_wait_link_up(void __iomem *dbi)
 
 enum serdes_mode s32_get_serdes_mode_from_target(void *dbi, int id)
 {
-	return SUBSYS_MODE_VALUE(in_le32(dbi + SS_SS_RW_REG_0));
+	return ((in_le32(dbi + SS_SS_RW_REG_0)) & SUBSYS_MODE_MASK) >>
+		SUBSYS_MODE_LSB;
 }
 
 int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
@@ -140,7 +141,7 @@ int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
 	default: return -EINVAL;
 	}
 
-	BSET32(dbi + SS_SS_RW_REG_0, SUBSYS_MODE_VALUE(mode));
+	BSET32(dbi + SS_SS_RW_REG_0, BUILD_MASK_VALUE(SUBSYS_MODE, mode));
 
 	/* small delay for stabilizing the signals */
 	udelay(100);
@@ -158,10 +159,10 @@ static void s32_serdes_enable_ltssm(void __iomem *dbi)
 	BSET32(dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
-/* SERDES Peripheral reset.
+/**
+ * @brief	SERDES Peripheral reset.
  * See Reference Manual for peripheral indices used below.
  */
-
 static int rgm_get_regs(u32 id, phys_addr_t *prst, phys_addr_t *pstat)
 {
 	if (id <= 17U) {
@@ -186,7 +187,7 @@ static int rgm_get_regs(u32 id, phys_addr_t *prst, phys_addr_t *pstat)
 }
 
 /**
- * @brief		Issue peripheral/domain reset
+ * @brief	Issue peripheral/domain reset
  * @param[in]	pid Peripheral/domain index. See RM.
  */
 int rgm_issue_reset(u32 pid)
@@ -205,7 +206,7 @@ int rgm_issue_reset(u32 pid)
 }
 
 /**
- * @brief		Release peripheral/domain reset
+ * @brief	Release peripheral/domain reset
  * @param[in]	pid Peripheral/domain index. See RM.
  */
 int rgm_release_reset(u32 pid)
@@ -270,8 +271,9 @@ void s32_serdes_phy_reg_write(struct s32_serdes *pcie, uint32_t addr,
 {
 	uint32_t temp_data;
 
-	W32(pcie->dbi + SS_PHY_REG_ADDR, (PHY_REG_ADDR_FIELD_VALUE(addr) |
-			PHY_REG_EN));
+	W32(pcie->dbi + SS_PHY_REG_ADDR,
+	    BUILD_MASK_VALUE(PHY_REG_ADDR_FIELD, addr) | PHY_REG_EN);
+
 	udelay(100);
 	if (wmask != 0xFFFF)
 		temp_data = in_le32(pcie->dbi + SS_PHY_REG_DATA);
@@ -647,7 +649,7 @@ static int s32_serdes_probe(struct udevice *dev)
 		if (IS_SERDES_SGMII(pcie->devtype))
 			pcie->linkwidth = X1;
 
-		/* Restrict EP to X1, since we don't always habe link
+		/* Restrict EP to X1, since we don't always have link
 		 * in case of EP (RC may start after the EP)
 		 */
 		if (!(pcie->devtype & PCIE_RC))

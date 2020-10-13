@@ -25,9 +25,9 @@
 #define LTSSM_STATE_L0		0x11 /* L0 state */
 
 #define SERDES_LINKUP_MASK	(SMLH_LINK_UP | RDLH_LINK_UP | \
-			SMLH_LTSSM_STATE)
+		SMLH_LTSSM_STATE)
 #define SERDES_LINKUP_EXPECT	(SMLH_LINK_UP | RDLH_LINK_UP | \
-			SMLH_LTSSM_STATE_VALUE(LTSSM_STATE_L0))
+		BUILD_MASK_VALUE(SMLH_LTSSM_STATE, LTSSM_STATE_L0))
 
 /* Configuration Request Retry Status (CRS) Enable. Active high. */
 /* Defer incoming configuration requests. */

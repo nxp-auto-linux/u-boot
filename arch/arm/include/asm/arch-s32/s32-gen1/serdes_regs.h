@@ -213,15 +213,11 @@ enum serdes_xpcs_mode {
 
 /* Field definitions for PHY_GEN_CTRL */
 
-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_BIT     (16)
-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_VALUE(x) \
-		((x) & (1) << (REF_REPEAT_CLK_EN_BIT))
-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN  ((1) << (REF_REPEAT_CLK_EN_BIT))
+#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_BIT	(16)
+#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN		BIT(REF_REPEAT_CLK_EN_BIT)
 
-#define PHY_GEN_CTRL_REF_USE_PAD_BIT           (17)
-#define PHY_GEN_CTRL_REF_USE_PAD_VALUE(x) \
-		((x) & (1) << (PHY_GEN_CTRL_REF_USE_PAD_BIT))
-#define PHY_GEN_CTRL_REF_USE_PAD    ((1) << (PHY_GEN_CTRL_REF_USE_PAD_BIT))
+#define PHY_GEN_CTRL_REF_USE_PAD_BIT	(17)
+#define PHY_GEN_CTRL_REF_USE_PAD	BIT(PHY_GEN_CTRL_REF_USE_PAD_BIT)
 
 #define EXT_PCLK_REQ				(1U << 0)
 
@@ -243,87 +239,75 @@ enum serdes_xpcs_mode {
 #define MPLLB_CTRL2_MPLLB_TX_CLK_DIV(n)		(((n) & 0x7U) << 11)
 
 #define MPLL_STATE_BIT         (30)
-#define MPLL_STATE_VALUE       ((x) & (1) << (MPLL_STATE_BIT))
-#define MPLL_STATE             ((1) << (MPLL_STATE_BIT))
+#define MPLL_STATE             BIT(MPLL_STATE_BIT)
 
 #define MPLLA_STATE_BIT        (31)
-#define MPLLA_STATE_VALUE(x)   ((x) & (1) << (MPLLA_STATE_BIT))
-#define MPLLA_STATE            ((1) << (MPLLA_STATE_BIT))
+#define MPLLA_STATE            BIT(MPLLA_STATE_BIT)
 
 /* Field definitions for PCIE_PHY_MPLLB_CTRL */
 
 #define MPLLB_FORCE_EN_BIT      (0)
-#define MPLLB_FORCE_EN_VALUE(x) ((x) & (1) << (MPLLB_FORCE_EN_BIT))
-#define MPLLB_FORCE_EN          ((1) << (MPLLB_FORCE_EN_BIT))
+#define MPLLB_FORCE_EN          BIT(MPLLB_FORCE_EN_BIT)
 
 #define MPLLB_SSC_EN_BIT       (1)
-#define MPLLB_SSC_EN_VALUE(x)  ((x) & (1) << (MPLLB_SSC_EN_BIT))
-#define MPLLB_SSC_EN           ((1) << (MPLLB_SSC_EN_BIT))
+#define MPLLB_SSC_EN           BIT(MPLLB_SSC_EN_BIT)
 
 #define MPLLB_STATE_BIT        (31)
-#define MPLLB_STATE_VALUE(x)   ((x) & (1) << (MPLLB_STATE_BIT))
-#define MPLLB_STATE            ((1) << (MPLLB_STATE_BIT))
+#define MPLLB_STATE            BIT(MPLLB_STATE_BIT)
 
 /* Field definitions for SS_RW_REG_0 */
 
-#define SUBSYS_MODE_VALUE(x)			(((x) & 0x7) << 0)
+#define SUBSYS_MODE_LSB		(0)
+#define SUBSYS_MODE_MASK	(0x7)
+#define SUBSYS_MODE		((SUBSYS_MODE_MASK) << \
+		(SUBSYS_MODE_LSB))
+
+#define PHY0_CR_PARA_SEL_BIT		(9)
+#define PHY0_CR_PARA_SEL		BIT(PHY0_CR_PARA_SEL_BIT)
 
 /* Field definitions for PE0_GEN_CTRL_1 */
 
-#define DEVICE_TYPE_OVERRIDE	0x10
-#define DEVICE_TYPE_EP			0x0
-#define DEVICE_TYPE_RC			0x4
+#define DEVICE_TYPE_OVERRIDE       0x10
+#define DEVICE_TYPE_EP             0x0
+#define DEVICE_TYPE_RC             0x4
 
-#define DEVICE_TYPE_LSB        (0)
-#define DEVICE_TYPE_MASK       (0x0000000F)
-#define DEVICE_TYPE_VALUE(x)   ((x) & (DEVICE_TYPE_MASK) << \
-		(DEVICE_TYPE_LSB))
-#define DEVICE_TYPE            ((DEVICE_TYPE_MASK) << \
+#define DEVICE_TYPE_LSB            (0)
+#define DEVICE_TYPE_MASK           (0x0000000F)
+#define DEVICE_TYPE                ((DEVICE_TYPE_MASK) << \
 		(DEVICE_TYPE_LSB))
 
 /* Field definitions for PE0_LINK_DBG_2 */
 
-#define SMLH_LTSSM_STATE_LSB   (0)
-#define SMLH_LTSSM_STATE_MASK  (0x0000003F)
-#define SMLH_LTSSM_STATE_VALUE(x) ((x) & (SMLH_LTSSM_STATE_MASK) << \
-		(SMLH_LTSSM_STATE_LSB))
-#define SMLH_LTSSM_STATE       ((SMLH_LTSSM_STATE_MASK) << \
+#define SMLH_LTSSM_STATE_LSB       (0)
+#define SMLH_LTSSM_STATE_MASK      (0x0000003F)
+#define SMLH_LTSSM_STATE           ((SMLH_LTSSM_STATE_MASK) << \
 		(SMLH_LTSSM_STATE_LSB))
 
-#define SMLH_LINK_UP_BIT       (6)
-#define SMLH_LINK_UP_VALUE(x)  ((x) & (1) << (SMLH_LINK_UP_BIT))
-#define SMLH_LINK_UP           ((1) << (SMLH_LINK_UP_BIT))
+#define SMLH_LINK_UP_BIT           (6)
+#define SMLH_LINK_UP               BIT(SMLH_LINK_UP_BIT)
 
-#define RDLH_LINK_UP_BIT       (7)
-#define RDLH_LINK_UP_VALUE(x)  ((x) & (1) << (RDLH_LINK_UP_BIT))
-#define RDLH_LINK_UP           ((1) << (RDLH_LINK_UP_BIT))
+#define RDLH_LINK_UP_BIT           (7)
+#define RDLH_LINK_UP               BIT(RDLH_LINK_UP_BIT)
 
 #define RATE_LSB           (8)
 #define RATE_MASK          (0x00000003)
-#define RATE_VALUE(x)      ((x) & (RATE_MASK) << (RATE_LSB))
 #define RATE               ((RATE_MASK) << (RATE_LSB))
 
 /* Field definitions for PHY_REG_ADDR */
 
-#define PHY_REG_ADDR_FIELD_LSB (0)
-#define PHY_REG_ADDR_FIELD_MASK (0x0000FFFF)
-#define PHY_REG_ADDR_FIELD_VALUE(x) \
-		((x) & (PHY_REG_ADDR_FIELD_MASK) << \
-			(PHY_REG_ADDR_FIELD_LSB))
-#define PHY_REG_ADDR_FIELD     ((PHY_REG_ADDR_FIELD_MASK) << \
+#define PHY_REG_ADDR_FIELD_LSB       (0)
+#define PHY_REG_ADDR_FIELD_MASK      (0x0000FFFF)
+#define PHY_REG_ADDR_FIELD           ((PHY_REG_ADDR_FIELD_MASK) << \
 		(PHY_REG_ADDR_FIELD_LSB))
 
 #define PHY_REG_EN_BIT         (31)
-#define PHY_REG_EN_VALUE(x)    ((x) & (1) << (PHY_REG_EN_BIT))
-#define PHY_REG_EN             ((1) << (PHY_REG_EN_BIT))
+#define PHY_REG_EN             BIT(PHY_REG_EN_BIT)
 
 /* Field definitions for PHY_REG_DATA */
 
-#define PHY_REG_DATA_FIELD_LSB (0)
-#define PHY_REG_DATA_FIELD_MASK (0x0000FFFF)
-#define PHY_REG_DATA_FIELD_VALUE(x) ((x) & (PHY_REG_DATA_FIELD_MASK) << \
-		(PHY_REG_DATA_FIELD_LSB))
-#define PHY_REG_DATA_FIELD     ((PHY_REG_DATA_FIELD_MASK) << \
+#define PHY_REG_DATA_FIELD_LSB       (0)
+#define PHY_REG_DATA_FIELD_MASK      (0x0000FFFF)
+#define PHY_REG_DATA_FIELD           ((PHY_REG_DATA_FIELD_MASK) << \
 		(PHY_REG_DATA_FIELD_LSB))
 
 /* PHY registers */

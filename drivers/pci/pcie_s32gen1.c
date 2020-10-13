@@ -72,7 +72,7 @@ static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
 			in_le32(pcie->dbi + SS_PE0_LINK_DBG_1),
 			in_le32(pcie->dbi + SS_PE0_LINK_DBG_2));
 	printf("(expected 0x%08x)\n",
-			SERDES_LINKUP_EXPECT);
+			(u32)SERDES_LINKUP_EXPECT);
 	printf("DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
 			in_le32(PCIE_PL_DEBUG0(pcie->dbi)),
 			in_le32(PCIE_PL_DEBUG1(pcie->dbi)));
@@ -113,8 +113,8 @@ void s32_pcie_atu_outbound_set(struct s32_pcie *pcie, uint32_t region_no,
 				(0x200 * region_no)), ctrl_1);
 		RMW32((PCIE_IATU_REGION_CTRL_2_OUTBOUND_0(pcie->dbi) +
 				(0x200 * region_no)),
-			PCIE_REGION_EN_VALUE(1) |
-			PCIE_CFG_SHIFT_MODE_VALUE(shift_mode),
+			PCIE_REGION_EN |
+			BUILD_BIT_VALUE(PCIE_CFG_SHIFT_MODE, shift_mode),
 			PCIE_REGION_EN | PCIE_CFG_SHIFT_MODE);
 	} else
 		printf("PCIe%d: Invalid iATU OUT region %d\n",
@@ -138,8 +138,8 @@ static void s32_pcie_atu_inbound_set_bar(struct s32_pcie *pcie,
 				(0x200 * region_no), ctrl_1);
 		RMW32(PCIE_IATU_REGION_CTRL_2_INBOUND_0(pcie->dbi) +
 				(0x200 * region_no),
-			PCIE_REGION_EN_VALUE(1) | PCIE_MATCH_MODE_VALUE(1) |
-			PCIE_BAR_NUM_VALUE(bar),
+			PCIE_REGION_EN | PCIE_MATCH_MODE |
+			BUILD_MASK_VALUE(PCIE_BAR_NUM, bar),
 			PCIE_REGION_EN | PCIE_MATCH_MODE | PCIE_BAR_NUM);
 	} else {
 		printf("PCIe%d: Invalid iATU IN region %d\n",
@@ -524,25 +524,25 @@ void s32_pcie_change_mstr_ace_domain(void __iomem *dbi, uint32_t ardomain,
 		uint32_t awdomain)
 {
 	BSET32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi),
-	       PCIE_CFG_MSTR_ARDOMAIN_MODE_VALUE(3) |
-		   PCIE_CFG_MSTR_AWDOMAIN_MODE_VALUE(3));
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_ARDOMAIN_MODE, 3) |
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_AWDOMAIN_MODE, 3));
 	RMW32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi),
-			PCIE_CFG_MSTR_ARDOMAIN_VALUE_VALUE(ardomain) |
-			PCIE_CFG_MSTR_AWDOMAIN_VALUE_VALUE(awdomain),
-			PCIE_CFG_MSTR_ARDOMAIN_VALUE |
-			PCIE_CFG_MSTR_AWDOMAIN_VALUE);
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_ARDOMAIN_VALUE, ardomain) |
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_AWDOMAIN_VALUE, awdomain),
+		PCIE_CFG_MSTR_ARDOMAIN_VALUE |
+		PCIE_CFG_MSTR_AWDOMAIN_VALUE);
 }
 
 void s32_pcie_change_mstr_ace_cache(void __iomem *dbi, uint32_t arcache,
 		uint32_t awcache)
 {
 	BSET32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi),
-	       PCIE_CFG_MSTR_ARCACHE_MODE_VALUE(0xF) |
-		   PCIE_CFG_MSTR_AWCACHE_MODE_VALUE(0xF));
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_ARCACHE_MODE, 0xF) |
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_AWCACHE_MODE, 0xF));
 	RMW32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi),
-	      PCIE_CFG_MSTR_ARCACHE_VALUE_VALUE(arcache) |
-		  PCIE_CFG_MSTR_AWCACHE_VALUE_VALUE(awcache),
-		  PCIE_CFG_MSTR_ARCACHE_VALUE|PCIE_CFG_MSTR_AWCACHE_VALUE);
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_ARCACHE_VALUE, arcache) |
+		BUILD_MASK_VALUE(PCIE_CFG_MSTR_AWCACHE_VALUE, awcache),
+		PCIE_CFG_MSTR_ARCACHE_VALUE | PCIE_CFG_MSTR_AWCACHE_VALUE);
 }
 
 bool s32_pcie_set_link_width(void __iomem *dbi,
@@ -552,19 +552,19 @@ bool s32_pcie_set_link_width(void __iomem *dbi,
 
 	/* Set link width */
 	RMW32(PCIE_PORT_LOGIC_GEN2_CTRL(dbi),
-			PCIE_NUM_OF_LANES_VALUE(linkwidth),
-			PCIE_NUM_OF_LANES);
+		BUILD_MASK_VALUE(PCIE_NUM_OF_LANES, linkwidth),
+		PCIE_NUM_OF_LANES);
 
 	if (linkwidth == X1) {
 		debug("PCIe%d: Set link X1\n", id);
 		RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(dbi),
-				PCIE_LINK_CAPABLE_VALUE(1),
-				PCIE_LINK_CAPABLE);
+			BUILD_MASK_VALUE(PCIE_LINK_CAPABLE, 1),
+			PCIE_LINK_CAPABLE);
 	} else {
 		debug("PCIe%d: Set link X2\n", id);
 		RMW32(PCIE_PORT_LOGIC_PORT_LINK_CTRL(dbi),
-				PCIE_LINK_CAPABLE_VALUE(3),
-				PCIE_LINK_CAPABLE);
+			BUILD_MASK_VALUE(PCIE_LINK_CAPABLE, 3),
+			PCIE_LINK_CAPABLE);
 	}
 
 	s32_pcie_disable_dbi_rw(dbi);
@@ -579,9 +579,11 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 
 	/* Set device type */
 	if (rc_mode)
-		W32(dbi + SS_PE0_GEN_CTRL_1, DEVICE_TYPE_VALUE(PCIE_RC));
+		W32(dbi + SS_PE0_GEN_CTRL_1,
+		    BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_RC));
 	else
-		W32(dbi + SS_PE0_GEN_CTRL_1, DEVICE_TYPE_VALUE(PCIE_EP));
+		W32(dbi + SS_PE0_GEN_CTRL_1,
+		    BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_EP));
 
 	/* Enable writing dbi registers */
 	s32_pcie_enable_dbi_rw(dbi);
@@ -590,10 +592,14 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	BSET32(PCIE_PORT_LOGIC_GEN2_CTRL(dbi),
 			PCIE_DIRECT_SPEED_CHANGE);
 
+	/* Disable phase 2,3 equalization */
 	RMW32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(dbi),
-		PCIE_GEN3_EQ_FB_MODE_VALUE(1) |
-		PCIE_GEN3_EQ_PSET_REQ_VEC_VALUE(0x84),
+		BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
+		BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84),
 		PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
+	/* Test value */
+	debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
+	      in_le32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(dbi)));
 
 	/* Set domain to 0 and cache to 3 */
 	s32_pcie_change_mstr_ace_cache(dbi, 3, 3);
@@ -602,15 +608,26 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	if (rc_mode) {
 		/* Set link number to 0 */
 		BCLR32(PCIE_PORT_LOGIC_PORT_FORCE(dbi), PCIE_LINK_NUM);
-		/* Set max payload supported */
+		/* Set max payload supported, 256 bytes and
+		 * relaxed ordering.
+		 */
 		RMW32(PCIE_CAP_DEVICE_CONTROL_DEVICE_STATUS(dbi),
-			PCIE_CAP_MAX_PAYLOAD_SIZE_CS_VALUE(1) |
-			PCIE_CAP_MAX_READ_REQ_SIZE_VALUE(1),
+			PCIE_CAP_EN_REL_ORDER |
+			BUILD_MASK_VALUE(PCIE_CAP_MAX_PAYLOAD_SIZE_CS, 1) |
+			BUILD_MASK_VALUE(PCIE_CAP_MAX_READ_REQ_SIZE, 1),
+			PCIE_CAP_EN_REL_ORDER |
 			PCIE_CAP_MAX_PAYLOAD_SIZE_CS |
 			PCIE_CAP_MAX_READ_REQ_SIZE);
-		/* Enable IO/Mem/Bus master */
+		/* Enable the IO space, Memory space, Bus master,
+		 * Parity error, Serr and disable INTx generation
+		 */
 		W32(PCIE_CTRL_TYPE1_STATUS_COMMAND_REG(dbi),
-				PCIE_IO_EN | PCIE_MSE | PCIE_BME);
+			PCIE_SERREN | PCIE_PERREN | PCIE_INT_EN |
+			PCIE_IO_EN | PCIE_MSE | PCIE_BME);
+
+		/* Test value */
+		debug("PCIE_CTRL_TYPE1_STATUS_COMMAND_REG: 0x%08x\n",
+		      in_le32(PCIE_CTRL_TYPE1_STATUS_COMMAND_REG(dbi)));
 	}
 
 	/* Disable writing dbi registers */
