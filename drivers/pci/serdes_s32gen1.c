@@ -285,13 +285,26 @@ void s32_serdes_phy_reg_write(struct s32_serdes *pcie, uint32_t addr,
 
 void s32_serdes_phy_init(struct s32_serdes *pcie)
 {
-	/* DELTA_IQ_OVRD_IN enable and overrides PCIe0.L0 */
-	s32_serdes_phy_reg_write(pcie, 0x3019, 0x03, 0xff);
-	s32_serdes_phy_reg_write(pcie, 0x3019, 0x13, 0xff);
+	/* Select the CR parallel interface */
+	BSET32(pcie->dbi + SS_SS_RW_REG_0, PHY0_CR_PARA_SEL);
 
-	/* DELTA_IQ_OVRD_IN enable and overrides PCIe0.L1 */
-	s32_serdes_phy_reg_write(pcie, 0x3119, 0x03, 0xff);
-	s32_serdes_phy_reg_write(pcie, 0x3119, 0x13, 0xff);
+	/* Address erratum TKT0527889:
+	 * PCIe Gen3 Receiver Long Channel Stressed Voltage Test Failing
+	 */
+	/* RX_EQ_DELTA_IQ_OVRD enable and override value for PCIe0 lane 0 */
+	s32_serdes_phy_reg_write(pcie,
+				 RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
+				 0x03, 0xff);
+	s32_serdes_phy_reg_write(pcie,
+				 RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
+				 0x13, 0xff);
+	/* RX_EQ_DELTA_IQ_OVRD enable and override value for PCIe0 lane 1 */
+	s32_serdes_phy_reg_write(pcie,
+				 RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
+				 0x03, 0xff);
+	s32_serdes_phy_reg_write(pcie,
+				 RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
+				 0x13, 0xff);
 }
 
 bool s32_serdes_init(struct s32_serdes *pcie)

@@ -326,6 +326,11 @@ enum serdes_xpcs_mode {
 #define PHY_REG_DATA_FIELD     ((PHY_REG_DATA_FIELD_MASK) << \
 		(PHY_REG_DATA_FIELD_LSB))
 
+/* PHY registers */
+
+#define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
+#define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
+
 enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
 int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode);
 enum serdes_mode s32_get_serdes_mode_from_target(void *dbi, int id);
