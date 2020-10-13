@@ -600,14 +600,23 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	/* Test value */
 	debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
 	      in_le32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(dbi)));
+	if (!s32_pcie_set_link_width(dbi, id, linkwidth))
+		return false;
 
 	/* Set domain to 0 and cache to 3 */
 	s32_pcie_change_mstr_ace_cache(dbi, 3, 3);
 	s32_pcie_change_mstr_ace_domain(dbi, 0, 0);
 
+	/* Test value for coherency control reg */
+	debug("COHERENCY_CONTROL_3_OFF: 0x%08x\n",
+	      in_le32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi)));
+
+	BSET32(PCIE_PORT_LOGIC_PORT_FORCE(dbi), PCIE_DO_DESKEW_FOR_SRIS);
+
+	/* Enable writing dbi registers */
+	s32_pcie_enable_dbi_rw(dbi);
+
 	if (rc_mode) {
-		/* Set link number to 0 */
-		BCLR32(PCIE_PORT_LOGIC_PORT_FORCE(dbi), PCIE_LINK_NUM);
 		/* Set max payload supported, 256 bytes and
 		 * relaxed ordering.
 		 */
@@ -628,7 +637,37 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		/* Test value */
 		debug("PCIE_CTRL_TYPE1_STATUS_COMMAND_REG: 0x%08x\n",
 		      in_le32(PCIE_CTRL_TYPE1_STATUS_COMMAND_REG(dbi)));
+
+		/* Enable errors */
+		BSET32(PCIE_CAP_DEVICE_CONTROL_DEVICE_STATUS(dbi),
+		       PCIE_CAP_CORR_ERR_REPORT_EN |
+		       PCIE_CAP_NON_FATAL_ERR_REPORT_EN |
+		       PCIE_CAP_FATAL_ERR_REPORT_EN |
+		       PCIE_CAP_UNSUPPORT_REQ_REP_EN);
+
+		/* Disable BARs */
+		W32(PCIE_BAR0_MASK(dbi), 0);
+		W32(PCIE_BAR1_MASK(dbi), 0);
+		W32(PCIE_BAR2_MASK(dbi), 0);
+		W32(PCIE_BAR3_MASK(dbi), 0);
+		W32(PCIE_BAR4_MASK(dbi), 0);
+		W32(PCIE_BAR5_MASK(dbi), 0);
 	}
+
+	/* Enable direct speed change */
+	BSET32(PCIE_PORT_LOGIC_GEN2_CTRL(dbi),
+	       PCIE_DIRECT_SPEED_CHANGE);
+
+	/* Disable phase 2,3 equalization */
+	RMW32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(dbi),
+	      BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
+	      BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84),
+	      PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
+	/* Test value */
+	debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
+	      in_le32(PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(dbi)));
+
+	BSET32(PCIE_PORT_LOGIC_GEN3_RELATED(dbi), PCIE_EQ_PHASE_2_3);
 
 	/* Disable writing dbi registers */
 	s32_pcie_disable_dbi_rw(dbi);
@@ -691,25 +730,6 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 	return ret;
 }
-
-#ifdef PCIE_LINK_RECONFIG_ON_ERR
-void s32_pcie_switch_speed(struct s32_pcie *pcie)
-{
-	debug("PCIe%d: Switching to GEN%d\n", pcie->id, pcie->linkspeed);
-
-	/* Set link speed */
-	RMW32(PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG(pcie->dbi),
-			PCIE_CAP_TARGET_LINK_SPEED_VALUE(pcie->linkspeed),
-			PCIE_CAP_TARGET_LINK_SPEED);
-
-	if (pcie->linkspeed > GEN1) {
-		BCLR32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
-				PCIE_DIRECT_SPEED_CHANGE);
-		BSET32(PCIE_PORT_LOGIC_GEN2_CTRL(pcie->dbi),
-				PCIE_DIRECT_SPEED_CHANGE);
-	}
-}
-#endif
 
 static void s32_get_link_status(struct s32_pcie *pcie,
 		u32 *width, u32 *speed, bool verbose)

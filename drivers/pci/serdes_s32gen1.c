@@ -368,7 +368,9 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 
 		/* Monitor Serdes MPLL state */
 		if (wait_read32((void *)(pcie->dbi + SS_PHY_MPLLA_CTRL),
-			MPLL_STATE, MPLL_STATE, PCIE_MPLL_LOCK_COUNT)) {
+			MPLL_STATE | MPLLA_STATE,
+			MPLL_STATE | MPLLA_STATE,
+			PCIE_MPLL_LOCK_COUNT)) {
 			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
 				pcie->id);
 			return false;
@@ -657,8 +659,6 @@ static int s32_serdes_probe(struct udevice *dev)
 
 		if (!s32_pcie_init(pcie->dbi, pcie->id,
 					pcie->devtype & PCIE_RC,
-					pcie->linkwidth) ||
-			!s32_pcie_set_link_width(pcie->dbi, pcie->id,
 					pcie->linkwidth))
 			return ret;
 
