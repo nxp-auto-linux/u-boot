@@ -7,11 +7,23 @@
 #include "imagetool.h"
 #include "s32_common.h"
 #include "s32v234image.h"
+#include <asm/arch/clock.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_cgm_regs.h>
 
+#define BIT(nr)			(1UL << (nr))
+
 static struct program_image image_layout = {
+#ifdef CONFIG_FLASH_BOOT
+	.qspi_params = {
+		.offset = S32V234_QSPI_PARAMS_OFFSET,
+		.size = S32V234_QSPI_PARAMS_SIZE,
+	},
+#endif
 	.ivt = {
+#ifdef CONFIG_FLASH_BOOT
+		.offset = S32V234_IVT_OFFSET,
+#else
 		/* The offset is actually 0x1000, but we do not
 		 * want to integrate it in the generated image.
 		 * This allows writing the image at 0x1000 on
@@ -19,6 +31,7 @@ static struct program_image image_layout = {
 		 * partition table.
 		 */
 		.offset = 0x0,
+#endif
 		.size = sizeof(struct ivt),
 	},
 	.boot_data = {
@@ -71,16 +84,31 @@ static struct boot_data *get_boot_data(struct program_image *image)
 	return (struct boot_data *)image->boot_data.data;
 }
 
+#ifdef CONFIG_FLASH_BOOT
+static struct qspi_params *get_qspi_params(struct program_image *image)
+{
+	return (struct qspi_params *)image->qspi_params.data;
+}
+
+static void s32v234_set_qspi_params(struct qspi_params *qspi_params)
+{
+	memcpy(qspi_params, &s32v234_qspi_params, sizeof(*qspi_params));
+}
+#endif
+
 static void set_data_pointers(struct program_image *layout, void *header)
 {
 	uint8_t *data = (uint8_t *)header;
 
 	layout->ivt.data = data + layout->ivt.offset;
+#ifdef CONFIG_FLASH_BOOT
+	layout->qspi_params.data = data + layout->qspi_params.offset;
+#endif
 	layout->boot_data.data = data + layout->boot_data.offset;
 	layout->dcd.data = data + layout->dcd.offset;
 }
 
-static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
+static void s32v234_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
 	uint8_t *dcd;
@@ -104,16 +132,22 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->version = IVT_VERSION;
 	ivt->entry = CONFIG_SYS_TEXT_BASE;
 	ivt->self = ivt->entry - S32V234_INITLOAD_SIZE + S32V234_IVT_OFFSET;
-	ivt->dcd_pointer = ivt->self + image_layout.dcd.offset;
-	ivt->boot_data_pointer = ivt->self +  image_layout.boot_data.offset;
+	ivt->dcd_pointer = ivt->self + image_layout.dcd.offset -
+				image_layout.ivt.offset;
+	ivt->boot_data_pointer = ivt->self + image_layout.boot_data.offset -
+				image_layout.ivt.offset;
 
 	boot_data = get_boot_data(&image_layout);
 	boot_data->start = ivt->entry - S32V234_INITLOAD_SIZE;
 	boot_data->length = ROUND(sbuf->st_size + S32V234_INITLOAD_SIZE,
 				  0x1000);
+#ifdef CONFIG_FLASH_BOOT
+	s32v234_set_qspi_params(get_qspi_params(&image_layout));
+#endif
+	s32_check_env_overlap(sbuf->st_size);
 }
 
-static int s32gen1_check_image_type(uint8_t type)
+static int s32v234_check_image_type(uint8_t type)
 {
 	if (type == IH_TYPE_S32V234IMAGE)
 		return EXIT_SUCCESS;
@@ -121,13 +155,16 @@ static int s32gen1_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
-static int s32g2xx_build_layout(struct program_image *program_image,
+static int s32v234_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
 	uint8_t *image_layout;
 	struct image_comp *parts[] = {&program_image->ivt,
 		&program_image->boot_data,
 		&program_image->dcd,
+#ifdef CONFIG_FLASH_BOOT
+		&program_image->qspi_params,
+#endif
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
@@ -154,17 +191,47 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	return 0;
 }
 
-static int s32gen1_vrec_header(struct image_tool_params *tool_params,
+static int s32v234_vrec_header(struct image_tool_params *tool_params,
 			       struct image_type_params *type_params)
 {
 	size_t header_size;
 	void *image = NULL;
 
-	s32g2xx_build_layout(&image_layout, &header_size, &image);
+	s32v234_build_layout(&image_layout, &header_size, &image);
 	type_params->header_size = header_size;
 	type_params->hdr = image;
 
 	return 0;
+}
+
+static void s32v234_print_header(const void *header)
+{
+	struct boot_data *boot_data;
+
+	boot_data = get_boot_data(&image_layout);
+
+	fprintf(stderr, "\nNote: The following offsets are absolute offsets "
+			"within the persistent storage\n");
+
+	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.ivt.offset + S32V234_IVT_OFFSET),
+		(unsigned int)image_layout.ivt.size);
+	fprintf(stderr, "Boot Data:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.boot_data.offset +
+							S32V234_IVT_OFFSET),
+		(unsigned int)image_layout.boot_data.size);
+	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(image_layout.dcd.offset + S32V234_IVT_OFFSET),
+		(unsigned int)image_layout.dcd.size);
+	fprintf(stderr, "U-Boot:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)(S32V234_INITLOAD_SIZE),
+		(unsigned int)boot_data->length);
+#if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
+	fprintf(stderr, "U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",
+		(unsigned int)CONFIG_ENV_OFFSET,
+		(unsigned int)CONFIG_ENV_SIZE);
+#endif
+	fprintf(stderr, "\n");
 }
 
 U_BOOT_IMAGE_TYPE(
@@ -174,10 +241,10 @@ U_BOOT_IMAGE_TYPE(
 	NULL,
 	NULL,
 	NULL,
-	s32_print_header,
-	s32gen1_set_header,
+	s32v234_print_header,
+	s32v234_set_header,
 	NULL,
-	s32gen1_check_image_type,
+	s32v234_check_image_type,
 	NULL,
-	s32gen1_vrec_header
+	s32v234_vrec_header
 );

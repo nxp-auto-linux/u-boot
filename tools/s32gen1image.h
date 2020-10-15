@@ -38,11 +38,6 @@ struct fip_image_data {
 #define APPLICATION_BOOT_CODE_TAG	(0xd5)
 #define APPLICATION_BOOT_CODE_VERSION	(0x60)
 
-#define SRAM_RESERVED_0_START		(0x34008050)
-#define SRAM_RESERVED_0_END		(0x34008200)
-#define SRAM_RESERVED_1_START		(0x38008050)
-#define SRAM_RESERVED_1_END		(0x38008200)
-
 #define S32GEN1_QSPI_PARAMS_SIZE	(0x200)
 
 struct ivt {
@@ -127,6 +122,10 @@ struct program_image {
 	struct image_comp ivt;
 #ifdef CONFIG_FLASH_BOOT
 	struct image_comp qspi_params;
+#endif
+	struct image_comp ivt_duplicate;
+#ifdef CONFIG_HSE_SECBOOT
+	struct image_comp hse_reserved;
 #endif
 	struct image_comp dcd;
 	struct image_comp app_code;

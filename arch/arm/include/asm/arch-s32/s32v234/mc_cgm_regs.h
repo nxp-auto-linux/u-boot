@@ -31,6 +31,16 @@
 #define MC_CGM_SC_SEL_MASK		(0x0F000000)
 #define MC_CGM_SC_SEL_OFFSET		(24)
 
+#define MC_CGM_SC_SEL_GET(sc_ss)	(((sc_ss) & MC_CGM_SC_SEL_MASK) >> \
+					MC_CGM_SC_SEL_OFFSET)
+#define MC_CGM_SC_DIV_GET(sc_ss)	\
+				((((sc_ss) & MC_CGM_SC_DCn_PREDIV_MASK) >> \
+				MC_CGM_SC_DCn_PREDIV_OFFSET) + 1)
+
+#define CGM_SCn_DC0	0
+#define CGM_SCn_DC1	1
+#define CGM_SCn_DC2	2
+
 /* MC_CGM_ACn_DCm */
 #define CGM_ACn_DCm(cgm_addr, ac, dc)	(((cgm_addr) + 0x00000808) + \
 					 ((ac) * 0x20) + ((dc) * 0x4))
@@ -62,6 +72,13 @@
 		(((source) & 0xF) << MC_CGM_ACn_SEL_OFFSET))
 #define MC_CGM_ACn_SEL_OFFSET		(24)
 
+#define MC_CGM_ACn_SEL_GET(ac)		(((ac) & MC_CGM_ACn_SEL_MASK) >> \
+					MC_CGM_ACn_SEL_OFFSET)
+
+#define MC_CGM_ACn_DIV_GET(ac)		\
+				((((ac) & MC_CGM_ACn_DCm_PREDIV_MASK) >> \
+				MC_CGM_ACn_DCm_PREDIV_OFFSET) + 1)
+
 #define MC_CGM_ACn_SEL_FIRC		(0x0)
 #define MC_CGM_ACn_SEL_XOSC		(0x1)
 #define MC_CGM_ACn_SEL_ARMPLL		(0x2)
@@ -77,6 +94,27 @@
 #define MC_CGM_ACn_SEL_VIDEOPLLDIV2	(0x9)
 #define MC_CGM_ACn_SEL_PERCLK		(0xA)
 
+#define CGM_AC0_SC	0
+#define CGM_AC1_SC	1
+#define CGM_AC2_SC	2
+#define CGM_AC3_SC	3
+#define CGM_AC5_SC	5
+#define CGM_AC6_SC	6
+#define CGM_AC7_SC	7
+#define CGM_AC8_SC	8
+#define CGM_AC9_SC	9
+#define CGM_AC12_SC	12
+#define CGM_AC13_SC	13
+#define CGM_AC14_SC	14
+#define CGM_AC15_SC	15
+
+#define CGM_ACn_DC0	0
+#define CGM_ACn_DC1	1
+#define CGM_ACn_DC2	2
+
+#define PLLDIG_PLLDV_PREDIV_0	0
+#define PLLDIG_PLLDV_PREDIV_1	1
+#define PLLDIG_PLLDV_PREDIV_3	3
 
 /* PLLDIG PLL Divider Register (PLLDIG_PLLDV) */
 #define PLLDIG_PLLDV(pll)		((MC_CGM0_BASE_ADDR + 0x00000028) + \
@@ -187,9 +225,9 @@
 /* DFS Port Reset Register (DFS_PORTRESET) */
 #define DFS_PORTRESET(pll)			(DFS0_BASE_ADDR + 0x00000014 +\
 						 ((pll) * 0x80))
-#define DFS_PORTRESET_PORTRESET_SET(val)	(DFS_PORTRESET_PORTRESET_MASK |\
-		(((val) & DFS_PORTRESET_PORTRESET_MAXVAL) \
-		 << DFS_PORTRESET_PORTRESET_OFFSET))
+#define DFS_PORTRESET_PORTRESET_SET(val)	\
+				(((val) & DFS_PORTRESET_PORTRESET_MASK) \
+				<< DFS_PORTRESET_PORTRESET_OFFSET)
 #define DFS_PORTRESET_PORTRESET_MAXVAL		(0xF)
 #define DFS_PORTRESET_PORTRESET_MASK		(0x0000000F)
 #define DFS_PORTRESET_PORTRESET_OFFSET		(0)

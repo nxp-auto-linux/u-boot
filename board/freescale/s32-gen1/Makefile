@@ -7,6 +7,7 @@
 
 ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
 ccflags-$(CONFIG_S32_GEN1) += -Iboard/freescale/s32-gen1
+ccflags-$(CONFIG_S32_GEN1) += -Idrivers/clk/s32/include
 obj-y := common.o
 
 obj-$(CONFIG_S32G274A) += s32g274a.o

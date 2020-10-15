@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2016 Heinz Wrobel <heinz.wrobel@nxp.com>
  * Copyright (C) 2015 Aurelian Voicu <aurelian.voicu@nxp.com>
- * Copyright 2016-2017 NXP
+ * Copyright 2016-2017, 2020 NXP
  * (C) Copyright 2018 MicroSys Electronics GmbH
  *
  * Based on upstream iMX U-Boot driver:
@@ -676,12 +676,17 @@ static int s32v_pcie_link_up(const int ep_mode)
 	 * up, otherwise no downstream devices are detected. After the
 	 * link is up, a managed Gen1->Gen2 transition can be initiated.
 	 */
-	printf("\nForcing PCIe to Gen1 operation\n");
+	if (!ep_mode) {
+		printf("\nForcing PCIe to Gen1 operation\n");
 
-	tmp = readl(S32V234_DBI_ADDR + 0x7c);
-	tmp &= ~0xf;
-	tmp |= 0x1;
-	writel(tmp, S32V234_DBI_ADDR + 0x7c);
+		tmp = readl(S32V234_DBI_ADDR + 0x7c);
+		tmp &= ~0xf;
+		tmp |= 0x1;
+		writel(tmp, S32V234_DBI_ADDR + 0x7c);
+	} else {
+		printf("\nPCIE: EP: Gen%d\n",
+		       readl(S32V234_DBI_ADDR + 0x7c) & 0xf);
+	}
 
 	/* LTSSM enable, starting link. */
 	setbits_le32(&src_regs->gpr5, SRC_GPR5_PCIE_APP_LTSSM_ENABLE);

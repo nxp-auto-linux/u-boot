@@ -1,8 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017,2020 NXP
  *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_S32V234_MCME_REGS_H__
@@ -19,16 +19,16 @@
 #define MC_ME_GS_S_SYSCLK_FXOSC			(0x1 << 0)
 #define MC_ME_GS_S_SYSCLK_ARMPLL		(0x2 << 0)
 #define MC_ME_GS_S_STSCLK_DISABLE		(0xF << 0)
-#define MC_ME_GS_S_FIRC				(1 << 4)
-#define MC_ME_GS_S_XOSC				(1 << 5)
-#define MC_ME_GS_S_ARMPLL			(1 << 6)
-#define MC_ME_GS_S_PERPLL			(1 << 7)
-#define MC_ME_GS_S_ENETPLL			(1 << 8)
-#define MC_ME_GS_S_DDRPLL			(1 << 9)
-#define MC_ME_GS_S_VIDEOPLL			(1 << 10)
-#define MC_ME_GS_S_MVR				(1 << 20)
-#define MC_ME_GS_S_PDO				(1 << 23)
-#define MC_ME_GS_S_MTRANS			(1 << 27)
+#define MC_ME_GS_S_FIRC				BIT(4)
+#define MC_ME_GS_S_XOSC				BIT(5)
+#define MC_ME_GS_S_ARMPLL			BIT(6)
+#define MC_ME_GS_S_PERPLL			BIT(7)
+#define MC_ME_GS_S_ENETPLL			BIT(8)
+#define MC_ME_GS_S_DDRPLL			BIT(9)
+#define MC_ME_GS_S_VIDEOPLL			BIT(10)
+#define MC_ME_GS_S_MVR				BIT(20)
+#define MC_ME_GS_S_PDO				BIT(23)
+#define MC_ME_GS_S_MTRANS			BIT(27)
 #define MC_ME_GS_S_CRT_MODE_RESET		(0x0 << 28)
 #define MC_ME_GS_S_CRT_MODE_TEST		(0x1 << 28)
 #define MC_ME_GS_S_CRT_MODE_DRUN		(0x3 << 28)
@@ -54,25 +54,25 @@
 /* MC_ME_ME */
 #define MC_ME_ME				(MC_ME_BASE_ADDR + 0x00000008)
 
-#define MC_ME_ME_RESET_FUNC			(1 << 0)
-#define MC_ME_ME_TEST				(1 << 1)
-#define MC_ME_ME_DRUN				(1 << 3)
-#define MC_ME_ME_RUN0				(1 << 4)
-#define MC_ME_ME_RUN1				(1 << 5)
-#define MC_ME_ME_RUN2				(1 << 6)
-#define MC_ME_ME_RUN3				(1 << 7)
+#define MC_ME_ME_RESET_FUNC			BIT(0)
+#define MC_ME_ME_TEST				BIT(1)
+#define MC_ME_ME_DRUN				BIT(3)
+#define MC_ME_ME_RUN0				BIT(4)
+#define MC_ME_ME_RUN1				BIT(5)
+#define MC_ME_ME_RUN2				BIT(6)
+#define MC_ME_ME_RUN3				BIT(7)
 
 /* MC_ME_RUN_PCn */
-#define MC_ME_RUN_PCn(n)			(MC_ME_BASE_ADDR + 0x00000080 +\
-							0x4 * (n))
+#define MC_ME_RUN_PCn(n)			(MC_ME_BASE_ADDR + \
+						 0x00000080 + 0x4 * (n))
 
-#define MC_ME_RUN_PCn_RESET			(1 << 0)
-#define MC_ME_RUN_PCn_TEST			(1 << 1)
-#define MC_ME_RUN_PCn_DRUN			(1 << 3)
-#define MC_ME_RUN_PCn_RUN0			(1 << 4)
-#define MC_ME_RUN_PCn_RUN1			(1 << 5)
-#define MC_ME_RUN_PCn_RUN2			(1 << 6)
-#define MC_ME_RUN_PCn_RUN3			(1 << 7)
+#define MC_ME_RUN_PCn_RESET			BIT(0)
+#define MC_ME_RUN_PCn_TEST			BIT(1)
+#define MC_ME_RUN_PCn_DRUN			BIT(3)
+#define MC_ME_RUN_PCn_RUN0			BIT(4)
+#define MC_ME_RUN_PCn_RUN1			BIT(5)
+#define MC_ME_RUN_PCn_RUN2			BIT(6)
+#define MC_ME_RUN_PCn_RUN3			BIT(7)
 
 /*
  * MC_ME_RESET_MC/MC_ME_TEST_MC
@@ -118,7 +118,8 @@
 #define MC_ME_PCTLn_RUNPCm(n)		((n) & MC_ME_PCTLn_RUNPCm_MASK)
 #define MC_ME_PCTLn_RUNPCm_MASK		(0x7)
 
-#define MC_ME_PCTLn(n)           (MC_ME_BASE_ADDR + 0xC0 + 4*(n>>2) + (3-(n)%4))
+#define MC_ME_PCTLn(n)		(MC_ME_BASE_ADDR + 0xC0 + 4 * ((n) >> 2) \
+				 + (3 - (n) % 4))
 
 /* Peripherals PCTL indexes */
 #define DEC200_PCTL     39
@@ -164,6 +165,7 @@
 
 /* Core status register */
 #define MC_ME_CS               (MC_ME_BASE_ADDR + 0x000001C0)
+#define MC_ME_CS_A53(n)		BIT((n) + 1)
 
 /* Cortex-M4 Core Control Register */
 #define MC_MC_CCTL0            (MC_ME_BASE_ADDR + 0x000001C6)
@@ -182,17 +184,19 @@
 #define MC_ME_CCTL_DEASSERT_CORE       (0xFA)
 
 /* Cortex-M4 Core Address Register */
-#define MC_ME_CADDR0   (MC_ME_BASE_ADDR + 0x000001E0)
+#define MC_ME_CADDR0		(MC_ME_BASE_ADDR + 0x000001E0)
 /* Cortex-A53 Core 0 - Core Address Register */
-#define MC_ME_CADDR1   (MC_ME_BASE_ADDR + 0x000001E4)
+#define MC_ME_CADDR1		(MC_ME_BASE_ADDR + 0x000001E4)
 /* Cortex-A53 Core 1 - Core Address Register */
-#define MC_ME_CADDR2   (MC_ME_BASE_ADDR + 0x000001E8)
+#define MC_ME_CADDR2		(MC_ME_BASE_ADDR + 0x000001E8)
 /* Cortex-A53 Core 2 - Core Address Register */
-#define MC_ME_CADDR3   (MC_ME_BASE_ADDR + 0x000001EC)
+#define MC_ME_CADDR3		(MC_ME_BASE_ADDR + 0x000001EC)
 /* Cortex-A53 Core 3 - Core Address Register */
-#define MC_ME_CADDR4   (MC_ME_BASE_ADDR + 0x000001F0)
+#define MC_ME_CADDR4		(MC_ME_BASE_ADDR + 0x000001F0)
+#define MC_ME_CADDR_A53(n)	(MC_ME_CADDR1 + (n) * 4)
 
-#define MC_ME_CADDRn_ADDR_EN	(1 << 0)
+#define MC_ME_CADDRn_ADDR_EN	BIT(0)
+#define MC_ME_CADDRn_ADDR_MASK	(0xFFFFFFFC)
 
 /* Default used values */
 #define CFG_RUN_PC	MC_ME_PCTLn_RUNPCm(1)

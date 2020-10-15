@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2018 NXP
+ * (C) Copyright 2018,2020 NXP
  * (C) Copyright 2009 Ilya Yanok, Emcraft Systems Ltd <yanok@emcraft.com>
  * (C) Copyright 2008,2009 Eric Jarrige <eric.jarrige@armadeus.org>
  * (C) Copyright 2008 Armadeus Systems nc
@@ -398,13 +398,11 @@ static void fec_rbd_clean(int last, struct fec_bd *prbd)
 	writew(0, &prbd->data_length);
 }
 
-#ifndef CONFIG_TARGET_MPXS32V234
 static int fec_get_hwaddr(int dev_id, unsigned char *mac)
 {
 	imx_get_mac_from_fuse(dev_id, mac);
 	return !is_valid_ethaddr(mac);
 }
-#endif
 
 #ifdef CONFIG_DM_ETH
 static int fecmxc_set_hwaddr(struct udevice *dev)
@@ -1108,10 +1106,8 @@ static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 {
 	struct eth_device *edev;
 	struct fec_priv *fec;
-#ifndef CONFIG_TARGET_MPXS32V234
 	unsigned char ethaddr[6];
 	char mac[16];
-#endif
 	uint32_t start;
 	int ret = 0;
 
@@ -1177,10 +1173,6 @@ static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 	/* only support one eth device, the index number pointed by dev_id */
 	edev->index = fec->dev_id;
 
-#ifndef CONFIG_TARGET_MPXS32V234
-	/*
-	 * At MPXS32V234 this is done in board_eth_init().
-	 */
 	if (fec_get_hwaddr(fec->dev_id, ethaddr) == 0) {
 		debug("got MAC%d address from fuse: %pM\n", fec->dev_id, ethaddr);
 		memcpy(edev->enetaddr, ethaddr, 6);
@@ -1191,7 +1183,7 @@ static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 		if (!env_get(mac))
 			eth_env_set_enetaddr(mac, ethaddr);
 	}
-#endif
+
 	return ret;
 err4:
 	fec_free_descs(fec);

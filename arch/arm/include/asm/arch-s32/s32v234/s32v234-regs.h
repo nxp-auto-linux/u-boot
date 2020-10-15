@@ -1,15 +1,11 @@
+/* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2018 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * (C) Copyright 2017-2020 NXP
  */
 
 #ifndef __ASM_ARCH_S32V234_REGS_H__
 #define __ASM_ARCH_S32V234_REGS_H__
-
-#define IRAM_BASE_ADDR		CONFIG_SYS_DATA_BASE
-#define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
 
 #if !defined(__ASSEMBLER__)
 #define AIPS0_BASE_ADDR		(0x40000000UL)

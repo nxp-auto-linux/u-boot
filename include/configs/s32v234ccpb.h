@@ -13,8 +13,11 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-
 #define	FDT_FILE fsl-s32v234-ccpb.dtb
+
+/* 512 MB x 2 banks */
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x20000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x20000000
 
 #define CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
 
@@ -22,8 +25,6 @@
 #define CONFIG_DSPI_SCK_CS_DELAY 100
 
 #define CONFIG_DDR_INIT_DELAY 100
-
-#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 
 /* HDMI configs */
 #define CONFIG_FSL_DCU_SII9022A
@@ -35,14 +36,6 @@
 #define CONFIG_FEC_XCV_TYPE     RGMII
 
 #define CONFIG_FEC_MXC_PHYADDR  3
-
-#define CONFIG_CMD_PCI
-
-#ifdef CONFIG_CMD_PCI
-#define CONFIG_GICSUPPORT
-#define CONFIG_USE_IRQ
-#define CONFIG_CMD_IRQ
-#endif
 
 #ifdef CONFIG_SJA1105
 #define SJA_1_BUS	0

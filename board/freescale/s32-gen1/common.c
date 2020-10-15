@@ -146,7 +146,7 @@ int board_early_init_f(void)
 int board_init(void)
 {
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+	gd->bd->bi_boot_params = CONFIG_SYS_FSL_DRAM_SIZE1 + 0x100;
 
 	return 0;
 }

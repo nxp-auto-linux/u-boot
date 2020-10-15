@@ -1,0 +1,91 @@
+About
+-----
+
+NXP's HSE provides Advanced Secure Boot (ASB), which uses
+Secure Memory Regions (SMR) and a device-specific key.
+
+The demo application in hse_adv_secboot.c is provided as a U-Boot command.
+The demo application demonstrates secure booting from an SD card,
+on the S32gen1 boards.
+
+Prerequisites
+-------------
+
+HSE FW must be on the SD card to be able to use the demo applications.
+
+HSE is a separate NXP product, available through Flexera. To find out
+how to obtain HSE, please address our marketing department.
+
+Building U-Boot with HSE secure boot support
+--------------------------------------------
+
+The follow config options must be set:
+
+    CONFIG_S32_GEN1="y"
+    CONFIG_HSE_SECBOOT="y" (depends on CONFIG_S32_GEN1)
+    CONFIG_CMD_HSE_ADVANCED_SECBOOT="y" (depends on CONFIG_HSE_SECBOOT)
+
+Preparing U-Boot for secure booting
+-----------------------------------
+
+The script "tools/s32gen1_secboot.sh" is provided to easily configure
+and sign U-Boot for secure booting.
+
+Please note that, for the moment, the script uses a fixed key pair,
+stored in clear in the script. Support for user-generated RSA key
+pairs will be added in BSP26.
+
+The following steps are taken by the script to configure, sign and
+write the signed U-Boot image to the SD card:
+
+    1. Generate a RSA2048 key pair;
+    2. Extract application code and application header from u-boot.s32;
+    3. Pad extracted image to 1M;
+    4. Sign the extracted image with the generated private key;
+    5. Verify the signed image with the generated public key;
+    6. Write IVT to SD card;
+    7. Write HSE FW to SD card;
+    8. Write signature to SD card;
+    9. Write DCD to SD card;
+    10. Write signed and padded image to SD card.
+
+The following SD card layout is used for secure boot:
+
+-------------  0x0
+|    IVT    |
+-------------  0x100
+|    MBR    |
+-------------  0x200
+|  HSE FW   |
+-------------  0x70200
+|  SYS_IMG  |
+-------------  0x80200
+| SIGNATURE |
+-------------  0x80400
+|   U-Boot  |
+-------------  0x180400
+
+Booting in secure boot
+----------------------
+
+To activate secure boot, we first need to generate a SYS-IMG file for HSE, which
+will be signed with a device-specific key. Fortunately, this is handled by HSE
+itself, and is taken care of by the ASB demo application. Boot the board, and
+run the following in the U-Boot command line:
+
+	hse_adv_secboot_prep_demo
+
+After the command has run, you can reboot the board and it will boot securely. You
+can check by verifying the secure boot bit in the IVT:
+
+00000020: 0024 0800 0000 0000 0900 0000 0000 0000
+
+Turning off secure boot
+-----------------------
+
+To stop booting securely, the IVT must be rewritten and the SYS-IMG on the SD card
+must be deleted. The secure boot SD layout need not be kept, so this can easily be
+done by overwriting the data on the SD card, though it is suggested to zero out the
+area needed before hand.
+
+	dd if=u-boot/u-boot.s32 of=/dev/sdb bs=512 conv=notrunc,fsync

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2019 NXP
+ * (C) Copyright 2017-2019,2020 NXP
  * (C) Copyright 2017 MicroSys Electronics GmbH
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_S32V234_SIUL_H__
@@ -33,10 +32,10 @@ static inline int get_siul2_midr2_speed(void)
 #define SIUL2_IMCRn(i)			(SIUL2_IMCR_BASE +  4 * (i))
 
 #define SIUL2_GPDO_BASE			(SIUL2_BASE_ADDR + 0x00001300)
-#define SIUL2_GPDOn(i)			(SIUL2_GPDO_BASE + (i))
+#define SIUL2_GPDO_N(i)			(SIUL2_GPDO_BASE + 4 * (i))
 
 #define SIUL2_GPDI_BASE			(SIUL2_BASE_ADDR + 0x00001500)
-#define SIUL2_GPDIn(i)			(SIUL2_GPDI_BASE + (i))
+#define SIUL2_GPDI_N(i)			(SIUL2_GPDI_BASE + 4 * (i))
 
 #define SIUL2_PGPDO_BASE		(SIUL2_BASE_ADDR + 0x00001700)
 #define SIUL2_PGPDOn(i)			(SIUL2_PGPDO_BASE + \
@@ -53,10 +52,19 @@ static inline int get_siul2_midr2_speed(void)
 
 /* GPIO */
 /* 163 GPIOs in output mode, we assume the GPIO number is in range */
-#define SIUL2_GPDO_for_GPIO(i)		(((i) & (~0x3)) >> 2)
-#define SIUL2_GPDO_PDO_off_for_GPIO(i)	(((i) & (0x3))
-#define SIUL2_PDOn(i)			(SIUL2_GPDOn(SIUL2_GPDO_for_GPIO(i) + \
-						SIUL2_GPDO_PDO_off_for_GPIO(i))
+#define SIUL2_GPDO_FOR_GPIO(i)		(((i) & (~0x3)) >> 2)
+#define SIUL2_GPDO_PDO_OFF_FOR_GPIO(i)	(~(i) & (0x3))
+#define SIUL2_PDO_N(i) \
+	(SIUL2_GPDO_N(SIUL2_GPDO_FOR_GPIO(i)) + \
+	 SIUL2_GPDO_PDO_OFF_FOR_GPIO(i))
+
+#define SIUL2_PGPDO_FOR_GPIO(i)		((i) >> 4)
+#define SIUL2_PGPDO_PPDO_OFF_FOR_GPIO(i)	((i) & BIT(3) ? 0 : 1)
+#define SIUL2_PPDO_BYTE(i) \
+	(SIUL2_PGPDOn(SIUL2_PGPDO_FOR_GPIO(i)) + \
+	 SIUL2_PGPDO_PPDO_OFF_FOR_GPIO(i))
+
+#define SIUL2_PPDIO_BIT(i)		BIT(~(i) & 0x7)
 #define SIUL2_GPIO_VALUE0		(0x00)
 #define SIUL2_GPIO_VALUE1		(0x01)
 
@@ -195,76 +203,76 @@ static inline int get_siul2_midr2_speed(void)
 	SIUL2_MSCR_MUX_MODE_ALT3)
 
 /* I2C settings */
+#define SIUL2_MSCR_PA15			15
+#define SIUL2_MSCR_PB0			16
+#define SIUL2_MSCR_PB1			17
+#define SIUL2_MSCR_PB2			18
+#define SIUL2_MSCR_PB3			19
+#define SIUL2_MSCR_PB4			20
+#define SIUL2_MSCR_PG3			99
+#define SIUL2_MSCR_PG4			100
+#define SIUL2_MSCR_PG5			101
+#define SIUL2_MSCR_PG6			102
+
+#define SIUL2_IMCR_I2C0_DATA		269
+#define SIUL2_IMCR_I2C0_CLK		268
+#define SIUL2_IMCR_I2C1_DATA		271
+#define SIUL2_IMCR_I2C1_CLK		270
+#define SIUL2_IMCR_I2C2_DATA		273
+#define SIUL2_IMCR_I2C2_CLK		272
+
 /* I2C0 - Serial Data Input AC15 */
-#define SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15 \
-	(SIUL2_MSCR_MUX_MODE_ALT2 | \
-	 SIUL2_MSCR_OBE_EN | \
+#define SIUL2_PAD_CTRL_I2C_COMMON \
+	(SIUL2_MSCR_OBE_EN | \
 	 SIUL2_MSCR_IBE_EN | \
 	 SIUL2_MSCR_ODE_EN | \
 	 SIUL2_MSCR_DSE_34ohm)
+
+#define SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15 \
+	(SIUL2_MSCR_MUX_MODE_ALT2 | \
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15	(SIUL2_MSCR_MUX_MODE_ALT3)
 
 /* I2C0 - Serial Clock Input AE15 */
 #define SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_AE15 \
 	(SIUL2_MSCR_MUX_MODE_ALT2 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15	(SIUL2_MSCR_MUX_MODE_ALT3)
 
 /* I2C0 - Serial Data Input F11 */
 #define SIUL2_PAD_CTRL_I2C0_MSCR_SDA_F11 \
 	(SIUL2_MSCR_MUX_MODE_ALT1 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C0_IMCR_SDA_F11	(SIUL2_MSCR_MUX_MODE_ALT2)
 
 /* I2C0 - Serial Clock Input F12 */
 #define SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_F12 \
 	(SIUL2_MSCR_MUX_MODE_ALT1 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_F12	(SIUL2_MSCR_MUX_MODE_ALT2)
 
 /* I2C1 - Serial Data Input */
 #define SIUL2_PAD_CTRL_I2C1_MSCR_SDA \
 	(SIUL2_MSCR_MUX_MODE_ALT2 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C1_IMCR_SDA	(SIUL2_MSCR_MUX_MODE_ALT3)
 
 /* I2C1 - Serial Clock Input */
 #define SIUL2_PAD_CTRL_I2C1_MSCR_SCLK \
 	(SIUL2_MSCR_MUX_MODE_ALT2 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C1_IMCR_SCLK	(SIUL2_MSCR_MUX_MODE_ALT3)
 
 /* I2C2 - Serial Data Input */
 #define SIUL2_PAD_CTRL_I2C2_MSCR_SDA \
 	(SIUL2_MSCR_MUX_MODE_ALT1 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C2_IMCR_SDA	(SIUL2_MSCR_MUX_MODE_ALT2)
 
 /* I2C2 - Serial Clock Input */
 #define SIUL2_PAD_CTRL_I2C2_MSCR_SCLK \
 	(SIUL2_MSCR_MUX_MODE_ALT1 | \
-	 SIUL2_MSCR_OBE_EN | \
-	 SIUL2_MSCR_IBE_EN | \
-	 SIUL2_MSCR_ODE_EN | \
-	 SIUL2_MSCR_DSE_34ohm)
+	 SIUL2_PAD_CTRL_I2C_COMMON)
 #define SIUL2_PAD_CTRL_I2C2_IMCR_SCLK	(SIUL2_MSCR_MUX_MODE_ALT2)
 
 /* I2C settings MPXS32V234-R1 */
@@ -593,6 +601,9 @@ static inline int get_siul2_midr2_speed(void)
 #define SIUL2_MSCR_PB6  22
 #define SIUL2_MSCR_PB7  23
 #define SIUL2_MSCR_PB8  24
+#define SIUL2_MSCR_PB13 29
+#define SIUL2_MSCR_PB14 30
+#define SIUL2_MSCR_PB15 31
 #define SIUL2_MSCR_PC0  32
 #define SIUL2_MSCR_PC1  33
 #define SIUL2_MSCR_PC2  34
@@ -604,6 +615,15 @@ static inline int get_siul2_midr2_speed(void)
 
 #define SIUL2_PAD_CTRL_DSPI0_MSCR_CS0_OUT	(SIUL2_PAD_CTRL_MSCR_CSx | \
 				SIUL2_MSCR_MUX_MODE_ALT1)
+
+#define SIUL2_PAD_CTRL_DSPI0_MSCR_CS1_OUT	(SIUL2_PAD_CTRL_MSCR_CSx | \
+				SIUL2_MSCR_MUX_MODE_ALT3)
+
+#define SIUL2_PAD_CTRL_DSPI0_MSCR_CS2_OUT	(SIUL2_PAD_CTRL_MSCR_CSx | \
+				SIUL2_MSCR_MUX_MODE_ALT3)
+
+#define SIUL2_PAD_CTRL_DSPI0_MSCR_CS3_OUT	(SIUL2_PAD_CTRL_MSCR_CSx | \
+				SIUL2_MSCR_MUX_MODE_ALT2)
 
 #define SIUL2_PAD_CTRL_DSPI0_MSCR_CS4_OUT	(SIUL2_PAD_CTRL_MSCR_CSx | \
 				SIUL2_MSCR_MUX_MODE_ALT3)
@@ -671,5 +691,25 @@ static inline int get_siul2_midr2_speed(void)
 	 SIUL2_MSCR_MUX_MODE_ALT1)
 
 #endif /* CONFIG_FSL_DCU_FB */
+
+/* GPIO Settings */
+
+#define SIUL2_MSCR_PF9  89
+#define SIUL2_MSCR_PF11 91
+#define SIUL2_MSCR_PF12 92
+#define SIUL2_MSCR_PF13 93
+
+/* SIUL2 - General Purpose Input */
+#define SIUL2_MSCR_GPI \
+	(SIUL2_MSCR_MUX_MODE_ALT0 | \
+	 SIUL2_MSCR_IBE_EN | \
+	 SIUL2_MSCR_PKE_EN | \
+	 SIUL2_MSCR_PUE_EN)
+
+/* SIUL2 - General Purpose Output */
+#define SIUL2_MSCR_GPO \
+	(SIUL2_MSCR_MUX_MODE_ALT0 | \
+	 SIUL2_MSCR_OBE_EN | \
+	 SIUL2_MSCR_DSE_34ohm)
 
 #endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */

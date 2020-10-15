@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2017,2019 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * (C) Copyright 2016-2017,2019-2020 NXP
  */
 
 /*
@@ -18,8 +17,11 @@
 
 #define	FDT_FILE fsl-s32v234-evb.dtb
 
-/* #define CONFIG_CMD_PCI */
+/* 1 GB x 2 banks */
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x40000000
 
+/* #define CONFIG_CMD_PCI */
 
 #define CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
 

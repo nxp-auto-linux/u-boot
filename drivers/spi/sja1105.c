@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2018,2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2018, 2020 NXP
  */
 
 
@@ -317,6 +316,23 @@ bool sja1105_post_cfg_load_check(struct sja_parms *sjap)
 	return status;
 }
 
+static void sja1105_en_rgmii_txid_by_default(struct sja_parms *sjap, int port)
+{
+	u32 id;
+
+	id = sja1105_read_reg32(sjap,
+				SJA1105_CFG_PAD_MIIX_ID_PORT(port));
+
+	if (id & (SJA1105_CFG_PAD_MIIX_ID_TXC_PD |
+				SJA1105_CFG_PAD_MIIX_ID_TXC_BYPASS)) {
+		id &= ~GENMASK(7, 0);
+		id |= SJA1105_CFG_PAD_MIIX_ID_RGMII_TXID;
+		sja1105_write_reg32(sjap,
+				    SJA1105_CFG_PAD_MIIX_ID_PORT(port),
+				    id);
+	}
+}
+
 static void sja1105_set_rgmii_clock(struct sja_parms *sjap, int port, int speed)
 {
 	u32 divisor = 0U;
@@ -336,10 +352,7 @@ static void sja1105_set_rgmii_clock(struct sja_parms *sjap, int port, int speed)
 	case SJA1105_REG_MAC_SPEED_1G:
 	case SJA1105_REG_MAC_SPEED_DISABLED:
 		/* Set Clock delay */
-		sja1105_write_reg32(sjap,
-				    SJA1105_CFG_PAD_MIIX_ID_PORT(port),
-				    SJA1105_CFG_PAD_MIIX_ID_RGMII_FAST);
-
+		sja1105_en_rgmii_txid_by_default(sjap, port);
 		/* Disable IDIV */
 		sja1105_write_reg32(sjap, SJA1105_CGU_IDIV_PORT(port),
 				    SJA1105_CGU_IDIV_DISABLE);
@@ -620,8 +633,12 @@ void sja1105_reset_ports(u32 cs, u32 bus)
 		val = sja1105_read_reg32(&sjap,
 					 SJA1105_CFG_PAD_MIIX_ID_PORT(i));
 
-		/* Toggle RX Clock PullDown and Bypass */
+		/* If the RXID is disabled, skip the port */
+		if (val & SJA1105_CFG_PAD_MIIX_ID_RXC_PD ||
+		    val & SJA1105_CFG_PAD_MIIX_ID_RXC_BYPASS)
+			continue;
 
+		/* Toggle RX Internal delay PowerDown and Bypass */
 		val |= SJA1105_CFG_PAD_MIIX_ID_RXC_PD;
 		val |= SJA1105_CFG_PAD_MIIX_ID_RXC_BYPASS;
 
@@ -726,6 +743,13 @@ static int sja1105_print_regs(struct sja_parms *sjap)
 			printf("port%d %s    = %u\n", i,
 			       eth_high_lvl_counters2[j], val32);
 		}
+	}
+
+	printf("\nInternal delay status\n");
+	for (i = 0; i < SJA1105_PORT_NB; i++) {
+		val32 = sja1105_read_reg32(sjap,
+					   SJA1105_CFG_PAD_MIIX_ID_PORT(i));
+		printf("CFG_PAD_MII%d_ID 0x%x\n", i, val32);
 	}
 
 	return 0;

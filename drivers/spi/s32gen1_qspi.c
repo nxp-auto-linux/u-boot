@@ -5,6 +5,7 @@
 #include "fsl_qspi.h"
 #include <cpu_func.h>
 #include <asm/io.h>
+#include <asm/arch/siul.h>
 #include <linux/mtd/spi-nor.h>
 #include <spi-mem.h>
 #include <inttypes.h>
@@ -766,6 +767,7 @@ static struct qspi_config ddr_config = {
 	    QSPI_DLLCR_SLV_AUTO_UPDT_EN |
 	    QSPI_DLLCR_DLLRES_N(8) |
 	    QSPI_DLLCR_DLL_REFCNTR_N(2) |
+	    QSPI_DLLCR_FREQEN_EN |
 	    QSPI_DLLCR_DLLEN_EN,
 	.sfacr = QSPI_SFACR_BSWAP_EN,
 	.smpr = QSPI_SMPR_DLLFSMPFA_NTH(4) |
@@ -828,6 +830,11 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 	mcr = qspi_read32(priv->flags, &regs->mcr);
 	mcr &= ~QSPI_MCR_MDIS_MASK;
 	qspi_write32(priv->flags, &regs->mcr, mcr);
+
+#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+	if (is_s32gen1_soc_rev1())
+		ddr_config.dllcr &= ~QSPI_DLLCR_FREQEN_EN;
+#endif
 
 	ret = program_dllcra(priv, ddr_config.dllcr);
 	if (ret) {

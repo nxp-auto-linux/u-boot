@@ -19,8 +19,64 @@
 #include <fsl_dspi.h>
 #endif
 
-#define MHZ	1000000
+#define DFS_NONE	0
+#define DFS0		1
+#define DFS1		2
+#define DFS2		3
+#define DFS3		4
 
+#define PERIPH_PLL_PHI0_DIV3	3
+#define PERIPH_PLL_PHI0_DIV5	5
+#define VIDEO_PLL_PHI0_DIV2	2
+
+#define MHZ	1000000
+#define MAC_ADDR_STR_LEN	17
+
+#ifdef CONFIG_DCU_QOS_FIX
+#define S32V234_NIC_FASTDMA1_IB_READ_QOS	(0x40012380)
+#define S32V234_NIC_FASTDMA1_IB_WRITE_QOS	(0x40012384)
+#define S32V234_NIC_GPU0_READ_QOS		(0x40012480)
+#define S32V234_NIC_GPU0_WRITE_QOS		(0x40012484)
+#define S32V234_NIC_H264DEC_READ_QOS		(0x40012580)
+#define S32V234_NIC_H264DEC_WRITE_QOS		(0x40012584)
+#define S32V234_NIC_GPU1_READ_QOS		(0x40012680)
+#define S32V234_NIC_GPU1_WRITE_QOS		(0x40012684)
+#define S32V234_NIC_CORES_CCI1_IB_READ_QOS	(0x40012780)
+#define S32V234_NIC_CORES_CCI1_IB_WRITE_QOS	(0x40012784)
+#define S32V234_NIC_APEX0_DMA_READ_QOS		(0x40012880)
+#define S32V234_NIC_APEX0_DMA_WRITE_QOS		(0x40012884)
+#define S32V234_NIC_APEX0_BLKDM_A_READ_QOS	(0x40012980)
+#define S32V234_NIC_APEX0_BLKDM_A_WRITE_QOS	(0x40012984)
+#define S32V234_NIC_APEX1_DMA_READ_QOS		(0x40012A80)
+#define S32V234_NIC_APEX1_DMA_WRITE_QOS		(0x40012A84)
+#define S32V234_NIC_APEX1_BLKDMA_READ_QOS	(0x40012B80)
+#define S32V234_NIC_APEX1_BLKDMA_WRITE_QOS	(0x40012B84)
+#define S32V234_NIC_PCIE_READ_QOS		(0x40012C80)
+#define S32V234_NIC_PCIE_WRITE_QOS		(0x40012C84)
+#define S32V234_NIC_ENET0_READ_QOS		(0x40012D80)
+#define S32V234_NIC_ENET0_WRITE_QOS		(0x40012D84)
+#define S32V234_NIC_ENET1_READ_QOS		(0x40012E80)
+#define S32V234_NIC_ENET1_WRITE_QOS		(0x40012E84)
+#define S32V234_NIC_CORES_CCI0_READ_QOS		(0x40012F80)
+#define S32V234_NIC_CORES_CCI0_WRITE_QOS	(0x40012F84)
+#define S32V234_NIC_AXBS_READ_QOS		(0x40013080)
+#define S32V234_NIC_AXBS_WRITE_QOS		(0x40013084)
+#define S32V234_NIC_PDI0_READ_QOS		(0x40013180)
+#define S32V234_NIC_PDI0_WRITE_QOS		(0x40013184)
+#define S32V234_NIC_PDI1_READ_QOS		(0x40013280)
+#define S32V234_NIC_PDI1_WRITE_QOS		(0x40013284)
+#define S32V234_NIC_AXBS_RAM_READ_QOS		(0x40013380)
+#define S32V234_NIC_AXBS_RAM_WRITE_QOS		(0x40013384)
+#define S32V234_NIC_FASTDMA0_READ_QOS		(0x40013480)
+#define S32V234_NIC_FASTDMA0_WRITE_QOS		(0x40013484)
+
+#define S32V234_NIC_RESET			(0x0)
+
+/* SRC_GPR8 bit fields */
+#define SRC_GPR8_2D_ACE_QOS_OFFSET				0
+#define MIN_DCU_QOS_PRIORITY					0xD
+
+#endif /* CONFIG_DCU_QOS_FIX */
 DECLARE_GLOBAL_DATA_PTR;
 
 u32 get_cpu_rev(void)
@@ -63,10 +119,10 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	double vco = 0;
 
 	if (selected_output > DFS_MAXNUMBER)
-		return -1;
+		return 0;
 
-	plldv_prediv = (plldv & PLLDIG_PLLDV_PREDIV_MASK) >>
-		PLLDIG_PLLDV_PREDIV_OFFSET;
+	plldv_prediv =
+	    (plldv & PLLDIG_PLLDV_PREDIV_MASK) >> PLLDIG_PLLDV_PREDIV_OFFSET;
 	plldv_mfd = (plldv & PLLDIG_PLLDV_MFD_MASK);
 
 	pllfd_mfn = (pllfd & PLLDIG_PLLFD_MFN_MASK);
@@ -77,17 +133,20 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 	vco = (refclk_freq / (double)plldv_prediv) *
 		(plldv_mfd + pllfd_mfn / (double)20480);
 
-	if (selected_output != 0) {
+	if (selected_output != DFS_NONE) {
 		/* Determine the RFDPHI for PHI1 */
-		plldv_rfdphi_div = (plldv & PLLDIG_PLLDV_RFDPHI1_MASK) >>
+		plldv_rfdphi_div =
+		    (plldv & PLLDIG_PLLDV_RFDPHI1_MASK) >>
 			PLLDIG_PLLDV_RFDPHI1_OFFSET;
 		plldv_rfdphi_div = plldv_rfdphi_div == 0 ? 1 : plldv_rfdphi_div;
 		if (pll == ARM_PLL || pll == ENET_PLL || pll == DDR_PLL) {
-			dfs_portn = readl(DFS_DVPORTn(pll,
-						selected_output - 1));
-			dfs_mfi = (dfs_portn & DFS_DVPORTn_MFI_MASK) >>
+			dfs_portn =
+			    readl(DFS_DVPORTn(pll, selected_output - 1));
+			dfs_mfi =
+			    (dfs_portn & DFS_DVPORTn_MFI_MASK) >>
 				DFS_DVPORTn_MFI_OFFSET;
-			dfs_mfn = (dfs_portn & DFS_DVPORTn_MFN_MASK) >>
+			dfs_mfn =
+			    (dfs_portn & DFS_DVPORTn_MFN_MASK) >>
 				DFS_DVPORTn_MFN_OFFSET;
 
 			dfs_mfi <<= 8;
@@ -100,7 +159,8 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 		}
 	} else {
 		/* Determine the RFDPHI for PHI0 */
-		plldv_rfdphi_div = (plldv & PLLDIG_PLLDV_RFDPHI_MASK) >>
+		plldv_rfdphi_div =
+		    (plldv & PLLDIG_PLLDV_RFDPHI_MASK) >>
 			PLLDIG_PLLDV_RFDPHI_OFFSET;
 		fout = vco / plldv_rfdphi_div;
 	}
@@ -111,13 +171,32 @@ static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
 static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
 		u32 selected_output)
 {
-	u32 plldv, pllfd, freq;
+	u32 plldv, pllfd;
 
 	plldv = readl(PLLDIG_PLLDV(pll));
 	pllfd = readl(PLLDIG_PLLFD(pll));
 
-	freq = get_pllfreq(pll, refclk_freq, plldv, pllfd, selected_output);
-	return freq  < 0 ? 0 : freq;
+	return get_pllfreq(pll, refclk_freq, plldv, pllfd, selected_output);
+}
+
+static u32 sys_source_clk_get(uintptr_t cgm_addr)
+{
+	return MC_CGM_SC_SEL_GET(readl(CGM_SC_SS(cgm_addr)));
+}
+
+static u32 sys_div_clk_get(uintptr_t cgm_addr, u8 dc)
+{
+	return MC_CGM_SC_DIV_GET(readl(CGM_SC_DCn(cgm_addr, dc)));
+}
+
+static u32 aux_source_clk_get(uintptr_t cgm_addr, u8 ac)
+{
+	return MC_CGM_ACn_SEL_GET(readl(CGM_ACn_SS(cgm_addr, ac)));
+}
+
+static u32 aux_div_clk_get(uintptr_t cgm_addr, u8 ac, u8 dc)
+{
+	return MC_CGM_ACn_DIV_GET(readl(CGM_ACn_DCm(cgm_addr, ac, dc)));
 }
 
 static u32 get_mcu_main_clk(void)
@@ -126,13 +205,8 @@ static u32 get_mcu_main_clk(void)
 	u32 sysclk_sel;
 	u32 freq = 0;
 
-	sysclk_sel = readl(CGM_SC_SS(MC_CGM1_BASE_ADDR)) & MC_CGM_SC_SEL_MASK;
-	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
-
-	coreclk_div = readl(CGM_SC_DCn(MC_CGM1_BASE_ADDR, 0)) &
-		MC_CGM_SC_DCn_PREDIV_MASK;
-	coreclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
-	coreclk_div += 1;
+	sysclk_sel = sys_source_clk_get(MC_CGM1_BASE_ADDR);
+	coreclk_div = sys_div_clk_get(MC_CGM1_BASE_ADDR, CGM_SCn_DC0);
 
 	switch (sysclk_sel) {
 	case MC_CGM_SC_SEL_FIRC:
@@ -142,10 +216,8 @@ static u32 get_mcu_main_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_SC_SEL_ARMPLL:
-		/* ARMPLL has as source XOSC and CORE_CLK has as input
-		 * PHI0
-		 */
-		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 0);
+		/* ARMPLL has as source XOSC and CORE_CLK has as input PHI0 */
+		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, DFS_NONE);
 		break;
 	case MC_CGM_SC_SEL_CLKDISABLE:
 		printf("Sysclk is disabled\n");
@@ -165,24 +237,18 @@ static u32 get_sys_clk(u32 number)
 	u32 freq = 0;
 
 	switch (number) {
-	case 3:
-		sysclk_div_number = 0;
+	case MXC_SYS3_CLK:
+		sysclk_div_number = CGM_SCn_DC0;
 		break;
-	case 6:
-		sysclk_div_number = 1;
+	case MXC_SYS6_CLK:
+		sysclk_div_number = CGM_SCn_DC1;
 		break;
 	default:
 		printf("unsupported system clock\n");
 		sysclk_div_number = 0;
 	}
-	sysclk_sel = readl(CGM_SC_SS(MC_CGM0_BASE_ADDR)) & MC_CGM_SC_SEL_MASK;
-	sysclk_sel >>= MC_CGM_SC_SEL_OFFSET;
-
-
-	sysclk_div = readl(CGM_SC_DCn(MC_CGM0_BASE_ADDR, sysclk_div_number)) &
-		MC_CGM_SC_DCn_PREDIV_MASK;
-	sysclk_div >>= MC_CGM_SC_DCn_PREDIV_OFFSET;
-	sysclk_div += 1;
+	sysclk_sel = sys_source_clk_get(MC_CGM0_BASE_ADDR);
+	sysclk_div = sys_div_clk_get(MC_CGM0_BASE_ADDR, sysclk_div_number);
 
 	switch (sysclk_sel) {
 	case MC_CGM_SC_SEL_FIRC:
@@ -192,10 +258,8 @@ static u32 get_sys_clk(u32 number)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_SC_SEL_ARMPLL:
-		/* ARMPLL has as source XOSC and SYSn_CLK has as
-		 * input DFS1
-		 */
-		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 1);
+		/* ARMPLL has as source XOSC and SYSn_CLK has as input DFS1 */
+		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, DFS0);
 		break;
 	case MC_CGM_SC_SEL_CLKDISABLE:
 		printf("Sysclk is disabled\n");
@@ -211,16 +275,10 @@ static u32 get_sys_clk(u32 number)
 static u32 get_peripherals_clk(void)
 {
 	u32 auxclk5_div, auxclk5_sel, freq = 0;
-#define SOURCE_CLK_DIV (5)
 
-	auxclk5_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, 5)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk5_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk5_div = readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 5, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk5_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk5_div += 1;
+	auxclk5_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC5_SC);
+	auxclk5_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC5_SC,
+				      CGM_ACn_DC0);
 
 	switch (auxclk5_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -230,8 +288,8 @@ static u32 get_peripherals_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_PERPLLDIVX:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 0) /
-			SOURCE_CLK_DIV;
+		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, DFS_NONE) /
+				  PERIPH_PLL_PHI0_DIV5;
 		break;
 	default:
 		printf("unsupported source clock\n");
@@ -239,22 +297,15 @@ static u32 get_peripherals_clk(void)
 	}
 
 	return freq / auxclk5_div;
-#undef SOURCE_CLK_DIV
 }
 
 static u32 get_uart_clk(void)
 {
 	u32 auxclk3_div, auxclk3_sel, freq = 0;
-#define SOURCE_CLK_DIV (3)
 
-	auxclk3_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, 3)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk3_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk3_div = readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 3, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk3_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk3_div += 1;
+	auxclk3_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC3_SC);
+	auxclk3_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC3_SC,
+				      CGM_ACn_DC0);
 
 	switch (auxclk3_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -264,11 +315,11 @@ static u32 get_uart_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_PERPLLDIVX:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 0) /
-			SOURCE_CLK_DIV;
+		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, DFS_NONE) /
+			PERIPH_PLL_PHI0_DIV3;
 		break;
 	case MC_CGM_ACn_SEL_SYSCLK:
-		freq = get_sys_clk(6);
+		freq = get_sys_clk(MXC_SYS6_CLK);
 		break;
 	default:
 		printf("unsupported system clock select\n");
@@ -276,7 +327,6 @@ static u32 get_uart_clk(void)
 	}
 
 	return freq/auxclk3_div;
-#undef SOURCE_CLK_DIV
 }
 
 static u32 get_fec_clk(void)
@@ -284,12 +334,10 @@ static u32 get_fec_clk(void)
 	u32 auxclk2_div;
 	u32 freq = 0;
 
-	auxclk2_div =  readl(CGM_ACn_DCm(MC_CGM2_BASE_ADDR, 2, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk2_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk2_div += 1;
+	auxclk2_div = aux_div_clk_get(MC_CGM2_BASE_ADDR, CGM_AC2_SC,
+				      CGM_ACn_DC0);
 
-	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 0);
+	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, DFS_NONE);
 
 	return freq / auxclk2_div;
 }
@@ -299,12 +347,10 @@ static u32 get_usdhc_clk(void)
 	u32 auxclk15_div;
 	u32 freq = 0;
 
-	auxclk15_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 15, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk15_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk15_div += 1;
+	auxclk15_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC15_SC,
+				       CGM_ACn_DC0);
 
-	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 4);
+	freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, DFS3);
 
 	return freq / auxclk15_div;
 }
@@ -319,16 +365,10 @@ static u32 get_i2c_clk(void)
 static u32 get_qspi_clk(void)
 {
 	u32 auxclk14_div, auxclk14_sel, freq = 0;
-#define AUXn 14
 
-	auxclk14_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, AUXn)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk14_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk14_div = readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, AUXn, 0)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk14_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk14_div += 1;
+	auxclk14_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC14_SC);
+	auxclk14_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC14_SC,
+				       CGM_ACn_DC0);
 
 	switch (auxclk14_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -338,7 +378,7 @@ static u32 get_qspi_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_ENETPLL:
-		freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, 3);
+		freq = decode_pll(ENET_PLL, XOSC_CLK_FREQ, DFS2);
 		break;
 	default:
 		printf("unsupported system clock select\n");
@@ -346,7 +386,6 @@ static u32 get_qspi_clk(void)
 	}
 
 	return freq/auxclk14_div;
-#undef AUXn
 }
 
 static u32 get_dcu_pix_clk(void)
@@ -354,15 +393,9 @@ static u32 get_dcu_pix_clk(void)
 	u32 auxclk9_div, auxclk9_sel;
 	u32 freq = 0;
 
-#define SOURCE_CLK_DIV (2)
-	auxclk9_sel = readl(CGM_ACn_SS(MC_CGM0_BASE_ADDR, 9)) &
-		MC_CGM_ACn_SEL_MASK;
-	auxclk9_sel >>= MC_CGM_ACn_SEL_OFFSET;
-
-	auxclk9_div =  readl(CGM_ACn_DCm(MC_CGM0_BASE_ADDR, 9, 1)) &
-		MC_CGM_ACn_DCm_PREDIV_MASK;
-	auxclk9_div >>= MC_CGM_ACn_DCm_PREDIV_OFFSET;
-	auxclk9_div += 1;
+	auxclk9_sel = aux_source_clk_get(MC_CGM0_BASE_ADDR, CGM_AC9_SC);
+	auxclk9_div = aux_div_clk_get(MC_CGM0_BASE_ADDR, CGM_AC9_SC,
+				      CGM_ACn_DC1);
 
 	switch (auxclk9_sel) {
 	case MC_CGM_ACn_SEL_FIRC:
@@ -372,8 +405,8 @@ static u32 get_dcu_pix_clk(void)
 		freq = XOSC_CLK_FREQ;
 		break;
 	case MC_CGM_ACn_SEL_VIDEOPLLDIV2:
-		freq = decode_pll(VIDEO_PLL, XOSC_CLK_FREQ, 0) /
-			SOURCE_CLK_DIV;
+		freq = decode_pll(VIDEO_PLL, XOSC_CLK_FREQ, DFS_NONE) /
+				VIDEO_PLL_PHI0_DIV2;
 		break;
 	default:
 		printf("unsupported source clock select\n");
@@ -381,12 +414,11 @@ static u32 get_dcu_pix_clk(void)
 	}
 
 	return freq/auxclk9_div;
-#undef SOURCE_CLK_DIV
 }
 
 static u32 get_dspi_clk(void)
 {
-	return get_sys_clk(6);
+	return get_sys_clk(MXC_SYS6_CLK);
 }
 
 /* return clocks in Hz */
@@ -420,65 +452,46 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	return 0;
 }
 
-/* Dump some core clocks */
 int do_s32_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
 	printf("Root clocks:\n");
 	printf("CPU clock:%5d MHz\n",
-	       mxc_get_clock(MXC_ARM_CLK) / 1000000);
+	       mxc_get_clock(MXC_ARM_CLK) / MHZ);
 	printf("PERIPHERALS clock: %5d MHz\n",
-	       mxc_get_clock(MXC_PERIPHERALS_CLK) / 1000000);
+	       mxc_get_clock(MXC_PERIPHERALS_CLK) / MHZ);
 	printf("uSDHC clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_USDHC_CLK) / 1000000);
+	       mxc_get_clock(MXC_USDHC_CLK) / MHZ);
 	printf("FEC clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_FEC_CLK) / 1000000);
+	       mxc_get_clock(MXC_FEC_CLK) / MHZ);
 	printf("UART clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_UART_CLK) / 1000000);
+	       mxc_get_clock(MXC_UART_CLK) / MHZ);
 	printf("QSPI clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_QSPI_CLK) / 1000000);
+	       mxc_get_clock(MXC_QSPI_CLK) / MHZ);
 	printf("DSPI clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_DSPI_CLK) / 1000000);
+	       mxc_get_clock(MXC_DSPI_CLK) / MHZ);
 
 	return 0;
 }
 
-U_BOOT_CMD(
-		clocks, CONFIG_SYS_MAXARGS, 1, do_s32_showclocks,
-		"display clocks",
-		""
+U_BOOT_CMD(clocks, CONFIG_SYS_MAXARGS, 1, do_s32_showclocks,
+	   "display clocks",
+	   ""
 	 );
 
 #ifdef CONFIG_FEC_MXC
-void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
+__weak void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
-#if 0 /* This feature will be implemented in ALB-123 */
-	struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
-	struct fuse_bank *bank = &ocotp->bank[4];
-	struct fuse_bank4_regs *fuse =
-		(struct fuse_bank4_regs *)bank->fuse_regs;
-
-	u32 value = readl(&fuse->mac_addr0);
-	mac[0] = (value >> 8);
-	mac[1] = value;
-
-	value = readl(&fuse->mac_addr1);
-	mac[2] = value >> 24;
-	mac[3] = value >> 16;
-	mac[4] = value >> 8;
-	mac[5] = value;
-#else
-	const char *mac_str = "00:1b:c3:12:34:22";
+	const char *mac_str = S32V234_FEC_DEFAULT_ADDR;
 
 	if ((!env_get("ethaddr")) ||
-	    (strncasecmp(mac_str, env_get("ethaddr"), 17) == 0)) {
+	    (strncasecmp(mac_str, env_get("ethaddr"), MAC_ADDR_STR_LEN) == 0)) {
 		printf("\nWarning: System is using default MAC address. ");
 		printf("Please set a new value\n");
 		string_to_enetaddr(mac_str, mac);
 	} else {
 		string_to_enetaddr(env_get("ethdaddr"), mac);
 	}
-#endif
 }
 #endif
 
@@ -536,7 +549,7 @@ int print_cpuinfo(void)
 			osc_freq = XOSC_CLK_FREQ;
 		else
 			osc_freq = FIRC_CLK_FREQ;
-		printf("ARM-PLL frequency was configured to %d MHz\n",
+		printf("ARM-PLL frequency was configured to %u MHz\n",
 		       decode_pll(ARM_PLL, osc_freq, 0) / MHZ);
 	}
 
@@ -565,8 +578,11 @@ int cpu_eth_init(bd_t *bis)
 			0);
 #endif
 
+#ifdef CONFIG_FEC_MXC_PHYADDR
 	rc = fecmxc_initialize(bis);
-#endif
+#endif /* CONFIG_FEC_MXC_PHYADDR */
+
+#endif /* CONFIG_FEC_MXC */
 
 	return rc;
 }
@@ -597,9 +613,9 @@ static int detect_boot_interface(void)
 	value = reg_val & SRC_BMR1_CFG1_MASK;
 	value = value >> SRC_BMR1_CFG1_BOOT_SHIFT;
 
-	if ((value != SRC_BMR1_CFG1_QuadSPI) &&
-	    (value != SRC_BMR1_CFG1_SD) &&
-	    (value != SRC_BMR1_CFG1_eMMC)) {
+	if (value != SRC_BMR1_CFG1_QuadSPI &&
+	    value != SRC_BMR1_CFG1_SD &&
+	    value != SRC_BMR1_CFG1_eMMC) {
 		printf("Unknown booting environment\n");
 		value = -1;
 	}
@@ -737,11 +753,6 @@ __weak void setup_iomux_dcu(void)
 #endif
 
 #ifdef CONFIG_DCU_QOS_FIX
-
-/* SRC_GPR8 bit fields */
-#define SRC_GPR8_2D_ACE_QOS_OFFSET				0
-#define MIN_DCU_QOS_PRIORITY					0xD
-
 int board_dcu_qos(void)
 {
 	/*
@@ -756,81 +767,82 @@ int board_dcu_qos(void)
 		struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
 		u32 val = readl(&src_regs->gpr8);
 
-		writel(val | MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
+		writel(val |
+		       (MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET),
 		       &src_regs->gpr8);
 	}
 
 	/* m_fastdma1_ib */
-	writel(0x0, 0x40012380);
-	writel(0x0, 0x40012384);
+	writel(S32V234_NIC_RESET, S32V234_NIC_FASTDMA1_IB_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_FASTDMA1_IB_WRITE_QOS);
 
 	/* m_gpu0 */
-	writel(0x0, 0x40012480);
-	writel(0x0, 0x40012484);
+	writel(S32V234_NIC_RESET, S32V234_NIC_GPU0_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_GPU0_WRITE_QOS);
 
 	/* m_h264dec */
-	writel(0x0, 0x40012580);
-	writel(0x0, 0x40012584);
+	writel(S32V234_NIC_RESET, S32V234_NIC_H264DEC_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_H264DEC_WRITE_QOS);
 
 	/* m_gpu1 */
-	writel(0x0, 0x40012680);
-	writel(0x0, 0x40012684);
+	writel(S32V234_NIC_RESET, S32V234_NIC_GPU1_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_GPU1_WRITE_QOS);
 
 	/* m_cores_cci1_ib */
-	writel(0x0, 0x40012780);
-	writel(0x0, 0x40012784);
+	writel(S32V234_NIC_RESET, S32V234_NIC_CORES_CCI1_IB_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_CORES_CCI1_IB_WRITE_QOS);
 
 	/* m_apex0_dma */
-	writel(0x0, 0x40012880);
-	writel(0x0, 0x40012884);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX0_DMA_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX0_DMA_WRITE_QOS);
 
 	/* m_apex0_blkdm a */
-	writel(0x0, 0x40012980);
-	writel(0x0, 0x40012984);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX0_BLKDM_A_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX0_BLKDM_A_WRITE_QOS);
 
 	/* m_apex1_dma */
-	writel(0x0, 0x40012A80);
-	writel(0x0, 0x40012A84);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX1_DMA_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX1_DMA_WRITE_QOS);
 
 	/* m_apex1_blkdma */
-	writel(0x0, 0x40012B80);
-	writel(0x0, 0x40012B84);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX1_BLKDMA_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_APEX1_BLKDMA_WRITE_QOS);
 
 	/* m_pcie */
-	writel(0x0, 0x40012C80);
-	writel(0x0, 0x40012C84);
+	writel(S32V234_NIC_RESET, S32V234_NIC_PCIE_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_PCIE_WRITE_QOS);
 
 	/* m_enet0 */
-	writel(0x0, 0x40012D80);
-	writel(0x0, 0x40012D84);
+	writel(S32V234_NIC_RESET, S32V234_NIC_ENET0_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_ENET0_WRITE_QOS);
 
 	/* m_enet1 */
-	writel(0x0, 0x40012E80);
-	writel(0x0, 0x40012E84);
+	writel(S32V234_NIC_RESET, S32V234_NIC_ENET1_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_ENET1_WRITE_QOS);
 
 	/* m_cores_cci0 */
-	writel(0x0, 0x40012F80);
-	writel(0x0, 0x40012F84);
+	writel(S32V234_NIC_RESET, S32V234_NIC_CORES_CCI0_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_CORES_CCI0_WRITE_QOS);
 
 	/* m_axbs */
-	writel(0x0, 0x40013080);
-	writel(0x0, 0x40013084);
+	writel(S32V234_NIC_RESET, S32V234_NIC_AXBS_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_AXBS_WRITE_QOS);
 
 	/* m_pdi0 */
-	writel(0x0, 0x40013180);
-	writel(0x0, 0x40013184);
+	writel(S32V234_NIC_RESET, S32V234_NIC_PDI0_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_PDI0_WRITE_QOS);
 
 	/* m_pdi1 */
-	writel(0x0, 0x40013280);
-	writel(0x0, 0x40013284);
+	writel(S32V234_NIC_RESET, S32V234_NIC_PDI1_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_PDI1_WRITE_QOS);
 
 	/* m_axbs_ram */
-	writel(0x0, 0x40013380);
-	writel(0x0, 0x40013384);
+	writel(S32V234_NIC_RESET, S32V234_NIC_AXBS_RAM_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_AXBS_RAM_WRITE_QOS);
 
 	/* m_fastdma0 */
-	writel(0x0, 0x40013480);
-	writel(0x0, 0x40013484);
+	writel(S32V234_NIC_RESET, S32V234_NIC_FASTDMA0_READ_QOS);
+	writel(S32V234_NIC_RESET, S32V234_NIC_FASTDMA0_WRITE_QOS);
 
 	return 0;
 }
@@ -915,11 +927,11 @@ static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
 	int ret;
-	printf("Hyperflash is disabled. SD/eMMC is active and can be used\n");
-
 	struct mmc *mmc = find_mmc_device(0);
 
-	if (mmc == NULL)
+	printf("Hyperflash is disabled. SD/eMMC is active and can be used\n");
+
+	if (!mmc)
 		return sdhc_setup(gd->bd);
 
 	/* set the sdhc pinmuxing */
@@ -934,12 +946,11 @@ static int do_sdhc_setup(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 /* sdhc setup */
-U_BOOT_CMD(
-		sdhcsetup, 1, 1, do_sdhc_setup,
-		"setup sdhc pinmuxing and sdhc registers for access to SD",
-		"\n"
-		"Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
-		"and disconnect from the Hyperflash.\n"
+U_BOOT_CMD(sdhcsetup, 1, 1, do_sdhc_setup,
+	   "setup sdhc pinmuxing and sdhc registers for access to SD",
+	   "\n"
+	   "Set up the sdhc pinmuxing and sdhc registers to access the SD\n"
+	   "and disconnect from the Hyperflash.\n"
 	 );
 #endif
 
@@ -958,7 +969,7 @@ void ddr_ctrl_init(void)
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
 void ddr_check_post_func_reset(uint8_t module)
 {
-	uint32_t ddr_self_ref_clr, mmdc_mapsr;
+	u32 ddr_self_ref_clr, mmdc_mapsr;
 	unsigned long mmdc_addr;
 	volatile struct src *src = (struct src *)SRC_SOC_BASE_ADDR;
 
@@ -972,8 +983,8 @@ void ddr_check_post_func_reset(uint8_t module)
 		writel(mmdc_mapsr | MMDC_MAPSR_EN_SLF_REF,
 		       mmdc_addr + MMDC_MAPSR);
 
-		src->ddr_self_ref_ctrl = src->ddr_self_ref_ctrl |
-			ddr_self_ref_clr;
+		src->ddr_self_ref_ctrl =
+			src->ddr_self_ref_ctrl | ddr_self_ref_clr;
 
 		mmdc_mapsr = readl(mmdc_addr + MMDC_MAPSR);
 		writel(mmdc_mapsr & ~MMDC_MAPSR_EN_SLF_REF,
@@ -986,7 +997,7 @@ __weak int dram_init(void)
 {
 #ifndef CONFIG_S32_SKIP_RELOC
 #ifdef CONFIG_DDR_HANDSHAKE_AT_RESET
-	uint32_t enabled_hs_events, func_event;
+	u32 enabled_hs_events, func_event;
 
 	if (readl(MC_RGM_DDR_HE) & MC_RGM_DDR_HE_EN) {
 		/* Enable DDR handshake for all functional events */
@@ -998,7 +1009,7 @@ __weak int dram_init(void)
 		/* If reset event was received, check DDR state */
 		func_event = readl(MC_RGM_FES);
 		enabled_hs_events = readl(MC_RGM_FRHE);
-		if (func_event & enabled_hs_events)
+		if (func_event & enabled_hs_events) {
 			if (func_event & MC_RGM_FES_ANY_FUNC_EVENT) {
 				/* Check if DDR handshake was done */
 				while (!(readl(MC_RGM_DDR_HS) &
@@ -1008,6 +1019,7 @@ __weak int dram_init(void)
 				ddr_check_post_func_reset(DDR0);
 				ddr_check_post_func_reset(DDR1);
 			}
+		}
 	} else {
 		/*
 		 * First boot so the handshake isn't necessary.
@@ -1021,18 +1033,14 @@ __weak int dram_init(void)
 	setup_iomux_ddr();
 
 	ddr_ctrl_init();
-
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
-#else
-	gd->ram_size = PHYS_SDRAM_SIZE;
 #endif
 
 	return 0;
 }
 
 /* start M4 core */
-static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
-		int argc, char * const argv[])
+static int do_start_m4(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
 {
 	unsigned long addr;
 	char *ep;
@@ -1044,7 +1052,7 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 	if (ep == argv[1] || *ep != '\0')
 		return CMD_RET_USAGE;
 
-	if (!IS_ADDR_IN_IRAM(addr)) {
+	if (!is_addr_in_sram(addr)) {
 		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n",
 		       addr);
 		return CMD_RET_USAGE;
@@ -1052,8 +1060,9 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 
 	printf("Starting core M4 at SRAM address 0x%08lX ...\n", addr);
 
-	/* write the M4 core's start address
-	   address is required by the hardware to be odd */
+	/* Write the M4 core's start address
+	 * address is required by the hardware to be odd
+	 */
 	writel(addr | 0x1, MC_ME_CADDR0);
 
 	/* enable CM4 to be active during all modes of operation */
@@ -1061,7 +1070,8 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 
 	/* mode_enter(DRUN_M) */
 	writel(MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL);
-	writel(MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL);
+	writel(MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL)
+		;
 
 	printf("Wait while mode entry is in progress ...\n");
 
@@ -1080,11 +1090,10 @@ static int do_start_m4(cmd_tbl_t *cmdtp, int flag,
 	return CMD_RET_SUCCESS;
 }
 
-U_BOOT_CMD(
-		startm4,	2,	1,	do_start_m4,
-		"start M4 core from SRAM address",
-		"startAddress"
-	 );
+U_BOOT_CMD(startm4,	2,	1,	do_start_m4,
+	   "start M4 core from SRAM address",
+	   "startAddress"
+	   );
 
 #ifdef CONFIG_ARCH_MISC_INIT
 int arch_misc_init(void)

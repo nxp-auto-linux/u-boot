@@ -8,10 +8,6 @@
 
 #define S32_AUTO_OFFSET ((size_t)(-1))
 
-void s32_print_header(const void *header)
-{
-}
-
 int image_parts_comp(const void *p1, const void *p2)
 {
 	const struct image_comp **part1 = (typeof(part1))p1;
@@ -64,4 +60,17 @@ void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 		if (i != 0)
 			check_overlap(parts[i - 1], parts[i]);
 	}
+}
+
+void s32_check_env_overlap(size_t image_size)
+{
+#ifdef CONFIG_ENV_OFFSET
+	if (image_size > CONFIG_ENV_OFFSET) {
+		fprintf(stderr, "This image of size 0x%x would be overwritten"
+				" by environment at 0x%p\n",
+			(unsigned int)(image_size),
+			(void *)CONFIG_ENV_OFFSET);
+		exit(EXIT_FAILURE);
+	}
+#endif
 }

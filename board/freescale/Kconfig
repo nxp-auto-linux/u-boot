@@ -1,6 +1,7 @@
 if TARGET_S32V234EVB ||		\
    TARGET_S32V234PCIE ||	\
    TARGET_S32V234CCPB ||	\
+   TARGET_CAMPPS32V2 ||		\
    TARGET_S32V344EVB ||		\
    TARGET_S32V344SIM ||		\
    TARGET_S32G274AEVB ||	\
@@ -17,6 +18,8 @@ source "board/freescale/s32v234pcie/Kconfig"
 
 source "board/freescale/s32v234ccpb/Kconfig"
 
+source "board/freescale/campps32v2/Kconfig"
+
 source "board/freescale/s32-gen1/Kconfig"
 
 config SYS_VENDOR
@@ -26,7 +29,7 @@ config SYS_VENDOR
 config SYS_DATA_BASE
 	hex "Data Base"
 	default 0x3E800000 if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
-	                      TARGET_S32V234CCPB
+	                      TARGET_S32V234CCPB || TARGET_CAMPPS32V2
 	default 0x34000000 if TARGET_S32V344EVB || TARGET_S32G274AEVB || \
 			      TARGET_S32G274ARDB || TARGET_S32R45EVB || \
 			      TARGET_TYPE_S32GEN1_EMULATOR || \
@@ -37,7 +40,7 @@ config SYS_DATA_BASE
 config SYS_MEM_SIZE
 	hex "RAM Memory Size"
 	default 0x00400000 if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
-	                      TARGET_S32V234CCPB
+	                      TARGET_S32V234CCPB  || TARGET_CAMPPS32V2
 	default 0x00800000 if TARGET_S32V344EVB || TARGET_S32G274AEVB || \
 			      TARGET_S32G274ARDB || TARGET_S32R45EVB || \
 			      TARGET_TYPE_S32GEN1_EMULATOR || \

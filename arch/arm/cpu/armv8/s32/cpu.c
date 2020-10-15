@@ -8,20 +8,22 @@
 #include <cpu_func.h>
 #include <asm/io.h>
 #include <asm/system.h>
-#include <asm/armv8/mmu.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/siul.h>
+#include <asm-generic/sections.h>
 #include "mp.h"
 #include "dma_mem.h"
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
-#ifdef CONFIG_S32_SKIP_RELOC
+#include <s32gen1_clk_utils.h>
 #include <asm-generic/sections.h>
-#endif
-
-#define S32_MMU_TABLE(BASE, IDX) ((BASE) + (IDX) * PGTABLE_SIZE)
+#include <clk.h>
+#include <dm/uclass.h>
+#include <linux/sizes.h>
+#include <power/pmic.h>
+#include <power/vr5510.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -29,273 +31,224 @@ DECLARE_GLOBAL_DATA_PTR;
 static int s32_gentimer_init(void);
 #endif
 
-static struct mm_region s32_mem_map[] = {
-	{
-		/* List terminator */
-		0,
-	}
-};
-
-struct mm_region *mem_map = s32_mem_map;
+void mmu_setup(void);
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 
-static void set_pgtable_section(u64 *page_table, u64 index, u64 section,
-				u64 memory_type, u64 attribute)
+static struct mm_region early_map[] = {
+#ifndef CONFIG_S32_SKIP_RELOC
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	{
+	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
+	  CONFIG_SYS_FSL_DRAM_SIZE1,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE | PTE_BLOCK_NS
+	},
+#else
+	/* DRAM_SIZE1 is configurable via defconfig, but there are both
+	 * address and size alignment restrictions in the MMU table lookup code
+	 */
+	{
+	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
+	  CONFIG_SYS_FSL_DRAM_SIZE1,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
+	},
+#endif
+#endif
+	{
+	  S32_SRAM_BASE, S32_SRAM_BASE,
+	  S32_SRAM_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#ifdef CONFIG_S32_GEN1
+	{
+	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
+	  CONFIG_SYS_FSL_PERIPH_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	},
+#else	/* S32V234 */
+	{
+	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
+	  CONFIG_SYS_FSL_PERIPH_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE
+	},
+#endif /* CONFIG_S32_GEN1 */
+#ifndef CONFIG_S32_SKIP_RELOC
+	{
+	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
+	  CONFIG_SYS_FSL_DRAM_SIZE2,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
+	},
+#endif
+	{
+	  CONFIG_SYS_FSL_FLASH0_BASE, CONFIG_SYS_FSL_FLASH0_BASE,
+	  CONFIG_SYS_FSL_FLASH0_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
+	},
+#ifdef CONFIG_SYS_FSL_FLASH1_BASE
+	{
+	  CONFIG_SYS_FSL_FLASH1_BASE, CONFIG_SYS_FSL_FLASH1_BASE,
+	  CONFIG_SYS_FSL_FLASH1_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
+	},
+#endif
+	/* list terminator */
+	{},
+};
+
+static struct mm_region final_map[] = {
+#ifndef CONFIG_S32_SKIP_RELOC
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	{
+	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
+	  CONFIG_SYS_FSL_DRAM_SIZE1,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#else
+	{
+	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
+	  CONFIG_SYS_FSL_DRAM_SIZE1,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#endif
+#endif
+	{
+	  S32_SRAM_BASE, S32_SRAM_BASE,
+	  S32_SRAM_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#ifdef CONFIG_S32_GEN1
+	{
+	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
+	  CONFIG_SYS_FSL_PERIPH_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	},
+#else
+	{
+	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
+	  CONFIG_SYS_FSL_PERIPH_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE
+	},
+#endif /* CONFIG_S32_GEN1 */
+#ifndef CONFIG_S32_SKIP_RELOC
+	{
+	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
+	  CONFIG_SYS_FSL_DRAM_SIZE2,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#endif
+	{
+	  CONFIG_SYS_FSL_FLASH0_BASE, CONFIG_SYS_FSL_FLASH0_BASE,
+	  CONFIG_SYS_FSL_FLASH0_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#ifdef CONFIG_SYS_FSL_FLASH1_BASE
+	{
+	  CONFIG_SYS_FSL_FLASH1_BASE, CONFIG_SYS_FSL_FLASH1_BASE,
+	  CONFIG_SYS_FSL_FLASH1_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	},
+#endif
+#if defined(CONFIG_PCIE_S32GEN1)
+	/* TODO: for CONFIG_DM_PCI, we should get address/size from
+	 * device tree
+	 */
+	{
+	  CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
+	  CONFIG_SYS_PCIE0_PHYS_SIZE_HI,
+	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+	  PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	},
+	{
+	  CONFIG_SYS_PCIE1_PHYS_ADDR_HI, CONFIG_SYS_PCIE1_PHYS_ADDR_HI,
+	  CONFIG_SYS_PCIE1_PHYS_SIZE_HI,
+	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+	  PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	},
+#endif
+	/* list terminator */
+	{},
+};
+
+struct mm_region *mem_map = early_map;
+
+#ifdef CONFIG_S32V234
+static void enable_snooping(void)
 {
-	u64 value;
+	struct ccsr_cci400 *cci = (struct ccsr_cci400 *)CCI400_BASE_ADDR;
 
-	value = section | PTE_TYPE_BLOCK | PTE_BLOCK_AF;
-	value |= PMD_ATTRINDX(memory_type);
-	value |= attribute;
-	page_table[index] = value;
+	out_le32(&cci->slave[3].snoop_ctrl,
+		 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
+	out_le32(&cci->slave[4].snoop_ctrl,
+		 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
 }
+#endif
 
-static void set_pgtable_table(u64 *page_table, u64 index, u64 *table_addr)
-{
-	u64 value;
-
-	value = (u64)table_addr | PTE_TYPE_TABLE;
-	page_table[index] = value;
-}
-
-/*
- * Set the block entries according to the information of the table.
- */
-static int set_block_entry(const struct sys_mmu_table *list,
-			   struct table_info *table)
-{
-	u64 block_size = 0, block_shift = 0;
-	u64 block_addr, index;
-	int j;
-
-	if (table->entry_size == BLOCK_SIZE_L1) {
-		block_size = BLOCK_SIZE_L1;
-		block_shift = SECTION_SHIFT_L1;
-	} else if (table->entry_size == BLOCK_SIZE_L2) {
-		block_size = BLOCK_SIZE_L2;
-		block_shift = SECTION_SHIFT_L2;
-	} else {
-		printf("Wrong size\n");
-	}
-
-	block_addr = list->phys_addr;
-	index = (list->virt_addr - table->table_base) >> block_shift;
-
-	for (j = 0; j < (list->size >> block_shift); j++) {
-		set_pgtable_section(table->ptr,
-				    index,
-				    block_addr,
-				    list->memory_type,
-				    list->share);
-		block_addr += block_size;
-		index++;
-	}
-
-	return 0;
-}
-
-/*
- * Find the corresponding table entry for the list.
- */
-static int find_table(const struct sys_mmu_table *list,
-		      struct table_info *table, u64 *level0_table)
-{
-	u64 index = 0, level = 0;
-	u64 *level_table = level0_table;
-	u64 temp_base = 0, block_size = 0, block_shift = 0;
-	while (level < 3) {
-		if (level == 0) {
-			block_size = BLOCK_SIZE_L0;
-			block_shift = SECTION_SHIFT_L0;
-		} else if (level == 1) {
-			block_size = BLOCK_SIZE_L1;
-			block_shift = SECTION_SHIFT_L1;
-		} else if (level == 2) {
-			block_size = BLOCK_SIZE_L2;
-			block_shift = SECTION_SHIFT_L2;
-		}
-
-		index = 0;
-		while (list->virt_addr >= temp_base) {
-			index++;
-			temp_base += block_size;
-		}
-		temp_base -= block_size;
-		if ((level_table[index - 1] & PTE_TYPE_MASK) ==
-		    PTE_TYPE_TABLE) {
-			level_table = (u64 *)(level_table[index - 1] &
-				~PTE_TYPE_MASK);
-			level++;
-			continue;
-		} else {
-			if (level == 0)
-				return -1;
-
-			if ((list->phys_addr + list->size) >
-			(temp_base + block_size * NUM_OF_ENTRY))
-				return -1;
-
-			/*
-			* Check the address and size of the list member is
-			* aligned with the block size.
-			*/
-			if (((list->phys_addr & (block_size - 1)) != 0) ||
-				((list->size & (block_size - 1)) != 0))
-				return -1;
-			table->ptr = level_table;
-			table->table_base = temp_base -
-					    ((index - 1) << block_shift);
-			table->entry_size = block_size;
-
-			return 0;
-		}
-	}
-	return -1;
-}
-
-/*
- * To start MMU before DDR is available, we create MMU table in SRAM.
- * The base address of SRAM is IRAM_BASE_ADDR. We use three
- * levels of translation tables here to cover 40-bit address space.
- * We use 4KB granule size, with 40 bits physical address, T0SZ=24
- */
 static inline void early_mmu_setup(void)
 {
-	unsigned int el, i;
-#ifdef CONFIG_S32V234
-	volatile struct ccsr_cci400 *cci = (struct ccsr_cci400 *)CCI400_BASE_ADDR;
+	/* global data is already setup, no allocation yet */
+	gd->arch.tlb_addr = S32_IRAM_MMU_TABLES_BASE;
+	gd->arch.tlb_size = CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
+
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	dma_mem_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
 #endif
-	u64 *level0_table =  (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 0);
-	u64 *level1_table0 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 1);
-	u64 *level1_table1 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 2);
-	u64 *level2_table0 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 3);
-	u64 *level2_table1 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 4);
-	u64 *level2_table2 = (u64 *)S32_MMU_TABLE(S32_IRAM_MMU_TABLES_BASE, 5);
-	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
 
-	dma_mem_clr((uintptr_t)level0_table,
-		    ((uintptr_t)level2_table2) + PGTABLE_SIZE -
-			((uintptr_t)level0_table));
-
-
-	/* Fill in the table entries */
-	set_pgtable_table(level0_table, 0, level1_table0);
-	set_pgtable_table(level0_table, 1, level1_table1);
-
-	set_pgtable_table(level1_table0,
-			  CONFIG_SYS_FSL_IRAM_BASE >> SECTION_SHIFT_L1,
-			  level2_table0);
-	set_pgtable_table(level1_table0,
-			  CONFIG_SYS_FSL_PERIPH_BASE >> SECTION_SHIFT_L1,
-			  level2_table1);
-	set_pgtable_table(level1_table0,
-			  CONFIG_SYS_FSL_DRAM_BASE2 >> SECTION_SHIFT_L1,
-			  level2_table2);
-
-	/* Find the table and fill in the block entries */
-	for (i = 0; i < ARRAY_SIZE(s32_early_mmu_table); i++) {
-		if (find_table(&s32_early_mmu_table[i],
-			&table, level0_table) == 0) {
-			/*
-			 * If find_table() returns error, it cannot be dealt
-			 * with here. Breakpoint can be added for debugging.
-			 */
-			set_block_entry(&s32_early_mmu_table[i], &table);
-			/*
-			 * If set_block_entry() returns error, it cannot be
-			 * dealt with here, either.
-			 */
-		}
-	}
 #ifdef CONFIG_S32V234
-	out_le32(&cci->slave[3].snoop_ctrl,
-			 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
-
-	out_le32(&cci->slave[4].snoop_ctrl,
-			 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
+	enable_snooping();
 #endif
-	el = current_el();
-	set_ttbr_tcr_mair(el, (u64)level0_table, S32V_TCR, MEMORY_ATTRIBUTES);
-	set_sctlr(get_sctlr() | CR_M);
+	mmu_setup();
 	set_sctlr(get_sctlr() | CR_C);
-
 }
 
-/*
- * The final tables look similar to early tables, but different in detail.
- * These tables are in DRAM using the area reserved by dtb for spintable area.
- *
- * Level 1 table 0 contains 512 entries for each 1GB from 0 to 512GB.
- * Level 1 table 1 contains 512 entries for each 1GB from 512GB to 1TB.
- * Level 2 table 0 contains 512 entries for each 2MB from 0 to 1GB.
- * Level 2 table 1 contains 512 entries for each 2MB from 1GB to 2GB.
- * Level 2 table 2 contains 512 entries for each 2MB from 3GB to 4GB.
- */
+/* Saved TLB settings for secondaries */
+uintptr_t s32_tlb_addr;
+u64 s32_tcr;
+
+static inline void save_tlb(void)
+{
+	s32_tlb_addr = gd->arch.tlb_addr;
+	s32_tcr = get_tcr(current_el(), NULL, NULL);
+
+	flush_dcache_range((unsigned long)&s32_tlb_addr,
+			   (unsigned long)&s32_tlb_addr + sizeof(s32_tlb_addr));
+
+	flush_dcache_range((unsigned long)&s32_tcr,
+			   (unsigned long)&s32_tcr + sizeof(s32_tcr));
+}
+
 static inline void final_mmu_setup(void)
 {
-	unsigned int el, i;
-	u64 *level0_table =  (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 0);
-	u64 *level1_table0 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 1);
-	u64 *level1_table1 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 2);
-	u64 *level2_table0 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 3);
-	u64 *level2_table1 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 4);
-	u64 *level2_table2 = (u64 *)S32_MMU_TABLE(S32_SDRAM_MMU_TABLES_BASE, 5);
-	struct table_info table = {level0_table, 0, BLOCK_SIZE_L0};
+	unsigned int el = current_el();
 
-	/* Invalidate all table entries */
+	mem_map = final_map;
 
-#ifdef CONFIG_S32_SKIP_RELOC
-	dma_mem_clr((uintptr_t)level0_table,
-		    ((uintptr_t)level2_table2) + PGTABLE_SIZE -
-			((uintptr_t)level0_table));
-#else
-	memset(level0_table, 0, PGTABLE_SIZE);
-	memset(level1_table0, 0, PGTABLE_SIZE);
-	memset(level1_table1, 0, PGTABLE_SIZE);
-	memset(level2_table0, 0, PGTABLE_SIZE);
-	memset(level2_table1, 0, PGTABLE_SIZE);
-	memset(level2_table2, 0, PGTABLE_SIZE);
+	/* global data is already setup, no allocation yet */
+	gd->arch.tlb_addr = S32_SDRAM_MMU_TABLES_BASE;
+	gd->arch.tlb_fillptr = gd->arch.tlb_addr;
+	gd->arch.tlb_size = CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
+
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	dma_mem_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
 #endif
-
-	/* Fill in the table entries */
-	set_pgtable_table(level0_table, 0, level1_table0);
-	set_pgtable_table(level0_table, 1, level1_table1);
-	set_pgtable_table(level1_table0,
-			 CONFIG_SYS_FSL_IRAM_BASE >> SECTION_SHIFT_L1,
-			 level2_table0);
-	set_pgtable_table(level1_table0,
-			  CONFIG_SYS_FSL_PERIPH_BASE >> SECTION_SHIFT_L1,
-			  level2_table1);
-	set_pgtable_table(level1_table0,
-			  CONFIG_SYS_FSL_DRAM_BASE2 >> SECTION_SHIFT_L1,
-			  level2_table2);
-
-
-	/* Find the table and fill in the block entries */
-	for (i = 0; i < ARRAY_SIZE(s32_final_mmu_table); i++) {
-		if (find_table(&s32_final_mmu_table[i],
-			&table, level0_table) == 0) {
-			if (set_block_entry(&s32_final_mmu_table[i],
-					&table) != 0) {
-				printf("MMU error: could not set block entry for %p\n",
-				       &s32_final_mmu_table[i]);
-			}
-		} else {
-			printf("MMU error: could not find the table for %p\n",
-			       &s32_final_mmu_table[i]);
-		}
-	}
+	setup_pgtables();
 
 	/* flush new MMU table */
-
 	/* Disable cache and MMU */
 	dcache_disable();   /* TLBs are invalidated */
 	invalidate_icache_all();
 
 	/* point TTBR to the new table */
-	el = current_el();
-	set_ttbr_tcr_mair(el, (u64)level0_table, S32V_TCR_FINAL, MEMORY_ATTRIBUTES);
+	set_ttbr_tcr_mair(el, gd->arch.tlb_addr, get_tcr(el, NULL, NULL),
+			  MEMORY_ATTRIBUTES);
+	__asm_invalidate_tlb_all();
+
+	/* gd->arch.tlb_emerg is used by mmu_set_region_dcache_behaviour */
+	gd->arch.tlb_emerg = gd->arch.tlb_addr;
+
+	save_tlb();
+
 	/*
 	 * MMU is already enabled, just need to invalidate TLB to load the
 	 * new table. The new table is compatible with the current table, if
@@ -305,21 +258,161 @@ static inline void final_mmu_setup(void)
 	set_sctlr(get_sctlr() | CR_M);
 }
 
-int arch_cpu_init(void)
+#ifdef CONFIG_S32_GEN1
+/*
+ * This function is a temporary fix for drivers without clock bindings.
+ *
+ * It should be removed once Linux kernel is able to enable all
+ * needed clocks and all U-Boot drivers have clock bindings.
+ *
+ * E.g. QSPI, FTM, etc.
+ */
+static int enable_periph_clocks(void)
 {
-#ifdef CONFIG_S32_SKIP_RELOC
+	struct udevice *dev;
+	struct clk_bulk bulk;
 	int ret;
-	int base, size;
 
-	gd->flags |= GD_FLG_SKIP_RELOC;
+	ret = uclass_get_device_by_name(UCLASS_CLK, "clks", &dev);
+	if (ret) {
+		pr_err("Failed to get 'clk' device\n");
+		return ret;
+	}
 
+	ret = clk_get_bulk(dev, &bulk);
+	if (ret == -EINVAL)
+		return 0;
+
+	if (ret)
+		return ret;
+
+	ret = clk_enable_bulk(&bulk);
+	if (ret) {
+		clk_release_bulk(&bulk);
+		return ret;
+	}
+
+	return 0;
+}
+#endif
+
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+static inline int clear_after_bss(void)
+{
+	int base, size, ret;
 	/*
 	 * Assumption: lowlevel.S will clear at least [__bss_start - __bss_end]
 	 */
 	base = (uintptr_t)&__bss_end;
-	size = IRAM_SIZE + IRAM_BASE_ADDR - base;
+	size = S32_SRAM_BASE + S32_SRAM_SIZE - base;
 	ret = dma_mem_clr(base, size);
 	if (!ret)
+		return ret;
+
+	return 0;
+}
+#endif
+
+#if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+static int watchdog_refresh(struct udevice *pmic)
+{
+	uint seed, wd_cfg;
+	int ret;
+
+	seed = pmic_reg_read(pmic, VR5510_FS_WD_SEED);
+
+	/* Challenger watchdog refresh */
+	seed = ((~(seed * 4 + 2) & 0xFFFFFFFFU) / 4) & 0xFFFFU;
+
+	ret = pmic_reg_write(pmic, VR5510_FS_WD_ANSWER, seed);
+	if (ret) {
+		pr_err("Failed to write VR5510 WD answer\n");
+		return ret;
+	}
+
+	wd_cfg = pmic_reg_read(pmic, VR5510_FS_I_WD_CFG);
+	if (VR5510_ERR_CNT(wd_cfg)) {
+		pr_err("Failed to refresh watchdog\n");
+		return -EIO;
+	}
+
+	return 0;
+}
+
+static int disable_vr5510_wdg(void)
+{
+	struct udevice *pmic;
+	uint wd_window, safe_input, fs_states, diag;
+	int ret;
+
+	ret = pmic_get(VR5510_FSU_NAME, &pmic);
+	if (ret)
+		return ret;
+
+	fs_states = pmic_reg_read(pmic, VR5510_FS_STATES);
+	if (VR5510_STATE(fs_states) != INIT_FS) {
+		pr_warn("VR5510 is not in INIT_FS state\n");
+		return 0;
+	}
+
+	/* Disable watchdog */
+	wd_window = pmic_reg_read(pmic, VR5510_FS_WD_WINDOW);
+	wd_window &= ~VR5510_WD_WINDOW_MASK;
+	ret = pmic_reg_write(pmic, VR5510_FS_WD_WINDOW, wd_window);
+	if (ret) {
+		pr_err("Failed write watchdog window\n");
+		return ret;
+	}
+
+	wd_window = ~wd_window & 0xFFFFU;
+	ret = pmic_reg_write(pmic, VR5510_FS_NOT_WD_WINDOW, wd_window);
+	if (ret) {
+		pr_err("Failed write watchdog window\n");
+		return ret;
+	}
+
+	diag = pmic_reg_read(pmic, VR5510_FS_DIAG_SAFETY);
+	if (!VR5510_ABIST1_OK(diag)) {
+		pr_err("VR5510 is not in ABIST1 state\n");
+		return ret;
+	}
+
+	/* Disable FCCU monitoring */
+	safe_input = pmic_reg_read(pmic, VR5510_FS_I_SAFE_INPUTS);
+	safe_input &= ~VR5510_FCCU_CFG_MASK;
+	ret = pmic_reg_write(pmic, VR5510_FS_I_SAFE_INPUTS, safe_input);
+	if (ret) {
+		pr_err("Failed to disable FCCU\n");
+		return ret;
+	}
+
+	safe_input = ~safe_input & 0xFFFFU;
+	ret = pmic_reg_write(pmic, VR5510_FS_I_NOT_SAFE_INPUTS, safe_input);
+	if (ret) {
+		pr_err("Failed to disable FCCU\n");
+		return ret;
+	}
+
+	return watchdog_refresh(pmic);
+}
+#endif
+
+int arch_cpu_init(void)
+{
+	int ret = 0;
+
+#ifdef CONFIG_S32_ATF_BOOT_FLOW
+	/* Clear the BSS. */
+	memset(__bss_start, 0, __bss_end - __bss_start);
+#endif
+
+#ifdef CONFIG_S32_SKIP_RELOC
+	gd->flags |= GD_FLG_SKIP_RELOC;
+#endif
+
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	ret = clear_after_bss();
+	if (ret)
 		return ret;
 #endif
 
@@ -331,9 +424,13 @@ int arch_cpu_init(void)
 	 * Note: TF-A has already initialized these, so don't do it again if
 	 * we're running at EL2.
 	 */
-	clock_init();
+	ret = enable_early_clocks();
+	if (ret)
+		return ret;
+
 	ncore_init(0x1);
 #endif
+
 	icache_enable();
 	__asm_invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
@@ -342,7 +439,7 @@ int arch_cpu_init(void)
 #if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	s32_gentimer_init();
 #endif
-	return 0;
+	return ret;
 }
 
 /*
@@ -362,10 +459,17 @@ void enable_caches(void)
 #endif
 
 #if defined(CONFIG_ARCH_EARLY_INIT_R)
-#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 int arch_early_init_r(void)
 {
-	int rv;
+	int rv = 0;
+
+#if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	rv = disable_vr5510_wdg();
+	if (rv)
+		return rv;
+#endif
+
+#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	asm volatile("dsb sy");
 	rv = fsl_s32_wake_secondary_cores();
 
@@ -376,21 +480,19 @@ int arch_early_init_r(void)
 	/* Reconfigure Concerto before actually waking the cores */
 	ncore_init(0xf);
 #endif
-
 	asm volatile("sev");
+#endif
 
-	return 0;
-}
-#else
-/* With TF-A, practically we should do nothing of the above; define an empty
- * stub to appease the compiler.
- */
-int arch_early_init_r(void)
-{
-	return 0;
-}
+#ifdef CONFIG_S32_GEN1
+	rv = enable_periph_clocks();
+
+	if (rv)
+		return rv;
 #endif
-#endif
+
+	return rv;
+}
+#endif /* CONFIG_ARCH_EARLY_INIT_R */
 
 /* For configurations with U-Boot *not* at EL3, it is presumed that
  * the EL3 software (e.g. the TF-A) will initialize the generic timer.
@@ -441,3 +543,81 @@ static int s32_gentimer_init(void)
 #error "S32 platform should provide ARMv8 generic timer initialization"
 #endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
+
+static void s32_init_ram_size(void)
+{
+	int i;
+	unsigned long start, size;
+
+	if (!gd->bd) {
+		pr_err("gd->bd isn't initialized\n");
+		return;
+	}
+
+	gd->ram_size = 0;
+	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+		start = gd->bd->bi_dram[i].start;
+		size = gd->bd->bi_dram[i].size;
+
+		/* Don't advertise SRAM */
+		if (start == S32_SRAM_BASE)
+			continue;
+
+		if (!start && !size)
+			continue;
+
+		gd->ram_size += get_ram_size((long *)start, size);
+	}
+}
+
+int dram_init_banksize(void)
+{
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	gd->bd->bi_dram[0].start = S32_SRAM_BASE;
+	gd->bd->bi_dram[0].size = S32_SRAM_SIZE;
+
+	gd->bd->bi_dram[1].start = 0x0;
+	gd->bd->bi_dram[1].size = 0x0;
+
+	gd->bd->bi_dram[2].start = 0x0;
+	gd->bd->bi_dram[2].size = 0x0;
+#else
+#ifdef CONFIG_S32_GEN1
+	int ret;
+
+	ret = fdtdec_setup_memory_banksize();
+	if (ret)
+		return ret;
+#else
+	gd->bd->bi_dram[0].start = CONFIG_SYS_FSL_DRAM_BASE1;
+	gd->bd->bi_dram[0].size = CONFIG_SYS_FSL_DRAM_SIZE1;
+
+	gd->bd->bi_dram[1].start = CONFIG_SYS_FSL_DRAM_BASE2;
+	gd->bd->bi_dram[1].size = CONFIG_SYS_FSL_DRAM_SIZE2;
+
+	gd->bd->bi_dram[2].start = S32_SRAM_BASE;
+	gd->bd->bi_dram[2].size = S32_SRAM_SIZE;
+#endif
+#endif
+	s32_init_ram_size();
+	return 0;
+}
+
+phys_size_t __weak get_effective_memsize(void)
+{
+	phys_size_t size;
+	/*
+	 * Restrict U-Boot area to the first bank of the DDR memory.
+	 * Note: gd->bd isn't initialized yet
+	 */
+#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+	size = S32_SRAM_SIZE;
+#else
+	size = CONFIG_SYS_FSL_DRAM_SIZE1;
+#ifdef CONFIG_PRAM
+	/* ATF space */
+	size -= CONFIG_PRAM * SZ_1K;
+#endif
+#endif
+	return size;
+}

@@ -30,17 +30,21 @@
 #include <dm/uclass.h>
 #include <generic-phy.h>
 #endif
+#include <dt-bindings/clock/s32gen1-clock.h>
+#include <s32gen1_clk_utils.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 
 u32 cpu_mask(void)
 {
+	u32 rgm_stat = readl(RGM_PSTAT(MC_RGM_BASE_ADDR,
+				       RGM_CORES_RESET_GROUP));
 	/* 0 means out of reset. */
 	/* Bit 0 corresponds to cluster reset and is 0 if any
 	 * of the other bits 1-4 are 0.
 	 */
-	return ((~(readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)))) >> 1) & 0xf;
+	return ((~(rgm_stat)) >> 1) & 0xf;
 }
 
 /*
@@ -51,309 +55,26 @@ int cpu_numcores(void)
 	return hweight32(cpu_mask());
 }
 
-/* There are 3 possible ranges for selected_output:
- * - < PHI_MAXNUMBER - the selected output is a PHI
- * - >= PHI_MAXNUMBER and <= PHI_MAXNUMBER + DFS_MAXNUMBER -
- *   the selected output is a DFS if supported or error
- * - > PHI_MAXNUMBER + DFS_MAXNUMBER - error
- */
-static u32 get_pllfreq(u32 pll, u32 refclk_freq, u32 plldv,
-		u32 pllfd, u32 selected_output)
+int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
 {
-	u32 plldv_rdiv = 0, plldv_mfi = 0, pllfd_mfn = 0;
-	u32 pllodiv_div = 0, fout = 0;
-	u32 dfs_portn = 0, dfs_mfn = 0, dfs_mfi = 0;
-	u32 phi_nr, dfs_nr;
-	double vco = 0;
+	if (enable)
+		return s32gen1_enable_plat_clk(S32GEN1_CLK_XBAR_DIV3);
 
-	if (selected_output > PHI_MAXNUMBER + DFS_MAXNUMBER) {
-		printf("Unsupported selected output\n");
-		return -1;
-	}
-
-	plldv_rdiv = (plldv & PLLDIG_PLLDV_RDIV_MASK) >>
-		PLLDIG_PLLDV_RDIV_OFFSET;
-	plldv_mfi = (plldv & PLLDIG_PLLDV_MFI_MASK);
-
-	pllfd_mfn = (pllfd & PLLDIG_PLLFD_MFN_MASK);
-
-	plldv_rdiv = plldv_rdiv == 0 ? 1 : plldv_rdiv;
-
-	/* The formula for VCO is from S32RS RefMan Rev. 1, draft D) */
-	vco = (refclk_freq / (double)plldv_rdiv) *
-		(plldv_mfi + pllfd_mfn / (double)18432);
-
-	if (selected_output < PHI_MAXNUMBER) {
-		/* Determine the div for PHI. */
-		phi_nr = selected_output;
-		pllodiv_div = readl(PLLDIG_PLLODIV(pll, phi_nr));
-		pllodiv_div = (pllodiv_div & PLLDIG_PLLODIV_DIV_MASK) >>
-			PLLDIG_PLLODIV_DIV_OFFSET;
-		fout = vco / (pllodiv_div + 1);
-	} else if (pll == ARM_PLL || pll == PERIPH_PLL) {
-		/* Determine the div for DFS. */
-		dfs_nr = selected_output - PHI_MAXNUMBER + 1;
-
-		dfs_portn = readl(DFS_DVPORTn(pll,
-					dfs_nr - 1));
-		dfs_mfi = (dfs_portn & DFS_DVPORTn_MFI_MASK) >>
-			DFS_DVPORTn_MFI_OFFSET;
-		dfs_mfn = (dfs_portn & DFS_DVPORTn_MFN_MASK) >>
-			DFS_DVPORTn_MFN_OFFSET;
-
-		/* According to the formula:
-		 * fdfs_clckout = fdfs_clkin /
-		 *     (2 * (DFS_DVPORTn[MFI] + (DFS_DVPORTn[MFN]/36)))
-		 */
-		fout = (18 * vco) / (36 * dfs_mfi + dfs_mfn);
-	} else {
-		printf("Selected PLL doesn't have DFS as output\n");
-		return -1;
-	}
-
-	return fout;
+	return 0;
 }
-
-/* There are 3 possible ranges for selected_output:
- * - < PHI_MAXNUMBER - the selected output is a PHI
- * - >= PHI_MAXNUMBER and <= PHI_MAXNUMBER + DFS_MAXNUMBER -
- *   the selected output is a DFS if supported or error
- * - > PHI_MAXNUMBER + DFS_MAXNUMBER - error
- */
-/* Implemented for ARM_PLL, PERIPH_PLL, ACCEL_PLL, DDR_PLL. */
-static u32 decode_pll(enum pll_type pll, u32 refclk_freq,
-		u32 selected_output)
-{
-	u32 plldv, pllfd, freq;
-
-	plldv = readl(PLLDIG_PLLDV(pll));
-	pllfd = readl(PLLDIG_PLLFD(pll));
-
-	freq = get_pllfreq(pll, refclk_freq, plldv, pllfd, selected_output);
-	return freq  < 0 ? 0 : freq;
-}
-
-static u32 get_sel(u64 cgm, u8 mux)
-{
-	u32 css_sel;
-
-	css_sel = readl(CGM_MUXn_CSS(cgm, mux));
-	return MC_CGM_MUXn_CSS_SELSTAT(css_sel);
-}
-
-static u32 get_div(u64 cgm, u8 mux)
-{
-	u32 div = 1, dc;
-
-	/* MC_CGM_0/5 MUXes below don't have a divider register */
-	if (cgm == MC_CGM0_BASE_ADDR) {
-		if ((mux == 7) || (mux == 8) || (mux == 11) || (mux == 16))
-			return div;
-	} else if (cgm == MC_CGM5_BASE_ADDR) {
-		if (mux == 0)
-			return div;
-	}
-
-	dc = readl(CGM_MUXn_DCm(cgm, mux, 0));
-	/* If div is enabled. */
-	if (dc & MC_CGM_MUXn_DCm_DE) {
-		div = (dc & MC_CGM_MUXn_DCm_DIV_MASK) >>
-			MC_CGM_MUXn_DCm_DIV_OFFSET;
-		div += 1;
-	} else {
-		div = 1;
-	}
-
-	return div;
-}
-
-static u32 get_uart_clk(void)
-{
-	u32 div, css_sel, freq = 0;
-
-	css_sel = get_sel(MC_CGM0_BASE_ADDR, 8);
-	div = get_div(MC_CGM0_BASE_ADDR, 8);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_FXOSC:
-		freq = XOSC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI3:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 3);
-		break;
-	default:
-		printf("unsupported system clock select\n");
-		freq = 0;
-	}
-
-	return freq/div;
-}
-
-static u32 get_usdhc_clk(void)
-{
-	u32 div, css_sel;
-	u32 freq = 0;
-
-	css_sel = get_sel(MC_CGM0_BASE_ADDR, 14);
-	div = get_div(MC_CGM0_BASE_ADDR, 14);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS3:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 10);
-		break;
-	default:
-		printf("unsupported system clock select\n");
-		freq = 0;
-	}
-
-	return freq / div;
-}
-
-u32 get_xbar_clk(void)
-{
-	u32 div, css_sel;
-	u32 freq = 0;
-
-	css_sel = get_sel(MC_CGM0_BASE_ADDR, 0);
-	div = get_div(MC_CGM0_BASE_ADDR, 0);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_ARM_PLL_DFS1:
-		freq = decode_pll(ARM_PLL, XOSC_CLK_FREQ, 8);
-		break;
-	default:
-		printf("unsupported system clock select\n");
-		freq = 0;
-	}
-
-	return freq / div;
-}
-
-static u32 get_dspi_clk(void)
-{
-	u32 div, css_sel, freq = 0;
-
-	css_sel = get_sel(MC_CGM0_BASE_ADDR, 16);
-	div = get_div(MC_CGM0_BASE_ADDR, 16);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI7:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 7);
-		break;
-	default:
-		printf("unsupported system clock select\n");
-		freq = 0;
-	}
-
-	return freq/div;
-}
-
-static u32 get_qspi_clk(void)
-{
-	u32 div, css_sel, freq = 0;
-
-	css_sel = get_sel(MC_CGM0_BASE_ADDR, 12);
-	div = get_div(MC_CGM0_BASE_ADDR, 12);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_DFS1:
-		freq = decode_pll(PERIPH_PLL, XOSC_CLK_FREQ, 8);
-		break;
-	default:
-		printf("unsupported system clock select\n");
-		freq = 0;
-	}
-
-	return freq/div;
-}
-
-static u32 get_ddr_clk(void)
-{
-	u32 div, css_sel, freq = 0;
-
-	css_sel = get_sel(MC_CGM5_BASE_ADDR, 0);
-	div = get_div(MC_CGM5_BASE_ADDR, 0);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_DDR_PLL_PHI0:
-		freq = decode_pll(DDR_PLL, XOSC_CLK_FREQ, 0);
-		break;
-	default:
-		printf("unsupported system clock select\n");
-		freq = 0;
-	}
-
-	return freq / div;
-}
-
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-static u32 get_pfe_clk(void)
-{
-	u32 div, css_sel, freq = 0;
-
-	css_sel = get_sel(MC_CGM2_BASE_ADDR, 0);
-	div = get_div(MC_CGM2_BASE_ADDR, 0);
-
-	switch (css_sel) {
-	case MC_CGM_MUXn_CSC_SEL_FIRC:
-		freq = FIRC_CLK_FREQ;
-		break;
-	case MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI1:
-		freq = decode_pll(ACCEL_PLL, XOSC_CLK_FREQ, 0);
-		break;
-	default:
-		printf("unsupported system clock select: 0x%x\n", css_sel);
-		freq = 0;
-	}
-
-	return freq / div;
-}
-#endif
 
 /* return clocks in Hz */
 unsigned int mxc_get_clock(enum mxc_clock clk)
 {
 	switch (clk) {
 	case MXC_UART_CLK:
-		return get_uart_clk();
-	case MXC_ESDHC_CLK:
-	case MXC_USDHC_CLK:
-		return get_usdhc_clk();
-	case MXC_QSPI_CLK:
-		return get_qspi_clk();
-	case MXC_DSPI_CLK:
-		return get_dspi_clk();
-	case MXC_XBAR_CLK:
-		return get_xbar_clk();
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-	case MXC_PFE_CLK:
-		return get_pfe_clk();
-#endif
-	/* TBD: get DDR clock */
-	case MXC_DDR_CLK:
-		return get_ddr_clk();
-#ifdef CONFIG_SYS_I2C_MXC
+		return S32GEN1_LIN_BAUD_CLK_FREQ;
 	case MXC_I2C_CLK:
-		return get_xbar_clk() / 3;
-#endif
+		return s32gen1_get_plat_clk_rate(S32GEN1_CLK_XBAR_DIV3);
+	case MXC_ESDHC_CLK:
+		return s32gen1_get_plat_clk_rate(S32GEN1_CLK_SDHC);
+	case MXC_DSPI_CLK:
+		return s32gen1_get_plat_clk_rate(S32GEN1_CLK_SPI);
 	default:
 		break;
 	}
@@ -362,66 +83,35 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	return 0;
 }
 
-/* Dump some core clocks */
-int do_s32_showclocks(cmd_tbl_t *cmdtp, int flag, int argc,
-		char * const argv[])
-{
-	printf("Root clocks:\n");
-	printf("UART clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_UART_CLK) / 1000000);
-	printf("SDHC clock:	%5d MHz\n",
-	       mxc_get_clock(MXC_USDHC_CLK) / 1000000);
-	printf("DSPI clock:     %5d MHz\n",
-	       mxc_get_clock(MXC_DSPI_CLK) / 1000000);
-	printf("QSPI clock:     %5d MHz\n",
-	       mxc_get_clock(MXC_QSPI_CLK) / 1000000);
-	printf("XBAR clock:     %5d MHz\n",
-	       mxc_get_clock(MXC_XBAR_CLK) / 1000000);
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-	printf("PFE  clock:     %5d MHz\n",
-	       mxc_get_clock(MXC_PFE_CLK) / 1000000);
-#endif
-	printf("DDR  clock:     %5d MHz\n",
-	       mxc_get_clock(MXC_DDR_CLK) / 1000000);
-
-	return 0;
-}
-
-U_BOOT_CMD(
-		clocks, CONFIG_SYS_MAXARGS, 1, do_s32_showclocks,
-		"display clocks",
-		""
-	 );
-
 #if defined(CONFIG_DISPLAY_CPUINFO)
 static const char *get_reset_cause(void)
 {
 	u32 val;
 
-	val = readl(RGM_DES);
+	val = readl(RGM_DES(MC_RGM_BASE_ADDR));
 	if (val & RGM_DES_POR) {
 		/* Clear bit */
-		writel(RGM_DES_POR, RGM_DES);
+		writel(RGM_DES_POR, RGM_DES(MC_RGM_BASE_ADDR));
 		return "Power-On Reset";
 	}
 
 	if (val) {
-		writel(~RGM_DES_POR, RGM_DES);
+		writel(~RGM_DES_POR, RGM_DES(MC_RGM_BASE_ADDR));
 		return "Destructive Reset";
 	}
 
-	val = readl(RGM_FES);
+	val = readl(RGM_FES(MC_RGM_BASE_ADDR));
 	if (val & RGM_FES_EXT) {
-		writel(RGM_FES_EXT, RGM_FES);
+		writel(RGM_FES_EXT, RGM_FES(MC_RGM_BASE_ADDR));
 		return "External Reset";
 	}
 
 	if (val) {
-		writel(~RGM_FES_EXT, RGM_FES);
+		writel(~RGM_FES_EXT, RGM_FES(MC_RGM_BASE_ADDR));
 		return "Functional Reset";
 	}
 
-	val = readl(MC_ME_MODE_STAT);
+	val = readl(MC_ME_MODE_STAT(MC_ME_BASE_ADDR));
 	if ((val & MC_ME_MODE_STAT_PREVMODE) == 0)
 		return "Reset";
 
@@ -430,12 +120,12 @@ static const char *get_reset_cause(void)
 
 void reset_cpu(ulong addr)
 {
-	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF);
+	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF(MC_ME_BASE_ADDR));
 
-	writel(MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD);
+	writel(MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD(MC_ME_BASE_ADDR));
 
-	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* If we get there, we are not in good shape */
 	mdelay(1000);
@@ -474,7 +164,6 @@ extern struct ddrss_firmware ddrss_firmware;
 #ifdef CONFIG_S32_SKIP_RELOC
 __weak int dram_init(void)
 {
-	gd->ram_size = PHYS_SDRAM_SIZE;
 	return 0;
 }
 #else
@@ -490,7 +179,6 @@ __weak int dram_init(void)
 		return ret;
 	}
 #endif
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
 
 	return 0;
 }
@@ -509,7 +197,7 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (ep == argv[1] || *ep != '\0')
 		return CMD_RET_USAGE;
 
-	if (!IS_ADDR_IN_IRAM(addr)) {
+	if (!is_addr_in_sram(addr)) {
 		printf("ERROR: Address 0x%08lX is not in internal SRAM ...\n",
 		       addr);
 		return CMD_RET_USAGE;
@@ -518,9 +206,10 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	printf("Starting CM7_%d core at SRAM address 0x%08lX ... ",
 	       coreid, addr);
 
-	writel(readl(RGM_PRST(MC_RGM_PRST_CM7)) | PRST_PERIPH_CM7n_RST(coreid),
-	       RGM_PRST(MC_RGM_PRST_CM7));
-	while (!(readl(RGM_PSTAT(MC_RGM_PSTAT_CM7)) &
+	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7)) |
+	       PRST_PERIPH_CM7n_RST(coreid),
+	       RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7));
+	while (!(readl(RGM_PSTAT(MC_RGM_BASE_ADDR, MC_RGM_PSTAT_CM7)) &
 		 PSTAT_PERIPH_CM7n_STAT(coreid)))
 		;
 
@@ -537,10 +226,10 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		 MC_ME_PRTN_N_CORE_M_STAT_CCS))
 		;
 
-	writel(readl(RGM_PRST(MC_RGM_PRST_CM7)) &
+	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7)) &
 	       (~PRST_PERIPH_CM7n_RST(coreid)),
-	       RGM_PRST(MC_RGM_PRST_CM7));
-	while (readl(RGM_PSTAT(MC_RGM_PSTAT_CM7)) &
+	       RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7));
+	while (readl(RGM_PSTAT(MC_RGM_BASE_ADDR, MC_RGM_PSTAT_CM7)) &
 	       PSTAT_PERIPH_CM7n_STAT(coreid))
 		;
 

@@ -304,18 +304,6 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		return -EINVAL;
 	}
 
-	if (xpcs0) {
-		debug("SerDes %d XPCS_0 init to 1G mode started\n", id);
-		retval = serdes_xpcs_set_1000_mode(serdes_base,
-						   xpcs0_base,
-						   clktype, fmhz, combo);
-		if (retval) {
-			printf("SerDes %d XPCS_0 init failed\n", id);
-			return retval;
-		}
-		debug("SerDes %d XPCS_0 init to 1G mode successful\n", id);
-	}
-
 	if (xpcs1) {
 		debug("SerDes %d XPCS_1 init to 1G mode started\n", id);
 		retval = serdes_xpcs_set_1000_mode(serdes_base,
@@ -326,6 +314,18 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 			return retval;
 		}
 		debug("SerDes %d XPCS_1 init to 1G mode successful\n", id);
+	}
+
+	if (xpcs0) {
+		debug("SerDes %d XPCS_0 init to 1G mode started\n", id);
+		retval = serdes_xpcs_set_1000_mode(serdes_base,
+						   xpcs0_base,
+						   clktype, fmhz, combo);
+		if (retval) {
+			printf("SerDes %d XPCS_0 init failed\n", id);
+			return retval;
+		}
+		debug("SerDes %d XPCS_0 init to 1G mode successful\n", id);
 	}
 
 	if (xpcs0) {

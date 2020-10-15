@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2018 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * (C) Copyright 2018,2020 NXP
  */
 
 #include <common.h>
@@ -164,8 +163,12 @@ int board_early_init_f(void)
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
+#ifdef CONFIG_FSL_DCU_FB
 	setup_iomux_dcu();
+#endif
+#ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
+#endif
 	setup_xrdc();
 
 	return 0;
@@ -174,7 +177,7 @@ int board_early_init_f(void)
 int board_init(void)
 {
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+	gd->bd->bi_boot_params = CONFIG_SYS_FSL_DRAM_SIZE1 + 0x100;
 
 	return 0;
 }

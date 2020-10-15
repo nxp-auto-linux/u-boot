@@ -11,41 +11,27 @@
 #include <asm/io.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>
+#include <asm/spin_table.h>
 #include "mp.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
-void *get_spin_tbl_addr(void)
-{
-	void *ptr = (void *)SECONDARY_CPU_BOOT_PAGE;
-
-	/*
-	 * Spin table is at the beginning of secondary boot page. It is
-	 * copied to SECONDARY_CPU_BOOT_PAGE.
-	 */
-	ptr += (u64)&__spin_table - (u64)&secondary_boot_page;
-
-	return ptr;
-}
-
-phys_addr_t determine_mp_bootpg(void)
-{
-	return (phys_addr_t)SECONDARY_CPU_BOOT_PAGE;
-}
-
 #ifdef CONFIG_S32V234
+static bool is_core_active(int core)
+{
+	u32 core_mask = MC_ME_CS_A53(core);
+
+	return (readl(MC_ME_CS) & core_mask) == core_mask;
+}
+
+static unsigned long get_core_start_addr(int core)
+{
+	return readl(MC_ME_CADDR_A53(core)) & MC_ME_CADDRn_ADDR_MASK;
+}
+
 int fsl_s32_wake_secondary_cores(void)
 {
-	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
-	size_t *boot_page_size = &(__secondary_boot_page_size);
-	u64 *table = get_spin_tbl_addr();
-
-	/* Clear spin table so that secondary processors
-	 * observe the correct value after waking up from wfe.
-	 */
-	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
-	flush_dcache_range((unsigned long)boot_loc,
-			   (unsigned long)boot_loc + *boot_page_size);
+	u32 start_addr = (u32)(uintptr_t)gd->relocaddr;
 
 	/* program the cores possible running modes */
 	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL2);
@@ -53,9 +39,9 @@ int fsl_s32_wake_secondary_cores(void)
 	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL4);
 
 	/* write the cores' start address */
-	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR2);
-	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR3);
-	writel(CONFIG_SYS_TEXT_BASE | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR4);
+	writel(start_addr | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR2);
+	writel(start_addr | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR3);
+	writel(start_addr | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR4);
 
 	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL );
 	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
@@ -70,6 +56,20 @@ int fsl_s32_wake_secondary_cores(void)
 }
 
 #elif defined(CONFIG_S32_GEN1)
+static bool is_core_active(int core)
+{
+	u32 mask = MC_ME_PRTN_N_CORE_M_STAT_CCS;
+	uintptr_t addr = MC_ME_PRTN_N_CORE_M_STAT(MC_ME_CORES_PRTN, core & ~1);
+	u32 status = readl(addr);
+
+	return (status & mask) == mask;
+}
+
+static unsigned long get_core_start_addr(int core)
+{
+	return readl(MC_ME_PRTN_N_CORE_M_ADDR(MC_ME_CORES_PRTN, core));
+}
+
 static void fsl_s32_wake_secondary_core(int prtn, int core)
 {
 	u32 reset, resetc;
@@ -90,8 +90,8 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 	       MC_ME_PRTN_N_CORE_M_PUPD(prtn, core & ~1));
 
 	/* Write valid key sequence to trigger the update. */
-	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* Wait for core clock enable status bit. */
 	while ((readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, core & ~1)) &
@@ -100,11 +100,12 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 		;
 
 	/* Deassert core reset */
-	reset = readl(RGM_PRST(RGM_CORES_RESET_GROUP));
+	reset = readl(RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
 	resetc = RGM_CORE_RST(core);
 	reset &= ~resetc;
-	writel(reset, RGM_PRST(RGM_CORES_RESET_GROUP));
-	while ((readl(RGM_PSTAT(RGM_CORES_RESET_GROUP)) & resetc) != 0)
+	writel(reset, RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
+	while ((readl(RGM_PSTAT(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP))
+				& resetc) != 0)
 		;
 
 	printf("CA53 core %d running.\n", core);
@@ -112,24 +113,15 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 
 int fsl_s32_wake_secondary_cores(void)
 {
-	void *boot_loc = (void *)SECONDARY_CPU_BOOT_PAGE;
-	size_t *boot_page_size = &(__secondary_boot_page_size);
-	u64 *table = get_spin_tbl_addr();
-
-	/* Clear spin table so that secondary processors
-	 * observe the correct value after waking up from wfe.
-	 */
-	memset(table, 0, CONFIG_MAX_CPUS * ENTRY_SIZE);
-	flush_dcache_range((unsigned long)boot_loc,
-			   (unsigned long)boot_loc + *boot_page_size);
-
 	/* Enable partition clock */
-	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(MC_ME_CORES_PRTN));
-	writel(MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PUPD(MC_ME_CORES_PRTN));
+	writel(MC_ME_PRTN_N_PCE,
+	       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, MC_ME_CORES_PRTN));
+	writel(MC_ME_PRTN_N_PCE,
+	       MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, MC_ME_CORES_PRTN));
 
 	/* Write valid key sequence to trigger the update. */
-	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY);
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY);
+	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
+	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* Cluster 0, core 0 is already enabled by BootROM.
 	 * We should enable core 1 from cluster 0 and
@@ -151,6 +143,7 @@ int fsl_s32_wake_secondary_cores(void)
 #error "Incomplete platform definition"
 #endif
 
+#ifdef CONFIG_MP
 int is_core_valid(unsigned int core)
 {
 	if (core == 0)
@@ -198,45 +191,33 @@ int core_to_pos(int nr)
 
 int cpu_status(u32 nr)
 {
-	u64 *table;
-	int valid;
+	printf("Core %d status: ", nr);
+	if (!is_core_active(nr))
+		printf("inactive");
+	else
+		printf("running");
+	printf("\n");
 
-	if (nr == 0) {
-		table = (u64 *)get_spin_tbl_addr();
-		printf("table base @ 0x%p\n", table);
-	} else {
-		valid = is_core_valid(nr);
-		if (!valid)
-			return -1;
-		table = (u64 *)get_spin_tbl_addr() + nr * NUM_BOOT_ENTRY;
-		printf("table @ 0x%p\n", table);
-		printf("   addr - 0x%016llx\n", table[BOOT_ENTRY_ADDR]);
-		printf("   r3   - 0x%016llx\n", table[BOOT_ENTRY_R3]);
-		printf("   pir  - 0x%016llx\n", table[BOOT_ENTRY_PIR]);
-	}
-
+	printf("Start address = 0x%lx\n", get_core_start_addr(nr));
 	return 0;
 }
 
 int cpu_release(u32 nr, int argc, char * const argv[])
 {
-	u64 boot_addr;
-	u64 *table = (u64 *)get_spin_tbl_addr();
-#ifndef CONFIG_FSL_SMP_RELEASE_ALL
 	int valid;
+	u64 boot_addr;
 
 	valid = is_core_valid(nr);
 	if (!valid)
 		return 0;
 
-	table += nr * NUM_BOOT_ENTRY;
-#endif
 	boot_addr = simple_strtoull(argv[0], NULL, 16);
-	table[BOOT_ENTRY_ADDR] = boot_addr;
-	flush_dcache_range((unsigned long)table,
-			   (unsigned long)table + SIZE_BOOT_ENTRY);
+	spin_table_cpu_release_addr = boot_addr;
+	flush_dcache_range((unsigned long)&spin_table_cpu_release_addr,
+			   (unsigned long)(&spin_table_cpu_release_addr + 1));
 	asm volatile("dsb st");
-	smp_kick_all_cpus();	/* only those with entry addr set will run */
 
+	smp_kick_all_cpus();	/* only those with entry addr set will run */
 	return 0;
 }
+#endif

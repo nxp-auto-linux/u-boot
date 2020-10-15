@@ -1,0 +1,152 @@
+* Clock bindings for NXP S32-GEN1 platforms
+
+S32-GEN1 chips take primary clocking input from an external
+oscillator. The oscillator clock is multiplied using
+multiple phase locked loops (PLL) to create a variety of frequencies
+which can then be passed to a variety of internal logic, including
+cores and peripheral IP blocks.
+Please refer to the Reference Manual for details.
+
+This binding uses the common clock binding (Documentation/devicetree/bindings/clock/clock-bindings.txt
+
+1. Required child nodes
+	- Phase-locked loop blocks
+		- ACCEL PLL
+		- ARM PLL
+		- DDR PLL
+		- Periph PLL
+	- Digital Frequency Synthesizers
+		- ARM DFS
+		- Periph DFS
+	- Mode Entry Module (MC_ME)
+	- Reset Domain Controller (RDC)
+	- Reset Generation Module (MC_RGM)
+	- Clock Generation Modules (MC_CGM 0-2,5)
+
+2. Required properties
+	- compatible: "fsl,s32-gen1-clocking"
+	- #clock-cells : from common clock binding; shall be set to 1.
+
+3. Optional properties
+	- #address-cells: Specifies the number of cells used to represent
+		physical base addresses.  Must be present if the device has
+		sub-nodes and set to 1 if present
+	- #size-cells: Specifies the number of cells used to represent
+		the size of an address. Must be present if the device has
+		sub-nodes and set to 1 if present
+	- clocks: List of clocks to be enabled during driver probe
+
+4. Child nodes description
+	- Phase-locked loop blocks
+		* Required properties
+			- reg: address and length of the register set
+			- compatible:
+				ACCELL PLL: fsl,s32gen1-accelpll
+				ARM PLL   : fsl,s32gen1-armpll
+				DDR PLL   : fsl,s32gen1-ddrpll
+				PERIPH PLL: fsl,s32gen1-periphpll
+	- Digital Frequency Synthesizers
+		* Required properties
+			- reg: address and length of the register set
+			- compatible:
+				ARM DFS   : fsl,s32gen1-armdfs
+				PERIPH DFS: fsl,s32gen1-periphdfs
+	- Mode Entry Module (MC_ME)
+			- reg: address and length of the register set
+			- compatible: fsl,s32gen1-mc_me
+	- Reset Domain Controller (RDC)
+			- reg: address and length of the register set
+			- compatible: fsl,s32gen1-rdc
+	- Reset Generation Module (MC_RGM)
+			- reg: address and length of the register set
+			- compatible: fsl,s32gen1-rgm
+	- Clock Generation Modules (MC_CGM 0-2,5)
+			- reg: address and length of the register set
+			- compatible:
+				MC_CGM0   : fsl,s32gen1-mc_cgm0
+				MC_CGM1   : fsl,s32gen1-mc_cgm1
+				MC_CGM2   : fsl,s32gen1-mc_cgm2
+				MC_CGM5   : fsl,s32gen1-mc_cgm5
+
+5. Example
+	clks: clks {
+		compatible = "fsl,s32-gen1-clocking";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		#clock-cells = <1>;
+		status = "okay";
+
+		...
+
+		armpll: armpll@4003800 {
+			compatible = "fsl,s32gen1-armpll";
+			reg = <0x0 0x40038000 0x0 0x3000>;
+			...
+		};
+
+		armdfs: armdfs@40054000 {
+			compatible = "fsl,s32gen1-armdfs";
+			reg = <0x0 0x40054000 0x0 0x3000>;
+			...
+		};
+
+		periphpll: periphpll@4003C000 {
+			compatible = "fsl,s32gen1-periphpll";
+			reg = <0x0 0x4003C000 0x0 0x3000>;
+			...
+		};
+
+		periphdfs: armdfs@40058000 {
+			compatible = "fsl,s32gen1-periphdfs";
+			reg = <0x0 0x40058000 0x0 0x3000>;
+			...
+		};
+
+		accelpll: accelpll@40040000 {
+			compatible = "fsl,s32gen1-accelpll";
+			reg = <0x0 0x40040000 0x0 0x3000>;
+			...
+		};
+
+		ddrpll: ddrpll@40044000 {
+			compatible = "fsl,s32gen1-ddrpll";
+			reg = <0x0 0x40044000 0x0 0x3000>;
+			...
+		};
+
+		mc_me: mc_me@40088000 {
+			compatible = "fsl,s32gen1-mc_me";
+			reg = <0x0 0x40088000 0x0 0x3000>;
+			...
+		};
+
+		rdc: rdc@440080000 {
+			compatible = "fsl,s32gen1-rdc";
+			reg = <0x0 0x40080000 0x0 0x3000>;
+			...
+		};
+
+		rgm: rgm@40078000 {
+			compatible = "fsl,s32gen1-rgm";
+			reg = <0x0 0x40078000 0x0 0x3000>;
+			...
+		};
+
+		mc_cgm0: mc_cgm0@40030000 {
+			compatible = "fsl,s32gen1-mc_cgm0";
+			reg = <0x0 0x40030000 0x0 0x3000>;
+			...
+		};
+
+		mc_cgm1: mc_cgm1@40034000 {
+			compatible = "fsl,s32gen1-mc_cgm1";
+			reg = <0x0 0x40034000 0x0 0x3000>;
+			...
+		};
+
+		mc_cgm5: mc_cgm5@40068000 {
+			compatible = "fsl,s32gen1-mc_cgm5";
+			reg = <0x0 0x40068000 0x0 0x3000>;
+			...
+		};
+	};

@@ -12,6 +12,11 @@
 #ifndef __S32_GEN1_H
 #define __S32_GEN1_H
 
+#define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x80000000
+#define CONFIG_SYS_FSL_DRAM_BASE2       0x880000000
+#define CONFIG_SYS_FSL_DRAM_SIZE2       0x80000000
+
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32.h */
 
@@ -48,8 +53,14 @@
 
 #if defined(CONFIG_TARGET_S32G274AEVB)
 #define FDT_FILE fsl-s32g274a-evb.dtb
+
 #elif defined(CONFIG_TARGET_S32G274ARDB)
+#ifdef CONFIG_S32G274ARDB
 #define FDT_FILE fsl-s32g274a-rdb.dtb
+#else
+#define FDT_FILE fsl-s32g274a-rdb2.dtb
+#endif /* CONFIG_TARGET_S32G274ARDB */
+
 #elif defined(CONFIG_TARGET_S32R45EVB)
 #define FDT_FILE fsl-s32r45-evb.dtb
 #endif
@@ -73,8 +84,6 @@
 #define CONFIG_SYS_FSL_FLASH0_BASE      0x0
 #define CONFIG_SYS_FSL_FLASH0_SIZE      0x20000000
 #define QSPI_BASE_ADDR		        0x40134000
-/* Flash related definitions */
-#define CONFIG_S32_GEN_1_USES_FLASH
 
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32.h>
@@ -95,17 +104,16 @@
 
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
-#define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
-#define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
-
-#ifndef CONFIG_SYS_DDR_SIZE
-#warn CONFIG_SYS_DDR_SIZE should be already defined in the defconfig
-#define CONFIG_SYS_DDR_SIZE 0x20000000
+#ifdef TARGET_TYPE_S32GEN1_SIMULATOR
+#define S32_SRAM_BASE		0x38000000
+#else
+#define S32_SRAM_BASE		0x34000000
 #endif
 
-#define IS_ADDR_IN_DDR(addr) \
-	((addr) >= (DDR_BASE_ADDR) && \
-	(addr) <= (DDR_BASE_ADDR) + (CONFIG_SYS_DDR_SIZE))
+#define S32_SRAM_SIZE		0x800000
+
+#define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
+#define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
 
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 #define CONFIG_SYS_FSL_QSPI_AHB

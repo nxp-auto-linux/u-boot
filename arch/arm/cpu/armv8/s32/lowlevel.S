@@ -134,11 +134,12 @@ watchdog_cortexm_disable:
 	str x1, [x0]
 #endif
 
+/* Skip SRAM initialization if running with ATF and U-Boot in DDR */
+#if !(defined(CONFIG_S32_ATF_BOOT_FLOW) && defined(CONFIG_S32_SKIP_RELOC))
 sram_init:
 	/* Clear stack region */
-	ldr x0,  =CONFIG_SYS_INIT_SP_ADDR
+	ldr x0,  =(CONFIG_SYS_INIT_SP_ADDR - CONFIG_SYS_INIT_SP_OFFSET)
 	ldr x1,  =CONFIG_SYS_INIT_SP_OFFSET
-	sub x0, x0, x1
 	bl dma_mem_clr
 
 	/* Start address of the SRAM memory to init */
@@ -149,8 +150,8 @@ sram_init:
 	ldr x1, =CONFIG_SYS_TEXT_BASE
 	add x1, x1, #CONFIG_UBOOT_SRAM_FOOTPRINT
 #else	/* S32V234 */
-	ldr x1, = IRAM_BASE_ADDR
-	add x1, x1, IRAM_SIZE
+	ldr x1, = S32_SRAM_BASE
+	add x1, x1, S32_SRAM_SIZE
 #endif
 	sub x1, x1, x0
 
@@ -158,6 +159,7 @@ sram_init:
 
 	/* turn on a53 slave cores from a53 master */
 	/* deassert cores on reset */
+#endif
 
 start_slave_cores:
 
@@ -198,18 +200,13 @@ start_slave_cores:
 	isb
 	isb
 
-	ldr	x0, =CPU_RELEASE_ADDR
-	ldr	x1, =PGTABLE_SIZE
-	add	x0, x0, x1
+	ldr	x0, =s32_tlb_addr
+	ldr	x0, [x0]
 	msr	ttbr0_el3, x0
 	msr	ttbr0_el2, x0
 
-	/* PS = 40 bits, 1 Tbyte; SH0 = 2 (Outer shareable);
-	 * ORGN0 = 1 - Normal memory, outer write-back write-allocate cacheable
-	 * IRGN0 = 1 - Normal memory, inner write-back write-allocate cacheable
-	 * T0SZ=24
-	 */
-	ldr	x0, =(2<<16) | (2<<12) | (1<<10) | (1<<8) | (24 << 0)
+	ldr	x0, =s32_tcr
+	ldr	x0, [x0]
 	msr	tcr_el3, x0
 	msr	tcr_el2, x0
 
@@ -287,29 +284,11 @@ ENDPROC(lowlevel_init)
 	/* Keep literals not used by the secondary boot page outside it */
 	.ltorg
 
-	.align 4
-	.global secondary_boot_page
-secondary_boot_page:
-	.global __spin_table
-__spin_table:
-	.space CONFIG_MAX_CPUS*ENTRY_SIZE
-
-	/* Ensure that the literals used by the secondary boot page are
-	 * assembled within it
-	 */
-	.ltorg
-
 	/* 64 bit alignment for elements accessed as data */
 	.align 4
 	.global __real_cntfrq
 __real_cntfrq:
 	.quad COUNTER_FREQUENCY
-	.globl __secondary_boot_page_size
-	.type __secondary_boot_page_size, %object
-	/* Secondary Boot Page ends here */
-__secondary_boot_page_size:
-	.quad .-secondary_boot_page
-
 	.data
 initvar:
 	.quad 0x0

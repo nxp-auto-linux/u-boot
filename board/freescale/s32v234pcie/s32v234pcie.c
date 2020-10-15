@@ -1,18 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * (C) Copyright 2017,2020 NXP
  */
 
 #include <common.h>
-#include <asm/io.h>
-#include <asm/arch/soc.h>
 #include <fdt_support.h>
-#include <linux/libfdt.h>
+#include <i2c.h>
 #include <miiphy.h>
 #include <netdev.h>
-#include <i2c.h>
+#include <asm/io.h>
+#include <asm/arch/soc.h>
+#include <asm/arch/siul.h>
+#include <asm/arch/xrdc.h>
+#include <linux/libfdt.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -41,7 +42,8 @@ void setup_iomux_enet(void)
 #endif
 
 	/* set PC15 - MSCR[47] - for TX CLK SWITCH */
-	writel(SIUL2_MSCR_ENET_TX_CLK_SWITCH, SIUL2_MSCRn(SIUL2_MSCR_PC15_SWITCH));
+	writel(SIUL2_MSCR_ENET_TX_CLK_SWITCH,
+	       SIUL2_MSCRn(SIUL2_MSCR_PC15_SWITCH));
 	writel(SIUL2_MSCR_ENET_TX_CLK_IN, SIUL2_MSCRn(SIUL2_MSCR_PC15_IN));
 
 	/* set PD0 - MSCR[48] - for RX_CLK */
@@ -83,36 +85,42 @@ void setup_iomux_enet(void)
 static void setup_iomux_i2c(void)
 {
 	/* I2C0 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15, SIUL2_MSCRn(99));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15, SIUL2_IMCRn(269));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG3));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C0_DATA));
 
 	/* I2C0 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_AE15, SIUL2_MSCRn(100));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15, SIUL2_IMCRn(268));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_AE15,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG4));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C0_CLK));
 
 	/* I2C1 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA, SIUL2_MSCRn(101));
-	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA, SIUL2_IMCRn(271));
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG5));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C1_DATA));
 
 	/* I2C1 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK, SIUL2_MSCRn(102));
-	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK, SIUL2_IMCRn(270));
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG6));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C1_CLK));
 
 	/* I2C2 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA, SIUL2_MSCRn(19));
-	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SDA, SIUL2_IMCRn(273));
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB3));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SDA,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C2_DATA));
 
 	/* I2C2 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK, SIUL2_MSCRn(20));
-	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK, SIUL2_IMCRn(272));
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB4));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C2_CLK));
 }
 
-#ifdef CONFIG_SYS_USE_NAND
-void setup_iomux_nfc(void)
-{
-	/*TODO: Implement nfc iomux when it is activated.*/
-}
-#endif
 
 static void mscm_init(void)
 {
@@ -158,11 +166,12 @@ int board_early_init_f(void)
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
-#ifdef CONFIG_SYS_USE_NAND
-	setup_iomux_nfc();
-#endif
+#ifdef CONFIG_FSL_DCU_FB
 	setup_iomux_dcu();
+#endif
+#ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
+#endif
 	setup_xrdc();
 
 	return 0;
@@ -171,7 +180,7 @@ int board_early_init_f(void)
 int board_init(void)
 {
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+	gd->bd->bi_boot_params = CONFIG_SYS_FSL_DRAM_SIZE1 + 0x100;
 
 	return 0;
 }

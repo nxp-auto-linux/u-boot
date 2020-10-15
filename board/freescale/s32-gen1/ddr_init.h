@@ -48,25 +48,25 @@ enum dram_type {
 };
 
 struct regconf {
-	u32 addr;
-	u32 data;
+	uint32_t addr;
+	uint32_t data;
 };
 
 struct ddrss_config {
-	u8 memory_type;
+	uint8_t memory_type;
 	struct regconf *ddrc_cfg;
 	size_t ddrc_cfg_size;
 	struct regconf *dq_swap_cfg;
 	size_t dq_swap_cfg_size;
 	struct regconf *phy_cfg;
 	size_t phy_cfg_size;
-	struct regconf *imem_1d;
+	uint32_t *imem_1d;
 	size_t imem_1d_size;
-	struct regconf *dmem_1d;
+	uint32_t *dmem_1d;
 	size_t dmem_1d_size;
-	struct regconf *imem_2d;
+	uint32_t *imem_2d;
 	size_t imem_2d_size;
-	struct regconf *dmem_2d;
+	uint32_t *dmem_2d;
 	size_t dmem_2d_size;
 	struct regconf *pie_cfg;
 	size_t pie_cfg_size;
@@ -78,21 +78,20 @@ extern struct regconf dq_swap_cfg[];
 extern size_t dq_swap_cfg_size;
 extern struct regconf phy_cfg[];
 extern size_t phy_cfg_size;
-extern struct regconf imem_1d[];
+extern uint32_t imem_1d[];
 extern size_t imem_1d_size;
-extern struct regconf dmem_1d[];
+extern uint32_t dmem_1d[];
 extern size_t dmem_1d_size;
-extern struct regconf imem_2d[];
+extern uint32_t imem_2d[];
 extern size_t imem_2d_size;
-extern struct regconf dmem_2d[];
+extern uint32_t dmem_2d[];
 extern size_t dmem_2d_size;
 extern struct regconf pie_cfg[];
 extern size_t pie_cfg_size;
 extern struct ddrss_config configs[];
 extern size_t ddrss_config_size;
 
-u32 ddr_init(void);
+uint32_t ddr_init(void);
 void init_image_sizes(void);
-__attribute__ ((weak)) void store_csr(void) {}
 
 #endif /* DDR_INIT_H */

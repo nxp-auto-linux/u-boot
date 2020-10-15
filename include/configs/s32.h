@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -20,12 +19,6 @@
 
 #define CONFIG_REMAKE_ELF
 
-#define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
-#define CONFIG_SYS_FSL_DRAM_SIZE1       CONFIG_SYS_DDR_SIZE
-#define CONFIG_SYS_FSL_DRAM_BASE2       0xC0000000
-#define CONFIG_SYS_FSL_DRAM_SIZE2       0x40000000
-
-#define DDR_BASE_ADDR			CONFIG_SYS_FSL_DRAM_BASE1
 #if defined(CONFIG_S32V234)
 #define CONFIG_STANDALONE_LOAD_ADDR	0x80100000
 #endif /* CONFIG_S32V234/CONFIG_S32_GEN1 */
@@ -34,9 +27,6 @@
 
 /* Config CACHE */
 #define CONFIG_CMD_CACHE
-
-/* Enable DCU QoS fix */
-#define CONFIG_DCU_QOS_FIX
 
 /* Flat device tree definitions */
 #define CONFIG_OF_FDT
@@ -51,13 +41,13 @@
 #ifdef CONFIG_FSL_CSE3
 
 #define CONFIG_ARCH_MISC_INIT
-#define KIA_BASE		(IRAM_BASE_ADDR + 0x5000UL)
+#define KIA_BASE		(S32_SRAM_BASE + 0x5000UL)
 /* Secure Boot */
 #ifdef CONFIG_SECURE_BOOT
 #define SECURE_BOOT_KEY_ID	0x4UL
 #endif
 /* start address and size of firmware+keyimage binary blob */
-#define CSE_BLOB_BASE		(IRAM_BASE_ADDR + 0x1000UL)
+#define CSE_BLOB_BASE		(S32_SRAM_BASE + 0x1000UL)
 #define CSE_BLOB_SIZE		0x00004500UL
 
 #define CONFIG_FSL_CSE3_SETTINGS \
@@ -79,7 +69,11 @@
 
 /* SMP definitions */
 #define CONFIG_MAX_CPUS			(4)
-#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_SDRAM_BASE)
+#ifdef CONFIG_S32_SKIP_RELOC
+#define SECONDARY_CPU_BOOT_PAGE		(S32_SRAM_BASE)
+#else
+#define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_FSL_DRAM_BASE1)
+#endif
 #define CPU_RELEASE_ADDR		SECONDARY_CPU_BOOT_PAGE
 #define CONFIG_FSL_SMP_RELEASE_ALL
 #ifndef CONFIG_XEN_SUPPORT
@@ -119,16 +113,6 @@
 
 #else
 
-#ifndef CONFIG_S32_GEN1
-/* S32V234 flash driver */
-#define CONFIG_S32_FLASH
-#endif
-
-/* QSPI/hyperflash configs */
-
-/* Debug stuff for qspi/hyperflash */
-#undef CONFIG_DEBUG_S32_QSPI_QSPI
-
 /* Flash comand disabled until implemented */
 #undef CONFIG_CMD_FLASH
 
@@ -152,16 +136,48 @@
 
 #endif
 
+/* Note: The *_FLASH_ADDR and *_FLASH_MAXSIZE macros are used
+ * with the 'setexpr' command. Therefore ensure none of them expand
+ * into operations with more than two operands and avoid unnecessary
+ * parantheses. Also these should be kept in sync with
+ * 'conf/machine/include/s32*flashmap.inc'.
+ */
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_FSL_FLASH0_BASE
-
-/* Flash booting */
-#define UBOOT_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0x0
-#define KERNEL_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0x100000
-#define KERNEL_FLASH_MAXSIZE		0xA00000
-#define FDT_FLASH_ADDR			CONFIG_SYS_FSL_FLASH0_BASE + 0xB00000
+#define KERNEL_FLASH_MAXSIZE		0xa00000
 #define FDT_FLASH_MAXSIZE		0x100000
-#define RAMDISK_FLASH_ADDR		CONFIG_SYS_FSL_FLASH0_BASE + 0xC00000
 #define RAMDISK_FLASH_MAXSIZE		0x2000000
+#define UBOOT_FLASH_ADDR		(CONFIG_SYS_FSL_FLASH0_BASE + 0x0)
+
+#ifdef CONFIG_S32_GEN1
+#  define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x1f0000)
+#  define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xbf0000)
+#  define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xcf0000)
+#else
+#  define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x100000)
+#  define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xb00000)
+#  define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xc00000)
+#endif
+
+#if defined(CONFIG_ENV_IS_IN_FLASH) || defined(CONFIG_ENV_IS_IN_SPI_FLASH)
+
+#if defined(CONFIG_ENV_OFFSET)
+#define ENV_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + CONFIG_ENV_OFFSET)
+#else
+#define ENV_FLASH_ADDR	(CONFIG_ENV_ADDR)
+#endif
+
+#if (ENV_FLASH_ADDR + CONFIG_ENV_SIZE > KERNEL_FLASH_ADDR)
+#  error "Environment and Kernel would overlap in flash memory"
+#endif
+
+#endif
+
+#if (KERNEL_FLASH_ADDR + KERNEL_FLASH_MAXSIZE > FDT_FLASH_ADDR)
+#error "Kernel and FDT would overlap in flash memory"
+#endif
+#if (FDT_FLASH_ADDR + FDT_FLASH_MAXSIZE > RAMDISK_FLASH_ADDR)
+#error "FDT and Ramdisk would overlap in flash memory"
+#endif
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_ARCH_TIMER)
@@ -205,27 +221,17 @@
  * enable them later (e.g CONFIG_FEC_MXC/MII or CONFIG_CMD_I2C)
  */
 #ifndef CONFIG_S32_GEN1
-#ifndef CONFIG_FLASH_BOOT
-#define CONFIG_SD_BOOT
-#endif
 
+#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
 #define CONFIG_SYS_FSL_ESDHC_NUM	1
 
-#define CONFIG_CMD_MMC
-#define CONFIG_GENERIC_MMC
-
 /* Ethernet config */
-#define CONFIG_FEC_MXC
-#define CONFIG_MII
-
 #ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
 #define CONFIG_FEC_MXC_PHYADDR (0x484a53)
 #define CONFIG_BCM_DUPLEX_MODE	DUPLEX_FULL
 #endif
 
 /* I2C Configs */
-#define CONFIG_CMD_I2C
-
 #ifndef CONFIG_DM_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
@@ -233,7 +239,6 @@
 #define CONFIG_SYS_I2C_MXC_I2C2	/* enable I2C bus 2 */
 #define CONFIG_SYS_I2C_MXC_I2C3	/* enable I2C bus 3 */
 #define CONFIG_SYS_I2C_SPEED	100000
-#define CONFIG_SYS_I2C_SLAVE	0x8
 #define CONFIG_SYS_SPD_BUS_NUM	0
 #endif
 
@@ -250,7 +255,6 @@
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "," __stringify(CONFIG_BAUDRATE) \
 	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL " earlycon " \
 	CONFIG_EXTRA_KERNEL_BOOT_ARGS
-#define CONFIG_CMD_ENV
 
 #define CONFIG_HWCONFIG
 
@@ -278,6 +282,15 @@
 #ifndef CONFIG_DCU_EXTRA_ENV_SETTINGS
 #define CONFIG_DCU_EXTRA_ENV_SETTINGS	""
 #endif
+
+#ifdef CONFIG_FEC_MXC
+#define S32V234_FEC_DEFAULT_ADDR "00:1b:c3:12:34:22"
+#define FEC_EXTRA_ENV_SETTINGS	"ethaddr=" S32V234_FEC_DEFAULT_ADDR
+#else
+#define FEC_EXTRA_ENV_SETTINGS	""
+#endif
+
+#define S32_DEFAULT_IP "10.0.0.100\0"
 
 /*
  * Enable CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT if u-boot should use a ramdisk
@@ -322,11 +335,13 @@
 #define PFE_INIT_CMD ""
 #endif
 
+#if !defined(PCIE_EXTRA_ENV_SETTINGS)
 #if defined(CONFIG_PCIE_S32GEN1) || defined(CONFIG_FSL_PFENG)
 #define PCIE_EXTRA_ENV_SETTINGS \
 	"hwconfig=" CONFIG_S32GEN1_HWCONFIG "\0"
 #else
 #define PCIE_EXTRA_ENV_SETTINGS ""
+#endif
 #endif
 
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
@@ -358,18 +373,17 @@
 #endif
 
 #ifdef CONFIG_S32_GEN1
-#define LIMIT_DDR " run limit_ddr; "
-#define LIMIT_DDR_CMD "limit_ddr=fdt addr ${fdt_addr} && fdt set /memory_DDR1 reg <0 0xc0000000 0 0x20000000>;\0"
+/* Limit DDR0 to 1.5 GB due to HSE driver limitation */
+#define DDR_LIMIT0 "ddr_limit0=0xE0000000;\0"
 #else
-#define LIMIT_DDR ""
-#define LIMIT_DDR_CMD ""
+#define DDR_LIMIT0 ""
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
-	LIMIT_DDR_CMD \
-	"ipaddr=10.0.0.100\0" \
+	DDR_LIMIT0 \
+	"ipaddr=" S32_DEFAULT_IP \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
@@ -380,7 +394,7 @@
 		PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
-	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"nfsboot=echo Booting from net using tftp and nfs...; " \
 		"run nfsbootargs;"\
 		"run loadtftpimage; " NFSRAMFS_TFTP_CMD "run loadtftpfdt;"\
@@ -424,7 +438,7 @@
 		"source\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file};" LIMIT_DDR "\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file};\0" \
 	"jtagboot=echo Booting using jtag...; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
@@ -479,13 +493,13 @@
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
 		S32_LOAD_FLASH_IMAGES_CMD\
-		LIMIT_DDR\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
 	GMAC_EXTRA_ENV_SETTINGS \
 	PFE_EXTRA_ENV_SETTINGS \
-	PCIE_EXTRA_ENV_SETTINGS
+	PCIE_EXTRA_ENV_SETTINGS \
+	FEC_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
 
@@ -507,7 +521,6 @@
 #endif
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_PROMPT		"=> "
 #define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
@@ -516,33 +529,24 @@
 #define CONFIG_SYS_MAXARGS		16	/* max number of command args */
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 
-#define CONFIG_SYS_MEMTEST_START	(DDR_BASE_ADDR)
-#define CONFIG_SYS_MEMTEST_END		(DDR_BASE_ADDR + (CONFIG_SYS_DDR_SIZE - 1))
+/* Limit mtest to first DDR bank if no arguments are given */
+#define CONFIG_SYS_MEMTEST_START	(CONFIG_SYS_FSL_DRAM_BASE1)
+#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_FSL_DRAM_BASE1 + \
+					 CONFIG_SYS_FSL_DRAM_SIZE1)
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
-#define CONFIG_SYS_HZ				1000
+#define CONFIG_SYS_HZ			1000
 
 #ifdef CONFIG_RUN_FROM_IRAM_ONLY
-#define CONFIG_SYS_MALLOC_BASE		(DDR_BASE_ADDR)
+#define CONFIG_SYS_MALLOC_BASE		(CONFIG_SYS_FSL_DRAM_BASE1)
 #endif
 
-/*
- * Stack sizes
- * The stack sizes are set up in start.S using the settings below
- */
-#define CONFIG_STACKSIZE		(128 * 1024)	/* regular stack */
-
-/* Physical memory map */
 #ifdef CONFIG_S32_SKIP_RELOC
-#define PHYS_SDRAM			(IRAM_BASE_ADDR)
-#define PHYS_SDRAM_SIZE			(IRAM_SIZE)
+#define CONFIG_SYS_SDRAM_BASE		S32_SRAM_BASE
 #else
-#define PHYS_SDRAM			(DDR_BASE_ADDR)
-#define PHYS_SDRAM_SIZE			(CONFIG_SYS_DDR_SIZE)
+#define CONFIG_SYS_SDRAM_BASE		CONFIG_SYS_FSL_DRAM_BASE1
 #endif
 
-
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
 #define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
 #define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
@@ -553,10 +557,10 @@
 
 #define S32_MMU_TABLES_OFFSET		CONFIG_SYS_INIT_SP_OFFSET
 #define S32_IRAM_MMU_TABLES_BASE	(IRAM_BASE_ADDR + S32_MMU_TABLES_OFFSET)
+#ifdef CONFIG_S32_SKIP_RELOC
+#define S32_SDRAM_MMU_TABLES_BASE	S32_IRAM_MMU_TABLES_BASE
+#else
 #define S32_SDRAM_MMU_TABLES_BASE	(CPU_RELEASE_ADDR + PGTABLE_SIZE)
-
-#if (defined(CONFIG_FLASH_BOOT) && defined(CONFIG_SD_BOOT))
-#error "CONFIG_FLASH_BOOT and CONFIG_SD_BOOT both defined"
 #endif
 
 #define CONFIG_SYS_MMC_ENV_DEV		0
@@ -567,20 +571,6 @@
 #else
 #define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */
 #endif
-
-#if defined(CONFIG_ENV_IS_IN_SPI_FLASH) || defined(CONFIG_ENV_IS_IN_FLASH)
-#if defined(CONFIG_S32_GEN1) && defined(CONFIG_SPI_FLASH_MACRONIX)
-#if CONFIG_ENV_OFFSET != (KERNEL_FLASH_ADDR - CONFIG_ENV_SECT_SIZE)
-#error "CONFIG_ENV_OFFSET should be in the flash sector before \
-	  KERNEL_FLASH_ADDR"
-#endif
-#else /* CONFIG_S32_GEN1 && CONFIG_SPI_FLASH_MACRONIX */
-#if CONFIG_ENV_ADDR != (UBOOT_FLASH_ADDR + 2 * FLASH_SECTOR_SIZE)
-#error "CONFIG_ENV_ADDR should be UBOOT_FLASH_ADDR + 2 * FLASH_SECTOR_SIZE"
-#endif
-#endif
-#endif
-
 
 #if defined(CONFIG_FLASH_BOOT)
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
@@ -594,6 +584,8 @@
  * to all S32's or find a smarter way to make S32G and S32V PCI coexist
  */
 #ifdef CONFIG_CMD_PCI
+#define CONFIG_GICSUPPORT
+#define CONFIG_CMD_IRQ
 #define CONFIG_PCIE_S32V234
 #define CONFIG_PCI
 #define CONFIG_PCI_PNP

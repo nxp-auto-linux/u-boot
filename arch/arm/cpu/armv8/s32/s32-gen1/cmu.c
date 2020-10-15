@@ -3,6 +3,7 @@
  * Copyright 2020 NXP
  */
 #include <asm/io.h>
+#include <asm/arch/siul.h>
 #include <command.h>
 #include <common.h>
 #include <inttypes.h>
@@ -207,7 +208,7 @@ static struct cmu cmu_blocks[] = {
 	FXOSC_PERIPH_CMU_FC(14, GMAC_0_TX_CLK, 125),
 	FXOSC_PERIPH_CMU_FC(15, GMAC_TS_CLK, 200),
 	FXOSC_PERIPH_CMU_FC(16, LIN_CLK, 125),
-	FXOSC_PERIPH_CMU_FC(17, QSPI_1X_CLK, 133.33),
+	FXOSC_PERIPH_CMU_FC(17, QSPI_1X_CLK, 200),
 	FXOSC_PERIPH_CMU_FC(18, SDHC_CLK, 200),
 	FIRC_PERIPH_CMU_FC(20, DDR_CLK, 666.66),
 	FXOSC_PERIPH_CMU_FC(21, GMAC_0_RX_CLK, 125),
@@ -515,6 +516,11 @@ static int do_verify_clocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	puts("|       (MHz)       \n");
 	puts("-----------|------------------|-----------|----------");
 	puts("|--------------------\n");
+
+#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+	if (is_s32gen1_soc_rev1())
+		cmu_blocks[17].mon_freq = 133.33;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(cmu_blocks); i++) {
 		inst = &cmu_blocks[i];

@@ -18,6 +18,10 @@
 #include <asm/arch/s32-gen1/serdes_regs.h>
 #include <asm/arch/s32-gen1/serdes_xpcs_regs.h>
 #include <linux/string.h>
+#include <clk.h>
+#include <dt-bindings/clock/s32g274a-clock.h>
+#include <s32gen1_clk_utils.h>
+#include <dm/device_compat.h>
 
 #include "pfeng.h"
 
@@ -84,86 +88,52 @@ static void disable_partition_2(void)
 	u32 val;
 
 	/* Unlocking the RDC register */
-	writel(readl(RDC_RD_2_CTRL) | RDC_RD_CTRL_UNLOCK, RDC_RD_2_CTRL);
+	writel(readl(RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO)) |
+			RDC_RD_CTRL_UNLOCK,
+			RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO));
 	/* Clearing XBAR_INTERFACE_DISABLE bit */
-	writel(readl(RDC_RD_2_CTRL) & ~RDC_RD_INTERCONNECT_DISABLE,
-	       RDC_RD_2_CTRL);
-	while ((readl(RDC_RD_2_STAT) & 0x00000010))
+	writel(readl(RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO)) &
+			~RDC_RD_INTERCONNECT_DISABLE,
+	       RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO));
+	while ((readl(RDC_RD_N_STATUS(RDC_BASE_ADDR, PART_PFE_NO)) &
+		0x00000010))
 		;
 	/* Locking the register Write */
-	writel(readl(RDC_RD_2_CTRL) & 0x7FFFFFFF, RDC_RD_2_CTRL);
+	writel(readl(RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO)) & 0x7FFFFFFF,
+	       RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO));
 
 	/* Disabling MC_ME partition 2 clock */
-	val = readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO));
+	val = readl(MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO));
 	if (val & MC_ME_PRTN_N_PCE) {
-		writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) &
-		       ~MC_ME_PRTN_N_PCE, MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-		writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) |
-		       MC_ME_PRTN_N_PCUD, MC_ME_PRTN_N_PUPD(PART_PFE_NO));
+		writel(readl(MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO)) &
+		       ~MC_ME_PRTN_N_PCE,
+		       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO));
+		writel(readl(MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO)) |
+		       MC_ME_PRTN_N_PCUD,
+		       MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO));
 		writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 		writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-		while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_PCS)
+		while (readl(MC_ME_PRTN_N_STAT(MC_ME_BASE_ADDR, PART_PFE_NO))
+				& MC_ME_PRTN_N_PCS)
 			;
 	}
 
-	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) | MC_ME_PRTN_N_OSSE,
-	       MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | MC_ME_PRTN_N_OSSUD,
-	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
+	writel(readl(MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO)) |
+			MC_ME_PRTN_N_OSSE,
+	       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO));
+	writel(readl(MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO)) |
+			MC_ME_PRTN_N_OSSUD,
+	       MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO));
 	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (!(readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS))
+	while (!(readl(MC_ME_PRTN_N_STAT(MC_ME_BASE_ADDR, PART_PFE_NO)) &
+				MC_ME_PRTN_N_OSSS))
 		;
 
 	/* Assert partition reset for PFE */
-	writel(readl(RGM_PRST(PART_PFE_NO)) | 0x1, RGM_PRST(PART_PFE_NO));
-	while (!(readl(RGM_PSTAT(PART_PFE_NO)) & 0x1))
-		;
-}
-
-static void enable_partition_2(void)
-{
-	/* Setup PFE coherency for all HIFs */
-	writel(PFE_COH_PORTS_MASK_HIF_0_3, S32G_PFE_COH_EN);
-
-	/* Enabling PFE clocks (EMACs + TS) in partition 2 */
-	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO)) |
-	       MC_ME_PFE_REQ_GROUP, MC_ME_PRTN_N_COFB0_CLKEN(PART_PFE_NO));
-	writel(readl(MC_ME_MODE_UPD) | MC_ME_MODE_UPD_UPD, MC_ME_MODE_UPD);
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-
-	/* Enabling MC_ME partition 2 clock */
-	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) | MC_ME_PRTN_N_PCE,
-	       MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | MC_ME_PRTN_N_PCUD,
-	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (!(readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_PCS))
-		;
-
-	/* Unlocking the RDC register */
-	writel(readl(RDC_RD_2_CTRL) | RDC_RD_CTRL_UNLOCK, RDC_RD_2_CTRL);
-	writel(readl(RDC_RD_2_CTRL) & ~RDC_RD_INTERCONNECT_DISABLE,
-	       RDC_RD_2_CTRL);
-	while ((readl(RDC_RD_2_STAT) & RDC_RD_INTERCONNECT_DISABLE_STAT))
-		;
-
-	/* Releasing partition reset for PFE */
-	writel(readl(RGM_PRST(PART_PFE_NO)) & 0xFFFFFFFE,
-	       RGM_PRST(PART_PFE_NO));
-
-	/* Disabling OSSE */
-	writel(readl(MC_ME_PRTN_N_PCONF(PART_PFE_NO)) & ~MC_ME_PRTN_N_OSSE,
-	       MC_ME_PRTN_N_PCONF(PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(PART_PFE_NO)) | MC_ME_PRTN_N_OSSUD,
-	       MC_ME_PRTN_N_PUPD(PART_PFE_NO));
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (readl(RGM_PSTAT(PART_PFE_NO)) & 0x1)
-		;
-	while (readl(MC_ME_PRTN_N_STAT(PART_PFE_NO)) & MC_ME_PRTN_N_OSSS)
+	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, PART_PFE_NO)) | 0x1,
+	       RGM_PRST(MC_RGM_BASE_ADDR, PART_PFE_NO));
+	while (!(readl(RGM_PSTAT(MC_RGM_BASE_ADDR, PART_PFE_NO)) & 0x1))
 		;
 }
 
@@ -249,170 +219,260 @@ static void switch_pfe0_clock(int intf)
 	writel(csel, S32G_MAIN_GENCTRL1);
 }
 
-static void setup_mux_clocks_pfe(int intf0, int intf1, int intf2)
+static int set_mac0_rx_tx_clk(struct udevice *pfe_dev, ulong mux4, ulong mux1)
 {
-	/* PFE MC_CGM clock MUX*/
+	int ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX4, mux4);
 
-	/* setup the mux clock divider for PFE_PE_CLK
-	 * ( ACCEL_PLL_PHI1_FREQ = 1800Mhz / (2+1) = 600 MHz)
-	 */
-	mux_div_clk_config(MC_CGM2_BASE_ADDR, 0, 0, 0);
-	mux_source_clk_config(MC_CGM2_BASE_ADDR, 0,
-			      MC_CGM_MUXn_CSC_SEL_ACCEL_PLL_PHI1);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux4 source\n");
 
-	/* EMAC 0 */
+	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX1, mux1);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux1 source\n");
 
-	/* setup the mux clock divider for PFE_MAC_0_REF_DIV_CLK
-	 * ( PFE_MAC_0_EXT_REF_CLK)
-	 */
-	mux_div_clk_config(MC_CGM2_BASE_ADDR, 7, 0, 0);
-	mux_source_clk_config(MC_CGM2_BASE_ADDR, 7,
-			      MC_CGM_MUXn_CSC_SEL_PFE_MAC_0_EXT_REF_CLK);
+	return 0;
+}
+
+static int set_mac1_rx_tx_clk(struct udevice *pfe_dev, ulong mux5, ulong mux2)
+{
+	int ret;
+
+	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX5, mux5);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux5 source\n");
+
+	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX2, mux2);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux2 source\n");
+
+	return 0;
+}
+
+static int set_mac2_rx_tx_clk(struct udevice *pfe_dev, ulong mux6, ulong mux3)
+{
+	int ret;
+
+	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX6, mux6);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux6 source\n");
+
+	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX3, mux3);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux2 source\n");
+
+	return 0;
+}
+
+static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
+{
+	int ret;
 
 	switch (intf0) {
+	case PHY_INTERFACE_MODE_SGMII:
+		switch_pfe0_clock(PHY_INTERFACE_MODE_SGMII);
+
+		ret = set_mac0_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_SERDES1_LANE0_CDR,
+					 S32G274A_CLK_SERDES1_LANE0_TX);
+		break;
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
-		/* setup the mux clock divider for PFE_MAC_0_RX_CLK
-		 * ( PFE_MAC_0_EXT_RX_CLK)
-		 */
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 4,
-				      MC_CGM_MUXn_CSC_SEL_PFE_MAC_0_EXT_RX_CLK);
-
-		/* Tx clk generated by S32G, RX,REF clk received */
-		/* PFE_MAC_0_TX_CLK ( PERIPH_PLL_PHI5 = 125Mhz) */
-		mux_div_clk_config(MC_CGM2_BASE_ADDR, 1, 0, 0);
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 1,
-				      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI5);
+		ret = set_mac0_rx_tx_clk(pfe_dev, S32G274A_CLK_PFE_MAC0_EXT_RX,
+					 S32GEN1_CLK_PERIPH_PLL_PHI5);
 #endif
 #endif
 		break;
+	case PHY_INTERFACE_MODE_RMII:
+		ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX7,
+						S32G274A_CLK_PFE_MAC0_EXT_REF);
+		if (ret)
+			dev_err(pfe_dev, "Failed to set cgm2_mux7 source\n");
 
-	case PHY_INTERFACE_MODE_SGMII:
+		ret = s32gen1_enable_dev_clk("pfe_mac0_ref_div", pfe_dev);
+		if (ret)
+			dev_err(pfe_dev, "Failed to enable pfe_mac0_ref_div clock\n");
 
-		switch_pfe0_clock(PHY_INTERFACE_MODE_SGMII);
-
-		/* setup the mux clock divider for PFE_MAC_0_RX_CLK
-		 * ( SERDES_1_LANE_0_CDR_CLK)
-		 */
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 4,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_CDR_CLK);
-
-		mux_div_clk_config(MC_CGM2_BASE_ADDR, 1, 0, 0);
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 1,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_1_LANE_0_TX_CLK);
+		ret = set_mac0_rx_tx_clk(pfe_dev, S32G274A_CLK_PFE_MAC0_EXT_RX,
+					 S32GEN1_CLK_PERIPH_PLL_PHI5);
 		break;
-
 	case PHY_INTERFACE_MODE_MII:
 		/* TODO */
 		break;
-
+	case PHY_INTERFACE_MODE_NONE:
+		/* Don't set tx/rx clocks */
+		return;
 	default:
+		ret = set_mac0_rx_tx_clk(pfe_dev,
+					 S32GEN1_CLK_FIRC,
+					 S32GEN1_CLK_FIRC);
 		break;
 	}
 
-	/* EMAC 1 */
+	ret = s32gen1_enable_dev_clk("pfe_mac0_rx", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_mac0_rx clock\n");
 
-	/* setup the mux clock divider for PFE_MAC_1_REF_DIV_CLK
-	 * ( PFE_MAC_1_EXT_REF_CLK)
-	 */
-	mux_div_clk_config(MC_CGM2_BASE_ADDR, 8, 0, 0);
-	mux_source_clk_config(MC_CGM2_BASE_ADDR, 8,
-			      MC_CGM_MUXn_CSC_SEL_PFE_MAC_1_EXT_REF_CLK);
+	ret = s32gen1_enable_dev_clk("pfe_mac0_tx", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_mac0_tx clock\n");
+}
+
+static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
+{
+	int ret;
 
 	switch (intf1) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* setup the mux clock divider for PFE_MAC_1_RX_CLK
-		 * ( SERDES_1_LANE_1_CDR_CLK)
-		 */
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 5,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_CDR_CLK);
-
-		mux_div_clk_config(MC_CGM2_BASE_ADDR, 2, 0, 0);
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 2,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_1_L1_TX_CLK);
+		ret = set_mac1_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_SERDES1_LANE1_CDR,
+					 S32G274A_CLK_SERDES1_LANE1_TX);
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_1_RGMII)
-		/* setup the mux clock divider for PFE_MAC_1_RX_CLK
-		 * ( PFE_MAC_1_EXT_RX_CLK)
-		 */
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 5,
-				      MC_CGM_MUXn_CSC_SEL_PFE_MAC_1_EXT_RX_CLK);
-
-		/* Tx clk generated by S32G, RX,REF clk received */
-		/* PFE_MAC_1_TX_CLK ( PERIPH_PLL_PHI5 = 125Mhz) */
-		mux_div_clk_config(MC_CGM2_BASE_ADDR, 2, 0, 0);
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 2,
-				      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI5);
+		ret = set_mac1_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_PFE_MAC1_EXT_RX,
+					 S32GEN1_CLK_PERIPH_PLL_PHI5);
 #endif
 #endif
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
-		/* TODO */
-		break;
+		ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX8,
+						S32G274A_CLK_PFE_MAC1_EXT_REF);
+		if (ret)
+			dev_err(pfe_dev, "Failed to set cgm2_mux8 source\n");
 
+		ret = s32gen1_enable_dev_clk("pfe_mac1_ref_div", pfe_dev);
+		if (ret)
+			dev_err(pfe_dev, "Failed to enable pfe_mac1_ref_div clock\n");
+
+		ret = set_mac1_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_PFE_MAC1_EXT_RX,
+					 S32GEN1_CLK_PERIPH_PLL_PHI5);
+		break;
 	case PHY_INTERFACE_MODE_MII:
 		/* TODO */
 		break;
-
+	case PHY_INTERFACE_MODE_NONE:
+		/* Don't set tx/rx clocks */
+		return;
 	default:
+		ret = set_mac1_rx_tx_clk(pfe_dev,
+					 S32GEN1_CLK_FIRC,
+					 S32GEN1_CLK_FIRC);
 		break;
 	}
 
-	/* EMAC 2 */
+	ret = s32gen1_enable_dev_clk("pfe_mac1_rx", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_mac1_rx clock\n");
 
-	/* setup the mux clock divider for PFE_MAC_2_REF_DIV_CLK
-	 * ( PFE_MAC_2_EXT_REF_CLK)
-	 */
-	mux_div_clk_config(MC_CGM2_BASE_ADDR, 9, 0, 0);
-	mux_source_clk_config(MC_CGM2_BASE_ADDR, 9,
-			      MC_CGM_MUXn_CSC_SEL_PFE_MAC_2_EXT_REF_CLK);
+	ret = s32gen1_enable_dev_clk("pfe_mac1_tx", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_mac1_tx clock\n");
+}
+
+static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
+{
+	int ret;
 
 	switch (intf2) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* setup the mux clock divider for PFE_MAC_2_RX_CLK
-		 * ( SERDES_0_LANE_1_CDR_CLK)
-		 */
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 6,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_CDR_CLK);
-
-		mux_div_clk_config(MC_CGM2_BASE_ADDR, 3, 0, 0);
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 3,
-				      MC_CGM_MUXn_CSC_SEL_SERDES_0_L1_TX_CLK);
+		ret = set_mac2_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_SERDES0_LANE1_CDR,
+					 S32G274A_CLK_SERDES0_LANE1_TX);
 		break;
-
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if !CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
-		/* setup the mux clock divider for PFE_MAC_2_RX_CLK
-		 * ( PFE_MAC_2_EXT_RX_CLK)
-		 */
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 6,
-				      MC_CGM_MUXn_CSC_SEL_PFE_MAC_2_EXT_RX_CLK);
-
-		/* Tx clk generated by S32G, RX,REF clk received */
-		/* PFE_MAC_2_TX_CLK ( PERIPH_PLL_PHI5 = 125Mhz) */
-		mux_div_clk_config(MC_CGM2_BASE_ADDR, 3, 0, 0);
-		mux_source_clk_config(MC_CGM2_BASE_ADDR, 3,
-				      MC_CGM_MUXn_CSC_SEL_PERIPH_PLL_PHI5);
+		ret = set_mac2_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_PFE_MAC2_EXT_RX,
+					 S32GEN1_CLK_PERIPH_PLL_PHI5);
 #endif
 #endif
 		break;
-
 	case PHY_INTERFACE_MODE_RMII:
-		/* TODO */
-		break;
+		ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX9,
+						S32G274A_CLK_PFE_MAC2_EXT_REF);
+		if (ret)
+			dev_err(pfe_dev, "Failed to set cgm2_mux8 source\n");
 
+		ret = s32gen1_enable_dev_clk("pfe_mac2_ref_div", pfe_dev);
+		if (ret)
+			dev_err(pfe_dev, "Failed to enable pfe_mac2_ref_div clock\n");
+
+		ret = set_mac2_rx_tx_clk(pfe_dev,
+					 S32G274A_CLK_PFE_MAC2_EXT_RX,
+					 S32GEN1_CLK_PERIPH_PLL_PHI5);
+		break;
 	case PHY_INTERFACE_MODE_MII:
 		/* TODO */
 		break;
-
+	case PHY_INTERFACE_MODE_NONE:
+		/* Don't set tx/rx clocks */
+		return;
 	default:
+		ret = set_mac2_rx_tx_clk(pfe_dev,
+					 S32GEN1_CLK_FIRC,
+					 S32GEN1_CLK_FIRC);
 		break;
+	}
+
+	ret = s32gen1_enable_dev_clk("pfe_mac2_rx", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_mac2_rx clock\n");
+
+	if (ret && intf2 == PHY_INTERFACE_MODE_RMII)
+		dev_err(pfe_dev, "Failed to switch PFE2 RX clock, check the external PHY\n");
+
+	ret = s32gen1_enable_dev_clk("pfe_mac2_tx", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_mac2_tx clock\n");
+}
+
+static void setup_pfe_clocks(int intf0, int intf1, int intf2,
+			     struct udevice *pfe_dev)
+{
+	int ret;
+	struct pfeng_priv *priv;
+
+	if (!pfe_dev) {
+		pr_err("%s: Invalid PFE device\n", __func__);
+		return;
+	}
+
+	priv = dev_get_priv(pfe_dev);
+	if (!priv) {
+		pr_err("%s: Invalid PFE device data\n", __func__);
+		return;
+	}
+
+	ret = s32gen1_set_parent_clk_id(S32G274A_CLK_MC_CGM2_MUX0,
+					S32G274A_CLK_ACCEL_PLL_PHI1);
+	if (ret)
+		dev_err(pfe_dev, "Failed to set cgm2_mux0 source\n");
+
+	ret = s32gen1_enable_dev_clk("pfe_pe", pfe_dev);
+	if (ret)
+		dev_err(pfe_dev, "Failed to enable pfe_pe clock\n");
+
+	/* Apply clock setting to all EMAC ports for first time only.
+	 * Otherwise setup clocks only on focused EMAC port
+	 */
+	if (!priv->clocks_done) {
+		set_pfe_mac0_clk(intf0, pfe_dev);
+		set_pfe_mac1_clk(intf1, pfe_dev);
+		set_pfe_mac2_clk(intf2, pfe_dev);
+		priv->clocks_done = true;
+	} else if (priv->if_index == 0) {
+		set_pfe_mac0_clk(intf0, pfe_dev);
+	} else if (priv->if_index == 1) {
+		set_pfe_mac1_clk(intf1, pfe_dev);
+	} else if (priv->if_index == 2) {
+		set_pfe_mac2_clk(intf2, pfe_dev);
 	}
 }
 
@@ -708,9 +768,9 @@ static void setup_iomux_pfe(int intf0, int intf1, int intf2)
 }
 
 /* setup all EMACs clocks */
-void pfeng_apply_clocks(void)
+void pfeng_apply_clocks(struct udevice *pfe_dev)
 {
-	setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
+	setup_pfe_clocks(emac_intf[0], emac_intf[1], emac_intf[2], pfe_dev);
 }
 
 /* disable power for EMACs */
@@ -719,7 +779,7 @@ void pfeng_cfg_emacs_disable_all(void)
 	writel(GPR_PFE_EMACn_PWR_DWN(0) |
 	       GPR_PFE_EMACn_PWR_DWN(1) |
 	       GPR_PFE_EMACn_PWR_DWN(2),
-	       (addr_t)S32G_PFE_PRW_CTRL);
+	       S32G_PFE_PRW_CTRL);
 }
 
 /* enable power for EMACs */
@@ -732,16 +792,17 @@ void pfeng_cfg_emacs_enable_all(void)
 	writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
 		(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
 		(pfeng_intf_to_s32g(emac_intf[0])),
-		(addr_t)S32G_PFE_EMACS_INTF_SEL);
+		(unsigned long)S32G_PFE_EMACS_INTF_SEL);
 	udelay(100);
-	writel(0, (addr_t)S32G_PFE_PRW_CTRL);
+	writel(0, S32G_PFE_PRW_CTRL);
 
 	/* reset all EMACs */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++) {
-		writel(readl((addr_t)S32G_PFE_EMACn_MODE(i))
-		       | EMAC_MODE_SWR_MASK, (addr_t)S32G_PFE_EMACn_MODE(i));
+		writel(readl((unsigned long)S32G_PFE_EMACn_MODE(i))
+		       | EMAC_MODE_SWR_MASK,
+		       (unsigned long)S32G_PFE_EMACn_MODE(i));
 		udelay(10);
-		while (readl((addr_t)S32G_PFE_EMACn_MODE(i))
+		while (readl((unsigned long)S32G_PFE_EMACn_MODE(i))
 		       & EMAC_MODE_SWR_MASK)
 			udelay(10);
 	}
@@ -758,18 +819,29 @@ static int pfeng_cfg_mode_disable(void)
 	return 0;
 }
 
-static int pfeng_cfg_mode_enable(void)
+static int pfeng_cfg_mode_enable(struct udevice *pfe_dev)
 {
-	/* enable partition 2 */
-	enable_partition_2();
+	struct pfeng_priv *priv = pfe_dev ? dev_get_priv(pfe_dev) : NULL;
 
+	if (!pfe_dev || !priv) {
+		pr_err("%s: Invalid PFE device\n", __func__);
+		return -EINVAL;
+	}
+
+	/* Setup PFE coherency for all HIFs */
+	writel(PFE_COH_PORTS_MASK_HIF_0_3, S32G_PFE_COH_EN);
+
+	/* Setup pins */
 	setup_iomux_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
-	setup_mux_clocks_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
+
+	/* Setup clocks */
+	priv->clocks_done = false;
+	setup_pfe_clocks(emac_intf[0], emac_intf[1], emac_intf[2], pfe_dev);
 
 	return 0;
 }
 
-bool pfeng_cfg_set_mode(u32 mode)
+bool pfeng_cfg_set_mode(u32 mode, struct udevice *pfe_dev)
 {
 	int ret = EINVAL;
 
@@ -782,7 +854,7 @@ bool pfeng_cfg_set_mode(u32 mode)
 		ret = pfeng_cfg_mode_disable();
 		break;
 	case PFENG_MODE_ENABLE:
-		ret = pfeng_cfg_mode_enable();
+		ret = pfeng_cfg_mode_enable(pfe_dev);
 		break;
 	}
 
@@ -836,7 +908,7 @@ int pfeng_set_emacs_from_env(char *env_mode)
 	writel((pfeng_intf_to_s32g(emac_intf[2]) << 8) |
 		(pfeng_intf_to_s32g(emac_intf[1]) << 4) |
 		(pfeng_intf_to_s32g(emac_intf[0])),
-		(addr_t)S32G_PFE_EMACS_INTF_SEL);
+		S32G_PFE_EMACS_INTF_SEL);
 
 	return 0;
 }
@@ -900,6 +972,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		       int argc, char * const argv[])
 {
 	char *env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
+	struct udevice *pfe_dev = eth_get_dev_by_name("eth_pfeng");
 
 	if (!env_mode) {
 		/* set the default mode */
@@ -927,16 +1000,16 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 #endif
 		return 0;
 	} else if (!strcmp(argv[1], "disable")) {
-		pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
+		pfeng_cfg_set_mode(PFENG_MODE_DISABLE, pfe_dev);
 		return 0;
 	} else if (!strcmp(argv[1], "enable")) {
-		pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+		pfeng_cfg_set_mode(PFENG_MODE_ENABLE, pfe_dev);
 		return 0;
 	} else if (!strcmp(argv[1], "stop")) {
 		if (pfeng_cfg_get_mode() > PFENG_MODE_DISABLE) {
 			/* we emulate STOP by DISABLE/ENABLE */
-			pfeng_cfg_set_mode(PFENG_MODE_DISABLE);
-			pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+			pfeng_cfg_set_mode(PFENG_MODE_DISABLE, pfe_dev);
+			pfeng_cfg_set_mode(PFENG_MODE_ENABLE, pfe_dev);
 		}
 		return 0;
 	} else if (!strcmp(argv[1], "emacs")) {
@@ -946,7 +1019,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		} else if (!strcmp(argv[2], "reapply-clocks")) {
 			setup_iomux_pfe(emac_intf[0], emac_intf[1],
 					emac_intf[2]);
-			pfeng_apply_clocks();
+			pfeng_apply_clocks(pfe_dev);
 			printf("PFE reapply clocks\n");
 			print_emacs_mode("  ");
 			return 0;
@@ -970,17 +1043,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 		return 0;
 	/* for development only */
 	} else if (!strcmp(argv[1], "debug")) {
-		if (!strcmp(argv[2], "emac")) {
-			u32 i = 0;
-			if (argc > 2)
-				i = simple_strtoul(argv[3], NULL, 10);
-			pfeng_debug_emac(i);
-		} else if (!strcmp(argv[2], "class")) {
-			pfeng_debug_class();
-		} else if (!strcmp(argv[2], "hif")) {
-			pfeng_debug_hif();
-		} else
-			return CMD_RET_USAGE;
+		pfeng_debug();
 		return 0;
 	} else if (!strcmp(argv[1], "help")) {
 	}

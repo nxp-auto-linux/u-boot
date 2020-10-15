@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
- * (C) Copyright 2017 NXP
+ * (C) Copyright 2017,2020 NXP
  */
 
 #include <common.h>
@@ -10,6 +10,7 @@
 #include <asm/arch/siul.h>
 #include <asm/arch/lpddr2.h>
 #include <asm/arch/mmdc.h>
+#include <hang.h>
 
 volatile int mscr_offset_ck0;
 
@@ -67,17 +68,23 @@ void ddr_config_iomux(uint8_t module)
 void config_mmdc(uint8_t module)
 {
 	unsigned long mmdc_addr = (module)? MMDC1_BASE_ADDR : MMDC0_BASE_ADDR;
+	const struct lpddr2_config *config = s32_get_lpddr2_config();
+
+	if (!config) {
+		pr_err("DDR: LPDDR2 config not found\n");
+		hang();
+	}
 
 	writel(MMDC_MDSCR_CFG_VALUE, mmdc_addr + MMDC_MDSCR);
 
-	writel(MMDC_MDCFG0_VALUE, mmdc_addr + MMDC_MDCFG0) ;
-	writel(MMDC_MDCFG1_VALUE, mmdc_addr + MMDC_MDCFG1);
-	writel(MMDC_MDCFG2_VALUE, mmdc_addr + MMDC_MDCFG2);
-	writel(MMDC_MDCFG3LP_VALUE, mmdc_addr + MMDC_MDCFG3LP);
+	writel(config->mdcfg0, mmdc_addr + MMDC_MDCFG0);
+	writel(config->mdcfg1, mmdc_addr + MMDC_MDCFG1);
+	writel(config->mdcfg2, mmdc_addr + MMDC_MDCFG2);
+	writel(config->mdcfg3lp, mmdc_addr + MMDC_MDCFG3LP);
 	writel(MMDC_MDOTC_VALUE, mmdc_addr + MMDC_MDOTC);
-	writel(MMDC_MDMISC_VALUE, mmdc_addr + MMDC_MDMISC);
+	writel(config->mdmisc, mmdc_addr + MMDC_MDMISC);
 	writel(MMDC_MDOR_VALUE, mmdc_addr + MMDC_MDOR);
-	writel(_MDCTL, mmdc_addr + MMDC_MDCTL);
+	writel(config->mdctl, mmdc_addr + MMDC_MDCTL);
 	writel(MMDC_MPMUR0_VALUE, mmdc_addr + MMDC_MPMUR0);
 
 	while (readl(mmdc_addr + MMDC_MPMUR0) & MMDC_MPMUR0_FRC_MSR) {}
@@ -88,7 +95,7 @@ void config_mmdc(uint8_t module)
 	while (readl(mmdc_addr + MMDC_MPZQHWCTRL) & MMDC_MPZQHWCTRL_ZQ_HW_FOR) {}
 
 	/* Enable MMDC with CS0 */
-	writel(_MDCTL + 0x80000000, mmdc_addr + MMDC_MDCTL);
+	writel(config->mdctl + 0x80000000, mmdc_addr + MMDC_MDCTL);
 
 	/* Precharge all command per JEDEC */
 	/* Ensures robust DRAM initialization */
@@ -98,7 +105,7 @@ void config_mmdc(uint8_t module)
 	/* Complete the initialization sequence as defined by JEDEC */
 	writel(MMDC_MDSCR_RST_VALUE, mmdc_addr + MMDC_MDSCR);
 	writel(MMDC_MDSCR_MR1_VALUE, mmdc_addr + MMDC_MDSCR);
-	writel(MMDC_MDSCR_MR2_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(config->mdscr_mr2, mmdc_addr + MMDC_MDSCR);
 	writel(MMDC_MDSCR_MR3_VALUE, mmdc_addr + MMDC_MDSCR);
 	writel(MMDC_MDSCR_MR10_VALUE, mmdc_addr + MMDC_MDSCR);
 
@@ -107,18 +114,26 @@ void config_mmdc(uint8_t module)
 
 	switch(module) {
 		case MMDC0:
-			writel(MMDC_MDASP_MODULE0_VALUE, mmdc_addr + MMDC_MDASP);
-			writel(MMDC_MPRDDLCTL_MODULE0_VALUE, mmdc_addr + MMDC_MPRDDLCTL);
-			writel(MMDC_MPWRDLCTL_MODULE0_VALUE, mmdc_addr + MMDC_MPWRDLCTL);
-			writel(MMDC_MPDGCTRL0_MODULE0_VALUE, mmdc_addr + MMDC_MPDGCTRL0);
-			writel(MMDC_MPDGCTRL1_MODULE0_VALUE, mmdc_addr + MMDC_MPDGCTRL1);
+			writel(config->mdasp_module0, mmdc_addr + MMDC_MDASP);
+		writel(config->mprddlctl_module0,
+		       mmdc_addr + MMDC_MPRDDLCTL);
+		writel(config->mpwrdlctl_module0,
+		       mmdc_addr + MMDC_MPWRDLCTL);
+		writel(MMDC_MPDGCTRL0_MODULE0_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL0);
+		writel(MMDC_MPDGCTRL1_MODULE0_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL1);
 			break;
 		case MMDC1:
-			writel(MMDC_MDASP_MODULE1_VALUE, mmdc_addr + MMDC_MDASP);
-			writel(MMDC_MPRDDLCTL_MODULE1_VALUE, mmdc_addr + MMDC_MPRDDLCTL);
-			writel(MMDC_MPWRDLCTL_MODULE1_VALUE, mmdc_addr + MMDC_MPWRDLCTL);
-			writel(MMDC_MPDGCTRL0_MODULE1_VALUE, mmdc_addr + MMDC_MPDGCTRL0);
-			writel(MMDC_MPDGCTRL1_MODULE1_VALUE, mmdc_addr + MMDC_MPDGCTRL1);
+			writel(config->mdasp_module1, mmdc_addr + MMDC_MDASP);
+		writel(config->mprddlctl_module1,
+		       mmdc_addr + MMDC_MPRDDLCTL);
+		writel(config->mpwrdlctl_module1,
+		       mmdc_addr + MMDC_MPWRDLCTL);
+		writel(MMDC_MPDGCTRL0_MODULE1_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL0);
+		writel(MMDC_MPDGCTRL1_MODULE1_VALUE,
+		       mmdc_addr + MMDC_MPDGCTRL1);
 			break;
 	}
 

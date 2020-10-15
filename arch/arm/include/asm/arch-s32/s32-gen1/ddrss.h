@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  */
 
 #ifndef DDRSS_H
@@ -160,10 +160,10 @@ static inline void deassert_ddr_reset(void)
 {
 	u32 rgm_prst_0;
 
-	rgm_prst_0 = readl(RGM_PRST(0));
+	rgm_prst_0 = readl(RGM_PRST(MC_RGM_BASE_ADDR, 0));
 	rgm_prst_0 &= ~(BIT(3) | BIT(0));
-	writel(rgm_prst_0, RGM_PRST(0));
-	while (readl(RGM_PSTAT(0)) != rgm_prst_0)
+	writel(rgm_prst_0, RGM_PRST(MC_RGM_BASE_ADDR, 0));
+	while (readl(RGM_PSTAT(MC_RGM_BASE_ADDR, 0)) != rgm_prst_0)
 		;
 }
 

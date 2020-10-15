@@ -14,6 +14,8 @@
 #include <elf.h>
 #include <hwconfig.h>
 #include <spi_flash.h>
+#include <clk.h>
+#include <cpu_func.h>
 
 #include "pfeng.h"
 
@@ -21,15 +23,28 @@
 #include <dm/device_compat.h>
 
 #define HIF_QUEUE_ID	0
-#define HIF_HEADER_SIZE sizeof(pfe_ct_hif_rx_hdr_t)
+#define HIF_HEADER_SIZE sizeof(struct pfe_ct_hif_rx_hdr)
+
+static const struct pfe_ct_hif_tx_hdr header[PFENG_EMACS_COUNT] = {
+	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(1)},
+	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(2)},
+	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(4)},
+};
 
 static struct pfeng_priv *pfeng_drv_priv = NULL;
 /* firmware */
 
+void pfeng_debug(void)
+{
+	if (!pfeng_drv_priv || !pfeng_drv_priv->pfe)
+		return;
+
+	pfeng_hw_debug(pfeng_drv_priv->pfe);
+}
+
 #if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
-static int
-pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
-	      struct pfeng_priv *priv)
+static int pfeng_fw_load(char *fname, char *iface, char *part, int ftype,
+			 struct pfeng_priv *priv)
 {
 	int ret;
 	void *addr = NULL;
@@ -157,9 +172,8 @@ exit:
 	return ret;
 }
 
-static int
-pfeng_fw_load(char *fname, char *iface, const char *part, int ftype,
-	      struct pfeng_priv *priv)
+static int pfeng_fw_load(char *fname, char *iface, const char *part, int ftype,
+			 struct pfeng_priv *priv)
 {
 	int ret = 0;
 	void *fw_buffer = NULL;
@@ -205,80 +219,16 @@ exit:
 }
 #endif /* FSL_PFENG_FW_LOC_QSPI */
 
-/* debug (sysfs-like) */
-
-#define DEBUG_BUF_SIZE (4096 * 8)
-static char text_buf[DEBUG_BUF_SIZE];
-
-int
-pfeng_debug_emac(u32 idx)
-{
-	int ret;
-
-	if (!pfeng_drv_priv)
-		return 0;
-
-	ret = pfe_emac_get_text_statistics(pfeng_drv_priv->pfe->emac[idx],
-					   text_buf, DEBUG_BUF_SIZE, 9);
-	if (ret > 0)
-		printf(text_buf);
-	else
-		printf("<no data?>\n");
-
-	return 0;
-}
-
-int
-pfeng_debug_hif(void)
-{
-	int ret;
-
-	if (!pfeng_drv_priv)
-		return 0;
-
-	ret = pfe_hif_get_text_statistics(pfeng_drv_priv->pfe->hif, text_buf,
-					  DEBUG_BUF_SIZE, 9);
-	if (ret > 0)
-		printf(text_buf);
-	else
-		printf("<no data?>\n");
-
-	return 0;
-}
-
-int
-pfeng_debug_class(void)
-{
-	int ret;
-
-	if (!pfeng_drv_priv)
-		return 0;
-
-	ret = pfe_class_get_text_statistics(pfeng_drv_priv->pfe->classifier,
-					    text_buf, DEBUG_BUF_SIZE, 9);
-	if (ret > 0)
-		printf(text_buf);
-	else
-		printf("<no data?>\n");
-	return 0;
-}
-
 /* MDIO */
-
-static int
-emac_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad, int mdio_reg)
+static int emac_mdio_read(struct mii_dev *bus, int mdio_addr,
+			  int mdio_devad, int mdio_reg)
 {
-	pfe_emac_t *emac = bus->priv;
+	void *emac = bus->priv;
 	u16 val;
 	int ret;
 
-	if (mdio_devad == MDIO_DEVAD_NONE)
-		/* clause 22 */
-		ret = pfe_emac_mdio_read22(emac, mdio_addr, mdio_reg, &val, 0);
-	else
-		/* clause 45 */
-		ret = pfe_emac_mdio_read45(emac, mdio_addr, mdio_devad,
-					   mdio_reg, &val, 0);
+	ret = pfeng_hw_emac_mdio_read(emac, mdio_addr, mdio_devad,
+				      mdio_reg, &val);
 
 	if (ret) {
 		pr_err("%s: MDIO read on MAC failed\n", bus->name);
@@ -289,24 +239,17 @@ emac_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad, int mdio_reg)
 	return val;
 }
 
-static int
-emac_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
-		int mdio_reg, u16 mdio_val)
+static int emac_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
+			   int mdio_reg, u16 mdio_val)
 {
-	pfe_emac_t *emac = bus->priv;
+	void *emac = bus->priv;
 	int ret;
 
 	debug("%s(addr=%x, reg=%d, val=%x):\n", __func__, mdio_addr, mdio_reg,
 	      mdio_val);
 
-	if (mdio_devad == MDIO_DEVAD_NONE)
-		/* clause 22 */
-		ret = pfe_emac_mdio_write22(emac, mdio_addr, mdio_reg, mdio_val,
-					    0);
-	else
-		/* clause 45 */
-		ret = pfe_emac_mdio_write45(emac, mdio_addr, mdio_devad,
-					    mdio_reg, mdio_val, 0);
+	ret = pfeng_hw_emac_mdio_write(emac, mdio_addr, mdio_devad,
+				       mdio_reg, mdio_val);
 
 	if (ret) {
 		pr_err("%s: MDIO write on MAC failed\n", bus->name);
@@ -316,8 +259,19 @@ emac_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 	return 0;
 }
 
-static void
-pfeng_mdio_unregister_all(struct pfeng_priv *priv)
+static void pfeng_flush_d(void *dat, u32 len)
+{
+	flush_dcache_range(rounddown((u64)dat, ARCH_DMA_MINALIGN),
+			   roundup((u64)dat + len, ARCH_DMA_MINALIGN));
+}
+
+static void pfeng_inval_d(void *dat, u32 len)
+{
+	invalidate_dcache_range(rounddown((u64)dat, ARCH_DMA_MINALIGN),
+				roundup((u64)dat + len, ARCH_DMA_MINALIGN));
+}
+
+static void pfeng_mdio_unregister_all(struct pfeng_priv *priv)
 {
 	int i;
 
@@ -328,8 +282,7 @@ pfeng_mdio_unregister_all(struct pfeng_priv *priv)
 		}
 }
 
-static int
-pfeng_mdio_register(struct pfeng_priv *priv, int mac_id)
+static int pfeng_mdio_register(struct pfeng_priv *priv, int mac_id)
 {
 	char dev_name[32];
 	int ret;
@@ -344,7 +297,7 @@ pfeng_mdio_register(struct pfeng_priv *priv, int mac_id)
 
 	priv->mii[mac_id]->read = emac_mdio_read;
 	priv->mii[mac_id]->write = emac_mdio_write;
-	priv->mii[mac_id]->priv = priv->pfe->emac[mac_id];
+	priv->mii[mac_id]->priv = priv->pfe->emac_base[mac_id];
 	strcpy(priv->mii[mac_id]->name, dev_name);
 
 	ret = mdio_register(priv->mii[mac_id]);
@@ -359,9 +312,7 @@ pfeng_mdio_register(struct pfeng_priv *priv, int mac_id)
 }
 
 /* driver */
-
-static int
-pfeng_write_hwaddr(struct udevice *dev)
+static int pfeng_write_hwaddr(struct udevice *dev)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
@@ -374,17 +325,14 @@ pfeng_write_hwaddr(struct udevice *dev)
 	if (eth_env_get_enetaddr_by_index("pfe", priv->if_index, ea)) {
 		if (memcmp(pdata->eth.enetaddr, ea, ARP_HLEN))
 			memcpy(pdata->eth.enetaddr, ea, ARP_HLEN);
-		if (!priv->logif_emac)
-			return 0;
-		return pfe_log_if_set_mac_addr(priv->logif_emac, ea);
+		return 0;
 	}
 
 	dev_err(dev, "Can not read hwaddr from 'pfe%daddr'\n", priv->if_index);
 	return -EINVAL;
 }
 
-static int
-pfeng_check_env(void)
+static int pfeng_check_env(void)
 {
 	char *env_mode = env_get(PFENG_ENV_VAR_MODE_NAME);
 	char *tok, *loc_mode;
@@ -410,8 +358,7 @@ pfeng_check_env(void)
 	return PFENG_MODE_ENABLE;
 }
 
-static int
-pfeng_set_fw_from_env(struct pfeng_priv *priv)
+static int pfeng_set_fw_from_env(struct pfeng_priv *priv)
 {
 	char *env_fw;
 	char *fw_int = NULL, *fw_name = NULL, *fw_part = NULL;
@@ -460,28 +407,112 @@ pfeng_set_fw_from_env(struct pfeng_priv *priv)
 	return pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);
 }
 
-static int
-pfeng_driver_init(struct pfeng_priv *priv)
+static struct pfe_hif_ring *pfeng_init_ring(bool is_rx)
+{
+	u32 ii;
+	u8 *offset = NULL;
+	struct pfe_hif_ring *ring = malloc(sizeof(struct pfe_hif_ring));
+	u32 page_size = 0x1000;
+	size_t  size;
+
+	if (!ring)
+		return NULL;
+
+	ring->write_idx = 0;
+	ring->read_idx = 0;
+
+	size = roundup(RING_LEN * sizeof(struct pfe_hif_bd), page_size);
+	ring->bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
+
+	if (!ring->bd) {
+		pr_warn("HIF ring couldn't be allocated.\n");
+		return NULL;
+	}
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
+					size, DCACHE_OFF);
+
+	size = roundup(RING_LEN * sizeof(struct pfe_hif_wb_bd), page_size);
+	ring->wb_bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
+
+	if (!ring->wb_bd) {
+		pr_warn("HIF ring couldn't be allocated.\n");
+		return NULL;
+	}
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
+					size, DCACHE_OFF);
+
+	/* Flushe cache to update MMU mapings */
+	flush_dcache_all();
+
+	ring->is_rx = is_rx;
+
+	memset(ring->bd, 0, RING_LEN * sizeof(struct pfe_hif_bd));
+
+	if (ring->is_rx) {
+		/* fill buffers */
+		ring->mem = memalign(page_size,
+				     PFE_BUF_SIZE * PFE_HIF_RING_CFG_LENGTH);
+		offset = ring->mem;
+		if (!ring) {
+			free(ring);
+			return NULL;
+		}
+	}
+
+	for (ii = 0; ii < RING_LEN; ii++) {
+		if (ring->is_rx) {
+			/*	Mark BD as RX */
+			ring->bd[ii].dir = 1U;
+			/* Add buffer to rx descriptor */
+			ring->bd[ii].desc_en = 1U;
+			ring->bd[ii].lifm = 1U;
+			ring->bd[ii].buflen = (u16)PFE_BUF_SIZE;
+			ring->bd[ii].data = (u32)(u64)offset;
+			offset = (void *)((u64)offset + PFE_BUF_SIZE);
+		}
+
+		/*	Enable BD interrupt */
+		ring->bd[ii].cbd_int_en = 1U;
+		ring->bd[ii].next = (u32)(u64)&ring->bd[ii + 1U];
+		pfeng_flush_d(&ring->bd[ii], sizeof(struct pfe_hif_bd));
+	}
+
+	ring->bd[ii - 1].next = (u32)(u64)&ring->bd[0];
+	ring->bd[ii - 1].last_bd = 1U;
+	pfeng_flush_d(&ring->bd[ii - 1], sizeof(struct pfe_hif_bd));
+
+	memset(ring->wb_bd, 0, RING_LEN * sizeof(struct pfe_hif_wb_bd));
+
+	for (ii = 0U; ii < RING_LEN; ii++) {
+		ring->wb_bd[ii].seqnum = 0xffffU;
+		ring->wb_bd[ii].desc_en = 1U;
+		pfeng_flush_d(&ring->wb_bd[ii], sizeof(struct pfe_hif_wb_bd));
+	}
+
+	debug("BD ring %p\nWB ring %p\nBuff %p\n",
+	      ring->bd, ring->wb_bd, ring->mem);
+
+	return ring;
+}
+
+static int pfeng_driver_init(struct pfeng_priv *priv)
 {
 	int ret;
 
 	/* CFG setup */
-	priv->pfe_cfg.common_irq_mode = FALSE; /* don't use common irq mode */
-	priv->pfe_cfg.irq_vector_hif_chnls[0] = 0x0; /* no IRQ used */
-	priv->pfe_cfg.cbus_base = (addr_t)S32G_PFE_REGS_BASE;
+	priv->pfe_cfg.cbus_base = (u64)S32G_PFE_REGS_BASE;
 	priv->pfe_cfg.cbus_len = 0x0; /* not used */
 	priv->pfe_cfg.fw = &priv->fw;
-	priv->pfe_cfg.hif_chnls_mask = HIF_CHNL_0; /* channel bitmap */
-	priv->pfe_cfg.irq_vector_hif_nocpy = 0;	   /* disable */
-	priv->pfe_cfg.irq_vector_bmu = 0;	   /* no IRQ used */
 
-	ret = pfe_platform_init(&priv->pfe_cfg);
+	ret = pfeng_hw_init(&priv->pfe_cfg);
 	if (ret) {
 		dev_err(priv->dev, "Could not init PFE platform\n");
 		goto end;
 	}
 
-	priv->pfe = pfe_platform_get_instance();
+	priv->pfe = pfeng_hw_get_instance();
 	if (!priv->pfe) {
 		dev_err(priv->dev, "Could not get PFE platform instance\n");
 		ret = -EINVAL;
@@ -489,107 +520,30 @@ pfeng_driver_init(struct pfeng_priv *priv)
 	}
 	debug("PFE platform inited\n");
 
-	/* Platform drv init */
-	priv->channel = pfe_hif_get_channel(priv->pfe->hif, HIF_CHNL_0);
-	if (!priv->channel) {
-		dev_err(priv->dev, "Could not get PFE HIF channel instance\n");
-		ret = -EINVAL;
-		goto end;
-	}
-	debug("PFE HIF channel retrieved\n");
-
-	priv->hif = pfe_hif_drv_create(priv->channel);
-	if (!priv->hif) {
-		dev_err(priv->dev, "Could not create HIF driver instance\n");
-		ret = -EINVAL;
-		goto end;
-	}
-	debug("PFE HIF channel inited\n");
-
-	if (pfe_hif_drv_init(priv->hif) != EOK) {
-		dev_err(priv->dev, "Could not init HIF driver instance\n");
-		ret = -EINVAL;
-		goto end;
-	}
-	debug("PFE HIF driver inited\n");
-
 	pfeng_write_hwaddr(priv->dev);
 end:
 	return ret;
 }
 
-static int
-pfeng_hif_event_handler(pfe_hif_drv_client_t *client, void *data,
-			u32 event, uint32_t qno)
-{
-	switch (event) {
-	case EVENT_HIGH_RX_WM: /* Rx queue has reached watermark level */
-		/* unused */
-		break;
-	case EVENT_RX_PKT_IND: /* New packet(s) received */
-		/* unused */
-		break;
-	case EVENT_TXDONE_IND: /* New Tx confirmation(s) */
-		/* unused */
-		break;
-	case EVENT_RX_OOB: /* Ran out of Rx buffers */
-		/* unused */
-		break;
-	default:
-		/* unused */
-		break;
-	}
-
-	return 0;
-}
-
-static void
-pfeng_stop(struct udevice *dev)
+static void pfeng_stop(struct udevice *dev)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
+	int ret;
 
 	debug("%s(dev=%p):\n", __func__, dev);
 
-	if (priv->hif)
-		pfe_hif_drv_stop(priv->hif);
-
-	if (priv->logif_emac) {
-		pfe_log_if_disable(priv->logif_emac);
-		pfe_platform_unregister_log_if(priv->pfe, priv->logif_emac);
-	}
-	if (priv->logif_hif) {
-		pfe_log_if_disable(priv->logif_hif);
-		pfe_platform_unregister_log_if(priv->pfe, priv->logif_hif);
-	}
-
-	if (priv->client) {
-		pfe_hif_drv_client_unregister(priv->client);
-		priv->client = NULL;
-	}
-
-	if (priv->logif_emac) {
-		pfe_log_if_destroy(priv->logif_emac);
-		priv->logif_emac = NULL;
-	}
-	if (priv->logif_hif) {
-		pfe_log_if_destroy(priv->logif_hif);
-		priv->logif_hif = NULL;
-	}
-
-	return;
+	ret = pfeng_hw_stop(priv->pfe, priv->if_index);
+	if (ret)
+		pr_err("PFE HW stop failed\n");
 }
 
-static int
-pfeng_start(struct udevice *dev)
+static int pfeng_start(struct udevice *dev)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	u32 clid = 0;
-	int ret;
+	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 	char devname[16];
 	char *env_emac = env_get(PFENG_ENV_VAR_EMAC);
-	static const pfe_ct_phy_if_id_t emac_ids[] = { PFE_PHY_IF_ID_EMAC0,
-						       PFE_PHY_IF_ID_EMAC1,
-						       PFE_PHY_IF_ID_EMAC2 };
+	int clid, ret = 0;
 
 	debug("%s(dev=%p):\n", __func__, dev);
 
@@ -605,43 +559,7 @@ pfeng_start(struct udevice *dev)
 	printf("Attached to %s\n", devname);
 
 	/* Update clocks */
-	pfeng_apply_clocks();
-
-	/* Retrieve PHYIF */
-	priv->phyif_emac = pfe_platform_get_phy_if_by_id(
-		priv->pfe, emac_ids[priv->if_index]);
-	if (!priv->phyif_emac) {
-		dev_err(dev, "Unsupported EMAC PHY id %d\n", priv->if_index);
-		return -ENODEV;
-	}
-
-	priv->phyif_hif =
-		pfe_platform_get_phy_if_by_id(priv->pfe, PFE_PHY_IF_ID_HIF0);
-	if (!priv->phyif_hif) {
-		dev_err(dev, "Unsupported HIF PHY id %d\n", priv->if_index);
-		return -ENODEV;
-	}
-
-	/* Create LOGIF */
-	priv->logif_emac = pfe_log_if_create(priv->phyif_emac, devname);
-	if (!priv->logif_emac) {
-		dev_err(dev, "Failed to create log if '%s'\n", devname);
-		return -ENODEV;
-	}
-	ret = pfe_platform_register_log_if(priv->pfe, priv->logif_emac);
-	if (ret)
-		goto err;
-
-	sprintf(devname, "hif%i", clid);
-	priv->logif_hif = pfe_log_if_create(priv->phyif_hif, devname);
-	if (!priv->logif_hif) {
-		dev_err(dev, "Failed to create log if '%s'\n", devname);
-		ret = ENODEV;
-		goto err;
-	}
-	ret = pfe_platform_register_log_if(priv->pfe, priv->logif_hif);
-	if (ret)
-		goto err;
+	pfeng_apply_clocks(dev);
 
 	priv->last_rx = NULL;
 	priv->last_tx = NULL;
@@ -650,127 +568,157 @@ pfeng_start(struct udevice *dev)
 	if (pfeng_cfg_emac_get_interface(clid) == PHY_INTERFACE_MODE_SGMII)
 		pfeng_serdes_wait_link(clid);
 
-	/* Sanitize hwaddr */
-	pfeng_write_hwaddr(dev);
-
-	/* Connect to HIF */
-	priv->client = pfe_hif_drv_client_register(
-		priv->hif,		  /* HIF Driver instance */
-		priv->logif_emac,	  /* Client ID */
-		1,			  /* TX Queue Count */
-		1,			  /* RX Queue Count */
-		256,			  /* TX Queue Depth */
-		256,			  /* RX Queue Depth */
-		&pfeng_hif_event_handler, /* Client's event handler */
-		(void *)priv);		  /* Meta data */
-
-	if (!priv->client) {
-		dev_err(dev, "Unable to register HIF client id %d\n", clid);
-		ret = -ENODEV;
-		goto err;
-	}
-	debug("Register HIF client id %d\n", clid);
-
-	ret = pfe_log_if_add_egress_if(priv->logif_emac, priv->phyif_hif);
+	/* Get address of current interface */
+	ret = pfeng_write_hwaddr(dev);
 	if (ret) {
-		dev_err(dev, "Can't set ingress interface for '%s'\n", devname);
-		goto err;
+		pr_err("Was not possible to set MAC address\n");
+		return ret;
 	}
-	ret = pfe_log_if_add_egress_if(priv->logif_hif, priv->phyif_emac);
+
+	/* Prepare platform for RX & TX */
+	ret = pfeng_hw_start(priv->pfe, clid, pdata->eth.enetaddr);
 	if (ret) {
-		dev_err(dev, "Can't set egress interface for '%s'\n", devname);
-		goto err;
+		pr_err("PFE HW start failed\n");
+		return ret;
 	}
 
-	/* Enable promiscuous mode.
-	   This is default log interface and therefore should always accept all traffic. */
-	pfe_log_if_promisc_enable(priv->logif_hif);
-
-	ret = pfe_log_if_enable(priv->logif_emac);
-	ret = pfe_log_if_enable(priv->logif_hif);
-	if (ret) {
-		dev_err(dev, "PFE LOGIF enabling failed\n");
-		ret = -ENODEV;
-		goto err;
-	}
-	debug("PFE LOGIF enabled\n");
-
-	/* start HIF driver */
-	ret = pfe_hif_drv_start(priv->hif);
-	if (ret) {
-		dev_err(dev, "PFE HIF driver start failed\n");
-		ret = -ENODEV;
-		goto err;
-	}
-	debug("PFE HIF driver started successfully\n");
-
-end:
-	return ret;
-
-err:
-	pfeng_stop(dev);
-	goto end;
+	return 0;
 }
 
-static int
-pfeng_send(struct udevice *dev, void *packet, int length)
+static int pfeng_send(struct udevice *dev, void *packet, int length)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	int ret;
+	struct pfe_hif_ring *ring = priv->tx_ring;
+	struct pfe_hif_bd *bd_hd, *bd_pkt, *bp_rd;
+	struct pfe_hif_wb_bd *wb_bd_hd, *wb_bd_pkt, *wb_bp_rd;
+	bool lifm = false;
 
 	debug("%s(dev=%p, packet=%p, length=%d):\n", __func__, dev, packet,
 	      length);
 
-	ret = pfe_hif_drv_client_xmit_pkt(priv->client, HIF_QUEUE_ID, packet,
-					  packet, length, packet);
-	if (ret) {
-		dev_err(dev, "%s(packet=%p, length=%d): failed: %d\n", __func__,
-			packet, length, ret);
-	} else {
-		while (NULL == pfe_hif_drv_client_receive_tx_conf(priv->client,
-								  HIF_QUEUE_ID))
-			pfe_hif_drv_tx_poll(priv->hif);
+	/* Get descriptor for header */
+	bd_hd = &ring->bd[ring->write_idx & RING_LEN_MASK];
+	wb_bd_hd = &ring->wb_bd[ring->write_idx & RING_LEN_MASK];
+
+	/* Get descriptor for packet */
+	bd_pkt = &ring->bd[(ring->write_idx + 1) & RING_LEN_MASK];
+	wb_bd_pkt = &ring->wb_bd[(ring->write_idx + 1) & RING_LEN_MASK];
+
+	pfeng_inval_d(bd_hd, sizeof(struct pfe_hif_bd));
+	pfeng_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
+
+	if (RING_BD_DESC_EN(bd_hd->ctrl) != 0U ||
+	    RING_BD_DESC_EN(bd_pkt->ctrl) != 0U)
+		return -EAGAIN;
+
+	/* Flush the data buffer */
+	pfeng_flush_d(packet, length);
+
+	/* Fill header */
+	bd_hd->data = (u64)&header[priv->if_index];
+	bd_hd->buflen = (u16)sizeof(struct pfe_ct_hif_tx_hdr);
+	bd_hd->status = 0U;
+	bd_hd->lifm = 0;
+	wb_bd_hd->desc_en = 1U;
+	dmb();
+	bd_hd->desc_en = 1U;
+
+	/* Fill packet */
+	bd_pkt->data = (u32)(u64)packet;
+	bd_pkt->buflen = (uint16_t)length;
+	bd_pkt->status = 0U;
+	bd_pkt->lifm = 1;
+	wb_bd_pkt->desc_en = 1U;
+	dmb();
+	bd_pkt->desc_en = 1U;
+
+	/* Increment index for next buffer descriptor */
+	ring->write_idx += 2;
+
+	/* Tx Confirmation */
+	while (1) {
+		lifm = false;
+		bp_rd = &ring->bd[ring->read_idx & RING_LEN_MASK];
+		wb_bp_rd = &ring->wb_bd[ring->read_idx & RING_LEN_MASK];
+
+		pfeng_inval_d(bp_rd, sizeof(struct pfe_hif_bd));
+		pfeng_inval_d(wb_bp_rd, sizeof(struct pfe_hif_wb_bd));
+
+		if (RING_BD_DESC_EN(bp_rd->ctrl) == 0 ||
+		    RING_WBBD_DESC_EN(wb_bp_rd->ctrl) != 0)
+			continue;
+
+		lifm = bp_rd->lifm;
+		bp_rd->desc_en = 0U;
+		wb_bp_rd->desc_en = 1U;
+		dmb();
+		ring->read_idx++;
+
+		if (lifm)
+			break;
 	}
+
 	priv->last_tx = packet;
 
 	return 0;
 }
 
-static int
-pfeng_recv(struct udevice *dev, int flags, uchar **packetp)
+static int pfeng_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	pfe_hif_pkt_t *hif_pkt;
-	u32 plen = 0;
+	struct pfe_hif_ring *ring = priv->rx_ring;
+	struct pfe_hif_bd *bd_pkt;
+	struct pfe_hif_wb_bd *wb_bd_pkt;
+	int plen = 0;
+
+	bd_pkt = &ring->bd[ring->read_idx & RING_LEN_MASK];
+	wb_bd_pkt = &ring->wb_bd[ring->read_idx & RING_LEN_MASK];
+
+	pfeng_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
+	pfeng_inval_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
 
 	debug("%s(dev=%p, flags=%x):\n", __func__, dev, flags);
 
-	pfe_hif_drv_rx_poll(priv->hif);
+	/* Check, if we received some data */
+	if (RING_BD_DESC_EN(bd_pkt->ctrl) == 0U ||
+	    RING_WBBD_DESC_EN(wb_bd_pkt->ctrl) != 0u)
+		return -EAGAIN;
 
-	hif_pkt = pfe_hif_drv_client_receive_pkt(priv->client, HIF_QUEUE_ID);
-	if (hif_pkt) {
-		/* Process the packet */
-		if (pfe_hif_pkt_is_last(hif_pkt) == TRUE) {
-			/* Whole packet received */
-			*packetp =
-				(void *)(addr_t)pfe_hif_pkt_get_data(hif_pkt) +
-				HIF_HEADER_SIZE;
-			plen = pfe_hif_pkt_get_data_len(hif_pkt) -
-			       HIF_HEADER_SIZE;
-			priv->last_rx = hif_pkt;
-		} else {
-			/* multi-buffer pkt, discard it */
-			dev_err(dev, "Got multi-buffer packet, dropped.\n");
-		}
+	/* Give the data to u-boot stack */
+	bd_pkt->desc_en = 0U;
+	wb_bd_pkt->desc_en = 1U;
+	dmb();
+	*packetp = ((void *)((u64)(bd_pkt->data) + HIF_HEADER_SIZE));
+	priv->last_rx = *packetp;
+	plen = wb_bd_pkt->buflen - HIF_HEADER_SIZE;
+
+	/* Advance read buffer */
+	ring->read_idx++;
+
+	/* Invalidate the buffer */
+	pfeng_inval_d(*packetp, plen);
+
+	if (wb_bd_pkt->lifm != 1U) {
+		printf("Multi buffer packets not supported, discarding.\n");
+		/* Return EOK so the stack frees the buffer */
+		return 0;
 	}
 
 	return plen;
 }
 
-static int
-pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
+static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
+	struct pfe_hif_ring *ring = priv->rx_ring;
+	struct pfe_hif_bd *bd_pkt;
+	struct pfe_hif_wb_bd *wb_bd_pkt;
+
+	bd_pkt = &ring->bd[ring->write_idx & RING_LEN_MASK];
+	wb_bd_pkt = &ring->wb_bd[ring->write_idx & RING_LEN_MASK];
+
+	pfeng_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
+	pfeng_inval_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
 
 	debug("%s(packet=%p, length=%d)\n", __func__, packet, length);
 
@@ -780,7 +728,25 @@ pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 	if (!priv->last_rx)
 		return 0;
 
-	pfe_hif_pkt_free(priv->last_rx);
+	if (bd_pkt->desc_en != 0U) {
+		pr_err("Can't free buffer since the BD entry is used\n");
+		return -EIO;
+	}
+
+	/* Free buffer */
+	bd_pkt->buflen = 2048;
+	bd_pkt->status = 0U;
+	bd_pkt->lifm = 1U;
+	wb_bd_pkt->desc_en = 1U;
+	dmb();
+	bd_pkt->desc_en = 1U;
+
+	/* This has to be here for correct HW functionality */
+	pfeng_flush_d(packet, length);
+	pfeng_inval_d(packet, length);
+
+	/* Advance free pointer */
+	ring->write_idx++;
 
 	priv->last_rx = NULL;
 
@@ -801,8 +767,7 @@ struct pfeng_config pfeng_s32g274a_config = {
 };
 
 #if CONFIG_IS_ENABLED(OF_CONTROL)
-static int
-pfeng_ofdata_to_platdata(struct udevice *dev)
+static int pfeng_ofdata_to_platdata(struct udevice *dev)
 {
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 
@@ -823,8 +788,7 @@ pfeng_ofdata_to_platdata(struct udevice *dev)
 }
 #endif /* OF_CONTROL */
 
-static int
-pfeng_probe(struct udevice *dev)
+static int pfeng_probe(struct udevice *dev)
 {
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
@@ -832,7 +796,6 @@ pfeng_probe(struct udevice *dev)
 	char *env_mode;
 
 	debug("%s(dev=%p):\n", __func__, dev);
-
 	/* check environment vars */
 	if (pfeng_check_env() == PFENG_MODE_DISABLE) {
 		dev_warn(
@@ -845,7 +808,8 @@ pfeng_probe(struct udevice *dev)
 	priv->dev = dev;
 	priv->dev_index = eth_get_dev_index();
 	priv->if_index = 0;
-	priv->if_changed = 1;
+	priv->if_changed = true;
+	priv->clocks_done = false;
 
 	priv->config = pdata->config;
 	if (!priv->config) {
@@ -865,7 +829,7 @@ pfeng_probe(struct udevice *dev)
 				return -ENODEV;
 
 	/* enable PFE IP support */
-	pfeng_cfg_set_mode(PFENG_MODE_ENABLE);
+	pfeng_cfg_set_mode(PFENG_MODE_ENABLE, dev);
 
 	/* fw: parse location and load it */
 	ret = pfeng_set_fw_from_env(priv);
@@ -874,6 +838,23 @@ pfeng_probe(struct udevice *dev)
 
 	/* init pfe platform driver */
 	ret = pfeng_driver_init(priv);
+	if (ret)
+		return ret;
+
+	/* init TX ring */
+	priv->tx_ring = pfeng_init_ring(false);
+	if (!priv->tx_ring)
+		return -ENOMEM;
+
+	/* init RX ring */
+	priv->rx_ring = pfeng_init_ring(true);
+	if (!priv->rx_ring)
+		return -ENOMEM;
+
+	/* register rings to pfe HW */
+	ret = pfeng_hw_attach_ring(priv->pfe,
+				   priv->tx_ring->bd, priv->tx_ring->wb_bd,
+				   priv->rx_ring->bd, priv->rx_ring->wb_bd);
 	if (ret)
 		return ret;
 
@@ -887,8 +868,7 @@ pfeng_probe(struct udevice *dev)
 	return 0;
 }
 
-static int
-pfeng_remove(struct udevice *dev)
+static int pfeng_remove(struct udevice *dev)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
 
@@ -900,8 +880,7 @@ pfeng_remove(struct udevice *dev)
 	return 0;
 }
 
-static int
-pfeng_bind(struct udevice *dev)
+static int pfeng_bind(struct udevice *dev)
 {
 	return device_set_name(dev, "eth_pfeng");
 }

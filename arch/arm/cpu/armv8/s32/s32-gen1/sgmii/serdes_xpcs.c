@@ -13,7 +13,6 @@
 #include <linux/ethtool.h>
 #include <asm/io.h>
 
-
 /**
  * @brief	Variables for XPCS indirect access
  */
@@ -306,7 +305,7 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 			      enum serdes_clock_fmhz fmhz,
 			      bool bypass)
 {
-	int retval;
+	int retval = 0;
 	u16 reg16, use_pad = 0U;
 
 	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
@@ -322,6 +321,8 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
 				      EN_VSMMD1 | BYP_PWRUP);
 
+/* Currently this can't be enabled due to issue in bifurcation modes */
+#ifdef S32G_XPCS_ENABLE_PRECHECKS
 	if (!(bypass && clktype == CLK_EXT)) {
 		/*	Wait for XPCS power up */
 		retval = serdes_xpcs_wait_for_power_good(base,
@@ -343,6 +344,7 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 			/*	Unexpected XPCS ID */
 			return -EINVAL;
 	}
+#endif
 
 	/*	(Switch to 1G mode: #1) */
 	if (clktype == CLK_INT)
@@ -452,33 +454,7 @@ int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
 		return -EXIT_FAILURE;
 	}
 
-#if 0
-	/*	TODO: Clause 37 Auto-negotiation here: */
-	/*	Link timer */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_LINK_TIMER_CTRL, 0x20);
-	/*	AN CTRL: SGMII + 4-bit MII, MAC side */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_AN_CTRL,
-			      MII_AN_CTRL_PCS_MODE(PCS_MODE_SGMII)
-			      | MII_AN_CTRL_MII_CTRL);
-	/*	Enable auto speed mode change */
-	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-			      reg16 | MAC_AUTO_SW | EN_VSMMD1);
-	/*	Enable and restart AN */
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_CTRL, &reg16);
-	serdes_xpcs_reg_write(base, xpcs, SR_MII_CTRL,
-			      reg16 | MII_CTRL_RESTART_AN | MII_CTRL_AN_ENABLE);
-
-	pr_debug("waiting for AN...\n");
-	/*	Wait for AN complete */
-	do
-		serdes_xpcs_reg_read(base, xpcs, VR_MII_AN_INTR_STS, &reg16);
-	while (0U == (reg16 & MII_AN_INTR_STS_CL37_ANCMPLT_INTR));
-
-	/*	TODO: W1clear the MII_AN_INTR_STS_CL37_ANCMPLT_INTR */
-#endif
-
-	return 0;
+	return retval;
 }
 
 /**

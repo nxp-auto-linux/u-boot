@@ -7,12 +7,28 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+#include <dt-bindings/clock/s32r45-clock.h>
 
 /dts-v1/;
 #include "fsl-s32-gen1.dtsi"
 / {
 	model = "NXP S32R45";
 	compatible = "fsl,s32r45", "arm,vexpress,v2p-aarch64", "arm,vexpress";
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x80000000>;
+	};
+
+	memory@880000000 {
+		device_type = "memory";
+		reg = <0x8 0x80000000 0 0x80000000>;
+	};
+
+	sram@34000000 {
+		device_type = "memory";
+		reg = <0 0x34000000 0 0x800000>;
+	};
 
 	signature {
 		key-boot_key {
@@ -22,21 +38,88 @@
 		};
 	};
 
-	memory_DDR0@800000000 {
-		device_type = "memory";
-		reg = <0x8 0x0 0 0x40000000>, /* 0 - 1 GB */
-		      <0x8 0x40000000 0 0x40000000>, /* 1 - 2 GB */
-		      <0x8 0x80000000 0 0x80000000>; /* 2 - 4 GB */
-		      /* extended DDR from 4 to 32 GB should go elsewhere */
+	gmac1_ext_rx: gmac1_ext_rx@0 {
+		compatible = "fixed-clock";
+		clock-frequency = <25000000>;
+		#clock-cells = <1>;
 	};
 
-	memory_DDR1@8800000000 {
-		device_type = "memory";
-		reg = <0x88 0x0 0 0x40000000>, /* 0 - 1 GB */
-		      <0x88 0x40000000 0 0xC0000000>; /* 1 - 4 GB */
-		      /* extended DDR from 4 to 32 GB should go elsewhere */
+	gmac1_ext_tx: gmac1_ext_tx@0 {
+		compatible = "fixed-clock";
+		clock-frequency = <125000000>;
+		#clock-cells = <1>;
 	};
 
+	gmac1_ext_ref: gmac1_ext_ref@0 {
+		compatible = "fixed-clock";
+		clock-frequency = <50000000>;
+		#clock-cells = <1>;
+	};
+
+};
+
+&serdes0 {
+	assigned-clocks =
+		<&clks S32GEN1_CLK_SERDES0_LANE0_TX>,
+		<&clks S32GEN1_CLK_SERDES0_LANE0_CDR>,
+		<&clks S32GEN1_CLK_SERDES_REF>;
+	assigned-clock-parents =
+		<&serdes0_lane0_ext_tx 0>,
+		<&serdes0_lane0_ext_cdr 0>;
+	assigned-clock-rates =
+		<0>, <0>,
+		<100000000>;
+};
+
+&accelpll {
+	assigned-clocks =
+		<&clks S32GEN1_CLK_ACCEL_PLL_MUX>,
+		<&clks S32GEN1_CLK_ACCEL_PLL_VCO>,
+		<&clks S32R45_CLK_ACCEL_PLL_PHI0>,
+		<&clks S32GEN1_CLK_ARM_PLL_DFS4>;
+	assigned-clock-parents =
+		<&clks S32GEN1_CLK_FXOSC>;
+	assigned-clock-rates =
+		<0>,
+		<1800000000>,
+		<600000000>,
+		<400000000>;
+};
+
+&clks {
+	clocks = <&clks S32GEN1_CLK_PER>,
+		<&clks S32GEN1_CLK_FTM0_REF>,
+		<&clks S32GEN1_CLK_FTM1_REF>,
+		<&clks S32GEN1_CLK_CAN_PE>,
+		<&clks S32GEN1_CLK_XBAR_2X>,
+		<&clks S32GEN1_CLK_XBAR>,
+		<&clks S32GEN1_CLK_XBAR_DIV2>,
+		<&clks S32GEN1_CLK_XBAR_DIV3>,
+		<&clks S32GEN1_CLK_XBAR_DIV4>,
+		<&clks S32GEN1_CLK_XBAR_DIV6>,
+		<&clks S32GEN1_CLK_SPI>,
+		<&clks S32GEN1_CLK_QSPI>,
+		<&clks S32R45_CLK_ACCEL3>,
+		<&clks S32R45_CLK_ACCEL4>;
+
+	mc_cgm2: mc_cgm2@440C0000 {
+		compatible = "fsl,s32gen1-mc_cgm2";
+		reg = <0x0 0x440C0000 0x0 0x3000>;
+
+		assigned-clocks =
+			<&clks S32R45_CLK_MC_CGM2_MUX0>,
+			<&clks S32R45_CLK_MC_CGM2_MUX1>,
+			<&clks S32R45_CLK_ACCEL3>,
+			<&clks S32R45_CLK_ACCEL4>;
+		assigned-clock-parents =
+			<&clks S32R45_CLK_ACCEL_PLL_PHI0>,
+			<&clks S32R45_CLK_ARM_PLL_DFS4_2>;
+		assigned-clock-rates =
+			<0>,
+			<0>,
+			<600000000>,
+			<400000000>;
+	};
 };
 
 &qspi {
@@ -64,6 +147,12 @@
 };
 
 &gmac0 {
+	clocks = <&clks S32GEN1_CLK_GMAC0_TX>,
+		 <&clks S32GEN1_CLK_GMAC0_RX>,
+		 <&clks S32GEN1_CLK_GMAC0_TS>,
+		 <&clks S32GEN1_CLK_XBAR>;
+	clock-names = "tx", "rx", "ts", "axi";
+
 	status = "okay";
 	phy-mode = "rgmii";
 	phy-handle = <&gmac0_phy1>;

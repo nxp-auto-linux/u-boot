@@ -1,9 +1,11 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2018 NXP
+ * Copyright 2018,2020 NXP
  */
 
+#include <asm/arch-s32/soc.h>
 #include <common.h>
+#include <cpu_func.h>
 #include <linux/kernel.h>
 
 int dma_mem_clr(int addr, int size);
@@ -38,18 +40,19 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 	}
 
-	if (!IS_ADDR_IN_IRAM(addr)) {
+	if (!is_addr_in_sram(addr)) {
 		printf("ERROR: Address 0x%08lX not in internal SRAM ...\n",
 		       addr);
 		return CMD_RET_USAGE;
 	}
 
-	max_size = IRAM_SIZE - (addr - IRAM_BASE_ADDR);
+	max_size = S32_SRAM_SIZE - (addr - S32_SRAM_BASE);
 	if (size > max_size) {
 		printf("WARNING: given size exceeds SRAM boundaries.\n");
 		size = max_size;
 	}
 
+	invalidate_dcache_range(addr, addr + size);
 	ret_size = dma_mem_clr(addr, size);
 
 	if (!ret_size) {

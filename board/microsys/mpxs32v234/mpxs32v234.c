@@ -1,32 +1,32 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
- * Copyright 2018 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2018,2020 NXP
  */
 
-#include <common.h>
 #include <command.h>
+#include <common.h>
+#include <fdt_support.h>
+#include <i2c.h>
+#include <miiphy.h>
+#include <net.h>
+#include <netdev.h>
+#include <rtc.h>
 #include <asm/io.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/siul.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/xrdc.h>
-#include <asm/arch/cse.h>
-#include <fdt_support.h>
 #include <asm/arch/soc.h>
-#include <miiphy.h>
-#include <netdev.h>
-#include <net.h>
-#include <i2c.h>
+#include <asm/arch/xrdc.h>
 #include "s32v_ocotp.h"
 
 #undef	CONFIG_MPXS32V234_R1
 
-DECLARE_GLOBAL_DATA_PTR;
+#define MAC_ADDR_STR_LEN	17
 
-void rtc_init(void);
+DECLARE_GLOBAL_DATA_PTR;
 
 static void setup_iomux_uart(void)
 {
@@ -54,48 +54,69 @@ static void setup_iomux_i2c(void)
 #ifdef	CONFIG_MPXS32V234_R1
 	/* MPXS32V234-R1 */
 	/* I2C0 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR1_SDA, SIUL2_MSCRn(15));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR1_SDA, SIUL2_IMCRn(269));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR1_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_PA15));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C0_DATA));
 
 	/* I2C0 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR1_SCLK, SIUL2_MSCRn(16));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR1_SCLK, SIUL2_IMCRn(268));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR1_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB0));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C0_CLK));
 
 	/* I2C1 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C1_MSCR1_SDA, SIUL2_MSCRn(17));
-	writel(SIUL2_PAD_CTRL_I2C1_IMCR1_SDA, SIUL2_IMCRn(271));
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR1_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB1));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C1_DATA));
 
 	/* I2C1 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C1_MSCR1_SCLK, SIUL2_MSCRn(18));
-	writel(SIUL2_PAD_CTRL_I2C1_IMCR1_SCLK, SIUL2_IMCRn(270));
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR1_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB2));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C1_CLK));
 
 #elif defined(CONFIG_MPXS32V234_R2)
 	/* MPXS32V234-R2 */
 	/* I2C0 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15, SIUL2_MSCRn(99));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15, SIUL2_IMCRn(269));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SDA_AC15,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG3));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SDA_AC15,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C0_DATA));
 
 	/* I2C0 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_AE15, SIUL2_MSCRn(100));
-	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15, SIUL2_IMCRn(268));
+	writel(SIUL2_PAD_CTRL_I2C0_MSCR_SCLK_AE15,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG4));
+	writel(SIUL2_PAD_CTRL_I2C0_IMCR_SCLK_AE15,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C0_CLK));
 
 	/* I2C1 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA, SIUL2_MSCRn(101));
-	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA, SIUL2_IMCRn(271));
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG5));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SDA,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C1_DATA));
 
 	/* I2C1 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK, SIUL2_MSCRn(102));
-	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK, SIUL2_IMCRn(270));
+	writel(SIUL2_PAD_CTRL_I2C1_MSCR_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_PG6));
+	writel(SIUL2_PAD_CTRL_I2C1_IMCR_SCLK,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C1_CLK));
+
 #else
 #error	Please define CONFIG_MPXS32V234_R1 or CONFIG_MPXS32V234_R2
 #endif
 	/* I2C2 - Serial Data Input */
-	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA, SIUL2_MSCRn(19));
-	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SDA, SIUL2_IMCRn(273));
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SDA,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB3));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SDA,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C2_DATA));
 
 	/* I2C2 - Serial Clock Input */
-	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK, SIUL2_MSCRn(20));
-	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK, SIUL2_IMCRn(272));
+	writel(SIUL2_PAD_CTRL_I2C2_MSCR_SCLK,
+	       SIUL2_MSCRn(SIUL2_MSCR_PB4));
+	writel(SIUL2_PAD_CTRL_I2C2_IMCR_SCLK,
+	       SIUL2_IMCRn(SIUL2_IMCR_I2C2_CLK));
 }
 
 static void mscm_init(void)
@@ -143,8 +164,12 @@ int board_early_init_f(void)
 	setup_iomux_enet();
 	setup_iomux_i2c();
 
+#ifdef CONFIG_FSL_DCU_FB
 	setup_iomux_dcu();
+#endif
+#ifdef CONFIG_DCU_QOS_FIX
 	board_dcu_qos();
+#endif
 	setup_xrdc();
 
 	return 0;
@@ -152,7 +177,7 @@ int board_early_init_f(void)
 
 int board_get_mac(struct eth_device *dev, unsigned char *mac)
 {
-	if (!dev || !mac)
+	if (!mac)
 		return CMD_RET_FAILURE;
 
 	u32 ocotp_mac0 = readl(OCOTP_MAC0_REG);
@@ -169,48 +194,27 @@ int board_get_mac(struct eth_device *dev, unsigned char *mac)
 	return CMD_RET_SUCCESS;
 }
 
-int board_eth_init(bd_t *bis)
+#ifdef CONFIG_FEC_MXC
+void imx_get_mac_from_fuse(int dev_id, unsigned char *mac)
 {
-	/*
-	 * cpu_eth_init() is implemented in arch/arm/cpu/armv8/s23v234/soc.c
-	 * It calls fecmxc_initialize(bis).
-	 */
+	char buf[MAC_ADDR_STR_LEN];
 
-	if (cpu_eth_init(bis) < 0)
-		printf("CPU Net Initialization Failed\n");
-
-	/*
-	 * After the call above the MAC can now be manipulated ...
-	 */
-
-	struct eth_device *dev = eth_get_dev_by_name("FEC");
-
-	if (dev) {
-		unsigned char mac[6];
-
-		board_get_mac(dev, mac);
-
+	board_get_mac(NULL, mac);
 		if (!is_zero_ethaddr(mac)) {
-			if (!env_get("ethaddr")) {
-				char buf[20];
 				sprintf(buf, "%pM", mac);
 				env_set("ethaddr", buf);
 			}
-		} else {
-			printf("Note: no MAC for %s in SROM programmed!\n"
-				, dev->name);
-		}
 
-		memcpy(dev->enetaddr, mac, 6);
-	}
-
-	return 0;
+	debug("%s: MAC%d: %02x.%02x.%02x.%02x.%02x.%02x\n",
+	      __func__, dev_id, mac[0], mac[1], mac[2], mac[3],
+	      mac[4], mac[5]);
 }
+#endif
 
 int board_init(void)
 {
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+	gd->bd->bi_boot_params = CONFIG_SYS_FSL_DRAM_SIZE1 + 0x100;
 
 	rtc_init();
 
