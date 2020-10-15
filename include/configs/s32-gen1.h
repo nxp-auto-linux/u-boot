@@ -61,6 +61,9 @@
 #define FDT_FILE fsl-s32g274a-rdb2.dtb
 #endif /* CONFIG_TARGET_S32G274ARDB */
 
+#elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+#define FDT_FILE fsl-s32g274a-bluebox3.dtb
+
 #elif defined(CONFIG_TARGET_S32R45EVB)
 #define FDT_FILE fsl-s32r45-evb.dtb
 #endif

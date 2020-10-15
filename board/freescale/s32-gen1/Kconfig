@@ -19,7 +19,8 @@ config TARGET_TYPE_S32GEN1_SIMULATOR
 endif
 
 if TARGET_S32V344EVB || TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
-	TARGET_S32R45EVB || TARGET_TYPE_S32GEN1_EMULATOR || \
+	TARGET_S32G274ABLUEBOX3 || TARGET_S32R45EVB || \
+	TARGET_TYPE_S32GEN1_EMULATOR || \
 	TARGET_TYPE_S32GEN1_SIMULATOR
 
 config S32_GEN1
@@ -38,7 +39,8 @@ config SYS_CONFIG_NAME
 	string
 	default "s32v344" if TARGET_S32V344EVB || TARGET_S32V344SIM
 	default "s32g274a" if TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
-			   TARGET_S32G274ASIM || TARGET_S32G274AEMU
+			   TARGET_S32G274ASIM || TARGET_S32G274AEMU || \
+			   TARGET_S32G274ABLUEBOX3
 	default "s32r45" if TARGET_S32R45EVB || TARGET_S32R45SIM || \
 			   TARGET_S32R45EMU
 
@@ -118,6 +120,7 @@ config S32GEN1_HWCONFIG
 	depends on S32_GEN1 && (PCIE_S32GEN1 || FSL_PFENG)
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274ARDB
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274AEVB
+	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274ABLUEBOX3
 	default "pcie0:mode=sgmii;pcie1:mode=sgmii" if (!PCIE_S32GEN1 && FSL_PFENG)
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int" if (PCIE_S32GEN1 && !FSL_PFENG)
 	default ""

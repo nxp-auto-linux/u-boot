@@ -40,7 +40,8 @@
 "______________________________________________________________________\n"
 
 
-#ifdef CONFIG_TARGET_S32G274AEVB
+#if defined(CONFIG_TARGET_S32G274AEVB) || \
+	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 /* First SOC revision with functional PCIe: rev 1.0.1, which means
  * major 0, minor 0, subminor 1
  */

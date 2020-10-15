@@ -22,6 +22,7 @@ obj-$(CONFIG_NETDEVICES) += eth.o
 obj-$(CONFIG_TARGET_S32G274AEVB) += s32g274aevb.o
 obj-$(CONFIG_TARGET_S32G274ARDB) += s32g274ardb.o
 obj-$(CONFIG_TARGET_S32G274ASIM) += s32g274asim.o
+obj-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.o
 obj-$(CONFIG_TARGET_S32G274AEMU) += s32g274aemu.o
 
 obj-$(CONFIG_TARGET_S32R45EVB) += s32r45evb.o
@@ -35,7 +36,7 @@ ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 
-ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB)),)
+ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB) $(CONFIG_TARGET_S32G274ABLUEBOX3)),)
 obj-$(CONFIG_SYS_FSL_DDRSS) += s32g274a/phy_cfg.o s32g274a/pie_cfg.o s32g274a/ddrc_cfg.o ddr_utils.o ddrss_cfg.o dq_swap_cfg.o imem_cfg.o s32g274a/dmem_cfg.o ddr_init.o
 endif
 

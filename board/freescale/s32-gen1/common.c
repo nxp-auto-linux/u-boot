@@ -157,6 +157,8 @@ int checkboard(void)
 	puts("Board:\tNXP S32G274A-EVB\n");
 #elif defined(CONFIG_TARGET_S32G274ARDB)
 	puts("Board:\tNXP S32G274A-RDB\n");
+#elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+	puts("Board:\tNXP S32G274A BlueBox3\n");
 #elif defined(CONFIG_TARGET_S32G274ASIM)
 	puts("Board:\tVDK for NXP S32G274A VP\n");
 #elif defined(CONFIG_TARGET_S32G274AEMU)

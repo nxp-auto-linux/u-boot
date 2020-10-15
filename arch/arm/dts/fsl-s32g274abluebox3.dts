@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2020 NXP
+ *
+ */
+
+/dts-v1/;
+#include "fsl-s32g274a.dtsi"
+
+/ {
+	model = "NXP S32G274A BlueBox3";
+	compatible = "fsl,s32gen1", "arm,vexpress,v2p-aarch64", "arm,vexpress";
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x80000000>;
+	};
+
+	memory@880000000 {
+		device_type = "memory";
+		reg = <0x8 0x80000000 0 0x80000000>;
+	};
+
+	sram@34000000 {
+		device_type = "memory";
+		reg = <0 0x34000000 0 0x800000>;
+	};
+};
+
+&dspi0 {
+	status = "okay";
+};
+
+&dspi1 {
+	status = "okay";
+};
+
+&usdhc0 {
+	status = "okay";
+	bus-width = <4>;
+};
+
+&pfe {
+	status = "okay";
+};
+
+&pcie1 {
+	status = "disabled";
+};
+
+&i2c0 {
+	clock-frequency=<100000>;
+	status = "okay";
+
+	eeprom@50 {
+		compatible = "atmel,24c01a";
+		reg = <0x50>;
+	};
+
+	eeprom@54 {
+		compatible = "atmel,24c128";
+		reg = <0x54>;
+		u-boot,i2c-offset-len = <2>;
+	};
+
+	eeprom@56 {
+		compatible = "atmel,24c01a";
+		reg = <0x56>;
+	};
+};
+
+&i2c1 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+&i2c2 {
+	clock-frequency=<100000>;
+	status = "okay";
+};
+
+&i2c4 {
+	clock-frequency=<100000>;
+	status = "okay";
+
+	vr5510 {
+		compatible = "fsl,vr5510";
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	vr5510_fsu {
+		compatible = "fsl,vr5510";
+		reg = <0x21>;
+		status = "okay";
+	};
+
+};

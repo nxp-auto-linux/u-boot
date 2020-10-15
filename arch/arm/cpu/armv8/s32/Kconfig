@@ -61,6 +61,12 @@ config TARGET_S32G274AEVB
 config TARGET_S32G274ARDB
 	bool "Support s32g274ardb"
 
+config TARGET_S32G274ABLUEBOX3
+	bool "Support s32g274abluebox3"
+	help
+	  Enable Microsys S32G SoM Bluebox 3 target.
+	  S32G works as PCIE EP.
+
 config TARGET_S32G274ASIM
 	bool "Support s32g274a VDK"
 

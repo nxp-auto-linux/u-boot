@@ -66,7 +66,9 @@ struct regconf dq_swap_cfg[] = {
 	{0x4039a848, 0x00000006},
 	{0x4039a84c, 0x00000003},
 };
-#elif defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+#elif defined(CONFIG_TARGET_S32G274AEVB) || \
+	defined(CONFIG_TARGET_S32G274ARDB) || \
+	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 struct regconf dq_swap_cfg[] = {};
 #endif
 

@@ -38,7 +38,7 @@ static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 }
 
 #if CONFIG_IS_ENABLED(FSL_PFENG)
-static bool intf_is_xmii(u32 intf)
+__maybe_unused static bool intf_is_xmii(u32 intf)
 {
 	return intf == PHY_INTERFACE_MODE_MII ||
 		intf == PHY_INTERFACE_MODE_RMII ||

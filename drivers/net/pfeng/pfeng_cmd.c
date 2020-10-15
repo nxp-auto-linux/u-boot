@@ -36,6 +36,11 @@ static u32 emac_intf[PFENG_EMACS_COUNT] = {
 	PHY_INTERFACE_MODE_NONE,  /* disabled, clashed with GMAC */
 	PHY_INTERFACE_MODE_RGMII  /* KSZ9031 */
 #endif
+#if CONFIG_IS_ENABLED(CONFIG_TARGET_S32G274ABLUEBOX3)
+	PHY_INTERFACE_MODE_SGMII, /* PFE_MAC0: SGMII */
+	PHY_INTERFACE_MODE_NONE, /* disabled */
+	PHY_INTERFACE_MODE_NONE  /* disabled */
+#endif
 };
 
 static u32 pfeng_mode = PFENG_MODE_DISABLE;

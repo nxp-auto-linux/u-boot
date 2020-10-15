@@ -27,7 +27,54 @@ void setup_iomux_uart1_pb09_pb10(void)
 }
 #endif
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
+#if defined(CONFIG_TARGET_S32G274AEVB) || \
+	defined(CONFIG_TARGET_S32G274ARDB) || \
+	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+void setup_iomux_i2c_pb00_pb01(void)
+{
+	/* I2C0 Serial Data Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C0_SDA,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_00));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C0_SDA,
+	       SIUL2_0_IMCRn(SIUL2_PB_00_IMCR_S32G_I2C0_SDA));
+
+	/* I2C0 Serial Clock Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C0_SCLK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_01));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C0_SCLK,
+	       SIUL2_0_IMCRn(SIUL2_PB_01_IMCR_S32G_I2C0_SCLK));
+}
+
+void setup_iomux_i2c_pb03_pb04(void)
+{
+	/* I2C1 Serial Data Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C1_SDA,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_04));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C1_SDA,
+	       SIUL2_1_IMCRn(SIUL2_PB_04_IMCR_S32G_I2C1_SDA));
+
+	/* I2C1 Serial Clock Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C1_SCLK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_03));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C1_SCLK,
+	       SIUL2_1_IMCRn(SIUL2_PB_03_IMCR_S32G_I2C1_SCLK));
+}
+
+void setup_iomux_i2c_pb05_pb06(void)
+{
+	/* I2C2 - Serial Data Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C2_SDA,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_06));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C2_SDA,
+	       SIUL2_1_IMCRn(SIUL2_PB_06_IMCR_S32G_I2C2_SDA));
+
+	/* I2C2 - Serial Clock Input */
+	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C2_SCLK,
+	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_05));
+	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C2_SCLK,
+	       SIUL2_1_IMCRn(SIUL2_PB_05_IMCR_S32G_I2C2_SCLK));
+}
+
 void setup_iomux_i2c_pc01_pc02(void)
 {
 	/* PMIC */
@@ -59,8 +106,8 @@ void setup_iomux_i2c_pc05_pc06(void)
 	       SIUL2_1_IMCRn(SIUL2_PB_05_IMCR_S32G_I2C2_SCLK));
 }
 
-#ifdef CONFIG_FSL_DSPI
-void setup_iomux_dspi(void)
+#if defined(CONFIG_FSL_DSPI)
+__weak void setup_iomux_dspi(void)
 {
 	/* Muxing for DSPI1 */
 
@@ -108,7 +155,6 @@ void setup_iomux_dspi(void)
 void setup_iomux_sdhc(void)
 {
 	/* Set iomux PADS for USDHC */
-
 	/* PC14 pad: uSDHC SD0_CLK_O  */
 	writel(SIUL2_USDHC_S32_G1_PAD_CTRL_CLK, SIUL2_0_MSCRn(46));
 

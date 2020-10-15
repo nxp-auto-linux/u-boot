@@ -328,6 +328,10 @@
 #define PFENG_MODE "enable,sgmii,none,rgmii"
 #define PFENG_EMAC "2"
 #endif
+#ifdef CONFIG_TARGET_S32G274ABLUEBOX3
+#define PFENG_MODE "enable,sgmii,none,none"
+#define PFENG_EMAC "0"
+#endif
 #define PFE_EXTRA_ENV_SETTINGS \
 	"pfeng_mode=" PFENG_MODE "\0" \
 	"pfeaddr=00:01:be:be:ef:11\0" \
