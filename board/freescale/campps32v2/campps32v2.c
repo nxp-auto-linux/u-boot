@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <asm/io.h>
+#include <asm/arch/xrdc.h>
 #include <asm/arch/soc.h>
 #include <campps32v2.h>
 #include <fdt_support.h>
@@ -187,6 +188,33 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
+void setup_xrdc(void)
+{
+	/* See S32V234 User Manual Rev 2, 11.4.21.
+	 * Let ISP, Camera, Decoder Pixel Interface and Encoder Bit Stream to
+	 * access the SRAM memory.
+	 */
+
+	/* Write start of the memory region. */
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_16);
+	/* Write end of the memory region. */
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_16);
+	/* Write valid bit for the memory region memory region. */
+	writel(XRDC_VALID, XRDC_MRGD_W3_16);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_17);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_17);
+	writel(XRDC_VALID, XRDC_MRGD_W3_17);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_18);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_18);
+	writel(XRDC_VALID, XRDC_MRGD_W3_18);
+
+	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_19);
+	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_19);
+	writel(XRDC_VALID, XRDC_MRGD_W3_19);
+}
+
 int board_early_init_f(void)
 {
 	u8 id;
@@ -210,6 +238,8 @@ int board_early_init_f(void)
 	if (id == 1)
 		setup_iomux_dspi();
 #endif
+	setup_xrdc();
+
 	return 0;
 }
 
