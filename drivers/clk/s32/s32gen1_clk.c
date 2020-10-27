@@ -517,7 +517,7 @@ struct s32gen1_clk accel_pll_phi1_clk =
 /* CLKOUT */
 static struct s32gen1_mux cgm0_mux1 =
 		S32GEN1_MUX_INIT(S32GEN1_CGM0, 1, 4,
-				 S32GEN1_CLK_FIRC,
+				 S32GEN1_CLK_FXOSC,
 				 S32GEN1_CLK_PERIPH_PLL_PHI0,
 				 S32GEN1_CLK_PERIPH_PLL_DFS2,
 				 S32GEN1_CLK_PERIPH_PLL_DFS5);
