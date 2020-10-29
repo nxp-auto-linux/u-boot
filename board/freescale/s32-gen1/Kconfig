@@ -27,7 +27,9 @@ config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
 	default y
 	select CLK
+	select CLK_SCMI
 	select OF_SEPARATE
+	select SCMI_FIRMWARE
 	help
 	  Platform Selection
 
