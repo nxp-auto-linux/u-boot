@@ -395,7 +395,6 @@ static int pfeng_set_fw_from_env(struct pfeng_priv *priv)
 		fw_name = CONFIG_FSL_PFENG_FW_NAME;
 #endif
 		fw_part = CONFIG_FSL_PFENG_FW_PART;
-		fw_type = FS_TYPE_FAT;
 	}
 
 #if CONFIG_IS_ENABLED(FSL_PFENG_FW_LOC_SDCARD)
