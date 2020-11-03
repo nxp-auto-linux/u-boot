@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 #include <dt-bindings/clock/s32g274a-clock.h>
+#include <dt-bindings/clock/s32g274a-scmi-clock.h>
 
 /dts-v1/;
 #include "fsl-s32-gen1.dtsi"
@@ -38,22 +39,20 @@
 		device_type = "pci-generic";
 		device_id = <1>;
 		num-lanes = <2>; /* supports max 2 lanes */
-		clocks = <&clks S32GEN1_CLK_SERDES_REF>;
+		clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
 
 		assigned-clocks =
 			<&clks S32G274A_CLK_SERDES1_LANE0_TX>,
 			<&clks S32G274A_CLK_SERDES1_LANE0_CDR>,
 			<&clks S32G274A_CLK_SERDES1_LANE1_TX>,
-			<&clks S32G274A_CLK_SERDES1_LANE1_CDR>,
-			<&clks S32GEN1_CLK_SERDES_REF>;
+			<&clks S32G274A_CLK_SERDES1_LANE1_CDR>;
 		assigned-clock-parents =
 			<&serdes1_lane0_ext_tx 0>,
 			<&serdes1_lane0_ext_cdr 0>,
 			<&serdes1_lane1_ext_tx 0>,
 			<&serdes1_lane1_ext_cdr 0>;
-		assigned-clock-rates =
-			<0>, <0>, <0>, <0>,
-			<100000000>;
+
+		status = "okay";
 	};
 
 	pcie1: pcie@44100000 {
@@ -134,7 +133,50 @@
 	pfe: ethernet@46080000 {
 		compatible = "fsl,s32g274a-pfe";
 		reg = <0x0 0x46000000 0x0 0x1000000>;
+		clocks = <&clks S32G274A_SCMI_CLK_PFE_PE>,
+			/* PFE0 */
+			<&clks S32G274A_SCMI_CLK_PFE0_RX_SGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE0_TX_SGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE0_RX_RGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE0_TX_RGMII>,
+			/* PFE1 */
+			<&clks S32G274A_SCMI_CLK_PFE1_RX_SGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE1_TX_SGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE1_RX_RGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE1_TX_RGMII>,
+			/* PFE2 */
+			<&clks S32G274A_SCMI_CLK_PFE2_RX_SGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE2_TX_SGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE2_RX_RGMII>,
+			<&clks S32G274A_SCMI_CLK_PFE2_TX_RGMII>;
+		clock-names = "pe",
+			"mac0_rx_sgmii", "mac0_tx_sgmii",
+			"mac0_rx_rgmii", "mac0_tx_rgmii",
+			"mac1_rx_sgmii", "mac1_tx_sgmii",
+			"mac1_rx_rgmii", "mac1_tx_rgmii",
+			"mac2_rx_sgmii", "mac2_tx_sgmii",
+			"mac2_rx_rgmii", "mac2_tx_rgmii";
+		status = "disabled";
+	};
+};
+
+&clks {
+	clocks = <&clks S32GEN1_SCMI_CLK_FTM0_SYS>,
+		<&clks S32GEN1_SCMI_CLK_FTM1_SYS>,
+		<&clks S32GEN1_SCMI_CLK_FTM0_EXT>,
+		<&clks S32GEN1_SCMI_CLK_FTM1_EXT>,
+		<&clks S32GEN1_SCMI_CLK_FLEXCAN_CAN>,
+		<&clks S32GEN1_SCMI_CLK_SPI_REG>,
+		<&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>;
+
+	mc_cgm2: mc_cgm2@44018000 {
+		compatible = "fsl,s32gen1-mc_cgm2";
+		reg = <0x0 0x44018000 0x0 0x3000>;
+
 		assigned-clocks =
+			<&clks S32G274A_CLK_PFE_MAC0_EXT_REF>,
+			<&clks S32G274A_CLK_PFE_MAC1_EXT_REF>,
+			<&clks S32G274A_CLK_PFE_MAC2_EXT_REF>,
 			<&clks S32G274A_CLK_MC_CGM2_MUX0>,
 			/* PFE MAC0 */
 			<&clks S32G274A_CLK_MC_CGM2_MUX7>,
@@ -160,22 +202,25 @@
 			<&clks S32G274A_CLK_PFE_MAC2_RX>,
 			<&clks S32G274A_CLK_PFE_MAC2_TX>;
 		assigned-clock-parents =
+			<&pfe_mac0_ext_ref 0>,
+			<&pfe_mac1_ext_ref 0>,
+			<&pfe_mac2_ext_ref 0>,
 			<&clks S32G274A_CLK_ACCEL_PLL_PHI1>,
 			/* PFE MAC0 */
-			<&pfe_mac0_ext_ref 0>,
+			<&clks S32G274A_CLK_PFE_MAC0_EXT_REF>,
 			<&clks S32G274A_CLK_SERDES1_LANE0_CDR>,
 			<&clks S32G274A_CLK_SERDES1_LANE0_TX>,
 			/* PFE MAC1 */
-			<&pfe_mac1_ext_ref 0>,
+			<&clks S32G274A_CLK_PFE_MAC1_EXT_REF>,
 			<&clks S32G274A_CLK_SERDES1_LANE1_CDR>,
 			<&clks S32G274A_CLK_SERDES1_LANE1_TX>,
 			/* PFE MAC2 */
-			<&pfe_mac2_ext_ref 0>,
+			<&clks S32G274A_CLK_PFE_MAC2_EXT_REF>,
 			<&clks S32G274A_CLK_SERDES0_LANE1_CDR>,
 			<&clks S32G274A_CLK_SERDES0_LANE1_TX>;
 		assigned-clock-rates =
-			<0>, <0>, <0>, <0>, <0>,
-			<0>, <0>, <0>, <0>, <0>,
+			<0>, <0>, <0>, <0>, <0>, <0>, <0>,
+			<0>, <0>, <0>, <0>, <0>, <0>,
 			<600000000>,
 			<50000000>,
 			<125000000>,
@@ -186,41 +231,7 @@
 			<50000000>,
 			<125000000>,
 			<125000000>;
-		clocks = <&clks S32G274A_CLK_PFE_PE>,
-			 <&clks S32G274A_CLK_PFE_MAC0_REF_DIV>,
-			 <&clks S32G274A_CLK_PFE_MAC0_RX>,
-			 <&clks S32G274A_CLK_PFE_MAC0_TX_DIV>,
-			 <&clks S32G274A_CLK_PFE_MAC1_REF_DIV>,
-			 <&clks S32G274A_CLK_PFE_MAC1_RX>,
-			 <&clks S32G274A_CLK_PFE_MAC1_TX>,
-			 <&clks S32G274A_CLK_PFE_MAC2_REF_DIV>,
-			 <&clks S32G274A_CLK_PFE_MAC2_RX>,
-			 <&clks S32G274A_CLK_PFE_MAC2_TX>;
-		clock-names = "pfe_pe",
-			"pfe_mac0_ref_div", "pfe_mac0_rx", "pfe_mac0_tx",
-			"pfe_mac1_ref_div", "pfe_mac1_rx", "pfe_mac1_tx",
-			"pfe_mac2_ref_div", "pfe_mac2_rx", "pfe_mac2_tx";
-		status = "disabled";
-	};
-};
 
-&clks {
-	clocks = <&clks S32GEN1_CLK_PER>,
-		<&clks S32GEN1_CLK_FTM0_REF>,
-		<&clks S32GEN1_CLK_FTM1_REF>,
-		<&clks S32GEN1_CLK_CAN_PE>,
-		<&clks S32GEN1_CLK_XBAR_2X>,
-		<&clks S32GEN1_CLK_XBAR>,
-		<&clks S32GEN1_CLK_XBAR_DIV2>,
-		<&clks S32GEN1_CLK_XBAR_DIV3>,
-		<&clks S32GEN1_CLK_XBAR_DIV4>,
-		<&clks S32GEN1_CLK_XBAR_DIV6>,
-		<&clks S32GEN1_CLK_SPI>,
-		<&clks S32GEN1_CLK_QSPI>;
-
-	mc_cgm2: mc_cgm2@44018000 {
-		 compatible = "fsl,s32gen1-mc_cgm2";
-		 reg = <0x0 0x44018000 0x0 0x3000>;
 	};
 };
 
@@ -240,11 +251,16 @@
 };
 
 &gmac0 {
-	clocks = <&clks S32GEN1_CLK_GMAC0_TX>,
-		 <&clks S32GEN1_CLK_GMAC0_RX>,
-		 <&clks S32GEN1_CLK_GMAC0_TS>,
-		 <&clks S32GEN1_CLK_XBAR>;
-	clock-names = "tx", "rx", "ts", "axi";
+	clocks = <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_SGMII>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_TS_SGMII>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_RGMII>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_RGMII>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_TS_RGMII>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_AXI>;
+	clock-names = "rx_sgmii", "tx_sgmii", "ts_sgmii",
+		      "rx_rgmii", "tx_rgmii", "ts_rgmii",
+		      "axi";
 };
 
 &qspi {
@@ -261,23 +277,6 @@
 	};
 };
 
-&serdes0 {
-	assigned-clocks =
-		<&clks S32GEN1_CLK_SERDES0_LANE0_TX>,
-		<&clks S32GEN1_CLK_SERDES0_LANE0_CDR>,
-		<&clks S32G274A_CLK_SERDES0_LANE1_TX>,
-		<&clks S32G274A_CLK_SERDES0_LANE1_CDR>,
-		<&clks S32GEN1_CLK_SERDES_REF>;
-	assigned-clock-parents =
-		<&serdes0_lane0_ext_tx 0>,
-		<&serdes0_lane0_ext_cdr 0>,
-		<&serdes0_lane1_ext_tx 0>,
-		<&serdes0_lane1_ext_cdr 0>;
-	assigned-clock-rates =
-		<0>, <0>, <0>, <0>,
-		<100000000>;
-};
-
 &usdhc0 {
 	status = "okay";
 };
@@ -292,4 +291,20 @@
 	status = "okay";
 
 	link-speed = <2>; /* Gen2 */
+};
+
+&serdes0 {
+	assigned-clocks =
+		<&clks S32GEN1_CLK_SERDES0_LANE0_TX>,
+		<&clks S32GEN1_CLK_SERDES0_LANE0_CDR>,
+		<&clks S32G274A_CLK_SERDES0_LANE1_TX>,
+		<&clks S32G274A_CLK_SERDES0_LANE1_CDR>;
+
+	assigned-clock-parents =
+		<&serdes0_lane0_ext_tx 0>,
+		<&serdes0_lane0_ext_cdr 0>,
+		<&serdes0_lane1_ext_tx 0>,
+		<&serdes0_lane1_ext_cdr 0>;
+
+	status = "okay";
 };
