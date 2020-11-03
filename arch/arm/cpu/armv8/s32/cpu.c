@@ -14,6 +14,7 @@
 #include <asm-generic/sections.h>
 #include "mp.h"
 #include "dma_mem.h"
+#include "scmi_reset_agent.h"
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
@@ -618,3 +619,14 @@ phys_size_t __weak get_effective_memsize(void)
 #endif
 	return size;
 }
+
+#ifdef CONFIG_S32_ATF_BOOT_FLOW
+void board_prep_linux(bootm_headers_t *images)
+{
+	int ret;
+
+	ret = scmi_reset_agent();
+	if (ret)
+		pr_err("Failed to reset SCMI agent's settings\n");
+}
+#endif
