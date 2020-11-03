@@ -8,6 +8,7 @@
 MKIMAGEFLAGS_u-boot.s32 = -T $(CONFIG_MKIMAGE_T)
 u-boot.s32: MKIMAGEOUTPUT = u-boot.s32.log
 u-boot.s32: u-boot.bin FORCE
+ifeq ($(CONFIG_S32_GEN1),y)
 	$(eval DTB_RSRVD_SIZE = $(shell \
 		echo $$((${CONFIG_SYS_TEXT_BASE} - ${CONFIG_DTB_SRAM_ADDR}))))
 	$(eval DTB_SIZE = $(shell stat --printf="%s" u-boot.dtb))
@@ -22,4 +23,5 @@ u-boot.s32: u-boot.bin FORCE
 	@dd if=u-boot.dtb of=u-boot-with-dtb.bin bs=${DTB_RSRVD_SIZE} count=1
 	@dd if=u-boot.bin of=u-boot-with-dtb.bin bs=${DTB_RSRVD_SIZE} seek=1
 	@mv u-boot-with-dtb.bin u-boot.bin
+endif
 	$(call if_changed,mkimage)

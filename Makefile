@@ -1176,7 +1176,11 @@ endif
 %.vyb: %.imx
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
-%.s32: %.bin u-boot.dtb
+ifeq ($(CONFIG_S32_GEN1),y)
+S32_DEPS = u-boot.dtb
+endif
+
+%.s32: %.bin $(S32_DEPS)
 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32 $@
 
 quiet_cmd_copy = COPY    $@
