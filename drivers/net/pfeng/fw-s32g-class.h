@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL 2.0 OR BSD-3-Clause */
+/* SPDX-License-Identifier: GPL 2.0 */
 /*
- * 2019 NXP
+ * Copyright (c) 2020 Imagination Technologies Limited
+ * Copyright 2019-2020 NXP
  *
  */
 
