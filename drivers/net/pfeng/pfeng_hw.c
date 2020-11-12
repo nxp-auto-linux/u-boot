@@ -16,6 +16,8 @@
 #include <asm/io.h>
 #include <elf.h>
 #include <phy.h>
+#include <cpu_func.h>
+
 #include <linux/delay.h>
 #include <linux/mdio.h>
 #include <linux/ethtool.h>
@@ -26,6 +28,14 @@
 #include "pfe_cbus.h"
 
 static struct pfe_platform pfe;
+
+static const struct pfe_ct_hif_tx_hdr header[3U] = {
+	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(1)},
+	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(2)},
+	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(4)},
+};
+
+#define HIF_HEADER_SIZE sizeof(struct pfe_ct_hif_rx_hdr)
 
 #define INIT_PLAT_OFF(plat, off) ((void *)((uint64_t)(plat)->cbus_baseaddr + \
 				  (uint64_t)(off)))
@@ -54,6 +64,11 @@ static struct pfe_platform pfe;
 #define BYTES_TO_4B_ALIGNMENT(x) (4U - ((x) & 0x3U))
 #define ELF_SKIP_FLAGS (SHF_WRITE | SHF_ALLOC | SHF_EXECINSTR)
 #define SHT_PFE_SKIP (0x7000002aU)
+
+struct pfe_hw_chnl {
+	struct pfe_hif_ring *rx_ring;
+	struct pfe_hif_ring *tx_ring;
+};
 
 struct pfe_gpi_cfg {
 	u32 alloc_retry_cycles;
@@ -602,6 +617,361 @@ int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
 		ntohl(pfe_pe_mmap->dmem_heap_size),
 		ntohl(pfe_pe_mmap->dmem_phy_if_base),
 		ntohl(pfe_pe_mmap->dmem_phy_if_size));
+	return 0;
+}
+
+static void pfeng_hw_flush_d(void *dat, u32 len)
+{
+	flush_dcache_range(rounddown((u64)dat, ARCH_DMA_MINALIGN),
+			   roundup((u64)dat + len, ARCH_DMA_MINALIGN));
+}
+
+static void pfeng_hw_inval_d(void *dat, u32 len)
+{
+	invalidate_dcache_range(rounddown((u64)dat, ARCH_DMA_MINALIGN),
+				roundup((u64)dat + len, ARCH_DMA_MINALIGN));
+}
+
+static int pfeng_hw_attach_ring(struct pfe_platform *platform,
+				void *tx_ring, void *tx_ring_wb,
+				void *rx_ring, void *rx_ring_wb)
+{
+	void *base = platform->hif_base;
+
+	if (!tx_ring | !tx_ring_wb | !rx_ring | !rx_ring_wb) {
+		pr_err("PFE: Invalid buffer descriptor rings");
+		return -EINVAL;
+	}
+
+	/*	Set TX BD ring */
+	writel((u32)((u64)tx_ring & 0xffffffffU),
+	       base + HIF_TX_BDP_RD_LOW_ADDR_CHN(pfe.hif_chnl));
+	writel(0U, base + HIF_TX_BDP_RD_HIGH_ADDR_CHN(pfe.hif_chnl));
+
+	/*	Set TX WB BD ring */
+	writel((u32)((u64)tx_ring_wb & 0xffffffffU),
+	       base + HIF_TX_BDP_WR_LOW_ADDR_CHN(pfe.hif_chnl));
+	writel(0U, base + HIF_TX_BDP_WR_HIGH_ADDR_CHN(pfe.hif_chnl));
+	writel(RING_LEN,
+	       base + HIF_TX_WRBK_BD_CHN_BUFFER_SIZE(pfe.hif_chnl));
+
+	/*	Set RX BD ring */
+	writel((u32)((u64)rx_ring & 0xffffffffU),
+	       base + HIF_RX_BDP_RD_LOW_ADDR_CHN(pfe.hif_chnl));
+	writel(0U, base + HIF_RX_BDP_RD_HIGH_ADDR_CHN(pfe.hif_chnl));
+
+	/*	Set RX WB BD ring */
+	writel((u32)((u64)rx_ring_wb & 0xffffffffU),
+	       base + HIF_RX_BDP_WR_LOW_ADDR_CHN(pfe.hif_chnl));
+	writel(0U, base + HIF_RX_BDP_WR_HIGH_ADDR_CHN(pfe.hif_chnl));
+	writel(RING_LEN,
+	       base + HIF_RX_WRBK_BD_CHN_BUFFER_SIZE(pfe.hif_chnl));
+
+	return 0;
+}
+
+static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
+{
+	u32 ii;
+	u8 *offset = NULL;
+	struct pfe_hif_ring *ring = malloc(sizeof(struct pfe_hif_ring));
+	u32 page_size = 0x1000;
+	size_t  size;
+
+	if (!ring)
+		return NULL;
+
+	ring->write_idx = 0;
+	ring->read_idx = 0;
+
+	size = roundup(RING_LEN * sizeof(struct pfe_hif_bd), page_size);
+	ring->bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
+
+	if (!ring->bd) {
+		pr_warn("HIF ring couldn't be allocated.\n");
+		return NULL;
+	}
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
+					size, DCACHE_OFF);
+
+	size = roundup(RING_LEN * sizeof(struct pfe_hif_wb_bd), page_size);
+	ring->wb_bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
+
+	if (!ring->wb_bd) {
+		pr_warn("HIF ring couldn't be allocated.\n");
+		return NULL;
+	}
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
+					size, DCACHE_OFF);
+
+	/* Flushe cache to update MMU mapings */
+	flush_dcache_all();
+
+	ring->is_rx = is_rx;
+
+	memset(ring->bd, 0, RING_LEN * sizeof(struct pfe_hif_bd));
+
+	if (ring->is_rx) {
+		/* fill buffers */
+		ring->mem = memalign(page_size,
+				     PFE_BUF_SIZE * PFE_HIF_RING_CFG_LENGTH);
+		offset = ring->mem;
+		if (!ring) {
+			free(ring);
+			return NULL;
+		}
+	}
+
+	for (ii = 0; ii < RING_LEN; ii++) {
+		if (ring->is_rx) {
+			/*	Mark BD as RX */
+			ring->bd[ii].dir = 1U;
+			/* Add buffer to rx descriptor */
+			ring->bd[ii].desc_en = 1U;
+			ring->bd[ii].lifm = 1U;
+			ring->bd[ii].buflen = (u16)PFE_BUF_SIZE;
+			ring->bd[ii].data = (u32)(u64)offset;
+			offset = (void *)((u64)offset + PFE_BUF_SIZE);
+		}
+
+		/*	Enable BD interrupt */
+		ring->bd[ii].cbd_int_en = 1U;
+		ring->bd[ii].next = (u32)(u64)&ring->bd[ii + 1U];
+		pfeng_hw_flush_d(&ring->bd[ii], sizeof(struct pfe_hif_bd));
+	}
+
+	ring->bd[ii - 1].next = (u32)(u64)&ring->bd[0];
+	ring->bd[ii - 1].last_bd = 1U;
+	pfeng_hw_flush_d(&ring->bd[ii - 1], sizeof(struct pfe_hif_bd));
+
+	memset(ring->wb_bd, 0, RING_LEN * sizeof(struct pfe_hif_wb_bd));
+
+	for (ii = 0U; ii < RING_LEN; ii++) {
+		ring->wb_bd[ii].seqnum = 0xffffU;
+		ring->wb_bd[ii].desc_en = 1U;
+		pfeng_hw_flush_d(&ring->wb_bd[ii],
+				 sizeof(struct pfe_hif_wb_bd));
+	}
+
+	debug("BD ring %p\nWB ring %p\nBuff %p\n",
+	      ring->bd, ring->wb_bd, ring->mem);
+
+	return ring;
+}
+
+struct pfe_hw_chnl *pfeng_hw_init_chnl(void)
+{
+	int ret = 0;
+	struct pfe_hw_chnl *chnl = malloc(sizeof(struct pfe_hw_chnl));
+
+	if (!chnl)
+		return NULL;
+
+	/* init TX ring */
+	chnl->tx_ring = pfeng_hw_init_ring(false);
+	if (!chnl->tx_ring)
+		return NULL;
+
+	/* init RX ring */
+	chnl->rx_ring = pfeng_hw_init_ring(true);
+	if (!chnl->rx_ring)
+		return NULL;
+
+	/* register rings to pfe HW */
+	ret = pfeng_hw_attach_ring(&pfe,
+				   chnl->tx_ring->bd, chnl->tx_ring->wb_bd,
+				   chnl->rx_ring->bd, chnl->rx_ring->wb_bd);
+	if (ret)
+		return NULL;
+
+	return chnl;
+}
+
+void pfeng_hw_deinit_chnl(struct pfe_hw_chnl *chnl)
+{
+	if (!chnl)
+		return;
+
+	if (chnl->rx_ring) {
+		if (chnl->rx_ring->mem) {
+			free(chnl->rx_ring->mem);
+			chnl->rx_ring->mem = NULL;
+		}
+		if (chnl->rx_ring->bd) {
+			free(chnl->rx_ring->bd);
+			chnl->rx_ring->bd = NULL;
+		}
+		if (chnl->rx_ring->wb_bd) {
+			free(chnl->rx_ring->wb_bd);
+			chnl->rx_ring->wb_bd = NULL;
+		}
+
+		free(chnl->rx_ring);
+		chnl->rx_ring = NULL;
+	}
+
+	if (chnl->tx_ring) {
+		if (chnl->tx_ring->bd) {
+			free(chnl->tx_ring->bd);
+			chnl->tx_ring->bd = NULL;
+		}
+		if (chnl->tx_ring->wb_bd) {
+			free(chnl->tx_ring->wb_bd);
+			chnl->tx_ring->wb_bd = NULL;
+		}
+
+		free(chnl->tx_ring);
+		chnl->tx_ring = NULL;
+	}
+}
+
+int pfeng_hw_chnl_xmit(struct pfe_hw_chnl *chnl, int emac,
+		       void *packet, int length)
+{
+	struct pfe_hif_ring *ring = chnl->tx_ring;
+	struct pfe_hif_bd *bd_hd, *bd_pkt, *bp_rd;
+	struct pfe_hif_wb_bd *wb_bd_hd, *wb_bd_pkt, *wb_bp_rd;
+	bool lifm = false;
+
+	/* Get descriptor for header */
+	bd_hd = &ring->bd[ring->write_idx & RING_LEN_MASK];
+	wb_bd_hd = &ring->wb_bd[ring->write_idx & RING_LEN_MASK];
+
+	/* Get descriptor for packet */
+	bd_pkt = &ring->bd[(ring->write_idx + 1) & RING_LEN_MASK];
+	wb_bd_pkt = &ring->wb_bd[(ring->write_idx + 1) & RING_LEN_MASK];
+
+	pfeng_hw_inval_d(bd_hd, sizeof(struct pfe_hif_bd));
+	pfeng_hw_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
+
+	if (RING_BD_DESC_EN(bd_hd->ctrl) != 0U ||
+	    RING_BD_DESC_EN(bd_pkt->ctrl) != 0U)
+		return -EAGAIN;
+
+	/* Flush the data buffer */
+	pfeng_hw_flush_d(packet, length);
+
+	/* Fill header */
+	bd_hd->data = (u64)&header[emac];
+	bd_hd->buflen = (u16)sizeof(struct pfe_ct_hif_tx_hdr);
+	bd_hd->status = 0U;
+	bd_hd->lifm = 0;
+	wb_bd_hd->desc_en = 1U;
+	dmb();
+	bd_hd->desc_en = 1U;
+
+	/* Fill packet */
+	bd_pkt->data = (u32)(u64)packet;
+	bd_pkt->buflen = (uint16_t)length;
+	bd_pkt->status = 0U;
+	bd_pkt->lifm = 1;
+	wb_bd_pkt->desc_en = 1U;
+	dmb();
+	bd_pkt->desc_en = 1U;
+
+	/* Increment index for next buffer descriptor */
+	ring->write_idx += 2;
+
+	/* Tx Confirmation */
+	while (1) {
+		lifm = false;
+		bp_rd = &ring->bd[ring->read_idx & RING_LEN_MASK];
+		wb_bp_rd = &ring->wb_bd[ring->read_idx & RING_LEN_MASK];
+
+		pfeng_hw_inval_d(bp_rd, sizeof(struct pfe_hif_bd));
+		pfeng_hw_inval_d(wb_bp_rd, sizeof(struct pfe_hif_wb_bd));
+
+		if (RING_BD_DESC_EN(bp_rd->ctrl) == 0 ||
+		    RING_WBBD_DESC_EN(wb_bp_rd->ctrl) != 0)
+			continue;
+
+		lifm = bp_rd->lifm;
+		bp_rd->desc_en = 0U;
+		wb_bp_rd->desc_en = 1U;
+		dmb();
+		ring->read_idx++;
+
+		if (lifm)
+			break;
+	}
+
+	return 0;
+}
+
+int pfeng_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp)
+{
+	struct pfe_hif_bd *bd_pkt;
+	struct pfe_hif_wb_bd *wb_bd_pkt;
+	struct pfe_hif_ring *ring = chnl->rx_ring;
+	int plen = 0;
+
+	bd_pkt = &ring->bd[ring->read_idx & RING_LEN_MASK];
+	wb_bd_pkt = &ring->wb_bd[ring->read_idx & RING_LEN_MASK];
+
+	pfeng_hw_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
+	pfeng_hw_inval_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
+
+	/* Check, if we received some data */
+	if (RING_BD_DESC_EN(bd_pkt->ctrl) == 0U ||
+	    RING_WBBD_DESC_EN(wb_bd_pkt->ctrl) != 0u)
+		return -EAGAIN;
+
+	/* Give the data to u-boot stack */
+	bd_pkt->desc_en = 0U;
+	wb_bd_pkt->desc_en = 1U;
+	dmb();
+	*packetp = ((void *)((u64)(bd_pkt->data) + HIF_HEADER_SIZE));
+	plen = wb_bd_pkt->buflen - HIF_HEADER_SIZE;
+
+	/* Advance read buffer */
+	ring->read_idx++;
+
+	/* Invalidate the buffer */
+	pfeng_hw_inval_d(*packetp, plen);
+
+	if (wb_bd_pkt->lifm != 1U) {
+		printf("Multi buffer packets not supported, discarding.\n");
+		/* Return EOK so the stack frees the buffer */
+		return 0;
+	}
+
+	return plen;
+}
+
+int pfeng_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length)
+{
+	struct pfe_hif_ring *ring = chnl->rx_ring;
+	struct pfe_hif_bd *bd_pkt;
+	struct pfe_hif_wb_bd *wb_bd_pkt;
+
+	bd_pkt = &ring->bd[ring->write_idx & RING_LEN_MASK];
+	wb_bd_pkt = &ring->wb_bd[ring->write_idx & RING_LEN_MASK];
+
+	pfeng_hw_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
+	pfeng_hw_inval_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
+
+	if (bd_pkt->desc_en != 0U) {
+		pr_err("Can't free buffer since the BD entry is used\n");
+		return -EIO;
+	}
+
+	/* Free buffer */
+	bd_pkt->buflen = 2048;
+	bd_pkt->status = 0U;
+	bd_pkt->lifm = 1U;
+	wb_bd_pkt->desc_en = 1U;
+	dmb();
+	bd_pkt->desc_en = 1U;
+
+	/* This has to be here for correct HW functionality */
+	pfeng_hw_flush_d(packet, length);
+	pfeng_hw_inval_d(packet, length);
+
+	/* Advance free pointer */
+	ring->write_idx++;
+
 	return 0;
 }
 
@@ -1577,44 +1947,6 @@ int pfeng_hw_init(struct pfe_platform_config *config)
 exit:
 	(void)pfeng_hw_remove();
 	return ret;
-}
-
-int pfeng_hw_attach_ring(struct pfe_platform *platform,
-			 void *tx_ring, void *tx_ring_wb,
-			 void *rx_ring, void *rx_ring_wb)
-{
-	void *base = platform->hif_base;
-
-	if (!tx_ring | !tx_ring_wb | !rx_ring | !rx_ring_wb) {
-		pr_err("PFE: Invalid buffer descriptor rings");
-		return -EINVAL;
-	}
-
-	/*	Set TX BD ring */
-	writel((u32)((u64)tx_ring & 0xffffffffU),
-	       base + HIF_TX_BDP_RD_LOW_ADDR_CHN(pfe.hif_chnl));
-	writel(0U, base + HIF_TX_BDP_RD_HIGH_ADDR_CHN(pfe.hif_chnl));
-
-	/*	Set TX WB BD ring */
-	writel((u32)((u64)tx_ring_wb & 0xffffffffU),
-	       base + HIF_TX_BDP_WR_LOW_ADDR_CHN(pfe.hif_chnl));
-	writel(0U, base + HIF_TX_BDP_WR_HIGH_ADDR_CHN(pfe.hif_chnl));
-	writel(RING_LEN,
-	       base + HIF_TX_WRBK_BD_CHN_BUFFER_SIZE(pfe.hif_chnl));
-
-	/*	Set RX BD ring */
-	writel((u32)((u64)rx_ring & 0xffffffffU),
-	       base + HIF_RX_BDP_RD_LOW_ADDR_CHN(pfe.hif_chnl));
-	writel(0U, base + HIF_RX_BDP_RD_HIGH_ADDR_CHN(pfe.hif_chnl));
-
-	/*	Set RX WB BD ring */
-	writel((u32)((u64)rx_ring_wb & 0xffffffffU),
-	       base + HIF_RX_BDP_WR_LOW_ADDR_CHN(pfe.hif_chnl));
-	writel(0U, base + HIF_RX_BDP_WR_HIGH_ADDR_CHN(pfe.hif_chnl));
-	writel(RING_LEN,
-	       base + HIF_RX_WRBK_BD_CHN_BUFFER_SIZE(pfe.hif_chnl));
-
-	return 0;
 }
 
 int pfeng_hw_debug(struct pfe_platform *platform)

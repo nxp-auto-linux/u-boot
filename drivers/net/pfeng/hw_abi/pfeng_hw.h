@@ -43,6 +43,8 @@
 #include "pfe_hif_ring.h"
 #include "pfe_platform_cfg.h"
 
+struct pfe_hw_chnl;
+
 struct pfe_fw {
 	char *version;     /* free text: version */
 	char *source;	     /* free text: filename, filepath, ... etc */
@@ -86,9 +88,13 @@ struct pfe_platform {
 /* Eth driver functionality */
 int pfeng_hw_start(struct pfe_platform *platform, int emac, u8 *ea);
 int pfeng_hw_stop(struct pfe_platform *platform, int emac);
-int pfeng_hw_attach_ring(struct pfe_platform *platform,
-			 void *tx_ring, void *tx_ring_wb,
-			 void *rx_ring, void *rx_ring_wb);
+
+/* Hw channel */
+struct pfe_hw_chnl *pfeng_hw_init_chnl(void);
+int pfeng_hw_chnl_xmit(struct pfe_hw_chnl *chnl, int emac,
+		       void *packet, int length);
+int pfeng_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp);
+int pfeng_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length);
 
 /* Mdio functionality */
 int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, s32 dev, u16 ra, u16 *val);

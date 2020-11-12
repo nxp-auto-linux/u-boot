@@ -80,10 +80,7 @@ struct pfeng_priv {
 	u32 if_index;
 	bool if_changed;
 	bool clocks_done;
-
-	struct pfe_hif_ring *tx_ring;
-	struct pfe_hif_ring *rx_ring;
-
+	struct pfe_hw_chnl *chnl;
 	void *last_rx;
 	void *last_tx;
 };

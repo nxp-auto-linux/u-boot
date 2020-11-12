@@ -22,15 +22,6 @@
 #include <dm/platform_data/pfeng_dm_eth.h>
 #include <dm/device_compat.h>
 
-#define HIF_QUEUE_ID	0
-#define HIF_HEADER_SIZE sizeof(struct pfe_ct_hif_rx_hdr)
-
-static const struct pfe_ct_hif_tx_hdr header[PFENG_EMACS_COUNT] = {
-	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(1)},
-	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(2)},
-	{.queue = 0, .flags = HIF_TX_INJECT, .chid = 0, .e_phy_ifs = htonl(4)},
-};
-
 static struct pfeng_priv *pfeng_drv_priv = NULL;
 /* firmware */
 
@@ -259,18 +250,6 @@ static int emac_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 	return 0;
 }
 
-static void pfeng_flush_d(void *dat, u32 len)
-{
-	flush_dcache_range(rounddown((u64)dat, ARCH_DMA_MINALIGN),
-			   roundup((u64)dat + len, ARCH_DMA_MINALIGN));
-}
-
-static void pfeng_inval_d(void *dat, u32 len)
-{
-	invalidate_dcache_range(rounddown((u64)dat, ARCH_DMA_MINALIGN),
-				roundup((u64)dat + len, ARCH_DMA_MINALIGN));
-}
-
 static void pfeng_mdio_unregister_all(struct pfeng_priv *priv)
 {
 	int i;
@@ -406,96 +385,6 @@ static int pfeng_set_fw_from_env(struct pfeng_priv *priv)
 	return pfeng_fw_load(fw_name, fw_int, fw_part, fw_type, priv);
 }
 
-static struct pfe_hif_ring *pfeng_init_ring(bool is_rx)
-{
-	u32 ii;
-	u8 *offset = NULL;
-	struct pfe_hif_ring *ring = malloc(sizeof(struct pfe_hif_ring));
-	u32 page_size = 0x1000;
-	size_t  size;
-
-	if (!ring)
-		return NULL;
-
-	ring->write_idx = 0;
-	ring->read_idx = 0;
-
-	size = roundup(RING_LEN * sizeof(struct pfe_hif_bd), page_size);
-	ring->bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
-
-	if (!ring->bd) {
-		pr_warn("HIF ring couldn't be allocated.\n");
-		return NULL;
-	}
-
-	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
-					size, DCACHE_OFF);
-
-	size = roundup(RING_LEN * sizeof(struct pfe_hif_wb_bd), page_size);
-	ring->wb_bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
-
-	if (!ring->wb_bd) {
-		pr_warn("HIF ring couldn't be allocated.\n");
-		return NULL;
-	}
-
-	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
-					size, DCACHE_OFF);
-
-	/* Flushe cache to update MMU mapings */
-	flush_dcache_all();
-
-	ring->is_rx = is_rx;
-
-	memset(ring->bd, 0, RING_LEN * sizeof(struct pfe_hif_bd));
-
-	if (ring->is_rx) {
-		/* fill buffers */
-		ring->mem = memalign(page_size,
-				     PFE_BUF_SIZE * PFE_HIF_RING_CFG_LENGTH);
-		offset = ring->mem;
-		if (!ring) {
-			free(ring);
-			return NULL;
-		}
-	}
-
-	for (ii = 0; ii < RING_LEN; ii++) {
-		if (ring->is_rx) {
-			/*	Mark BD as RX */
-			ring->bd[ii].dir = 1U;
-			/* Add buffer to rx descriptor */
-			ring->bd[ii].desc_en = 1U;
-			ring->bd[ii].lifm = 1U;
-			ring->bd[ii].buflen = (u16)PFE_BUF_SIZE;
-			ring->bd[ii].data = (u32)(u64)offset;
-			offset = (void *)((u64)offset + PFE_BUF_SIZE);
-		}
-
-		/*	Enable BD interrupt */
-		ring->bd[ii].cbd_int_en = 1U;
-		ring->bd[ii].next = (u32)(u64)&ring->bd[ii + 1U];
-		pfeng_flush_d(&ring->bd[ii], sizeof(struct pfe_hif_bd));
-	}
-
-	ring->bd[ii - 1].next = (u32)(u64)&ring->bd[0];
-	ring->bd[ii - 1].last_bd = 1U;
-	pfeng_flush_d(&ring->bd[ii - 1], sizeof(struct pfe_hif_bd));
-
-	memset(ring->wb_bd, 0, RING_LEN * sizeof(struct pfe_hif_wb_bd));
-
-	for (ii = 0U; ii < RING_LEN; ii++) {
-		ring->wb_bd[ii].seqnum = 0xffffU;
-		ring->wb_bd[ii].desc_en = 1U;
-		pfeng_flush_d(&ring->wb_bd[ii], sizeof(struct pfe_hif_wb_bd));
-	}
-
-	debug("BD ring %p\nWB ring %p\nBuff %p\n",
-	      ring->bd, ring->wb_bd, ring->mem);
-
-	return ring;
-}
-
 static int pfeng_driver_init(struct pfeng_priv *priv)
 {
 	int ret;
@@ -587,137 +476,39 @@ static int pfeng_start(struct udevice *dev)
 static int pfeng_send(struct udevice *dev, void *packet, int length)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	struct pfe_hif_ring *ring = priv->tx_ring;
-	struct pfe_hif_bd *bd_hd, *bd_pkt, *bp_rd;
-	struct pfe_hif_wb_bd *wb_bd_hd, *wb_bd_pkt, *wb_bp_rd;
-	bool lifm = false;
+	int ret = 0;
 
 	debug("%s(dev=%p, packet=%p, length=%d):\n", __func__, dev, packet,
 	      length);
+	ret = pfeng_hw_chnl_xmit(priv->chnl, priv->if_index, packet, length);
 
-	/* Get descriptor for header */
-	bd_hd = &ring->bd[ring->write_idx & RING_LEN_MASK];
-	wb_bd_hd = &ring->wb_bd[ring->write_idx & RING_LEN_MASK];
+	/* Store ref only if the packet was transmitted  */
+	if (!ret)
+		priv->last_tx = packet;
 
-	/* Get descriptor for packet */
-	bd_pkt = &ring->bd[(ring->write_idx + 1) & RING_LEN_MASK];
-	wb_bd_pkt = &ring->wb_bd[(ring->write_idx + 1) & RING_LEN_MASK];
-
-	pfeng_inval_d(bd_hd, sizeof(struct pfe_hif_bd));
-	pfeng_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
-
-	if (RING_BD_DESC_EN(bd_hd->ctrl) != 0U ||
-	    RING_BD_DESC_EN(bd_pkt->ctrl) != 0U)
-		return -EAGAIN;
-
-	/* Flush the data buffer */
-	pfeng_flush_d(packet, length);
-
-	/* Fill header */
-	bd_hd->data = (u64)&header[priv->if_index];
-	bd_hd->buflen = (u16)sizeof(struct pfe_ct_hif_tx_hdr);
-	bd_hd->status = 0U;
-	bd_hd->lifm = 0;
-	wb_bd_hd->desc_en = 1U;
-	dmb();
-	bd_hd->desc_en = 1U;
-
-	/* Fill packet */
-	bd_pkt->data = (u32)(u64)packet;
-	bd_pkt->buflen = (uint16_t)length;
-	bd_pkt->status = 0U;
-	bd_pkt->lifm = 1;
-	wb_bd_pkt->desc_en = 1U;
-	dmb();
-	bd_pkt->desc_en = 1U;
-
-	/* Increment index for next buffer descriptor */
-	ring->write_idx += 2;
-
-	/* Tx Confirmation */
-	while (1) {
-		lifm = false;
-		bp_rd = &ring->bd[ring->read_idx & RING_LEN_MASK];
-		wb_bp_rd = &ring->wb_bd[ring->read_idx & RING_LEN_MASK];
-
-		pfeng_inval_d(bp_rd, sizeof(struct pfe_hif_bd));
-		pfeng_inval_d(wb_bp_rd, sizeof(struct pfe_hif_wb_bd));
-
-		if (RING_BD_DESC_EN(bp_rd->ctrl) == 0 ||
-		    RING_WBBD_DESC_EN(wb_bp_rd->ctrl) != 0)
-			continue;
-
-		lifm = bp_rd->lifm;
-		bp_rd->desc_en = 0U;
-		wb_bp_rd->desc_en = 1U;
-		dmb();
-		ring->read_idx++;
-
-		if (lifm)
-			break;
-	}
-
-	priv->last_tx = packet;
-
-	return 0;
+	return ret;
 }
 
 static int pfeng_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	struct pfe_hif_ring *ring = priv->rx_ring;
-	struct pfe_hif_bd *bd_pkt;
-	struct pfe_hif_wb_bd *wb_bd_pkt;
-	int plen = 0;
-
-	bd_pkt = &ring->bd[ring->read_idx & RING_LEN_MASK];
-	wb_bd_pkt = &ring->wb_bd[ring->read_idx & RING_LEN_MASK];
-
-	pfeng_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
-	pfeng_inval_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
+	int ret = 0;
 
 	debug("%s(dev=%p, flags=%x):\n", __func__, dev, flags);
+	ret = pfeng_hw_chnl_receive(priv->chnl, flags, packetp);
 
-	/* Check, if we received some data */
-	if (RING_BD_DESC_EN(bd_pkt->ctrl) == 0U ||
-	    RING_WBBD_DESC_EN(wb_bd_pkt->ctrl) != 0u)
-		return -EAGAIN;
+	/* Store ref only in case we actually recived something */
+	/* neg ret = no free, zero ret = error free, pos ret = success free*/
+	if (ret >= 0)
+		priv->last_rx = *packetp;
 
-	/* Give the data to u-boot stack */
-	bd_pkt->desc_en = 0U;
-	wb_bd_pkt->desc_en = 1U;
-	dmb();
-	*packetp = ((void *)((u64)(bd_pkt->data) + HIF_HEADER_SIZE));
-	priv->last_rx = *packetp;
-	plen = wb_bd_pkt->buflen - HIF_HEADER_SIZE;
-
-	/* Advance read buffer */
-	ring->read_idx++;
-
-	/* Invalidate the buffer */
-	pfeng_inval_d(*packetp, plen);
-
-	if (wb_bd_pkt->lifm != 1U) {
-		printf("Multi buffer packets not supported, discarding.\n");
-		/* Return EOK so the stack frees the buffer */
-		return 0;
-	}
-
-	return plen;
+	return ret;
 }
 
 static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 {
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	struct pfe_hif_ring *ring = priv->rx_ring;
-	struct pfe_hif_bd *bd_pkt;
-	struct pfe_hif_wb_bd *wb_bd_pkt;
-
-	bd_pkt = &ring->bd[ring->write_idx & RING_LEN_MASK];
-	wb_bd_pkt = &ring->wb_bd[ring->write_idx & RING_LEN_MASK];
-
-	pfeng_inval_d(bd_pkt, sizeof(struct pfe_hif_bd));
-	pfeng_inval_d(wb_bd_pkt, sizeof(struct pfe_hif_wb_bd));
+	int ret = 0;
 
 	debug("%s(packet=%p, length=%d)\n", __func__, packet, length);
 
@@ -727,29 +518,11 @@ static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 	if (!priv->last_rx)
 		return 0;
 
-	if (bd_pkt->desc_en != 0U) {
-		pr_err("Can't free buffer since the BD entry is used\n");
-		return -EIO;
-	}
+	ret = pfeng_hw_chnl_free_pkt(priv->chnl, packet, length);
+	if (!ret)
+		priv->last_rx = NULL;
 
-	/* Free buffer */
-	bd_pkt->buflen = 2048;
-	bd_pkt->status = 0U;
-	bd_pkt->lifm = 1U;
-	wb_bd_pkt->desc_en = 1U;
-	dmb();
-	bd_pkt->desc_en = 1U;
-
-	/* This has to be here for correct HW functionality */
-	pfeng_flush_d(packet, length);
-	pfeng_inval_d(packet, length);
-
-	/* Advance free pointer */
-	ring->write_idx++;
-
-	priv->last_rx = NULL;
-
-	return 0;
+	return ret;
 }
 
 static const struct eth_ops pfeng_ops = {
@@ -841,21 +614,9 @@ static int pfeng_probe(struct udevice *dev)
 		return ret;
 
 	/* init TX ring */
-	priv->tx_ring = pfeng_init_ring(false);
-	if (!priv->tx_ring)
+	priv->chnl = pfeng_hw_init_chnl();
+	if (!priv->chnl)
 		return -ENOMEM;
-
-	/* init RX ring */
-	priv->rx_ring = pfeng_init_ring(true);
-	if (!priv->rx_ring)
-		return -ENOMEM;
-
-	/* register rings to pfe HW */
-	ret = pfeng_hw_attach_ring(priv->pfe,
-				   priv->tx_ring->bd, priv->tx_ring->wb_bd,
-				   priv->rx_ring->bd, priv->rx_ring->wb_bd);
-	if (ret)
-		return ret;
 
 	/* register mdios */
 	for (i = 0; i < PFENG_EMACS_COUNT; i++)
