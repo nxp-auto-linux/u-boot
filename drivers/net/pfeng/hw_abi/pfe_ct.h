@@ -116,6 +116,7 @@ struct pfe_ct_pe_mmap {
 	u32 size;
 	/*	Version information */
 	struct pfe_ct_version version;
+	u32 fill1[6];
 	/*	Pointer to DMEM heap */
 	u32 dmem_heap_base;
 	/*	DMEM heap size in number of bytes */
@@ -124,7 +125,7 @@ struct pfe_ct_pe_mmap {
 	u32 dmem_phy_if_base;
 	/*	Physical interfaces memory space size in number of bytes */
 	u32 dmem_phy_if_size;
-	u8 fill[52];
+	u8 fill2[28];
 } __packed __aligned(4);
 
 _ct_assert(sizeof(struct pfe_ct_pe_mmap) == 168);
