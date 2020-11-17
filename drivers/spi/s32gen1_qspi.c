@@ -801,7 +801,10 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 
 	/* Disable the module */
 	mcr = qspi_read32(priv->flags, &regs->mcr);
-	mcr |= QSPI_MCR_MDIS_MASK | ddr_config.mcr;
+	mcr |= QSPI_MCR_MDIS_MASK;
+	qspi_write32(priv->flags, &regs->mcr, mcr);
+
+	mcr |= ddr_config.mcr;
 	qspi_write32(priv->flags, &regs->mcr, mcr);
 
 	qspi_write32(priv->flags, &regs->flshcr, ddr_config.flshcr);
@@ -963,7 +966,7 @@ int enable_spi(struct fsl_qspi_priv *priv, bool force)
 	qspi_write32(priv->flags, &priv->regs->sfacr, 0x0);
 
 	mcr = qspi_read32(priv->flags, &regs->mcr);
-	mcr &= ~(QSPI_MCR_DLPEN_MASK | QSPI_MCR_DQS_MASK);
+	mcr &= ~QSPI_MCR_DLPEN_MASK;
 
 	mcr &= ~QSPI_MCR_MDIS_MASK;
 	qspi_write32(priv->flags, &regs->mcr, mcr);
