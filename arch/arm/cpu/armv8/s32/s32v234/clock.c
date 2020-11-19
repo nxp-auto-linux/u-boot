@@ -16,6 +16,14 @@
 #include <campps32v2.h>
 #endif
 
+struct ddr_clk_params {
+	u32 phi0_freq;
+	u32 phi1_freq;
+	u32 prediv;
+	u32 mfd;
+	u32 mfn;
+};
+
 /* System Reset Controller is not yet available on VirtualPlatform */
 /*
  * Select the clock reference for required pll.
@@ -366,47 +374,34 @@ static void enable_modules_clock( void )
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
 
+#ifndef CONFIG_TARGET_CAMPPS32V2
+static void initialize_ddr_clk_params(struct ddr_clk_params *params)
+{
+	params->phi0_freq = DDR_PLL_PHI0_FREQ;
+	params->phi1_freq = DDR_PLL_PHI1_FREQ;
+	params->prediv = DDR_PLL_PLLDV_PREDIV;
+	params->mfd = DDR_PLL_PLLDV_MFD;
+	params->mfn = DDR_PLL_PLLDV_MFN;
+}
+#else
+static void initialize_ddr_clk_params(struct ddr_clk_params *params)
+{
+	params->phi0_freq = DDR_PLL_PHI0_FREQ_400MHZ;
+	params->phi1_freq = DDR_PLL_PHI1_FREQ_400MHZ;
+	params->prediv = DDR_PLL_PLLDV_PREDIV_400MHZ;
+	params->mfd = DDR_PLL_PLLDV_MFD_400MHZ;
+	params->mfn = DDR_PLL_PLLDV_MFN_400MHZ;
+}
+#endif
+
 void ddr_program_pll(u32 ddr_dfs[][DFS_PARAMS_Nr])
 {
-#ifdef CONFIG_TARGET_CAMPPS32V2
+	struct ddr_clk_params params;
 
-	int prediv;
-	int mfd;
-	int mfn;
-	int phi0_freq;
-	int phi1_freq;
-
-	switch (campps32v2_get_device_id()) {
-	case 2:
-	case 3:
-	case 4:
-		printf("DDR: Frequency: 400\n");
-		prediv = 1;
-		mfd  = 20;
-		mfn = 0;
-		phi0_freq = 400000000;
-		phi1_freq = 800000000;
-		break;
-	default:
-		printf("DDR: Frequency: 533\n");
-		prediv = DDR_PLL_PLLDV_PREDIV;
-		mfd = DDR_PLL_PLLDV_MFD;
-		mfn = DDR_PLL_PLLDV_MFN;
-		phi0_freq = DDR_PLL_PHI0_FREQ;
-		phi1_freq = DDR_PLL_PHI1_FREQ;
-	}
-
-	program_pll(DDR_PLL, XOSC_CLK_FREQ, phi0_freq,
-		    phi1_freq, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
-		    prediv, mfd, mfn);
-
-#else
-
-	program_pll(DDR_PLL, XOSC_CLK_FREQ, DDR_PLL_PHI0_FREQ,
-		    DDR_PLL_PHI1_FREQ, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
-		    DDR_PLL_PLLDV_PREDIV, DDR_PLL_PLLDV_MFD, DDR_PLL_PLLDV_MFN);
-
-#endif
+	initialize_ddr_clk_params(&params);
+	program_pll(DDR_PLL, XOSC_CLK_FREQ, params.phi0_freq,
+		    params.phi1_freq, DDR_PLL_PHI1_DFS_Nr, ddr_dfs,
+		    params.prediv, params.mfd, params.mfn);
 }
 
 void clock_init(void)
