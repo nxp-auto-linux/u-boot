@@ -297,7 +297,9 @@
 #define FEC_EXTRA_ENV_SETTINGS	""
 #endif
 
+#ifndef S32_DEFAULT_IP
 #define S32_DEFAULT_IP "10.0.0.100\0"
+#endif
 
 /*
  * Enable CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT if u-boot should use a ramdisk
