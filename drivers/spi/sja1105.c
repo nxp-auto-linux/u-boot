@@ -319,17 +319,15 @@ bool sja1105_post_cfg_load_check(struct sja_parms *sjap)
 static void sja1105_en_rgmii_txid_by_default(struct sja_parms *sjap, int port)
 {
 	u32 id;
+	u32 reg = SJA1105_CFG_PAD_MIIX_ID_PORT(port);
 
-	id = sja1105_read_reg32(sjap,
-				SJA1105_CFG_PAD_MIIX_ID_PORT(port));
+	id = sja1105_read_reg32(sjap, reg);
 
 	if (id & (SJA1105_CFG_PAD_MIIX_ID_TXC_PD |
 				SJA1105_CFG_PAD_MIIX_ID_TXC_BYPASS)) {
 		id &= ~GENMASK(7, 0);
 		id |= SJA1105_CFG_PAD_MIIX_ID_RGMII_TXID;
-		sja1105_write_reg32(sjap,
-				    SJA1105_CFG_PAD_MIIX_ID_PORT(port),
-				    id);
+		sja1105_write_reg32(sjap, reg, id);
 	}
 }
 

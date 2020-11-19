@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier:    GPL-2.0+
  *
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  */
 
@@ -9,6 +9,6 @@ struct sja1105_cfgs_s {
 	u32 devid;
 	u32 cs;
 	u32 bin_len;
-	u8 *cfg_bin;
+	const u8 *cfg_bin;
 };
 

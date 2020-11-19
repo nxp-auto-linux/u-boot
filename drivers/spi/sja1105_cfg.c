@@ -11,7 +11,7 @@
 
 extern struct sja1105_cfgs_s *sja1105_cfgs;
 
-int sja1105_get_cfg(u32 devid, u32 cs, u32 *bin_len, u8 **cfg_bin)
+int sja1105_get_cfg(u32 devid, u32 cs, u32 *bin_len, const u8 **cfg_bin)
 {
 	int i = 0;
 	while (sja1105_cfgs[i].cfg_bin) {
