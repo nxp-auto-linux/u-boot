@@ -1375,7 +1375,7 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
 
 	writel(0, &regs->dllctrl);
-#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+#ifndef SDHC_REDUCED_MAP
 	if (priv->flags & ESDHC_FLAG_USDHC) {
 		if (priv->flags & ESDHC_FLAG_STD_TUNING) {
 			u32 val = readl(&regs->tuning_ctrl);
@@ -1500,8 +1500,10 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct fsl_esdhc_plat *plat = dev_get_platdata(dev);
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
+#ifndef SDHC_REDUCED_MAP
 	const void *fdt = gd->fdt_blob;
 	int node = dev_of_offset(dev);
+#endif
 	struct esdhc_soc_data *data =
 		(struct esdhc_soc_data *)dev_get_driver_data(dev);
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
@@ -1532,6 +1534,7 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	else
 		priv->bus_width = 1;
 
+#ifndef SDHC_REDUCED_MAP
 	val = fdtdec_get_int(fdt, node, "fsl,tuning-step", 1);
 	priv->tuning_step = val;
 	val = fdtdec_get_int(fdt, node, "fsl,tuning-start-tap",
@@ -1540,6 +1543,7 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	val = fdtdec_get_int(fdt, node, "fsl,strobe-dll-delay-target",
 			     ESDHC_STROBE_DLL_CTRL_SLV_DLY_TARGET_DEFAULT);
 	priv->strobe_dll_delay_target = val;
+#endif
 
 	if (dev_read_bool(dev, "broken-cd"))
 		priv->broken_cd = 1;
