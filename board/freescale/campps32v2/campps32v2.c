@@ -190,7 +190,9 @@ int board_phy_config(struct phy_device *phydev)
 
 void setup_xrdc(void)
 {
-	/* See S32V234 User Manual Rev 2, 11.4.21.
+	/* See S32V234 User Manual, chapter Extended Resource Domain Controller
+	 * (XRDC), section S32V234 specific MRC instance for SRAM controller
+	 * memory protection.
 	 * Let ISP, Camera, Decoder Pixel Interface and Encoder Bit Stream to
 	 * access the SRAM memory.
 	 */
@@ -199,7 +201,7 @@ void setup_xrdc(void)
 	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_16);
 	/* Write end of the memory region. */
 	writel(XRDC_ADDR_MAX, XRDC_MRGD_W1_16);
-	/* Write valid bit for the memory region memory region. */
+	/* Write valid bit for the memory region */
 	writel(XRDC_VALID, XRDC_MRGD_W3_16);
 
 	writel(XRDC_ADDR_MIN, XRDC_MRGD_W0_17);
