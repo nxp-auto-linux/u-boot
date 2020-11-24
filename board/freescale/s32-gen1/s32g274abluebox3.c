@@ -11,8 +11,8 @@
 #include <i2c.h>
 #include <asm/arch-s32/s32-gen1/serdes_regs.h>
 
-#define BLUEBOX3_S32G_PHY_ADDR_1	0x01
-#define BLUEBOX3_S32G_PHY_ADDR_2	0x02
+#define BLUEBOX3_S32G_PHY_ADDR_5	0x05
+#define BLUEBOX3_S32G_PHY_ADDR_6	0x06
 
 struct pin {
 	int nr;
@@ -190,12 +190,12 @@ int last_stage_init(void)
 	eth = eth_get_dev_by_name("eth_pfeng");
 	bus = miiphy_get_dev_by_name("pfeng_emac_0");
 	if (eth && bus) {
-		phy = phy_connect(bus, BLUEBOX3_S32G_PHY_ADDR_1, eth,
+		phy = phy_connect(bus, BLUEBOX3_S32G_PHY_ADDR_5, eth,
 				  PHY_INTERFACE_MODE_RGMII);
 		if (phy)
 			phy_config(phy);
 
-		phy = phy_connect(bus, BLUEBOX3_S32G_PHY_ADDR_2, eth,
+		phy = phy_connect(bus, BLUEBOX3_S32G_PHY_ADDR_6, eth,
 				  PHY_INTERFACE_MODE_RGMII);
 		if (phy)
 			phy_config(phy);
