@@ -1,15 +1,3 @@
-config SYS_DATA_BASE
-	hex "Data Base"
-	default 0x34000000
-	help
-	  U-boot data base address (normally SRAM base address)
-
-config SYS_MEM_SIZE
-	hex "RAM Memory Size"
-	default 0x00800000
-	help
-	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
-
 if TARGET_S32G274AEMU || TARGET_S32R45EMU
 
 config TARGET_TYPE_S32GEN1_EMULATOR
@@ -29,6 +17,22 @@ config TARGET_TYPE_S32GEN1_SIMULATOR
 	  Target Type S32 Gen1 Simulator
 
 endif
+
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0x34000000
+	help
+	  U-boot data base address (normally SRAM base address)
+
+config SYS_TEXT_BASE
+	hex
+	default 0x340a0000
+
+config SYS_MEM_SIZE
+	hex "RAM Memory Size"
+	default 0x00800000
+	help
+	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
 
 if TARGET_S32V344EVB || TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
 	TARGET_S32G274ABLUEBOX3 || TARGET_S32R45EVB || \

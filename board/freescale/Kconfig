@@ -4,8 +4,10 @@ config S32V2
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
+	select ARM_SMCCC
 	select CLK
 	select CLK_SCMI
+	select OF_CONTROL
 	select OF_SEPARATE
 	select SCMI_FIRMWARE
 	help
@@ -62,6 +64,9 @@ config SYS_DATA_BASE
 	default 0x3E800000
 	help
 	  U-boot data base address (normally SRAM base address)
+
+config SYS_TEXT_BASE
+	default 0x3E820000
 
 config SYS_MEM_SIZE
 	hex "RAM Memory Size"
