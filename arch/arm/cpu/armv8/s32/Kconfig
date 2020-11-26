@@ -17,61 +17,76 @@ choice
 config TARGET_S32V234CCPB
 	bool "Support s32v234ccpb"
 	select S32V234CCPB
+	select S32V2
 
 config TARGET_S32V234EVB
 	bool "Support s32v234evb"
 	select SYS_FSL_ERRATUM_ESDHC111
+	select S32V2
 	help
 	  S32V Evaluation System for high-performance, safe computation-intensive
 	  front vision, surround vision and sensor fusion applications.
 
 config TARGET_S32V234PCIE
 	bool "Support s32v234pcie"
+	select S32V2
 	help
 	  S32V234 board with PCIe Edge connector.
 
 config TARGET_MPXS32V234
 	bool "Support s32v234sbc"
 	select S32V234EVB_29288
+	select S32V2
 
 config TARGET_CAMPPS32V2
 	bool "Support campps32v2"
+	select S32V2
 	help
 	  Enable Camera card V2 target.
 	  Camera card V2 is a developemnt board with 6x S32V.
 
 config TARGET_S32V344EVB
 	bool "Support s32v344evb"
+	select S32_GEN1
 
 config TARGET_S32V344SIM
 	bool "Support s32v344 VDK"
+	select S32_GEN1
 
 config TARGET_S32R45EVB
 	bool "Support s32r45evb"
+	select S32_GEN1
 
 config TARGET_S32R45SIM
 	bool "Support s32r45 VDK"
+	select S32_GEN1
 
 config TARGET_S32R45EMU
 	bool "Support s32r45 ZeBu"
+	select S32_GEN1
 
 config TARGET_S32G274AEVB
 	bool "Support s32g274aevb"
+	select S32_GEN1
 
 config TARGET_S32G274ARDB
 	bool "Support s32g274ardb"
+	select S32_GEN1
 
 config TARGET_S32G274ABLUEBOX3
 	bool "Support s32g274abluebox3"
+	select S32_GEN1
 	help
 	  Enable Microsys S32G SoM Bluebox 3 target.
 	  S32G works as PCIE EP.
 
 config TARGET_S32G274ASIM
 	bool "Support s32g274a VDK"
+	select S32_GEN1
 
 config TARGET_S32G274AEMU
 	bool "Support s32g274a ZeBu"
+	select S32_GEN1
 
 endchoice
 

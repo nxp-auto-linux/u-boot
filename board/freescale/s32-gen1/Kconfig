@@ -1,3 +1,15 @@
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0x34000000
+	help
+	  U-boot data base address (normally SRAM base address)
+
+config SYS_MEM_SIZE
+	hex "RAM Memory Size"
+	default 0x00800000
+	help
+	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
+
 if TARGET_S32G274AEMU || TARGET_S32R45EMU
 
 config TARGET_TYPE_S32GEN1_EMULATOR
@@ -22,16 +34,6 @@ if TARGET_S32V344EVB || TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
 	TARGET_S32G274ABLUEBOX3 || TARGET_S32R45EVB || \
 	TARGET_TYPE_S32GEN1_EMULATOR || \
 	TARGET_TYPE_S32GEN1_SIMULATOR
-
-config S32_GEN1
-	bool "S32 GEN1 Common Chassis"
-	default y
-	select CLK
-	select CLK_SCMI
-	select OF_SEPARATE
-	select SCMI_FIRMWARE
-	help
-	  Platform Selection
 
 config SYS_BOARD
 	string
@@ -70,22 +72,6 @@ config UBOOT_SRAM_FOOTPRINT
 config DTB_SRAM_ADDR
 	hex "SRAM address at which the dtb will be found"
 	default 0x34090000
-
-config PHY_RGMII_DIRECT_CONNECTED
-	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
-	default n
-	help
-	  Adds the platform "fixed" MDIO Bus to cover the boards that
-	  use PHYs that are not connected to the real MDIO bus.
-
-config XEN_SUPPORT
-	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
-	default n
-	help
-	  Skip the enablement of CONFIG_ARMV8_SWITCH_TO_EL1 and set Xen Image,
-	  fdts load addresses and u-boot environment variables in order for u-boot
-	  to directly load the Xen Image which will use a given Kernel Image as
-	  Dom0.
 
 choice
 	prompt "Select boot flow configuration"

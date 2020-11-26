@@ -1,61 +1,28 @@
-if TARGET_S32V234EVB ||		\
-   TARGET_S32V234PCIE ||	\
-   TARGET_S32V234CCPB ||	\
-   TARGET_CAMPPS32V2 ||		\
-   TARGET_S32V344EVB ||		\
-   TARGET_S32V344SIM ||		\
-   TARGET_S32G274AEVB ||	\
-   TARGET_S32G274ABLUEBOX3 ||	\
-   TARGET_S32G274ARDB ||	\
-   TARGET_S32G274ASIM || 	\
-   TARGET_S32G274AEMU ||	\
-   TARGET_S32R45EVB ||		\
-   TARGET_S32R45SIM ||		\
-   TARGET_S32R45EMU
+config S32V2
+	bool
+	default false
 
-source "board/freescale/s32v234evb/Kconfig"
-
-source "board/freescale/s32v234pcie/Kconfig"
-
-source "board/freescale/s32v234ccpb/Kconfig"
-
-source "board/freescale/campps32v2/Kconfig"
-
-source "board/freescale/s32-gen1/Kconfig"
-
-config SYS_VENDOR
-	string
-	default "freescale"
-
-config SYS_DATA_BASE
-	hex "Data Base"
-	default 0x3E800000 if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
-	                      TARGET_S32V234CCPB || TARGET_CAMPPS32V2
-	default 0x34000000 if TARGET_S32V344EVB || TARGET_S32G274AEVB || \
-			      TARGET_S32G274ARDB || \
-			      TARGET_S32G274ABLUEBOX3 || \
-			      TARGET_S32R45EVB || \
-			      TARGET_TYPE_S32GEN1_EMULATOR || \
-	                      TARGET_TYPE_S32GEN1_SIMULATOR
+config S32_GEN1
+	bool "S32 GEN1 Common Chassis"
+	select CLK
+	select CLK_SCMI
+	select OF_SEPARATE
+	select SCMI_FIRMWARE
 	help
-	  U-boot data base address (normally SRAM base address)
+	  Platform Selection
 
-config SYS_MEM_SIZE
-	hex "RAM Memory Size"
-	default 0x00400000 if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
-	                      TARGET_S32V234CCPB  || TARGET_CAMPPS32V2
-	default 0x00800000 if TARGET_S32V344EVB || TARGET_S32G274AEVB || \
-			      TARGET_S32G274ARDB || \
-			      TARGET_S32G274ABLUEBOX3 || \
-			      TARGET_S32R45EVB || \
-			      TARGET_TYPE_S32GEN1_EMULATOR || \
-	                      TARGET_TYPE_S32GEN1_SIMULATOR
-	help
-	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
+if S32V2 || S32_GEN1
 
 config EXTRA_KERNEL_BOOT_ARGS
 	string "Additional boot arguments for Linux kernel"
 	default ""
+
+config PHY_RGMII_DIRECT_CONNECTED
+	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
+	default n
+	help
+	  Adds the platform "fixed" MDIO Bus to cover the boards that
+	  use PHYs that are not connected to the real MDIO bus.
 
 config S32_SKIP_RELOC
 	bool "Skip code relocation on NXP S32 platforms"
@@ -64,4 +31,53 @@ config S32_SKIP_RELOC
 		memory. It's very useful for bring-up activities or when the DDR
 		memory is not stable.
 
+if !TARGET_MPXS32V234
+config SYS_VENDOR
+	string
+	default "freescale"
+endif
+
+config XEN_SUPPORT
+	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
+	default n
+	help
+	  Skip the enablement of CONFIG_ARMV8_SWITCH_TO_EL1 and set Xen Image,
+	  fdts load addresses and u-boot environment variables in order for u-boot
+	  to directly load the Xen Image which will use a given Kernel Image as
+	  Dom0.
+
+endif
+
+if S32V2
+source "board/freescale/s32v234evb/Kconfig"
+
+source "board/freescale/s32v234pcie/Kconfig"
+
+source "board/freescale/s32v234ccpb/Kconfig"
+
+source "board/freescale/campps32v2/Kconfig"
+
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0x3E800000
+	help
+	  U-boot data base address (normally SRAM base address)
+
+config SYS_MEM_SIZE
+	hex "RAM Memory Size"
+	default 0x00400000
+	help
+	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
+
+config S32V234_FAST_BOOT
+	bool "Configure DCD and RUNMODE for a fast-boot efused board"
+	default n
+	help
+	  Configure DCD and RUNMODE for a board that has been efused such that
+	  OCOTP_CFG6:[19]FAST_BOOT_ENABLE = 0 and OCOTP_CFG6:[18]NO_PLL = 1.
+
+endif
+
+if S32_GEN1
+source "board/freescale/s32-gen1/Kconfig"
 endif
