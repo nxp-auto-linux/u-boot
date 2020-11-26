@@ -29,9 +29,6 @@ obj-$(CONFIG_TARGET_S32R45EVB) += s32r45evb.o
 obj-$(CONFIG_TARGET_S32R45SIM) += s32r45sim.o
 obj-$(CONFIG_TARGET_S32R45EMU) += s32r45emu.o
 
-obj-$(CONFIG_TARGET_S32V344EVB) += s32v344sim.o
-obj-$(CONFIG_TARGET_S32V344SIM) += s32v344sim.o
-
 ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else

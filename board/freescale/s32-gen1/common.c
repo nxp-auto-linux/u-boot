@@ -169,10 +169,6 @@ int checkboard(void)
 	puts("Board:\tVDK for NXP S32R45 VP\n");
 #elif defined(CONFIG_TARGET_S32R45EMU)
 	puts("Board:\tZeBu model for NXP S32R45\n");
-#elif defined(CONFIG_TARGET_S32V344EVB)
-	puts("Board:\tNXP S32V344-EVB\n");
-#elif defined(CONFIG_TARGET_S32V344SIM)
-	puts("Board:\tVDK for NXP S32V344 VP\n");
 #else
 	puts("Board:\tNXP S32-gen1-xxxxxxx\n");
 #endif

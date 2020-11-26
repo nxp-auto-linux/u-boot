@@ -147,8 +147,6 @@ int print_cpuinfo(void)
 	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
 #elif defined(CONFIG_S32R45)
 	printf("CPU:\tNXP S32R45\n");
-#elif defined(CONFIG_S32V344)
-	printf("CPU:\tNXP S32V344\n");
 #endif
 	printf("Reset cause: %s\n", get_reset_cause());
 

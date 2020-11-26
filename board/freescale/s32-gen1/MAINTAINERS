@@ -5,12 +5,6 @@ F:	board/freescale/s32-gen1/
 F:	arch/arm/cpu/armv8/s32
 F:	arch/arm/include/asm/arch-s32
 
-S32V344 BOARD
-M:	-
-S:	Maintained
-F:	configs/s32v344_defconfig
-F:	include/configs/s32v344.h
-
 S32G274A-EVB BOARD
 M:	-
 S:	Maintained

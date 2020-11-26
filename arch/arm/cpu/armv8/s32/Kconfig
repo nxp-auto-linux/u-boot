@@ -45,14 +45,6 @@ config TARGET_CAMPPS32V2
 	  Enable Camera card V2 target.
 	  Camera card V2 is a developemnt board with 6x S32V.
 
-config TARGET_S32V344EVB
-	bool "Support s32v344evb"
-	select S32_GEN1
-
-config TARGET_S32V344SIM
-	bool "Support s32v344 VDK"
-	select S32_GEN1
-
 config TARGET_S32R45EVB
 	bool "Support s32r45evb"
 	select S32_GEN1
