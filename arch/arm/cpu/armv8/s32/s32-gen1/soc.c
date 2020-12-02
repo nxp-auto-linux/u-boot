@@ -159,6 +159,10 @@ extern struct ddrss_conf ddrss_conf;
 extern struct ddrss_firmware ddrss_firmware;
 #endif
 
+#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+void store_csr(void) {}
+#endif
+
 #ifdef CONFIG_S32_SKIP_RELOC
 __weak int dram_init(void)
 {
