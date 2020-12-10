@@ -13,8 +13,8 @@
 /dts-v1/;
 #include "fsl-s32-gen1.dtsi"
 / {
-	model = "NXP S32G27x";
-	compatible = "fsl,s32g275-simu", "fsl,s32g275", "fsl,s32gen1",
+	model = "NXP S32G2XX";
+	compatible = "fsl,s32g274-simu", "fsl,s32g274", "fsl,s32gen1",
 				 "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
 	aliases {

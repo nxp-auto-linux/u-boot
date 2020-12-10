@@ -136,7 +136,7 @@ void reset_cpu(ulong addr)
 int print_cpuinfo(void)
 {
 #ifdef CONFIG_S32G274A
-	printf("CPU:\tNXP S32G274A");
+	printf("CPU: NXP %s", get_s32g2_deriv_name());
 	#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 	printf("\n");
 	#else
