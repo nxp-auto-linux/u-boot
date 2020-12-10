@@ -1134,3 +1134,9 @@ int mmap_dspi(unsigned short bus, struct dspi **base_addr)
 	return 0;
 }
 #endif
+
+u32 cpu_pos_mask(void)
+{
+	/* 4 cores */
+	return 0xFU;
+}

@@ -113,6 +113,8 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 
 int fsl_s32_wake_secondary_cores(void)
 {
+	u32 i, mask = cpu_pos_mask();
+
 	/* Enable partition clock */
 	writel(MC_ME_PRTN_N_PCE,
 	       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, MC_ME_CORES_PRTN));
@@ -129,9 +131,10 @@ int fsl_s32_wake_secondary_cores(void)
 	 * The procedure can be found in
 	 * "MC_ME application core enable", S32R RM Rev1 DraftC.
 	 */
-	fsl_s32_wake_secondary_core(1, 1);
-	fsl_s32_wake_secondary_core(1, 2);
-	fsl_s32_wake_secondary_core(1, 3);
+	for (i = 1; i <= fls(mask); i++) {
+		if (test_bit(i, &mask))
+			fsl_s32_wake_secondary_core(1, i);
+	}
 
 	smp_kick_all_cpus();
 

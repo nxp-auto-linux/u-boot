@@ -323,3 +323,28 @@ int mmap_dspi(unsigned short bus, struct dspi **base_addr)
 	return 0;
 }
 #endif
+
+#if CONFIG_NXP_S32G2XX
+u32 cpu_pos_mask(void)
+{
+	switch (get_s32g2_derivative()) {
+	case S32G274A_DERIV:
+		return BIT(0) | BIT(1) | BIT(2) | BIT(3);
+	case S32G254A_DERIV:
+	case S32G233A_DERIV:
+		return BIT(0) | BIT(2);
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_NXP_S32R45
+u32 cpu_pos_mask(void)
+{
+	/* 4 cores */
+	return 0xFU;
+}
+#endif

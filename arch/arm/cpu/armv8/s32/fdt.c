@@ -14,6 +14,8 @@
 #include <linux/sizes.h>
 #include "mp.h"
 
+#define ID_TO_CORE(ID)	(((ID) & 3) | ((ID) >> 7))
+
 #if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
 #include <dt-bindings/clock/s32gen1-clock-freq.h>
 #endif
@@ -99,21 +101,41 @@ fdt_error:
 
 void ft_fixup_cpu(void *blob)
 {
-	int off;
-	u64 *reg;
+	int off, addr_cells;
+	u64 core_id;
+	fdt32_t *reg;
+	u32 mask = cpu_pos_mask();
+	int off_prev = -1;
 
-	off = fdt_node_offset_by_prop_value(blob, -1, "device_type", "cpu", 4);
+	off = fdt_path_offset(blob, "/cpus");
+	if (off < 0) {
+		puts("couldn't find /cpus node\n");
+		return;
+	}
+
+	fdt_support_default_count_cells(blob, off, &addr_cells, NULL);
+
+	off = fdt_node_offset_by_prop_value(blob, off_prev, "device_type",
+					    "cpu", 4);
 	while (off != -FDT_ERR_NOTFOUND) {
-		reg = (u64 *)fdt_getprop(blob, off, "reg", 0);
+		reg = (fdt32_t *)fdt_getprop(blob, off, "reg", 0);
 		if (!reg) {
-			puts("cpu NULL\n");
 			continue;
 		}
+
+		core_id = fdt_read_number(reg, addr_cells);
+		if (!test_bit(ID_TO_CORE(core_id), &mask)) {
+			fdt_del_node(blob, off);
+			off = off_prev;
+		} else {
 #if CONFIG_S32_ATF_BOOT_FLOW
-		ft_fixup_enable_method(blob, off, *reg);
+			ft_fixup_enable_method(blob, off, *reg);
 #endif
-		off = fdt_node_offset_by_prop_value(blob, off, "device_type",
-						    "cpu", 4);
+		}
+
+		off_prev = off;
+		off = fdt_node_offset_by_prop_value(blob, off_prev,
+						    "device_type", "cpu", 4);
 	}
 
 #if CONFIG_S32_ATF_BOOT_FLOW
