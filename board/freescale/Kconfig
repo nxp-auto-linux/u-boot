@@ -4,9 +4,11 @@ config S32V2
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
+	imply CMD_GPIO
 	select ARM_SMCCC
 	select CLK
 	select CLK_SCMI
+	select DM_GPIO
 	select OF_CONTROL
 	select OF_SEPARATE
 	select PINCTRL
@@ -14,6 +16,7 @@ config S32_GEN1
 	select PINCTRL_S32
 	select SCMI_FIRMWARE
 	select ARCH_MISC_INIT
+	select S32_GPIO
 	help
 	  Platform Selection
 

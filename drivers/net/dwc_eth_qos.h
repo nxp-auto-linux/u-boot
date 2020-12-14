@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  */
+
+#include <asm-generic/gpio.h>
 
 #ifndef DWC_ETH_QOS_H
 #define DWC_ETH_QOS_H
