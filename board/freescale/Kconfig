@@ -9,6 +9,9 @@ config S32_GEN1
 	select CLK_SCMI
 	select OF_CONTROL
 	select OF_SEPARATE
+	select PINCTRL
+	select PINCTRL_FULL
+	select PINCTRL_S32
 	select SCMI_FIRMWARE
 	select ARCH_MISC_INIT
 	help
