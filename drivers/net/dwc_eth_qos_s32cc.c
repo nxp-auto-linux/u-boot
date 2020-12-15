@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  */
 
@@ -116,7 +116,7 @@ static const char *s32ccgmac_cfg_get_interface_mode_str(void)
 
 static bool s32ccgmac_set_interface(struct udevice *dev, u32 mode)
 {
-	setup_iomux_enet_gmac(mode);
+	setup_iomux_enet_gmac(dev, mode);
 	setup_clocks_enet_gmac(mode, dev);
 
 	mac_intf = mode;
@@ -138,7 +138,7 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 {
 	u32 mode = eqos_get_interface_s32cc(dev);
 
-	setup_iomux_enet_gmac(mode);
+	setup_iomux_enet_gmac(dev, mode);
 	setup_clocks_enet_gmac(mode, dev);
 
 	return 0;

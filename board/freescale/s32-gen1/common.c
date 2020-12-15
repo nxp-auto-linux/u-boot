@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2021 NXP
  */
 
 #include <common.h>
@@ -36,110 +35,11 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
-#ifdef CONFIG_FSL_QSPI
-static void setup_iomux_qspi(void)
-{
-	/* QSPI_DATA_A[0] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF5__QSPI_A_DATA0_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF5__QSPI_A_DATA0_IN));
-
-	/* QSPI_DATA_A[1] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF6__QSPI_A_DATA1_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF6__QSPI_A_DATA1_IN));
-
-	/* QSPI_DATA_A[2] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF7__QSPI_A_DATA2_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF7__QSPI_A_DATA2_IN));
-
-	/* QSPI_DATA_A[3] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF8__QSPI_A_DATA3_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF8__QSPI_A_DATA3_IN));
-
-	/* QSPI_DATA_A[4] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF9__QSPI_A_DATA4_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF9__QSPI_A_DATA4_IN));
-
-	/* QSPI_DATA_A[5] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF10__QSPI_A_DATA5_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF10__QSPI_A_DATA5_IN));
-
-	/* QSPI_DATA_A[6] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF11__QSPI_A_DATA6_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF11__QSPI_A_DATA6_IN));
-
-	/* QSPI_DATA_A[7] */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DATA0_7,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF12__QSPI_A_DATA7_OUT));
-	writel(SIUL2_IMCR_S32_G1_QSPI_A_DATA_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF12__QSPI_A_DATA7_IN));
-
-	/* QSPI_DQS_A */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DQS,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF13__QSPI_A_DQS_OUT));
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_DQS_MUX,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF13__QSPI_A_DQS_IN));
-
-	/* QSPI_CK_A */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_CLK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PG0__QSPI_A_SCK));
-
-	/* QSPI_CK_A_b */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_CLK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PG1__QSPI_A_B_SCK));
-
-	/* QSPI_CK_2A */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_CLK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PG2__QSPI_2A_SCK));
-
-	/* QSPI_CK_2A_b */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_CLK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PG2__QSPI_2A_B_SCK));
-
-	/* QSPI_CS_A0 */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_CS,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PG4__QSPI_A_CS0));
-
-	/* QSPI_CS_A1 */
-	writel(SIUL2_MSCR_S32_G1_QSPI_A_CS,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PG5__QSPI_A_CS1));
-}
-#endif
-
 int board_early_init_f(void)
 {
 	mscm_init();
-
-#ifdef CONFIG_S32_STANDALONE_BOOT_FLOW
-	/* Do these only if TF-A hasn't already. */
-	setup_iomux_i2c();
 	setup_iomux_uart();
-#endif
-#ifdef CONFIG_DM_MMC
-	setup_iomux_sdhc();
-#endif
-#ifdef CONFIG_FSL_DSPI
-	setup_iomux_dspi();
-#endif
-#ifdef CONFIG_FSL_QSPI
-	setup_iomux_qspi();
-#endif
-#ifdef CONFIG_SAF1508BET_USB_PHY
-	setup_iomux_usb();
-#endif
+
 	return 0;
 }
 
@@ -190,9 +90,25 @@ int ft_board_setup(void *blob, bd_t *bd)
 }
 #endif /* defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP) */
 
-/* Pinmuxing code which is common between at least two boards */
+#if defined(CONFIG_TARGET_S32G274ASIM) || defined(CONFIG_TARGET_S32G274AEMU)
+void setup_iomux_uart1_pb09_pb10(void)
+{
+	/* Muxing for linflex1 */
 
-#ifdef CONFIG_S32G274A
+	/* set PB09 - MSCR[25] - for UART1 TXD */
+	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART1_TXD,
+	       SIUL2_0_MSCRn(SIUL2_PB09_MSCR_S32_G1_UART1));
+
+	/* set PB10 - MSCR[26] - for UART1 RXD */
+	writel(SIUL2_MSCR_S32G_G1_PORT_CTRL_UART_RXD,
+	       SIUL2_0_MSCRn(SIUL2_PB10_MSCR_S32_G1_UART1));
+
+	/* set PB10 - MSCR[736]/IMCR[224] - for UART1 RXD */
+	writel(SIUL2_IMCR_S32G_G1_UART1_RXD_to_pad,
+	       SIUL2_1_IMCRn(SIUL2_PB10_IMCR_S32_G1_UART1));
+}
+#endif
+
 void setup_iomux_uart0_pc09_pc10(void)
 {
 	/* Muxing for linflex0 */
@@ -209,21 +125,4 @@ void setup_iomux_uart0_pc09_pc10(void)
 	writel(SIUL2_IMCR_S32G_G1_UART0_RXD_to_pad,
 	       SIUL2_0_IMCRn(SIUL2_PC10_IMCR_S32_G1_UART0));
 }
-#elif defined(CONFIG_S32R45)
-void setup_iomux_uart0_pc09_pc10(void)
-{
-	/* Muxing for linflex0 */
 
-	/* Set PC_10 - MSCR[42] - for LIN0_RX */
-	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART_RXD,
-	       SIUL2_0_MSCRn(SIUL2_PC10_MSCR_S32R45_UART0));
-
-	/* Set LIN0_RX - IMCR[512] - to link to PC_10 */
-	writel(SIUL2_IMCR_S32R45_UART_RXD_to_pad,
-	       SIUL2_0_IMCRn(SIUL2_PC10_IMCR_S32R45_UART0));
-
-	/* Set PC_09 - MSCR[41] - for LIN0_TX */
-	writel(SIUL2_MSCR_S32R45_PORT_CTRL_UART0_TXD,
-	       SIUL2_0_MSCRn(SIUL2_PC09_MSCR_S32R45_UART0));
-}
-#endif

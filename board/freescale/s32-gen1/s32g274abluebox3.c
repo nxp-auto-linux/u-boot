@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  */
 #include <asm/arch/soc.h>
 #include <board_common.h>
@@ -59,61 +59,6 @@ void setup_iomux_uart(void)
 #error "Unsupported UART pinmuxing configuration"
 #endif
 }
-
-void setup_iomux_i2c(void)
-{
-	setup_iomux_i2c_pb00_pb01();
-	setup_iomux_i2c_pb03_pb04();
-	setup_iomux_i2c_pb05_pb06();
-	setup_iomux_i2c_pc01_pc02();
-}
-
-#ifdef CONFIG_FSL_DSPI
-void setup_iomux_dspi(void)
-{
-	/* DSPI0 */
-	writel(SUIL2_MSCR_S32G_PAD_CTL_SPI0_CS1,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_09));
-
-	writel(SUIL2_MSCR_S32G_PAD_CTL_SPI0_CS2,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_10));
-
-	/* MSCR */
-	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI0_SOUT,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_15));
-
-	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI0_SIN,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_14));
-
-	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI0_SCK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_13));
-
-	/* IMCR */
-	writel(SIUL2_IMCR_S32G_PAD_CTL_SPI0_SIN,
-	       SIUL2_1_IMCRn(SIUL2_PA_14_IMCR_S32G_SPI0_SIN));
-
-	/* DSPI1 */
-	writel(SUIL2_MSCR_S32G_PAD_CTL_SPI1_CS0,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_07));
-
-	writel(SUIL2_MSCR_S32G_PAD_CTL_SPI1_CS3,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PE_05));
-
-	/* MSCR */
-	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI1_SOUT,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_06));
-
-	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI1_SIN,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PF_15));
-
-	writel(SIUL2_MSCR_S32G_PAD_CTL_SPI1_SCK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PA_08));
-
-	/* IMCR */
-	writel(SIUL2_IMCR_S32G_PAD_CTL_SPI1_SIN,
-	       SIUL2_1_IMCRn(SIUL2_PF_15_IMCR_S32G_SPI1_SIN));
-}
-#endif
 
 static void setup_iomux_mdio(void)
 {

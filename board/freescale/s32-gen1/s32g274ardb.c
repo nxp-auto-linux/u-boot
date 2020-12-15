@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  */
 #include <asm/arch/soc.h>
 #include <board_common.h>
@@ -33,37 +33,3 @@ void setup_iomux_uart(void)
 #endif
 }
 
-void setup_iomux_i2c(void)
-{
-	/* IO Expander */
-	/* I2C0 Serial Data Input */
-	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C0_SDA_ALT2,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PB_15));
-	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C0_SDA_ALT3,
-	       SIUL2_0_IMCRn(SIUL2_PB_15_IMCR_S32G_I2C1_SDA));
-
-	/* I2C0 Serial Clock Input */
-	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C0_SCLK,
-	       SIUL2_0_MSCRn(SIUL2_MSCR_S32G_PC_00));
-	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C0_SCLK_ALT3,
-	       SIUL2_0_IMCRn(SIUL2_PC_00_IMCR_S32G_I2C1_SCLK));
-
-	/* PCIe X1 (P1) */
-	/* I2C1 Serial Data Input */
-	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C1_SDA_ALT3,
-	       SIUL2_1_MSCRn(SIUL2_MSCR_S32G_PK_05));
-	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C1_SDA_ALT4,
-	       SIUL2_1_IMCRn(SIUL2_PK_05_IMCR_S32G_I2C1_SDA));
-
-	/* I2C1 Serial Clock Input */
-	writel(SIUL2_MSCR_S32G_PAD_CTRL_I2C1_SCLK_ALT3,
-	       SIUL2_1_MSCRn(SIUL2_MSCR_S32G_PK_03));
-	writel(SIUL2_IMCR_S32G_PAD_CTRL_I2C1_SCLK_ALT5,
-	       SIUL2_1_IMCRn(SIUL2_PK_03_IMCR_S32G_I2C1_SCLK));
-
-	/* FLEXRAY connector (J5) */
-	setup_iomux_i2c_pc05_pc06();
-
-	/* PMIC - I2C4 */
-	setup_iomux_i2c_pc01_pc02();
-}

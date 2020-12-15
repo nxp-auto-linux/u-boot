@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2021 NXP
  */
 
 #include <common.h>
@@ -19,11 +19,3 @@ void setup_iomux_uart(void)
 #error "Unsupported UART pinmuxing configuration"
 #endif
 }
-
-void setup_iomux_i2c(void) {}
-
-#ifdef CONFIG_FSL_DSPI
-void setup_iomux_dspi(void) {}
-#endif
-
-void setup_iomux_sdhc(void) {}

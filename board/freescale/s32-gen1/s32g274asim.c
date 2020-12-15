@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2021 NXP
  */
 
 #include <common.h>
@@ -113,4 +113,10 @@ void setup_iomux_dspi(void)
 }
 #endif
 
-void setup_iomux_sdhc(void) {}
+int board_early_init_r(void)
+{
+	setup_iomux_i2c();
+	setup_iomux_dspi();
+
+	return 0;
+}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2021 NXP
  */
 
 #include "asm/arch-s32/siul-s32r45.h"
@@ -20,8 +20,3 @@ void setup_iomux_uart(void)
 #endif
 }
 
-void setup_iomux_sdhc(void) {}
-
-#ifdef CONFIG_FSL_DSPI
-void setup_iomux_dspi(void) {}
-#endif

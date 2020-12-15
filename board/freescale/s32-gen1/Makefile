@@ -10,9 +10,6 @@ ccflags-$(CONFIG_S32_GEN1) += -Iboard/freescale/s32-gen1
 ccflags-$(CONFIG_S32_GEN1) += -Idrivers/clk/s32/include
 obj-y := common.o
 
-obj-$(CONFIG_S32G274A) += s32g274a.o
-obj-$(CONFIG_S32R45) += s32r45.o
-
 ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
 	obj-y	+= ../../../drivers/core/ofnode.o
 endif

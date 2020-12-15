@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  */
 #include <common.h>
 #include <dm.h>
@@ -25,6 +25,7 @@
 #include <s32gen1_clk_utils.h>
 #include <s32gen1_gmac_utils.h>
 #include <dm/device_compat.h>
+#include <dm/pinctrl.h>
 
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 				       void *fdt, int nodeoff)
@@ -175,78 +176,16 @@ static struct eqos_pdata dwmac_pdata = {
 
 /* GMAC platform specific setup */
 
-void setup_iomux_enet_gmac(int intf)
+void setup_iomux_enet_gmac(struct udevice *dev, int intf)
 {
 	/* configure interface specific pins */
 	switch (intf) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* GMAC_MDC */
-		writel(SIUL2_MSCR_S32_G1_ENET_MDC,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD12));
-		/* GMAC_MDIO */
-		writel(SIUL2_MSCR_S32_G1_ENET_MDIO,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD13));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D3_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_MDI_IN));
+		pinctrl_select_state(dev, "gmac_sgmii");
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
-		/* set PE2 - MSCR[66] - for TX CLK */
-		writel(SIUL2_MSCR_S32_G1_ENET_TX_CLK,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_TX_CLK));
-		/* set PE3 - MSCR[67] - for TX_EN */
-		writel(SIUL2_MSCR_S32_G1_ENET_TX_EN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE3));
-		/* set PE4 - MSCR[68] - for TX_D0 */
-		writel(SIUL2_MSCR_S32_G1_ENET_TX_D0,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE4));
-		/* set PE5 - MSCR[69] - for TX_D1 */
-		writel(SIUL2_MSCR_S32_G1_ENET_TX_D1,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE5));
-		/* set PE6 - MSCR[70] - for TX_D2 */
-		writel(SIUL2_MSCR_S32_G1_ENET_TX_D2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE6));
-		/* set PE7 - MSCR[71] - for TX_D3 */
-		writel(SIUL2_MSCR_S32_G1_ENET_TX_D3,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE7));
-		/* set PE8 - MSCR[72] - for RX_CLK */
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_CLK,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE8));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_CLK_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_RX_CLK_IN));
-		/* set PD9 - MSCR[73] - for RX_DV */
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_DV,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE9));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_DV_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_RXDV_IN));
-		/* set PE10 - MSCR[74] - for RX_D0 */
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D0,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE10));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D0_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_RXD0_IN));
-		/* set PE11 - MSCR[75] - for RX_D1 */
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D1,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE11));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D1_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_RXD1_IN));
-		/* set PE12 - MSCR[76] - for RX_D2 */
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE12));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D2_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_RXD2_IN));
-		/* set PE13 - MSCR[77] - for RX_D3 */
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D3,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE13));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D3_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_RXD3_IN));
-		/* GMAC_MDC */
-		writel(SIUL2_MSCR_S32_G1_ENET_MDC,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD12));
-		/* GMAC_MDIO */
-		writel(SIUL2_MSCR_S32_G1_ENET_MDIO,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD13));
-		writel(SIUL2_MSCR_S32_G1_ENET_RX_D3_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_GMAC0_MDI_IN));
+		pinctrl_select_state(dev, "gmac_rgmii");
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:

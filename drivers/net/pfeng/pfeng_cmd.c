@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  */
 
@@ -23,6 +23,7 @@
 #include <dt-bindings/clock/s32g274a-clock.h>
 #include <s32gen1_clk_utils.h>
 #include <dm/device_compat.h>
+#include <dm/pinctrl.h>
 
 #include "pfeng.h"
 
@@ -416,88 +417,20 @@ static void setup_pfe_clocks(int intf0, int intf1, int intf2,
 	}
 }
 
-static void setup_iomux_pfe(int intf0, int intf1, int intf2)
+static void setup_iomux_pfe(struct udevice *dev,
+			    int intf0, int intf1, int intf2)
 {
 	/* EMAC 0 */
 
 	switch (intf0) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* SerDes_1 lane_0 */
+		pinctrl_select_state(dev, "pfe0_sgmii");
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
-		/* set PF2 - MSCR[82] - for PFE MAC0 MDC*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF2));
-
-		/* set PE15 - MSCR[79] - for PFE MAC0 MDO*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_S32_G1_PFE_IN
-		       | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE15));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_MDO_IN));
-
-		/* set PH6 - MSCR[118] - for PFE MAC0 RXD0*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH6));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_RXD0_IN));
-
-		/* set PH7 - MSCR[119] - for PFE MAC0 RXD1*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH7));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_RXD1_IN));
-
-		/* set PH8 - MSCR[120] - for PFE MAC0 RXD2*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH8));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_RXD2_IN));
-
-		/* set PH9 - MSCR[121] - for PFE MAC0 RXD3*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH9));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_RXD3_IN));
-
-		/* set PH5 - MSCR[117] - for PFE MAC0 RX CTRL*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH5));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_RXDV_IN));
-
-		/* set PH4 - MSCR[116] - for PFE MAC0 RX CLK*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH4));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC0_RX_CLK_IN));
-
-		/* set PJ0 - MSCR[144] - for PFE MAC0 TXD0*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PJ0));
-
-		/* set PH1 - MSCR[113] - for PFE MAC0 TXD1*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH1));
-
-		/* set PH2 - MSCR[114] - for PFE MAC0 TXD2*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH2));
-
-		/* set PH3 - MSCR[115] - for PFE MAC0 TXD3*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH3));
-
-		/* set PH10 - MSCR[122] - for PFE MAC0 TX CLK*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH10));
-
-		/* set PE14 - MSCR[78] - for PFE MAC0 TX EN*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT1,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE14));
+		pinctrl_select_state(dev, "pfe0_rgmii");
 #endif
 #endif
 		break;
@@ -518,82 +451,13 @@ static void setup_iomux_pfe(int intf0, int intf1, int intf2)
 
 	switch (intf1) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* SerDes_1 lane_1 */
+		pinctrl_select_state(dev, "pfe1_sgmii");
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_1_RGMII)
-		/* set PD12 - MSCR[60] - for PFE MAC1 MDC*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD12));
-
-		/* set PD13 - MSCR[61] - for PFE MAC1 MDO*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_S32_G1_PFE_IN
-		       | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PD13));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_MDI_IN));
-
-		/* set PE10 - MSCR[74] - for PFE MAC1 RXD0*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE10));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_RXD0_IN));
-
-		/* set PE11 - MSCR[75] - for PFE MAC1 RXD1*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE11));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_RXD1_IN));
-
-		/* set PE12 - MSCR[76] - for PFE MAC1 RXD2*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE12));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_RXD2_IN));
-
-		/* set PE13 - MSCR[77] - for PFE MAC1 RXD3*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE13));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_RXD3_IN));
-
-		/* set PE9 - MSCR[73] - for PFE MAC1 RX CTRL*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE9));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_RXDV_IN));
-
-		/* set PE8 - MSCR[72] - for PFE MAC1 RX CLK*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE8));
-		writel(SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC1_RX_CLK_IN));
-
-		/* set PE4 - MSCR[68] - for PFE MAC1 TXD0*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE4));
-
-		/* set PE5 - MSCR[69] - for PFE MAC1 TXD1*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE5));
-
-		/* set PE6 - MSCR[70] - for PFE MAC1 TXD2*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE6));
-
-		/* set PE7 - MSCR[71] - for PFE MAC1 TXD3*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE7));
-
-		/* set PE2 - MSCR[66] - for PFE MAC1 TX CLK*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE2));
-
-		/* set PE3 - MSCR[67] - for PFE MAC1 TX EN*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE3));
+		pinctrl_select_state(dev, "pfe1_rgmii");
 #endif
 #endif
 		break;
@@ -614,82 +478,13 @@ static void setup_iomux_pfe(int intf0, int intf1, int intf2)
 
 	switch (intf2) {
 	case PHY_INTERFACE_MODE_SGMII:
-		/* SerDes_0 lane_1 */
+		pinctrl_select_state(dev, "pfe2_sgmii");
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
 #if CONFIG_IS_ENABLED(TARGET_S32G274AEVB) || CONFIG_IS_ENABLED(TARGET_S32G274ARDB)
 #if !CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
-		/* set PF2 - MSCR[82] - for PFE MAC2 MDC*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PF2));
-
-		/* set PE15 - MSCR[79] - for PFE MAC2 MDO*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_S32_G1_PFE_IN
-		       | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE15));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_MDO_IN));
-
-		/* set PH6 - MSCR[118] - for PFE MAC2 RXD0*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH6));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_RXD0_IN));
-
-		/* set PH7 - MSCR[119] - for PFE MAC2 RXD1*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH7));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_RXD1_IN));
-
-		/* set PH8 - MSCR[120] - for PFE MAC2 RXD2*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH8));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_RXD2_IN));
-
-		/* set PH9 - MSCR[121] - for PFE MAC2 RXD3*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH9));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_RXD3_IN));
-
-		/* set PH5 - MSCR[117] - for PFE MAC2 RX CTRL*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH5));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_RXDV_IN));
-
-		/* set PH4 - MSCR[116] - for PFE MAC2 RX CLK*/
-		writel(SIUL2_MSCR_S32_G1_PFE_IN,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH4));
-		writel(SIUL2_MSCR_MUX_MODE_ALT3,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PFE_MAC2_RX_CLK_IN));
-
-		/* set PJ0 - MSCR[144] - for PFE MAC2 TXD0*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PJ0));
-
-		/* set PH1 - MSCR[113] - for PFE MAC2 TXD1*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH1));
-
-		/* set PH2 - MSCR[114] - for PFE MAC2 TXD2*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH2));
-
-		/* set PH3 - MSCR[115] - for PFE MAC2 TXD3*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH3));
-
-		/* set PH10 - MSCR[122] - for PFE MAC2 TX CLK*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_1_MSCRn(SIUL2_MSCR_S32_G1_PH10));
-
-		/* set PE14 - MSCR[78] - for PFE MAC2 TX EN*/
-		writel(SIUL2_MSCR_S32_G1_PFE_OUT | SIUL2_MSCR_MUX_MODE_ALT2,
-		       SIUL2_0_MSCRn(SIUL2_MSCR_S32_G1_PE14));
+		pinctrl_select_state(dev, "pfe2_rgmii");
 #endif
 #endif
 		break;
@@ -772,7 +567,7 @@ static int pfeng_cfg_mode_enable(struct udevice *pfe_dev)
 	writel(PFE_COH_PORTS_MASK_HIF_0_3, S32G_PFE_COH_EN);
 
 	/* Setup pins */
-	setup_iomux_pfe(emac_intf[0], emac_intf[1], emac_intf[2]);
+	setup_iomux_pfe(pfe_dev, emac_intf[0], emac_intf[1], emac_intf[2]);
 
 	/* Setup clocks */
 	priv->clocks_done = false;
@@ -957,7 +752,7 @@ static int do_pfeng_cmd(cmd_tbl_t *cmdtp, int flag,
 			print_emacs_mode("  ");
 			return 0;
 		} else if (!strcmp(argv[2], "reapply-clocks")) {
-			setup_iomux_pfe(emac_intf[0], emac_intf[1],
+			setup_iomux_pfe(pfe_dev, emac_intf[0], emac_intf[1],
 					emac_intf[2]);
 			pfeng_apply_clocks(pfe_dev);
 			printf("PFE reapply clocks\n");
