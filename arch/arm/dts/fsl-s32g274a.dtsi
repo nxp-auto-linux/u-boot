@@ -173,6 +173,14 @@
 			<&pinctrl0 512 595>;
 			status = "okay";
 		};
+
+		gpio0: siul2-gpio0 {
+			compatible = "fsl,s32-gen1-siul2-gpio";
+			#gpio-cells = <2>;
+			gpio-controller;
+			gpio-ranges = <&pinctrl0 0 0 102>;
+			status = "okay";
+		};
 	};
 
 	siul2_1@44010000 {
@@ -187,6 +195,15 @@
 			pins = <&pinctrl1 112 190>,
 			/* IMCR range */
 			<&pinctrl1 631 1023>;
+			status = "okay";
+		};
+
+		gpio1: siul2-gpio1 {
+			compatible = "fsl,s32-gen1-siul2-gpio";
+			#gpio-cells = <2>;
+			gpio-controller;
+			gpio-ranges = <&pinctrl1 0 112 11>,
+				<&pinctrl1 11 144 47>;
 			status = "okay";
 		};
 	};
