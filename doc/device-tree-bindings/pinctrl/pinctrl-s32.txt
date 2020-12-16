@@ -1,0 +1,23 @@
+* NXP S32 SIUL2 PIN controller
+
+Required properties:
+- compatible : "fsl,s32-gen1-siul2-pinctrl"
+- #pinctrl-cells : Should be 2 (pin range)
+- pins: A list of phandles to self with associated cells.
+
+Example:
+siul2_1@44010000 {
+	compatible = "simple-mfd";
+	status = "okay";
+	reg = <0x0 0x44010000 0x0 0x2000>;
+
+	pinctrl1: siul2-pinctrl1 {
+			compatible = "fsl,s32-gen1-siul2-pinctrl";
+			#pinctrl-cells = <2>;
+			/* MSCR range */
+			pins = <&pinctrl1 112 190>,
+			/* IMCR range */
+			<&pinctrl1 631 1023>;
+			status = "okay";
+	};
+};
