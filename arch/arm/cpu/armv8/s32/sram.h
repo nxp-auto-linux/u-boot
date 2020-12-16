@@ -2,8 +2,8 @@
 /*
  * Copyright 2020 NXP
  */
-#ifndef S32_DMA_MEM_H
-#define S32_DMA_MEM_H
+#ifndef S32G_SRAM_H
+#define S32G_SRAM_H
 
 /**
  * @brief Clear a memory region of size 'size' starting with address 'addr'
@@ -14,6 +14,6 @@
  *
  * @return  0 on error or size of memory cleared on success
  */
-int dma_mem_clr(int addr, int size);
+int sram_clr(int addr, int size);
 
 #endif

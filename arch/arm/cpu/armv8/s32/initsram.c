@@ -7,8 +7,7 @@
 #include <common.h>
 #include <cpu_func.h>
 #include <linux/kernel.h>
-
-int dma_mem_clr(int addr, int size);
+#include <sram.h>
 
 static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 			char * const argv[])
@@ -53,7 +52,7 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 	}
 
 	invalidate_dcache_range(addr, addr + size);
-	ret_size = dma_mem_clr(addr, size);
+	ret_size = sram_clr(addr, size);
 
 	if (!ret_size) {
 		printf("Init SRAM failed\n");

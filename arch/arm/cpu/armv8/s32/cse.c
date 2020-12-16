@@ -12,6 +12,7 @@
 #include <linux/libfdt.h>
 #include <fs.h>
 #include <errno.h>
+#include <sram.h>
 
 #define CSE_TIMEOUT		1000000
 
@@ -64,7 +65,6 @@ static int mmc_load_cse_blob(void)
 	return 0;
 }
 
-extern void dma_mem_clr(void *, uint32_t);
 int cse_init(void)
 {
 	uint32_t firmware;
@@ -106,7 +106,7 @@ cse_firmware_loading:
 	/* check if CSE_BLOB_BASE is in SRAM and if it is, clear the area
 	 * between CSE_BLOB_BASE and CSE_BLOB_BASE + CSE_BLOB_SIZE */
 	if (is_addr_in_sram(CSE_BLOB_BASE))
-		dma_mem_clr((void *)CSE_BLOB_BASE, CSE_BLOB_SIZE);
+		sram_clr(CSE_BLOB_BASE, CSE_BLOB_SIZE);
 
 	if (mmc_load_cse_blob()) {
 		printf("CSE firmware loading failed\n");

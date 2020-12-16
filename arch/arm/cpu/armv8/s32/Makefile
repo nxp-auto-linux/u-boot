@@ -4,6 +4,7 @@
 # (C) Copyright 2016-2018, 2020 NXP
 #
 ccflags-y += -I./board/freescale/common/
+ccflags-y += -Iarch/arm/cpu/armv8/s32/
 
 obj-$(CONFIG_S32V234)		+= s32v234/
 obj-$(CONFIG_S32_GEN1)		+= s32-gen1/

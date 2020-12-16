@@ -13,7 +13,7 @@
 #include <asm/arch/siul.h>
 #include <asm-generic/sections.h>
 #include "mp.h"
-#include "dma_mem.h"
+#include "sram.h"
 #include "scmi_reset_agent.h"
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
@@ -193,7 +193,7 @@ static inline void early_mmu_setup(void)
 	gd->arch.tlb_size = CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
 
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	dma_mem_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
+	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
 #endif
 
 #ifdef CONFIG_S32V234
@@ -231,7 +231,7 @@ static inline void final_mmu_setup(void)
 	gd->arch.tlb_size = CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
 
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	dma_mem_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
+	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
 #endif
 	setup_pgtables();
 
@@ -306,7 +306,7 @@ static inline int clear_after_bss(void)
 	 */
 	base = (uintptr_t)&__bss_end;
 	size = S32_SRAM_BASE + S32_SRAM_SIZE - base;
-	ret = dma_mem_clr(base, size);
+	ret = sram_clr(base, size);
 	if (!ret)
 		return ret;
 
