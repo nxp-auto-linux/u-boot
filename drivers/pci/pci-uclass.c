@@ -12,6 +12,7 @@
 #include <asm/io.h>
 #include <dm/device-internal.h>
 #include <dm/lists.h>
+#include <dm/uclass-internal.h>
 #if defined(CONFIG_X86) && defined(CONFIG_HAVE_FSP)
 #include <asm/fsp/fsp_support.h>
 #endif
@@ -538,7 +539,7 @@ int pci_auto_config_devices(struct udevice *bus)
 		debug("%s: device %s\n", __func__, dev->name);
 		ret = dm_pciauto_config_device(dev);
 		if (ret < 0)
-			return ret;
+			return log_msg_ret("auto", ret);
 		max_bus = ret;
 		sub_bus = max(sub_bus, max_bus);
 
@@ -548,7 +549,7 @@ int pci_auto_config_devices(struct udevice *bus)
 	}
 	debug("%s: done\n", __func__);
 
-	return sub_bus;
+	return log_msg_ret("sub", sub_bus);
 }
 
 int pci_generic_mmap_write_config(
@@ -626,14 +627,9 @@ int dm_pci_hose_probe_bus(struct udevice *bus)
 	if (ret) {
 		debug("%s: Cannot probe bus %s: %d\n", __func__, bus->name,
 		      ret);
-		return ret;
+		return log_msg_ret("probe", ret);
 	}
-	if (sub_bus != bus->seq) {
-		printf("%s: Internal error, bus '%s' got seq %d, expected %d\n",
-		       __func__, bus->name, bus->seq, sub_bus);
-		return -EPIPE;
-	}
-	sub_bus = pci_get_bus_max();
+
 	dm_pciauto_postscan_setup_bridge(bus, sub_bus);
 
 	return sub_bus;
@@ -695,7 +691,7 @@ static int pci_find_and_bind_driver(struct udevice *parent,
 
 	if (ofnode_valid(node) && !ofnode_is_available(node)) {
 		debug("%s: Ignoring disabled device\n", __func__);
-		return -EPERM;
+		return log_msg_ret("dis", -EPERM);
 	}
 
 	start = ll_entry_start(struct pci_driver_entry, pci_driver_entry);
@@ -721,7 +717,7 @@ static int pci_find_and_bind_driver(struct udevice *parent,
 			 */
 			if (!(gd->flags & GD_FLG_RELOC) &&
 			    !(drv->flags & DM_FLAG_PRE_RELOC))
-				return -EPERM;
+				return log_msg_ret("pre", -EPERM);
 
 			/*
 			 * We could pass the descriptor to the driver as
@@ -749,7 +745,7 @@ static int pci_find_and_bind_driver(struct udevice *parent,
 	 * limited (ie: using Cache As RAM).
 	 */
 	if (!(gd->flags & GD_FLG_RELOC) && !bridge)
-		return -EPERM;
+		return log_msg_ret("notbr", -EPERM);
 
 	/* Bind a generic driver so that the device can be used */
 	sprintf(name, "pci_%x:%x.%x", parent->seq, PCI_DEV(bdf),
@@ -978,6 +974,16 @@ static int pci_uclass_pre_probe(struct udevice *bus)
 	      bus->parent->name);
 	hose = bus->uclass_priv;
 
+	/*
+	 * Set the sequence number, if device_bind() doesn't. We want control
+	 * of this so that numbers are allocated as devices are probed. That
+	 * ensures that sub-bus numbered is correct (sub-buses must get numbers
+	 * higher than their parents)
+	 */
+	if (bus->seq == -1) {
+		bus->seq = uclass_find_next_free_req_seq(UCLASS_PCI);
+	}
+
 	/* For bridges, use the top-level PCI controller */
 	if (!device_is_on_pci_bus(bus)) {
 		hose->ctlr = bus;
@@ -988,6 +994,7 @@ static int pci_uclass_pre_probe(struct udevice *bus)
 		parent_hose = dev_get_uclass_priv(bus->parent);
 		hose->ctlr = parent_hose->bus;
 	}
+
 	hose->bus = bus;
 	hose->first_busno = bus->seq;
 	hose->last_busno = bus->seq;
@@ -1005,14 +1012,14 @@ static int pci_uclass_post_probe(struct udevice *bus)
 	debug("%s: probing bus %d\n", __func__, bus->seq);
 	ret = pci_bind_bus_devices(bus);
 	if (ret)
-		return ret;
+		return log_msg_ret("bind", ret);
 
 	if (CONFIG_IS_ENABLED(PCI_PNP) &&
 	    (!hose->skip_auto_config_until_reloc ||
 	     (gd->flags & GD_FLG_RELOC))) {
 		ret = pci_auto_config_devices(bus);
 		if (ret < 0)
-			return log_msg_ret("pci auto-config", ret);
+			return log_msg_ret("cfg", ret);
 	}
 
 #if defined(CONFIG_X86) && defined(CONFIG_HAVE_FSP)
@@ -1032,7 +1039,7 @@ static int pci_uclass_post_probe(struct udevice *bus)
 	if ((gd->flags & GD_FLG_RELOC) && (bus->seq == 0)) {
 		ret = fsp_init_phase_pci();
 		if (ret)
-			return ret;
+			return log_msg_ret("fsp", ret);
 	}
 #endif
 
