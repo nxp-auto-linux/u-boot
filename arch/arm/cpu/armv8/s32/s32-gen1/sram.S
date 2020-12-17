@@ -180,9 +180,11 @@ ENDPROC(clear_unaligned_ends)
  * x1: end address of memory area to clear
  * x0: return 0 on error or size of memory cleared on success
  *
- * Clobber list: x0,x1,x2,x3,x4,x5,x6,x7,x9,x10,x11,x12,x13,x14,x15
+ * Clobber list: x0,x1,x2,x3,x4,x5,x6,x7,x9,x10,x11,x12,x13,x14,x15,x16
  */
 ENTRY(_s32g_sram_clr)
+	mov	x16, x1
+	sub	x16, x16, x0
 	mov	x13, x0
 	mov	x14, x1
 	bl	clear_unaligned_ends
@@ -197,6 +199,7 @@ ENTRY(_s32g_sram_clr)
 
 align_high_addr:
 	and	x1, x1, #SRAM_INV_BLOCK_MASK
+	cbz	x1, sram_exit
 
 	sub	x1, x1, #1
 	/* Low address */
@@ -265,12 +268,13 @@ init_sramc1:
 sram_exit:
 	/* Restore x30 */
 	mov	x30, x15
+	mov	x0, x16
 	ret
 
 error:
 	/* Restore x30 */
 	mov	x30, x15
-	mov	x0, #-1
+	mov	x0, #0
 	ret
 ENDPROC(_s32g_sram_clr)
 
@@ -278,10 +282,10 @@ ENDPROC(_s32g_sram_clr)
  * Clear SRAM region using SRAMC
  *
  * x0: start address of memory area to clear
- * x1: end address of memory area to clear
- * x0: return 0 on error or size of memory cleared on success
+ * x1: size of the memory area to be cleared
+ * x0: return the size of the cleared memory
  *
- * Clobber list: x0,x1,x2,x3,x4,x5,x6,x7,x9,x10,x11,x12,x13,x14,x15
+ * Clobber list: x0,x1,x2,x3,x4,x5,x6,x7,x9,x10,x11,x12,x13,x14,x15,x16
  */
 ENTRY(sram_clr)
 	/* Save x30 */
