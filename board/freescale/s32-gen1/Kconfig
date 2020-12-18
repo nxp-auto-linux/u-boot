@@ -34,10 +34,7 @@ config SYS_MEM_SIZE
 	help
 	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
 
-if TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
-	TARGET_S32G274ABLUEBOX3 || TARGET_S32R45EVB || \
-	TARGET_TYPE_S32GEN1_EMULATOR || \
-	TARGET_TYPE_S32GEN1_SIMULATOR
+if S32_GEN1
 
 config SYS_BOARD
 	string
@@ -45,16 +42,12 @@ config SYS_BOARD
 
 config SYS_CONFIG_NAME
 	string
-	default "s32g274a" if TARGET_S32G274AEVB || TARGET_S32G274ARDB || \
-			   TARGET_S32G274ASIM || TARGET_S32G274AEMU || \
-			   TARGET_S32G274ABLUEBOX3
-	default "s32r45" if TARGET_S32R45EVB || TARGET_S32R45SIM || \
-			   TARGET_S32R45EMU
+	default "s32g274a" if NXP_S32G2XX
+	default "s32r45" if NXP_S32R45
 
 config SYS_ERRATUM_ERR050543
 	bool "Workaround for NXP Erratum ERR050543"
-	default y if S32_LPDDR4 || TARGET_S32G274AEVB || \
-		TARGET_S32G274ARDB || TARGET_S32R45EVB
+	default y if S32_LPDDR4 || NXP_S32G2XX || NXP_S32R45
 	help
 	  This option enables a workaround for NXP Erratum ERR050543
 	  (This erratum applies for LPDDR4 memories only. The memories require

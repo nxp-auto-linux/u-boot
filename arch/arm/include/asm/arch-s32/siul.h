@@ -90,9 +90,7 @@ static inline int get_siul2_midr2_subminor(void)
 
 #endif  /* CONFIG_S32_GEN1 */
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || \
-	defined(CONFIG_TARGET_S32G274ARDB) || \
-	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+#if defined(CONFIG_NXP_S32G2XX)
 /* If SOC REV < 2, QSPI clock max frequency should be 133,33MHz. */
 static inline bool is_s32gen1_soc_rev1(void)
 {

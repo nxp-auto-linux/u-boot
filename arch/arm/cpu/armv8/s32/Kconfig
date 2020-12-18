@@ -8,6 +8,18 @@ config BAUDRATE
 	int "Serial baudrate"
 	default 115200
 
+config NXP_S32G2XX
+	bool
+	select S32_GEN1
+	help
+	  Platforms having S32G2XXX SoC
+
+config NXP_S32R45
+	bool
+	select S32_GEN1
+	help
+	  Platforms having S32R45 SoC
+
 choice
 	prompt "Select S32 Target Board Support"
 	default TARGET_S32V234EVB
@@ -47,38 +59,38 @@ config TARGET_CAMPPS32V2
 
 config TARGET_S32R45EVB
 	bool "Support s32r45evb"
-	select S32_GEN1
+	select NXP_S32R45
 
 config TARGET_S32R45SIM
 	bool "Support s32r45 VDK"
-	select S32_GEN1
+	select NXP_S32R45
 
 config TARGET_S32R45EMU
 	bool "Support s32r45 ZeBu"
-	select S32_GEN1
+	select NXP_S32R45
 
 config TARGET_S32G274AEVB
 	bool "Support s32g274aevb"
-	select S32_GEN1
+	select NXP_S32G2XX
 
 config TARGET_S32G274ARDB
 	bool "Support s32g274ardb"
-	select S32_GEN1
+	select NXP_S32G2XX
 
 config TARGET_S32G274ABLUEBOX3
 	bool "Support s32g274abluebox3"
-	select S32_GEN1
+	select NXP_S32G2XX
 	help
 	  Enable Microsys S32G SoM Bluebox 3 target.
 	  S32G works as PCIE EP.
 
 config TARGET_S32G274ASIM
 	bool "Support s32g274a VDK"
-	select S32_GEN1
+	select NXP_S32G2XX
 
 config TARGET_S32G274AEMU
 	bool "Support s32g274a ZeBu"
-	select S32_GEN1
+	select NXP_S32G2XX
 
 endchoice
 

@@ -155,7 +155,7 @@ struct cmu {
 	bool fc;
 };
 
-#if defined(CONFIG_TARGET_S32R45EVB)
+#if defined(CONFIG_NXP_S32R45)
 static struct cmu cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC_CLK, FXOSC_FREQ),
 	FXOSC_PERIPH_CMU_FM(1, FIRC_CLK, FIRC_FREQ),
@@ -189,9 +189,7 @@ static struct cmu cmu_blocks[] = {
 	FXOSC_PERIPH_CMU_FC(53, MIPICSI2_0, 400),
 	FXOSC_PERIPH_CMU_FC(54, SERDES_REF_CLK, 125),
 };
-#elif defined(CONFIG_TARGET_S32G274AEVB) || \
-	defined(CONFIG_TARGET_S32G274ARDB) || \
-	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+#elif defined(CONFIG_NXP_S32G2XX)
 static struct cmu cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC_CLK, FXOSC_FREQ),
 	FXOSC_PERIPH_CMU_FM(1, FIRC_CLK, FIRC_FREQ),
