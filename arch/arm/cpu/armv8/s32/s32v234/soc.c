@@ -1140,3 +1140,8 @@ u32 cpu_pos_mask(void)
 	/* 4 cores */
 	return 0xFU;
 }
+
+u32 get_sram_size(void)
+{
+	return S32_SRAM_SIZE;
+}

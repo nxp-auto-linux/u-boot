@@ -45,7 +45,7 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 	}
 
-	max_size = S32_SRAM_SIZE - (addr - S32_SRAM_BASE);
+	max_size = get_sram_size() - (addr - S32_SRAM_BASE);
 	if (size > max_size) {
 		printf("WARNING: given size exceeds SRAM boundaries.\n");
 		size = max_size;

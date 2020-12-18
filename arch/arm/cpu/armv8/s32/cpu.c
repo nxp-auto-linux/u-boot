@@ -572,7 +572,7 @@ int dram_init_banksize(void)
 {
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	gd->bd->bi_dram[0].start = S32_SRAM_BASE;
-	gd->bd->bi_dram[0].size = S32_SRAM_SIZE;
+	gd->bd->bi_dram[0].size = get_sram_size();
 
 	gd->bd->bi_dram[1].start = 0x0;
 	gd->bd->bi_dram[1].size = 0x0;
@@ -594,7 +594,7 @@ int dram_init_banksize(void)
 	gd->bd->bi_dram[1].size = CONFIG_SYS_FSL_DRAM_SIZE2;
 
 	gd->bd->bi_dram[2].start = S32_SRAM_BASE;
-	gd->bd->bi_dram[2].size = S32_SRAM_SIZE;
+	gd->bd->bi_dram[2].size = get_sram_size();
 #endif
 #endif
 	s32_init_ram_size();
@@ -609,7 +609,7 @@ phys_size_t __weak get_effective_memsize(void)
 	 * Note: gd->bd isn't initialized yet
 	 */
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	size = S32_SRAM_SIZE;
+	size = get_sram_size();
 #else
 	size = CONFIG_SYS_FSL_DRAM_SIZE1;
 #ifdef CONFIG_PRAM
