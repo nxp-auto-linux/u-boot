@@ -156,7 +156,7 @@ int checkboard(void)
 #if defined(CONFIG_TARGET_S32G274AEVB)
 	printf("Board:\tNXP %s-EVB\n", get_s32g2_deriv_name());
 #elif defined(CONFIG_TARGET_S32G274ARDB)
-	puts("Board:\tNXP %s-RDB\n", get_s32g2_deriv_name());
+	printf("Board:\tNXP %s-RDB\n", get_s32g2_deriv_name());
 #elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 	puts("Board:\tNXP S32G274A BlueBox3\n");
 #elif defined(CONFIG_TARGET_S32G274ASIM)
