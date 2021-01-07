@@ -1272,6 +1272,13 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->host_caps |= MMC_MODE_DDR_52MHz;
 #endif
 
+	if (priv->flags & ESDHC_FLAG_HS200)
+		cfg->host_caps |= MMC_MODE_HS200;
+	if (priv->flags & ESDHC_FLAG_HS400)
+		cfg->host_caps |= MMC_MODE_HS400;
+	if (priv->flags & ESDHC_FLAG_HS400_ES)
+		cfg->host_caps |= MMC_MODE_HS400_ES;
+
 	if (priv->bus_width > 0) {
 		if (priv->bus_width < 8)
 			cfg->host_caps &= ~MMC_MODE_8BIT;
@@ -1658,7 +1665,9 @@ static struct esdhc_soc_data usdhc_imx8qm_data = {
 };
 
 static struct esdhc_soc_data usdhc_s32gen1_data = {
-	.flags = ESDHC_FLAG_USDHC,
+	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_STD_TUNING |
+		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
+		ESDHC_FLAG_HS400,
 };
 
 static bool is_s32gen1_usdhc(struct fsl_esdhc_priv *priv)

@@ -17,6 +17,7 @@ config S32_GEN1
 	select SCMI_FIRMWARE
 	select ARCH_MISC_INIT
 	select S32_GPIO
+	select MMC_HS400_SUPPORT
 	help
 	  Platform Selection
 
