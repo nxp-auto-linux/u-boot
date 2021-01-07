@@ -164,8 +164,6 @@ struct fsl_esdhc_priv {
 #endif
 };
 
-static bool is_s32gen1_usdhc(struct fsl_esdhc_priv *priv);
-
 /* Return the XFERTYP flags for a given command and data packet */
 static uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
 {
@@ -1297,10 +1295,6 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->host_caps |= priv->caps;
 
 	cfg->f_min = 400000;
-#if CONFIG_IS_ENABLED(DM_MMC)
-	if (!is_s32gen1_usdhc(priv))
-		priv->sdhc_clk = min(priv->sdhc_clk, (u32)200000000);
-#endif
 	cfg->f_max = priv->sdhc_clk;
 
 	cfg->b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
@@ -1669,11 +1663,6 @@ static struct esdhc_soc_data usdhc_s32gen1_data = {
 		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
 		ESDHC_FLAG_HS400,
 };
-
-static bool is_s32gen1_usdhc(struct fsl_esdhc_priv *priv)
-{
-	return (ulong)priv == (ulong)&usdhc_s32gen1_data;
-}
 
 static const struct udevice_id fsl_esdhc_ids[] = {
 	{ .compatible = "fsl,imx53-esdhc", },
