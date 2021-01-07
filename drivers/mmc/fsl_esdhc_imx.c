@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
@@ -810,7 +810,9 @@ static int esdhc_set_voltage(struct mmc *mmc)
 {
 	struct fsl_esdhc_priv *priv = dev_get_priv(mmc->dev);
 	struct fsl_esdhc *regs = priv->esdhc_regs;
+#if CONFIG_IS_ENABLED(DM_REGULATOR)
 	int ret;
+#endif
 
 	priv->signal_voltage = mmc->signal_voltage;
 	switch (mmc->signal_voltage) {
