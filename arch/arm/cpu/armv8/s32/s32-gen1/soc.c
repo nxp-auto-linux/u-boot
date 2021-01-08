@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  */
 
 #include <common.h>
@@ -246,7 +246,6 @@ U_BOOT_CMD(
 		"<start_address>"
 	  );
 
-#ifdef CONFIG_ARCH_MISC_INIT
 int arch_misc_init(void)
 {
 	int ret = 0;
@@ -289,7 +288,6 @@ int arch_misc_init(void)
 #endif
 	return ret;
 }
-#endif
 
 #ifdef CONFIG_FSL_DSPI
 int mmap_dspi(unsigned short bus, struct dspi **base_addr)

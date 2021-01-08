@@ -10,6 +10,7 @@ config S32_GEN1
 	select OF_CONTROL
 	select OF_SEPARATE
 	select SCMI_FIRMWARE
+	select ARCH_MISC_INIT
 	help
 	  Platform Selection
 
