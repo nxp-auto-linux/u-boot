@@ -19,20 +19,21 @@ config TARGET_TYPE_S32GEN1_SIMULATOR
 endif
 
 config SYS_DATA_BASE
-	hex "Data Base"
+	hex "Data Base" if !S32_ATF_BOOT_FLOW
+	default 0xff800000 if S32_ATF_BOOT_FLOW
 	default 0x34000000
 	help
 	  U-boot data base address (normally SRAM base address)
 
 config SYS_TEXT_BASE
-	hex
+	default 0xff8a0000 if S32_ATF_BOOT_FLOW
 	default 0x340a0000
 
 config SYS_MEM_SIZE
 	hex "RAM Memory Size"
 	default 0x00800000
 	help
-	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
+	  U-boot SRAM size (8 MB for Gen1)
 
 if S32_GEN1
 
@@ -66,7 +67,8 @@ config UBOOT_SRAM_FOOTPRINT
 	default 0x200000
 
 config DTB_SRAM_ADDR
-	hex "SRAM address at which the dtb will be found"
+	hex "SRAM address at which the dtb will be found" if !S32_ATF_BOOT_FLOW
+	default 0xff890000 if S32_ATF_BOOT_FLOW
 	default 0x34090000
 
 choice
@@ -92,6 +94,7 @@ choice
 
 	config S32_ATF_BOOT_FLOW
 		bool "Boot flow with TF-A"
+		select S32_SKIP_RELOC
 		help
 		  U-Boot is started by the ARM Trusted Firmware (TF-A) and runs
 		  in the non-secure world.

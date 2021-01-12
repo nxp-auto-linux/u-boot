@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  */
 
 #include <common.h>
@@ -37,7 +37,8 @@ void mmu_setup(void);
 #ifndef CONFIG_SYS_DCACHE_OFF
 
 static struct mm_region early_map[] = {
-#ifndef CONFIG_S32_SKIP_RELOC
+#if !defined(CONFIG_S32_SKIP_RELOC) || \
+	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
@@ -74,7 +75,8 @@ static struct mm_region early_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE
 	},
 #endif /* CONFIG_S32_GEN1 */
-#ifndef CONFIG_S32_SKIP_RELOC
+#if !defined(CONFIG_S32_SKIP_RELOC) || \
+	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
 	  CONFIG_SYS_FSL_DRAM_SIZE2,
@@ -98,7 +100,8 @@ static struct mm_region early_map[] = {
 };
 
 static struct mm_region final_map[] = {
-#ifndef CONFIG_S32_SKIP_RELOC
+#if !defined(CONFIG_S32_SKIP_RELOC) || \
+	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
@@ -132,7 +135,8 @@ static struct mm_region final_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE
 	},
 #endif /* CONFIG_S32_GEN1 */
-#ifndef CONFIG_S32_SKIP_RELOC
+#if !defined(CONFIG_S32_SKIP_RELOC) || \
+	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
 	  CONFIG_SYS_FSL_DRAM_SIZE2,
