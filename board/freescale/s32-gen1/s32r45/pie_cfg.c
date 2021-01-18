@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -13,7 +13,7 @@
  * and/or other materials provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its
- * contributors may be used to endorse or promote products derived from this 
+ * contributors may be used to endorse or promote products derived from this
  * software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -587,7 +587,6 @@ struct regconf pie_cfg[] = {
 	{0x4039a8e4, 0x00000001},
 	{0x4039a8e8, 0x00000001},
 	{0x4039a8ec, 0x00000001},
-	{0x403814fc, 0x00000002},
 	{0x40381644, 0x00000001},
 	{0x40381640, 0x00000019},
 	{0x40380bec, 0x00000002},

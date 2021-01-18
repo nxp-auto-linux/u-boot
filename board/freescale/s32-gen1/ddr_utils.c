@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,9 +31,9 @@
 
 #include "ddr_utils.h"
 
-static uint32_t enable_axi_ports(void);
-static uint32_t get_mail(uint32_t *mail);
-static uint32_t ack_mail(void);
+static u32 enable_axi_ports(void);
+static u32 get_mail(u32 *mail);
+static u32 ack_mail(void);
 
 /*
  * Do not deinitialize this variable.
@@ -43,59 +43,71 @@ static uint32_t ack_mail(void);
  * available after u-boot is relocated into DRAM, when its
  * value will be used.
  */
-uint8_t polling_needed = 2;
+u8 polling_needed = 2;
+
+/* Modify bitfield value with delta, given bitfield position and mask */
+static inline bool update_bf(u32 *v, u8 pos, u32 mask,
+			     int delta)
+{
+	if (mask >= (((*v >> pos) & mask) + delta)) {
+		*v = (*v & ~(mask << pos)) | ((((*v >> pos)
+						& mask) + delta) << pos);
+		return true;
+	} else {
+		return false;
+	}
+}
 
 /*
  * Set the ddr clock source, FIRC or DDR_PLL_PHI0.
  * @param clk_src - requested clock source
  * @return - true whether clock source has been changed, false otherwise
  */
-bool sel_clk_src(uint32_t clk_src)
+bool sel_clk_src(u32 clk_src)
 {
-	uint32_t tmp32;
+	u32 tmp32;
 
 	/* Check if the clock source is already set to clk_src*/
-	tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSS);
+	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
 	if (((tmp32 & 0x3fffffff) >> 24) == clk_src)
 		return false;
 
 	/* To wait till clock switching is completed */
 	do {
-		tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSS);
+		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
 	} while (((tmp32 >> 16) & 0x1) != 0x0);
 
 	/* Set DDR_CLK source on src_clk */
-	tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSC);
+	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
 	writel((0xc0ffffff & tmp32) | (clk_src << 24),
-	       MC_CGM5 + OFFSET_MUX_0_CSC);
+	       MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
 
 	/* Request clock switch */
-	tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSC);
-	writel((0x1 << 2) | tmp32, MC_CGM5 + OFFSET_MUX_0_CSC);
+	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
+	writel((0x1 << 2) | tmp32, MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
 
 	/* To wait till clock switching is completed */
 	do {
-		tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSS);
+		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
 	} while (((tmp32 >> 16) & 0x1) != 0x0);
 
 	/* To wait till Switch after request is succeeded */
 	do {
-		tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSS);
+		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
 	} while (((tmp32 >> 17) & 0x1) != 0x1);
 
 	/* Make sure correct clock source is selected */
 	do {
-		tmp32 = readl(MC_CGM5 + OFFSET_MUX_0_CSS);
+		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
 	} while (((tmp32 & 0x3fffffff) >> 24) != clk_src);
 
 	return true;
 }
 
 /* Sets default AXI parity. */
-uint32_t set_axi_parity(void)
+u32 set_axi_parity(void)
 {
-	uint32_t ret = NO_ERR;
-	uint32_t tmp32;
+	u32 tmp32;
 	bool switched_to_firc;
 
 	/* Enable Parity For All AXI Interfaces */
@@ -144,29 +156,30 @@ uint32_t set_axi_parity(void)
 	writel(((~0x00000008) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/* Enable Quasi-Dynamic Programming */
-	writel(0x0, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+	writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
 
 	/* Confirm Register Programming Done Ack is Cleared */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-	} while ((tmp32 & 0x1) == 1);
+	} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) == 1);
 
 	/* DFI_INIT_COMPLETE_EN set to 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 	writel((~0x1) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 
-	do {
-		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
-	} while ((tmp32 & 0x1) != 0);
+	/* Set SWCTL.sw_done to 1 */
+	writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
 
-	return ret;
+	do {
+		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
+	} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) == 0);
+
+	return NO_ERR;
 }
 
 /* Enables AXI port n. Programming Mode: Dynamic */
-static uint32_t enable_axi_ports(void)
+static u32 enable_axi_ports(void)
 {
-	uint32_t ret = NO_ERR;
-
 	/* Port 0 Control Register */
 	writel(0x00000001, DDRC_UMCTL2_MP_BASE_ADDR + OFFSET_DDRC_PCTRL_0);
 	/* Port 1 Control Register */
@@ -174,17 +187,17 @@ static uint32_t enable_axi_ports(void)
 	/* Port 2 Control Register */
 	writel(0x00000001, DDRC_UMCTL2_MP_BASE_ADDR + OFFSET_DDRC_PCTRL_2);
 
-	return ret;
+	return NO_ERR;
 }
 
 /*
  * Post PHY training setup - complementary settings that need to be
  * performed after running the firmware.
  */
-uint32_t post_train_setup(void)
+u32 post_train_setup(void)
 {
-	uint32_t ret = NO_ERR;
-	uint32_t tmp32;
+	u32 ret = NO_ERR;
+	u32 tmp32;
 
 	/*
 	 * CalBusy.0 = 1, indicates the calibrator is actively calibrating.
@@ -195,21 +208,21 @@ uint32_t post_train_setup(void)
 	} while ((tmp32 & 0x1) != 0);
 
 	/* Set SWCTL.sw_done to 0 */
-	writel(0x00000000, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+	writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-	} while ((tmp32 & 0x1) != 0);
+	} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) != 0);
 
 	/* Set DFIMISC.dfi_init_start to 1*/
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 	writel((0x00000020 | tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 
 	/* Set SWCTL.sw_done to 1 */
-	writel(0x00000001, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+	writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
 	/* Wait SWSTAT.sw_done_ack to 1*/
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-	} while ((tmp32 & 0x1) == 0);
+	} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) == 0);
 
 	/* Wait DFISTAT.dfi_init_complete to 1 */
 	do {
@@ -217,10 +230,10 @@ uint32_t post_train_setup(void)
 	} while ((tmp32 & 0x1) == 0);
 
 	/* Set SWCTL.sw_done to 0 */
-	writel(0x00000000, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+	writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-	} while ((tmp32 & 0x1));
+	} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) != 0);
 
 	/* Set dfi_init_start to 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
@@ -235,10 +248,10 @@ uint32_t post_train_setup(void)
 	writel(((~0x00000020) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/* Set SWCTL.sw_done to 1 */
-	writel(0x00000001, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+	writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-	} while ((tmp32 & 0x1) == 0);
+	} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) == 0);
 
 	/* Wait for DWC_ddr_umctl2 to move to normal operating mode */
 	do {
@@ -274,24 +287,24 @@ uint32_t post_train_setup(void)
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 	writel(0x00000008 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
-	enable_derating_temp_errata();
+	ret |= enable_derating_temp_errata();
 
 	/*
 	 * Each platform has a different number of AXI ports so this
 	 * method should be implemented in hardware specific source
 	 */
-	ret = enable_axi_ports();
+	ret |= enable_axi_ports();
 	return ret;
 }
 
 /* Wait until firmware finishes execution and return training result */
-uint32_t wait_firmware_execution(void)
+u32 wait_firmware_execution(void)
 {
-	uint32_t mail = 0;
+	u32 mail = 0;
 
 	while (mail == 0) {
 		/* Obtain message from PHY (major message) */
-		uint32_t ret = get_mail(&mail);
+		u32 ret = get_mail(&mail);
 
 		if (ret != NO_ERR)
 			return ret;
@@ -310,15 +323,15 @@ uint32_t wait_firmware_execution(void)
 }
 
 /* Acknowledge received message */
-static uint32_t ack_mail(void)
+static u32 ack_mail(void)
 {
-	uint32_t timeout = DEFAULT_TIMEOUT;
+	u32 timeout = DEFAULT_TIMEOUT;
 	/* ACK message */
 	writel(0, DDR_PHYA_APBONLY_DCTWRITEPROT);
 
 	/* Wait firmware to respond to ACK (UctWriteProtShadow to be set) */
 	while (--timeout && !(readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS) &
-		   UCT_WRITE_PROT_SHADOW_MASK))
+			      UCT_WRITE_PROT_SHADOW_MASK))
 		;
 
 	if (!timeout)
@@ -330,12 +343,12 @@ static uint32_t ack_mail(void)
 }
 
 /* Read available message from DDR PHY microcontroller */
-static uint32_t get_mail(uint32_t *mail)
+static u32 get_mail(u32 *mail)
 {
-	uint32_t timeout = DEFAULT_TIMEOUT;
+	u32 timeout = DEFAULT_TIMEOUT;
 
 	while (--timeout && (readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS) &
-		   UCT_WRITE_PROT_SHADOW_MASK))
+			     UCT_WRITE_PROT_SHADOW_MASK))
 		;
 
 	if (!timeout)
@@ -348,10 +361,10 @@ static uint32_t get_mail(uint32_t *mail)
 }
 
 /* Initialize memory with the ecc scrubber */
-uint32_t init_memory_ecc_scrubber(void)
+u32 init_memory_ecc_scrubber(void)
 {
-	uint8_t region_lock;
-	uint32_t tmp32, pattern = 0x00000000;
+	u8 region_lock;
+	u32 tmp32, pattern = 0x00000000;
 
 	/* Save previous ecc region parity locked state. */
 	region_lock = readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1) & (0x1 << 4);
@@ -421,9 +434,9 @@ uint32_t init_memory_ecc_scrubber(void)
 }
 
 /* Read lpddr4 mode register with given index */
-uint32_t read_lpddr4_MR(uint16_t MR_index)
+u32 read_lpddr4_mr(u8 mr_index)
 {
-	uint32_t tmp32;
+	u32 tmp32;
 
 	/* Set MRR_DDR_SEL_REG to 0x1 to enable LPDDR4 mode */
 	tmp32 = readl(PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
@@ -440,14 +453,15 @@ uint32_t read_lpddr4_MR(uint16_t MR_index)
 	/* Set MR_TYPE = 0x1 (Read) and MR_RANK = 0x1 (Rank 0) */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
 	tmp32 |= 0x1;
-	tmp32 &= ~(0x1 << 4); // TODO - check bitfield size!
+	tmp32 = (tmp32 & ~(0xf << 4)) | (0x1 << 4);
 	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
 
 	/* Configure MR address: MRCTRL1[8:15] */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
-	writel(tmp32 | (MR_index << 8), DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
+	tmp32 = (tmp32 & ~(0xff << 8)) | (mr_index << 8);
+	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
 
-	asm("DSB SY");
+	__asm__("DSB SY");
 
 	/* Initiate MR transaction: MR_WR = 0x1 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
@@ -461,17 +475,59 @@ uint32_t read_lpddr4_MR(uint16_t MR_index)
 	return readl(PERF_BASE_ADDR + OFFSET_MRR_1_DATA_REG_ADDR);
 }
 
-/* Read Temperature Update Flag from lpddr4 MR4 register. */
-uint8_t read_TUF(void)
+/* Write data in lpddr4 mode register with given index */
+u32 write_lpddr4_mr(u8 mr_index, u8 mr_data)
 {
-	uint32_t MR4_val;
-	uint8_t MR4_die_1, MR4_die_2;
+	u32 tmp32;
 
-	MR4_val = read_lpddr4_MR(MR4);
-	MR4_die_1 = MR4_val & 0x7;
-	MR4_die_2 = (MR4_val >> 16) & 0x7;
+	/* Set MRR_DDR_SEL_REG to 0x1 to enable LPDDR4 mode */
+	tmp32 = readl(PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
+	writel(tmp32 | 0x1, PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
 
-	return MR4_die_1 > MR4_die_2 ? MR4_die_1 : MR4_die_2;
+	/*
+	 * Ensure no MR transaction is in progress:
+	 * mr_wr_busy signal must be low
+	 */
+	do {
+		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRSTAT);
+	} while ((tmp32 & 0x1) != 0);
+
+	/* Set MR_TYPE = 0x0 (Write) and MR_RANK = 0x1 (Rank 0) */
+	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
+	tmp32 &= ~(0x1);
+	tmp32 = (tmp32 & ~(0xf << 4)) | (0x1 << 4);
+	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
+
+	/* Configure MR address: MRCTRL1[8:15] and MR data: MRCTRL1[0:7]*/
+	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
+	tmp32 = (tmp32 & (0xffffu << 16)) | (mr_index << 8) | mr_data;
+	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
+
+	__asm__("DSB SY");
+
+	/* Initiate MR transaction: MR_WR = 0x1 */
+	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
+	writel(tmp32 | (0x1u << 31), DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
+
+	/* Wait until MR transaction completed */
+	do {
+		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRSTAT);
+	} while ((tmp32 & 0x1) != 0);
+
+	return NO_ERR;
+}
+
+/* Read Temperature Update Flag from lpddr4 MR4 register. */
+u8 read_tuf(void)
+{
+	u32 mr4_val;
+	u8 mr4_die_1, mr4_die_2;
+
+	mr4_val = read_lpddr4_mr(MR4);
+	mr4_die_1 = mr4_val & 0x7;
+	mr4_die_2 = (mr4_val >> 16) & 0x7;
+
+	return mr4_die_1 > mr4_die_2 ? mr4_die_1 : mr4_die_2;
 }
 
 /*
@@ -482,23 +538,25 @@ uint8_t read_TUF(void)
  * Software workaround requires reading MR register and adjusting timing
  * parameters, if necessary.
  */
-void enable_derating_temp_errata(void)
+u32 enable_derating_temp_errata(void)
 {
-	uint32_t tmp32, bf_val;
+	u32 tmp32, bf_val;
 
-	if (read_TUF() > TUF_THRESHOLD) {
+	if (read_tuf() > TUF_THRESHOLD) {
 		/* Disable timing parameter derating: DERATEEN.DERATE_EN = 0 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
-		writel(tmp32 & ~(0x1), DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
+		writel(tmp32 & ~DDRC_DERATEEN_MASK_DISABLE,
+		       DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
 
 		/*
 		 * Update average time interval between refreshes per rank:
 		 * RFSHTMG.T_RFC_NOM_X1_X32 = RFSHTMG.T_RFC_NOM_X1_X32 / 4
 		 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHTMG);
-		bf_val = (tmp32 >> 16) & 0xfff;
+		bf_val = (tmp32 >> DDRC_RFSHTMG_VAL_SHIFT) & DDRC_RFSHTMG_VAL;
 		bf_val = bf_val >> 2;
-		tmp32 = (tmp32 & ~(0xfff << 16)) | (bf_val << 16);
+		tmp32 = (tmp32 & ~DDRC_RFSHTMG_MASK) |
+			(bf_val << DDRC_RFSHTMG_VAL_SHIFT);
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_RFSHTMG);
 
 		/*
@@ -506,28 +564,35 @@ void enable_derating_temp_errata(void)
 		 * refresh registers have been updated
 		 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
-		bf_val = (tmp32 >> 1) & 0x1;
+		bf_val = (tmp32 >> DDRC_RFSHCTL3_UPDATE_SHIFT) &
+			DDRC_RFSHCTL3_AUTO_REFRESH_VAL;
 		bf_val = bf_val ^ 1;
-		writel((tmp32 & ~(0x1 << 1)) | (bf_val << 1),
-		       DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
+		tmp32 = (tmp32 & ~DDRC_RFSHCTL3_MASK) |
+			(bf_val << DDRC_RFSHCTL3_UPDATE_SHIFT);
+		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
 
 		/* Set SWCTL.sw_done to 0 */
-		writel(0x00000000, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+		writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR +
+		       OFFSET_DDRC_SWCTL);
 		do {
 			tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-		} while ((tmp32 & 0x1) != 0);
+		} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) != 0);
 
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
 		/*
 		 * Set minimum time from activate to read/write command to same
 		 * bank: DRAMTMG4.T_RCD += 2
 		 */
-		tmp32 = update_bf(tmp32, 24, 0x1f, 2);
+		if (!update_bf(&tmp32, DDRC_DRAMTMG4_TRCD_POS,
+			       DDRC_DRAMTMG5_TRCD_MASK, 2))
+			return BITFIELD_EXCEEDED;
 		/*
 		 * Set minimum time between activates from bank "a" to bank "b"
 		 * DRAMTMG4.T_RRD += 2
 		 */
-		tmp32 = update_bf(tmp32, 8, 0xf, 2);
+		if (!update_bf(&tmp32, DDRC_DRAMTMG4_TRRD_POS,
+			       DDRC_DRAMTMG5_TRRD_MASK, 2))
+			return BITFIELD_EXCEEDED;
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
 
 		/*
@@ -535,7 +600,9 @@ void enable_derating_temp_errata(void)
 		 * DRAMTMG0.T_RAS_MIN += 2
 		 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG0);
-		tmp32 = update_bf(tmp32, 0, 0x3f, 2);
+		if (!update_bf(&tmp32, DDRC_DRAMTMG0_TRAS_POS,
+			       DDRC_DRAMTMG0_TRAS_MASK, 2))
+			return BITFIELD_EXCEEDED;
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG0);
 
 		/*
@@ -543,7 +610,9 @@ void enable_derating_temp_errata(void)
 		 * same bank: DRAMTMG4.T_RP += 2
 		 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
-		tmp32 = update_bf(tmp32, 0, 0x1f, 2);
+		if (!update_bf(&tmp32, DDRC_DRAMTMG4_TRP_POS,
+			       DDRC_DRAMTMG4_TRP_MASK, 2))
+			return BITFIELD_EXCEEDED;
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
 
 		/*
@@ -551,133 +620,27 @@ void enable_derating_temp_errata(void)
 		 * DRAMTMG1.T_RC += 3
 		 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG1);
-		tmp32 = update_bf(tmp32, 0, 0x7f, 3);
-		bf_val = tmp32 & 0x7f;
-		bf_val += 6;
-		tmp32 = (tmp32 & ~(0x7f)) | bf_val;
+		if (!update_bf(&tmp32, DDRC_DRAMTMG1_TRC_POS,
+			       DDRC_DRAMTMG1_TRC_MASK, 3))
+			return BITFIELD_EXCEEDED;
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG1);
 
 		/* Set SWCTL.sw_done to 1 */
-		writel(0x00000001, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+		writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR +
+		       OFFSET_DDRC_SWCTL);
 		do {
 			tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
-		} while ((tmp32 & 0x1) == 0);
+		} while ((tmp32 & DDRC_SWSTAT_SWDONE_ACK_MASK) == 0);
 
 		polling_needed = 1;
 
 	} else {
 		/* Enable timing parameter derating: DERATEEN.DERATE_EN = 1 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
-		writel(tmp32 | 0x1, DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
+		writel(tmp32 | DDRC_DERATEEN_ENABLE,
+		       DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
 
 		polling_needed = 0;
 	}
-}
-
-/*
- * Periodically read Temperature Update Flag in MR4 and undo changes made by
- * ERR050543 workaround if no longer needed. Refresh rate is updated and auto
- * derating is turned on.
- * @param traffic_halted - if ddr traffic was halted, restore also timing
- * parameters
- */
-void poll_derating_temp_errata(bool traffic_halted)
-{
-	int nominal_temp_flag = 0, val_1, val_2;
-	uint32_t tmp32, bf_val;
-
-	if (polling_needed) {
-		if (read_TUF() <= TUF_THRESHOLD) {
-			nominal_temp_flag++;
-
-			val_1 = read_TUF();
-			val_2 = read_TUF();
-
-			if (val_1 <= TUF_THRESHOLD && val_2 <= TUF_THRESHOLD)
-				nominal_temp_flag += 2;
-		}
-	}
-
-	if (nominal_temp_flag == REQUIRED_OK_CHECKS) {
-		/*
-		 * Update average time interval between refreshes per rank:
-		 * RFSHTMG.T_RFC_NOM_X1_X32 = RFSHTMG.T_RFC_NOM_X1_X32 * 4
-		 */
-		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHTMG);
-		bf_val = (tmp32 >> 16) & 0xfff;
-		bf_val = bf_val << 2;
-		tmp32 = (tmp32 & ~(0xfff << 16)) | (bf_val << 16);
-		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_RFSHTMG);
-
-		/*
-		 * Toggle RFSHCTL3.REFRESH_UPDATE_LEVEL to indicate that
-		 * refresh registers have been updated
-		 */
-		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
-		bf_val = (tmp32 >> 1) & 0x1;
-		bf_val = bf_val ^ 1;
-		writel((tmp32 & ~(0x1 << 1)) | (bf_val << 1),
-		       DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
-
-		/* If DDR trafic was halted, restore timing parameters */
-		if (traffic_halted) {
-			/* Set SWCTL.sw_done to 0 */
-			writel(0x00000000, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
-			do {
-				tmp32 = readl(DDRC_BASE_ADDR +
-					      OFFSET_DDRC_SWSTAT);
-			} while ((tmp32 & 0x1) != 0);
-
-			tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
-			/*
-			 * Set minimum time from activate to read/write command
-			 * to same bank: DRAMTMG4.T_RCD -= 2
-			 */
-			tmp32 = update_bf(tmp32, 24, 0x1f, -2LL);
-
-			/*
-			 * Set minimum time between activates from bank "a" to
-			 * bank "b": DRAMTMG4.T_RRD -= 4
-			 */
-			tmp32 = update_bf(tmp32, 8, 0xf, -2LL);
-			writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
-
-			/*
-			 * Set minimum time between activate and precharge to
-			 * same bank: DRAMTMG0.T_RAS_MIN -= 2
-			 */
-			tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG0);
-			tmp32 = update_bf(tmp32, 0, 0x3f, -2LL);
-			writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG0);
-
-			/*
-			 * Set minimum time from single-bank precharge to
-			 * activate of same bank: DRAMTMG4.T_RP -= 2
-			 */
-			tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
-			tmp32 = update_bf(tmp32, 0, 0x1f, -2LL);
-			writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
-
-			/*
-			 * Set minimum time between activates to same bank:
-			 * DRAMTMG1.T_RC -= 3
-			 */
-			tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG1);
-			tmp32 = update_bf(tmp32, 0, 0x7f, -3LL);
-			writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG1);
-
-			/* Set SWCTL.sw_done to 1 */
-			writel(0x00000001, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
-			do {
-				tmp32 = readl(DDRC_BASE_ADDR +
-					      OFFSET_DDRC_SWSTAT);
-			} while ((tmp32 & 0x1) == 0);
-		}
-
-		/* Enable timing parameter derating: DERATEEN.DERATE_EN = 1 */
-		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
-		writel(tmp32 | 0x1, DDRC_BASE_ADDR + OFFSET_DDRC_DERATEEN);
-
-		polling_needed = 0;
-	}
+	return NO_ERR;
 }

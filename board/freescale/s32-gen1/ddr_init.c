@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,19 +31,19 @@
 
 #include "ddr_init.h"
 
-static uint32_t ddrc_init_cfg(struct ddrss_config *config);
-static uint32_t execute_training(struct ddrss_config *config);
-static uint32_t load_register_cfg(size_t size, struct regconf cfg[]);
-static void set_optimal_pll(struct ddrss_config *config);
-static uint32_t load_image(uint32_t start_addr, size_t size, uint32_t image[]);
-
-__attribute__ ((weak)) void store_csr(void) {}
+static u32 ddrc_init_cfg(struct ddrss_config *config);
+static u32 execute_training(struct ddrss_config *config);
+static u32 load_register_cfg(size_t size, struct regconf cfg[]);
+static u32 load_dq_cfg(size_t size, struct dqconf cfg[]);
+static void set_optimal_pll(void);
+static u32 load_phy_image(u32 start_addr, size_t size,
+			  u16 image[]);
 
 /* Main method needed to initialize ddr subsystem. */
-uint32_t ddr_init(void)
+u32 ddr_init(void)
 {
-	uint32_t ret = NO_ERR;
-	size_t i = 0;
+	u32 ret = NO_ERR;
+	size_t i;
 
 	init_image_sizes();
 
@@ -72,20 +72,20 @@ uint32_t ddr_init(void)
 }
 
 /* Initialize ddr controller with given settings. */
-static uint32_t ddrc_init_cfg(struct ddrss_config *config)
+static u32 ddrc_init_cfg(struct ddrss_config *config)
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 
 	ret = load_register_cfg(config->ddrc_cfg_size, config->ddrc_cfg);
 	return ret;
 }
 
 /* Execute phy training with given settings. 2D training stage is optional. */
-static uint32_t execute_training(struct ddrss_config *config)
+static u32 execute_training(struct ddrss_config *config)
 {
-	uint32_t ret = NO_ERR;
+	u32 ret = NO_ERR;
 	/* Apply DQ swapping settings */
-	ret = load_register_cfg(config->dq_swap_cfg_size, config->dq_swap_cfg);
+	ret = load_dq_cfg(config->dq_swap_cfg_size, config->dq_swap_cfg);
 	if (ret != NO_ERR)
 		return ret;
 
@@ -95,34 +95,33 @@ static uint32_t execute_training(struct ddrss_config *config)
 		return ret;
 
 	/* Load 1D imem image */
-	UNLOCK_CSR_ACCESS;
-	ret = load_image(IMEM_START_ADDR, config->imem_1d_size,
-			 config->imem_1d);
+	writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
+	ret = load_phy_image(IMEM_START_ADDR, config->imem_1d_size,
+			     config->imem_1d);
 	if (ret != NO_ERR)
 		return ret;
-	LOCK_CSR_ACCESS;
+	writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 
 	/* Load 1D imem image */
-	UNLOCK_CSR_ACCESS;
-	ret = load_image(DMEM_START_ADDR, config->dmem_1d_size,
-			 config->dmem_1d);
+	writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
+	ret = load_phy_image(DMEM_START_ADDR, config->dmem_1d_size,
+			     config->dmem_1d);
 	if (ret != NO_ERR)
 		return ret;
-	LOCK_CSR_ACCESS;
+	writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 
 	/* Configure PLL optimal settings */
-	set_optimal_pll(config);
+	set_optimal_pll();
 
-	LOCK_CSR_ACCESS;
-	writel(0x00000009, 0x40380420);
-	writel(0x00000001, 0x40380420);
-	writel(0x00000000, 0x40380420);
+	writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
+	writel(0x00000009, APBONLY_MICRORESET);
+	writel(0x00000001, APBONLY_MICRORESET);
+	writel(0x00000000, APBONLY_MICRORESET);
 
 	ret = wait_firmware_execution();
-	UNLOCK_CSR_ACCESS;
+	writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 	if (ret != NO_ERR)
 		return ret;
-	store_csr();
 
 	/*
 	 * Check if 2d training images have been initialized before executing
@@ -130,81 +129,80 @@ static uint32_t execute_training(struct ddrss_config *config)
 	 */
 	if (config->imem_2d_size > 0 && config->dmem_2d_size > 0) {
 		/* Load 2d imem image */
-		UNLOCK_CSR_ACCESS;
-		ret = load_image(IMEM_START_ADDR, config->imem_2d_size,
-				 config->imem_2d);
+		writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
+		ret = load_phy_image(IMEM_START_ADDR, config->imem_2d_size,
+				     config->imem_2d);
 		if (ret != NO_ERR)
 			return ret;
-		LOCK_CSR_ACCESS;
+		writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 
 		/* Load 2d dmem image */
-		UNLOCK_CSR_ACCESS;
-		ret = load_image(DMEM_START_ADDR, config->dmem_2d_size,
-				 config->dmem_2d);
+		writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
+		ret = load_phy_image(DMEM_START_ADDR, config->dmem_2d_size,
+				     config->dmem_2d);
 		if (ret != NO_ERR)
 			return ret;
-		LOCK_CSR_ACCESS;
+		writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 
 		/* Configure PLL optimal settings */
-		set_optimal_pll(config);
+		set_optimal_pll();
 
-		LOCK_CSR_ACCESS;
-		writel(0x00000009, 0x40380420);
-		writel(0x00000001, 0x40380420);
-		writel(0x00000000, 0x40380420);
+		writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
+		writel(0x00000009, APBONLY_MICRORESET);
+		writel(0x00000001, APBONLY_MICRORESET);
+		writel(0x00000000, APBONLY_MICRORESET);
 
 		ret = wait_firmware_execution();
 		if (ret != NO_ERR)
 			return ret;
-		store_csr();
 	}
 
-	UNLOCK_CSR_ACCESS;
+	writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 	/*  Load pie image after training has executed */
 	ret = load_register_cfg(config->pie_cfg_size, config->pie_cfg);
-	LOCK_CSR_ACCESS;
+	writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 	return ret;
 }
 
 /* Load register array into memory. */
-static uint32_t load_register_cfg(size_t size, struct regconf cfg[])
+static u32 load_register_cfg(size_t size, struct regconf cfg[])
 {
-	uint32_t ret = NO_ERR;
 	size_t i;
 
 	for (i = 0; i < size; i++)
 		writel(cfg[i].data, (uintptr_t)cfg[i].addr);
-	return ret;
+	return NO_ERR;
+}
+
+/* Load dq config array into memory. */
+static u32 load_dq_cfg(size_t size, struct dqconf cfg[])
+{
+	size_t i;
+
+	for (i = 0; i < size; i++)
+		writel(cfg[i].data, (uintptr_t)cfg[i].addr);
+	return NO_ERR;
 }
 
 /* Load image into memory at consecutive addresses */
-static uint32_t load_image(uint32_t start_addr, size_t size, uint32_t image[])
+static u32 load_phy_image(u32 start_addr, size_t size,
+			  u16 image[])
 {
-	uint32_t ret = NO_ERR;
 	size_t i;
 
 	for (i = 0; i < size; i++) {
 		writel(image[i], (uintptr_t)start_addr);
-		start_addr += sizeof(uint32_t);
+		start_addr += sizeof(u32);
 	}
-	return ret;
+	return NO_ERR;
 }
 
-/* Ensure optimal settings for pll, depending on the memory type. */
-static void set_optimal_pll(struct ddrss_config *config)
+/* Ensure optimal phy pll settings. */
+static void set_optimal_pll(void)
 {
-	switch (config->memory_type) {
-	case LPDDR4:
-		writel(0x00000021, 0x403816f0);
-		writel(0x00000024, 0x40381708);
-		break;
-	case DDR3:
-		writel(0x00000020, 0x403816f0);
-		writel(0x00000124, 0x40381708);
-		break;
-	default:
-		break;
-	}
-	writel(0x0000017f, 0x4038171c);
-	writel(0x00000019, 0x403816dc);
+	/* Configure phy pll for 2667MTS data rate */
+	writel(0x00000021, MASTER_PLLCTRL1);
+	writel(0x00000024, MASTER_PLLTESTMODE);
+	writel(0x0000017f, MASTER_PLLCTRL4);
+	writel(0x00000019, MASTER_PLLCTRL2);
 }

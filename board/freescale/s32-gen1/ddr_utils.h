@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -45,6 +45,7 @@
 #define UNSUPPORTED_ERR     0x00000001
 #define TIMEOUT_ERR         0x00000002
 #define TRAINING_FAILED     0x00000003
+#define BITFIELD_EXCEEDED   0x00000004
 
 /* DDRC related */
 #define    DDRC_BASE_ADDR                   0x403C0000
@@ -68,6 +69,32 @@
 #define    OFFSET_DDRC_DRAMTMG0             0x100
 #define    OFFSET_DDRC_DRAMTMG1             0x104
 #define    OFFSET_DDRC_DRAMTMG4             0x110
+
+/* DDRC masks and values */
+#define    DDRC_RFSHTMG_VAL_SHIFT           16
+#define    DDRC_RFSHTMG_VAL                 0xfff
+#define    DDRC_RFSHTMG_MASK                (DDRC_RFSHTMG_VAL << \
+					     DDRC_RFSHTMG_VAL_SHIFT)
+#define    DDRC_RFSHCTL3_UPDATE_SHIFT       1
+#define    DDRC_RFSHCTL3_AUTO_REFRESH_VAL   0x1
+#define    DDRC_RFSHCTL3_MASK               (DDRC_RFSHCTL3_AUTO_REFRESH_VAL \
+					     << DDRC_RFSHCTL3_UPDATE_SHIFT)
+#define    DDRC_DERATEEN_ENABLE             0x1
+#define    DDRC_SWCTL_SWDONE_ENABLE         0x0
+#define    DDRC_SWSTAT_SWDONE_ACK_MASK      0x1
+#define    DDRC_DRAMTMG4_TRCD_POS           24
+#define    DDRC_DRAMTMG5_TRCD_MASK          0x1f
+#define    DDRC_DRAMTMG4_TRRD_POS           8
+#define    DDRC_DRAMTMG5_TRRD_MASK          0xf
+#define    DDRC_DRAMTMG0_TRAS_POS           0
+#define    DDRC_DRAMTMG0_TRAS_MASK          0x3f
+#define    DDRC_DRAMTMG4_TRP_POS            0
+#define    DDRC_DRAMTMG4_TRP_MASK           0x1f
+#define    DDRC_DRAMTMG1_TRC_POS            0
+#define    DDRC_DRAMTMG1_TRC_MASK           0x7f
+#define    DDRC_SWCTL_SWDONE_DONE           0x1
+#define    SUCCESSIVE_READ                  2
+#define    DDRC_DERATEEN_MASK_DISABLE       0x1
 
 /* Performance monitoring registers */
 #define    PERF_BASE_ADDR                   0x403E0000
@@ -94,11 +121,13 @@
 
 /* Reset Generation Module */
 #define    MC_RGM_PRST_0                 0x40078040
-#define    MC_CGM5                       0x40068000
+#ifndef MC_CGM5_BASE_ADDR
+#define    MC_CGM5_BASE_ADDR             0x40068000
+#endif
 #define    OFFSET_MUX_0_CSS              0x304
 #define    OFFSET_MUX_0_CSC              0x300
-#define    MC_CGM_MUX_0_DIV_UPD_STAT	 0x33C
-#define    FIRC_CLK_SRC				     0x0
+#define    MC_CGM_MUX_0_DIV_UPD_STAT     0x33C
+#define    FIRC_CLK_SRC                  0x0
 #define    DDR_PHI0_PLL                  0x24
 
 /* Default timeout for DDR PHY operations */
@@ -113,43 +142,45 @@
 #define TUF_THRESHOLD 3
 #define REQUIRED_OK_CHECKS 3
 
-/* Modify bitfield with delta, given bitfield position and mask */
-#define update_bf(v, pos, mask, delta)\
-	(v & ~(mask << pos)) | ((((v >> pos) & mask) + delta) << pos)
-
 /**
  * @brief Set default AXI parity.
  */
-uint32_t set_axi_parity(void);
+u32 set_axi_parity(void);
 
 /**
  * @brief Post PHY train setup - complementary settings
  * that needs to be performed after running the firmware.
  */
-uint32_t post_train_setup(void);
+u32 post_train_setup(void);
 
-uint32_t wait_firmware_execution(void);
+u32 wait_firmware_execution(void);
 
-uint32_t load_register_array(uint32_t reg_writes,
-			     uint32_t array[reg_writes][2]);
+u32 load_register_array(u32 reg_writes,
+			u32 array[][2]);
 
 /* Initialize memory with the ecc scrubber */
-uint32_t init_memory_ecc_scrubber(void);
+u32 init_memory_ecc_scrubber(void);
 
 /*
  * Set the ddr clock source, FIRC or DDR_PLL_PHI0.
  * @param clk_src - requested clock source
  * @return - true whether clock source has been changed, false otherwise
  */
-bool sel_clk_src(uint32_t clk_src);
+bool sel_clk_src(u32 clk_src);
 
 /* Read lpddr4 mode register.
- * @param MR_index - index of mode register to be read
+ * @param mr_index - index of mode register to be read
  */
-uint32_t read_lpddr4_MR(uint16_t MR_index);
+u32 read_lpddr4_mr(u8 mr_index);
+
+/* Write lpddr4 mode register
+ * @param mr_index - index of mode register to be read
+ * @param mr_data - data to be written
+ */
+u32 write_lpddr4_mr(u8 mr_index, u8 mr_data);
 
 /* Read Temperature Update Flag from lpddr4 MR4 register. */
-uint8_t read_TUF(void);
+u8 read_tuf(void);
 
 /*
  * Enable ERR050543 errata workaround.
@@ -159,7 +190,7 @@ uint8_t read_TUF(void);
  * Software workaround requires reading MR register and adjusting timing
  * parameters, if necessary.
  */
-void enable_derating_temp_errata(void);
+u32 enable_derating_temp_errata(void);
 
 /*
  * Periodically read Temperature Update Flag in MR4 and undo changes made by
@@ -167,7 +198,8 @@ void enable_derating_temp_errata(void);
  * derating is turned on.
  * @param traffic_halted - if ddr traffic was halted, restore also timing
  * parameters
+ * @return - Returns 1, if the errata changes are reverted, 0 otherwise
  */
-void poll_derating_temp_errata(bool traffic_halted);
+int poll_derating_temp_errata(bool traffic_halted);
 
 #endif /* DDR_UTILS_H_ */

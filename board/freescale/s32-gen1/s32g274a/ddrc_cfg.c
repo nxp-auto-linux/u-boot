@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -13,7 +13,7 @@
  * and/or other materials provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its
- * contributors may be used to endorse or promote products derived from this 
+ * contributors may be used to endorse or promote products derived from this
  * software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -65,7 +65,7 @@ struct regconf ddrc_cfg[] = {
 	{0x403c00e8, 0x0066004d},
 	{0x403c00ec, 0x0006004f},
 	{0x403c00f0, 0x00000000},
-	{0x403c00f4, 0x00000639},
+	{0x403c00f4, 0x00000779},
 	{0x403c0100, 0x181b161c},
 	{0x403c0104, 0x0005052a},
 	{0x403c0108, 0x070e1516},
@@ -120,14 +120,14 @@ struct regconf ddrc_cfg[] = {
 	{0x403c0304, 0x00000000},
 	{0x403c030c, 0x00000000},
 	{0x403c0320, 0x00000001},
-	{0x403c0330, 0x00b03032},
+	{0x403c0330, 0x00b03033},
 	{0x403c0334, 0x00000000},
 	{0x403c036c, 0x00000011},
 	{0x403c0374, 0x00000000},
 	{0x403c037c, 0x00000000},
 	{0x403c0384, 0x00000000},
-	{0x403c03c0, 0x00000002},
-	{0x403c03e0, 0x00010000},
+	{0x403c03c0, 0x00000003},
+	{0x403c03e0, 0x00010001},
 	{0x403c03e8, 0x00010001},
 	{0x403c0400, 0x00000111},
 	{0x403c0404, 0x000010f3},

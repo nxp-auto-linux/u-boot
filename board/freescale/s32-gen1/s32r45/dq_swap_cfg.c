@@ -31,42 +31,39 @@
 
 #include "ddr_init.h"
 
-struct ddrss_config configs[] = {
-	{
-		.memory_type = 2,
-		.ddrc_cfg = &ddrc_cfg[0],
-		.ddrc_cfg_size = 0,
-		.dq_swap_cfg = &dq_swap_cfg[0],
-		.dq_swap_cfg_size = 0,
-		.phy_cfg = &phy_cfg[0],
-		.phy_cfg_size = 0,
-		.imem_1d = &imem_1d[0],
-		.imem_1d_size = 0,
-		.dmem_1d = &dmem_1d[0],
-		.dmem_1d_size = 0,
-		.imem_2d = &imem_2d[0],
-		.imem_2d_size = 0,
-		.dmem_2d = &dmem_2d[0],
-		.dmem_2d_size = 0,
-		.pie_cfg = &pie_cfg[0],
-		.pie_cfg_size = 0,
-	}
+struct dqconf dq_swap_cfg[] = {
+	{0x40394830, 0x02},
+	{0x40394834, 0x05},
+	{0x40394838, 0x07},
+	{0x4039483c, 0x04},
+	{0x40394840, 0x00},
+	{0x40394844, 0x01},
+	{0x40394848, 0x06},
+	{0x4039484c, 0x03},
+	{0x40396830, 0x04},
+	{0x40396834, 0x06},
+	{0x40396838, 0x07},
+	{0x4039683c, 0x01},
+	{0x40396840, 0x05},
+	{0x40396844, 0x02},
+	{0x40396848, 0x00},
+	{0x4039684c, 0x03},
+	{0x40398830, 0x04},
+	{0x40398834, 0x06},
+	{0x40398838, 0x05},
+	{0x4039883c, 0x07},
+	{0x40398840, 0x01},
+	{0x40398844, 0x03},
+	{0x40398848, 0x00},
+	{0x4039884c, 0x02},
+	{0x4039a830, 0x00},
+	{0x4039a834, 0x04},
+	{0x4039a838, 0x02},
+	{0x4039a83c, 0x01},
+	{0x4039a840, 0x07},
+	{0x4039a844, 0x05},
+	{0x4039a848, 0x06},
+	{0x4039a84c, 0x03},
 };
 
-void init_image_sizes(void)
-{
-	size_t i;
-
-	for (i = 0; i < ddrss_config_size; i++) {
-		configs[i].ddrc_cfg_size = ddrc_cfg_size;
-		configs[i].dq_swap_cfg_size = dq_swap_cfg_size;
-		configs[i].phy_cfg_size = phy_cfg_size;
-		configs[i].imem_1d_size = imem_1d_size;
-		configs[i].dmem_1d_size = dmem_1d_size;
-		configs[i].imem_2d_size = imem_2d_size;
-		configs[i].dmem_2d_size = dmem_2d_size;
-		configs[i].pie_cfg_size = pie_cfg_size;
-	}
-}
-
-size_t ddrss_config_size = sizeof(configs) / sizeof(struct ddrss_config);
+size_t dq_swap_cfg_size = sizeof(dq_swap_cfg) / sizeof(struct dqconf);

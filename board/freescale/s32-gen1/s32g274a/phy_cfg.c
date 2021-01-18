@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -13,7 +13,7 @@
  * and/or other materials provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its
- * contributors may be used to endorse or promote products derived from this 
+ * contributors may be used to endorse or promote products derived from this
  * software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -92,15 +92,15 @@ struct regconf phy_cfg[] = {
 	{0x40381668, 0x00000002},
 	{0x40381314, 0x0000029b},
 	{0x40381640, 0x00000009},
-	{0x40381690, 0x000000dc},
-	{0x4039451c, 0x000005a1},
-	{0x40394520, 0x000005a1},
-	{0x4039651c, 0x000005a1},
-	{0x40396520, 0x000005a1},
-	{0x4039851c, 0x000005a1},
-	{0x40398520, 0x000005a1},
-	{0x4039a51c, 0x000005a1},
-	{0x4039a520, 0x000005a1},
+	{0x40381690, 0x00000134},
+	{0x4039451c, 0x00000e20},
+	{0x40394520, 0x00000e20},
+	{0x4039651c, 0x00000e20},
+	{0x40396520, 0x00000e20},
+	{0x4039851c, 0x00000e20},
+	{0x40398520, 0x00000e20},
+	{0x4039a51c, 0x00000e20},
+	{0x4039a520, 0x00000e20},
 	{0x403817c0, 0x00000001},
 	{0x403813d0, 0x00000001},
 	{0x40381798, 0x00000000},
@@ -111,10 +111,13 @@ struct regconf phy_cfg[] = {
 	{0x403817ac, 0x00000000},
 	{0x403817b0, 0x00000000},
 	{0x403817b4, 0x0000f000},
+	{0x4039456c, 0x00000500},
+	{0x4039656c, 0x00000500},
+	{0x4039856c, 0x00000500},
+	{0x4039a56c, 0x00000500},
 	{0x4038144c, 0x00000000},
 	{0x40381480, 0x00000000},
-	{0x403816f0, 0x00000021},
-	{0x40381708, 0x00000024},
+	{0x40381478, 0x00000000},
 };
 
 size_t phy_cfg_size = sizeof(phy_cfg) / sizeof(struct regconf);
