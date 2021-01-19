@@ -3,7 +3,7 @@
  * FSL SD/MMC Defines
  *-------------------------------------------------------------------
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
  * Copyright 2007-2008,2010-2011 Freescale Semiconductor, Inc
@@ -39,6 +39,7 @@
 #define VENDORSPEC_HCKEN	0x00001000
 #define VENDORSPEC_IPGEN	0x00000800
 #define VENDORSPEC_INIT		0x20007809
+#define VENDORSPEC_FRC_SDCLK_ON	BIT(8)
 
 #define IRQSTAT			0x0002e030
 #define IRQSTAT_DMAE		(0x10000000)
@@ -84,6 +85,9 @@
 #define IRQSTATEN_BGE		(0x00000004)
 #define IRQSTATEN_TC		(0x00000002)
 #define IRQSTATEN_CC		(0x00000001)
+
+#define AUTOC12ERR_EXECUTE_TUNING	BIT(22)
+#define AUTOC12ERR_SMP_CLK_SEL		BIT(23)
 
 #define ESDHCCTL		0x0002e40c
 #define ESDHCCTL_PCS		(0x00080000)
@@ -174,6 +178,7 @@
 #define ESDHC_VENDORSPEC_VSELECT 0x00000002 /* Use 1.8V */
 
 /* Imported from Linux Kernel drivers/mmc/host/sdhci-esdhc-imx.c */
+#define	MIX_CTRL_BCEN		BIT(1)
 #define	MIX_CTRL_DDREN		BIT(3)
 #define MIX_CTRL_DTDSEL_READ	BIT(4)
 #define	MIX_CTRL_AC23EN		BIT(7)
@@ -204,8 +209,19 @@
 /* NOTE: the minimum valid tuning start tap for mx6sl is 1 */
 #define ESDHC_TUNING_START_TAP_DEFAULT	0x1
 #define ESDHC_TUNING_START_TAP_MASK	0xff
+#define ESDHC_TUNING_START_TAP(x)	((x) & ESDHC_TUNING_START_TAP_MASK)
+#define ESDHC_TUNING_COUNTER_MASK	0xff00
+#define ESDHC_TUNING_COUNTER_SHIFT	8
+#define ESDHC_TUNING_COUNTER(x)		(((x) << ESDHC_TUNING_COUNTER_SHIFT) \
+						& ESDHC_TUNING_COUNTER_MASK)
 #define ESDHC_TUNING_STEP_MASK		0x00070000
 #define ESDHC_TUNING_STEP_SHIFT		16
+#define ESDHC_TUNING_STEP(x)		(((x) << ESDHC_TUNING_STEP_SHIFT) \
+						& ESDHC_TUNING_STEP_MASK)
+#define ESDHC_TUNING_WINDOW_MASK	0x700000
+#define ESDHC_TUNING_WINDOW_SHIFT	20
+#define ESDHC_TUNING_WINDOW(x)		(((x) << ESDHC_TUNING_WINDOW_SHIFT) \
+						& ESDHC_TUNING_WINDOW_MASK)
 
 #define	ESDHC_FLAG_MULTIBLK_NO_INT	BIT(1)
 #define	ESDHC_FLAG_ENGCM07207		BIT(2)

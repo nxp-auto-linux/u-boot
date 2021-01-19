@@ -861,6 +861,74 @@ static int esdhc_set_voltage(struct mmc *mmc)
 	}
 }
 
+static int fsl_s32gen1_esdhc_execute_tuning(struct udevice *dev,
+					    uint32_t opcode)
+{
+	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
+	struct fsl_esdhc *regs = priv->esdhc_regs;
+	u32 val, ret;
+
+	val = readl(&regs->irqstaten);
+	val |= IRQSTATEN_BRR;
+	writel(val, &regs->irqstaten);
+
+	val = readl(&regs->vendorspec);
+	val |= VENDORSPEC_FRC_SDCLK_ON;
+	writel(val, &regs->vendorspec);
+
+	val = readl(&regs->tuning_ctrl);
+	val |= ESDHC_STD_TUNING_EN;
+	val |= ESDHC_TUNING_WINDOW(3);
+	val |= ESDHC_TUNING_STEP(1);
+	val |= ESDHC_TUNING_COUNTER(127);
+	val |= ESDHC_TUNING_START_TAP(0x81);
+	writel(val, &regs->tuning_ctrl);
+
+	val = readl(&regs->autoc12err);
+	val |= AUTOC12ERR_EXECUTE_TUNING;
+	writel(val, &regs->autoc12err);
+
+	while (readl(&regs->autoc12err) & AUTOC12ERR_EXECUTE_TUNING) {
+		writel(BLKATTR_CNT(1) | BLKATTR_SIZE(0x80), &regs->blkattr);
+
+		while (readl(&regs->prsstat) & (PRSSTAT_CICHB | PRSSTAT_CIDHB))
+			;
+		writel(0xffffffff, &regs->irqstat);
+		writel(0, &regs->cmdarg);
+
+		val = readl(&regs->mixctrl);
+		val |= MIX_CTRL_DTDSEL_READ;
+		val &= ~MIX_CTRL_BCEN;
+		writel(val, &regs->mixctrl);
+
+		val = XFERTYP_CMD(opcode) | XFERTYP_RSPTYP_48;
+		val |= XFERTYP_DPSEL | XFERTYP_CICEN | XFERTYP_CCCEN;
+		writel(val, &regs->xfertyp);
+
+		while (!(readl(&regs->irqstat) & IRQSTAT_BRR))
+			;
+
+		val = readl(&regs->irqstat);
+		val |= IRQSTAT_BRR;
+		writel(val, &regs->irqstat);
+	}
+
+	if (readl(&regs->autoc12err) & AUTOC12ERR_SMP_CLK_SEL) {
+		val = readl(&regs->mixctrl);
+		val |= MIX_CTRL_AUTO_TUNE_EN;
+		writel(val, &regs->mixctrl);
+		ret = 0;
+	} else {
+		ret = -ETIMEDOUT;
+	}
+
+	val = readl(&regs->vendorspec);
+	val &= ~VENDORSPEC_FRC_SDCLK_ON;
+	writel(val, &regs->vendorspec);
+
+	return ret;
+}
+
 static void esdhc_stop_tuning(struct mmc *mmc)
 {
 	struct mmc_cmd cmd;
@@ -872,6 +940,8 @@ static void esdhc_stop_tuning(struct mmc *mmc)
 	dm_mmc_send_cmd(mmc->dev, &cmd, NULL);
 }
 
+static struct esdhc_soc_data usdhc_s32gen1_data;
+
 static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 {
 	struct fsl_esdhc_plat *plat = dev_get_platdata(dev);
@@ -882,6 +952,11 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 	u32 irqsigen = readl(&regs->irqsigen);
 	int i, ret = -ETIMEDOUT;
 	u32 val, mixctrl;
+	struct esdhc_soc_data *soc_data =
+		(struct esdhc_soc_data *)dev_get_driver_data(dev);
+
+	if (soc_data == &usdhc_s32gen1_data)
+		return fsl_s32gen1_esdhc_execute_tuning(dev, opcode);
 
 	/* clock tuning is not needed for upto 52MHz */
 	if (mmc->clock <= 52000000)
