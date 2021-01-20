@@ -940,7 +940,7 @@
 #define SIUL2_GPDIO_FOR_GPIO(i)		(((i) & (~0x3)) >> 2)
 #define SIUL2_GPDIO_PDIO_OFF_FOR_GPIO(i)	(~(i) & (0x3))
 
-#ifdef CONFIG_S32R45
+#ifdef CONFIG_NXP_S32R45
 #define SIUL2_0_MAX_GPIO		SIUL2_0_S32R45_MAX_GPIO
 #endif
 

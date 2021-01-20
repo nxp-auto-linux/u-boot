@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2021 NXP
  */
 
 /*
@@ -10,8 +9,6 @@
 
 #ifndef __S32R45_H
 #define __S32R45_H
-
-#define CONFIG_S32R45
 
 #include <configs/s32-gen1.h>
 

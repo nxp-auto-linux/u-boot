@@ -150,7 +150,7 @@ int print_cpuinfo(void)
 		   get_siul2_midr1_minor(),
 		   get_siul2_midr2_subminor());
 	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
-#elif defined(CONFIG_S32R45)
+#elif defined(CONFIG_NXP_S32R45)
 	printf("CPU:\tNXP S32R45\n");
 #endif
 	printf("Reset cause: %s\n", get_reset_cause());
