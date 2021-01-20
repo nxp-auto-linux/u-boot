@@ -193,11 +193,20 @@ static void enable_snooping(void)
 }
 #endif
 
+static unsigned long get_tlb_size(void)
+{
+#ifdef CONFIG_S32V234
+	return CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
+#else
+	return CONFIG_DTB_SRAM_ADDR - S32_IRAM_MMU_TABLES_BASE;
+#endif
+}
+
 static inline void early_mmu_setup(void)
 {
 	/* global data is already setup, no allocation yet */
 	gd->arch.tlb_addr = S32_IRAM_MMU_TABLES_BASE;
-	gd->arch.tlb_size = CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
+	gd->arch.tlb_size = get_tlb_size();
 
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
@@ -235,7 +244,7 @@ static inline void final_mmu_setup(void)
 	/* global data is already setup, no allocation yet */
 	gd->arch.tlb_addr = S32_SDRAM_MMU_TABLES_BASE;
 	gd->arch.tlb_fillptr = gd->arch.tlb_addr;
-	gd->arch.tlb_size = CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
+	gd->arch.tlb_size = get_tlb_size();
 
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
