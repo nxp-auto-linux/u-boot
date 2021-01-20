@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2018-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2018-2021 NXP
  */
 
 #ifndef __S32_GEN1_BOARD_COMMON_H__
@@ -17,7 +16,7 @@ void setup_iomux_uart(void);
 	void setup_iomux_dspi(void);
 #endif
 
-#if defined(CONFIG_S32G274A) || defined(CONFIG_S32R45)
+#if defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_S32R45)
 void setup_iomux_uart0_pc09_pc10(void);
 #endif
 

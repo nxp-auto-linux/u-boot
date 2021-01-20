@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  */
 
 /*
@@ -9,8 +9,6 @@
 
 #ifndef __S32G274A_H
 #define __S32G274A_H
-
-#define CONFIG_S32G274A
 
 #include <configs/s32-gen1.h>
 

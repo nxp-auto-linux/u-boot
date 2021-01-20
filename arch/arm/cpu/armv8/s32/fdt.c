@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017,2019-2020 NXP
+ * (C) Copyright 2017,2019-2021 NXP
  */
 
 #include <common.h>
@@ -227,7 +227,7 @@ static void hide_sram(bd_t *bd)
 	}
 }
 
-#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
+#if defined(CONFIG_NXP_S32G2XX) && defined(CONFIG_PRAM)
 /* Fixup the DDR node in order to reserve "pram" amount of KB somewhere in the
  * available physical memory. This would typically be used by TF-A as a secure
  * memory, and enforced through XRDC. Making it "invisible" to Linux is only a
@@ -320,7 +320,7 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 {
 	hide_sram(bd);
 
-#if defined(CONFIG_S32G274A) && defined(CONFIG_PRAM)
+#if defined(CONFIG_NXP_S32G2XX) && defined(CONFIG_PRAM)
 	exclude_pram(bd);
 #endif
 	apply_ddr_limits(bd);

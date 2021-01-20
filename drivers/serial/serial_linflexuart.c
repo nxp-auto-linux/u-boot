@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * Copyright 2017, 2019 NXP
+ * Copyright 2017, 2019, 2021 NXP
  */
 
 #include <common.h>
@@ -17,7 +17,7 @@
 #define LINCR1_INIT			BIT(0)
 #define LINCR1_MME			BIT(4)
 /* This bit is marked as Reserved on S32G274A */
-#ifndef CONFIG_S32G274A
+#ifndef CONFIG_NXP_S32G2XX
 #define LINCR1_BF			BIT(7)
 #endif
 #define LINSR_LINS_INITMODE		(0x00001000)
@@ -101,7 +101,7 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 	/* set the Linflex in master|init mode and activate by-pass filter
 	 * (where supported) */
 	ctrl = LINCR1_MME | LINCR1_INIT;
-#ifndef CONFIG_S32G274A
+#ifndef CONFIG_NXP_S32G2XX
 	ctrl |= LINCR1_BF;
 #endif
 	__raw_writel(ctrl, &base->lincr1);

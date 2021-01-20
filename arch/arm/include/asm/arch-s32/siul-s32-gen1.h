@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2021 NXP
  */
 
 #ifndef __ARCH_ARM_MACH_S32G1_SIUL_H__
@@ -945,7 +944,7 @@
 #define SIUL2_0_MAX_GPIO		SIUL2_0_S32R45_MAX_GPIO
 #endif
 
-#ifdef CONFIG_S32G274A
+#ifdef CONFIG_NXP_S32G2XX
 #define SIUL2_0_MAX_GPIO		SIUL2_0_S32G274A_MAX_GPIO
 #endif
 

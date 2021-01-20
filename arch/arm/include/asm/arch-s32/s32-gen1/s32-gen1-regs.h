@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017-2020 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2021 NXP
  */
 
 #ifndef __ASM_ARCH_S32_GEN1_REGS_H__
@@ -115,7 +114,7 @@
 #ifdef CONFIG_S32R45
 #define CAN_FD0_BASE_ADDR			(PER_GROUP1_BASE + 0x000B4000)
 #define CAN_FD1_BASE_ADDR			(PER_GROUP1_BASE + 0x000BE000)
-#elif defined(CONFIG_S32G274A)
+#elif defined(CONFIG_NXP_S32G2XX)
 #define CAN_FD0_BASE_ADDR			(PER_GROUP1_BASE + 0x000B8000)
 #define CAN_FD1_BASE_ADDR			(PER_GROUP1_BASE + 0x000BC000)
 #endif
