@@ -438,7 +438,7 @@ int arch_cpu_init(void)
 
 	ncore_init(0x1);
 #endif
-
+	set_sctlr(get_sctlr() & ~CR_M);
 	icache_enable();
 	__asm_invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
