@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * (C) Copyright 2014 Freescale Semiconductor
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  *
  * Extracted from armv8/start.S
  */
@@ -46,6 +46,7 @@ watchdog_cortexm_disable:
 
 /* Skip SRAM initialization if running with ATF and U-Boot in DDR */
 #if !(defined(CONFIG_S32_ATF_BOOT_FLOW) && defined(CONFIG_S32_SKIP_RELOC))
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 sram_init:
 	/* Clear stack region */
 	ldr x0,  =(CONFIG_SYS_INIT_SP_ADDR - CONFIG_SYS_INIT_SP_OFFSET)
@@ -66,9 +67,9 @@ sram_init:
 	sub x1, x1, x0
 
 	bl sram_clr
-
 	/* turn on a53 slave cores from a53 master */
 	/* deassert cores on reset */
+#endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 #endif
 
 start_slave_cores:
