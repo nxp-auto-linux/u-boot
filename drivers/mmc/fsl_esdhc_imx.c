@@ -1614,7 +1614,9 @@ static int fsl_esdhc_probe(struct udevice *dev)
 
 	init_clk_usdhc(dev->seq);
 
-#if CONFIG_IS_ENABLED(CLK)
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	priv->sdhc_clk = 400000000;
+#elif CONFIG_IS_ENABLED(CLK)
 	/* Assigned clock already set clock */
 	ret = clk_get_by_name(dev, "per", &priv->per_clk);
 	if (ret) {

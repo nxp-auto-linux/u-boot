@@ -276,6 +276,7 @@ static inline void final_mmu_setup(void)
 }
 
 #if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 /*
  * This function is a temporary fix for drivers without clock bindings.
  *
@@ -311,6 +312,7 @@ static int enable_periph_clocks(void)
 
 	return 0;
 }
+#endif
 #endif
 
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
@@ -501,7 +503,9 @@ int arch_early_init_r(void)
 #endif
 
 #if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	return enable_periph_clocks();
+#endif
 #endif
 
 	return rv;
