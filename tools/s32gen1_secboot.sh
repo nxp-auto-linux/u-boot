@@ -103,7 +103,8 @@ openssl dgst -sha1 -verify "$KEY_PATH"/public.pem \
 
 # add everything to the sdcard
 # write primary ivt and duplicate ivt
-dd if=u-boot.s32 of="$DEV_PATH" bs=512 count=9 conv=notrunc,fsync
+dd if=u-boot.s32 of="$DEV_PATH" bs=256 count=1 conv=notrunc,fsync
+dd if=u-boot.s32 of="$DEV_PATH" bs=512 skip=8 seek=8 count=1 conv=notrunc,fsync
 
 # write DCD
 dd if=u-boot.s32 of="$DEV_PATH" bs=512 \
@@ -117,3 +118,7 @@ dd if=u-boot.sign of="$DEV_PATH" bs=512 seek=1033 conv=notrunc,fsync
 
 # write signed u-boot
 dd if=u-boot-tosign.s32 of="$DEV_PATH" bs=512 seek=1051 conv=notrunc,fsync
+
+# write app header
+dd if=u-boot.s32 of="$DEV_PATH" bs=512 \
+seek=1050 skip=1050 count=1 conv=notrunc,fsync
