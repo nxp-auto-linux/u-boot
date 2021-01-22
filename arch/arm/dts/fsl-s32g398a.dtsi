@@ -7,11 +7,10 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-
 /dts-v1/;
 #include "fsl-s32g.dtsi"
 / {
-	model = "NXP S32G2XX";
-	compatible = "fsl,s32g274-simu", "fsl,s32g274", "fsl,s32gen1",
-				 "arm,vexpress,v2p-aarch64", "arm,vexpress";
+	model = "NXP S32G3XX";
+	compatible = "fsl,s32g398", "fsl,s32gen1",
+			"arm,vexpress,v2p-aarch64", "arm,vexpress";
 };

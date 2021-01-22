@@ -1,10 +1,9 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
-# Copyright 2018-2020 NXP
+# Copyright 2018-2021 NXP
 #
 
-obj-$(CONFIG_NXP_S32G2XX)		+= cmu.o
-obj-$(CONFIG_NXP_S32R45)		+= cmu.o
+obj-$(CONFIG_S32_GEN1)			+= cmu.o
 obj-$(CONFIG_HSE_SECBOOT)		+= hse_adv_secboot.o
 obj-y					+= ncore.o
 obj-y					+= soc.o

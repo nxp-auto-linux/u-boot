@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <asm/io.h>
 #include <asm/arch/siul.h>
@@ -189,7 +189,7 @@ static struct cmu cmu_blocks[] = {
 	FXOSC_PERIPH_CMU_FC(53, MIPICSI2_0, 400),
 	FXOSC_PERIPH_CMU_FC(54, SERDES_REF_CLK, 125),
 };
-#elif defined(CONFIG_NXP_S32G2XX)
+#elif defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32G3XX)
 static struct cmu cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC_CLK, FXOSC_FREQ),
 	FXOSC_PERIPH_CMU_FM(1, FIRC_CLK, FIRC_FREQ),

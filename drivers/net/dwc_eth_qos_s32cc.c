@@ -259,7 +259,8 @@ static int check_sgmii_cfg(int gmac_no)
 #if defined(CONFIG_TARGET_S32G274AEVB) || \
 	defined(CONFIG_TARGET_S32G274ARDB) || \
 	defined(CONFIG_TARGET_S32G274ASIM) || \
-	defined(CONFIG_TARGET_S32G274AEMU)
+	defined(CONFIG_TARGET_S32G274ASIM) || \
+	defined(CONFIG_TARGET_S32G398AEMU)
 
 	desired_mode1 = SGMII_XPCS0;
 	desired_mode2 = SGMII_XPCS0_XPCS1;

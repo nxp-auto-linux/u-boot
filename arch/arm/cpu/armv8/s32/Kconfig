@@ -14,6 +14,12 @@ config NXP_S32G2XX
 	help
 	  Platforms having S32G2XXX SoC
 
+config NXP_S32G3XX
+	bool
+	select S32_GEN1
+	help
+	  Platforms having S32G3XXX SoC
+
 config NXP_S32R45
 	bool
 	select S32_GEN1
@@ -91,6 +97,10 @@ config TARGET_S32G274ASIM
 config TARGET_S32G274AEMU
 	bool "Support s32g274a ZeBu"
 	select NXP_S32G2XX
+
+config TARGET_S32G398AEMU
+	bool "Support S32G398A ZeBu"
+	select NXP_S32G3XX
 
 endchoice
 

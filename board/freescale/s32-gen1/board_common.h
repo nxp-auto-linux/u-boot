@@ -20,7 +20,9 @@ void setup_iomux_uart(void);
 void setup_iomux_uart0_pc09_pc10(void);
 #endif
 
-#if defined(CONFIG_TARGET_S32G274ASIM) || defined(CONFIG_TARGET_S32G274AEMU)
+#if defined(CONFIG_TARGET_S32G274ASIM) || \
+	defined(CONFIG_TARGET_S32G274AEMU) || \
+	defined(CONFIG_TARGET_S32G398AEMU)
 void setup_iomux_uart1_pb09_pb10(void);
 #endif
 

@@ -152,6 +152,8 @@ int print_cpuinfo(void)
 	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
 #elif defined(CONFIG_NXP_S32R45)
 	printf("CPU:\tNXP S32R45\n");
+#elif defined(CONFIG_NXP_S32G3XX)
+	printf("CPU:\tNXP S32G398A\n");
 #endif
 	printf("Reset cause: %s\n", get_reset_cause());
 
@@ -371,7 +373,17 @@ u32 cpu_pos_mask(void)
 
 	return 0;
 }
+#elif defined(CONFIG_NXP_S32G3XX) || defined(CONFIG_NXP_S32R45)
+u32 cpu_pos_mask(void)
+{
+	/* 4 cores */
+	return 0xFU;
+}
+#else
+#error "Unsupported SOC"
+#endif
 
+#if CONFIG_NXP_S32G2XX
 u32 get_sram_size(void)
 {
 	switch (get_s32g2_derivative()) {
@@ -386,15 +398,7 @@ u32 get_sram_size(void)
 
 	return 0;
 }
-#endif
-
-#ifdef CONFIG_NXP_S32R45
-u32 cpu_pos_mask(void)
-{
-	/* 4 cores */
-	return 0xFU;
-}
-
+#else
 u32 get_sram_size(void)
 {
 	return S32_SRAM_SIZE;
