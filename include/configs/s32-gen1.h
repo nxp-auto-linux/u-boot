@@ -1,8 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -113,7 +113,11 @@
 #define S32_SRAM_BASE		0x34000000
 #endif
 
+#ifdef CONFIG_NXP_S32G3XX
+#define S32_SRAM_SIZE		(20 * SZ_1M)
+#else
 #define S32_SRAM_SIZE		(8 * SZ_1M)
+#endif
 
 #define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
 #define IRAM_SIZE		CONFIG_SYS_MEM_SIZE

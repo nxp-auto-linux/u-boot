@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Extracted from armv8/start.S
  */
@@ -14,9 +14,15 @@
 
 /*
  * Translate a bus address in SRAM controller initialization address based on:
+ * On S32G2 and S32R45
  * mem_addr[16:0] = {bus_addr[23:9], bus_addr[5:4]}
  *
  * addr := ((addr >> 9) << 2) | ((addr >> 4) & 0x3);
+ *
+ * On S32G3
+ * mem_addr[16:0] = {bus_addr[24:10], bus_addr[5:4]}
+ *
+ * addr := ((addr >> 10) << 2) | ((addr >> 4) & 0x3);
  *
  * x0: SRAM bus address
  * ret: x0: Initialization address
@@ -24,7 +30,11 @@
  * Clobber list: x0,x4,x5
  */
 ENTRY(calc_sramc_addr)
+#if defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32R45)
 	lsr	x4, x0, #9
+#else /* CONFIG_NXP_S32G3XX */
+	lsr	x4, x0, #10
+#endif
 	lsl	x4, x4, #2
 	lsr	x5, x0, #4
 	and	x5, x5, #3
@@ -224,20 +234,11 @@ align_high_addr:
 	mov	x2, x7
 	mov	x3, x10
 	bl	in_overlap
-	cbnz	x0, init_sramc0
-
-check_sramc1:
-	mov	x0, #SRAMC1_MIN_ADDR
-	mov	x1, #SRAMC1_MAX_ADDR
-	mov	x2, x7
-	mov	x3, x10
-	bl	in_overlap
-	cbnz	x0, init_sramc1
-	b	sram_exit
+	cbz	x0, check_sramc1
 
 init_sramc0:
-	mov	x0, #SRAMC0_BASE_ADDD_L
-	movk	x0, #SRAMC0_BASE_ADDD_H, lsl #16
+	mov	x0, #SRAMC0_BASE_ADDR_L
+	movk	x0, #SRAMC0_BASE_ADDR_H, lsl #16
 	mov	x1, x7
 	mov	x2, x10
 	mov	x9, #SRAMC0_MAX_ADDR
@@ -248,11 +249,22 @@ init_sramc0:
 	mov	x2, #SRAMC0_MAX_ADDR
 2:
 	bl	clear_sramc_range
-	b	check_sramc1
+
+check_sramc1:
+	mov	x0, #SRAMC1_MIN_ADDR
+	mov	x1, #SRAMC1_MAX_ADDR
+	mov	x2, x7
+	mov	x3, x10
+	bl	in_overlap
+#if defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32R45)
+	cbz	x0, sram_exit
+#else /* CONFIG_NXP_S32G3XX */
+	cbz	x0, check_sramc2
+#endif
 
 init_sramc1:
-	mov	x0, #SRAMC1_BASE_ADDD_L
-	movk	x0, #SRAMC1_BASE_ADDD_H, lsl #16
+	mov	x0, #SRAMC1_BASE_ADDR
+	movk	x0, #SRAMC1_BASE_ADDR_H, lsl #16
 	cmp	x7, #SRAMC1_MIN_ADDR
 	b.lt	3f
 	sub	x1, x7, #SRAMC1_MIN_ADDR
@@ -262,6 +274,52 @@ init_sramc1:
 4:
 	sub	x2, x10, #SRAMC1_MIN_ADDR
 	bl	clear_sramc_range
+
+#ifdef CONFIG_NXP_S32G3XX
+check_sramc2:
+	mov	x0, #SRAMC2_MIN_ADDR
+	mov	x1, #SRAMC2_MAX_ADDR_L
+	movk	x1, #SRAMC2_MAX_ADDR_H, lsl #16
+	mov	x2, x7
+	mov	x3, x10
+	bl	in_overlap
+	cbz	x0, check_sramc3
+
+init_sramc2:
+	mov	x0, #SRAMC2_BASE_ADDR_L
+	movk	x0, #SRAMC2_BASE_ADDR_H, lsl #16
+	cmp	x7, #SRAMC2_MIN_ADDR
+	b.lt	5f
+	sub	x1, x7, #SRAMC2_MIN_ADDR
+	b	6f
+5:
+	mov	x1, #0
+6:
+	sub	x2, x10, #SRAMC2_MIN_ADDR
+	bl	clear_sramc_range
+
+check_sramc3:
+	mov	x0, #SRAMC3_MIN_ADDR
+	mov	x1, #SRAMC3_MAX_ADDR_L
+	movk	x1, #SRAMC3_MAX_ADDR_H, lsl #16
+	mov	x2, x7
+	mov	x3, x10
+	bl	in_overlap
+	cbz	x0, sram_exit
+
+init_sramc3:
+	mov	x0, #SRAMC2_BASE_ADDR_L
+	movk	x0, #SRAMC2_BASE_ADDR_H, lsl #16
+	cmp	x7, #SRAMC2_MIN_ADDR
+	b.lt	7f
+	sub	x1, x7, #SRAMC2_MIN_ADDR
+	b	8f
+7:
+	mov	x1, #0
+8:
+	sub	x2, x10, #SRAMC2_MIN_ADDR
+	bl	clear_sramc_range
+#endif
 
 	mov	x0, #0
 
