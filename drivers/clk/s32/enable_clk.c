@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
@@ -419,8 +419,10 @@ static int init_dfs_port(void *dfs_addr, u32 port, u32 mfi, u32 mfn)
 	writel(mask, DFS_PORTOLSR(dfs_addr));
 	writel(mask, DFS_PORTRESET(dfs_addr));
 
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	while (readl(DFS_PORTSR(dfs_addr)) & mask)
 		;
+#endif
 
 	if (init_dfs)
 		writel(DFS_CTL_RESET, DFS_CTL(dfs_addr));
@@ -436,8 +438,10 @@ static int init_dfs_port(void *dfs_addr, u32 port, u32 mfi, u32 mfn)
 	portreset &= ~BIT(port);
 	writel(portreset, DFS_PORTRESET(dfs_addr));
 
+#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	while ((readl(DFS_PORTSR(dfs_addr)) & BIT(port)) != BIT(port))
 		;
+#endif
 
 	portolsr = readl(DFS_PORTOLSR(dfs_addr));
 	if (portolsr & DFS_PORTOLSR_LOL(port)) {
