@@ -31,11 +31,31 @@ obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 
 ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB) $(CONFIG_TARGET_S32G274ABLUEBOX3)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) += s32g274a/phy_cfg.o s32g274a/pie_cfg.o s32g274a/ddrc_cfg.o ddr_utils.o ddrss_cfg.o s32g274a/dq_swap_cfg.o imem_cfg.o s32g274a/dmem_cfg.o ddr_init.o
+obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
+				ddr_init.o \
+				ddr_utils.o \
+				ddrss_cfg.o \
+				imem_cfg.o \
+				s32g274a/ddrc_cfg.o \
+				s32g274a/dmem_cfg.o \
+				s32g274a/dq_swap_cfg.o \
+				s32g274a/pie_cfg.o \
+				s32g274a/phy_cfg.o \
+
 endif
 
 ifneq ($(filter y,$(CONFIG_TARGET_S32R45EVB)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) += s32r45/phy_cfg.o s32r45/pie_cfg.o s32r45/ddrc_cfg.o ddr_utils.o ddrss_cfg.o s32r45/dq_swap_cfg.o imem_cfg.o s32r45/dmem_cfg.o ddr_init.o
+obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
+				ddr_init.o \
+				ddr_utils.o \
+				ddrss_cfg.o \
+				imem_cfg.o \
+				s32r45/ddrc_cfg.o \
+				s32r45/dmem_cfg.o \
+				s32r45/dq_swap_cfg.o \
+				s32r45/phy_cfg.o \
+				s32r45/pie_cfg.o \
+
 endif
 
 ifdef CONFIG_TARGET_S32G274AEVB

@@ -26,6 +26,9 @@
 #include <power/pmic.h>
 #include <power/vr5510.h>
 
+#define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
+#define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
@@ -546,6 +549,92 @@ static int s32_gentimer_init(void)
 #endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 
+#if defined(CONFIG_S32GEN1_DRAM_INLINE_ECC)
+#include "ddr_density.h"
+
+static inline bool get_intersection(unsigned long s1, unsigned long e1,
+				    unsigned long s2, unsigned long e2,
+				    unsigned long *s3, unsigned long *e3)
+{
+	if (s2 > e1 || s1 > e2)
+		return false;
+
+	*s3 = max(s1, s2);
+	*e3 = min(e1, e2);
+
+	return true;
+}
+
+static bool is_ext_addr(unsigned long addr)
+{
+	return addr >= S32GEN1_DRAM_EXT_ADDR;
+}
+
+static unsigned long to_ext_addr(unsigned long addr)
+{
+	return addr - S32GEN1_DRAM_STD_ADDR + S32GEN1_DRAM_EXT_ADDR;
+}
+
+static unsigned long to_std_addr(unsigned long addr)
+{
+	return addr + S32GEN1_DRAM_STD_ADDR - S32GEN1_DRAM_EXT_ADDR;
+}
+
+static void s32_exclude_ecc_region(void)
+{
+	static struct s32_ddr_region pages[S32GEN1_DDR_MAX_NO_PAGES];
+	unsigned long start, size;
+	unsigned long pg_start, pg_end;
+	unsigned long r_start, r_end;
+	int active_pages;
+	bool std_map;
+	u32 i, j;
+
+	if (!gd->bd) {
+		pr_err("gd->bd isn't initialized\n");
+		return;
+	}
+
+	s32gen1_get_ddr_regions(pages, &active_pages);
+
+	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+		start = gd->bd->bi_dram[i].start;
+		size = gd->bd->bi_dram[i].size;
+
+		/* Skip SRAM */
+		if (start == S32_SRAM_BASE)
+			continue;
+
+		/* Use extended addresses */
+		if (!is_ext_addr(start)) {
+			start = to_ext_addr(start);
+			std_map = true;
+		} else {
+			std_map = false;
+		}
+
+		for (j = 0; j < active_pages; j++) {
+			pg_start = pages[j].address;
+			pg_end = pg_start + pages[j].size;
+
+			if (!get_intersection(start, start + size,
+					      pg_start, pg_end,
+					      &r_start, &r_end))
+				continue;
+
+			start = r_start;
+			size = r_end - r_start;
+		}
+
+		if (std_map)
+			start = to_std_addr(start);
+
+		gd->bd->bi_dram[i].start = start;
+		gd->bd->bi_dram[i].size = size;
+	}
+}
+#endif
+
 static void s32_init_ram_size(void)
 {
 	int i;
@@ -602,6 +691,11 @@ int dram_init_banksize(void)
 #endif
 #endif
 	s32_init_ram_size();
+
+#if defined(CONFIG_S32GEN1_DRAM_INLINE_ECC)
+	s32_exclude_ecc_region();
+#endif
+
 	return 0;
 }
 

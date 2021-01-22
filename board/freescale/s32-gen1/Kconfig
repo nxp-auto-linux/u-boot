@@ -18,6 +18,13 @@ config TARGET_TYPE_S32GEN1_SIMULATOR
 
 endif
 
+config S32GEN1_DRAM_INLINE_ECC
+	bool "S32 GEN1 inline ECC"
+	default y if !TARGET_TYPE_S32GEN1_EMULATOR
+	help
+	  Select this config if you want to use inline ECC feature for
+	  S32 Gen1 boards.
+
 config SYS_DATA_BASE
 	hex "Data Base" if !S32_ATF_BOOT_FLOW
 	default 0xff800000 if S32_ATF_BOOT_FLOW
