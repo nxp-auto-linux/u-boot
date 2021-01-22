@@ -265,17 +265,6 @@
 		ddrpll: ddrpll@40044000 {
 			compatible = "fsl,s32gen1-ddrpll";
 			reg = <0x0 0x40044000 0x0 0x3000>;
-
-			assigned-clocks =
-				<&clks S32GEN1_CLK_DDR_PLL_MUX>,
-				<&clks S32GEN1_CLK_DDR_PLL_VCO>,
-				<&clks S32GEN1_CLK_DDR_PLL_PHI0>;
-			assigned-clock-parents =
-				<&clks S32GEN1_CLK_FXOSC>;
-			assigned-clock-rates =
-				<0>,
-				<S32GEN1_DDR_PLL_VCO_FREQ>,
-				<S32GEN1_DDR_FREQ>;
 		};
 
 		mc_me: mc_me@40088000 {
@@ -379,16 +368,6 @@
 		mc_cgm5: mc_cgm5@40068000 {
 			compatible = "fsl,s32gen1-mc_cgm5";
 			reg = <0x0 0x40068000 0x0 0x3000>;
-
-			assigned-clocks =
-				<&clks S32GEN1_CLK_MC_CGM5_MUX0>,
-				<&clks S32GEN1_CLK_DDR>;
-			assigned-clock-parents =
-				<&clks S32GEN1_CLK_DDR_PLL_PHI0>,
-				<0>;
-			assigned-clock-rates =
-				<0>,
-				<S32GEN1_DDR_FREQ>;
 		};
 	};
 
