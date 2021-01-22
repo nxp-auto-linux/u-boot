@@ -2,7 +2,7 @@
 /*
  * HSE advanced secure boot preparatory command demo
  *
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 
 #include <common.h>
@@ -46,69 +46,52 @@ static const u8 rsa2048_orig_exp[] = { 0x01, 0x00, 0x01 };
 /* hse nvm key catalog configuration */
 #define HSE_NVM_KEY_CATALOG_CFG \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY128_BITS }, \
+	HSE_KEY_TYPE_AES, 4U, HSE_KEY128_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY256_BITS }, \
+	HSE_KEY_TYPE_AES, 6U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_HMAC, 5U, HSE_KEY1024_BITS }, \
+	HSE_KEY_TYPE_HMAC, 1U, HSE_KEY512_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PUB, 4U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_ECC_PUB_EXT, 2U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 5U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_RSA_PAIR, 2U, HSE_KEY2048_BITS}, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PAIR, 3U, HSE_KEY4096_BITS }, \
+	HSE_KEY_TYPE_RSA_PUB, 2U, HSE_KEY2048_BITS}, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PUB, 3U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 5U, HSE_KEY4096_BITS }, \
+	HSE_KEY_TYPE_RSA_PUB_EXT, 2U, HSE_KEY2048_BITS}, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY128_BITS }, \
+	HSE_KEY_TYPE_AES, 1U, HSE_KEY128_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_AES, 10U, HSE_KEY256_BITS }, \
+	HSE_KEY_TYPE_AES, 3U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_HMAC, 10U, HSE_KEY1024_BITS }, \
+	HSE_KEY_TYPE_HMAC, 1U, HSE_KEY512_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_ECC_PUB, 1U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB, 3U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 5U, HSE_KEY521_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PAIR, 2U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PUB, 3U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 5U, HSE_KEY4096_BITS }, \
-{ HSE_MU0_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB, 1U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_RSA_PUB, 1U, HSE_KEY2048_BITS}, \
 { 0U, 0U, 0U, 0U, 0U }
 
 /* hse ram key catalog configuration */
 #define HSE_RAM_KEY_CATALOG_CFG \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_AES, 20U, HSE_KEY128_BITS }, \
+	HSE_KEY_TYPE_AES, 2U, HSE_KEY128_BITS }, \
 { HSE_MU0_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_AES, 20U, HSE_KEY256_BITS }, \
+	HSE_KEY_TYPE_AES, 4U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_HMAC, 10U, HSE_KEY1024_BITS }, \
+	HSE_KEY_TYPE_HMAC, 5U, HSE_KEY512_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PUB, 6U, HSE_KEY521_BITS }, \
+	HSE_KEY_TYPE_ECC_PUB, 1U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 10U, HSE_KEY521_BITS  }, \
+	HSE_KEY_TYPE_RSA_PUB, 2U, HSE_KEY2048_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_RSA_PUB, 6U, HSE_KEY4096_BITS }, \
+	HSE_KEY_TYPE_SHARED_SECRET, 2U, HSE_KEY638_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 10U, HSE_KEY4096_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_SHARED_SECRET, 10U, HSE_KEY638_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_SHARED_SECRET, 5U, HSE_KEY4096_BITS }, \
+	HSE_KEY_TYPE_SHARED_SECRET, 2U, HSE_KEY4096_BITS }, \
 { 0U, 0U, 0U, 0U, 0U }
-
 
 /* the nvm container used to format the hse key catalogs */
 static const struct hse_key_group_cfg_entry nvm_orig_cat[] = {
@@ -264,9 +247,10 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 
 	/**
 	 * no address of actual code start, need to reference app bl header
+	 * CONFIG_DTB_SRAM_ADDR used bc smr contains dtb and code
 	 */
 	smr_entry->smr_src = priv->ivt.app_boot + 0x200;
-	smr_entry->smr_dst_addr = CONFIG_SYS_TEXT_BASE;
+	smr_entry->smr_dst_addr = CONFIG_DTB_SRAM_ADDR;
 	smr_entry->smr_size = HSE_UBOOT_MAX_SIZE;
 	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
 				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
@@ -335,7 +319,7 @@ hse_send_fail:
 	return ret;
 }
 
-int hse_write_sys_img(struct hse_private *priv)
+int hse_write_sys_img(struct hse_private *priv, bool secure)
 {
 	int ret = 0;
 
@@ -358,8 +342,9 @@ int hse_write_sys_img(struct hse_private *priv)
 	priv->ivt.sys_img_ext_flash_type = HSE_EXT_FLASH_SD;
 	priv->ivt.sys_img_flash_page_size = HSE_EXT_FLASH_PAGE;
 
-	/* set BOOT_SEQ bit */
-	priv->ivt.boot_cfg |= HSE_IVT_BOOTSEQ_BIT;
+	/* set BOOT_SEQ bit, if using secure boot */
+	if (secure)
+		priv->ivt.boot_cfg |= HSE_IVT_BOOTSEQ_BIT;
 
 	/* write primary ivt */
 	ret = hse_mmc_write(&priv->ivt, HSE_PIVT_BLK, 1);
@@ -394,7 +379,7 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	/* check if hse has been initialised */
 	hse_status_ret = hse_mu_check_status();
 	if (!(hse_status_ret & HSE_STATUS_INIT_OK)) {
-		/* keep printf to warn user if hse is missing all the time */
+		/* keep printf to warn user if hse fw is missing */
 		printf("ERROR: HSE not initialised or missing firmware!\n");
 		ret = CMD_RET_FAILURE;
 		goto ret_fail;
@@ -403,8 +388,19 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	/* find mem reserved for hse */
 	hse_nodeoffset = fdt_path_offset(gd->fdt_blob,
 				     "/reserved-memory/hse_reserved");
+	if (hse_nodeoffset < 0) {
+		log_err("ERROR: hse_reserved node not found!\n");
+		return hse_nodeoffset;
+	}
+
 	hse_resmem = fdt_get_base_address(gd->fdt_blob, hse_nodeoffset);
+	if (hse_resmem < 0) {
+		log_err("ERROR: could not get base address of hse_reserved node!\n");
+		return hse_resmem;
+	}
+
 	priv = (struct hse_private *)hse_resmem;
+	memset((void *)priv, 0, sizeof(struct hse_private));
 
 	/* can only read from mmc in blocks of 512B */
 	ret = hse_mmc_read((void *)&priv->ivt, HSE_PIVT_BLK, 1);
@@ -471,7 +467,7 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	if (ret) 
 		goto ret_fail;
 
-	ret = hse_write_sys_img(priv);
+	ret = hse_write_sys_img(priv, true);
 	if (ret) 
 		goto ret_fail;
 
@@ -490,7 +486,8 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 	struct hse_private *priv;
 	u16 hse_status_ret;
 	u32 hse_recv;
-	int ret;
+	u64 hse_resmem;
+	int hse_nodeoffset, ret;
 
 	/* check if hse has been initialised */
 	hse_status_ret = hse_mu_check_status();
@@ -501,8 +498,22 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 		goto ret_fail;
 	}
 
-	/* hse can only read up to 0xe0000000 */
-	priv = (struct hse_private *)HSE_RESERVED_MEM;
+	/* find mem reserved for hse */
+	hse_nodeoffset = fdt_path_offset(gd->fdt_blob,
+				     "/reserved-memory/hse_reserved");
+	if (hse_nodeoffset < 0) {
+		log_err("ERROR: hse_reserved node not found!\n");
+		return hse_nodeoffset;
+	}
+
+	hse_resmem = fdt_get_base_address(gd->fdt_blob, hse_nodeoffset);
+	if (hse_resmem < 0) {
+		log_err("ERROR: could not get base address of hse_reserved node!\n");
+		return hse_resmem;
+	}
+
+	priv = (struct hse_private *)hse_resmem;
+	memset((void *)priv, 0, sizeof(struct hse_private));
 
 	/* can only read from mmc in blocks of 512B */
 	ret = hse_mmc_read((void *)&priv->ivt, HSE_PIVT_BLK, 1);
@@ -530,7 +541,7 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 	if (ret)
 		goto ret_fail;
 
-	ret = hse_write_sys_img(priv);
+	ret = hse_write_sys_img(priv, false);
 	if (ret)
 		goto ret_fail;
 

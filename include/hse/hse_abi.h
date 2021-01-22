@@ -2,7 +2,7 @@
 /*
  * HSE ABI for secure boot in u-boot
  *
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 
 #ifndef HSE_ABI_H
@@ -18,8 +18,6 @@
 #define HSE_SRV_RSP_INVALID_ADDR  0x55A5AA55ul
 #define HSE_SRV_RSP_INVALID_PARAM 0x55A5AA56ul
 #define HSE_SRV_RSP_KEY_INVALID   0xA5AA5527ul
-
-#define HSE_RESERVED_MEM 0x80000000ul
 
 #define HSE_UBOOT_MAX_SIZE   0x100000u
 #define HSE_SYS_IMG_MAX_SIZE 0x10000u
@@ -65,7 +63,7 @@
 #define HSE_HASH_ALGO_SHA_1       2u
 
 #define HSE_INVALID_KEY_HANDLE 0xFFFFFFFFul
-#define HSE_BOOT_KEY_HANDLE    0x010700
+#define HSE_BOOT_KEY_HANDLE    0x010600
 
 #define HSE_MU0_MASK    BIT(0)
 #define HSE_MU1_MASK    BIT(1)
@@ -93,9 +91,11 @@
 
 #define HSE_KEY128_BITS  128u
 #define HSE_KEY256_BITS  256u
+#define HSE_KEY512_BITS  512u
 #define HSE_KEY521_BITS  521u
 #define HSE_KEY638_BITS  638u
 #define HSE_KEY1024_BITS 1024u
+#define HSE_KEY2048_BITS 2048u
 #define HSE_KEY4096_BITS 4096u
 
 /* see include/mmc.h */
