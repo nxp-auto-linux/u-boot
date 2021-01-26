@@ -37,6 +37,14 @@
 
 #endif
 
+#if defined(CONFIG_NXP_S32G3XX)
+#define CPUMASK_CLUSTER0	(BIT(0) | BIT(1) | BIT(4) | BIT(5))
+#define CPUMASK_CLUSTER1	(BIT(2) | BIT(3) | BIT(6) | BIT(7))
+#elif defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32R45)
+#define CPUMASK_CLUSTER0	(BIT(0) | BIT(1))
+#define CPUMASK_CLUSTER1	(BIT(2) | BIT(3))
+#endif
+
 u32 cpu_mask(void);
 int cpu_numcores(void);
 

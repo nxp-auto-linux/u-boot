@@ -497,7 +497,7 @@ int arch_early_init_r(void)
 
 #ifdef CONFIG_S32_GEN1
 	/* Reconfigure Concerto before actually waking the cores */
-	ncore_init(0xf);
+	ncore_init(cpu_pos_mask());
 #endif
 	asm volatile("sev");
 #endif

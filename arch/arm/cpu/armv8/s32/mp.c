@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2020 NXP
+ * (C) Copyright 2017-2021 NXP
  */
 
 #include <common.h>
@@ -74,6 +74,15 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 {
 	u32 reset, resetc;
 
+	/* For S32G2/S32R45 we have the following mapping:
+	 * MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1
+	 * MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1
+	 * For G32G3 we have the following mapping:
+	 * MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1/2/3
+	 * MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1/2/3
+	 */
+	u32 pconf_index = (core % 4) & ~1;
+
 	/* MC_ME holds the low 32 bits of the start_address */
 	writel(gd->relocaddr, MC_ME_PRTN_N_CORE_M_ADDR(prtn, core));
 
@@ -85,16 +94,16 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 	 * Enable core clock
 	 */
 	writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE,
-	       MC_ME_PRTN_N_CORE_M_PCONF(prtn, core & ~1));
+	       MC_ME_PRTN_N_CORE_M_PCONF(prtn, pconf_index));
 	writel(MC_ME_PRTN_N_CORE_M_PUPD_CCUPD,
-	       MC_ME_PRTN_N_CORE_M_PUPD(prtn, core & ~1));
+	       MC_ME_PRTN_N_CORE_M_PUPD(prtn, pconf_index));
 
 	/* Write valid key sequence to trigger the update. */
 	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* Wait for core clock enable status bit. */
-	while ((readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, core & ~1)) &
+	while ((readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, pconf_index)) &
 				MC_ME_PRTN_N_CORE_M_STAT_CCS) !=
 			MC_ME_PRTN_N_CORE_M_STAT_CCS)
 		;

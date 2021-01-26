@@ -13,6 +13,7 @@
 #include <hang.h>
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
+#include <asm/arch/cpu.h>
 #include <asm/arch/s32-gen1/mc_me_regs.h>
 #include <asm/arch/s32-gen1/mc_rgm_regs.h>
 #if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
@@ -40,6 +41,29 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if CONFIG_NXP_S32G2XX
+u32 cpu_pos_mask(void)
+{
+	switch (get_s32g2_derivative()) {
+	case S32G274A_DERIV:
+		return CPUMASK_CLUSTER0 | CPUMASK_CLUSTER1;
+	case S32G254A_DERIV:
+	case S32G233A_DERIV:
+		return BIT(0) | BIT(2);
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+#elif defined(CONFIG_NXP_S32G3XX) || defined(CONFIG_NXP_S32R45)
+u32 cpu_pos_mask(void)
+{
+	return CPUMASK_CLUSTER0 | CPUMASK_CLUSTER1;
+}
+#else
+#error "Unsupported SOC"
+#endif
 
 u32 cpu_mask(void)
 {
@@ -49,7 +73,7 @@ u32 cpu_mask(void)
 	/* Bit 0 corresponds to cluster reset and is 0 if any
 	 * of the other bits 1-4 are 0.
 	 */
-	return ((~(rgm_stat)) >> 1) & 0xf;
+	return ((~(rgm_stat)) >> 1) & cpu_pos_mask();
 }
 
 /*
@@ -356,31 +380,6 @@ int mmap_dspi(unsigned short bus, struct dspi **base_addr)
 	*base_addr = (struct dspi *)addr;
 	return 0;
 }
-#endif
-
-#if CONFIG_NXP_S32G2XX
-u32 cpu_pos_mask(void)
-{
-	switch (get_s32g2_derivative()) {
-	case S32G274A_DERIV:
-		return BIT(0) | BIT(1) | BIT(2) | BIT(3);
-	case S32G254A_DERIV:
-	case S32G233A_DERIV:
-		return BIT(0) | BIT(2);
-	default:
-		return 0;
-	}
-
-	return 0;
-}
-#elif defined(CONFIG_NXP_S32G3XX) || defined(CONFIG_NXP_S32R45)
-u32 cpu_pos_mask(void)
-{
-	/* 4 cores */
-	return 0xFU;
-}
-#else
-#error "Unsupported SOC"
 #endif
 
 #if CONFIG_NXP_S32G2XX

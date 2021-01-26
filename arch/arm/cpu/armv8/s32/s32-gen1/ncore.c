@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2019 NXP
+ * Copyright 2019,2021 NXP
  */
 
 #include <stdio.h>
 #include <linux/types.h>
 #include <asm/io.h>
 #include <common.h>
+#include <asm/arch/cpu.h>
 #include <asm/arch/s32-gen1/ncore.h>
 
 #define NCORE_BASE_ADDR		(0x50400000ul)
@@ -64,9 +65,6 @@
 #define A53_GPR			(0x4007c400ul)
 #define GPR06			(A53_GPR + 0x18)
 #define GPR06_CA53_LOCKSTEP_EN	BIT(0)
-
-#define CPUMASK_CLUSTER0	(BIT(0) | BIT(1))
-#define CPUMASK_CLUSTER1	(BIT(2) | BIT(3))
 
 void ncore_init(u32 cpumask)
 {
