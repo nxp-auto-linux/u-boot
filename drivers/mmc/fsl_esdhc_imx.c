@@ -861,6 +861,7 @@ static int esdhc_set_voltage(struct mmc *mmc)
 	}
 }
 
+#ifdef MMC_SUPPORTS_TUNING
 static int fsl_s32gen1_esdhc_execute_tuning(struct udevice *dev,
 					    uint32_t opcode)
 {
@@ -1042,6 +1043,7 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 	return ret;
 }
 #endif
+#endif /* MMC_SUPPORTS_TUNING */
 
 static int esdhc_set_ios_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 {
