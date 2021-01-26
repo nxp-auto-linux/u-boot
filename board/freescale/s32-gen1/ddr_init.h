@@ -103,6 +103,25 @@ extern size_t pie_cfg_size;
 extern struct ddrss_config configs[];
 extern size_t ddrss_config_size;
 
+extern struct regconf ddrc_cfg_rev2[];
+extern size_t ddrc_cfg_size_rev2;
+extern struct dqconf dq_swap_cfg_rev2[];
+extern size_t dq_swap_cfg_size_rev2;
+extern struct regconf phy_cfg_rev2[];
+extern size_t phy_cfg_size_rev2;
+extern u16 imem_1d_rev2[];
+extern size_t imem_1d_size_rev2;
+extern u16 dmem_1d_rev2[];
+extern size_t dmem_1d_size_rev2;
+extern u16 imem_2d_rev2[];
+extern size_t imem_2d_size_rev2;
+extern u16 dmem_2d_rev2[];
+extern size_t dmem_2d_size_rev2;
+extern struct regconf pie_cfg_rev2[];
+extern size_t pie_cfg_size_rev2;
+extern struct ddrss_config configs_rev2[];
+extern size_t ddrss_config_size_rev2;
+
 u32 ddr_init(void);
 void init_image_sizes(void);
 
