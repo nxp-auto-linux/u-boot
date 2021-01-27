@@ -187,6 +187,14 @@ config DDR_HANDSHAKE_AT_RESET
 	  Enable DDR handshake after functional reset.
 	  Execute additional checks in case of a functional reset.
 
+config S32_CMU
+	bool "Enable Clock Monitoring Unit-Frequency Check"
+	default y if !CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	depends on CONFIG_S32_GEN1
+	help
+	  Checks if the frequency of a monitored clock (monitored_clock)
+	  is within a programmable frequency range specified by the user.
+
 source "board/freescale/Kconfig"
 source "board/microsys/mpxs32v234/Kconfig"
 
