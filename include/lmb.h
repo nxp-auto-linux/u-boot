@@ -10,9 +10,10 @@
  * Logical memory blocks.
  *
  * Copyright (C) 2001 Peter Bergner, IBM Corp.
+ * Copyright 2021 NXP
  */
 
-#define MAX_LMB_REGIONS 8
+#define MAX_LMB_REGIONS 16
 
 struct lmb_property {
 	phys_addr_t base;
