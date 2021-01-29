@@ -613,6 +613,8 @@
 #define CONFIG_PCI_PNP
 #define CONFIG_PCI_SCAN_SHOW
 #endif
+#else
+#define CONFIG_SYS_PCI_64BIT
 #endif  /* !CONFIG_S32_GEN1 */
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
