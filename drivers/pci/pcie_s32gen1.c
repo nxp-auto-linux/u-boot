@@ -105,7 +105,7 @@ void s32_pcie_atu_outbound_set(struct s32_pcie *pcie, uint32_t region_no,
 		W32((PCIE_IATU_UPPER_BASE_ADDR_OUTBOUND_0(pcie->dbi) +
 				(0x200 * region_no)), (s_addr >> 32));
 		W32((PCIE_IATU_LIMIT_ADDR_OUTBOUND_0(pcie->dbi) +
-				(0x200 * region_no)), s_addr_lim);
+				(0x200 * region_no)), s_addr_lim - 1);
 		W32((PCIE_IATU_LWR_TARGET_ADDR_OUTBOUND_0(pcie->dbi) +
 				(0x200 * region_no)), (uint32_t)d_addr);
 		W32((PCIE_IATU_UPPER_TARGET_ADDR_OUTBOUND_0(pcie->dbi) +
