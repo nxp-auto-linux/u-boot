@@ -10,21 +10,6 @@
 / {
 	model = "NXP S32G274A BlueBox3";
 	compatible = "fsl,s32gen1", "arm,vexpress,v2p-aarch64", "arm,vexpress";
-
-	memory@80000000 {
-		device_type = "memory";
-		reg = <0 0x80000000 0 0x80000000>;
-	};
-
-	memory@880000000 {
-		device_type = "memory";
-		reg = <0x8 0x80000000 0 0x80000000>;
-	};
-
-	sram@34000000 {
-		device_type = "memory";
-		reg = <0 0x34000000 0 0x800000>;
-	};
 };
 
 &dspi0 {
