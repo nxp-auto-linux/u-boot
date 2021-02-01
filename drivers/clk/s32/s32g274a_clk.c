@@ -7,21 +7,6 @@
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
 #include <s32gen1_scmi_clk.h>
 
-static bool is_qspi1x_clk(uint32_t id)
-{
-	return id == S32GEN1_SCMI_CLK_QSPI_FLASH1X || id == S32GEN1_CLK_QSPI;
-}
-
-static bool is_qspi2x_clk(uint32_t id)
-{
-	return id == S32GEN1_SCMI_CLK_QSPI_FLASH2X || id == S32GEN1_CLK_QSPI_2X;
-}
-
-static bool is_qspi_clk(uint32_t id)
-{
-	return is_qspi1x_clk(id) || is_qspi2x_clk(id);
-}
-
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
 {
 	ulong qspi_max_rate;
