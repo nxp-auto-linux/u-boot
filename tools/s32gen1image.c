@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2019-2020 NXP */
+/* Copyright 2019-2021 NXP */
 
 #include <image.h>
 #include <generated/autoconf.h>
@@ -186,7 +186,8 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	},
 };
 
-#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB)
+#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB) || \
+	defined(CONFIG_TARGET_S32G274AEVB)
 static void adjust_qspi_params(struct qspi_params *qspi_params)
 {
 	qspi_params->dllcr = 0x8280000c;
@@ -203,7 +204,8 @@ static struct qspi_params *get_qspi_params(struct program_image *image)
 static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 {
 	memcpy(qspi_params, &s32g2xx_qspi_conf, sizeof(*qspi_params));
-#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB)
+#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB) || \
+	defined(CONFIG_TARGET_S32G274AEVB)
 	adjust_qspi_params(qspi_params);
 #endif
 }
