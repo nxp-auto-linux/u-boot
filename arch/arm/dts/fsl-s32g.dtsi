@@ -7,8 +7,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include <dt-bindings/clock/s32g274a-clock.h>
-#include <dt-bindings/clock/s32g274a-scmi-clock.h>
+#include <dt-bindings/clock/s32g-clock.h>
+#include <dt-bindings/clock/s32g-scmi-clock.h>
 #include <dt-bindings/pinctrl/s32g274a-pinctrl.h>
 
 /dts-v1/;

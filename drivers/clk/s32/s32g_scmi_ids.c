@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
-#include <dt-bindings/clock/s32g274a-clock.h>
-#include <dt-bindings/clock/s32g274a-scmi-clock.h>
+#include <dt-bindings/clock/s32g-clock.h>
+#include <dt-bindings/clock/s32g-scmi-clock.h>
 #include <errno.h>
 #include <linux/kernel.h>
 #include <s32gen1_clk_funcs.h>
