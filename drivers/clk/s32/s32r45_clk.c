@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <dt-bindings/clock/s32r45-clock.h>
+#include <dt-bindings/clock/s32gen1-scmi-clock.h>
 #include <s32gen1_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
 #include <s32gen1_scmi_clk.h>
@@ -199,5 +200,20 @@ struct s32gen1_clk *get_plat_clock(uint32_t id)
 
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
 {
+	ulong qspi_max_rate;
+
+	if (s32gen1_scmi_request(c))
+		return 0;
+
+	if (is_qspi_clk(c->id)) {
+		if (is_qspi2x_clk(c->id))
+			qspi_max_rate = S32GEN1_QSPI_MAX_FREQ * 2;
+		else
+			qspi_max_rate = S32GEN1_QSPI_MAX_FREQ;
+
+		if (rate > qspi_max_rate)
+			rate = qspi_max_rate;
+	}
+
 	return s32gen1_scmi_set_rate(c, rate);
 }

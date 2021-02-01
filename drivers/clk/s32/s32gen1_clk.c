@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <dt-bindings/clock/s32gen1-clock.h>
+#include <dt-bindings/clock/s32gen1-scmi-clock.h>
 #include <s32gen1_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
 #include <s32gen1_shared_clks.h>
@@ -652,3 +653,19 @@ struct s32gen1_clk *get_clock(uint32_t id)
 	return plat_clocks[index];
 }
 
+bool is_qspi1x_clk(uint32_t id)
+{
+	return (id == S32GEN1_SCMI_CLK_QSPI_FLASH1X) ||
+		(id == S32GEN1_CLK_QSPI);
+}
+
+bool is_qspi2x_clk(uint32_t id)
+{
+	return (id == S32GEN1_SCMI_CLK_QSPI_FLASH2X) ||
+		(id == S32GEN1_CLK_QSPI_2X);
+}
+
+bool is_qspi_clk(uint32_t id)
+{
+	return is_qspi1x_clk(id) || is_qspi2x_clk(id);
+}

@@ -186,7 +186,7 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	},
 };
 
-#ifdef CONFIG_S32G274ARDB
+#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB)
 static void adjust_qspi_params(struct qspi_params *qspi_params)
 {
 	qspi_params->dllcr = 0x8280000c;
@@ -203,7 +203,7 @@ static struct qspi_params *get_qspi_params(struct program_image *image)
 static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 {
 	memcpy(qspi_params, &s32g2xx_qspi_conf, sizeof(*qspi_params));
-#ifdef CONFIG_S32G274ARDB
+#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB)
 	adjust_qspi_params(qspi_params);
 #endif
 }

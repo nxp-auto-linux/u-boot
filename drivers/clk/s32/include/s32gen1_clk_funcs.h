@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #ifndef S32GEN1_CLK_FUNCS_H
 #define S32GEN1_CLK_FUNCS_H
@@ -15,6 +15,10 @@ ulong s32gen1_set_rate(struct clk *c, ulong rate);
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate);
 int s32gen1_set_parent(struct clk *c, struct clk *p);
 int s32gen1_enable(struct clk *c);
+
+bool is_qspi1x_clk(uint32_t id);
+bool is_qspi2x_clk(uint32_t id);
+bool is_qspi_clk(uint32_t id);
 
 ulong s32gen1_get_rate(struct clk *clk);
 ulong get_module_rate(struct s32gen1_clk_obj *module,

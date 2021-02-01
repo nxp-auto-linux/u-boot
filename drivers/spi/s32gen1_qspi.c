@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include "fsl_qspi.h"
 #include <cpu_func.h>
@@ -837,6 +837,9 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 #if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
 	if (is_s32gen1_soc_rev1())
 		ddr_config.dllcr &= ~QSPI_DLLCR_FREQEN_EN;
+#endif
+#if defined(CONFIG_TARGET_S32R45EVB)
+	ddr_config.dllcr &= ~QSPI_DLLCR_FREQEN_EN;
 #endif
 
 	ret = program_dllcra(priv, ddr_config.dllcr);

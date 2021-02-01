@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <asm/arch/siul.h>
 #include <dt-bindings/clock/s32g274a-clock.h>
@@ -325,21 +325,6 @@ struct s32gen1_clk *get_plat_clock(uint32_t id)
 		return NULL;
 
 	return s32g274a_clocks[id];
-}
-
-static bool is_qspi1x_clk(uint32_t id)
-{
-	return id == S32GEN1_SCMI_CLK_QSPI_FLASH1X || id == S32GEN1_CLK_QSPI;
-}
-
-static bool is_qspi2x_clk(uint32_t id)
-{
-	return id == S32GEN1_SCMI_CLK_QSPI_FLASH2X || id == S32GEN1_CLK_QSPI_2X;
-}
-
-static bool is_qspi_clk(uint32_t id)
-{
-	return is_qspi1x_clk(id) || is_qspi2x_clk(id);
 }
 
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
