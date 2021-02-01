@@ -41,29 +41,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if CONFIG_NXP_S32G2XX
-u32 cpu_pos_mask(void)
-{
-	switch (get_s32g2_derivative()) {
-	case S32G274A_DERIV:
-		return CPUMASK_CLUSTER0 | CPUMASK_CLUSTER1;
-	case S32G254A_DERIV:
-	case S32G233A_DERIV:
-		return BIT(0) | BIT(2);
-	default:
-		return 0;
-	}
-
-	return 0;
-}
-#elif defined(CONFIG_NXP_S32G3XX) || defined(CONFIG_NXP_S32R45)
-u32 cpu_pos_mask(void)
+__weak u32 cpu_pos_mask(void)
 {
 	return CPUMASK_CLUSTER0 | CPUMASK_CLUSTER1;
 }
-#else
-#error "Unsupported SOC"
-#endif
 
 u32 cpu_mask(void)
 {
@@ -382,24 +363,7 @@ int mmap_dspi(unsigned short bus, struct dspi **base_addr)
 }
 #endif
 
-#if CONFIG_NXP_S32G2XX
-u32 get_sram_size(void)
-{
-	switch (get_s32g2_derivative()) {
-	case S32G274A_DERIV:
-	case S32G254A_DERIV:
-		return S32_SRAM_SIZE;
-	case S32G233A_DERIV:
-		return 6 * SZ_1M;
-	default:
-		return 0;
-	}
-
-	return 0;
-}
-#else
-u32 get_sram_size(void)
+__weak u32 get_sram_size(void)
 {
 	return S32_SRAM_SIZE;
 }
-#endif
