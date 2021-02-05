@@ -1,6 +1,6 @@
 # SPDX-License-Identifier:GPL-2.0
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 
 # S32G PFEng driver
@@ -18,8 +18,8 @@ INCLUDES += -I$(INC_PREFIX)pfe_platform/public
 
 CCFLAGS_pfe += -D$(PFE_CFG_TARGET_ARCH_DEF) -D$(PFE_CFG_TARGET_OS_DEF) -D$(PFE_CFG_BUILD_PROFILE_DEF)
 
-# FW abi version
-ccflags-y += -DPFE_CFG_PFE_CT_H_MD5=bf8e8abc66429d158e51b80d3e25ad46
+# Hash of compatible FW binary interface (0.9.3)
+ccflags-y += -DPFE_CFG_PFE_CT_H_MD5=4e3e2e8a5e0e8e215c15a424048782d9
 # Platform
 ccflags-y += -DPFE_CFG_TARGET_ARCH_aarch64
 # IP version

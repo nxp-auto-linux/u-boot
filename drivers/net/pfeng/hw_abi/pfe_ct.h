@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
  *  Copyright (c) 2020 Imagination Technologies Limited
- *  Copyright 2018-2020 NXP
+ *  Copyright 2018-2021 NXP
  */
 
 /**
@@ -62,8 +62,6 @@ struct pfe_ct_log_if {
 	u32 class_stats[4] __aligned(4);
 } __packed __aligned(4);
 
-_ct_assert(sizeof(struct pfe_ct_log_if) == 108);
-
 /**
  * @brief Firmware physical interface
  */
@@ -77,11 +75,9 @@ struct pfe_ct_phy_if {
 	u8 mirror;
 	u8 reserved[3];
 	u32 spd;
+	u32 reserved1;
 	u32 phy_stats[4] __aligned(4);
 } __packed __aligned(4);
-
-_ct_assert(sizeof(struct pfe_ct_phy_if) == 36);
-
 
 /**
  * @brief Firmware version information
@@ -103,10 +99,8 @@ struct pfe_ct_version {
 	char vctrl[16];
 	/*  This header version */
 	char cthdr[36];
+	u32 res1[2];
 } __packed;
-
-_ct_assert(sizeof(struct pfe_ct_version) == 96);
-
 
 /**
  * @brief PE memory map representation type shared between host and PFE
@@ -128,7 +122,8 @@ struct pfe_ct_pe_mmap {
 	u8 fill2[28];
 } __packed __aligned(4);
 
-_ct_assert(sizeof(struct pfe_ct_pe_mmap) == 168);
+/* Structure length has to be compatible with FW binary (currently 176)*/
+_ct_assert(sizeof(struct pfe_ct_pe_mmap) == 176);
 
 /**
  * @brief	HIF RX packet header
@@ -149,6 +144,7 @@ struct pfe_ct_hif_rx_hdr {
 	u32 rx_timestamp_s;
 } __packed;
 
+/* Structure has to be 16B in length for correct decoding of rx data */
 _ct_assert(sizeof(struct pfe_ct_hif_rx_hdr) == 16);
 
 /**
@@ -165,7 +161,7 @@ struct pfe_ct_hif_tx_hdr {
 	u32 cookie;
 } __aligned(4);
 
+/* Structure has to be 16B in length for correct HW functionality */
 _ct_assert(sizeof(struct pfe_ct_hif_tx_hdr) == 16);
-_ct_assert(0 == (sizeof(struct pfe_ct_hif_tx_hdr) % sizeof(uint32_t)));
 #endif /* HW_S32G_PFE_CT_H_ */
 /** @} */
