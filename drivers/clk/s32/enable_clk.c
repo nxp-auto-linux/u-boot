@@ -2,6 +2,7 @@
 /*
  * Copyright 2020-2021 NXP
  */
+#include <linux/bitops.h>
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>

@@ -8,8 +8,8 @@
 #include "s32_common.h"
 #include "s32v234image.h"
 #include <asm/arch/clock.h>
-#include <asm/arch/mc_me_regs.h>
-#include <asm/arch/mc_cgm_regs.h>
+#include <asm/arch-s32/s32v234/mc_cgm_regs.h>
+#include <asm/arch-s32/s32v234/mc_me_regs.h>
 
 #define BIT(nr)			(1UL << (nr))
 

@@ -9,7 +9,6 @@
 #define __ARCH_ARM_MACH_S32GEN1_MCME_REGS_H__
 
 #ifndef __ASSEMBLY__
-#include <linux/bitops.h>
 
 /* MC_ME registers. */
 #define MC_ME_CTL_KEY(MC_ME)		(UPTR(MC_ME) + 0x0)
