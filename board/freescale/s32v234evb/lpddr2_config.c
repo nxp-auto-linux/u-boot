@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 
 #include <common.h>
@@ -16,10 +16,16 @@ static const struct lpddr2_config s32v_lpddr2_config = {
 	.mdctl = 0x03010000,
 	.mdmisc = 0x000017C8,
 	.mdscr_mr2 = 0x06028030,
+	.mdscr_mr3 = 0x01038030,
 	.mprddlctl_module0 = 0x4D4B4F4B,
 	.mprddlctl_module1 = 0x49484848,
 	.mpwrdlctl_module0 = 0x38383737,
 	.mpwrdlctl_module1 = 0x3E403E3F,
+	.mpdgctrl0_module0 = 0x20000000,
+	.mpdgctrl1_module0 = 0x00000000,
+	.mpdgctrl0_module1 = 0x20000000,
+	.mpdgctrl1_module1 = 0x00000000,
+	.frequency = 533,
 };
 
 const struct lpddr2_config *s32_get_lpddr2_config(void)
