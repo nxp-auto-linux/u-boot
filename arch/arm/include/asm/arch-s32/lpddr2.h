@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017,2020 NXP
+ * Copyright 2017, 2020-2021 NXP
  */
 
 #ifndef __ARCH_ARM_MACH_S32_LPDDR2_H__
@@ -37,9 +37,9 @@
 /* Set MDSCR[CON_REQ] (configuration request) */
 #define MMDC_MDSCR_CFG_VALUE		0x00008000
 /* Precharge-all command CS0 */
-#define MMDC_MDSCR_CS0_VALUE				0x00008010
+#define MMDC_MDSCR_CS0_VALUE		0x00008010
 /* Precharge-all command CS1 */
-#define MMDC_MDSCR_CS1_VALUE				0x00008018
+#define MMDC_MDSCR_CS1_VALUE		0x00008018
 /* tAOFPD=n/a,tAONPD=n/a,tANPD=n/a,tAXPD=n/a,tODTLon=n/a,tODT_idle_off=n/a */
 #define MMDC_MDOTC_VALUE		0x00000000
 /* tXPR=n/a , SDE_to_RST=n/a, RST_to_CKE=14 */
@@ -60,18 +60,8 @@
  * wrap control no wrap, tWR cycles 8
  */
 #define MMDC_MDSCR_MR1_VALUE		0xC2018030
-/* Configure MR3: DS=34R */
-#define MMDC_MDSCR_MR3_VALUE		0x01038030
 /* Configure MR10: Calibration at init */
 #define MMDC_MDSCR_MR10_VALUE		0xFF0A8030
-/* Read DQS gating control 0 (disabled) */
-#define MMDC_MPDGCTRL0_MODULE0_VALUE	0x20000000
-/* Read DQS gating control 1 */
-#define MMDC_MPDGCTRL1_MODULE0_VALUE	0x00000000
-/* Read DQS gating control 0 (disabled) */
-#define MMDC_MPDGCTRL0_MODULE1_VALUE	0x20000000
-/* Read DQS gating control 1 */
-#define MMDC_MPDGCTRL1_MODULE1_VALUE	0x00000000
 /* Read/write command delay - default used */
 #define MMDC_MDRWD_VALUE		0x0F9F26D2
 /* Power down control */
@@ -95,10 +85,16 @@ struct lpddr2_config {
 	u32 mdctl;
 	u32 mdmisc;
 	u32 mdscr_mr2;
+	u32 mdscr_mr3;
 	u32 mprddlctl_module0;
 	u32 mprddlctl_module1;
 	u32 mpwrdlctl_module0;
 	u32 mpwrdlctl_module1;
+	u32 mpdgctrl0_module0;
+	u32 mpdgctrl1_module0;
+	u32 mpdgctrl0_module1;
+	u32 mpdgctrl1_module1;
+	u32 frequency;
 };
 
 const struct lpddr2_config *s32_get_lpddr2_config(void);

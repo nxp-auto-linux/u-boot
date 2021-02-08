@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
- * (C) Copyright 2017,2020 NXP
+ * (C) Copyright 2017, 2020-2021 NXP
  */
 
 #include <common.h>
@@ -106,7 +106,7 @@ void config_mmdc(uint8_t module)
 	writel(MMDC_MDSCR_RST_VALUE, mmdc_addr + MMDC_MDSCR);
 	writel(MMDC_MDSCR_MR1_VALUE, mmdc_addr + MMDC_MDSCR);
 	writel(config->mdscr_mr2, mmdc_addr + MMDC_MDSCR);
-	writel(MMDC_MDSCR_MR3_VALUE, mmdc_addr + MMDC_MDSCR);
+	writel(config->mdscr_mr3, mmdc_addr + MMDC_MDSCR);
 	writel(MMDC_MDSCR_MR10_VALUE, mmdc_addr + MMDC_MDSCR);
 
 	/* Set the amount of DRAM */
@@ -119,9 +119,9 @@ void config_mmdc(uint8_t module)
 		       mmdc_addr + MMDC_MPRDDLCTL);
 		writel(config->mpwrdlctl_module0,
 		       mmdc_addr + MMDC_MPWRDLCTL);
-		writel(MMDC_MPDGCTRL0_MODULE0_VALUE,
+		writel(config->mpdgctrl0_module0,
 		       mmdc_addr + MMDC_MPDGCTRL0);
-		writel(MMDC_MPDGCTRL1_MODULE0_VALUE,
+		writel(config->mpdgctrl1_module0,
 		       mmdc_addr + MMDC_MPDGCTRL1);
 			break;
 		case MMDC1:
@@ -130,9 +130,9 @@ void config_mmdc(uint8_t module)
 		       mmdc_addr + MMDC_MPRDDLCTL);
 		writel(config->mpwrdlctl_module1,
 		       mmdc_addr + MMDC_MPWRDLCTL);
-		writel(MMDC_MPDGCTRL0_MODULE1_VALUE,
+		writel(config->mpdgctrl0_module1,
 		       mmdc_addr + MMDC_MPDGCTRL0);
-		writel(MMDC_MPDGCTRL1_MODULE1_VALUE,
+		writel(config->mpdgctrl1_module1,
 		       mmdc_addr + MMDC_MPDGCTRL1);
 			break;
 	}

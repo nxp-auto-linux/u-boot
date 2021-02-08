@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2018,2020 NXP
+ * (C) Copyright 2017-2018, 2020-2021 NXP
  */
 
 #include <asm/io.h>
@@ -10,11 +10,8 @@
 #include <asm/arch/mc_me_regs.h>
 #include <asm/arch/mc_rgm_regs.h>
 #include <asm/arch/clock.h>
+#include <asm/arch/lpddr2.h>
 #include <asm/arch-s32/siul.h>
-
-#ifdef CONFIG_TARGET_CAMPPS32V2
-#include <campps32v2.h>
-#endif
 
 struct ddr_clk_params {
 	u32 phi0_freq;
@@ -374,23 +371,40 @@ static void enable_modules_clock( void )
 	entry_to_target_mode( MC_ME_MCTL_RUN0 );
 }
 
-#ifndef CONFIG_TARGET_CAMPPS32V2
+#if defined(CONFIG_S32_LPDDR2)
 static void initialize_ddr_clk_params(struct ddr_clk_params *params)
 {
-	params->phi0_freq = DDR_PLL_PHI0_FREQ;
-	params->phi1_freq = DDR_PLL_PHI1_FREQ;
-	params->prediv = DDR_PLL_PLLDV_PREDIV;
-	params->mfd = DDR_PLL_PLLDV_MFD;
-	params->mfn = DDR_PLL_PLLDV_MFN;
+	switch (s32_get_lpddr2_config()->frequency) {
+	case 400:
+		*params = (struct ddr_clk_params) {
+			.phi0_freq = DDR_PLL_PHI0_FREQ_400MHZ,
+			.phi1_freq = DDR_PLL_PHI1_FREQ_400MHZ,
+			.prediv = DDR_PLL_PLLDV_PREDIV_400MHZ,
+			.mfd = DDR_PLL_PLLDV_MFD_400MHZ,
+			.mfn = DDR_PLL_PLLDV_MFN_400MHZ,
+		};
+		break;
+	case 533:
+	default:
+		*params = (struct ddr_clk_params) {
+			.phi0_freq = DDR_PLL_PHI0_FREQ_533MHZ,
+			.phi1_freq = DDR_PLL_PHI1_FREQ_533MHZ,
+			.prediv = DDR_PLL_PLLDV_PREDIV_533MHZ,
+			.mfd = DDR_PLL_PLLDV_MFD_533MHZ,
+			.mfn = DDR_PLL_PLLDV_MFN_533MHZ,
+		};
+	}
 }
 #else
 static void initialize_ddr_clk_params(struct ddr_clk_params *params)
 {
-	params->phi0_freq = DDR_PLL_PHI0_FREQ_400MHZ;
-	params->phi1_freq = DDR_PLL_PHI1_FREQ_400MHZ;
-	params->prediv = DDR_PLL_PLLDV_PREDIV_400MHZ;
-	params->mfd = DDR_PLL_PLLDV_MFD_400MHZ;
-	params->mfn = DDR_PLL_PLLDV_MFN_400MHZ;
+	*params = (struct ddr_clk_params) {
+		.phi0_freq = DDR_PLL_PHI0_FREQ_533MHZ,
+		.phi1_freq = DDR_PLL_PHI1_FREQ_533MHZ,
+		.prediv = DDR_PLL_PLLDV_PREDIV_533MHZ,
+		.mfd = DDR_PLL_PLLDV_MFD_533MHZ,
+		.mfn = DDR_PLL_PLLDV_MFN_533MHZ,
+	};
 }
 #endif
 
