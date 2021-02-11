@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2020 NXP
+ * Copyright 2016-2021 NXP
  */
 
 /*
@@ -42,7 +42,8 @@
 /* Flash related definitions */
 #define CONFIG_S32V234_USES_FLASH
 
-#if !defined(CONFIG_TARGET_CAMPPS32V2)
+#if !defined(CONFIG_TARGET_CAMPPS32V2) || \
+	!defined(CONFIG_TARGET_CAMPPS32V2_REVB)
 /* Enable DCU QoS fix */
 #define CONFIG_DCU_QOS_FIX
 #endif
