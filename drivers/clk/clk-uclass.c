@@ -4,6 +4,7 @@
  * Written by Simon Glass <sjg@chromium.org>
  * Copyright (c) 2016, NVIDIA CORPORATION.
  * Copyright (c) 2018, Theobroma Systems Design und Consulting GmbH
+ * Copyright 2021 NXP
  */
 
 #include <common.h>
@@ -252,7 +253,7 @@ static int clk_set_default_rates(struct udevice *dev, int stage)
 	int index;
 	int num_rates;
 	int size;
-	int ret = 0;
+	ulong ret = 0;
 	u32 *rates = NULL;
 
 	size = dev_read_size(dev, "assigned-clock-rates");
@@ -294,8 +295,8 @@ static int clk_set_default_rates(struct udevice *dev, int stage)
 
 		ret = clk_set_rate(&clk, rates[index]);
 
-		if (ret < 0) {
-			debug("%s: failed to set rate on clock index %d (%ld) for %s\n",
+		if (ret == 0) {
+			pr_err("%s: failed to set rate on clock index %d (%ld) for %s\n",
 			      __func__, index, clk.id, dev_read_name(dev));
 			break;
 		}
@@ -498,7 +499,7 @@ ulong clk_set_rate(struct clk *clk, ulong rate)
 	ops = clk_dev_ops(clk->dev);
 
 	if (!ops->set_rate)
-		return -ENOSYS;
+		return 0;
 
 	return ops->set_rate(clk, rate);
 }
