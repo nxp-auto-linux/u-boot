@@ -405,6 +405,7 @@
 		clock-names = "ipg", "ahb", "per";
 		clock-frequency = <0>;	/* updated dynamically if 0 */
 		bus-width = <8>;
+		no-1-8-v;
 		status = "disabled";
 	};
 
