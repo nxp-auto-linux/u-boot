@@ -1536,6 +1536,12 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	else
 		priv->bus_width = 1;
 
+	if (data == &usdhc_s32gen1_data)
+		if (dev_read_bool(dev, "no-1-8-v"))
+			priv->flags &= ~(ESDHC_FLAG_HS200 |
+					 ESDHC_FLAG_HS400 |
+					 ESDHC_FLAG_HS400_ES);
+
 #ifndef SDHC_REDUCED_MAP
 	val = fdtdec_get_int(fdt, node, "fsl,tuning-step", 1);
 	priv->tuning_step = val;
