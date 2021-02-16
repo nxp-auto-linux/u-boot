@@ -58,8 +58,12 @@
 
 	pcie1: pcie@44100000 {
 		compatible = "fsl,s32gen1-pcie";
-		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
-		       0x48 0x00000000 0x0 0x20000>; /* configuration space */
+		reg =
+			<0x00 0x44100000 0x0 0x80000   /* dbi registers */
+			/* configuration space, 4KB each for cfg0 and cfg1
+			 * at the end of the outbound memory map
+			 */
+			0x4f 0xffffe000 0x0 0x00002000>;
 		reg-names = "dbi", "config";
 		#address-cells = <3>;
 		#size-cells = <2>;
@@ -70,10 +74,14 @@
 		link-speed = <3>; /* supports Gen3 speed */
 		bus-range = <0x0 0xff>;
 		ranges =
-			/* downstream I/O */
-			<0x81000000 0x0 0x00000000 0x48 0x00020000 0x0 0x00010000
-			/* non-prefetchable memory */
-			0x82000000 0x0 0x40000000 0x48 0x40000000 0x0 0x40000000>;
+			/* downstream I/O, 64KB and aligned naturally just before
+			 * the config space to minimize fragmentation
+			 */
+			<0x81000000 0x0 0x00000000 0x4f 0xfffe0000 0x0 0x00010000
+			/* non-prefetchable memory, with best case size
+			 * and alignment
+			 */
+			 0x82000000 0x0 0x00000000 0x48 0x00000000 0x7 0xfffe0000>;
 		status = "disabled";
 	};
 
