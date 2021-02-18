@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -213,7 +213,9 @@ static void s32_pcie_rc_setup_atu(struct s32_pcie *pcie)
 #else
 	uint64_t cfg_size = fdt_resource_size(&pcie->cfg_res) / 2;
 #endif
-	uint64_t cfg_limit = cfg_start + cfg_size;
+	uint64_t limit = cfg_start + cfg_size;
+
+	struct pci_region *io, *mem, *pref;
 
 	pcie->atu_out_num = 0;
 	pcie->atu_in_num = 0;
@@ -223,18 +225,44 @@ static void s32_pcie_rc_setup_atu(struct s32_pcie *pcie)
 
 	/* ATU 0 : OUTBOUND : CFG0 */
 	s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
-			cfg_start, cfg_limit,
+			cfg_start, limit,
 			(uint64_t)0x0, PCIE_ATU_TYPE_CFG0, 0);
 
 #ifdef PCIE_USE_CFG1
 	/* ATU 1 : OUTBOUND : CFG1 */
 	s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
-			cfg_limit, cfg_limit + cfg_size,
+			limit, limit + cfg_size,
 			(uint64_t)0x0, PCIE_ATU_TYPE_CFG1, 0);
 #endif
 
-	/* TODO: create regions returned by pci_get_regions()
+	/* Create regions returned by pci_get_regions()
+	 * TBD if we need an inbound for the entire address space (1TB)
+	 * and if we need to enable shifting
 	 */
+
+	pci_get_regions(pcie->bus, &io, &mem, &pref);
+
+	if (io) {
+		/* OUTBOUND WIN: IO */
+		limit = io->phys_start + io->size;
+		s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
+				io->phys_start, limit, io->bus_start,
+				PCIE_ATU_TYPE_IO, 0);
+	}
+	if (mem) {
+		/* OUTBOUND WIN: MEM */
+		limit = mem->phys_start + mem->size;
+		s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
+				mem->phys_start, limit, mem->bus_start,
+				PCIE_ATU_TYPE_MEM, 0);
+	}
+	if (pref) {
+		/* OUTBOUND WIN: pref MEM */
+		limit = pref->phys_start + pref->size;
+		s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
+				pref->phys_start, limit, pref->bus_start,
+				PCIE_ATU_TYPE_MEM, 0);
+	}
 
 #ifdef DEBUG
 	s32_pcie_dump_atu(pcie);
