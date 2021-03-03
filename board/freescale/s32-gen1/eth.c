@@ -46,6 +46,45 @@ __maybe_unused static bool intf_is_xmii(u32 intf)
 		intf == PHY_INTERFACE_MODE_RGMII;
 }
 
+#ifdef CONFIG_TARGET_S32G274ARDB
+static int get_phy_handle(const void *fdt, int nodeoffset)
+{
+	const int *php;
+	int len;
+
+	php = fdt_getprop(fdt, nodeoffset, "phy-handle", &len);
+	if (!php || len != sizeof(*php))
+		return -1;
+
+	return fdt32_to_cpu(*php);
+}
+
+static void ft_enet_pfe_fixup_phy(u32 idx, void *fdt, int nodeoff)
+{
+	int phy_handle;
+	char env_name[32];
+	char *phy_addr_str;
+	u32 phy_addr;
+	int phy_nodeoff;
+
+	snprintf(env_name, sizeof(env_name), "pfe%d_phy_addr", idx);
+
+	phy_addr_str = env_get(env_name);
+	phy_handle = get_phy_handle(fdt, nodeoff);
+
+	if (!phy_addr_str || phy_handle == -1)
+		return;
+
+	phy_addr = (unsigned int)simple_strtoul(phy_addr_str, NULL, 16);
+	phy_nodeoff = fdt_node_offset_by_phandle(fdt, phy_handle);
+
+	if (phy_nodeoff >= 0) {
+		fdt_setprop_u32(fdt, phy_nodeoff, "reg", phy_addr);
+		printf("DT: pfe%d: update phy addr to 0x%x\n", idx, phy_addr);
+	}
+}
+#endif
+
 static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 {
 	int nlen = 0, nodeoff = -1;
@@ -76,6 +115,10 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 
 			/* sync MAC HW addr to DT [local-mac-address] */
 			ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
+
+#ifdef CONFIG_TARGET_S32G274ARDB
+			ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
+#endif
 		}
 		/* We are done */
 		return;
