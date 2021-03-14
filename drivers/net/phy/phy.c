@@ -668,7 +668,7 @@ static struct phy_device *phy_device_create(struct mii_dev *bus, int addr,
 	dev = malloc(sizeof(*dev));
 	if (!dev) {
 		printf("Failed to allocate PHY device for %s:%d\n",
-		       bus->name, addr);
+		       bus ? bus->name : "NULL MDIO Bus", addr);
 		return NULL;
 	}
 
@@ -696,7 +696,7 @@ static struct phy_device *phy_device_create(struct mii_dev *bus, int addr,
 		return NULL;
 	}
 
-	if (addr >= 0 && addr < PHY_MAX_ADDR)
+	if (bus && addr >= 0 && addr < PHY_MAX_ADDR)
 		bus->phymap[addr] = dev;
 
 	return dev;
@@ -969,6 +969,42 @@ static struct phy_device *phy_connect_gmii2rgmii(struct mii_dev *bus,
 #endif
 
 #ifdef CONFIG_PHY_FIXED
+
+/**
+ * fixed_phy_create() - create an unconnected fixed-link pseudo-PHY device
+ * @node: OF node for the container of the fixed-link node
+ *
+ * Description: Creates a struct phy_device based on a fixed-link of_node
+ * description. Can be used without phy_connect by drivers which do not expose
+ * a UCLASS_ETH udevice.
+ */
+struct phy_device *fixed_phy_create(ofnode node)
+{
+	phy_interface_t interface = PHY_INTERFACE_MODE_NONE;
+	struct phy_device *phydev;
+	const char *if_str;
+	ofnode subnode;
+
+	if_str = ofnode_read_string(node, "phy-mode");
+	if (!if_str) {
+		if_str = ofnode_read_string(node, "phy-interface-type");
+	}
+	if (if_str) {
+		interface = phy_get_interface_by_name(if_str);
+	}
+
+	subnode = ofnode_find_subnode(node, "fixed-link");
+	if (!ofnode_valid(subnode)) {
+		return NULL;
+	}
+
+	phydev = phy_device_create(NULL, 0, PHY_FIXED_ID, false, interface);
+	if (phydev)
+		phydev->node = subnode;
+
+	return phydev;
+}
+
 #ifdef CONFIG_DM_ETH
 static struct phy_device *phy_connect_fixed(struct mii_dev *bus,
 					    struct udevice *dev,
@@ -979,20 +1015,16 @@ static struct phy_device *phy_connect_fixed(struct mii_dev *bus,
 					    phy_interface_t interface)
 #endif
 {
-	struct phy_device *phydev = NULL;
-	int sn;
-	const char *name;
+	ofnode node = dev_ofnode(dev), subnode;
+	struct phy_device *phydev;
 
-	sn = fdt_first_subnode(gd->fdt_blob, dev_of_offset(dev));
-	while (sn > 0) {
-		name = fdt_get_name(gd->fdt_blob, sn, NULL);
-		if (name && strcmp(name, "fixed-link") == 0) {
-			phydev = phy_device_create(bus, sn, PHY_FIXED_ID, false,
-						   interface);
-			break;
-		}
-		sn = fdt_next_subnode(gd->fdt_blob, sn);
-	}
+	subnode = ofnode_find_subnode(node, "fixed-link");
+	if (!ofnode_valid(subnode))
+		return NULL;
+
+	phydev = phy_device_create(bus, 0, PHY_FIXED_ID, false, interface);
+	if (phydev)
+		phydev->node = subnode;
 
 	return phydev;
 }
