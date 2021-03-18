@@ -378,7 +378,7 @@ static int get_dfs_mfi_mfn(ulong dfs_freq, struct s32gen1_dfs_div *div,
 	ulong out = div->freq;
 
 	*mfi = in / out / 2;
-	dmfn = (double)(in % out) / out * 18;
+	dmfn = ((double)in / (2 * out) - *mfi) * 36;
 	*mfn = (u32)dmfn;
 	div_freq = (double)in / (2 * (*mfi + (double)*mfn / 36.0));
 
