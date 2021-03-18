@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  * The SerDes module source file.
  */
@@ -13,168 +13,124 @@
 #include <linux/ethtool.h>
 #include <asm/io.h>
 
-/**
- * @brief	Variables for XPCS indirect access
- */
-typedef struct __serdes_xpcs_access_vars_tag {
-	u32 ofsleft;
-	u32 ofsright;
-	u32 addr1;
-	u32 data1;
-	u32 addr2;
-	u32 data2;
-} serdes_xpcs_access_vars_t;
+#define XPCS_BASE(xpcs) (((xpcs) == 0)  ? (SERDES_XPCS_0_ADDR2) : \
+					  (SERDES_XPCS_1_ADDR2))
 
-/**
- * @brief		Get variables needed for indirect XPCS access
- */
-static int serdes_get_xpcs_access_vars(u32 xpcs, u32 reg,
-					   serdes_xpcs_access_vars_t *vars)
+u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
 {
-	vars->ofsleft = (reg >> 8) & 0xffffU;
-	vars->ofsright = (reg & 0xffU);
-	vars->data1 = vars->ofsleft;
+	u32 ofsleft = (reg >> 8) & 0xffffU;
+	u32 ofsright = (reg & 0xffU);
+	u32 pcs_off = XPCS_BASE(xpcs);
 
-	if (SERDES_XPCS_0_BASE == xpcs) {
-		vars->addr1 = SERDES_XPCS_0_ADDR1;
-		vars->addr2 = SERDES_XPCS_0_ADDR2 + (vars->ofsright * 4U);
-	} else if (SERDES_XPCS_1_BASE == xpcs) {
-		vars->addr1 = SERDES_XPCS_1_ADDR1;
-		vars->addr2 = SERDES_XPCS_1_ADDR2 + (vars->ofsright * 4U);
-	} else {
-		return -EINVAL;
+	writel(ofsleft, base + pcs_off + 0x3fc);
+	return readl(base + pcs_off + 4 * ofsright) & 0xffffU;
+}
+
+void serdes_xpcs_write_gen2(void *base, u32 xpcs, u32 reg, u16 val)
+{
+	u32 ofsleft = (reg >> 8) & 0xffffU;
+	u32 ofsright = (reg & 0xffU);
+	u32 pcs_off = XPCS_BASE(xpcs);
+
+	writel(ofsleft, base + pcs_off + 0x3fc);
+	writel(val, base + pcs_off + 4 * ofsright);
+}
+
+void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
+			       u16 clr_mask, u16 mask)
+{
+	u16 tmp_rd =  0;
+
+	if (!base)
+		return;
+
+	if (mask || clr_mask)
+		tmp_rd = serdes_xpcs_read_gen2(base, xpcs, reg);
+
+	serdes_xpcs_write_gen2(base, xpcs, reg, (tmp_rd & ~clr_mask) | mask);
+}
+
+#define PCSW16(serdes_base, pcs, reg, val) ({\
+	serdes_xpcs_write_gen2(serdes_base, pcs, reg, val);\
+})
+
+#define PCSR16(serdes_base, pcs, reg) ({\
+	serdes_xpcs_read_gen2(serdes_base, pcs, reg);\
+})
+
+#define PCSBCLR(serdes_base, pcs, reg, mask) \
+	serdes_xpcs_clr_setb_gen2(serdes_base, pcs, reg, mask, 0)
+
+#define PCSBSET(serdes_base, pcs, reg, mask) \
+	serdes_xpcs_clr_setb_gen2(serdes_base, pcs, reg, 0, mask)
+
+#define PCSBCLRSET(serdes_base, pcs, reg, clr_mask, mask) \
+	serdes_xpcs_clr_setb_gen2(serdes_base, pcs, reg, clr_mask, mask)
+
+static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
+				u16 val, u16 us, u16 cnt)
+{
+	u32 tmp = cnt; /* Take care so this is not optimized out */
+
+	while ((((serdes_xpcs_read_gen2(base, xpcs, reg) & mask) != val) &&
+		(tmp > 0))) {
+		udelay(us);
+		tmp--;
 	}
 
-	return 0;
+	return ((tmp > 0)) ? (0) : (-ETIMEDOUT);
 }
 
-/**
- * @brief			Read XPCS register
- * @param[in]		base SerDes base address
- * @param[in]		xpcs XPCS offset within SerDes memory space
- * @param[in]		reg XPCS register address
- * @param[in,out]	val The XPCS register value
- * @return		0 if success, error code otherwise
- */
-static void serdes_xpcs_reg_read(void *base, u32 xpcs, u32 reg,
-				 volatile u16 *val)
+void serdes_pcs_loopback_enable(void *base, u32 xpcs)
 {
-	int ret;
-	serdes_xpcs_access_vars_t vars = {0U};
-
-	ret = serdes_get_xpcs_access_vars(xpcs, reg, &vars);
-	if (ret)
-		pr_warn("Can't read XPCS register (0x%x)\n", reg);
-
-	writel(vars.data1, (phys_addr_t)base + vars.addr1);
-	*val = readl((phys_addr_t)base + vars.addr2) & 0xffffU;
+	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, R2TLBE);
 }
 
-/**
- * @brief	Write XPCS register
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @param[in]	reg XPCS register address
- * @param[in]	val The XPCS register value
- * @return	0 if success, error code otherwise
- */
-static void serdes_xpcs_reg_write(void *base, u32 xpcs, u32 reg, u16 val)
+void serdes_pcs_loopback_disable(void *base, u32 xpcs)
 {
-	int ret;
-	serdes_xpcs_access_vars_t vars = {0U};
-
-	ret = serdes_get_xpcs_access_vars(xpcs, reg, &vars);
-	if (ret)
-		pr_warn("Can't write XPCS register (0x%x)\n", reg);
-
-	writel(vars.data1, (phys_addr_t)base + vars.addr1);
-	writel(val, (phys_addr_t)base + vars.addr2);
+	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, R2TLBE);
 }
 
-/**
- * @brief	Wait until XPCS power-up sequence state "Power_Good"
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @return	0 Power-up sequence state is "Power_Good"
- */
-int serdes_xpcs_wait_for_power_good(void *base, u32 xpcs)
+int serdes_pcs_wait_for_power_good(void *base, u32 xpcs)
 {
-	u16 reg16;
-	u8 pseq;
-	int timeout = 1000U;
-
-	do {
-		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_STS, &reg16);
-		pseq = (reg16 >> 2) & 0x7U;
-		if (pseq == 0x4U)
-			break;
-		timeout--;
-		udelay(1000U);
-	} while (timeout > 0);
-
-	if (timeout > 0U)
-		return 0;
-
-	return -ETIMEDOUT;
+	return serdes_pcs_wait_bits(base, xpcs, VR_MII_DIG_STS,
+				    0x7U << 2, 0x4U << 2, 1000U, 1000U);
 }
 
-/**
- * @brief	Wait until XPCS reset is cleared
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @return	0 Power-up sequence state is "Power_Good"
- */
-static int serdes_xpcs_wait_for_reset(void *base, u32 xpcs)
+void serdes_pcs_issue_vreset(void *base, u32 xpcs)
 {
-	volatile u16 reg16;
-	u8 pseq;
-	u32 timeout = 1000U;
-
-	do {
-		serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-		pseq = reg16 & VR_RST;
-		if (pseq == 0x0U)
-			break;
-		timeout--;
-		udelay(1000U);
-	} while (timeout > 0U);
-
-	if (timeout > 0U)
-		return 0;
-
-	return -ETIMEDOUT;
+	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, VR_RST);
 }
 
-/**
- * @brief		Set SGMII speed
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @param[in]	mbps Speed in [Mbps]
- * @param[in]	fduplex Full duplex = TRUE, Half duplex = FALSE
- * @return	0 if success, error code otherwise
- */
-int serdes_xpcs_set_sgmii_speed(void *base, u32 xpcs, u32 mbps,
-				bool fduplex)
+int serdes_pcs_wait_for_vreset(void *base, u32 xpcs)
 {
-	u16 reg16;
+	return serdes_pcs_wait_bits(base, xpcs, VR_MII_DIG_CTRL1,
+				    VR_RST, 0, 1000U, 1000U);
+}
 
-	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
-		return -EINVAL;
+static void serdes_pcs_set_2500M_mode(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, EN_2_5G_MODE);
+}
 
-	/*	Update control register (+ disable AN) */
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_CTRL, &reg16);
-	reg16 &= ~(MII_CTRL_SS13 | MII_CTRL_SS6 | MII_CTRL_DUPLEX_MODE
-		   | MII_CTRL_AN_ENABLE);
+static void serdes_pcs_set_1000M_mode(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, EN_2_5G_MODE);
+}
 
-	switch (mbps) {
-	case SPEED_10:
+int serdes_pcs_speed_select(void *base, u32 xpcs, u32 div)
+{
+	u16 reg16 = 0;
+
+	switch (div) {
+	case 100:
 		break;
 
-	case SPEED_100:
+	case 10:
 		reg16 |= MII_CTRL_SS13;
 		break;
 
-	case SPEED_1000:
+	case 1:
 		reg16 |= MII_CTRL_SS6;
 		break;
 
@@ -183,397 +139,532 @@ int serdes_xpcs_set_sgmii_speed(void *base, u32 xpcs, u32 mbps,
 		return -EINVAL;
 	}
 
-	if (fduplex)
-		reg16 |= MII_CTRL_DUPLEX_MODE;
-
-	/*	Write the control register */
-	serdes_xpcs_reg_write(base, xpcs, SR_MII_CTRL, reg16);
+	PCSBCLRSET(base, xpcs, SR_MII_CTRL,
+		   MII_CTRL_SS13 | MII_CTRL_SS6,
+		   reg16);
 
 	return 0;
 }
 
-/**
- * @brief	Get SGMII speed
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- *		SERDES_XPCS_0_BASE or SERDES_XPCS_1_BASE
- * @param[in]	mbps Speed in [Mbps]
- * @param[in]	duplex Full duplex = TRUE, Half duplex = FALSE
- * @param[in]	an Auto-neg enabled = TRUE, Auto-neg disabled = FALSE
- * @return	0 if success, error code otherwise
- */
-int serdes_xpcs_get_sgmii_speed(void *base, u32 xpcs, int *mbps,
-				bool *fduplex, bool *an)
+void serdes_pcs_set_fd(void *base, u32 xpcs)
 {
-	u16 reg16;
+	PCSBSET(base, xpcs, SR_MII_CTRL, MII_CTRL_DUPLEX_MODE);
+}
 
-	if (xpcs != SERDES_XPCS_0_BASE && xpcs != SERDES_XPCS_1_BASE)
+void serdes_pcs_set_hd(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, SR_MII_CTRL, MII_CTRL_DUPLEX_MODE);
+}
+
+/* Call in case MII bus is in all speeds 8bit */
+void serdes_pcs_mii_bus_control_disable(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, VR_MII_AN_CTRL, MII_AN_CTRL_MII_CTRL);
+}
+
+/* Call in case MII bus is in 1G 8bit and other speeds 4bit */
+void serdes_pcs_mii_bus_control_enable(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, VR_MII_AN_CTRL, MII_AN_CTRL_MII_CTRL);
+}
+
+void serdes_pcs_an_enable(void *base, u32 xpcs)
+{
+	/* Select SGMII type AN, enable interrupt */
+	PCSBCLRSET(base, xpcs, VR_MII_AN_CTRL,
+		   MII_AN_CTRL_PCS_MODE(0x3),
+		   MII_AN_CTRL_PCS_MODE(PCS_MODE_SGMII) |
+		   MII_AN_INTR_EN);
+	/* Enable SGMII AN */
+	PCSBSET(base, xpcs, SR_MII_CTRL, MII_CTRL_AN_ENABLE);
+}
+
+void serdes_pcs_an_disable(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, SR_MII_CTRL, MII_CTRL_AN_ENABLE);
+	/* Disable interrupt */
+	PCSBCLR(base, xpcs, VR_MII_AN_CTRL, MII_AN_INTR_EN);
+}
+
+void serdes_pcs_an_restart(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, SR_MII_CTRL, MII_CTRL_RESTART_AN);
+}
+
+void serdes_pcs_an_auto_sw_enable(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, MAC_AUTO_SW);
+}
+
+void serdes_pcs_an_auto_sw_disable(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, MAC_AUTO_SW);
+}
+
+void serdes_pcs_an_set_link_timer(void *base, u32 xpcs, u16 link_timer)
+{
+	PCSW16(base, xpcs, VR_MII_LINK_TIMER_CTRL, link_timer);
+	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, CL37_TMR_OVR_RIDE);
+	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, CL37_TMR_OVR_RIDE);
+}
+
+/* This is intended to be called from AN interrupt to resolve the AN result */
+int serdes_pcs_an_decode(void *base, u32 xpcs, bool *link,
+			 bool *fduplex, u16 *speed)
+{
+	u16 reg16 = PCSR16(base, xpcs, VR_MII_AN_INTR_STS);
+
+	if (reg16 & CL37_ANSGM_STS_LINK) {
+		*link = true;
+	} else {
+		*link = false;
+		/* Remote link is down Auto-negotiation didn't work*/
+		pr_warn("Auto-negotiation wasn't successful\n");
 		return -EINVAL;
-
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_CTRL, &reg16);
-
-	*mbps = SPEED_10;
+	}
 	*fduplex = false;
-	*an = false;
-
-	if (reg16 & MII_CTRL_SS13)
-		*mbps = SPEED_100;
-
-	if (reg16 & MII_CTRL_SS6)
-		*mbps = SPEED_1000;
-
-	if ((reg16 & MII_CTRL_SS6) && (reg16 & MII_CTRL_SS13))
-		return -EINVAL;
-
-	if (reg16 & MII_CTRL_DUPLEX_MODE)
+	if (reg16 & CL37_ANSGM_STS_FD)
 		*fduplex = true;
 
-	if (reg16 & MII_CTRL_AN_ENABLE)
-		*an = true;
-
-	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-	if (reg16 & EN_2_5G_MODE) {
-		*mbps = SPEED_2500;
-		/* Auto-neg not supported in 2.5G mode */
-		*an = false;
+	switch (CL37_ANSGM_STS_GET_SPEED(reg16)) {
+	case CL37_ANSGM_STS_SPEED_10M:
+		*speed = 10;
+		break;
+	case CL37_ANSGM_STS_SPEED_100M:
+		*speed = 100;
+		break;
+	case CL37_ANSGM_STS_SPEED_1000M:
+		*speed = 1000;
+		break;
+	default:
+		*speed = 0;
+		return -EINVAL;
 	}
 
 	return 0;
 }
 
-int serdes_xpcs_set_loopback(void *base, u32 xpcs, bool enable)
+int serdes_pma_wait_link(void *base, u32 xpcs, u8 sec)
 {
-	u16 reg16;
+	return serdes_pcs_wait_bits(base, xpcs, SR_MII_STS,
+				    MII_STS_LINK_STS, MII_STS_LINK_STS,
+				    1000U, 1000U * sec);
+}
 
-	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
-		return -EINVAL;
+void serdes_pma_issue_rx_reset(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1, RX_RST_0);
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1, RX_RST_0);
+}
 
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_CTRL, &reg16);
+void serdes_pma_lane_disable(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL,
+		TX_DISABLE_0);
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL,
+		RX_DISABLE_0);
+}
 
-	/*	Update control register (+ manage LBE) */
-	if (enable)
-		reg16 |= R2TLBE;
+void serdes_pma_lane_enable(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL,
+		TX_DISABLE_0);
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL,
+		RX_DISABLE_0);
+}
+
+void serdes_pma_loopback_enable(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, SR_MII_CTRL, LBE);
+}
+
+void serdes_pma_loopback_disable(void *base, u32 xpcs)
+{
+	PCSBCLR(base, xpcs, SR_MII_CTRL, LBE);
+}
+
+static void serdes_pma_configure_tx_ctr(void *base, u32 xpcs)
+{
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_EQ_CTRL0,
+		   0x3fU << 8U,
+		   0xCU << 8U);
+	PCSBCLRSET(base, xpcs, VR_MII_CONSUMER_10G_TX_TERM_CTRL,
+		   0x7U,
+		   0x4U);
+}
+
+static void serdes_pma_1250Mhz_prepare(void *base, u32 xpcs,
+				       enum serdes_clock_fmhz fmhz)
+{
+	u16 vco_cal_ld, vco_cal_ref;
+
+	if (fmhz == CLK_100MHZ) {
+		vco_cal_ld = 1350U;
+		vco_cal_ref = 27U;
+	} else {
+		vco_cal_ld = 1360U;
+		vco_cal_ref = 17U;
+	}
+	/* RX VCO calibration value */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
+		   0x1fff,
+		   vco_cal_ld);
+
+	/* VCO calibration reference */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0,
+		   0x3f,
+		   vco_cal_ref);
+
+	/* TX rate baud/4 (baud 1250Mhz) */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
+		   0x7,
+		   0x2U); /* b010 */
+
+	/* Rx rate baud/8 (baud 1250Mhz) */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
+		   0x3U,
+		   0x3U); /* b11 */
+
+	/* Clear low-frequency operating band */
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL, VCO_LOW_FREQ_0);
+}
+
+/* Call only with 125mhz ref clk */
+static void serdes_pma_3125Mhz_prepare(void *base, u32 xpcs,
+				       enum serdes_clock_fmhz fmhz)
+{
+	u16 vco_cal_ld, vco_cal_ref;
+
+	if (fmhz == CLK_100MHZ) {
+		vco_cal_ld = 1344U;
+		vco_cal_ref = 43U;
+	} else {
+		vco_cal_ld = 1350U;
+		vco_cal_ref = 27U;
+	}
+	/* RX VCO calibration value */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
+		   0x1fff,
+		   vco_cal_ld);
+
+	/* VCO calibration reference */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0,
+		   0x3f,
+		   vco_cal_ref);
+
+	/* TX rate baud  */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
+		   0x7,
+		   0x0U);
+
+	/* Rx rate baud/2 */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
+		   0x3U,
+		   0x1U);
+
+	/* Set low-frequency operating band */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL, VCO_LOW_FREQ_0);
+}
+
+static void serdes_pma_mplla_start_cal(void *base, u32 xpcs,
+				       enum serdes_clock_fmhz fmhz)
+{
+	if (fmhz == CLK_100MHZ) {
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+			   REF_RANGE(0x7U) | REF_CLK_DIV2 | REF_MPLLA_DIV2,
+			   REF_RANGE(0x3U) | REF_CLK_EN);
+
+		/* Clear multiplier and set it to 25 and enable PPL cal */
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
+			   MPLLA_MULTIPLIER_VALUE(0xff) |
+			   MPLLA_CAL_DISABLE,
+			   MPLLA_MULTIPLIER_VALUE(25U));
+
+	} else {
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+			   REF_RANGE(0x7U),
+			   REF_RANGE(0x2U) | REF_CLK_DIV2 |
+			   REF_MPLLA_DIV2 | REF_CLK_EN);
+
+		/* Clear multiplier and set it to 80 and enable PPL cal */
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
+			   MPLLA_MULTIPLIER_VALUE(0xff) | MPLLA_CAL_DISABLE,
+			   MPLLA_MULTIPLIER_VALUE(80U));
+	}
+
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL1, 0xffe0U);
+
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL2,
+		   MPLLA_TX_CLK_DIV(0x7U),
+		   MPLLA_TX_CLK_DIV(1U) | MPLLA_DIV10_CLK_EN);
+
+	if (fmhz == CLK_100MHZ)
+		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3, 357U);
 	else
-		reg16 &= ~R2TLBE;
-
-	/*	Write the control register */
-	serdes_xpcs_reg_write(base, xpcs, SR_MII_CTRL, reg16);
-
-	return 0;
+		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3, 43U);
 }
 
-/**
- * @brief	Wait for PCS link
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @param[in]	timeout Timeout in [s]
- * @return	0 link is up, error code otherwise
+/* Configure PLLB and start calibration
+ * Note: Enable this only with 125Mhz ref !!
  */
-int serdes_wait_for_link(void *base, u32 xpcs, u8 timeout)
+static void serdes_pma_mpllb_start_cal(void *base, u32 xpcs,
+				       enum serdes_clock_fmhz fmhz)
 {
-	/*	Number of 100ms periods */
-	u32 tout = (1000U * timeout) / 100U;
-	u16 reg16;
+	if (fmhz == CLK_100MHZ) {
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+			   REF_RANGE(0x7U) | REF_CLK_DIV2 | REF_MPLLB_DIV2,
+			   REF_RANGE(0x3U) | REF_CLK_EN);
 
-	do {
-		serdes_xpcs_reg_read(base, xpcs, SR_MII_STS, &reg16);
-		if (0U != (reg16 & MII_STS_LINK_STS))
-			break;
-		tout--;
-		udelay(100000U);
-	} while (tout > 0U);
+		/* Clear multiplier and set it to 25 and enable PPL cal */
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
+			   MPLLB_MULTIPLIER(0xffU) | MPPLB_CAL_DISABLE,
+			   MPLLB_MULTIPLIER(0x27U));
 
-	if (0U == tout)
-		return -ETIMEDOUT;
+	} else {
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+			   REF_RANGE(0x7U),
+			   REF_RANGE(0x2U) | REF_MPLLB_DIV2 |
+			   REF_CLK_DIV2 | REF_CLK_EN);
 
-	return 0;
+		/* Clear multiplier and set it to 125 and enable PPL cal */
+		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
+			   MPLLB_MULTIPLIER(0xffU) | MPPLB_CAL_DISABLE,
+			   MPLLB_MULTIPLIER(125U));
+	}
+
+	/* Clear the fraction divider */
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL1, 0xffe0U);
+
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL2,
+		   MPLLB_TX_CLK_DIV(0x7U),
+		   MPLLB_TX_CLK_DIV(0x5U) | MPLLB_DIV10_CLK_EN);
+
+	if (fmhz == CLK_100MHZ) {
+		/* Set fraction divider */
+		PCSBSET(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL1, 0x414U << 5U);
+
+		/* PLL bandwidth */
+		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL3, 0x66U);
+	} else {
+		/* PLL bandwidth */
+		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL3, 68U);
+	}
 }
 
-
-/**
- * @brief	Configure XPCS to 1G mode with respect to reference clock
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @param[in]	ext_ref If reference clock is taken via pads then this shall be
- *		TRUE. If internal reference clock is used then use FALSE.
- * @param[in]	ref_mhz Reference clock frequency in [MHz]. 100 or 125.
- * @param[in]	bypass If true bypass initialization checks in case of ext_ref
- * @return	0 if success, error code otherwise
- */
-int serdes_xpcs_set_1000_mode(void *base, u32 xpcs,
-			      enum serdes_clock clktype,
-			      enum serdes_clock_fmhz fmhz,
-			      bool bypass)
+static void serdes_pma_mplla_stop_cal(void *base, u32 xpcs)
 {
-	int retval = 0;
-	u16 reg16, use_pad = 0U;
+	/* Disable PLLB calibration */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0, MPLLA_CAL_DISABLE);
+}
 
-	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
-		return -EINVAL;
+static void serdes_pma_mpllb_stop_cal(void *base, u32 xpcs)
+{
+	/* Disable PLLB calibration */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0, MPPLB_CAL_DISABLE);
+}
 
-	if (clktype == CLK_EXT) {
-		/*	Using external clock reference */
-		use_pad = REF_CLK_CTRL_REF_USE_PAD;
+void serdes_pma_select_plla_ref(void *base, u32 xpcs)
+{
+	/* Select PLLA */
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
+	/* Enable PLL */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
+}
+
+void serdes_pma_select_pllb_ref(void *base, u32 xpcs)
+{
+	/* Select PLLB */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
+	/* Enable PLL */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
+}
+
+int serdes_bifurcation_pll_transit(void *base, u32 xpcs, bool plla)
+{
+	int ret = 0;
+
+	/* Signal that clock are not available */
+	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, TX_CLK_RDY_0);
+
+	if (plla) {
+		/* Request PLLA */
+		serdes_pma_select_plla_ref(base, xpcs);
+	} else {
+		/* Request PLLB */
+		serdes_pma_select_pllb_ref(base, xpcs);
+	}
+
+	/* Initiate transmitter TX reconfiguration request */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL2, TX_REQ_0);
+
+	/* Wait for transmitter to reconfigure */
+	ret = serdes_pcs_wait_bits(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL2,
+				   TX_REQ_0, 0,
+				   100U, 100U);
+	if (ret)
+		pr_err("TX_REQ_0 failed\n");
+
+	/* Initiate transmitter RX reconfiguration request */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL2, RX_REQ_0);
+
+	/* Wait for transmitter to reconfigure */
+	ret = serdes_pcs_wait_bits(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL2,
+				   RX_REQ_0, 0,
+				   100U, 100U);
+	if (ret)
+		pr_err("RX_REQ_0 failed\n");
+
+	/* Signal that clock are available */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, TX_CLK_RDY_0);
+
+	/* Flush internal logic */
+	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, INIT);
+
+	/* Wait for init */
+	ret = serdes_pcs_wait_bits(base, xpcs, VR_MII_DIG_CTRL1,
+				   INIT, 0,
+				   100U, 100U);
+	if (ret)
+		pr_err("INIT failed\n");
+
+	return ret;
+}
+
+/* Transit to PLLB */
+int serdes_bifurcation_pll_transit_to_3125Mhz(void *base, u32 xpcs,
+					      enum serdes_clock_fmhz fmhz)
+{
+	/* Switch PCS logic to 2.5G */
+	serdes_pcs_set_2500M_mode(base, xpcs);
+
+	/* Switch PMA logic to 3.125Ghz */
+	serdes_pma_3125Mhz_prepare(base, xpcs, fmhz);
+
+	/* Do the transit to PLLB */
+	return serdes_bifurcation_pll_transit(base, xpcs, false);
+}
+
+/* Transit to PLLA */
+int serdes_bifurcation_pll_transit_to_1250Mhz(void *base, u32 xpcs,
+					      enum serdes_clock_fmhz fmhz)
+{
+	/* Switch PCS logic to 1G */
+	serdes_pcs_set_1000M_mode(base, xpcs);
+
+	/* Switch PMA logic to 1.250Ghz */
+	serdes_pma_1250Mhz_prepare(base, xpcs, fmhz);
+
+	/* Do the transit PLLA */
+	return serdes_bifurcation_pll_transit(base, xpcs, true);
+}
+
+void serdes_pcs_pma_init_gen2(void *base, enum serdes_clock_fmhz fmhz,
+			      u32 init_flags)
+{
+	u32 xpcs_phy_ctr = 0;
+
+	if ((init_flags & PHY_CTRL_XPCS_OWNED) != 0) {
+		if ((init_flags & PHY_CTRL_XPCS0_OWNED) != 0)
+			xpcs_phy_ctr = 0;
+		else if ((init_flags & PHY_CTRL_XPCS1_OWNED) != 0)
+			xpcs_phy_ctr = 1;
 	}
 
 	/* Set bypass flag in case of internal clocks */
-	if (clktype == CLK_INT)
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-				      EN_VSMMD1 | BYP_PWRUP);
-
-/* Currently this can't be enabled due to issue in bifurcation modes */
-#ifdef S32G_XPCS_ENABLE_PRECHECKS
-	if (!(bypass && clktype == CLK_EXT)) {
-		/*	Wait for XPCS power up */
-		retval = serdes_xpcs_wait_for_power_good(base,
-							 xpcs);
-		if (retval)
-			/*	XPCS power-up failed */
-			return retval;
-
-		/*	Compatibility check */
-		serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID1,
-				     &reg16);
-		if (reg16 != 0x7996U)
-			/*	Unexpected XPCS ID */
-			return -EINVAL;
-
-		serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID2,
-				     &reg16);
-		if (reg16 != 0xced0U)
-			/*	Unexpected XPCS ID */
-			return -EINVAL;
-	}
-#endif
-
-	/*	(Switch to 1G mode: #1) */
-	if (clktype == CLK_INT)
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-				      EN_VSMMD1 | BYP_PWRUP);
-	else
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-				      EN_VSMMD1);
-	/*	(Switch to 1G mode: #2) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DBG_CTRL, 0U);
-	/*	(Switch to 1G mode: #3) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL,
-			      MPLL_CMN_CTRL_MPLL_EN_0);
-
-	if (fmhz == CLK_100MHZ) {
-		/*	RefClk = 100MHz */
-		/*	(Switch to 1G mode: #4) */
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
-				      REF_CLK_CTRL_REF_RANGE(3U)
-				      | use_pad
-				      | REF_CLK_CTRL_REF_CLK_EN);
-		/*	(Switch to 1G mode: #5) */
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
-				      MPLLA_MULTIPLIER_VALUE(25U));
-	} else {
-		/*	RefClk = 125MHz */
-		/*	(Switch to 1G mode: #4) */
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
-				      REF_CLK_CTRL_REF_RANGE(2U)
-				      | use_pad
-				      | REF_CLK_CTRL_REF_MPLLA_DIV2
-				      | REF_CLK_CTRL_REF_CLK_DIV2
-				      | REF_CLK_CTRL_REF_CLK_EN);
-		/*	(Switch to 1G mode: #5) */
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
-				      MPLLA_MULTIPLIER_VALUE(80U));
+	if (((init_flags & PHY_CLK_INT) != 0) &&
+	    ((init_flags & (XPCS0_OWNED)) != 0)) {
+		PCSBSET(base, 0, VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
+	} else if ((init_flags & (XPCS0_OWNED)) != 0) {
+		PCSBCLRSET(base, 0, VR_MII_DIG_CTRL1, BYP_PWRUP, EN_VSMMD1);
 	}
 
-	/*	(Switch to 1G mode: #6) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL1, 0U);
-
-	/*	(Switch to 1G mode: #7) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL2,
-			      MPLLA_TX_CLK_DIV(1U) | MPLLA_DIV10_CLK_EN);
-
-	if (fmhz == CLK_100MHZ) {
-		/*	RefClk = 100MHz */
-		/*	(Switch to 1G mode: #8) */
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3,
-				      357U);
-		/*	(Switch to 1G mode: #9) */
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_GEN5_12G_16G_VCO_CAL_LD0, 1350U);
-		/*	(Switch to 1G mode: #10) */
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0,
-				      27U);
-	} else {
-		/*	RefClk = 125MHz */
-		/*	(Switch to 1G mode: #8) */
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3,
-				      43U);
-		/*	(Switch to 1G mode: #9) */
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_GEN5_12G_16G_VCO_CAL_LD0, 1360U);
-		/*	(Switch to 1G mode: #10) */
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0,
-				      17U);
+	if (((init_flags & PHY_CLK_INT) != 0) &&
+	    ((init_flags & (XPCS1_OWNED)) != 0)) {
+		PCSBSET(base, 1, VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
+	} else if ((init_flags & (XPCS1_OWNED)) != 0) {
+		PCSBCLRSET(base, 1, VR_MII_DIG_CTRL1, BYP_PWRUP, EN_VSMMD1);
 	}
 
-	/*	(Switch to 1G mode: #11) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
-			      0x2U); /* b010 */
-	/*	(Switch to 1G mode: #12) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
-			      0x3U); /* b11 */
-	/*	(Switch to 1G mode: #13) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL,
-			      0x1U); /* VCO_LOW_FREQ_0=0 + CDR_TRACK_ENA=1 */
-	/*	(Switch to 1G mode: #14) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
-			      MPPLB_CAL_DISABLE|0x7dU);
-			      /* CAL_DISABLE=1, MPPLB_MULTIPLIER=default */
+	if ((init_flags & XPCS0_2500M) != 0) {
+		serdes_pma_configure_tx_ctr(base, 0U);
+		serdes_pcs_set_2500M_mode(base, 0);
+		serdes_pma_select_pllb_ref(base, 0);
+	} else if ((init_flags & XPCS0_1000M) != 0) {
+		serdes_pma_configure_tx_ctr(base, 0U);
+		serdes_pcs_set_1000M_mode(base, 0);
+		serdes_pma_select_plla_ref(base, 0);
+	}
 
-	/*	(Switch to 1G mode: #15) */
-	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
+	if ((init_flags & XPCS1_2500M) != 0) {
+		serdes_pma_configure_tx_ctr(base, 1);
+		serdes_pcs_set_2500M_mode(base, 1);
+		serdes_pma_select_pllb_ref(base, 1);
+	} else if ((init_flags & XPCS1_1000M) != 0) {
+		serdes_pma_configure_tx_ctr(base, 1);
+		serdes_pcs_set_1000M_mode(base, 1);
+		serdes_pma_select_plla_ref(base, 1);
+	}
+
+	/* Using external clock reference */
+	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+	    (init_flags & PHY_CLK_INT) == 0)
+		PCSBSET(base, xpcs_phy_ctr, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+			REF_USE_PAD);
+	else if ((init_flags & PHY_CTRL_XPCS_OWNED) != 0)
+		PCSBCLR(base, xpcs_phy_ctr, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+			REF_USE_PAD);
+
+	/* Start PLLA cal */
+	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+	    (init_flags & PLLA_CAL_EN) != 0) {
+		/* Configure PLLA and start calibration */
+		serdes_pma_mplla_start_cal(base, xpcs_phy_ctr, fmhz);
+	}
+
+	/* Start PLLB cal */
+	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+	    (init_flags & PLLB_CAL_EN) != 0) {
+		serdes_pma_mpllb_start_cal(base, xpcs_phy_ctr, fmhz);
+	}
+
+	/* Disable PLLA, if requested */
+	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+	    (init_flags & PLLA_CAL_DIS) != 0) {
+		serdes_pma_mplla_stop_cal(base, xpcs_phy_ctr);
+	}
+
+	/* Disable PLLB, if requested */
+	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+	    (init_flags & PLLB_CAL_DIS) != 0) {
+		serdes_pma_mpllb_stop_cal(base, xpcs_phy_ctr);
+	}
+
+	if ((init_flags & XPCS0_2500M) != 0)
+		serdes_pma_3125Mhz_prepare(base, 0, fmhz);
+	else if ((init_flags & XPCS0_1000M) != 0)
+		serdes_pma_1250Mhz_prepare(base, 0, fmhz);
+
+	if ((init_flags & XPCS1_2500M) != 0)
+		serdes_pma_3125Mhz_prepare(base, 1, fmhz);
+	else if ((init_flags & XPCS1_1000M) != 0)
+		serdes_pma_1250Mhz_prepare(base, 1, fmhz);
+
+	if ((init_flags & XPCS0_DIS) != 0)
+		serdes_pma_lane_disable(base, 0);
+
+	if ((init_flags & XPCS1_DIS) != 0)
+		serdes_pma_lane_disable(base, 1);
 
 	/* Clear bypass flag in case of internal clocks */
-	if (clktype == CLK_INT) {
-		reg16 &= ~BYP_PWRUP;
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16);
-	}
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16 | VR_RST);
-
-	/* Issue reset */
-	/*	(Switch to 1G mode: #16) */
-	if (serdes_xpcs_wait_for_reset(base, xpcs))
-		pr_err("XPCS pre power-up soft reset failed\n");
-
-	/*	Wait for XPCS power up */
-	pr_debug("Waiting for XPCS power-up\n");
-	if (serdes_xpcs_wait_for_power_good(base, xpcs)) {
-		pr_err("XPCS power-up failed\n");
-		return -EXIT_FAILURE;
+	if (((init_flags & PHY_CLK_INT) != 0U) &&
+	    ((init_flags & (XPCS0_OWNED)) != 0U) &&
+	    ((init_flags & XPCS0_DIS) == 0U)) {
+		PCSBCLR(base, 0U, VR_MII_DIG_CTRL1, BYP_PWRUP);
 	}
 
-	return retval;
-}
-
-/**
- * @brief	Configure XPCS to 2.5G mode with respect to reference clock
- * @param[in]	base SerDes base address
- * @param[in]	xpcs XPCS offset within SerDes memory space
- * @param[in]	clktype If reference clock external/internal
- * @param[in]	fmhz Reference clock frequency
- * @return	0 if success, error code otherwise
- */
-int serdes_xpcs_set_2500_mode(void *base, u32 xpcs,
-			      enum serdes_clock clktype,
-			      enum serdes_clock_fmhz fmhz)
-{
-	int retval;
-	u16 reg16, use_pad = 0U;
-
-	if ((SERDES_XPCS_0_BASE != xpcs) && (SERDES_XPCS_1_BASE != xpcs))
-		return -EINVAL;
-
-	if (fmhz != CLK_125MHZ)
-		return -EINVAL;
-
-	if (clktype == CLK_EXT) {
-		/*	Using external clock reference */
-		use_pad = REF_CLK_CTRL_REF_USE_PAD;
+	if (((init_flags & PHY_CLK_INT) != 0U) &&
+	    ((init_flags & (XPCS1_OWNED)) != 0U) &&
+	    ((init_flags & XPCS1_DIS) == 0U)) {
+		PCSBCLR(base, 1U, VR_MII_DIG_CTRL1, BYP_PWRUP);
 	}
-
-	/* Set bypass flag in case of internal clocks */
-	if (clktype == CLK_INT)
-		serdes_xpcs_reg_write(base, xpcs,
-				      VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
-
-	/*	Wait for XPCS power up */
-	retval = serdes_xpcs_wait_for_power_good(base, xpcs);
-	if (retval)
-		/*	XPCS power-up failed */
-		return retval;
-
-	/*	Compatibility check */
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID1, &reg16);
-	if (0x7996U != reg16)
-		/*	Unexpected XPCS ID */
-		return -EINVAL;
-
-	serdes_xpcs_reg_read(base, xpcs, SR_MII_DEV_ID2, &reg16);
-	if (0xced0U != reg16)
-		/*	Unexpected XPCS ID */
-		return -EINVAL;
-
-	/*	(Switch to 2.5G mode: #1) */
-	if (clktype == CLK_INT)
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-				      EN_VSMMD1 | EN_2_5G_MODE | BYP_PWRUP);
-	else
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1,
-				      EN_VSMMD1 | EN_2_5G_MODE);
-	/*	(Switch to 2.5G mode: #2) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DBG_CTRL, 0U);
-	/*	(Switch to 2.5G mode: #3) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL,
-			      MPLL_CMN_CTRL_MPLL_EN_0
-			      | MPLL_CMN_CTRL_MPLLB_SEL_0);
-	/*	(Switch to 2.5G mode: #4) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
-			      REF_CLK_CTRL_REF_MPLLB_DIV2
-			      | use_pad
-			      | REF_CLK_CTRL_REF_RANGE(2U)
-			      | REF_CLK_CTRL_REF_CLK_DIV2);
-	/*	(Switch to 2.5G mode: #5) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
-			      MPLLB_MULTIPLIER(125U));
-	/*	(Switch to 2.5G mode: #6) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL1, 0U);
-	/*	(Switch to 2.5G mode: #7) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL2,
-			      MPLLB_CTRL2_MPLLB_TX_CLK_DIV(5U)
-			      | MPLLB_CTRL2_MPLLB_DIV10_CLK_EN);
-	/*	(Switch to 2.5G mode: #8) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL3, 68U);
-	/*	(Switch to 2.5G mode: #9) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
-			      1350U);
-	/*	(Switch to 2.5G mode: #10) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0, 27U);
-	/*	(Switch to 2.5G mode: #11) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL, 0U);
-	/*	(Switch to 2.5G mode: #12) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
-			      0x1U); /* b01 */
-	/*	(Switch to 2.5G mode: #13) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL,
-			      CDR_CTRL_VCO_LOW_FREQ_0 | 0x1U);
-			      /* +CDR_TRACKING_ENABLE=1 */
-	/*	(Switch to 2.5G mode: #14) */
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
-			      MPLLA_CAL_DISABLE | 0x50U);
-			      /* MPPLA_MULTIPLIER=default */
-	/*	(Switch to 2.5G mode: #15) */
-	serdes_xpcs_reg_read(base, xpcs, VR_MII_DIG_CTRL1, &reg16);
-
-	/* Clear bypass flag in case of internal clocks */
-	if (clktype == CLK_INT) {
-		reg16 &= ~BYP_PWRUP;
-		serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16);
-	}
-	serdes_xpcs_reg_write(base, xpcs, VR_MII_DIG_CTRL1, reg16 | VR_RST);
-		/* Issue reset */
-
-	/*	(Switch to 2.5G mode: #16) */
-	if (serdes_xpcs_wait_for_reset(base, xpcs))
-		pr_err("XPCS pre power-up soft reset failed\n");
-
-	/*	Wait for XPCS power up */
-	pr_debug("Waiting for XPCS power-up\n");
-	if (serdes_xpcs_wait_for_power_good(base, xpcs)) {
-		pr_err("XPCS power-up failed\n");
-		return -EXIT_FAILURE;
-	}
-
-	return 0;
 }

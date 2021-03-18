@@ -37,6 +37,15 @@ enum serdes_dev_type {
 	 */
 };
 
+/* New enum */
+enum serdes_xpcs_mode_gen2 {
+	SGMII_XPCS_PCIE = 0,
+	SGMII_XPCS_DISABLED,
+	SGMII_XPCS_1G_OP,
+	SGMII_XPCS_2G5_OP,
+};
+
+/* Old enum TODO remove*/
 enum serdes_xpcs_mode {
 	SGMII_INAVALID = 0,
 	SGMII_XPCS0,		/* Combo mode PCIex1/SGMII(XPCS0) */
@@ -98,7 +107,9 @@ enum serdes_mode {
 	SERDES_MODE_PCIE_SGMII1 = 2,
 	/*	Lane0=SGMII(1G/2.5G), Lane1=SGMII(1G/2.5G) */
 	SERDES_MODE_SGMII_SGMII = 3,
-	SERDES_MODE_MAX = SERDES_MODE_SGMII_SGMII
+	/*	Lane0=SGMII(1G/2.5G), Lane1=SGMII(1G/2.5G) */
+	SERDES_MODE_SGMII_SGMII_ALT = 4,
+	SERDES_MODE_MAX = SERDES_MODE_SGMII_SGMII_ALT
 };
 
 enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);

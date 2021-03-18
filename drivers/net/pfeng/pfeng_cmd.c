@@ -149,46 +149,32 @@ static void disable_partition_2(void)
 int pfeng_map_emac_to_serdes_xpcs(int emac, int *serdes, int *xpcs)
 {
 	int emac_to_serdes[] = {1, 1, 0};
-	enum serdes_xpcs_mode mode;
-	int mac_serdes;
+	int emac_to_pcs[] = {0, 1, 1};
+	enum serdes_xpcs_mode_gen2 mode;
 
 	if (emac >= ARRAY_SIZE(emac_intf)) {
 		pr_err("invalid emac index %d\n", emac);
 		return -ENXIO;
 	}
 
-	mac_serdes = emac_to_serdes[emac];
-	mode = s32_get_xpcs_mode(mac_serdes);
+	mode = s32_get_xpcs_mode(emac_to_serdes[emac], emac_to_pcs[emac]);
 
-	if (mode == SGMII_INAVALID) {
+	if (mode == SGMII_XPCS_PCIE) {
 		pr_err("Emac %d not initialized\n", emac);
 		return -ENXIO;
 	}
 
-	if ((mac_serdes == 0 && emac == 2) ||
-	    (mac_serdes == 1 && emac == 1)) {
-		switch (mode) {
-		case SGMII_XPCS1:
-		case SGMII_XPCS0_XPCS1:
-			*xpcs = 1;
-			break;
-		default:
-			return -ENXIO;
-		}
-	} else if (mac_serdes == 1 && emac == 0) {
-		switch (mode) {
-		case SGMII_XPCS0:
-		case SGMII_XPCS0_XPCS1:
-		case SGMII_XPCS0_2G5:
-			*xpcs = 0;
-			break;
-		default:
-			return -ENXIO;
-		}
-	} else {
+	if (mode == SGMII_XPCS_DISABLED) {
+		pr_err("PCS for emac %d was disabled\n", emac);
 		return -ENXIO;
 	}
-	*serdes = mac_serdes;
+
+	if (!((emac == 0 && mode == SGMII_XPCS_2G5_OP) ||
+	      mode == SGMII_XPCS_1G_OP))
+		return -ENXIO;
+
+	*serdes = emac_to_serdes[emac];
+	*xpcs = emac_to_pcs[emac];
 
 	return 0;
 }

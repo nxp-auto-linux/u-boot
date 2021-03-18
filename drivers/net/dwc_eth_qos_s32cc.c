@@ -254,7 +254,7 @@ static int check_sgmii_cfg(int gmac_no)
 {
 	int serdes = gmac_no;
 	int xpcs = 0;
-	enum serdes_xpcs_mode mode, desired_mode1, desired_mode2;
+	enum serdes_xpcs_mode_gen2 mode, desired_mode1, desired_mode2;
 
 #if defined(CONFIG_TARGET_S32G2XXAEVB) || \
 	defined(CONFIG_TARGET_S32G3XXAEVB) || \
@@ -263,21 +263,21 @@ static int check_sgmii_cfg(int gmac_no)
 	defined(CONFIG_TARGET_S32G274ASIM) || \
 	defined(CONFIG_TARGET_S32G398AEMU)
 
-	desired_mode1 = SGMII_XPCS0;
-	desired_mode2 = SGMII_XPCS0_XPCS1;
+	desired_mode1 = SGMII_XPCS_1G_OP;
+	desired_mode2 = SGMII_XPCS_1G_OP;
 
 #elif defined(CONFIG_TARGET_S32R45EVB) || \
 	defined(CONFIG_TARGET_S32R45SIM) || \
 	defined(CONFIG_TARGET_S32R45EMU)
 
-	desired_mode1 = SGMII_XPCS0;
-	desired_mode2 = SGMII_XPCS0_2G5;
+	desired_mode1 = SGMII_XPCS_1G_OP;
+	desired_mode2 = SGMII_XPCS_2G5_OP;
 
 #else
 #error "Board not supported"
 #endif
 
-	mode = s32_get_xpcs_mode(serdes);
+	mode = s32_get_xpcs_mode(serdes, 0);
 
 	if (mode != desired_mode1 && mode != desired_mode2) {
 		printf("Invalid SGMII configuration for GMAC%d", gmac_no);

@@ -155,9 +155,9 @@
 
 #define MPLLB_CTRL2_MPLLB_DIV_MULT(n)		(((n) & 0xffU) << 0)
 #define MPLLB_CTRL2_MPLLB_DIV8_CLK_EN		(1U << 8)
-#define MPLLB_CTRL2_MPLLB_DIV10_CLK_EN		(1U << 9)
+#define MPLLB_DIV10_CLK_EN			BIT(9)
 #define MPLLB_CTRL2_MPLLB_DIV_CLK_EN		(1U << 10)
-#define MPLLB_CTRL2_MPLLB_TX_CLK_DIV(n)		(((n) & 0x7U) << 11)
+#define MPLLB_TX_CLK_DIV(n)		(((n) & 0x7U) << 11)
 
 #define MPLL_STATE_BIT         (30)
 #define MPLL_STATE             BIT(MPLL_STATE_BIT)

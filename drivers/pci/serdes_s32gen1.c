@@ -303,6 +303,7 @@ void s32_serdes_phy_init(struct s32_serdes *pcie)
 	s32_serdes_phy_reg_write(pcie,
 				 RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
 				 0x13, 0xff);
+
 	/* RX_EQ_DELTA_IQ_OVRD enable and override value for PCIe0 lane 1 */
 	s32_serdes_phy_reg_write(pcie,
 				 RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
@@ -314,6 +315,9 @@ void s32_serdes_phy_init(struct s32_serdes *pcie)
 
 bool s32_serdes_init(struct s32_serdes *pcie)
 {
+	/* Fall back to mode compatible with PCIe */
+	pcie->ss_mode = SERDES_MODE_PCIE_SGMII0;
+
 	/* Reset the Serdes module */
 	s32_assert_serdes_reset(pcie);
 
@@ -335,37 +339,28 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 					SERDES_MODE_PCIE_PCIE))
 			return false;
 	} else if (IS_SERDES_PCIE(pcie->devtype) &&
-				IS_SERDES_SGMII(pcie->devtype)) {
+		   IS_SERDES_SGMII(pcie->devtype)) {
 		if (pcie->xpcs_mode != SGMII_XPCS0 &&
 		    pcie->xpcs_mode != SGMII_XPCS1) {
 			printf("ERROR: Invalid XPCS config on PCIe%d\n",
 			       pcie->id);
-
-			/* Fall back to mode compatible with PCIe */
-			if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-						SERDES_MODE_PCIE_SGMII0))
-				return false;
 		}
 
 		/* Configure SS mode based on XPCS */
 		if (pcie->xpcs_mode == SGMII_XPCS0)
-			if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-						SERDES_MODE_PCIE_SGMII0))
-				return false;
+			pcie->ss_mode = SERDES_MODE_PCIE_SGMII0;
 		if (pcie->xpcs_mode == SGMII_XPCS1)
-			if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-						SERDES_MODE_PCIE_SGMII1))
-				return false;
+			pcie->ss_mode = SERDES_MODE_PCIE_SGMII1;
+
 	} else if (!IS_SERDES_PCIE(pcie->devtype) &&
-				IS_SERDES_SGMII(pcie->devtype)) {
+		    IS_SERDES_SGMII(pcie->devtype)) {
 		/*	Set pipeP_pclk */
 		W32(pcie->dbi + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
-		if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-					 SERDES_MODE_SGMII_SGMII))
-			return false;
+		pcie->ss_mode = SERDES_MODE_SGMII_SGMII;
 	}
 
-	s32_deassert_serdes_reset(pcie);
+	if (s32_serdes_set_mode(pcie->dbi, pcie->id, pcie->ss_mode))
+		return false;
 
 	/* Set the clock for the Serdes module */
 	if (pcie->clktype == CLK_INT) {
@@ -379,6 +374,9 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 		       PHY_GEN_CTRL_REF_USE_PAD);
 		BCLR32(pcie->dbi + SS_SS_RW_REG_0, 1 << 23);
 	}
+
+	/* Deassert SerDes reset */
+	s32_deassert_serdes_reset(pcie);
 
 	/* Enable PHY's SRIS mode in PCIe mode*/
 	if (pcie->phy_mode == SRIS)
@@ -423,7 +421,7 @@ __weak bool s32_pcie_set_link_width(void __iomem *dbi,
 }
 
 __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
-			     bool combo,
+			     enum serdes_mode ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     enum serdes_clock clktype,
 			     enum serdes_clock_fmhz fmhz)
@@ -594,14 +592,6 @@ static bool s32_serdes_is_xpcs_cfg_valid(struct s32_serdes *pcie)
 		ret = false;
 	}
 
-	if (pcie->xpcs_mode == SGMII_XPCS0_2G5 &&
-	    pcie->fmhz == CLK_100MHZ) {
-		printf("Invalid \"hwconfig\": In SGMII 2.5G frequency");
-		printf("has to be 125MHz\n");
-		/* We just fail in this case user has to reconfigure */
-		ret = false;
-	}
-
 	return ret;
 }
 
@@ -661,7 +651,6 @@ static int s32_serdes_probe(struct udevice *dev)
 	char mode[SERDES_MODE_SIZE];
 	const char *pcie_phy_mode;
 	int ret = 0;
-	bool combo_mode;
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
@@ -734,10 +723,8 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	if (IS_SERDES_SGMII(pcie->devtype) &&
 	    pcie->xpcs_mode != SGMII_INAVALID) {
-		combo_mode = (IS_SERDES_SGMII(pcie->devtype) &&
-			      IS_SERDES_PCIE(pcie->devtype));
 		ret = s32_eth_xpcs_init(pcie->dbi, pcie->id,
-					combo_mode,
+					pcie->ss_mode,
 					pcie->xpcs_mode,
 					pcie->clktype,
 					pcie->fmhz);

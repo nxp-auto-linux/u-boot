@@ -55,6 +55,7 @@ struct s32_serdes {
 	struct udevice *bus;
 	struct fdt_resource dbi_res;
 	void __iomem *dbi;
+	enum serdes_mode ss_mode;
 
 	int id;
 	enum serdes_dev_type devtype;
@@ -74,7 +75,7 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		enum serdes_link_width linkwidth);
 
 int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
-		      bool combo,
+		      enum serdes_mode ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      enum serdes_clock clktype,
 		      enum serdes_clock_fmhz fmhz);
