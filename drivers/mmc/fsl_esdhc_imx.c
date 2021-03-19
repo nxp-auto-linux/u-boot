@@ -686,6 +686,8 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 	priv->clock = clock;
 }
 
+static struct esdhc_soc_data usdhc_s32gen1_data;
+
 #ifdef MMC_SUPPORTS_TUNING
 static int esdhc_change_pinstate(struct udevice *dev)
 {
@@ -861,7 +863,6 @@ static int esdhc_set_voltage(struct mmc *mmc)
 	}
 }
 
-#ifdef MMC_SUPPORTS_TUNING
 static int fsl_s32gen1_esdhc_execute_tuning(struct udevice *dev,
 					    uint32_t opcode)
 {
@@ -940,8 +941,6 @@ static void esdhc_stop_tuning(struct mmc *mmc)
 
 	dm_mmc_send_cmd(mmc->dev, &cmd, NULL);
 }
-
-static struct esdhc_soc_data usdhc_s32gen1_data;
 
 static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 {
@@ -1042,7 +1041,6 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 
 	return ret;
 }
-#endif
 #endif /* MMC_SUPPORTS_TUNING */
 
 static int esdhc_set_ios_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
