@@ -407,6 +407,10 @@ static void setup_pfe_clocks(int intf0, int intf1, int intf2,
 		set_pfe_mac0_clk(intf0, pfe_dev);
 		set_pfe_mac1_clk(intf1, pfe_dev);
 		set_pfe_mac2_clk(intf2, pfe_dev);
+
+		ret = s32gen1_enable_dev_clk("ts", pfe_dev);
+		if (ret)
+			dev_err(pfe_dev, "Failed to enable ts clock\n");
 		priv->clocks_done = true;
 	} else if (priv->if_index == 0) {
 		set_pfe_mac0_clk(intf0, pfe_dev);
@@ -415,6 +419,11 @@ static void setup_pfe_clocks(int intf0, int intf1, int intf2,
 	} else if (priv->if_index == 2) {
 		set_pfe_mac2_clk(intf2, pfe_dev);
 	}
+}
+
+unsigned long long get_pfe_axi_clk_f(struct udevice *pfe_dev)
+{
+	return s32gen1_get_dev_clk_rate("axi", pfe_dev);
 }
 
 static void setup_iomux_pfe(struct udevice *dev,

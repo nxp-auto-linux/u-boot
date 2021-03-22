@@ -42,6 +42,7 @@ static const struct pfe_ct_hif_tx_hdr header[3U] = {
 				  (uint64_t)(off)))
 
 /* EMAC  helper macros */
+#define MHZ		(1000000UL)
 #define PFE_EMAC_F_DEF (0U | PASS_CONTROL_PACKETS(FORWARD_ALL_EXCEPT_PAUSE) | \
 			HASH_MULTICAST | HASH_OR_PERFECT_FILTER | \
 			HASH_UNICAST)
@@ -302,7 +303,7 @@ int pfeng_hw_emac_mdio_read(void *base_va, u8 pa, s32 dev, uint16_t ra,
 
 	reg |=	GMII_BUSY |
 		GMII_OPERATION_CMD(GMII_READ) |
-		CSR_CLOCK_RANGE(CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204) |
+		CSR_CLOCK_RANGE(pfe.emac_mdio_div) |
 		PHYS_LAYER_ADDR(pa);
 
 	/*	Start a read operation */
@@ -342,7 +343,7 @@ int pfeng_hw_emac_mdio_write(void *base_va, u8 pa, s32 dev, uint16_t ra,
 	}
 
 	reg |=	GMII_BUSY | GMII_OPERATION_CMD(GMII_WRITE) |
-		CSR_CLOCK_RANGE(CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204) |
+		CSR_CLOCK_RANGE(pfe.emac_mdio_div) |
 		PHYS_LAYER_ADDR(pa);
 
 	/*	Start a write operation */
@@ -356,6 +357,34 @@ int pfeng_hw_emac_mdio_write(void *base_va, u8 pa, s32 dev, uint16_t ra,
 	}
 
 	return 0;
+}
+
+static u8 pfeng_hw_emac_mdio_div_decode(u64 csr_clk)
+{
+	u8 mdio_div = CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204;
+
+	if (csr_clk < 35 * MHZ)
+		mdio_div = CSR_CLK_20_35_MHZ_MDC_CSR_DIV_16;
+	else if ((csr_clk >= 35 * MHZ) && (csr_clk < 60 * MHZ))
+		mdio_div = CSR_CLK_35_60_MHZ_MDC_CSR_DIV_26;
+	else if ((csr_clk >= 60 * MHZ) && (csr_clk < 100 * MHZ))
+		mdio_div = CSR_CLK_60_100_MHZ_MDC_CSR_DIV_42;
+	else if ((csr_clk >= 100 * MHZ) && (csr_clk < 150 * MHZ))
+		mdio_div = CSR_CLK_100_150_MHZ_MDC_CSR_DIV_62;
+	else if ((csr_clk >= 150 * MHZ) && (csr_clk < 250 * MHZ))
+		mdio_div = CSR_CLK_150_250_MHZ_MDC_CSR_DIV_102;
+	else if ((csr_clk >= 250 * MHZ) && (csr_clk < 300 * MHZ))
+		mdio_div = CSR_CLK_250_300_MHZ_MDC_CSR_DIV_124;
+	else if ((csr_clk >= 300 * MHZ) && (csr_clk < 500 * MHZ))
+		mdio_div = CSR_CLK_300_500_MHZ_MDC_CSR_DIV_204;
+	else if ((csr_clk >= 500 * MHZ) && (csr_clk < 800 * MHZ))
+		mdio_div = CSR_CLK_500_800_MHZ_MDC_CSR_DIV_324;
+	else
+		pr_err("PFE: Invalid csr_clk");
+
+	pr_info("csr_clock %llu, mdio_div %u", csr_clk, mdio_div);
+
+	return mdio_div;
 }
 
 /* PE helper functions */
@@ -1889,6 +1918,7 @@ int pfeng_hw_init(struct pfe_platform_config *config)
 	pfe.shape_per_phy = 4;
 	pfe.sch_per_phy = 2;
 	pfe.hif_chnl = 0;
+	pfe.emac_mdio_div = pfeng_hw_emac_mdio_div_decode(config->csr_clk_f);
 
 	/* BMU */
 	ret = pfeng_hw_init_bmu(&pfe);

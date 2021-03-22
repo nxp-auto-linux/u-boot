@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  */
 
@@ -120,6 +120,7 @@ void pfeng_cfg_emacs_enable_all(void);
 void pfeng_cfg_emacs_disable_all(void);
 u32 pfeng_cfg_emac_get_interface(u32 idx);
 void pfeng_apply_clocks(struct udevice *pfe_dev);
+unsigned long long get_pfe_axi_clk_f(struct udevice *pfe_dev);
 
 /* SGMII/XPCS */
 int pfeng_serdes_wait_link(int emac);

@@ -58,6 +58,7 @@ struct pfe_fw {
 struct pfe_platform_config {
 	u64 cbus_base;	/* PFE control bus base address */
 	u64 cbus_len;	/* PFE control bus size */
+	u64 csr_clk_f;	/* CSR clk frequency */
 	char *fw_name;	/* FW name */
 	struct pfe_fw *fw;		/* Required firmware, embedded */
 };
@@ -70,6 +71,7 @@ struct pfe_platform {
 	u64 bmu_buffers_size;
 	u32 hif_chnl_count; /* Number of HIF channels */
 	u32 emac_count;	    /* Number of EMAC blocks */
+	u8  emac_mdio_div;  /* Divider for mdio clk */
 	u32 gpi_total;	    /* Number of GPI/ETGPI/HGPI blocks */
 	u32 gpi_count;	    /* Number of GPI blocks */
 	u32 etgpi_count;	    /* Number of ETGPI blocks */

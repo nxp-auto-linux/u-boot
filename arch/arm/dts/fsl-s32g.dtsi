@@ -149,6 +149,8 @@
 		compatible = "fsl,s32g274a-pfe";
 		reg = <0x0 0x46000000 0x0 0x1000000>;
 		clocks = <&clks S32G_SCMI_CLK_PFE_PE>,
+			<&clks S32G_SCMI_CLK_PFE_AXI>,
+			<&clks S32GEN1_SCMI_CLK_GMAC0_TS_RGMII>,
 			/* PFE0 */
 			<&clks S32G_SCMI_CLK_PFE0_RX_SGMII>,
 			<&clks S32G_SCMI_CLK_PFE0_TX_SGMII>,
@@ -164,7 +166,7 @@
 			<&clks S32G_SCMI_CLK_PFE2_TX_SGMII>,
 			<&clks S32G_SCMI_CLK_PFE2_RX_RGMII>,
 			<&clks S32G_SCMI_CLK_PFE2_TX_RGMII>;
-		clock-names = "pe",
+		clock-names = "pe", "axi", "ts",
 			"mac0_rx_sgmii", "mac0_tx_sgmii",
 			"mac0_rx_rgmii", "mac0_tx_rgmii",
 			"mac1_rx_sgmii", "mac1_tx_sgmii",

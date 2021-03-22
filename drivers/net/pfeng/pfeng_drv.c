@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  */
 
@@ -394,6 +394,7 @@ static int pfeng_driver_init(struct pfeng_priv *priv)
 	priv->pfe_cfg.cbus_base = (u64)S32G_PFE_REGS_BASE;
 	priv->pfe_cfg.cbus_len = 0x0; /* not used */
 	priv->pfe_cfg.fw = &priv->fw;
+	priv->pfe_cfg.csr_clk_f = get_pfe_axi_clk_f(priv->dev);
 
 	ret = pfeng_hw_init(&priv->pfe_cfg);
 	if (ret) {
