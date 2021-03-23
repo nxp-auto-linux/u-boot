@@ -331,39 +331,68 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 }
 
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
-static int disable_clk_node(void *blob, uint32_t *phandle)
+static int disable_node_alias(void *blob, const char *alias, uint32_t *phandle)
 {
-	const char *clk_path;
+	const char *alias_path;
 	int nodeoff, ret;
 
-	clk_path = fdt_get_alias(blob, "clks");
-	if (!clk_path) {
-		pr_err("Failed to get path of 'clks' alias\n");
+	alias_path = fdt_get_alias(blob, alias);
+	if (!alias_path) {
+		pr_err("Failed to get path of '%s' alias\n", alias);
 		return -EIO;
 	}
 
-	nodeoff = fdt_path_offset(blob, clk_path);
+	nodeoff = fdt_path_offset(blob, alias_path);
 	if (nodeoff < 0) {
-		pr_err("Failed to get offset of '%s' node\n", clk_path);
+		pr_err("Failed to get offset of '%s' node\n", alias_path);
 		return nodeoff;
 	}
 
 	*phandle = fdt_get_phandle(blob, nodeoff);
 	if (*phandle < 0) {
-		pr_err("Failed to get phandle of '%s' node\n", clk_path);
+		pr_err("Failed to get phandle of '%s' node\n", alias_path);
 		return *phandle;
 	}
 
 	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_DISABLED, 0);
 	if (ret) {
-		pr_err("Failed to disable '%s' node\n", clk_path);
+		pr_err("Failed to disable '%s' node\n", alias_path);
 		return ret;
 	}
 
 	ret = fdt_delprop(blob, nodeoff, "phandle");
 	if (ret) {
-		pr_err("Failed to remove phandle property of '%s' node\n",
-		       clk_path);
+		pr_err("Failed to remove phandle property of '%s' node: %s\n",
+		       alias_path, fdt_strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+static int disable_clk_node(void *blob, uint32_t *phandle)
+{
+	return disable_node_alias(blob, "clks", phandle);
+}
+
+static int disable_reset_node(void *blob, uint32_t *phandle)
+{
+	return disable_node_alias(blob, "reset", phandle);
+}
+
+static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
+{
+	int nodeoff, ret;
+
+	nodeoff = fdt_path_offset(blob, path);
+	if (nodeoff < 0) {
+		pr_err("Failed to get offset of '%s' node\n", path);
+		return nodeoff;
+	}
+
+	ret = fdt_set_phandle(blob, nodeoff, phandle);
+	if (ret) {
+		pr_err("Failed to set phandle property of '%s' node\n", path);
 		return ret;
 	}
 
@@ -372,21 +401,16 @@ static int disable_clk_node(void *blob, uint32_t *phandle)
 
 static int enable_scmi_clk_node(void *blob, uint32_t phandle)
 {
-	int nodeoff, ret;
+	const char *path = "/firmware/scmi/protocol@14";
 
-	nodeoff = fdt_path_offset(blob, "/firmware/scmi/protocol@14");
-	if (nodeoff < 0) {
-		pr_err("Failed to get offset of '/firmware/scmi/protocol@14' node\n");
-		return nodeoff;
-	}
+	return enable_scmi_protocol(blob, path, phandle);
+}
 
-	ret = fdt_set_phandle(blob, nodeoff, phandle);
-	if (ret) {
-		pr_err("Failed to set phandle property of '/firmware/scmi/protocol@14' node\n");
-		return ret;
-	}
+static int enable_scmi_reset_node(void *blob, uint32_t phandle)
+{
+	const char *path = "/firmware/scmi/protocol@16";
 
-	return 0;
+	return enable_scmi_protocol(blob, path, phandle);
 }
 
 static int enable_scmi_mbox(void *blob)
@@ -427,14 +451,44 @@ static int enable_scmi_smc(void *blob)
 	return 0;
 }
 
-static void ft_fixup_scmi_clks(void *blob)
+static int enable_scmi_clks(void *blob)
 {
 	u32 phandle;
+	int ret;
 
-	if (disable_clk_node(blob, &phandle))
+	ret = disable_clk_node(blob, &phandle);
+	if (ret)
+		return ret;
+
+	ret = enable_scmi_clk_node(blob, phandle);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+static int enable_scmi_reset(void *blob)
+{
+	u32 phandle;
+	int ret;
+
+	ret = disable_reset_node(blob, &phandle);
+	if (ret)
+		return ret;
+
+	ret = enable_scmi_reset_node(blob, phandle);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+static void ft_fixup_scmi(void *blob)
+{
+	if (enable_scmi_clks(blob))
 		return;
 
-	if (enable_scmi_clk_node(blob, phandle))
+	if (enable_scmi_reset(blob))
 		return;
 
 	/* As of Linux Kernel version 5.10, the 'arm,smc-mbox'
@@ -464,6 +518,6 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	ft_fixup_ddr_polling(blob);
 #endif
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
-	ft_fixup_scmi_clks(blob);
+	ft_fixup_scmi(blob);
 #endif
 }
