@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL 2.0
 /*
  *  Copyright (c) 2020 Imagination Technologies Limited
- *  Copyright 2018-2020 NXP
+ *  Copyright 2018-2021 NXP
  */
 
 /**
@@ -528,8 +528,10 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 {
 	s32 ii;
 	s32 l_addr;
+	u32 lcv = htonl(PFE_LOADCONF_ENABLE);
 	void *buf;
 	bool map_found = false;
+	bool lc_found = false;
 	int ret;
 	char *names;
 	Elf32_Ehdr *ehdr = (Elf32_Ehdr *)fw;
@@ -540,13 +542,28 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 
 	names = (char *)((int64_t)fw + shdr[ehdr->e_shstrndx].sh_offset);
 	for (ii = 0; ii < ehdr->e_shnum; ++ii) {
-		if (strcmp(".pfe_pe_mmap", &names[shdr[ii].sh_name]) == 0) {
-			map_found = true;
+		if (!strcmp(".loadconf", &names[shdr[ii].sh_name])) {
+			lc_found = true;
 			break;
 		}
 	}
 
-	if (map_found) {
+	if (lc_found) {
+		memcpy(((u8 *)fw + shdr[ii].sh_offset), &lcv, sizeof(lcv));
+	} else {
+		for (ii = 0; ii < ehdr->e_shnum; ++ii) {
+			if (!strcmp(".pfe_pe_mmap", &names[shdr[ii].sh_name])) {
+				map_found = true;
+				break;
+			}
+		}
+
+		if (!map_found) {
+			pr_err("PFE: loadconf section is not available.\n");
+			pr_err("PFE: PE Memory map is not available.\n");
+			return -EINVAL;
+		}
+
 		fw_mmap = malloc(sizeof(struct pfe_ct_pe_mmap));
 		if (!fw_mmap)
 			return -ENOMEM;
@@ -564,10 +581,6 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 		pr_info("pfe_ct.h file version\"%s\"\n", mmap_version_str);
 		/*	Indicate that mmap_data is available */
 		*memmap = fw_mmap;
-
-	} else {
-		pr_err("PFE: PE Memory map is not available.\n");
-		return -EINVAL;
 	}
 
 	/*	Try to upload all sections of the .elf */

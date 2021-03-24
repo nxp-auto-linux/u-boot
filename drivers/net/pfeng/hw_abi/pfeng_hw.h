@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
  *  Copyright (c) 2020 Imagination Technologies Limited
- *  Copyright 2018-2020 NXP
+ *  Copyright 2018-2021 NXP
  */
 
 /**
@@ -43,6 +43,8 @@
 #include "pfe_ct.h"
 #include "pfe_hif_ring.h"
 #include "pfe_platform_cfg.h"
+
+#define PFE_LOADCONF_ENABLE 0xABCDU
 
 struct pfe_hw_chnl;
 
