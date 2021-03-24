@@ -5,6 +5,7 @@
 #include <asm/arch/siul.h>
 #include <dt-bindings/clock/s32g-clock.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
+#include <s32gen1_clk_funcs.h>
 #include <s32gen1_scmi_clk.h>
 
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
