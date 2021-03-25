@@ -12,10 +12,30 @@
 #include <asm/io.h>
 #include <asm/arch/siul.h>
 #include <linux/sizes.h>
-#include <errno.h>
+#include <hwconfig.h>
+#include <asm/arch-s32/s32-gen1/serdes_hwconfig.h>
+#include <dt-bindings/phy/phy.h>
+#include <linux/ctype.h>
 #include "mp.h"
 
 #define ID_TO_CORE(ID)	(((ID) & 3) | ((ID) >> 7))
+
+#define PCIE_ALIAS_FMT		"pcie%d"
+#define PCIE_ALIAS_SIZE		sizeof(PCIE_ALIAS_FMT)
+
+#define SERDES_ALIAS_FMT	"serdes%d"
+#define SERDES_ALIAS_SIZE	sizeof(SERDES_ALIAS_FMT)
+
+#define SERDES_EXT_PATH_FMT		"/clocks/serdes_%d_ext"
+#define SERDES_EXT_PATH_FMT_SIZE	sizeof(SERDES_EXT_PATH_FMT)
+/* Add some space for SerDes ID */
+#define SERDES_EXT_PATH_SIZE		(SERDES_EXT_PATH_FMT_SIZE + 2)
+
+#define SERDES_EXT_CLK			"ext"
+#define SERDES_EXT_SIZE			sizeof(SERDES_EXT_CLK)
+
+#define SERDES_LINE_NAME_FMT	"serdes_lane%d"
+#define SERDES_LINE_NAME_LEN	sizeof(SERDES_LINE_NAME_FMT)
 
 #if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
 #include <dt-bindings/clock/s32gen1-clock-freq.h>
@@ -500,6 +520,361 @@ static void ft_fixup_scmi(void *blob)
 }
 #endif
 
+#ifdef CONFIG_NXP_S32G2XX
+static int fdt_alias2node(void *blob, const char *alias_fmt, int alias_id)
+{
+	const char *alias_path;
+	char alias_name[strlen(alias_fmt) + 1];
+	int nodeoff;
+
+	sprintf(alias_name, alias_fmt, alias_id);
+
+	alias_path = fdt_get_alias(blob, alias_name);
+	if (!alias_path) {
+		pr_err("Failed to get '%s' alias\n", alias_name);
+		return -EINVAL;
+	}
+
+	nodeoff = fdt_path_offset(blob, alias_path);
+	if (nodeoff < 0)
+		pr_err("Failed to get offset of '%s' node\n", alias_path);
+
+	return nodeoff;
+}
+
+static int set_pcie_mode(void *blob, int nodeoff, int id)
+{
+	int ret;
+	const char *compatible;
+	enum serdes_dev_type pcie_mode;
+
+	pcie_mode = s32_serdes_get_mode_from_hwconfig(id);
+	if (pcie_mode & PCIE_EP)
+		compatible = "fsl,s32gen1-pcie-ep";
+	else
+		compatible = "fsl,s32gen1-pcie";
+
+	ret = fdt_setprop(blob, nodeoff, "compatible", compatible,
+			  strlen(compatible) + 1);
+	if (ret) {
+		pr_err("Failed to set PCIE compatible: %s\n",
+		       fdt_strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+static int add_serdes_lines(void *blob, int id, int lanes, uint32_t phandle)
+{
+	char serdes_lane[SERDES_LINE_NAME_LEN];
+	int i, ret, nodeoff;
+
+	nodeoff = fdt_alias2node(blob, PCIE_ALIAS_FMT, id);
+	if (nodeoff < 0)
+		return nodeoff;
+
+	ret = fdt_setprop_u32(blob, nodeoff, "num-lanes", lanes);
+	if (ret)
+		pr_err("Failed to set 'num-lanes'\n");
+
+	for (i = 0; i < lanes; i++) {
+		sprintf(serdes_lane, SERDES_LINE_NAME_FMT, i);
+		ret = fdt_appendprop_string(blob, nodeoff, "phy-names",
+					    serdes_lane);
+		if (ret) {
+			pr_err("Failed to append serdes lane to 'phy-names': %s\n",
+			       fdt_strerror(ret));
+			return ret;
+		}
+
+		ret = fdt_appendprop_u32(blob, nodeoff, "phys", phandle);
+		if (ret) {
+			pr_err("Failed to append serdes phandle to 'phys': %s\n",
+			       fdt_strerror(ret));
+			return ret;
+		}
+
+		ret = fdt_appendprop_u32(blob, nodeoff, "phys", PHY_TYPE_PCIE);
+		if (ret) {
+			pr_err("Failed to append PHY type to 'phys': %s\n",
+			       fdt_strerror(ret));
+			return ret;
+		}
+
+		ret = fdt_appendprop_u32(blob, nodeoff, "phys", id);
+		if (ret) {
+			pr_err("Failed to append PCIE instance to 'phys': %s\n",
+			       fdt_strerror(ret));
+			return ret;
+		}
+
+		ret = fdt_appendprop_u32(blob, nodeoff, "phys", i);
+		if (ret) {
+			pr_err("Failed to append SerDes line to 'phys': %s\n",
+			       fdt_strerror(ret));
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+static int set_serdes_lines(void *blob, int id)
+{
+	enum serdes_mode mode;
+	u32 phandle;
+	int serdes_off, ret, lanes = 0;
+
+	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+	if (mode == SERDES_MODE_PCIE_PCIE)
+		lanes = 2;
+
+	if (mode == SERDES_MODE_PCIE_SGMII0 || mode == SERDES_MODE_PCIE_SGMII1)
+		lanes = 1;
+
+	if (!lanes) {
+		pr_err("Invalid PCIe%d lanes config\n", id);
+		return -EINVAL;
+	}
+
+	serdes_off = fdt_alias2node(blob, SERDES_ALIAS_FMT, id);
+	if (serdes_off < 0)
+		return serdes_off;
+
+	phandle = fdt_get_phandle(blob, serdes_off);
+	if (!phandle) {
+		ret = fdt_generate_phandle(blob, &phandle);
+		if (ret < 0) {
+			pr_err("Failed to generate a new phandle for %s%d\n",
+			       SERDES_ALIAS_FMT, id);
+			return ret;
+		}
+
+		ret = fdtdec_set_phandle(blob, serdes_off, phandle);
+		if (ret < 0) {
+			pr_err("Failed to set phandle for node: %s%d\n",
+			       SERDES_ALIAS_FMT, id);
+			return ret;
+		}
+	}
+
+	ret = add_serdes_lines(blob, id, lanes, phandle);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+static int prepare_pcie_node(void *blob, int id)
+{
+	int ret, nodeoff;
+
+	nodeoff = fdt_alias2node(blob, PCIE_ALIAS_FMT, id);
+	if (nodeoff < 0)
+		return nodeoff;
+
+	if (is_pcie_enabled_in_hwconfig(id)) {
+		ret = fdt_status_okay(blob, nodeoff);
+		if (ret) {
+			pr_err("Failed to enable PCIe%d\n", id);
+			return ret;
+		}
+	} else {
+		ret = fdt_status_disabled(blob, nodeoff);
+		if (ret) {
+			pr_err("Failed to disable PCIe%d\n", id);
+			return ret;
+		}
+
+		/* Skip rest of the configuration if not enabled */
+		return 0;
+	}
+
+	ret = set_pcie_mode(blob, nodeoff, id);
+	if (ret)
+		return ret;
+
+	ret = set_serdes_lines(blob, id);
+	if (ret)
+		return ret;
+
+	return ret;
+}
+
+static int rename_ext_clk(void *blob, int nodeoff, int prop_pos)
+{
+	int i, ret, length, str_pos;
+	const char *list;
+	char *propval;
+
+	list = fdt_getprop(blob, nodeoff, "clock-names", &length);
+	if (!list)
+		return -EINVAL;
+
+	propval = malloc(length);
+	memcpy(propval, list, length);
+
+	/* Jump over elements before 'ext' clock */
+	for (str_pos = 0, i = 0; i < prop_pos; i++)
+		str_pos += strlen(&propval[str_pos]) + 1;
+
+	propval[str_pos] = toupper(propval[str_pos]);
+
+	ret = fdt_setprop(blob, nodeoff, "clock-names", propval,
+			  length);
+	if (ret) {
+		pr_err("Failed to rename 'ext' SerDes clock: %s\n",
+		       fdt_strerror(ret));
+		return ret;
+	}
+
+	free(propval);
+
+	return 0;
+}
+
+static int get_ext_clk_phandle(void *blob, int id, uint32_t *phandle)
+{
+	enum serdes_clock_fmhz mhz;
+	char ext_clk_path[SERDES_EXT_PATH_SIZE];
+	int clk_mhz, ext_off, ret;
+
+	mhz = s32_serdes_get_clock_fmhz_from_hwconfig(id);
+	if (mhz == CLK_100MHZ)
+		clk_mhz = 100;
+	else
+		clk_mhz = 125;
+
+	sprintf(ext_clk_path, SERDES_EXT_PATH_FMT, clk_mhz);
+
+	ext_off = fdt_path_offset(blob, ext_clk_path);
+	if (ext_off < 0) {
+		pr_err("Failed to get offset of '%s' node\n", ext_clk_path);
+		return ext_off;
+	}
+
+	*phandle = fdt_get_phandle(blob, ext_off);
+	if (!*phandle) {
+		ret = fdt_generate_phandle(blob, phandle);
+		if (ret < 0) {
+			pr_err("Failed to generate a new phandle for %s\n",
+			       ext_clk_path);
+			return ret;
+		}
+
+		ret = fdtdec_set_phandle(blob, ext_off, *phandle);
+		if (ret < 0) {
+			pr_err("Failed to set phandle for node: %s\n",
+			       ext_clk_path);
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+static int add_ext_clk(void *blob, int id)
+{
+	u32 phandle;
+	int ret, nodeoff;
+
+	ret = get_ext_clk_phandle(blob, id, &phandle);
+	if (ret)
+		return ret;
+
+	nodeoff = fdt_alias2node(blob, SERDES_ALIAS_FMT, id);
+	if (nodeoff < 0)
+		return nodeoff;
+
+	ret = fdt_appendprop_string(blob, nodeoff, "clock-names",
+				    SERDES_EXT_CLK);
+	if (ret) {
+		pr_err("Failed to append ext clock to 'clock-names'\n");
+		return ret;
+	}
+
+	ret = fdt_appendprop_u32(blob, nodeoff, "clocks", phandle);
+	if (ret) {
+		pr_err("Failed to append ext clock to 'clock-names'\n");
+		return ret;
+	}
+
+	return ret;
+}
+
+static int set_serdes_clk(void *blob, int id)
+{
+	enum serdes_clock clk = s32_serdes_get_clock_from_hwconfig(id);
+	int nodeoff, prop_pos;
+
+	nodeoff = fdt_alias2node(blob, SERDES_ALIAS_FMT, id);
+	if (nodeoff < 0)
+		return nodeoff;
+
+	prop_pos = fdt_stringlist_search(blob, nodeoff, "clock-names",
+					 SERDES_EXT_CLK);
+
+	if (clk == CLK_INT && prop_pos >= 0)
+		return rename_ext_clk(blob, nodeoff, prop_pos);
+
+	if (clk == CLK_EXT && prop_pos <= 0)
+		return add_ext_clk(blob, id);
+
+	return 0;
+}
+
+static int set_serdes_mode(void *blob, int id)
+{
+	int nodeoff, ret;
+	enum serdes_mode mode;
+
+	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+	if (mode == SERDES_MODE_INVAL) {
+		pr_err("Invalid SerDes%d mode\n", id);
+		return -EINVAL;
+	}
+
+	nodeoff = fdt_alias2node(blob, SERDES_ALIAS_FMT, id);
+	if (nodeoff < 0)
+		return nodeoff;
+
+	ret = fdt_setprop_u32(blob, nodeoff, "fsl,sys-mode", mode);
+	if (ret)
+		pr_err("Failed to set 'fsl,sys-mode'\n");
+
+	return ret;
+}
+
+static void ft_fixup_serdes(void *blob)
+{
+	int ret, id;
+
+	/* Add some space for the following changes */
+	ret = fdt_increase_size(blob, 512);
+	if (ret < 0) {
+		pr_err("Could not increase size of device tree: %s\n",
+		       fdt_strerror(ret));
+		return;
+	}
+
+	for (id = 0; id <= 1; id++) {
+		ret = prepare_pcie_node(blob, id);
+		if (ret)
+			pr_err("Failed to set mode for PCIe%d\n", id);
+
+		ret = set_serdes_clk(blob, id);
+		if (ret)
+			pr_err("Failed to set the clock for SerDes%d\n", id);
+
+		ret = set_serdes_mode(blob, id);
+		if (ret)
+			pr_err("Failed to set mode for SerDes%d\n", id);
+	}
+}
+
+#endif
+
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
 #ifdef CONFIG_MP
@@ -519,5 +894,8 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #endif
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
 	ft_fixup_scmi(blob);
+#endif
+#ifdef CONFIG_NXP_S32G2XX
+	ft_fixup_serdes(blob);
 #endif
 }

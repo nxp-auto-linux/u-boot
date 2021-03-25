@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -411,6 +411,23 @@ __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
 	return -ENODEV;
 }
 
+bool is_pcie_enabled_in_hwconfig(int id)
+{
+	char pcie_name[10];
+	enum serdes_dev_type pcie_mode;
+
+	sprintf(pcie_name, "pcie%d", id);
+
+	if (!hwconfig_arg(pcie_name, NULL))
+		return false;
+
+	pcie_mode = s32_serdes_get_mode_from_hwconfig(id);
+	if ((pcie_mode & PCIE_EP) || (pcie_mode & PCIE_RC))
+		return true;
+
+	return false;
+}
+
 enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id)
 {
 	char pcie_name[10];
@@ -482,6 +499,34 @@ enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 		clk = CLK_125MHZ;
 
 	return clk;
+}
+
+enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
+{
+	enum serdes_dev_type mod;
+	enum serdes_xpcs_mode xpcs_mode;
+
+	/* Mode 3 */
+	mod = s32_serdes_get_mode_from_hwconfig(id);
+	if (mod == SGMII)
+		return SERDES_MODE_SGMII_SGMII;
+
+	/* Mode 0 */
+	if (mod == PCIE_EP || mod == PCIE_RC)
+		return SERDES_MODE_PCIE_PCIE;
+
+	/* Not mode 1 || 2 */
+	if ((mod != (PCIE_EP | SGMII)) && (mod != (PCIE_RC | SGMII)))
+		return SERDES_MODE_INVAL;
+
+	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
+	if (xpcs_mode == SGMII_XPCS0)
+		return SERDES_MODE_PCIE_SGMII0;
+
+	if (xpcs_mode == SGMII_XPCS1)
+		return SERDES_MODE_PCIE_SGMII1;
+
+	return SERDES_MODE_INVAL;
 }
 
 static bool s32_serdes_is_xpcs_cfg_valid(struct s32_serdes *pcie)
