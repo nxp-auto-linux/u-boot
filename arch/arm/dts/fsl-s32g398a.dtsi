@@ -7,6 +7,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+#include <dt-bindings/clock/s32g3-clock.h>
+
 /dts-v1/;
 
 #include "fsl-s32g.dtsi"
@@ -85,5 +87,25 @@
 			<100000000>,
 			<400000000>,
 			<400000000>;
+	};
+
+	mc_cgm6: mc_cgm0@4053C000 {
+		compatible = "fsl,s32gen1-mc_cgm6";
+		reg = <0x0 0x4053C000 0x0 0x3000>;
+
+		assigned-clocks =
+			<&clks S32G_CLK_MC_CGM6_MUX0>,
+			<&clks S32G_CLK_MC_CGM6_MUX1>,
+			<&clks S32G_CLK_MC_CGM6_MUX2>,
+			<&clks S32GEN1_CLK_GMAC0_TS>;
+		assigned-clock-parents =
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI4>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI5>,
+			<&clks S32GEN1_CLK_GMAC0_EXT_RX>;
+		assigned-clock-rates =
+			<0>,
+			<0>,
+			<0>,
+			<200000000>;
 	};
 };
