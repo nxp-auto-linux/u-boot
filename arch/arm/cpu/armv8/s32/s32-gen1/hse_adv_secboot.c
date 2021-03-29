@@ -196,8 +196,9 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
 
 	priv->cr_entry.core_id = HSE_APP_CORE3;
 	priv->cr_entry.cr_sanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
-	priv->cr_entry.smr_verif_map = HSE_SMR_ENTRY_1;
+	priv->cr_entry.preboot_smr_map = HSE_SMR_ENTRY_1;
 	priv->cr_entry.pass_reset = CONFIG_SYS_TEXT_BASE;
+	priv->cr_entry.start_option = HSE_CR_AUTO_START;
 
 	priv->srv_desc.srv_id = HSE_SRV_ID_CORE_RESET_ENTRY_INSTALL;
 	priv->srv_desc.cr_install_req.cr_entry_index = 1u;
@@ -231,8 +232,6 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 
 	printf("\tGenerating Secure Memory Region entry...\n");
 
-	priv->uboot_sign_len = HSE_UBOOT_AUTH_LEN - 0x100;
-
 	ret = hse_mmc_read(&priv->uboot_sign, HSE_UBOOT_SIGN_BLK, 1);
 	if (ret) {
 		log_err("ERROR: signature read failed!\n");
@@ -254,12 +253,12 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 	smr_entry->smr_size = HSE_UBOOT_MAX_SIZE;
 	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
 				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
-	smr_entry->verif_method = HSE_SMR_VERIF_PRE_BOOT_MASK;
 	smr_entry->check_period = 0;
 	smr_entry->key_handle = HSE_BOOT_KEY_HANDLE;
 	smr_entry->sign_sch.sign_scheme = HSE_SIGN_RSASSA_PKCS1_V15;
 	smr_entry->sign_sch.sch.hash_algo = HSE_HASH_ALGO_SHA_1;
 	smr_entry->auth_tag = HSE_AUTH_TAG_SD;
+	smr_entry->decrypt_key_handle = HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED;
 
 	priv->srv_desc.srv_id = HSE_SRV_ID_SMR_ENTRY_INSTALL;
 	smr_install_req->access_mode = HSE_ACCESS_MODE_ONE_PASS;
@@ -268,7 +267,7 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 	smr_install_req->smr_data_addr = (uintptr_t)&priv->uboot_copy;
 	smr_install_req->smr_data_len = HSE_UBOOT_MAX_SIZE;
 	smr_install_req->smr_auth_tag_addr = (uintptr_t)&priv->uboot_sign;
-	smr_install_req->smr_auth_tag_len_addr = (uintptr_t)&priv->uboot_sign_len;
+	smr_install_req->smr_auth_tag_len = HSE_UBOOT_AUTH_LEN;
 
 	flush_dcache_range((u64)priv,
 			   (u64)priv + sizeof(struct hse_private));
@@ -455,11 +454,11 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	if (ret)
 		goto ret_fail;
 
-	ret = hse_install_cr_entry(priv, &hse_recv);
+	ret = hse_install_smr_entry(priv, &hse_recv);
 	if (ret)
 		goto ret_fail;
 
-	ret = hse_install_smr_entry(priv, &hse_recv);
+	ret = hse_install_cr_entry(priv, &hse_recv);
 	if (ret)
 		goto ret_fail;
 

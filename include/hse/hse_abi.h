@@ -21,7 +21,7 @@
 
 #define HSE_UBOOT_MAX_SIZE   0x100000u
 #define HSE_SYS_IMG_MAX_SIZE 0x10000u
-#define HSE_UBOOT_AUTH_LEN   0x200u
+#define HSE_UBOOT_AUTH_LEN   0x100u
 #define HSE_SYS_IMG_SD       0x71200u
 #define HSE_AUTH_TAG_SD      0x81200u
 
@@ -55,15 +55,16 @@
 #define HSE_SMR_CFG_FLAG_SD_FLASH     0x2u
 #define HSE_SMR_CFG_FLAG_INSTALL_AUTH BIT(2)
 #define HSE_SMR_ENTRY_1               BIT(1)
-#define HSE_SMR_VERIF_PRE_BOOT_MASK   0x56u
 
-#define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 1u
+#define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 0x7455u
+#define HSE_CR_AUTO_START                  0x35A5U
 
 #define HSE_SIGN_RSASSA_PKCS1_V15 0x93u
 #define HSE_HASH_ALGO_SHA_1       2u
 
-#define HSE_INVALID_KEY_HANDLE 0xFFFFFFFFul
-#define HSE_BOOT_KEY_HANDLE    0x010600
+#define HSE_INVALID_KEY_HANDLE              0xFFFFFFFFul
+#define HSE_BOOT_KEY_HANDLE                 0x010600u
+#define HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED 0ul
 
 #define HSE_MU0_MASK    BIT(0)
 #define HSE_MU1_MASK    BIT(1)
@@ -81,7 +82,7 @@
 
 #define HSE_KEY_TYPE_AES           0x12u
 #define HSE_KEY_TYPE_HMAC          0x20u
-#define HSE_KEY_TYPE_SHARED_SECRET 0x40u
+#define HSE_KEY_TYPE_SHARED_SECRET 0x30u
 #define HSE_KEY_TYPE_ECC_PAIR      0x87u
 #define HSE_KEY_TYPE_ECC_PUB       0x88u
 #define HSE_KEY_TYPE_ECC_PUB_EXT   0x89u
@@ -213,7 +214,7 @@ struct hse_import_key_srv {
 	u32 cipher_key;
 	u8 reserved2[48];
 	u32 auth_key;
-	u8 reserved3[36];
+	u8 reserved3[48];
 } __packed;
 
 /**
@@ -244,40 +245,46 @@ struct hse_sign_scheme {
  * @smr_dst_addr: ptr to write location after authentication
  * @smr_size: size in bytes of SMR to be loaded
  * @config_flags: config flags for SMR entry
- * @verif_method: specified when SMR verification takes places
  * @check_period: required by hse, must be 0
  * @key_handle: key from key catalog used to authenticate SMR
  * @sign_sch: auth scheme used to verify the SMR
  * @auth_tag: location of SMR signature in flash
+ * @decrypt_key_handle: specifies parameters for smr decryption
  */
 struct hse_smr_entry {
 	u32 smr_src;
 	u64 smr_dst_addr;
 	u32 smr_size;
 	u8 config_flags;
-	u8 verif_method;
-	u8 reserved1[2];
+	u8 reserved1[3];
 	u32 check_period;
 	u32 key_handle;
 	struct hse_sign_scheme sign_sch;
 	u32 auth_tag;
-	u8 reserved[4];
+	u8 reserved2[4];
+	u32 decrypt_key_handle;
+	u8 reserved3[12];
 } __packed;
 
 /**
  * struct hse_cr_entry - core reset entry
  * @core_id: core to be un-gated once SMR authentication is successful
  * @cr_sanction: sanction to apply if SMR authentication fails
- * @smr_verif_map: smr entries which need to be verified to ungate core
+ * @preboot_smr_map: smr entries which need to be verified before
+ *                   booting to ungate core
  * @pass_reset: first instruction to jump to if verification is successful
+ * @start_option: specifies if the core is automatically released from
+ *                reset or not
  */
 struct hse_cr_entry {
 	u8 core_id;
-	u8 cr_sanction;
-	u8 reserved1[2];
-	u32 smr_verif_map;
+	u8 reserved1[1];
+	u16 cr_sanction;
+	u32 preboot_smr_map;
 	u32 pass_reset;
-	u8 reserved2[20];
+	u8 reserved2[12];
+	u16 start_option;
+	u8 reserved3[6];
 } __packed;
 
 /**
@@ -288,20 +295,19 @@ struct hse_cr_entry {
  * @smr_data_addr: ptr to SMR data to install
  * @smr_data_len: length of SMR data to install
  * @smr_auth_tag_addr: ptr to SMR data authentication tag to verify
- * @smr_auth_tag_len_addr: ptr to length of SMR data authentication tag
+ * @smr_auth_tag_len: length of SMR data authentication tag
  */
 struct hse_smr_install_srv {
 	u8 access_mode;
-	u8 reserved1;
 	u8 entry_index;
-	u8 reserved2;
+	u8 reserved1[2];
 	u64 smr_entry_addr;
 	u64 smr_data_addr;
 	u32 smr_data_len;
 	u64 smr_auth_tag_addr;
-	u8 reserved3[8];
-	u64 smr_auth_tag_len_addr;
-	u8 reserved4[8];
+	u8 reserved2[8];
+	u16 smr_auth_tag_len;
+	u8 reserved3[18];
 } __packed;
 
 /**
@@ -377,7 +383,6 @@ struct hse_private {
 	u8 uboot_sign[HSE_UBOOT_AUTH_LEN];
 	u8 uboot_copy[HSE_UBOOT_MAX_SIZE];
 	u8 sys_img[HSE_SYS_IMG_MAX_SIZE];
-	u32 uboot_sign_len;
 	u32 sys_img_len;
 	struct hse_key_group_cfg_entry nvm_catalog[20];
 	struct hse_key_group_cfg_entry ram_catalog[11];
