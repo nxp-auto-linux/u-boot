@@ -197,7 +197,7 @@ config DDR_HANDSHAKE_AT_RESET
 
 config S32_CMU
 	bool "Enable Clock Monitoring Unit-Frequency Check"
-	default y if !CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	default y
 	depends on S32_GEN1
 	help
 	  Checks if the frequency of a monitored clock (monitored_clock)
