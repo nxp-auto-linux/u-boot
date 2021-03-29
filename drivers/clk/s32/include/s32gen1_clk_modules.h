@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #ifndef S32GEN1_CLK_MODULES_H
 #define S32GEN1_CLK_MODULES_H
@@ -128,6 +128,7 @@ struct s32gen1_clk_priv {
 	void *cgm1;
 	void *cgm2;
 	void *cgm5;
+	void *cgm6;
 	void *ddrpll;
 	void *fxosc;
 	void *mc_me;
@@ -145,6 +146,7 @@ enum s32gen1_clk_source {
 	S32GEN1_CGM1,
 	S32GEN1_CGM2,
 	S32GEN1_CGM5,
+	S32GEN1_CGM6,
 	S32GEN1_DDR_PLL,
 	S32GEN1_FIRC,
 	S32GEN1_FXOSC,

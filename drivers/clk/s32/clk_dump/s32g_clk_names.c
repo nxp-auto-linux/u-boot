@@ -71,12 +71,19 @@ const char *plat_clk_name(const char *name)
 	return name + s32g_len;
 }
 
+__weak struct s32gen1_clk_blk *s32g_get_plat_clk_blk(u32 id)
+{
+	return NULL;
+}
+
 struct s32gen1_clk_blk *s32gen1_get_plat_clk_blk(u32 id)
 {
 	if (id < ARRAY_SIZE(s32g_clk_blks))
 		return &s32g_clk_blks[id];
 
-	return NULL;
+	id -= ARRAY_SIZE(s32g_clk_blks);
+
+	return s32g_get_plat_clk_blk(id);
 }
 
 const char *s32gen1_get_plat_clock_name(struct s32gen1_clk_blk *clk)

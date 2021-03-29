@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <asm/arch/mc_cgm_regs.h>
 #include <asm/io.h>
@@ -24,9 +24,13 @@ static int bind_clk_provider(struct udevice *pdev, const char *compatible,
 	ofnode node;
 	int ret;
 
+	*base_addr = NULL;
 	node = ofnode_by_compatible(ofnode_null(), compatible);
-	if (!node.np) {
-		pr_err("Could not find '%s' node\n", compatible);
+	if (!ofnode_valid(node)) {
+		/* Don't print here an error if the node doesn't exist.
+		 * It may be never used.
+		 */
+		pr_debug("Could not find '%s' node\n", compatible);
 		return -EIO;
 	}
 
@@ -69,7 +73,6 @@ static int bind_clk_provider(struct udevice *pdev, const char *compatible,
 
 static int s32gen1_clk_probe(struct udevice *dev)
 {
-	int ret;
 	size_t i;
 	struct s32gen1_clk_priv *priv = dev_get_priv(dev);
 
@@ -110,6 +113,10 @@ static int s32gen1_clk_probe(struct udevice *dev)
 			.compat = "fsl,s32gen1-mc_cgm5",
 		},
 		{
+			.base_addr = &priv->cgm6,
+			.compat = "fsl,s32gen1-mc_cgm6",
+		},
+		{
 			.base_addr = &priv->armpll,
 			.compat = "fsl,s32gen1-armpll",
 		},
@@ -135,11 +142,8 @@ static int s32gen1_clk_probe(struct udevice *dev)
 		},
 	};
 
-	for (i = 0; i < ARRAY_SIZE(deps); i++) {
-		ret = bind_clk_provider(dev, deps[i].compat, deps[i].base_addr);
-		if (ret)
-			return ret;
-	}
+	for (i = 0; i < ARRAY_SIZE(deps); i++)
+		bind_clk_provider(dev, deps[i].compat, deps[i].base_addr);
 
 	return 0;
 }
@@ -161,6 +165,8 @@ void *get_base_addr(enum s32gen1_clk_source id, struct s32gen1_clk_priv *priv)
 		return priv->cgm2;
 	case S32GEN1_CGM5:
 		return priv->cgm5;
+	case S32GEN1_CGM6:
+		return priv->cgm6;
 	case S32GEN1_DDR_PLL:
 		return priv->ddrpll;
 	case S32GEN1_FXOSC:

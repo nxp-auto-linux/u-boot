@@ -287,6 +287,7 @@ static int enable_mux(struct s32gen1_clk_obj *module,
 	case S32GEN1_CGM1:
 	case S32GEN1_CGM2:
 	case S32GEN1_CGM5:
+	case S32GEN1_CGM6:
 		return enable_cgm_mux(mux, priv);
 	default:
 		pr_err("Unknown mux parent type: %d\n", mux->module);
