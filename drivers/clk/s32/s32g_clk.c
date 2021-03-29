@@ -4,11 +4,9 @@
  */
 #include <asm/arch/siul.h>
 #include <dt-bindings/clock/s32g-clock.h>
-#include <s32gen1_clk_funcs.h>
+#include <s32g_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
 #include <s32gen1_shared_clks.h>
-
-#define ARR_CLK(N)	S32G_CLK_INDEX(N)
 
 /* XBAR_2X */
 static struct s32gen1_part_block llce_block =
@@ -304,23 +302,25 @@ static struct s32gen1_clk *s32g_cc_clocks[] = {
 
 struct s32gen1_clk *get_plat_cc_clock(uint32_t id)
 {
-	id = s32gen1_platclk2mux(id);
+	u32 index = s32gen1_platclk2mux(id);
 
-	if (id >= ARRAY_SIZE(s32g_cc_clocks))
-		return NULL;
+	if (index >= ARRAY_SIZE(s32g_cc_clocks) || !s32g_cc_clocks[index])
+		return s32g_get_plat_cc_clock(id);
 
-	return s32g_cc_clocks[id];
+	return s32g_cc_clocks[index];
 }
 
 struct s32gen1_clk *get_plat_clock(uint32_t id)
 {
+	u32 index;
+
 	if (id < S32GEN1_PLAT_CLK_ID_BASE)
 		return NULL;
 
-	id -= S32GEN1_PLAT_CLK_ID_BASE;
+	index = id - S32GEN1_PLAT_CLK_ID_BASE;
 
-	if (id >= ARRAY_SIZE(s32g_clocks))
-		return NULL;
+	if (index >= ARRAY_SIZE(s32g_clocks) || !s32g_clocks[index])
+		return s32g_get_plat_clock(id);
 
-	return s32g_clocks[id];
+	return s32g_clocks[index];
 }
