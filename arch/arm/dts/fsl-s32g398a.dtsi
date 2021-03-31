@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 /dts-v1/;
+
 #include "fsl-s32g.dtsi"
 / {
 	model = "NXP S32G3XX";
@@ -28,5 +29,61 @@
 		device_type = "memory";
 		reg = <0 0x34000000 0 0x1400000>;
 	};
+};
 
+/delete-node/ &mc_cgm0;
+&clks {
+	mc_cgm0: mc_cgm0@40030000 {
+		compatible = "fsl,s32gen1-mc_cgm0";
+		reg = <0x0 0x40030000 0x0 0x3000>;
+
+		assigned-clocks =
+			<&clks S32GEN1_CLK_MC_CGM0_MUX0>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX3>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX4>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX5>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX7>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX8>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX12>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX14>,
+			<&clks S32GEN1_CLK_MC_CGM0_MUX16>,
+			<&clks S32GEN1_CLK_PER>,
+			<&clks S32GEN1_CLK_XBAR_2X>,
+			<&clks S32GEN1_CLK_FTM0_REF>,
+			<&clks S32GEN1_CLK_FTM1_REF>,
+			<&clks S32GEN1_CLK_CAN_PE>,
+			<&clks S32GEN1_CLK_LIN_BAUD>,
+			<&clks S32GEN1_CLK_SPI>,
+			<&clks S32GEN1_CLK_QSPI_2X>,
+			<&clks S32GEN1_CLK_SDHC>;
+		assigned-clock-parents =
+			<&clks S32GEN1_CLK_ARM_PLL_DFS1>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI1>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI1>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI1>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI2>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI3>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_DFS1>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_DFS3>,
+			<&clks S32GEN1_CLK_PERIPH_PLL_PHI7>;
+		assigned-clock-rates =
+			<0>,
+			<0>,
+			<0>,
+			<0>,
+			<0>,
+			<0>,
+			<0>,
+			<0>,
+			<0>,
+			<80000000>,
+			<S32GEN1_XBAR_2X_FREQ>,
+			<40000000>,
+			<40000000>,
+			<80000000>,
+			<125000000>,
+			<100000000>,
+			<400000000>,
+			<400000000>;
+	};
 };

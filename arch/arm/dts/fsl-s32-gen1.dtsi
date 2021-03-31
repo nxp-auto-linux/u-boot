@@ -217,7 +217,7 @@
 				<&clks S32GEN1_CLK_ARM_PLL_DFS1>,
 				<&clks S32GEN1_CLK_ARM_PLL_DFS2>;
 			assigned-clock-rates =
-				<800000000>,
+				<S32GEN1_CLK_ARM_PLL_DFS1_FREQ>,
 				<800000000>;
 		};
 
