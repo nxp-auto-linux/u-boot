@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #include <dt-bindings/clock/s32gen1-clock.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
@@ -117,8 +117,9 @@ static int set_gmac_rx_parent(struct clk *clk)
 	u32 rx_id;
 	u32 clk_id = clk->id;
 
-	if (clk_id == S32GEN1_SCMI_CLK_GMAC0_RX_SGMII ||
-	    clk_id == S32GEN1_SCMI_CLK_GMAC0_RX_RGMII) {
+	if (clk_id == S32GEN1_SCMI_CLK_GMAC0_RX_SGMII) {
+		rx_id = S32GEN1_CLK_SERDES0_LANE0_CDR;
+	} else if (clk_id == S32GEN1_SCMI_CLK_GMAC0_RX_RGMII) {
 		rx_id = S32GEN1_CLK_GMAC0_EXT_RX;
 	} else {
 		pr_err("Invalid GMAC RX mode\n");
