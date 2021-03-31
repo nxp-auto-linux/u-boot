@@ -12,6 +12,7 @@
 #include <asm/io.h>
 #include <asm/arch/siul.h>
 #include <linux/sizes.h>
+#include <errno.h>
 #include "mp.h"
 
 #define ID_TO_CORE(ID)	(((ID) & 3) | ((ID) >> 7))
@@ -388,21 +389,42 @@ static int enable_scmi_clk_node(void *blob, uint32_t phandle)
 	return 0;
 }
 
-static void enable_scmi_mbox(void *blob)
+static int enable_scmi_mbox(void *blob)
 {
 	int nodeoff, ret;
 
 	nodeoff = fdt_node_offset_by_compatible(blob, -1, "arm,smc-mbox");
 	if (nodeoff < 0) {
-		pr_err("Failed to get offset of 'arm,smc-mbox' node\n");
-		return;
+		pr_debug("Failed to get offset of 'arm,smc-mbox' node\n");
+		return -ENODEV;
 	}
 
 	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_OKAY, 0);
 	if (ret) {
 		pr_err("Failed to enable 'arm,smc-mbox' node\n");
-		return;
+		return -ENXIO;
 	}
+
+	return 0;
+}
+
+static int enable_scmi_smc(void *blob)
+{
+	int nodeoff, ret;
+
+	nodeoff = fdt_node_offset_by_compatible(blob, -1, "arm,scmi-smc");
+	if (nodeoff < 0) {
+		pr_debug("Failed to get offset of 'arm,scmi-smc' node\n");
+		return -ENODEV;
+	}
+
+	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_OKAY, 0);
+	if (ret) {
+		pr_err("Failed to enable 'arm,scmi-smc' node\n");
+		return -ENXIO;
+	}
+
+	return 0;
 }
 
 static void ft_fixup_scmi_clks(void *blob)
@@ -415,7 +437,12 @@ static void ft_fixup_scmi_clks(void *blob)
 	if (enable_scmi_clk_node(blob, phandle))
 		return;
 
-	enable_scmi_mbox(blob);
+	/* As of Linux Kernel version 5.10, the 'arm,smc-mbox'
+	 * dts node is no longer used
+	 */
+	if (enable_scmi_mbox(blob) == -ENODEV)
+		if (enable_scmi_smc(blob))
+			pr_err("Failed to enable 'arm,smc-mbox' or 'arm,scmi-smc' node\n");
 }
 #endif
 
