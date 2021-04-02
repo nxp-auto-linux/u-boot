@@ -125,6 +125,14 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 	}
 }
 
+static void ft_enet_coherent_fixup(void *fdt, int nodeoff)
+{
+	if (is_s32gen1_soc_rev1())
+		if (fdt_getprop(fdt, nodeoff, "dma-coherent", NULL))
+			if (fdt_delprop(fdt, nodeoff, "dma-coherent"))
+				pr_err("Failed to remove dma-coherent\n");
+}
+
 static bool pfeng_drv_status_active(void)
 {
 	struct udevice *dev;
@@ -161,6 +169,9 @@ void ft_enet_fixup(void *fdt)
 			ft_enet_pfe_emac_fixup(0, fdt);
 			ft_enet_pfe_emac_fixup(1, fdt);
 			ft_enet_pfe_emac_fixup(2, fdt);
+
+			/* Remove dma-coherent for Rev 1*/
+			ft_enet_coherent_fixup(fdt, nodeoff);
 		}
 	}
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
