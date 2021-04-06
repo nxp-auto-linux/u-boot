@@ -622,9 +622,9 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	if (!s32_pcie_set_link_width(dbi, id, linkwidth))
 		return false;
 
-	/* Set domain to 0 and cache to 3 */
+	/* Configure transactions as Cacheable, Outer Shareable. */
 	s32_pcie_change_mstr_ace_cache(dbi, 3, 3);
-	s32_pcie_change_mstr_ace_domain(dbi, 0, 0);
+	s32_pcie_change_mstr_ace_domain(dbi, 2, 2);
 
 	/* Test value for coherency control reg */
 	debug("COHERENCY_CONTROL_3_OFF: 0x%08x\n",
