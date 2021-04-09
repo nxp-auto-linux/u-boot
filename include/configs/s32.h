@@ -412,6 +412,15 @@
 #define DDR_LIMIT0 ""
 #endif
 
+#define INITRD_HIGH_DEFAULT 0xffffffff
+
+/* Leave room for TF-A & OPTEE */
+#if defined(CONFIG_S32_ATF_BOOT_FLOW)
+#define INITRD_HIGH 0xFE7FFFFF
+#else
+#define INITRD_HIGH INITRD_HIGH_DEFAULT
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
@@ -439,7 +448,7 @@
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
 	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "\0" \
 	"fdt_high=0xa0000000\0" \
-	"initrd_high=0xffffffff\0" \
+	"initrd_high=" __stringify(INITRD_HIGH) "\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \
 	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
 	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
