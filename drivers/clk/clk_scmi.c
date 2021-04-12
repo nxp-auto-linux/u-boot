@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2019-2020 Linaro Limited
+ * Copyright 2021 NXP
  */
 #include <common.h>
 #include <clk-uclass.h>
@@ -135,7 +136,10 @@ static ulong scmi_clk_set_rate(struct clk *clk, ulong rate)
 	if (rc)
 		return 0;
 
-	return scmi_to_linux_errno(out.status);
+	if (scmi_to_linux_errno(out.status))
+		return 0;
+
+	return rate;
 }
 
 static const struct clk_ops scmi_clk_ops = {
