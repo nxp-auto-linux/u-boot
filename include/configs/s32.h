@@ -489,7 +489,7 @@
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
-		"run loadimage; if run loadfdt; then " \
+		"if run loadfdt; then " \
 			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 		"else " \
 			"echo WARN: Cannot load the DT; " \
