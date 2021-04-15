@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005, Intec Automation Inc.
  * Copyright (C) 2014, Freescale Semiconductor, Inc.
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Synced from Linux v4.19
  */
@@ -36,6 +36,11 @@
 #define HZ					CONFIG_SYS_HZ
 
 #define DEFAULT_READY_WAIT_JIFFIES		(40UL * HZ)
+/*
+ * For full-chip erase, calibrated to a 2MB flash (M25P16); should be scaled up
+ * for larger flash
+ */
+#define CHIP_ERASE_2MB_READY_WAIT_JIFFIES	(40UL * HZ)
 
 static int spi_nor_read_write_reg(struct spi_nor *nor, struct spi_mem_op
 		*op, void *buf)
@@ -539,6 +544,26 @@ static int read_bar(struct spi_nor *nor, const struct flash_info *info)
 }
 #endif
 
+/**
+ * spi_nor_erase_chip() - Erase the entire flash memory.
+ * @nor:        pointer to 'struct spi_nor'.
+ *
+ * Return: 0 on success, -errno otherwise.
+ */
+static int spi_nor_erase_chip(struct spi_nor *nor)
+{
+	struct spi_mem_op op =
+		SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_CHIP_ERASE, 1),
+			   SPI_MEM_OP_NO_ADDR,
+			   SPI_MEM_OP_NO_DUMMY,
+			   SPI_MEM_OP_NO_DATA);
+
+	if (nor->write_reg)
+		return nor->write_reg(nor, SPINOR_OP_CHIP_ERASE, NULL, 0);
+
+	return spi_mem_exec_op(nor->spi, &op);
+}
+
 /*
  * Initiate the erasure of a single sector
  */
@@ -569,6 +594,7 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 	struct spi_nor *nor = mtd_to_spi_nor(mtd);
 	u32 addr, len, rem;
 	int ret;
+	unsigned long timeout;
 
 	dev_dbg(nor->dev, "at 0x%llx, len %lld\n", (long long)instr->addr,
 		(long long)instr->len);
@@ -583,24 +609,45 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 	addr = instr->addr;
 	len = instr->len;
 
-	while (len) {
-#ifdef CONFIG_SPI_FLASH_BAR
-		ret = write_bar(nor, addr);
-		if (ret < 0)
-			return ret;
-#endif
+	if (len == mtd->size && !(nor->flags & SNOR_F_NO_OP_CHIP_ERASE)) {
 		write_enable(nor);
 
-		ret = spi_nor_erase_sector(nor, addr);
+		ret = spi_nor_erase_chip(nor);
 		if (ret)
 			goto erase_err;
 
-		addr += mtd->erasesize;
-		len -= mtd->erasesize;
-
-		ret = spi_nor_wait_till_ready(nor);
+		/*
+		 * Scale the timeout linearly with the size of the flash, with
+		 * a minimum calibrated to an old 2MB flash. We could try to
+		 * pull these from CFI/SFDP, but these values should be good
+		 * enough for now.
+		 */
+		timeout = max(CHIP_ERASE_2MB_READY_WAIT_JIFFIES,
+			      CHIP_ERASE_2MB_READY_WAIT_JIFFIES *
+			      (unsigned long)(mtd->size / SZ_2M));
+		ret = spi_nor_wait_till_ready_with_timeout(nor, timeout);
 		if (ret)
 			goto erase_err;
+	} else {
+		while (len) {
+#ifdef CONFIG_SPI_FLASH_BAR
+			ret = write_bar(nor, addr);
+			if (ret < 0)
+				return ret;
+#endif
+			write_enable(nor);
+
+			ret = spi_nor_erase_sector(nor, addr);
+			if (ret)
+				goto erase_err;
+
+			addr += mtd->erasesize;
+			len -= mtd->erasesize;
+
+			ret = spi_nor_wait_till_ready(nor);
+			if (ret)
+				goto erase_err;
+		}
 	}
 
 erase_err:
