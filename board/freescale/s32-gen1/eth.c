@@ -125,6 +125,15 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 	}
 }
 
+static void ft_enet_compatible_fixup(void *fdt, int nodeoff)
+{
+	if (!is_s32gen1_soc_rev1())
+		return;
+
+	fdt_setprop_string(fdt, nodeoff, "compatible",
+			   "fsl,s32g274a-pfeng-cut1.1");
+}
+
 static void ft_enet_coherent_fixup(void *fdt, int nodeoff)
 {
 	if (is_s32gen1_soc_rev1())
@@ -170,8 +179,12 @@ void ft_enet_fixup(void *fdt)
 			ft_enet_pfe_emac_fixup(1, fdt);
 			ft_enet_pfe_emac_fixup(2, fdt);
 
-			/* Remove dma-coherent for Rev 1*/
+			/*
+			 * Remove dma-coherent and change 'compatible'
+			 * for Rev 1
+			 */
 			ft_enet_coherent_fixup(fdt, nodeoff);
+			ft_enet_compatible_fixup(fdt, nodeoff);
 		}
 	}
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
