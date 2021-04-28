@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2019-2020 NXP */
+/* Copyright 2019-2021 NXP */
 
 #ifndef S32GEN1IMAGE_H
 #define S32GEN1IMAGE_H
@@ -124,10 +124,10 @@ struct program_image {
 	struct image_comp qspi_params;
 #endif
 	struct image_comp ivt_duplicate;
+	struct image_comp dcd;
 #ifdef CONFIG_HSE_SECBOOT
 	struct image_comp hse_reserved;
 #endif
-	struct image_comp dcd;
 	struct image_comp app_code;
 	struct image_comp code;
 	__u8 *header;

@@ -44,6 +44,13 @@
 			reg = <0x0 0xd0000000 0x0 0x001000>;
 			no-map;
 		};
+
+#ifdef CONFIG_HSE_SECBOOT
+		hse_reserved: hse_reserved@0x84000000 {
+			no-map;
+			reg = <0 0x84000000 0 0x40000>; /* 256K */
+		};
+#endif
 	};
 
 	fxosc: fxosc@40050000 {

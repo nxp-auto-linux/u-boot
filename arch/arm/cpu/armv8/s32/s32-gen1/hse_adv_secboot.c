@@ -46,52 +46,36 @@ static const u8 rsa2048_orig_exp[] = { 0x01, 0x00, 0x01 };
 /* hse nvm key catalog configuration */
 #define HSE_NVM_KEY_CATALOG_CFG \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_AES, 4U, HSE_KEY128_BITS }, \
+	HSE_KEY_TYPE_AES, 5U, HSE_KEY128_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_AES, 6U, HSE_KEY256_BITS }, \
+	HSE_KEY_TYPE_AES, 10U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_HMAC, 1U, HSE_KEY512_BITS }, \
+	HSE_KEY_TYPE_HMAC, 5U, HSE_KEY512_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
 	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_ECC_PUB_EXT, 2U, HSE_KEY256_BITS }, \
+	HSE_KEY_TYPE_ECC_PUB, 2U, HSE_KEY256_BITS }, \
+{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
+	HSE_KEY_TYPE_ECC_PUB_EXT, 1U, HSE_KEY256_BITS }, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
 	HSE_KEY_TYPE_RSA_PAIR, 2U, HSE_KEY2048_BITS}, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
 	HSE_KEY_TYPE_RSA_PUB, 2U, HSE_KEY2048_BITS}, \
 { HSE_ALL_MU_MASK, HSE_KEY_OWNER_CUST, \
-	HSE_KEY_TYPE_RSA_PUB_EXT, 2U, HSE_KEY2048_BITS}, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_AES, 1U, HSE_KEY128_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_AES, 3U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_HMAC, 1U, HSE_KEY512_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_ECC_PUB, 1U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_OEM, \
-	HSE_KEY_TYPE_RSA_PUB, 1U, HSE_KEY2048_BITS}, \
+	HSE_KEY_TYPE_RSA_PUB_EXT, 1U, HSE_KEY2048_BITS}, \
 { 0U, 0U, 0U, 0U, 0U }
 
 /* hse ram key catalog configuration */
-#define HSE_RAM_KEY_CATALOG_CFG \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_AES, 2U, HSE_KEY128_BITS }, \
-{ HSE_MU0_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_AES, 4U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_HMAC, 5U, HSE_KEY512_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_ECC_PUB, 1U, HSE_KEY256_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_RSA_PUB, 2U, HSE_KEY2048_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_SHARED_SECRET, 2U, HSE_KEY638_BITS }, \
-{ HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
-	HSE_KEY_TYPE_SHARED_SECRET, 2U, HSE_KEY4096_BITS }, \
-{ 0U, 0U, 0U, 0U, 0U }
+#define  HSE_RAM_KEY_CATALOG_CFG \
+{HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+	HSE_KEY_TYPE_RSA_PUB, 1u, HSE_KEY2048_BITS }, \
+{HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+	HSE_KEY_TYPE_AES, 12u, HSE_KEY256_BITS }, \
+{HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+	HSE_KEY_TYPE_HMAC, 6u, HSE_KEY512_BITS}, \
+{HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+	HSE_KEY_TYPE_ECC_PUB, 1u, HSE_KEY256_BITS}, \
+{0u, 0u, 0u, 0u, 0u}
 
 /* the nvm container used to format the hse key catalogs */
 static const struct hse_key_group_cfg_entry nvm_orig_cat[] = {
@@ -327,7 +311,7 @@ int hse_write_sys_img(struct hse_private *priv, bool secure)
 	flush_dcache_range((u64)priv,
 			   (u64)priv + sizeof(struct hse_private));
 
-	ret = hse_mmc_write(&priv->sys_img, HSE_SYS_IMG_BLK, 128);
+	ret = hse_mmc_write(&priv->sys_img, HSE_SYS_IMG_BLK, 96);
 	if (ret) {
 		log_err("ERROR: sys-img write failed!\n");
 		ret = CMD_RET_FAILURE;
@@ -388,13 +372,13 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	hse_nodeoffset = fdt_path_offset(gd->fdt_blob,
 				     "/reserved-memory/hse_reserved");
 	if (hse_nodeoffset < 0) {
-		log_err("ERROR: hse_reserved node not found!\n");
+		printf("ERROR: hse_reserved node not found!\n");
 		return hse_nodeoffset;
 	}
 
 	hse_resmem = fdt_get_base_address(gd->fdt_blob, hse_nodeoffset);
 	if (hse_resmem < 0) {
-		log_err("ERROR: could not get base address of hse_reserved node!\n");
+		printf("ERROR: could not get base address of hse_reserved node!\n");
 		return hse_resmem;
 	}
 

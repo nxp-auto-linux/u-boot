@@ -11,20 +11,6 @@
 		usb0 = &usbotg;
 	};
 
-#ifdef CONFIG_HSE_SECBOOT
-	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		/* reserved space to store hse data */
-		hse_reserved: hse_reserved@0x80000000 {
-			no-map;
-			reg = <0 0x80000000 0 0x40000>; /* 256K */
-		};
-	};
-#endif
-
 	usbotg: usb@44064000 {
 		compatible = "fsl,imx27-usb";
 		reg = <0x0 0x44064000 0x0 0x200>;

@@ -2,7 +2,7 @@
 /*
  * HSE MU interface for secure boot in u-boot
  *
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 
 #include <common.h>
@@ -41,6 +41,9 @@ static inline int hse_err_decode(u32 *srv_rsp)
 		goto ret_err;
 	case HSE_SRV_RSP_KEY_INVALID:
 		printf("ERROR: key flags do not match requested operation!\n");
+		goto ret_err;
+	case HSE_SRV_RSP_NOT_ALLOWED:
+		printf("ERROR: operation not allowed!\n");
 		goto ret_err;
 	default:
 		printf("ERROR: unknown error, EFAULT!\n");

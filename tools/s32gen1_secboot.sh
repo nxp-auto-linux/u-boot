@@ -87,7 +87,7 @@ openssl rsa -in "$KEY_PATH"/private.pem -pubout > "$KEY_PATH"/public.pem
 fi
 
 # extract app code
-dd if=u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=1051
+dd if=u-boot.s32 of=u-boot-tosign.s32 bs=512 skip=1057
 
 # find necessary padding for u-boot
 PAD=$((UBOOT_MAX_SIZE - $(wc -c < u-boot-tosign.s32)))
@@ -108,17 +108,17 @@ dd if=u-boot.s32 of="$DEV_PATH" bs=512 skip=8 seek=8 count=1 conv=notrunc,fsync
 
 # write DCD
 dd if=u-boot.s32 of="$DEV_PATH" bs=512 \
-skip=1034 seek=1034 count=16 conv=notrunc,fsync
+skip=9 seek=9 count=16 conv=notrunc,fsync
 
 # write hse fw
-dd if="$HSE_PATH" of="$DEV_PATH" bs=512 seek=9 conv=notrunc,fsync
+dd if="$HSE_PATH" of="$DEV_PATH" bs=512 seek=32 conv=notrunc,fsync
 
 # write signature
-dd if=u-boot.sign of="$DEV_PATH" bs=512 seek=1033 conv=notrunc,fsync
-
-# write signed u-boot
-dd if=u-boot-tosign.s32 of="$DEV_PATH" bs=512 seek=1051 conv=notrunc,fsync
+dd if=u-boot.sign of="$DEV_PATH" bs=512 seek=1040 conv=notrunc,fsync
 
 # write app header
 dd if=u-boot.s32 of="$DEV_PATH" bs=512 \
-seek=1050 skip=1050 count=1 conv=notrunc,fsync
+seek=1056 skip=1056 count=1 conv=notrunc,fsync
+
+# write signed u-boot
+dd if=u-boot-tosign.s32 of="$DEV_PATH" bs=512 seek=1057 conv=notrunc,fsync

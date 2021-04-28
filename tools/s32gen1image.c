@@ -11,7 +11,7 @@
 #define UNSPECIFIED	-1
 
 #ifdef CONFIG_HSE_SECBOOT
-#  define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80200u
+#  define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80000ul
 #endif
 
 #ifdef CONFIG_FLASH_BOOT
@@ -40,18 +40,18 @@ static struct program_image image_layout = {
 		.offset = S32GEN1_IVT_OFFSET_1000,
 		.size = sizeof(struct ivt),
 	},
-#ifdef CONFIG_HSE_SECBOOT
-	.hse_reserved = {
-		.offset = S32_AUTO_OFFSET,
-		.alignment = 0x200U,
-		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
-	},
-#endif
 	.dcd = {
 		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
 		.size = DCD_MAXIMUM_SIZE,
 	},
+#ifdef CONFIG_HSE_SECBOOT
+	.hse_reserved = {
+		.offset = S32_AUTO_OFFSET,
+		.alignment = 0x2000U,
+		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
+	},
+#endif
 	.app_code = {
 		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
@@ -370,10 +370,10 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		&program_image->qspi_params,
 #endif
 		&program_image->ivt_duplicate,
+		&program_image->dcd,
 #ifdef CONFIG_HSE_SECBOOT
 		&program_image->hse_reserved,
 #endif
-		&program_image->dcd,
 		&program_image->app_code,
 		&program_image->code,
 	};
@@ -422,20 +422,19 @@ static void s32gen1_print_header(const void *header)
 	fprintf(stderr, "IVT (duplicate):\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.ivt_duplicate.offset,
 		(unsigned int)image_layout.ivt_duplicate.size);
+	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)image_layout.dcd.offset,
+		(unsigned int)image_layout.dcd.size);
 #ifdef CONFIG_HSE_SECBOOT
 	fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.hse_reserved.offset,
 		(unsigned int)image_layout.hse_reserved.size);
 #endif
-	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.dcd.offset,
-		(unsigned int)image_layout.dcd.size);
 	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.app_code.offset,
 		(unsigned int)image_layout.app_code.size);
 	fprintf(stderr, "U-Boot/FIP:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)(image_layout.app_code.offset +
-			offsetof(struct application_boot_code, code)),
+		(unsigned int)image_layout.code.offset,
 		(unsigned int)image_layout.code.size);
 #if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
 	fprintf(stderr, "U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",

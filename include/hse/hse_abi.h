@@ -14,22 +14,23 @@
 #define BYTES_TO_BITS(x)	((x) * 8u)
 
 #define HSE_SRV_RSP_OK            0x55A5AA33ul
-#define HSE_SRV_RSP_VERIFY_FAILED 0x55A5AA35ul
-#define HSE_SRV_RSP_INVALID_ADDR  0x55A5AA55ul
-#define HSE_SRV_RSP_INVALID_PARAM 0x55A5AA56ul
-#define HSE_SRV_RSP_KEY_INVALID   0xA5AA5527ul
+#define HSE_SRV_RSP_VERIFY_FAILED 0x55A5A164ul
+#define HSE_SRV_RSP_INVALID_ADDR  0x55A5A26Aul
+#define HSE_SRV_RSP_INVALID_PARAM 0x55A5A399ul
+#define HSE_SRV_RSP_NOT_ALLOWED   0xAA55A21Cul
+#define HSE_SRV_RSP_KEY_INVALID   0xA5AA52B4ul
 
 #define HSE_UBOOT_MAX_SIZE   0x100000u
-#define HSE_SYS_IMG_MAX_SIZE 0x10000u
+#define HSE_SYS_IMG_MAX_SIZE 0xC000u
 #define HSE_UBOOT_AUTH_LEN   0x100u
-#define HSE_SYS_IMG_SD       0x71200u
-#define HSE_AUTH_TAG_SD      0x81200u
+#define HSE_SYS_IMG_SD       0x76000u
+#define HSE_AUTH_TAG_SD      0x82000u
 
 #define HSE_PIVT_BLK       0
 #define HSE_DIVT_BLK       8
-#define HSE_SYS_IMG_BLK    905
-#define HSE_UBOOT_SIGN_BLK 1033
-#define HSE_UBOOT_BIN_BLK  1051
+#define HSE_SYS_IMG_BLK    944
+#define HSE_UBOOT_SIGN_BLK 1040
+#define HSE_UBOOT_BIN_BLK  1057
 
 #define HSE_EXT_FLASH_SD   2u
 #define HSE_EXT_FLASH_PAGE 512u
@@ -48,7 +49,7 @@
 
 #define HSE_ACCESS_MODE_ONE_PASS 0u
 
-#define HSE_APP_CORE3 3u
+#define HSE_APP_CORE3 3u /* A53_0 */
 
 #define HSE_PUBLISH_ALL_DATA_SETS BIT(1)
 
@@ -57,13 +58,13 @@
 #define HSE_SMR_ENTRY_1               BIT(1)
 
 #define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 0x7455u
-#define HSE_CR_AUTO_START                  0x35A5U
+#define HSE_CR_AUTO_START                  0x35A5u
 
 #define HSE_SIGN_RSASSA_PKCS1_V15 0x93u
 #define HSE_HASH_ALGO_SHA_1       2u
 
 #define HSE_INVALID_KEY_HANDLE              0xFFFFFFFFul
-#define HSE_BOOT_KEY_HANDLE                 0x010600u
+#define HSE_BOOT_KEY_HANDLE                 0x010700u
 #define HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED 0ul
 
 #define HSE_MU0_MASK    BIT(0)
