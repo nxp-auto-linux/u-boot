@@ -405,13 +405,6 @@
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
-#ifdef CONFIG_S32_GEN1
-/* Limit DDR0 to 1.5 GB due to HSE driver limitation */
-#define DDR_LIMIT0 "ddr_limit0=0xE0000000;\0"
-#else
-#define DDR_LIMIT0 ""
-#endif
-
 #define INITRD_HIGH_DEFAULT 0xffffffff
 
 /* Leave room for TF-A & OPTEE */
@@ -424,7 +417,6 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
-	DDR_LIMIT0 \
 	"ipaddr=" S32_DEFAULT_IP \
 	ENV_FDTCONTROLADDR \
 	"serverip=10.0.0.1\0" \
