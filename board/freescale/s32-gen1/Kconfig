@@ -26,7 +26,7 @@ config S32GEN1_DRAM_INLINE_ECC
 	  S32 Gen1 boards.
 
 config SYS_DATA_BASE
-	hex "Data Base" if !S32_ATF_BOOT_FLOW
+	hex "Data Base"
 	default 0xff800000 if S32_ATF_BOOT_FLOW
 	default 0x34000000
 	help
@@ -76,7 +76,7 @@ config UBOOT_SRAM_FOOTPRINT
 	default 0x200000
 
 config DTB_SRAM_ADDR
-	hex "SRAM address at which the dtb will be found" if !S32_ATF_BOOT_FLOW
+	hex "SRAM address at which the dtb will be found"
 	default 0xff890000 if S32_ATF_BOOT_FLOW
 	default 0x34090000
 
