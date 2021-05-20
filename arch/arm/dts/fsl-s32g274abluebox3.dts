@@ -145,6 +145,34 @@
 				    >;
 		};
 
+		pinctrl0_qspi: pinctrl0_qspi {
+			fsl,pins = <PF05_MSCR_S32G PF05_QSPI_DATA_A0_CFG
+				    PF06_MSCR_S32G PF06_QSPI_DATA_A1_CFG
+				    PF07_MSCR_S32G PF07_QSPI_DATA_A2_CFG
+				    PF08_MSCR_S32G PF08_QSPI_DATA_A3_CFG
+				    PF09_MSCR_S32G PF09_QSPI_DATA_A4_CFG
+				    PF10_MSCR_S32G PF10_QSPI_DATA_A5_CFG
+				    PF11_MSCR_S32G PF11_QSPI_DATA_A6_CFG
+				    PF12_MSCR_S32G PF12_QSPI_DATA_A7_CFG
+				    PF13_MSCR_S32G PF13_QSPI_DQS_A_CFG
+				    PG00_MSCR_S32G PG00_QSPI_CLK_A_CFG
+				    PG01_MSCR_S32G PG01_QSPI_CLK_A_b_CFG
+				    PG02_MSCR_S32G PG02_QSPI_CLK_2A_CFG
+				    PG03_MSCR_S32G PG03_QSPI_CLK_2A_b_CFG
+				    PG04_MSCR_S32G PG04_QSPI_CS_A0
+				    PG05_MSCR_S32G PG05_QSPI_CS_A1
+				    QSPI_DATA0_A_IMCR PF05_QSPI_DATA_A0_IN
+				    QSPI_DATA1_A_IMCR PF06_QSPI_DATA_A1_IN
+				    QSPI_DATA2_A_IMCR PF07_QSPI_DATA_A2_IN
+				    QSPI_DATA3_A_IMCR PF08_QSPI_DATA_A3_IN
+				    QSPI_DATA4_A_IMCR PF09_QSPI_DATA_A4_IN
+				    QSPI_DATA5_A_IMCR PF10_QSPI_DATA_A5_IN
+				    QSPI_DATA6_A_IMCR PF11_QSPI_DATA_A6_IN
+				    QSPI_DATA7_A_IMCR PF12_QSPI_DATA_A7_IN
+				    QSPI_DQS_A_IMCR PF13_DQS_A_IN
+				    >;
+		};
+
 		pinctrl0_sd0: pinctrl0_sd0 {
 			fsl,pins = <PC14_MSCR_S32G PC14_SD0_CLK_CFG
 				    PC15_MSCR_S32G PC15_SD0_CMD_CFG
@@ -203,5 +231,23 @@
 				    I2C4_SCL_IMCR PC02_I2C4_SCL_IN
 				    >;
 		};
+	};
+};
+
+&qspi {
+	pinctrl-0 = <&pinctrl0_qspi>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	/delete-node/ mx25uw51245g@0;
+
+	mt35xu512aba@0 {
+		address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <200000000>;
+		spi-tx-bus-width = <8>;
+		spi-rx-bus-width = <8>;
+		reg = <0>;
 	};
 };
