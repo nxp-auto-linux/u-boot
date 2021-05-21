@@ -594,7 +594,7 @@ config SYS_TEXT_BASE
 	default 0x4a000000 if ARCH_SUNXI && !MACH_SUN9I && !MACH_SUN8I_V3S
 	default 0x2a000000 if ARCH_SUNXI && MACH_SUN9I
 	default 0x42e00000 if ARCH_SUNXI && MACH_SUN8I_V3S
-	hex "Text Base"
+	hex "Text Base" if !ARCH_S32
 	help
 	  The address in memory that U-Boot will be running from, initially.
 
