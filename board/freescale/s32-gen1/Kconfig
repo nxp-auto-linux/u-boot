@@ -25,14 +25,29 @@ config S32GEN1_DRAM_INLINE_ECC
 	  Select this config if you want to use inline ECC feature for
 	  S32 Gen1 boards.
 
+config CUSTOM_SYS_DATA_BASE
+	bool "Use a custom SYS_DATA_BASE address"
+	help
+	  Enable this if you need to define a custom SYS_DATA_BASE address.
+	  When disabled, a suitable SYS_DATA_BASE address is calculated
+	  automatically.
+
 config SYS_DATA_BASE
-	hex "Data Base"
+	hex "Data Base" if CUSTOM_SYS_DATA_BASE
 	default 0xff800000 if S32_ATF_BOOT_FLOW
 	default 0x34000000
 	help
 	  U-boot data base address (normally SRAM base address)
 
+config CUSTOM_SYS_TEXT_BASE
+	bool "Use a custom SYS_TEXT_BASE"
+	help
+	  Enable this if you need to use a custom SYS_TEXT_BASE address.
+	  When disabled, a suitable SYS_TEXT_BASE address will be calculated
+	  automatically.
+
 config SYS_TEXT_BASE
+	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
 	default 0xff8a0000 if S32_ATF_BOOT_FLOW
 	default 0x340a0000
 
@@ -75,8 +90,15 @@ config UBOOT_SRAM_FOOTPRINT
 	hex
 	default 0x200000
 
+config CUSTOM_DTB_SRAM_ADDR
+	bool "Use a custom DTB_SRAM_ADDR"
+	help
+	  Enable this if you need to use a custom DTB_SRAM_ADDR.
+	  When disabled, a suitable DTB_SRAM_ADDR address is calculated
+	  automatically.
+
 config DTB_SRAM_ADDR
-	hex "SRAM address at which the dtb will be found"
+	hex "SRAM address at which the dtb will be found" if CUSTOM_DTB_SRAM_ADDR
 	default 0xff890000 if S32_ATF_BOOT_FLOW
 	default 0x34090000
 
