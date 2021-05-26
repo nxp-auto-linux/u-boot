@@ -558,7 +558,7 @@ static int s32_gentimer_init(void)
 #endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 
-#if defined(CONFIG_S32GEN1_DRAM_INLINE_ECC)
+#if defined(CONFIG_SYS_FSL_DDRSS)
 #include "ddr_density.h"
 
 static inline bool get_intersection(unsigned long s1, unsigned long e1,
@@ -589,54 +589,70 @@ static unsigned long to_std_addr(unsigned long addr)
 	return addr + S32GEN1_DRAM_STD_ADDR - S32GEN1_DRAM_EXT_ADDR;
 }
 
-static void s32_exclude_ecc_region(void)
+static void s32_exclude_ecc(unsigned long *start, unsigned long *size)
 {
 	static struct s32_ddr_region pages[S32GEN1_DDR_MAX_NO_PAGES];
-	unsigned long start, size;
+	static int active_pages;
+	static bool init_pages;
 	unsigned long pg_start, pg_end;
 	unsigned long r_start, r_end;
-	int active_pages;
 	bool std_map;
-	u32 i, j;
+	u32 j;
+
+	if (!init_pages) {
+		s32gen1_get_ddr_regions(pages, &active_pages);
+		init_pages = true;
+	}
+
+	/* Skip SRAM */
+	if (*start == S32_SRAM_BASE)
+		return;
+
+	/* Use extended addresses */
+	if (!is_ext_addr(*start)) {
+		*start = to_ext_addr(*start);
+		std_map = true;
+	} else {
+		std_map = false;
+	}
+
+	for (j = 0; j < active_pages; j++) {
+		pg_start = pages[j].address;
+		pg_end = pg_start + pages[j].size;
+
+		if (!get_intersection(*start, *start + *size,
+				      pg_start, pg_end,
+				      &r_start, &r_end))
+			continue;
+
+		*start = r_start;
+		*size = r_end - r_start;
+	}
+
+	if (std_map)
+		*start = to_std_addr(*start);
+}
+
+static void s32_exclude_ecc_range(unsigned long start, unsigned long *size)
+{
+	s32_exclude_ecc(&start, size);
+}
+
+static void s32_exclude_ecc_from_dram(void)
+{
+	unsigned long start, size;
+	u32 i;
 
 	if (!gd->bd) {
 		pr_err("gd->bd isn't initialized\n");
 		return;
 	}
 
-	s32gen1_get_ddr_regions(pages, &active_pages);
-
 	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
 		start = gd->bd->bi_dram[i].start;
 		size = gd->bd->bi_dram[i].size;
 
-		/* Skip SRAM */
-		if (start == S32_SRAM_BASE)
-			continue;
-
-		/* Use extended addresses */
-		if (!is_ext_addr(start)) {
-			start = to_ext_addr(start);
-			std_map = true;
-		} else {
-			std_map = false;
-		}
-
-		for (j = 0; j < active_pages; j++) {
-			pg_start = pages[j].address;
-			pg_end = pg_start + pages[j].size;
-
-			if (!get_intersection(start, start + size,
-					      pg_start, pg_end,
-					      &r_start, &r_end))
-				continue;
-
-			start = r_start;
-			size = r_end - r_start;
-		}
-
-		if (std_map)
-			start = to_std_addr(start);
+		s32_exclude_ecc(&start, &size);
 
 		gd->bd->bi_dram[i].start = start;
 		gd->bd->bi_dram[i].size = size;
@@ -701,8 +717,8 @@ int dram_init_banksize(void)
 #endif
 	s32_init_ram_size();
 
-#if defined(CONFIG_S32GEN1_DRAM_INLINE_ECC)
-	s32_exclude_ecc_region();
+#ifdef CONFIG_SYS_FSL_DDRSS
+	s32_exclude_ecc_from_dram();
 #endif
 
 	return 0;
@@ -710,7 +726,8 @@ int dram_init_banksize(void)
 
 phys_size_t __weak get_effective_memsize(void)
 {
-	phys_size_t size;
+	unsigned long size;
+
 	/*
 	 * Restrict U-Boot area to the first bank of the DDR memory.
 	 * Note: gd->bd isn't initialized yet
@@ -719,6 +736,11 @@ phys_size_t __weak get_effective_memsize(void)
 	size = get_sram_size();
 #else
 	size = CONFIG_SYS_FSL_DRAM_SIZE1;
+
+#ifdef CONFIG_SYS_FSL_DDRSS
+	s32_exclude_ecc_range(CONFIG_SYS_FSL_DRAM_BASE1, &size);
+#endif
+
 #ifdef CONFIG_PRAM
 	/* ATF space */
 	size -= CONFIG_PRAM * SZ_1K;
