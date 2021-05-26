@@ -2610,6 +2610,7 @@ int spi_nor_scan(struct spi_nor *nor)
 
 	if (!mtd->name)
 		mtd->name = info->name;
+	mtd->dev = nor->dev;
 	mtd->priv = nor;
 	mtd->type = MTD_NORFLASH;
 	mtd->writesize = 1;
