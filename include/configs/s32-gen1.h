@@ -13,9 +13,13 @@
 #define __S32_GEN1_H
 
 #define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+#define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
+#else
 #define CONFIG_SYS_FSL_DRAM_SIZE1       0x80000000
 #define CONFIG_SYS_FSL_DRAM_BASE2       0x880000000
 #define CONFIG_SYS_FSL_DRAM_SIZE2       0x80000000
+#endif
 
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32.h */

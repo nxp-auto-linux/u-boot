@@ -17,12 +17,12 @@
 	compatible = "fsl,s32g398", "fsl,s32gen1",
 			"arm,vexpress,v2p-aarch64", "arm,vexpress";
 
-	memory@80000000 {
+	mem1: memory@80000000 {
 		device_type = "memory";
 		reg = <0 0x80000000 0 0x80000000>;
 	};
 
-	memory@880000000 {
+	mem2: memory@880000000 {
 		device_type = "memory";
 		reg = <0x8 0x80000000 0 0x80000000>;
 	};

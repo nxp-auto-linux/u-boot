@@ -7,6 +7,8 @@
 #include "fsl-s32g398a.dtsi"
 
 /delete-node/ &gic;
+/delete-node/ &mem1;
+/delete-node/ &mem2;
 / {
 	gic: interrupt-controller@50800000 {
 		compatible = "arm,gic-v3";
@@ -20,6 +22,11 @@
 		      <0 0x50410000 0 0x2000>, /* GICH */
 		      <0 0x50420000 0 0x2000>; /* GICV */
 		interrupts = <1 9 0xf04>;
+	};
+
+	mem1: memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x40000000>;
 	};
 };
 
