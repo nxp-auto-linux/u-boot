@@ -248,7 +248,8 @@ static void hide_sram(bd_t *bd)
 	}
 }
 
-#if defined(CONFIG_NXP_S32G2XX) && defined(CONFIG_PRAM)
+#if (defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32G3XX)) && \
+	defined(CONFIG_PRAM)
 /* Fixup the DDR node in order to reserve "pram" amount of KB somewhere in the
  * available physical memory. This would typically be used by TF-A as a secure
  * memory, and enforced through XRDC. Making it "invisible" to Linux is only a
@@ -341,7 +342,8 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 {
 	hide_sram(bd);
 
-#if defined(CONFIG_NXP_S32G2XX) && defined(CONFIG_PRAM)
+#if (defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32G3XX)) && \
+	defined(CONFIG_PRAM)
 	exclude_pram(bd);
 #endif
 	apply_ddr_limits(bd);
