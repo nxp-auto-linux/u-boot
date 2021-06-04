@@ -416,6 +416,54 @@ static int disable_vr5510_wdg(void)
 
 	return watchdog_refresh(pmic);
 }
+
+static int vr5510_reset_flt_err_cnt(void)
+{
+	struct udevice *pmic;
+	uint fs_i_fssm, flt_err_cnt, flt_err_cnt_lmt;
+	int ret;
+
+	ret = pmic_get(VR5510_FSU_NAME, &pmic);
+	if (ret)
+		return ret;
+
+	fs_i_fssm = pmic_reg_read(pmic, VR5510_FS_I_FSSM);
+	flt_err_cnt_lmt = VR5510_ERR_CNT_LMT(fs_i_fssm);
+	flt_err_cnt = VR5510_ERR_CNT(fs_i_fssm);
+
+	switch (flt_err_cnt_lmt) {
+	case ERR_CNT_LIMIT_00:
+		flt_err_cnt_lmt = 2;
+		break;
+	case ERR_CNT_LIMIT_10:
+		flt_err_cnt_lmt = 8;
+		break;
+	case ERR_CNT_LIMIT_11:
+		flt_err_cnt_lmt = 12;
+		break;
+	case ERR_CNT_LIMIT_01:
+	default:
+		flt_err_cnt_lmt = 6;
+		break;
+	}
+
+	/* Reset FLT_ERR_CNT only for its intermediate value. */
+	if (!flt_err_cnt || flt_err_cnt < (flt_err_cnt_lmt / 2) - 1)
+		return 0;
+
+	pr_warn("VR5510 FLT_ERR_CNT counter at %d, resetting to 0\n",
+		flt_err_cnt);
+	while (flt_err_cnt) {
+		ret = watchdog_refresh(pmic);
+		if (ret)
+			return ret;
+
+		fs_i_fssm = pmic_reg_read(pmic, VR5510_FS_I_FSSM);
+		flt_err_cnt = VR5510_ERR_CNT(fs_i_fssm);
+	}
+
+	return 0;
+}
 #endif
 
 int arch_cpu_init(void)
@@ -485,6 +533,12 @@ int arch_early_init_r(void)
 	int rv = 0;
 
 #if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+	rv = vr5510_reset_flt_err_cnt();
+	if (rv)
+		return rv;
+#endif
+
 	rv = disable_vr5510_wdg();
 	if (rv)
 		return rv;

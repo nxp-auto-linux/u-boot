@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause */
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 #ifndef VR5510_PMIC_H
 #define VR5510_PMIC_H
@@ -83,6 +83,10 @@
 #define VR5510_FS_I_ABIST2_CTRL			5
 #define VR5510_FS_I_NOT_ABIST2_CTRL		6
 #define VR5510_FS_I_WD_CFG			7
+#define VR5510_ERR_CNT_LMT_OFFSET		14
+#define VR5510_ERR_CNT_LMT_MASK			(3 << VR5510_ERR_CNT_LMT_OFFSET)
+#define VR5510_ERR_CNT_LMT(V)		(((V) & VR5510_ERR_CNT_LMT_MASK) \
+					 >> VR5510_ERR_CNT_LMT_OFFSET)
 #define VR5510_ERR_CNT_MASK			0xF
 #define VR5510_ERR_CNT(V)			((V) & VR5510_ERR_CNT_MASK)
 #define VR5510_FS_I_NOT_WD_CFG			8
@@ -144,6 +148,13 @@ enum fs_states {
 	ASSERT_FS0B,
 	NORMAL_FS,
 
+};
+
+enum flt_err_cnt_limit {
+	ERR_CNT_LIMIT_00 = 0,
+	ERR_CNT_LIMIT_01,
+	ERR_CNT_LIMIT_10,
+	ERR_CNT_LIMIT_11,
 };
 
 #endif
