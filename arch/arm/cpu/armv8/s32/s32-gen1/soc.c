@@ -14,6 +14,7 @@
 #include <asm/arch/cse.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/cpu.h>
+#include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/mc_me_regs.h>
 #include <asm/arch/s32-gen1/mc_rgm_regs.h>
 #if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
@@ -43,7 +44,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 __weak u32 cpu_pos_mask(void)
 {
-	return CPUMASK_CLUSTER0 | CPUMASK_CLUSTER1;
+	if (is_a53_lockstep_enabled())
+		return cpu_pos_mask_cluster0();
+	return cpu_pos_mask_cluster0() | cpu_pos_mask_cluster1();
 }
 
 __weak u32 cpu_pos_mask_cluster0(void)

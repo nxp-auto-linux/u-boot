@@ -37,11 +37,6 @@ u32 cpu_pos_mask_cluster1(void)
 	return 0;
 }
 
-u32 cpu_pos_mask(void)
-{
-	return cpu_pos_mask_cluster0() | cpu_pos_mask_cluster1();
-}
-
 u32 get_sram_size(void)
 {
 	switch (get_s32g2_derivative()) {
