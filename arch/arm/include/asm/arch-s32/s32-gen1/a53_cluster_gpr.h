@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2019 NXP
+ * Copyright 2019, 2021 NXP
  */
 
 #define A53_CLUSTER_GPR			0x4007C400ul
@@ -144,3 +144,8 @@
 
 #define GPR21_CA53_1_L2MERRSR_LOW_BITS_MASK		(0xffffffff)
 #define GPR21_CA53_1_L2MERRSR_LOW_BITS_VALUE(x)		(((x) & 0xffffffff) << 0)
+
+static inline bool is_a53_lockstep_enabled(void)
+{
+	return readl(A53_CLUSTER_GPR_GPR(6)) & GPR06_CA53_LOCKSTEP_EN_MASK;
+}
