@@ -251,18 +251,6 @@
 
 #endif
 
-#undef CONFIG_BOOTDELAY
-
-#define CONFIG_BOOTDELAY	3
-
-#define CONFIG_BOOTARGS_LOGLEVEL ""
-
-#undef CONFIG_BOOTARGS
-#define CONFIG_BOOTARGS		\
-	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "," __stringify(CONFIG_BAUDRATE) \
-	" root=/dev/ram rw" CONFIG_BOOTARGS_LOGLEVEL " earlycon " \
-	CONFIG_EXTRA_KERNEL_BOOT_ARGS
-
 #define CONFIG_HWCONFIG
 
 #ifdef CONFIG_CMD_BOOTI
@@ -404,8 +392,7 @@
 		"root=/dev/nfs rw " \
 		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
 		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp " \
-		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS \
-		PFENG_EXTRA_BOOT_ARGS "\0" \
+		"earlycon " PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"loadtftpramdisk=tftp ${ramdisk_addr} ${ramdisk};\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
@@ -442,9 +429,8 @@
 				"mmc write ${loadaddr} 0x8 ${fw_sz}; " \
 			"fi; "	\
 		"fi\0" \
-	"mmcargs=setenv bootargs console=${console},${baudrate} " CONFIG_BOOTARGS_LOGLEVEL \
+	"mmcargs=setenv bootargs console=${console},${baudrate}" \
 		" root=${mmcroot} earlycon " \
-		CONFIG_EXTRA_KERNEL_BOOT_ARGS \
 		PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
@@ -468,8 +454,7 @@
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
-		"earlycon " CONFIG_EXTRA_KERNEL_BOOT_ARGS \
-		PFENG_EXTRA_BOOT_ARGS "\0" \
+		"earlycon " PFENG_EXTRA_BOOT_ARGS "\0" \
 	"netboot=echo Booting from net ...; " \
 		"run netargs; " \
 		"if test ${ip_dyn} = yes; then " \
@@ -491,9 +476,8 @@
 		"else " \
 			"${boot_mtd}; " \
 		"fi;\0" \
-	"flashbootargs=setenv bootargs console=${console}" \
-		CONFIG_BOOTARGS_LOGLEVEL " root=/dev/ram rw earlycon " \
-		CONFIG_EXTRA_KERNEL_BOOT_ARGS \
+	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
+		" root=/dev/ram rw earlycon " \
 		PFENG_EXTRA_BOOT_ARGS ";" \
 		"setexpr uboot_flashaddr " __stringify(UBOOT_FLASH_ADDR) ";" \
 		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
