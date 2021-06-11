@@ -46,6 +46,16 @@ __weak u32 cpu_pos_mask(void)
 	return CPUMASK_CLUSTER0 | CPUMASK_CLUSTER1;
 }
 
+__weak u32 cpu_pos_mask_cluster0(void)
+{
+	return CPUMASK_CLUSTER0;
+}
+
+__weak u32 cpu_pos_mask_cluster1(void)
+{
+	return CPUMASK_CLUSTER1;
+}
+
 u32 cpu_mask(void)
 {
 	u32 rgm_stat = readl(RGM_PSTAT(MC_RGM_BASE_ADDR,

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017,2019-2020 NXP
+ * Copyright 2017,2019-2021 NXP
  *
  */
 #ifndef _FSL_S32_CPU_H
@@ -47,5 +47,7 @@
 
 u32 cpu_mask(void);
 int cpu_numcores(void);
+u32 cpu_pos_mask_cluster0(void);
+u32 cpu_pos_mask_cluster1(void);
 
 #endif /* _FSL_S32_CPU_H */

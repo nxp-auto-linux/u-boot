@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2020 NXP
+ * Copyright 2016-2021 NXP
  */
 
 #include <common.h>
@@ -1139,6 +1139,16 @@ u32 cpu_pos_mask(void)
 {
 	/* 4 cores */
 	return 0xFU;
+}
+
+u32 cpu_pos_mask_cluster0(void)
+{
+	return BIT(0) | BIT(1);
+}
+
+u32 cpu_pos_mask_cluster1(void)
+{
+	return BIT(2) | BIT(3);
 }
 
 u32 get_sram_size(void)
