@@ -56,6 +56,12 @@
 		status = "okay";
 	};
 
+	ddr: ddr@403C0000 {
+		compatible = "fsl,s32gen1-ddr-err050543";
+		/* Will be modified by ATF */
+		status = "disabled";
+	};
+
 	pcie1: pcie@44100000 {
 		compatible = "fsl,s32gen1-pcie";
 		reg =

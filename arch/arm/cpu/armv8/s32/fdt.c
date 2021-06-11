@@ -17,6 +17,9 @@
 #include <dt-bindings/phy/phy.h>
 #include <linux/ctype.h>
 #include "mp.h"
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
+#include <ddr_s32gen1_err050543.h>
+#endif
 
 #define ID_TO_CORE(ID)	(((ID) & 3) | ((ID) >> 7))
 
@@ -42,10 +45,6 @@
 #endif
 
 #define S32_DDR_LIMIT_VAR "ddr_limitX"
-
-#ifdef CONFIG_SYS_ERRATUM_ERR050543
-extern uint8_t polling_needed;
-#endif
 
 #ifdef CONFIG_MP
 

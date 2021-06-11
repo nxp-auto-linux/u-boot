@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 #
 # Copyright 2008-2014 Freescale Semiconductor, Inc.
+# Copyright 2021 NXP
 
 obj-$(CONFIG_SYS_FSL_DDR1) += main.o util.o ctrl_regs.o options.o \
 				lc_common_dimm_params.o
@@ -37,4 +38,8 @@ ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_emu.o
 else
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss.o
+endif
+
+ifdef CONFIG_S32_ATF_BOOT_FLOW
+obj-$(CONFIG_SYS_ERRATUM_ERR050543) += ddr_s32gen1_err050543.o
 endif
