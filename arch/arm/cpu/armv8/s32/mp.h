@@ -1,16 +1,11 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * Copyright 2014, Freescale Semiconductor
- * Copyright 2017-2018, 2020 NXP
+ * Copyright 2017-2018, 2020-2021 NXP
  */
 
 #ifndef _S32_MP_H
 #define _S32_MP_H
-
-#if defined (CONFIG_S32_GEN1)
-#define S32_A53_GPR_BASE_ADDR	0x4007c400ul
-#define S32_A53_GP06_OFF	0x18
-#endif
 
 #ifdef __ASSEMBLY__
 #define PGTABLE_SIZE		(4096 * 4)
