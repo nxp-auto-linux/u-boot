@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013-2015 Freescale Semiconductor, Inc.
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Freescale Quad Serial Peripheral Interface (QSPI) driver
  */
@@ -975,8 +975,9 @@ static int fsl_qspi_probe(struct udevice *bus)
 	priv->ddr_mode = false;
 	priv->num_pads = 1;
 
-#if defined(CONFIG_S32_GEN1) && defined(CONFIG_SPI_FLASH_MACRONIX)
-	reset_bootrom_settings(priv);
+#if defined(CONFIG_S32_GEN1) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
+	defined(CONFIG_SPI_FLASH_STMICRO))
+	s32gen1_reset_bootrom_settings(priv);
 #endif
 
 	priv->speed_hz = plat->speed_hz;
@@ -1081,7 +1082,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 #ifndef CONFIG_S32_GEN1
 	qspi_set_lut(priv);
 #else
-	enable_spi(priv, true);
+	s32gen1_enable_spi(priv, true);
 #endif
 
 #ifdef CONFIG_SYS_FSL_QSPI_AHB

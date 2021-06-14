@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013-2014 Freescale Semiconductor, Inc.
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Register definitions for Freescale QSPI
  */
@@ -321,12 +321,44 @@ struct fsl_qspi_priv {
 #define QSPI_FLAG_PREV_READ_MEM		BIT(1)
 
 #ifdef CONFIG_S32_GEN1
-void reset_bootrom_settings(struct fsl_qspi_priv *priv);
+struct qspi_op {
+	const struct spi_mem_op *op;
+	u8 *cfg;
+};
+
+struct qspi_config {
+	u32 mcr;
+	u32 flshcr;
+	u32 dllcr;
+	u32 sfacr;
+	u32 smpr;
+	u32 dlcr;
+	u32 flash1_size;
+	u32 flash2_size;
+	u32 dlpr;
+};
+
+void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *q);
 void qspi_init_ahb_read(struct fsl_qspi_priv *priv);
-int enable_spi(struct fsl_qspi_priv *priv, bool force);
+int s32gen1_enable_spi(struct fsl_qspi_priv *q, bool force);
 extern struct spi_controller_mem_ops s32gen1_mem_ops;
 void qspi_write32(u32 flags, u32 *addr, u32 val);
 u32 qspi_read32(u32 flags, u32 *addr);
+bool s32gen1_enable_operators(struct fsl_qspi_priv *priv,
+			      struct qspi_op *ops, size_t n_ops);
+void s32gen1_disable_operators(struct qspi_op *ops, size_t n_ops);
+int s32gen1_mem_exec_read_op(struct fsl_qspi_priv *q,
+			     const struct spi_mem_op *op, u8 lut_cfg);
+int s32gen1_mem_exec_write_op(struct fsl_qspi_priv *q,
+			      const struct spi_mem_op *op, u8 lut_cfg);
+int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *q, struct qspi_config *config);
+int macronix_mem_enable_ddr(struct fsl_qspi_priv *q);
+int micron_mem_enable_ddr(struct fsl_qspi_priv *q);
+void macronix_get_ddr_config(struct qspi_config *ddr_config);
+void micron_get_ddr_config(struct qspi_config *ddr_config);
+int s32gen1_mem_reset(struct fsl_qspi_priv *q);
+u32 *s32gen1_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index);
+
 #endif
 
 #endif /* _FSL_QSPI_H_ */
