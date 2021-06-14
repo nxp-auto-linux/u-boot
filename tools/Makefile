@@ -64,6 +64,10 @@ FIT_CIPHER_OBJS-$(CONFIG_FIT_CIPHER) := common/image-cipher.o
 S32_COMMON-$(CONFIG_ARCH_S32) := s32_common.o
 S32V234IMAGE-$(CONFIG_S32V234) := s32v234image.o
 S32GEN1IMAGE-$(CONFIG_S32_GEN1) := s32gen1image.o
+ifdef CONFIG_S32_GEN1
+S32GEN1IMAGE-$(CONFIG_SPI_FLASH_MACRONIX) += s32gen1image_qspi_macronix.o
+S32GEN1IMAGE-$(CONFIG_SPI_FLASH_STMICRO) += s32gen1image_qspi_micron.o
+endif
 
 # The following files are synced with upstream DTC.
 # Use synced versions from scripts/dtc/libfdt/.
