@@ -89,7 +89,7 @@ struct flash_write {
 	};
 	__u32 addr;
 	__u32 data;
-} __packed;
+} __attribute__((packed));
 
 struct qspi_params {
 	__u32 header;
@@ -132,5 +132,8 @@ struct program_image {
 	struct image_comp code;
 	__u8 *header;
 };
+
+struct qspi_params *get_s32g2xx_qspi_conf(void);
+void adjust_qspi_params(struct qspi_params *qspi_params);
 
 #endif /* S32GEN1IMAGE_H */
