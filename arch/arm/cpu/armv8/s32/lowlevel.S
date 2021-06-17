@@ -123,13 +123,6 @@ start_slave_cores:
 	msr	mair_el3, x0
 	msr	mair_el2, x0
 
-	/* icache & dcache */
-	mrs	x0, sctlr_el3
-	ldr	x1, =(1<<12) | (1<<5) | (1 << 3) | (1<<2) |(1 << 0) /* bits SA(3)  M(0) */
-	orr	x0, x0, x1     /* set bits */
-	msr	sctlr_el3, x0
-	isb
-
 	/*
 	 * MPIDR_EL1 Fields:
 	 * MPIDR[1:0] = AFF0_CPUID <- Core ID (0,1)
