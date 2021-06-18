@@ -413,6 +413,7 @@ static int disable_vr5510_wdg(void)
 	return watchdog_refresh(pmic);
 }
 
+#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 static int vr5510_reset_flt_err_cnt(void)
 {
 	struct udevice *pmic;
@@ -460,6 +461,7 @@ static int vr5510_reset_flt_err_cnt(void)
 
 	return 0;
 }
+#endif /* CONFIG_TARGET_S32G274ABLUEBOX3 */
 #endif
 
 int arch_cpu_init(void)
