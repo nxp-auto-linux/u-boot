@@ -4,6 +4,7 @@
  */
 
 /dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
 #include "fsl-s32g274a.dtsi"
 
 &usdhc0 {
@@ -34,32 +35,44 @@
 /* IO Expander  */
 &i2c0 {
 	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl0_i2c0>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pinctrl0_i2c0_gpio>;
+	scl-gpios = <&gpio0 32 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 31 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 	status = "okay";
 };
 
 /* PCIe X1 Connector  */
 &i2c1 {
 	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl1_i2c1>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pinctrl1_i2c1_gpio>;
+	scl-gpios = <&gpio1 163 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio1 165 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 	status = "okay";
 };
 
 /* FLEXRAY_LIN  */
 &i2c2 {
 	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl0_i2c2 &pinctrl1_i2c2>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pinctrl0_i2c2_gpio &pinctrl1_i2c2_gpio>;
+	scl-gpios = <&gpio0 21 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 22 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 	status = "okay";
 };
 
 /* PMIC */
 &i2c4 {
 	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl0_i2c4 &pinctrl1_i2c4>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pinctrl0_i2c4_gpio &pinctrl1_i2c4_gpio>;
+	scl-gpios = <&gpio0 34 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 33 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 	status = "okay";
 
 	vr5510 {
@@ -85,15 +98,35 @@
 				    >;
 		};
 
+		pinctrl0_i2c0_gpio: pinctrl0_i2c0_gpio {
+			fsl,pins = <PB15_MSCR_S32G PB15_I2C0_SDA_GPIO
+				    PC00_MSCR_S32G PC00_I2C0_SCL_GPIO
+				    I2C0_SDA_IMCR IMCR_DISABLED
+				    I2C0_SCL_IMCR IMCR_DISABLED
+				    >;
+		};
+
 		pinctrl0_i2c2: pinctrl0_i2c2 {
 			fsl,pins = <PB05_MSCR_S32G PB05_I2C2_SCL_CFG
 				    PB06_MSCR_S32G PB06_I2C2_SDA_CFG
 				    >;
 		};
 
+		pinctrl0_i2c2_gpio: pinctrl0_i2c2_gpio {
+			fsl,pins = <PB05_MSCR_S32G PB05_I2C2_SCL_GPIO
+				    PB06_MSCR_S32G PB06_I2C2_SDA_GPIO
+				    >;
+		};
+
 		pinctrl0_i2c4: pinctrl0_i2c4 {
 			fsl,pins = <PC01_MSCR_S32G PC01_I2C4_SDA_CFG
 				    PC02_MSCR_S32G PC02_I2C4_SCL_CFG
+				    >;
+		};
+
+		pinctrl0_i2c4_gpio: pinctrl0_i2c4_gpio {
+			fsl,pins = <PC01_MSCR_S32G PC01_I2C4_SDA_GPIO
+				    PC02_MSCR_S32G PC02_I2C4_SCL_GPIO
 				    >;
 		};
 
@@ -180,15 +213,35 @@
 				    >;
 		};
 
+		pinctrl1_i2c1_gpio: pinctrl1_i2c1_gpio {
+			fsl,pins = <PK03_MSCR_S32G PK03_I2C1_SCL_GPIO
+				    PK05_MSCR_S32G PK05_I2C1_SDA_GPIO
+				    I2C1_SCL_IMCR IMCR_DISABLED
+				    I2C1_SDA_IMCR IMCR_DISABLED
+				    >;
+		};
+
 		pinctrl1_i2c2: pinctrl1_i2c2 {
 			fsl,pins = <I2C2_SCL_IMCR PB05_I2C2_SCL_IN
 				    I2C2_SDA_IMCR PB06_I2C2_SDA_IN
 				    >;
 		};
 
+		pinctrl1_i2c2_gpio: pinctrl1_i2c2_gpio {
+			fsl,pins = <I2C2_SCL_IMCR IMCR_DISABLED
+				    I2C2_SDA_IMCR IMCR_DISABLED
+				    >;
+		};
+
 		pinctrl1_i2c4: pinctrl1_i2c4 {
 			fsl,pins = <I2C4_SDA_IMCR PC01_I2C4_SDA_IN
 				    I2C4_SCL_IMCR PC02_I2C4_SCL_IN
+				    >;
+		};
+
+		pinctrl1_i2c4_gpio: pinctrl1_i2c4_gpio {
+			fsl,pins = <I2C4_SDA_IMCR IMCR_DISABLED
+				    I2C4_SCL_IMCR IMCR_DISABLED
 				    >;
 		};
 

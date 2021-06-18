@@ -9,6 +9,7 @@
  */
 #include <dt-bindings/clock/s32r45-clock.h>
 #include <dt-bindings/clock/s32r45-scmi-clock.h>
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/s32r45-pinctrl.h>
 
 /dts-v1/;
@@ -225,16 +226,22 @@
 /* J36 - PMIC */
 &i2c0 {
 	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl0_i2c0>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pinctrl0_i2c0_gpio>;
+	scl-gpios = <&gpio0 17 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 16 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 	status = "okay";
 };
 
 /* J37 */
 &i2c1 {
 	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl0_i2c1 &pinctrl1_i2c1>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pinctrl0_i2c1_gpio &pinctrl1_i2c1_gpio>;
+	scl-gpios = <&gpio0 14 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 15 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 	status = "okay";
 };
 
@@ -305,9 +312,23 @@
 				    >;
 		};
 
+		pinctrl0_i2c0_gpio: pinctrl0_i2c0_gpio {
+			fsl,pins = <PB00_MSCR_S32R45 PB00_I2C0_SDA_GPIO
+				    PB01_MSCR_S32R45 PB01_I2C0_SCL_GPIO
+				    I2C0_SDA_IMCR IMCR_DISABLED
+				    I2C0_SCL_IMCR IMCR_DISABLED
+				    >;
+		};
+
 		pinctrl0_i2c1: pinctrl0_i2c1 {
 			fsl,pins = <PA14_MSCR_S32R45 PA14_I2C1_SCL_CFG
 				    PA15_MSCR_S32R45 PA15_I2C1_SDA_CFG
+				    >;
+		};
+
+		pinctrl0_i2c1_gpio: pinctrl0_i2c1_gpio {
+			fsl,pins = <PA14_MSCR_S32R45 PA14_I2C1_SCL_GPIO
+				    PA15_MSCR_S32R45 PA15_I2C1_SDA_GPIO
 				    >;
 		};
 
@@ -395,6 +416,12 @@
 		pinctrl1_i2c1: pinctrl1_i2c1 {
 			fsl,pins = <I2C1_SCL_IMCR PA14_I2C1_SCL_IN
 				    I2C1_SDA_IMCR PA15_I2C1_SDA_IN
+				    >;
+		};
+
+		pinctrl1_i2c1_gpio: pinctrl1_i2c1_gpio {
+			fsl,pins = <I2C1_SCL_IMCR IMCR_DISABLED
+				    I2C1_SDA_IMCR IMCR_DISABLED
 				    >;
 		};
 	};
