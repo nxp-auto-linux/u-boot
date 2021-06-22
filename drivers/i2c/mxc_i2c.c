@@ -10,7 +10,7 @@
  *  Copyright (C) 2005 Matthias Blaschke <blaschke at synertronixx.de>
  *  Copyright (C) 2007 RightHand Technologies, Inc.
  *  Copyright (C) 2008 Darius Augulis <darius.augulis at teltonika.lt>
- *  Copyright 2020 NXP
+ *  Copyright 2020-2021 NXP
  *
  */
 
@@ -943,10 +943,10 @@ static int mxc_i2c_probe(struct udevice *bus)
 	} else {
 		ret = gpio_request_by_name_nodev(offset_to_ofnode(node),
 				"scl-gpios", 0, &i2c_bus->scl_gpio,
-				GPIOD_IS_OUT);
+				GPIOD_REQUESTED);
 		ret2 = gpio_request_by_name_nodev(offset_to_ofnode(node),
 				"sda-gpios", 0, &i2c_bus->sda_gpio,
-				GPIOD_IS_OUT);
+				GPIOD_REQUESTED);
 		if (!dm_gpio_is_valid(&i2c_bus->sda_gpio) ||
 		    !dm_gpio_is_valid(&i2c_bus->scl_gpio) ||
 		    ret || ret2) {
