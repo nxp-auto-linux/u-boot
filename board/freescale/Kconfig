@@ -5,6 +5,7 @@ config S32V2
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
 	imply CMD_GPIO
+	imply CMD_FUSE
 	imply MISC
 	select ARM_SMCCC
 	select CLK
