@@ -532,3 +532,7 @@
 		};
 	};
 };
+
+&ocotp {
+	compatible = "fsl,s32g-ocotp";
+};

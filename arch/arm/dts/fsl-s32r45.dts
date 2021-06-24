@@ -450,3 +450,7 @@
 	pinctrl-0 =  <&pinctrl1_dspi5>;
 	status = "okay";
 };
+
+&ocotp {
+	compatible = "fsl,s32r45-ocotp";
+};

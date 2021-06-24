@@ -594,5 +594,10 @@
 		clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
 		status = "disabled";
 	};
+
+	ocotp: ocotp@400A4000 {
+		reg = <0x0 0x400A4000 0x0 0x400>;
+		status = "okay";
+	};
 };
 
