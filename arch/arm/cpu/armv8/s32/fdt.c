@@ -521,7 +521,7 @@ static void ft_fixup_scmi(void *blob)
 }
 #endif
 
-#ifdef CONFIG_NXP_S32G2XX
+#ifdef CONFIG_PCIE_S32GEN1
 static int fdt_alias2node(void *blob, const char *alias_fmt, int alias_id)
 {
 	const char *alias_path;
@@ -873,7 +873,6 @@ static void ft_fixup_serdes(void *blob)
 			pr_err("Failed to set mode for SerDes%d\n", id);
 	}
 }
-
 #endif
 
 void ft_cpu_setup(void *blob, bd_t *bd)
@@ -896,7 +895,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
 	ft_fixup_scmi(blob);
 #endif
-#ifdef CONFIG_NXP_S32G2XX
+#ifdef CONFIG_PCIE_S32GEN1
 	ft_fixup_serdes(blob);
 #endif
 }
