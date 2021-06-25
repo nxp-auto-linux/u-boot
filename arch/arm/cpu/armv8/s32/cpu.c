@@ -15,13 +15,16 @@
 #include "mp.h"
 #include "sram.h"
 #include "scmi_reset_agent.h"
+#include "s32gen1_ocotp.h"
 #include <asm/arch/soc.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/ncore.h>
 #include <s32gen1_clk_utils.h>
 #include <asm-generic/sections.h>
 #include <clk.h>
+#include <dm/device.h>
 #include <dm/uclass.h>
+#include <misc.h>
 #include <linux/sizes.h>
 #include <power/pmic.h>
 #include <power/vr5510.h>
@@ -360,9 +363,8 @@ static int watchdog_refresh(struct udevice *pmic)
 	return 0;
 }
 
-static int disable_vr5510_wdg(void)
+static int disable_vr5510_wdg(struct udevice *pmic)
 {
-	struct udevice *pmic;
 	uint wd_window, safe_input, fs_states, diag;
 	int ret;
 
@@ -418,15 +420,10 @@ static int disable_vr5510_wdg(void)
 }
 
 #if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-static int vr5510_reset_flt_err_cnt(void)
+static int vr5510_reset_flt_err_cnt(struct udevice *pmic)
 {
-	struct udevice *pmic;
 	uint fs_i_fssm, flt_err_cnt, flt_err_cnt_lmt;
 	int ret;
-
-	ret = pmic_get(VR5510_FSU_NAME, &pmic);
-	if (ret)
-		return ret;
 
 	fs_i_fssm = pmic_reg_read(pmic, VR5510_FS_I_FSSM);
 	flt_err_cnt_lmt = VR5510_ERR_CNT_LMT(fs_i_fssm);
@@ -466,6 +463,101 @@ static int vr5510_reset_flt_err_cnt(void)
 	return 0;
 }
 #endif /* CONFIG_TARGET_S32G274ABLUEBOX3 */
+
+static int is_svs_needed(bool *status)
+{
+	struct udevice *dev;
+	int ret;
+	u32 val;
+
+	ret = uclass_get_device_by_driver(UCLASS_MISC,
+					  DM_GET_DRIVER(s32gen1_ocotp),
+					  &dev);
+	if (ret) {
+		pr_err("Failed to get 's32gen1_ocotp' driver\n");
+		return ret;
+	}
+
+	ret = misc_read(dev, S32GEN1_OCOTP_DIE_PROCESS_ADDR, &val,
+			S32GEN1_OCOTP_WORD_SIZE);
+
+	/* Read less than 4 bytes */
+	if (ret != S32GEN1_OCOTP_WORD_SIZE && ret > 0)
+		return -EIO;
+
+	if (ret < 0)
+		return ret;
+
+	*status = !!(val & S32GEN1_OCOTP_DIE_PROCESS_MASK);
+
+	return 0;
+}
+
+static int apply_svs(struct udevice *pmic)
+{
+	int ret;
+	uint svs, fs_states;
+	bool enable_svs;
+
+	ret = is_svs_needed(&enable_svs);
+	if (ret)
+		return ret;
+
+	if (!enable_svs)
+		return 0;
+
+	fs_states = pmic_reg_read(pmic, VR5510_FS_STATES);
+	if (VR5510_STATE(fs_states) != INIT_FS) {
+		pr_err("Cannot apply SVS in state %u\n",
+			VR5510_STATE(fs_states));
+		return -1;
+	}
+
+	/**
+	 * Targeted voltage according to S32G & S32R DS : 0.76875V ->
+	 * 5 SVS steps
+	 */
+	svs = 5 << VR5510_FS_I_SVS_SVS_OFFSET;
+	ret = pmic_reg_write(pmic, VR5510_FS_I_SVS, svs);
+	if (ret) {
+		pr_err("Failed to write SVS\n");
+		return ret;
+	}
+
+	svs = ~svs & 0xFFFFU;
+	ret = pmic_reg_write(pmic, VR5510_FS_I_NOT_SVS, svs);
+	if (ret) {
+		pr_err("Failed to write NOT_SVS\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int setup_vr5510(void)
+{
+	struct udevice *pmic;
+	int ret;
+
+	ret = pmic_get(VR5510_FSU_NAME, &pmic);
+	if (ret)
+		return ret;
+
+#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+	ret = vr5510_reset_flt_err_cnt(pmic);
+	if (ret)
+		return ret;
+#endif
+	ret = apply_svs(pmic);
+	if (ret)
+		return ret;
+
+	ret = disable_vr5510_wdg(pmic);
+	if (ret)
+		return ret;
+
+	return ret;
+}
 #endif
 
 int arch_cpu_init(void)
@@ -535,13 +627,7 @@ int arch_early_init_r(void)
 	int rv = 0;
 
 #if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-	rv = vr5510_reset_flt_err_cnt();
-	if (rv)
-		return rv;
-#endif
-
-	rv = disable_vr5510_wdg();
+	rv = setup_vr5510();
 	if (rv)
 		return rv;
 #endif

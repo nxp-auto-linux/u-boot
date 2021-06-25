@@ -22,5 +22,6 @@ obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
 obj-$(CONFIG_FSL_DCU_FB)	+= dcu.o
 obj-y				+= initsram.o
 ccflags-y			+= -Idrivers/clk/s32/include
+ccflags-y			+= -Idrivers/misc
 ccflags-y			+= -Iboard/freescale/s32-gen1
 ccflags-$(CONFIG_SYS_ERRATUM_ERR050543)	+= -Idrivers/ddr/fsl
