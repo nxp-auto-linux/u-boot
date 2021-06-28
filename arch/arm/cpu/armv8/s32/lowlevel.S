@@ -23,6 +23,57 @@ ENTRY(lowlevel_init)
 
 	mov	x29, lr			/* Save LR */
 
+#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+reset_registers_for_lockstep:
+	/*
+	 * Timers reset must be done when lockstep is enabled to avoid RCCU
+	 * mismatch errors. Reset should be executed as early as possible
+	 * before any read access to these counters. Resetting them for all boot
+	 * flows assures consistent values
+	 * This must be done in EL3 and executed for all cores.
+	 */
+
+	mov x0, #0x0
+	msr cntkctl_el1, x0
+
+	msr cntp_tval_el0, x0
+	msr cntp_ctl_el0, x0
+	msr cntp_cval_el0, x0
+
+	msr cntv_tval_el0, x0
+	msr cntv_cval_el0, x0
+	msr cntv_ctl_el0, x0
+
+	msr cntvoff_el2, x0
+	msr cnthctl_el2, x0
+
+	msr cnthp_tval_el2, x0
+	msr cnthp_ctl_el2, x0
+	msr cnthp_cval_el2, x0
+
+	msr cntps_tval_el1, x0
+	msr cntps_ctl_el1, x0
+	msr cntps_cval_el1, x0
+
+	/*
+	 * Lockstep sync GPR registers: write x19-x28 callee-saved registers
+	 * as defined in procedure call standard for the ARM 64-bit. These
+	 * registers may be saved to stack without being initialized, setting
+	 * them is needed to avoid lockstep errors.
+	 */
+
+	mov x19, #0
+	mov x20, #0
+	mov x21, #0
+	mov x22, #0
+	mov x23, #0
+	mov x24, #0
+	mov x25, #0
+	mov x26, #0
+	mov x27, #0
+	mov x28, #0
+#endif
+
 #if defined(CONFIG_GICV2) || defined(CONFIG_GICV3)
 	branch_if_slave x0, 1f
 #endif
