@@ -252,6 +252,7 @@ endif # DWC_ETH_QOS_DEVICES
 
 config E1000
 	bool "Intel PRO/1000 Gigabit Ethernet support"
+	depends on PCI
 	help
 	  This driver supports Intel(R) PRO/1000 gigabit ethernet family of
 	  adapters.  For more information on how to identify your adapter, go
