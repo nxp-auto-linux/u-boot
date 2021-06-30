@@ -78,33 +78,6 @@ int checkboard(void)
 	return 0;
 }
 
-#if CONFIG_IS_ENABLED(PCIE_S32GEN1)
-static void ft_pcie_fixup(void *fdt)
-{
-	const char * const aliases[] = {"pcie0", "pcie1"};
-	const char *path;
-	int off = -1;
-	size_t i;
-
-	/* Add dma-coherent property to each PCIe node */
-	for (i = 0; i < ARRAY_SIZE(aliases); i++) {
-		path = fdt_get_alias(fdt, aliases[i]);
-		if (!path) {
-			pr_err("%s: No such alias: %s\n", __func__, aliases[i]);
-			break;
-		}
-
-		off = fdt_path_offset(fdt, path);
-		if (off < 0) {
-			pr_err("%s: Could not find path %s\n", __func__, path);
-			break;
-		}
-
-		if (fdt_setprop(fdt, off, "dma-coherent", NULL, 0))
-			pr_err("PCIe%ld fdt: could not set dma-coherent\n", i);
-	}
-}
-#endif
 
 #if defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
@@ -113,10 +86,6 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 #if CONFIG_IS_ENABLED(NETDEVICES)
 	ft_enet_fixup(blob);
-#endif
-
-#if CONFIG_IS_ENABLED(PCIE_S32GEN1)
-	ft_pcie_fixup(blob);
 #endif
 
 	return 0;
