@@ -399,8 +399,9 @@
 		"fdt rm /chosen linux,initrd-end; \0" \
 	"updatexenfdt=run chosen_node_setup; run dom0_node_setup; " \
 		"run bootargs_setup; run clear_default_chosen;\0" \
-	"bootcmd=" XEN_LOAD_FILES "run updatexenfdt; " \
-		"booti ${loadaddr} - ${fdt_addr}\0"
+
+#define XEN_BOOTCMD \
+	XEN_LOAD_FILES "run updatexenfdt; booti ${loadaddr} - ${fdt_addr}"
 #else
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
@@ -547,6 +548,9 @@
 #  define CONFIG_BOOTCOMMAND \
 	PFE_INIT_CMD "run flashboot"
 #elif defined(CONFIG_SD_BOOT)
+#ifdef CONFIG_XEN_SUPPORT
+#  define CONFIG_BOOTCOMMAND XEN_BOOTCMD
+#else
 #  define CONFIG_BOOTCOMMAND \
 	PFE_INIT_CMD "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadimage; then " \
@@ -554,6 +558,7 @@
 		   "else run netboot; " \
 		   "fi; " \
 	   "else run netboot; fi"
+#endif
 #endif
 
 /* Miscellaneous configurable options */
