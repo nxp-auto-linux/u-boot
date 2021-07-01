@@ -622,13 +622,10 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	if (!s32_pcie_set_link_width(dbi, id, linkwidth))
 		return false;
 
-	/* Configure transactions as Cacheable, Outer Shareable. */
-	s32_pcie_change_mstr_ace_cache(dbi, 3, 3);
-	s32_pcie_change_mstr_ace_domain(dbi, 2, 2);
-
-	/* Test value for coherency control reg */
-	debug("COHERENCY_CONTROL_3_OFF: 0x%08x\n",
-	      in_le32(PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi)));
+	/* PCIE_COHERENCY_CONTROL_<n> registers provide defaults that configure
+	 * the transactions as Outer Shareable, Write-Back cacheable; we won't
+	 * change those defaults.
+	 */
 
 	BSET32(PCIE_PORT_LOGIC_PORT_FORCE(dbi), PCIE_DO_DESKEW_FOR_SRIS);
 
