@@ -605,7 +605,9 @@
 #endif
 
 #define CONFIG_SYS_MMC_ENV_DEV		0
-#define CONFIG_MMC_PART			1
+#define MMC_PART_FAT			1
+#define MMC_PART_EXT			2
+#define CONFIG_MMC_PART			MMC_PART_FAT
 
 #ifdef CONFIG_S32_GEN1
 #define FLASH_SECTOR_SIZE               (64 * 1024) /* 64 KB */
