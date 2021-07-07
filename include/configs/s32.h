@@ -372,36 +372,14 @@
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 
 #ifdef CONFIG_XEN_SUPPORT
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
-#define XEN_LOAD_FILES "setenv filesize a00000; "
-#else
-#define XEN_LOAD_FILES \
-	"fatload mmc 0 ${fdt_addr} ${fdt_file}; " \
-	"fatload mmc 0 ${loadaddr} xen; " \
-	"fatload mmc 0 ${dom0_addr} Image; "
-#endif
 #define XEN_EXTRA_ENV_SETTINGS \
-	"dom0_addr=0x90000000\0" \
-	"dom0_mem=192M\0" \
-	"dom0_bootargs=\"console=hvc0 root=/dev/mmcblk0p2 rootwait rw\"\0" \
-	"bootargs_setup=setenv bootargs dom0_mem=${dom0_mem} bootscrub=0 " \
-		"console=dtuart dtuart=serial0\0" \
-	"dom0_node_setup=fdt set /chosen/module@0 compatible " \
-		"\"xen,linux-zimage\" \"xen,multiboot-module\"; " \
-		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
-		"fdt set /chosen/module@0 bootargs ${dom0_bootargs} \0" \
-	"chosen_node_setup=fdt addr ${fdt_addr} 0x40000; fdt resize 1024; " \
-		"fdt chosen; fdt set /chosen \\\\\#address-cells <1>; " \
-		"fdt set /chosen \\\\\#size-cells <1>; " \
-		"fdt mknod /chosen module@0;\0" \
-	"clear_default_chosen=fdt rm /chosen stdout-path; " \
-		"fdt rm /chosen linux,initrd-start; " \
-		"fdt rm /chosen linux,initrd-end; \0" \
-	"updatexenfdt=run chosen_node_setup; run dom0_node_setup; " \
-		"run bootargs_setup;\0" \
+	"script_addr=0x80200000\0" \
+	"mmcpart_ext=" __stringify(MMC_PART_EXT) "\0" \
 
 #define XEN_BOOTCMD \
-	XEN_LOAD_FILES "run updatexenfdt; booti ${loadaddr} - ${fdt_addr}"
+	"ext4load mmc ${mmcdev}:${mmcpart_ext} ${script_addr} " \
+		"boot/${script}; source ${script_addr}; " \
+		"booti ${xen_addr} - ${fdt_addr};"
 #else
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
