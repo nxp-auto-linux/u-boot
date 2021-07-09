@@ -48,6 +48,8 @@
 #define PCIE_MIN_SOC_REV_SUPPORTED 0x1
 #endif
 
+#define PCI_MAX_BUS_NUM	256
+
 DECLARE_GLOBAL_DATA_PTR;
 
 LIST_HEAD(s32_pcie_list);
@@ -926,7 +928,7 @@ static int s32_pcie_probe(struct udevice *dev)
 }
 
 static void show_pci_devices(struct udevice *bus, struct udevice *dev,
-		int depth, int last_flag)
+		int depth, int last_flag, bool *parsed_bus)
 {
 	int i, is_last;
 	struct udevice *child;
@@ -950,6 +952,7 @@ static void show_pci_devices(struct udevice *bus, struct udevice *dev,
 	pplat = dev_get_parent_platdata(dev);
 	printf("%02x:%02x.%02x", bus->seq,
 	       PCI_DEV(pplat->devfn), PCI_FUNC(pplat->devfn));
+	parsed_bus[bus->seq] = true;
 
 	for (i = (PCIE_ALIGNMENT - depth); i > 0; i--)
 		printf("    ");
@@ -958,7 +961,7 @@ static void show_pci_devices(struct udevice *bus, struct udevice *dev,
 	list_for_each_entry(child, &dev->child_head, sibling_node) {
 		is_last = list_is_last(&child->sibling_node, &dev->child_head);
 		show_pci_devices(dev, child, depth + 1,
-			(last_flag << 1) | is_last);
+			(last_flag << 1) | is_last, parsed_bus);
 	}
 }
 
@@ -974,12 +977,18 @@ void show_pcie_devices(void)
 {
 	struct udevice *bus;
 	bool show_header = true;
+	bool parsed_bus[PCI_MAX_BUS_NUM];
+
+	memset(parsed_bus, false, sizeof(bool) * PCI_MAX_BUS_NUM);
 
 	for (uclass_find_first_device(UCLASS_PCI, &bus);
 		     bus;
 		     uclass_find_next_device(&bus)) {
 		struct udevice *dev;
 		struct s32_pcie *pcie = dev_get_priv(bus);
+
+		if (parsed_bus[bus->seq])
+			continue;
 
 		if (pcie && pcie->enabled) {
 			if (show_header) {
@@ -997,7 +1006,8 @@ void show_pcie_devices(void)
 					&bus->child_head);
 			if (dev->seq < 0)
 				continue;
-			show_pci_devices(bus, dev, depth - 3, is_last);
+			show_pci_devices(bus, dev, depth - 3,
+					is_last, parsed_bus);
 		}
 	}
 }
