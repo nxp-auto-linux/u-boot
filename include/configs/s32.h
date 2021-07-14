@@ -390,7 +390,7 @@
 		"\"xen,linux-zimage\" \"xen,multiboot-module\"; " \
 		"fdt set /chosen/module@0 reg <${dom0_addr} 0x${filesize} >; " \
 		"fdt set /chosen/module@0 bootargs ${dom0_bootargs} \0" \
-	"chosen_node_setup=fdt addr ${fdt_addr} 0x40000; fdt resize; " \
+	"chosen_node_setup=fdt addr ${fdt_addr} 0x40000; fdt resize 1024; " \
 		"fdt chosen; fdt set /chosen \\\\\#address-cells <1>; " \
 		"fdt set /chosen \\\\\#size-cells <1>; " \
 		"fdt mknod /chosen module@0;\0" \
@@ -398,7 +398,7 @@
 		"fdt rm /chosen linux,initrd-start; " \
 		"fdt rm /chosen linux,initrd-end; \0" \
 	"updatexenfdt=run chosen_node_setup; run dom0_node_setup; " \
-		"run bootargs_setup; run clear_default_chosen;\0" \
+		"run bootargs_setup;\0" \
 
 #define XEN_BOOTCMD \
 	XEN_LOAD_FILES "run updatexenfdt; booti ${loadaddr} - ${fdt_addr}"
