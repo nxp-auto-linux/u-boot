@@ -97,7 +97,7 @@
 #endif
 
 /*Kernel image load address */
-#  define LOADADDR		0x80080000
+#  define LOADADDR		0x80000000
 
 /* Ramdisk load address */
 #  define RAMDISK_ADDR		0x84000000
