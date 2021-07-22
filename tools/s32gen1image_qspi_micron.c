@@ -12,7 +12,7 @@
 	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 void adjust_qspi_params(struct qspi_params *qspi_params)
 {
-	qspi_params->dllcr = 0x82860704;
+	qspi_params->dllcr = 0x42860704;
 	qspi_params->dll_slv_upd_en = 0x01;
 	qspi_params->sflash_clk_freq = 133;
 }
@@ -22,7 +22,7 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	.mcr      = 0x010f00cc,
 	.flshcr   = 0x00010303,
 	.bufgencr = 0x00000000,
-	.dllcr    = 0x82860704,
+	.dllcr    = 0x42860704,
 	.paritycr = 0x00000000,
 	.sfacr    = 0x00000000,
 	.smpr     = 0x44000000,
