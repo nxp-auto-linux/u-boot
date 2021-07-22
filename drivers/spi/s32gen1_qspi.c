@@ -459,6 +459,11 @@ static bool add_op_to_lutdb(struct fsl_qspi_priv *priv,
 	return true;
 }
 
+static u32 *get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index)
+{
+	return &regs->lut[index * LUTS_PER_CONFIG];
+}
+
 static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
@@ -468,7 +473,7 @@ static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
 	iter = &lut_configs[opcode].conf[0];
 	iterb = iter;
 
-	lutaddr = &regs->lut[index * LUTS_PER_CONFIG];
+	lutaddr = get_lut_seq_start(regs, index);
 
 	/* Unlock the LUT */
 	qspi_write32(priv->flags, &regs->lutkey, LUT_KEY_VALUE);
@@ -900,13 +905,15 @@ void reset_bootrom_settings(struct fsl_qspi_priv *priv)
 	u32 bfgencr, lutid;
 	u32 lut;
 	u32 instr0;
+	u32 *lutaddr;
 
 	/* Read the configuration left by BootROM */
 
 	bfgencr = qspi_read32(priv->flags, &regs->bfgencr);
 	lutid = (bfgencr & QSPI_BFGENCR_SEQID_MASK) >> QSPI_BFGENCR_SEQID_SHIFT;
 
-	lut = qspi_read32(priv->flags, &regs->lut[lutid]);
+	lutaddr = get_lut_seq_start(regs, lutid);
+	lut = qspi_read32(priv->flags, lutaddr);
 
 	/* Not configured */
 	if (!lut)
