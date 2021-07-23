@@ -203,6 +203,11 @@ config S32_CMU
 	  Checks if the frequency of a monitored clock (monitored_clock)
 	  is within a programmable frequency range specified by the user.
 
+config BOARD_NFS_BOOT_INTERFACE
+	string "Board NFS Boot Interface"
+	default "br0" if TARGET_S32G274ABLUEBOX3
+	default "eth0"
+
 source "board/freescale/Kconfig"
 source "board/microsys/mpxs32v234/Kconfig"
 
