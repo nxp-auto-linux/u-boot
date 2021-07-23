@@ -92,6 +92,10 @@
 #define CONFIG_SYS_FSL_FLASH0_SIZE      0x20000000
 #define QSPI_BASE_ADDR		        0x40134000
 
+#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+#define CONFIG_BOARD_USE_RAMFS_IN_NFSBOOT
+#endif
+
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32.h>
 

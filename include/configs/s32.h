@@ -390,7 +390,7 @@
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs rw " \
-		"ip=${ipaddr}:${serverip}::${netmask}::eth0:off " \
+		"ip=${ipaddr}:${serverip}::${netmask}::" CONFIG_BOARD_NFS_BOOT_INTERFACE ":off " \
 		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp " \
 		"earlycon " PFENG_EXTRA_BOOT_ARGS "\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
