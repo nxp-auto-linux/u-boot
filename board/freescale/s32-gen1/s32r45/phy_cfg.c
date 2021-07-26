@@ -31,7 +31,7 @@
 
 #include "ddr_init.h"
 
-struct regconf phy_cfg[] = {
+struct regconf_16 phy_cfg[] = {
 	{0x4038040c, 0x00000001},
 	{0x40380bdc, 0x00000001},
 	{0x403945dc, 0x000001ff},
@@ -55,11 +55,11 @@ struct regconf phy_cfg[] = {
 	{0x403816dc, 0x00000019},
 	{0x40381494, 0x00000002},
 	{0x40380c58, 0x00000000},
-	{0x40381438, 0x000000e3},
+	{0x40381438, 0x000001e3},
 	{0x403814fc, 0x00000002},
 	{0x40381618, 0x00000212},
 	{0x40381608, 0x00000061},
-	{0x40381530, 0x00000007},
+	{0x40381530, 0x00000003},
 	{0x403945a0, 0x00000600},
 	{0x403945a4, 0x00000600},
 	{0x403965a0, 0x00000600},
@@ -120,4 +120,4 @@ struct regconf phy_cfg[] = {
 	{0x40381478, 0x00000000},
 };
 
-size_t phy_cfg_size = sizeof(phy_cfg) / sizeof(struct regconf);
+size_t phy_cfg_size = ARRAY_SIZE(phy_cfg);

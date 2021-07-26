@@ -66,4 +66,4 @@ struct dqconf dq_swap_cfg[] = {
 	{0x4039a84c, 0x03},
 };
 
-size_t dq_swap_cfg_size = sizeof(dq_swap_cfg) / sizeof(struct dqconf);
+size_t dq_swap_cfg_size = ARRAY_SIZE(dq_swap_cfg);
