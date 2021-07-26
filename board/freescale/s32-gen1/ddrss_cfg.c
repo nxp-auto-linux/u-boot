@@ -29,12 +29,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <asm/arch/siul.h>
 #include "ddr_init.h"
 
 struct ddrss_config configs[] = {
 	{
-		.memory_type = 2,
+		.memory_type = LPDDR4,
 		.ddrc_cfg = &ddrc_cfg[0],
 		.ddrc_cfg_size = 0,
 		.dq_swap_cfg = &dq_swap_cfg[0],
@@ -54,58 +53,9 @@ struct ddrss_config configs[] = {
 	}
 };
 
-#ifdef CONFIG_NXP_S32G2XX
-struct ddrss_config configs_rev2[] = {
-	{
-		.memory_type = 2,
-		.ddrc_cfg = &ddrc_cfg_rev2[0],
-		.ddrc_cfg_size = 0,
-		.dq_swap_cfg = &dq_swap_cfg[0],
-		.dq_swap_cfg_size = 0,
-		.phy_cfg = &phy_cfg_rev2[0],
-		.phy_cfg_size = 0,
-		.imem_1d = &imem_1d[0],
-		.imem_1d_size = 0,
-		.dmem_1d = &dmem_1d_rev2[0],
-		.dmem_1d_size = 0,
-		.imem_2d = &imem_2d[0],
-		.imem_2d_size = 0,
-		.dmem_2d = &dmem_2d_rev2[0],
-		.dmem_2d_size = 0,
-		.pie_cfg = &pie_cfg_rev2[0],
-		.pie_cfg_size = 0,
-	}
-};
-
-void init_image_sizes_rev2(void)
-{
-	size_t i;
-
-	memcpy(&configs, &configs_rev2, sizeof(configs));
-
-	for (i = 0; i < ddrss_config_size; i++) {
-		configs[i].ddrc_cfg_size = ddrc_cfg_size_rev2;
-		configs[i].dq_swap_cfg_size = dq_swap_cfg_size;
-		configs[i].phy_cfg_size = phy_cfg_size_rev2;
-		configs[i].imem_1d_size = imem_1d_size;
-		configs[i].dmem_1d_size = dmem_1d_size_rev2;
-		configs[i].imem_2d_size = imem_2d_size;
-		configs[i].dmem_2d_size = dmem_2d_size_rev2;
-		configs[i].pie_cfg_size = pie_cfg_size_rev2;
-	}
-}
-#endif
-
 void init_image_sizes(void)
 {
 	size_t i;
-
-#ifdef CONFIG_NXP_S32G2XX
-	if (!is_s32gen1_soc_rev1()) {
-		init_image_sizes_rev2();
-		return;
-	}
-#endif
 
 	for (i = 0; i < ddrss_config_size; i++) {
 		configs[i].ddrc_cfg_size = ddrc_cfg_size;

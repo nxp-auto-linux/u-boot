@@ -42,10 +42,6 @@ obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 				s32g274a/dq_swap_cfg.o \
 				s32g274a/phy_cfg.o \
 				s32g274a/pie_cfg.o \
-				s32g274a/rev2/ddrc_cfg_rev2.o \
-				s32g274a/rev2/dmem_cfg_rev2.o \
-				s32g274a/rev2/phy_cfg_rev2.o \
-				s32g274a/rev2/pie_cfg_rev2.o \
 
 endif
 

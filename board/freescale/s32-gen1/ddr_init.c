@@ -33,11 +33,8 @@
 
 static u32 ddrc_init_cfg(struct ddrss_config *config);
 static u32 execute_training(struct ddrss_config *config);
-static u32 load_register_cfg(size_t size, struct regconf cfg[]);
-static u32 load_dq_cfg(size_t size, struct dqconf cfg[]);
-static void set_optimal_pll(void);
 static u32 load_phy_image(u32 start_addr, size_t size,
-			  u16 image[]);
+			       u16 image[]);
 
 /* Main method needed to initialize ddr subsystem. */
 u32 ddr_init(void)
@@ -64,7 +61,7 @@ u32 ddr_init(void)
 			return ret;
 
 		/* Execute post training setup */
-		ret = post_train_setup();
+		ret = post_train_setup(STORE_CSR_MASK | INIT_MEM_MASK);
 		if (ret != NO_ERR)
 			return ret;
 	}
@@ -90,7 +87,7 @@ static u32 execute_training(struct ddrss_config *config)
 		return ret;
 
 	/* Initialize phy module */
-	ret = load_register_cfg(config->phy_cfg_size, config->phy_cfg);
+	ret = load_register_cfg_16(config->phy_cfg_size, config->phy_cfg);
 	if (ret != NO_ERR)
 		return ret;
 
@@ -159,34 +156,47 @@ static u32 execute_training(struct ddrss_config *config)
 
 	writel(UNLOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 	/*  Load pie image after training has executed */
-	ret = load_register_cfg(config->pie_cfg_size, config->pie_cfg);
+	ret = load_register_cfg_16(config->pie_cfg_size, config->pie_cfg);
 	writel(LOCK_CSR_ACCESS, MICROCONT_MUX_SEL);
 	return ret;
 }
 
 /* Load register array into memory. */
-static u32 load_register_cfg(size_t size, struct regconf cfg[])
+u32 load_register_cfg_16(size_t size, struct regconf_16 cfg[])
+{
+	size_t i;
+
+	for (i = 0; i < size; i++)
+		writew(cfg[i].data, (uintptr_t)cfg[i].addr);
+
+	return NO_ERR;
+}
+
+/* Load register array into memory. */
+u32 load_register_cfg(size_t size, struct regconf cfg[])
 {
 	size_t i;
 
 	for (i = 0; i < size; i++)
 		writel(cfg[i].data, (uintptr_t)cfg[i].addr);
+
 	return NO_ERR;
 }
 
 /* Load dq config array into memory. */
-static u32 load_dq_cfg(size_t size, struct dqconf cfg[])
+u32 load_dq_cfg(size_t size, struct dqconf cfg[])
 {
 	size_t i;
 
 	for (i = 0; i < size; i++)
 		writel(cfg[i].data, (uintptr_t)cfg[i].addr);
+
 	return NO_ERR;
 }
 
 /* Load image into memory at consecutive addresses */
 static u32 load_phy_image(u32 start_addr, size_t size,
-			  u16 image[])
+			       u16 image[])
 {
 	size_t i;
 
@@ -198,9 +208,9 @@ static u32 load_phy_image(u32 start_addr, size_t size,
 }
 
 /* Ensure optimal phy pll settings. */
-static void set_optimal_pll(void)
+void set_optimal_pll(void)
 {
-	/* Configure phy pll for 2667MTS data rate */
+	/* Configure phy pll for 3200MTS data rate */
 	writel(0x00000021, MASTER_PLLCTRL1);
 	writel(0x00000024, MASTER_PLLTESTMODE);
 	writel(0x0000017f, MASTER_PLLCTRL4);

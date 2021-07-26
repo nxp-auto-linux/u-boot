@@ -35,23 +35,14 @@ static u32 enable_axi_ports(void);
 static u32 get_mail(u32 *mail);
 static u32 ack_mail(void);
 
-/*
- * Do not deinitialize this variable.
- * We want this variable to be stored in .data section.
- * If left un-initialized, or if initialized with value 0,
- * it will be stored in .bss section and therefore not be
- * available after u-boot is relocated into DRAM, when its
- * value will be used.
- */
 u8 polling_needed = 2;
 
 /* Modify bitfield value with delta, given bitfield position and mask */
-static inline bool update_bf(u32 *v, u8 pos, u32 mask,
-			     int delta)
+bool update_bf(u32 *v, u8 pos, u32 mask, int32_t delta)
 {
 	if (mask >= (((*v >> pos) & mask) + delta)) {
 		*v = (*v & ~(mask << pos)) | ((((*v >> pos)
-						& mask) + delta) << pos);
+			& mask) + delta) << pos);
 		return true;
 	} else {
 		return false;
@@ -69,37 +60,37 @@ bool sel_clk_src(u32 clk_src)
 
 	/* Check if the clock source is already set to clk_src*/
 	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
-	if (((tmp32 & 0x3fffffff) >> 24) == clk_src)
+	if (((tmp32 & 0x3fffffffU) >> 24) == clk_src)
 		return false;
 
 	/* To wait till clock switching is completed */
 	do {
 		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
-	} while (((tmp32 >> 16) & 0x1) != 0x0);
+	} while (((tmp32 >> 16) & 0x1U) != 0x0);
 
 	/* Set DDR_CLK source on src_clk */
 	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
-	writel((0xc0ffffff & tmp32) | (clk_src << 24),
+	writel((0xc0ffffffU & tmp32) | (clk_src << 24),
 	       MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
 
 	/* Request clock switch */
 	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
-	writel((0x1 << 2) | tmp32, MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
+	writel((0x1u << 2) | tmp32, MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSC);
 
 	/* To wait till clock switching is completed */
 	do {
 		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
-	} while (((tmp32 >> 16) & 0x1) != 0x0);
+	} while (((tmp32 >> 16) & 0x1U) != 0x0);
 
 	/* To wait till Switch after request is succeeded */
 	do {
 		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
-	} while (((tmp32 >> 17) & 0x1) != 0x1);
+	} while (((tmp32 >> 17) & 0x1U) != 0x1);
 
 	/* Make sure correct clock source is selected */
 	do {
 		tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
-	} while (((tmp32 & 0x3fffffff) >> 24) != clk_src);
+	} while (((tmp32 & 0x3fffffffU) >> 24) != clk_src);
 
 	return true;
 }
@@ -111,13 +102,19 @@ u32 set_axi_parity(void)
 	bool switched_to_firc;
 
 	/* Enable Parity For All AXI Interfaces */
-	writel(readl(DDR_SS_REG) | 0x1ff0, DDR_SS_REG);
+	tmp32 = readl(DDR_SS_REG);
+	writel(tmp32 | 0x1ff0U, DDR_SS_REG);
 
 	/* Set AXI_PARITY_TYPE to 0x1ff;   0-even, 1-odd */
-	writel(readl(DDR_SS_REG) | 0x1ff0000, DDR_SS_REG);
+	tmp32 = readl(DDR_SS_REG);
+	writel(tmp32 | 0x1ff0000U, DDR_SS_REG);
 
-	/* Set DFI1_ENABLED to 0x1 */
-	writel(readl(DDR_SS_REG) | 0x1, DDR_SS_REG);
+	/* For LPDDR4 Set DFI1_ENABLED to 0x1 */
+	tmp32 = readl(DDRC_BASE_ADDR);
+	if ((tmp32 & MSTR_LPDDR4_MASK) == MSTR_LPDDR4_VAL) {
+		tmp32 = readl(DDR_SS_REG);
+		writel(tmp32 | 0x1U, DDR_SS_REG);
+	}
 
 	/*
 	 * Set ddr clock source on FIRC_CLK.
@@ -127,33 +124,33 @@ u32 set_axi_parity(void)
 
 	/* De-assert Reset To Controller and AXI Ports */
 	tmp32 = readl(MC_RGM_PRST_0);
-	writel(~(0x1 << 3) & tmp32, MC_RGM_PRST_0);
+	writel(~(0x1U << 3) & tmp32, MC_RGM_PRST_0);
 
 	/* Check if the initial clock source was not on FIRC */
 	if (switched_to_firc)
-		sel_clk_src(DDR_PHI0_PLL);
+		switched_to_firc = sel_clk_src(DDR_PHI0_PLL);
 
 	/* Enable HIF, CAM Queueing */
 	writel(0x0, DDRC_BASE_ADDR + OFFSET_DDRC_DBG1);
 
 	/* Disable auto-refresh: RFSHCTL3.dis_auto_refresh = 1 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
-	writel((1 | tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
+	writel((0x1U | tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
 
 	/* Disable power down: PWRCTL.powerdown_en = 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(((~0x00000002) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(((~0x00000002U) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/* Disable self-refresh: PWRCTL.selfref_en = 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(((~0x00000001) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(((~0x00000001U) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/*
 	 * Disable assertion of dfi_dram_clk_disable:
 	 * PWRTL.en_dfi_dram_clk_disable = 0
 	 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(((~0x00000008) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(((~0x00000008U) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/* Enable Quasi-Dynamic Programming */
 	writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
@@ -165,7 +162,7 @@ u32 set_axi_parity(void)
 
 	/* DFI_INIT_COMPLETE_EN set to 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
-	writel((~0x1) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+	writel((~0x1U) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 
 	/* Set SWCTL.sw_done to 1 */
 	writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
@@ -193,8 +190,10 @@ static u32 enable_axi_ports(void)
 /*
  * Post PHY training setup - complementary settings that need to be
  * performed after running the firmware.
+ * @param options - various flags controlling post training actions
+ * (whether to init memory with ECC scrubber / whether to store CSR)
  */
-u32 post_train_setup(void)
+u32 post_train_setup(u8 options)
 {
 	u32 ret = NO_ERR;
 	u32 tmp32;
@@ -205,7 +204,7 @@ u32 post_train_setup(void)
 	 */
 	do {
 		tmp32 = readl(DDR_PHYA_MASTER0_CALBUSY);
-	} while ((tmp32 & 0x1) != 0);
+	} while ((tmp32 & 0x1U) != 0);
 
 	/* Set SWCTL.sw_done to 0 */
 	writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
@@ -215,7 +214,7 @@ u32 post_train_setup(void)
 
 	/* Set DFIMISC.dfi_init_start to 1*/
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
-	writel((0x00000020 | tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+	writel((0x00000020U | tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 
 	/* Set SWCTL.sw_done to 1 */
 	writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
@@ -227,7 +226,7 @@ u32 post_train_setup(void)
 	/* Wait DFISTAT.dfi_init_complete to 1 */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFISTAT);
-	} while ((tmp32 & 0x1) == 0);
+	} while ((tmp32 & 0x1U) == 0);
 
 	/* Set SWCTL.sw_done to 0 */
 	writel(DDRC_SWCTL_SWDONE_ENABLE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
@@ -237,15 +236,15 @@ u32 post_train_setup(void)
 
 	/* Set dfi_init_start to 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
-	writel((~0x00000020) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+	writel((~0x00000020U) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 
 	/* Set dfi_complete_en to 1 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
-	writel(0x00000001 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+	writel(0x00000001U | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
 
 	/* Set PWRCTL.selfref_sw to 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(((~0x00000020) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(((~0x00000020U) & tmp32), DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/* Set SWCTL.sw_done to 1 */
 	writel(DDRC_SWCTL_SWDONE_DONE, DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
@@ -256,17 +255,18 @@ u32 post_train_setup(void)
 	/* Wait for DWC_ddr_umctl2 to move to normal operating mode */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_STAT);
-	} while ((tmp32 & 0x7) == 0);
+	} while ((tmp32 & 0x7U) == 0);
 
 	/* Enable auto-refresh: RFSHCTL3.dis_auto_refresh = 0 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
-	writel((~0x00000001) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
+	writel((~0x00000001U) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
 
 	/*
 	 * If ECC feature is enabled (ECCCFG0[ecc_mode] > 0)
 	 * initialize memory with the ecc scrubber
 	 */
-	if ((readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG0) & 0x7) > 0) {
+	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG0);
+	if (((tmp32 & 0x7U) > 0) && ((options & INIT_MEM_MASK) != 0)) {
 		ret = init_memory_ecc_scrubber();
 		if (ret != NO_ERR)
 			return ret;
@@ -274,18 +274,18 @@ u32 post_train_setup(void)
 
 	/* Enable power down: PWRCTL.powerdown_en = 1 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(0x00000002 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(0x00000002U | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/* Enable self-refresh: PWRCTL.selfref_en = 1*/
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(0x00000001 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(0x00000001U | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	/*
 	 * Enable assertion of dfi_dram_clk_disable:
 	 * PWRTL.en_dfi_dram_clk_disable = 1
 	 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
-	writel(0x00000008 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
+	writel(0x00000008U | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
 	ret |= enable_derating_temp_errata();
 
@@ -301,25 +301,27 @@ u32 post_train_setup(void)
 u32 wait_firmware_execution(void)
 {
 	u32 mail = 0;
+	u32 ret;
 
-	while (mail == 0) {
+	while (true) {
 		/* Obtain message from PHY (major message) */
-		u32 ret = get_mail(&mail);
+		ret = get_mail(&mail);
 
 		if (ret != NO_ERR)
-			return ret;
+			break;
 
 		/* 0x07 means OK, 0xFF means failure */
 		if (mail == 0x07)
-			return NO_ERR;
-		if (mail == 0xff)
-			/* Training stage failed */
-			return TRAINING_FAILED;
+			break;
 
-		/* No error. Keep querying for mails */
-		mail = 0;
+		if (mail == 0xff) {
+			/* Training stage failed */
+			ret = TRAINING_FAILED;
+			break;
+		}
 	}
-	return TIMEOUT_ERR;
+
+	return ret;
 }
 
 /* Acknowledge received message */
@@ -328,13 +330,14 @@ static u32 ack_mail(void)
 	u32 timeout = DEFAULT_TIMEOUT;
 	/* ACK message */
 	writel(0, DDR_PHYA_APBONLY_DCTWRITEPROT);
+	u32 tmp32 = readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS);
 
 	/* Wait firmware to respond to ACK (UctWriteProtShadow to be set) */
-	while (--timeout && !(readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS) &
-			      UCT_WRITE_PROT_SHADOW_MASK))
-		;
+	while ((--timeout != 0) &&
+	       ((tmp32 & UCT_WRITE_PROT_SHADOW_MASK) == 0))
+		tmp32 = readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS);
 
-	if (!timeout)
+	if (timeout == 0)
 		return TIMEOUT_ERR;
 
 	writel(1, DDR_PHYA_APBONLY_DCTWRITEPROT);
@@ -346,12 +349,13 @@ static u32 ack_mail(void)
 static u32 get_mail(u32 *mail)
 {
 	u32 timeout = DEFAULT_TIMEOUT;
+	u32 tmp32 = readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS);
 
-	while (--timeout && (readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS) &
-			     UCT_WRITE_PROT_SHADOW_MASK))
-		;
+	while ((--timeout != 0) &&
+	       ((tmp32 & UCT_WRITE_PROT_SHADOW_MASK) != 0))
+		tmp32 = readl(DDR_PHYA_APBONLY_UCTSHSADOWREGS);
 
-	if (!timeout)
+	if (timeout == 0)
 		return TIMEOUT_ERR;
 
 	*mail = readl(DDR_PHYA_APBONLY_UCTWRITEONLYSHADOW);
@@ -364,33 +368,34 @@ static u32 get_mail(u32 *mail)
 u32 init_memory_ecc_scrubber(void)
 {
 	u8 region_lock;
-	u32 tmp32, pattern = 0x00000000;
+	u32 tmp32, pattern = 0x00000000U;
 
 	/* Save previous ecc region parity locked state. */
-	region_lock = readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1) & (0x1 << 4);
+	region_lock = readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1) &
+				  (0x1UL << 4);
 
 	/* Enable ecc region lock. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1);
-	writel((0x1 << 4) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1);
+	writel((0x01U << 4) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1);
 
 	/* Set SBRCTL.scrub_mode = 1. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel((0x1 << 2) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel((0x1U << 2) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Set SBRCTL.scrub_during_lowpower = 1. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel((0x1 << 1) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel((0x1U << 1) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Set SBRCTL.scrub_interval = 0. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel(~(0x1fff << 8) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel(~(0x1fffU << 8) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Set the desired pattern through SBRWDATA0 register. */
 	writel(pattern, DDRC_BASE_ADDR + OFFSET_DDRC_SBRWDATA0);
 
 	/* Enable the SBR by programming SBRCTL.scrub_en = 1. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel(0x1 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel(0x1U | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/*
 	 * Poll until SBRSTAT.scrub_done = 1
@@ -398,7 +403,7 @@ u32 init_memory_ecc_scrubber(void)
 	 */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRSTAT);
-	} while ((tmp32 & 0x2) == 0);
+	} while ((tmp32 & 0x2U) == 0);
 
 	/*
 	 * Poll until SBRSTAT.scrub_busy = 0
@@ -406,28 +411,28 @@ u32 init_memory_ecc_scrubber(void)
 	 */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRSTAT);
-	} while (tmp32 & 0x1);
+	} while ((tmp32 & 0x1U) != 0);
 
 	/* Disable SBR by programming SBRCTL.scrub_en = 0. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel(~(0x1) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel(~(0x1U) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Enter normal scrub operation (Reads): SBRCTL.scrub_mode = 0. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel(~(0x1 << 2) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel(~(0x1U << 2) & tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Set SBRCTL.scrub_interval = 1. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	tmp32 = ~(0x1fff << 8) & tmp32;
-	writel((0x1 << 8) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	tmp32 = ~(0x1fffU << 8) & tmp32;
+	writel((0x1UL << 8) | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Enable the SBR by programming SBRCTL.scrub_en = 1. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
-	writel(0x1 | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
+	writel(0x1U | tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_SBRCTL);
 
 	/* Restore locked state of ecc region. */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1);
-	tmp32 = (tmp32 & ~(0x1 << 4)) | (region_lock << 4);
+	tmp32 = (tmp32 & ~(0x1UL << 4)) | (region_lock << 4);
 	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_ECCCFG1);
 
 	return NO_ERR;
@@ -437,10 +442,11 @@ u32 init_memory_ecc_scrubber(void)
 u32 read_lpddr4_mr(u8 mr_index)
 {
 	u32 tmp32;
+	u8 succesive_reads = 0;
 
 	/* Set MRR_DDR_SEL_REG to 0x1 to enable LPDDR4 mode */
 	tmp32 = readl(PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
-	writel((tmp32 | 0x1), PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
+	writel((tmp32 | 0x1U), PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
 
 	/*
 	 * Ensure no MR transaction is in progress:
@@ -448,29 +454,38 @@ u32 read_lpddr4_mr(u8 mr_index)
 	 */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRSTAT);
-	} while ((tmp32 & 0x1) != 0);
+		if ((tmp32 & 0x1U) == 0)
+			succesive_reads++;
+		else
+			succesive_reads = 0;
+	} while (succesive_reads != REQUIRED_MRSTAT_READS);
 
 	/* Set MR_TYPE = 0x1 (Read) and MR_RANK = 0x1 (Rank 0) */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
-	tmp32 |= 0x1;
-	tmp32 = (tmp32 & ~(0xf << 4)) | (0x1 << 4);
+	tmp32 |= 0x1U;
+	tmp32 = (tmp32 & ~(0xfUL << 4)) | (0x1UL << 4);
 	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
 
 	/* Configure MR address: MRCTRL1[8:15] */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
-	tmp32 = (tmp32 & ~(0xff << 8)) | (mr_index << 8);
+	tmp32 = (tmp32 & ~(0xffUL << 8)) | ((u16)mr_index << 8);
 	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
 
-	__asm__("DSB SY");
+	dsb();
 
 	/* Initiate MR transaction: MR_WR = 0x1 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
-	writel(tmp32 | (0x1u << 31), DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
+	writel(tmp32 | (0x1UL << 31), DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
 
 	/* Wait until MR transaction completed */
+	succesive_reads = 0;
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRSTAT);
-	} while ((tmp32 & 0x1) != 0);
+		if ((tmp32 & 0x1U) == 0)
+			succesive_reads++;
+		else
+			succesive_reads = 0;
+	} while (succesive_reads != REQUIRED_MRSTAT_READS);
 
 	return readl(PERF_BASE_ADDR + OFFSET_MRR_1_DATA_REG_ADDR);
 }
@@ -479,10 +494,11 @@ u32 read_lpddr4_mr(u8 mr_index)
 u32 write_lpddr4_mr(u8 mr_index, u8 mr_data)
 {
 	u32 tmp32;
+	u8 succesive_reads = 0;
 
 	/* Set MRR_DDR_SEL_REG to 0x1 to enable LPDDR4 mode */
 	tmp32 = readl(PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
-	writel(tmp32 | 0x1, PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
+	writel(tmp32 | 0x1U, PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
 
 	/*
 	 * Ensure no MR transaction is in progress:
@@ -490,29 +506,39 @@ u32 write_lpddr4_mr(u8 mr_index, u8 mr_data)
 	 */
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRSTAT);
-	} while ((tmp32 & 0x1) != 0);
+		if ((tmp32 & 0x1U) == 0)
+			succesive_reads++;
+		else
+			succesive_reads = 0;
+	} while (succesive_reads != REQUIRED_MRSTAT_READS);
 
 	/* Set MR_TYPE = 0x0 (Write) and MR_RANK = 0x1 (Rank 0) */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
-	tmp32 &= ~(0x1);
-	tmp32 = (tmp32 & ~(0xf << 4)) | (0x1 << 4);
+	tmp32 &= ~(0x1U);
+	tmp32 = (tmp32 & ~(0xfUL << 4)) | (0x1UL << 4);
 	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
 
 	/* Configure MR address: MRCTRL1[8:15] and MR data: MRCTRL1[0:7]*/
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
-	tmp32 = (tmp32 & (0xffffu << 16)) | (mr_index << 8) | mr_data;
+	tmp32 = (tmp32 & (0xffffUL << 16)) | ((u16)mr_index << 8) |
+		mr_data;
 	writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL1);
 
-	__asm__("DSB SY");
+	dsb();
 
 	/* Initiate MR transaction: MR_WR = 0x1 */
 	tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
-	writel(tmp32 | (0x1u << 31), DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
+	writel(tmp32 | (0x1UL << 31), DDRC_BASE_ADDR + OFFSET_DDRC_MRCTRL0);
 
 	/* Wait until MR transaction completed */
+	succesive_reads = 0;
 	do {
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_MRSTAT);
-	} while ((tmp32 & 0x1) != 0);
+		if ((tmp32 & 0x1U) == 0)
+			succesive_reads++;
+		else
+			succesive_reads = 0;
+	} while (succesive_reads != REQUIRED_MRSTAT_READS);
 
 	return NO_ERR;
 }
@@ -523,11 +549,11 @@ u8 read_tuf(void)
 	u32 mr4_val;
 	u8 mr4_die_1, mr4_die_2;
 
-	mr4_val = read_lpddr4_mr(MR4);
-	mr4_die_1 = mr4_val & 0x7;
-	mr4_die_2 = (mr4_val >> 16) & 0x7;
+	mr4_val = read_lpddr4_mr(MR4_IDX);
+	mr4_die_1 = mr4_val & 0x7U;
+	mr4_die_2 = (mr4_val >> 16) & 0x7U;
 
-	return mr4_die_1 > mr4_die_2 ? mr4_die_1 : mr4_die_2;
+	return (mr4_die_1 > mr4_die_2) ? mr4_die_1 : mr4_die_2;
 }
 
 /*
@@ -565,8 +591,8 @@ u32 enable_derating_temp_errata(void)
 		 */
 		tmp32 = readl(DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
 		bf_val = (tmp32 >> DDRC_RFSHCTL3_UPDATE_SHIFT) &
-			DDRC_RFSHCTL3_AUTO_REFRESH_VAL;
-		bf_val = bf_val ^ 1;
+			 DDRC_RFSHCTL3_AUTO_REFRESH_VAL;
+		bf_val = bf_val ^ 0x1U;
 		tmp32 = (tmp32 & ~DDRC_RFSHCTL3_MASK) |
 			(bf_val << DDRC_RFSHCTL3_UPDATE_SHIFT);
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_RFSHCTL3);
@@ -586,6 +612,7 @@ u32 enable_derating_temp_errata(void)
 		if (!update_bf(&tmp32, DDRC_DRAMTMG4_TRCD_POS,
 			       DDRC_DRAMTMG5_TRCD_MASK, 2))
 			return BITFIELD_EXCEEDED;
+
 		/*
 		 * Set minimum time between activates from bank "a" to bank "b"
 		 * DRAMTMG4.T_RRD += 2
@@ -593,6 +620,7 @@ u32 enable_derating_temp_errata(void)
 		if (!update_bf(&tmp32, DDRC_DRAMTMG4_TRRD_POS,
 			       DDRC_DRAMTMG5_TRRD_MASK, 2))
 			return BITFIELD_EXCEEDED;
+
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
 
 		/*
@@ -603,6 +631,7 @@ u32 enable_derating_temp_errata(void)
 		if (!update_bf(&tmp32, DDRC_DRAMTMG0_TRAS_POS,
 			       DDRC_DRAMTMG0_TRAS_MASK, 2))
 			return BITFIELD_EXCEEDED;
+
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG0);
 
 		/*
@@ -613,6 +642,7 @@ u32 enable_derating_temp_errata(void)
 		if (!update_bf(&tmp32, DDRC_DRAMTMG4_TRP_POS,
 			       DDRC_DRAMTMG4_TRP_MASK, 2))
 			return BITFIELD_EXCEEDED;
+
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG4);
 
 		/*
@@ -623,6 +653,7 @@ u32 enable_derating_temp_errata(void)
 		if (!update_bf(&tmp32, DDRC_DRAMTMG1_TRC_POS,
 			       DDRC_DRAMTMG1_TRC_MASK, 3))
 			return BITFIELD_EXCEEDED;
+
 		writel(tmp32, DDRC_BASE_ADDR + OFFSET_DDRC_DRAMTMG1);
 
 		/* Set SWCTL.sw_done to 1 */

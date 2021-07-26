@@ -45,18 +45,22 @@
 #define LOCK_CSR_ACCESS   0x00000001
 #define UNLOCK_CSR_ACCESS 0x00000000
 
+#define FIRMWARE_VERSION "2020_06_SP2"
+
 /* Enum for DRAM Type */
 enum dram_type {
-	DDR4,
-	DDR3,
-	LPDDR4,
-	LPDDR3,
-	DDR5
+	DDR3L = 1,
+	LPDDR4
 };
 
 struct regconf {
 	u32 addr;
 	u32 data;
+};
+
+struct regconf_16 {
+	u32 addr;
+	u16 data;
 };
 
 struct dqconf {
@@ -65,12 +69,12 @@ struct dqconf {
 };
 
 struct ddrss_config {
-	uint8_t memory_type;
+	u8 memory_type;
 	struct regconf *ddrc_cfg;
 	size_t ddrc_cfg_size;
 	struct dqconf *dq_swap_cfg;
 	size_t dq_swap_cfg_size;
-	struct regconf *phy_cfg;
+	struct regconf_16 *phy_cfg;
 	size_t phy_cfg_size;
 	u16 *imem_1d;
 	size_t imem_1d_size;
@@ -80,7 +84,7 @@ struct ddrss_config {
 	size_t imem_2d_size;
 	u16 *dmem_2d;
 	size_t dmem_2d_size;
-	struct regconf *pie_cfg;
+	struct regconf_16 *pie_cfg;
 	size_t pie_cfg_size;
 };
 
@@ -88,7 +92,7 @@ extern struct regconf ddrc_cfg[];
 extern size_t ddrc_cfg_size;
 extern struct dqconf dq_swap_cfg[];
 extern size_t dq_swap_cfg_size;
-extern struct regconf phy_cfg[];
+extern struct regconf_16 phy_cfg[];
 extern size_t phy_cfg_size;
 extern u16 imem_1d[];
 extern size_t imem_1d_size;
@@ -98,31 +102,52 @@ extern u16 imem_2d[];
 extern size_t imem_2d_size;
 extern u16 dmem_2d[];
 extern size_t dmem_2d_size;
-extern struct regconf pie_cfg[];
+extern struct regconf_16 pie_cfg[];
 extern size_t pie_cfg_size;
 extern struct ddrss_config configs[];
 extern size_t ddrss_config_size;
 
-extern struct regconf ddrc_cfg_rev2[];
-extern size_t ddrc_cfg_size_rev2;
-extern struct dqconf dq_swap_cfg_rev2[];
-extern size_t dq_swap_cfg_size_rev2;
-extern struct regconf phy_cfg_rev2[];
-extern size_t phy_cfg_size_rev2;
-extern u16 imem_1d_rev2[];
-extern size_t imem_1d_size_rev2;
-extern u16 dmem_1d_rev2[];
-extern size_t dmem_1d_size_rev2;
-extern u16 imem_2d_rev2[];
-extern size_t imem_2d_size_rev2;
-extern u16 dmem_2d_rev2[];
-extern size_t dmem_2d_size_rev2;
-extern struct regconf pie_cfg_rev2[];
-extern size_t pie_cfg_size_rev2;
-extern struct ddrss_config configs_rev2[];
-extern size_t ddrss_config_size_rev2;
-
+/*
+ * Full initialization of DDR SubSystem.
+ * @return - error code, 0 if init succeeds, non-zero on error.
+ */
 u32 ddr_init(void);
+
+/* Set initial sizes for all configuration images. */
 void init_image_sizes(void);
+
+/*
+ * Writes the data associated for each address.
+ *
+ * @param size - size of the array, number of elements
+ * @param cfg - array of configuration elements
+ * @return - error code, 0 if init succeeds, non-zero on error.
+ */
+u32 load_register_cfg(size_t size, struct regconf cfg[]);
+
+/*
+ * Writes the data associated for each address. Similar to
+ * @load_register_cfg but uses 16bit data elements for memory
+ * usage optimization.
+ *
+ * @param size - size of the array, number of elements
+ * @param cfg - array of configuration elements
+ * @return - error code, 0 if init succeeds, non-zero on error.
+ */
+u32 load_register_cfg_16(size_t size, struct regconf_16 cfg[]);
+
+/*
+ * Writes the data associated for each address. Similar to
+ * @load_register_cfg but uses 8bit data elements for memory
+ * usage optimization.
+ *
+ * @param size - size of the array, number of elements
+ * @param cfg - array of configuration elements
+ * @return - error code, 0 if init succeeds, non-zero on error.
+ */
+u32 load_dq_cfg(size_t size, struct dqconf cfg[]);
+
+/* Updates PHY internal PLL settings. */
+void set_optimal_pll(void);
 
 #endif /* DDR_INIT_H */
