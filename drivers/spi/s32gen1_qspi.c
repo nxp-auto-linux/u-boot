@@ -752,10 +752,37 @@ int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
 	return 0;
 }
 
+static inline void s32gen1_qspi_print_read_speed(const struct spi_mem_op *op,
+						 unsigned long us_before)
+{
+#ifdef DEBUG
+	unsigned long us_after, us;
+
+	us_after = timer_get_boot_us();
+	us = us_after - us_before;
+	printf("%u bytes read in %lu us", op->data.nbytes, us);
+	if (us > 0) {
+		puts(" (");
+		print_size((double)op->data.nbytes / us * 1000000, "/s");
+		puts(")");
+	}
+	puts("\n");
+#endif
+}
+
+static inline unsigned long s32gen1_get_initial_ts(void)
+{
+#ifdef DEBUG
+	return timer_get_boot_us();
+#else
+	return 0;
+#endif
+}
+
 static int qspi_read_mem(struct fsl_qspi_priv *priv,
 			 const struct spi_mem_op *op, u8 lut_cfg)
 {
-	unsigned long us_before, us_after, us;
+	unsigned long us_before;
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg;
 
@@ -768,18 +795,10 @@ static int qspi_read_mem(struct fsl_qspi_priv *priv,
 	invalidate_dcache_range(op->addr.val, op->addr.val + op->data.nbytes);
 
 	/* Read out the data directly from the AHB buffer. */
-	us_before = timer_get_boot_us();
+	us_before = s32gen1_get_initial_ts();
 	memcpy_fromio(op->data.buf.in, (void *)(uintptr_t)op->addr.val,
 		      op->data.nbytes);
-	us_after = timer_get_boot_us();
-	us = us_after - us_before;
-	printf("%u bytes read in %lu us", op->data.nbytes, us);
-	if (us > 0) {
-		puts(" (");
-		print_size((double)op->data.nbytes / us * 1000000, "/s");
-		puts(")");
-	}
-	puts("\n");
+	s32gen1_qspi_print_read_speed(op, us_before);
 
 	qspi_write32(priv->flags, &regs->mcr, mcr_reg);
 	return 0;
