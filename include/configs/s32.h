@@ -102,6 +102,86 @@
 /* Ramdisk load address */
 #  define RAMDISK_ADDR		0x84000000
 
+#ifdef CONFIG_FSL_USDHC
+#define BOOT_TARGET_DEVICES_SD(func)	func(SD, sd, na)
+#else
+#define BOOT_TARGET_DEVICES_SD(func)
+#endif
+
+#ifdef CONFIG_TARGET_S32G274ABLUEBOX3
+#define BOOTENV_DEV_SD(devtypeu, devtypel, instance) \
+	"bootcmd_sd=" PFE_INIT_CMD "i2c dev 0; "		\
+			"i2c write ${load_addr_r} 4d f0 0 -s; " \
+			"mmc rescan && run mmcboot \0"
+#else
+#define BOOTENV_DEV_SD(devtypeu, devtypel, instance) \
+	"bootcmd_sd=mmc dev ${mmcdev}; "		\
+			"mmc rescan && run mmcboot \0"
+#endif
+
+#define BOOTENV_DEV_NAME_SD(devtypeu, devtypel, instance)	\
+		"sd "
+
+#ifdef CONFIG_TARGET_S32G274ABLUEBOX3
+#define BOOT_TARGET_DEVICES_EMMC(func)	func(EMMC, emmc, na)
+#else
+#define BOOT_TARGET_DEVICES_EMMC(func)
+#endif
+
+#ifdef CONFIG_TARGET_S32G274ABLUEBOX3
+#define BOOTENV_DEV_EMMC(devtypeu, devtypel, instance) \
+	"bootcmd_emmc=" PFE_INIT_CMD "i2c dev 0; "		\
+			"i2c write ${load_addr_r} 4d f8 0 -s; " \
+			"mmc rescan && run mmcboot \0"
+#endif
+
+#define BOOTENV_DEV_NAME_EMMC(devtypeu, devtypel, instance)	\
+		"emmc "
+
+#ifdef CONFIG_FSL_QSPI
+#define BOOT_TARGET_DEVICES_QSPI(func)	func(QSPI, qspi, na)
+#else
+#define BOOT_TARGET_DEVICES_QSPI(func)
+#endif
+
+#define BOOTENV_DEV_QSPI(devtypeu, devtypel, instance) \
+	"bootcmd_qspi=" PFE_INIT_CMD "run flashboot \0"
+#define BOOTENV_DEV_NAME_QSPI(devtypeu, devtypel, instance)	\
+		"qspi "
+
+#if defined(CONFIG_CMD_NFS) && defined(CONFIG_CMD_TFTPBOOT)
+#define BOOT_TARGET_DEVICES_NFS(func)	func(NFS, nfs, na)
+#else
+#define BOOT_TARGET_DEVICES_NFS(func)
+#endif
+
+#define BOOTENV_DEV_NFS(devtypeu, devtypel, instance) \
+	"bootcmd_nfs=run nfsboot \0"
+#define BOOTENV_DEV_NAME_NFS(devtypeu, devtypel, instance)	\
+		"nfs "
+
+#if defined(CONFIG_CMD_PXE) && defined(CONFIG_CMD_DHCP)
+#define BOOT_TARGET_DEVICES_PXE(func) func(PXE, pxe, na)
+#else
+#define BOOT_TARGET_DEVICES_PXE(func)
+#endif
+
+#if defined(CONFIG_CMD_DHCP)
+#define BOOT_TARGET_DEVICES_DHCP(func) func(DHCP, dhcp, na)
+#else
+#define BOOT_TARGET_DEVICES_DHCP(func)
+#endif
+
+#define BOOT_TARGET_DEVICES(func) \
+	BOOT_TARGET_DEVICES_SD(func) \
+	BOOT_TARGET_DEVICES_EMMC(func) \
+	BOOT_TARGET_DEVICES_QSPI(func) \
+	BOOT_TARGET_DEVICES_NFS(func) \
+	BOOT_TARGET_DEVICES_PXE(func) \
+	BOOT_TARGET_DEVICES_DHCP(func)
+
+#include <config_distro_bootcmd.h>
+
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 
 /* Flash Size and Num need to be updated according to the board's flash type */
@@ -444,6 +524,7 @@
 	"fdt_file="  __stringify(FDT_FILE) "\0" \
 	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
 	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
+	"load_addr_r=0x88000000\0" \
 	"boot_fdt=try\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
@@ -481,6 +562,10 @@
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
+		"if run loadimage; then :; " \
+		"else " \
+			"echo WARN: Cannot load the image; exit; " \
+		"fi; " \
 		"if run loadfdt; then " \
 			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 		"else " \
@@ -530,6 +615,7 @@
 		S32_LOAD_FLASH_IMAGES_CMD\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
+	BOOTENV \
 	XEN_EXTRA_ENV_SETTINGS \
 	GMAC_EXTRA_ENV_SETTINGS \
 	PFE_EXTRA_ENV_SETTINGS \
@@ -537,23 +623,10 @@
 	PCIE_MSIS_ENV_SETTINGS \
 	FEC_EXTRA_ENV_SETTINGS
 
-#undef CONFIG_BOOTCOMMAND
-
 #if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR) || \
 	defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
-#  define CONFIG_BOOTCOMMAND \
-		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
-#elif defined(CONFIG_FLASH_BOOT)
-#  define CONFIG_BOOTCOMMAND \
-	PFE_INIT_CMD "run flashboot"
-#elif defined(CONFIG_SD_BOOT)
-#  define CONFIG_BOOTCOMMAND \
-	PFE_INIT_CMD "mmc dev ${mmcdev}; if mmc rescan; then " \
-		   "if run loadimage; then " \
-			   "run mmcboot; " \
-		   "else run netboot; " \
-		   "fi; " \
-	   "else run netboot; fi"
+#define CONFIG_BOOTCOMMAND \
+	"${boot_mtd} ${loadaddr} - ${fdt_addr}"
 #endif
 
 /* Miscellaneous configurable options */
