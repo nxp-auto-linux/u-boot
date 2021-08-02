@@ -26,6 +26,7 @@
 #include <s32gen1_gmac_utils.h>
 #include <dm/device_compat.h>
 #include <dm/pinctrl.h>
+#include <hwconfig.h>
 
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 				       void *fdt, int nodeoff)
@@ -83,6 +84,28 @@ static void ft_enet_pfe_fixup_phy(u32 idx, void *fdt, int nodeoff)
 		printf("DT: pfe%d: update phy addr to 0x%x\n", idx, phy_addr);
 	}
 }
+
+static void ft_enet_pfe_fixup_fixed_link(u32 idx, void *fdt, int nodeoff)
+{
+	int fixedoff = -1;
+
+	if (pfeng_cfg_emac_get_interface(idx) != PHY_INTERFACE_MODE_SGMII)
+		return;
+
+	fixedoff = fdt_subnode_offset(fdt, nodeoff, "fixed-link");
+	if (fixedoff < 0)
+		return;
+
+	if ((hwconfig_subarg_cmp("pcie1", "mode", "sgmii") &&
+	    (hwconfig_subarg_cmp("pcie1", "xpcs_mode", "both") ||
+	    hwconfig_subarg_cmp("pcie1", "xpcs_mode", "0"))) ||
+	    ((hwconfig_subarg_cmp("pcie1", "mode", "ep&sgmii") ||
+	    hwconfig_subarg_cmp("pcie1", "mode", "rc&sgmii")) &&
+	    hwconfig_subarg_cmp("pcie1", "xpcs_mode", "0"))) {
+		fdt_setprop_u32(fdt, fixedoff, "speed", 1000);
+		printf("DT: pfe%d: Update fixed-link speed to 1000Mbps\n", idx);
+	}
+}
 #endif
 
 static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
@@ -118,6 +141,9 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 
 #ifdef CONFIG_TARGET_S32G274ARDB
 			ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
+
+			if (idx == 0)
+				ft_enet_pfe_fixup_fixed_link(idx, fdt, nodeoff);
 #endif
 		}
 		/* We are done */
