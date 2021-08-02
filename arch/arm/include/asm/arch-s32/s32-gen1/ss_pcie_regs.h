@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2020 NXP
+ * Copyright 2016-2021 NXP
  */
 
 #ifndef S32GEN1_SS_PCIE_REGS_H
@@ -340,6 +340,9 @@
 
 #define PCIE_DIRECT_SPEED_CHANGE_BIT  (17)
 #define PCIE_DIRECT_SPEED_CHANGE      BIT(PCIE_DIRECT_SPEED_CHANGE_BIT)
+
+#define PCIE_SRIS_MODE_BIT			(8)
+#define PCIE_SRIS_MODE_MASK			BIT(PCIE_SRIS_MODE_BIT)
 
 /* Field definitions for GEN3_RELATED */
 

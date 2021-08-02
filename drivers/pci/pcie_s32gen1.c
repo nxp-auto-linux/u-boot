@@ -593,6 +593,14 @@ bool s32_pcie_set_link_width(void __iomem *dbi,
 	return true;
 }
 
+static int s32_pcie_check_phy_mode(int id, const char *mode)
+{
+	char pcie_name[10];
+
+	sprintf(pcie_name, "pcie%d", id);
+	return hwconfig_subarg_cmp(pcie_name, "phy_mode", mode);
+}
+
 bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		enum serdes_link_width linkwidth)
 {
@@ -605,6 +613,9 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	else
 		W32(dbi + SS_PE0_GEN_CTRL_1,
 		    BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_EP));
+
+	if (s32_pcie_check_phy_mode(id, "sris"))
+		BSET32(dbi + SS_PE0_GEN_CTRL_1, PCIE_SRIS_MODE_MASK);
 
 	/* Enable writing dbi registers */
 	s32_pcie_enable_dbi_rw(dbi);

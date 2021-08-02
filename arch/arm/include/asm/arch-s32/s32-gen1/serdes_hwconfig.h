@@ -20,6 +20,13 @@ enum serdes_clock_fmhz {
 	CLK_125MHZ		/* For 2.5G mode */
 };
 
+enum serdes_phy_mode {
+	PHY_MODE_INVALID = -1,
+	CRNS = 0, /* Common Reference Clock, No Spread Spectrum */
+	CRSS = 1, /* Common Reference Clock, Spread Spectrum */
+	SRIS = 2  /* Separate Reference Clock, Spread Spectrum */
+};
+
 enum serdes_dev_type {
 	SERDES_INVALID = -1,
 	PCIE_EP = 0x1, /* EP mode is 0x0, use 0x1 to allow us to use masks */
@@ -99,6 +106,7 @@ enum serdes_clock s32_serdes_get_clock_from_hwconfig(int id);
 enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id);
 enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
 enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
+enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
 bool is_pcie_enabled_in_hwconfig(int id);
 
 #endif

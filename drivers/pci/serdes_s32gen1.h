@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -61,6 +61,7 @@ struct s32_serdes {
 	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_clock clktype;
 	enum serdes_clock_fmhz fmhz;
+	enum serdes_phy_mode phy_mode;
 	enum serdes_link_width linkwidth;
 };
 
