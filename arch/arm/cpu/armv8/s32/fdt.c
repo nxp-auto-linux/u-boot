@@ -566,6 +566,39 @@ static int set_pcie_mode(void *blob, int nodeoff, int id)
 	return 0;
 }
 
+static int set_pcie_phy_mode(void *blob, int nodeoff, int id)
+{
+	int ret = 0;
+	char mode[10] = "crns";
+	enum serdes_phy_mode phy_mode;
+
+	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
+	if (phy_mode == PHY_MODE_INVALID) {
+		pr_err("Invalid PCIe%d PHY mode", id);
+		return -EINVAL;
+	}
+
+	switch (phy_mode) {
+	case CRNS:
+		break;
+	case CRSS:
+		strcpy(mode, "crss");
+		break;
+	case SRIS:
+		strcpy(mode, "sris");
+		break;
+	default:
+		pr_err("PCIe PHY mode not supported\n");
+		return -EINVAL;
+	}
+
+	ret = fdt_setprop_string(blob, nodeoff, "nxp,phy-mode", mode);
+	if (ret)
+		pr_err("Failed to set 'nxp,phy-mode'\n");
+
+	return ret;
+}
+
 static int add_serdes_lines(void *blob, int id, int lanes, uint32_t phandle)
 {
 	char serdes_lane[SERDES_LINE_NAME_LEN];
@@ -693,6 +726,10 @@ static int prepare_pcie_node(void *blob, int id)
 	}
 
 	ret = set_pcie_mode(blob, nodeoff, id);
+	if (ret)
+		return ret;
+
+	ret = set_pcie_phy_mode(blob, nodeoff, id);
 	if (ret)
 		return ret;
 
