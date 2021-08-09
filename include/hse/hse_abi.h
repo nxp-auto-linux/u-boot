@@ -41,6 +41,7 @@
 #define HSE_STATUS_INIT_OK  BIT(8)
 #define HSE_IVT_BOOTSEQ_BIT BIT(3)
 
+#define HSE_SRV_ID_SET_ATTR                 0x00000001ul
 #define HSE_SRV_ID_PUBLISH_SYS_IMAGE        0x00000011ul
 #define HSE_SRV_ID_FORMAT_KEY_CATALOGS      0x00000101ul
 #define HSE_SRV_ID_IMPORT_KEY               0x00000104ul
@@ -59,6 +60,10 @@
 
 #define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 0x7455u
 #define HSE_CR_AUTO_START                  0x35A5u
+
+#define HSE_MU_ACTIVATED      0xA5u
+#define HSE_MU_DEACTIVATED    0x5Au
+#define HSE_MU_CONFIG_ATTR_ID 20u
 
 #define HSE_SIGN_RSASSA_PKCS1_V15 0x93u
 #define HSE_HASH_ALGO_SHA_1       2u
@@ -339,6 +344,40 @@ struct hse_publish_sys_img_srv {
 } __packed;
 
 /**
+ * struct hse_mu_instance_config - configure a MU interface
+ * @mu_config: specify MU state; MU0 cannot be deactivated
+ * @xrdc_domain_id: domain id to acces host interface memory chunk
+ * @shared_mem_chunk_size: which chunk of host interface memory to reserve
+ */
+struct hse_mu_instance_config {
+	u8 mu_config;
+	u8 xrdc_domain_id;
+	u16 shared_mem_chunk_size;
+	u8 reserved[60];
+} __packed;
+
+/**
+ * struct hse_mu_config - configure all MU interfaces
+ * @mu_instances: contains configuration for all MU interfaces
+ */
+struct hse_mu_config {
+	struct hse_mu_instance_config mu_instances[4];
+} __packed;
+
+/**
+ * struct hse_getset_attr_srv - get attribute
+ * @attr_id: attribute ID
+ * @attr_len: attribute length, in bytes
+ * @attr: DMA address of the attribute
+ */
+struct hse_getset_attr_srv {
+	u16 attr_id;
+	u8 reserved[2];
+	u32 attr_len;
+	u64 p_attr;
+} __packed;
+
+/**
  * struct hse_srv_desc - HSE service descriptor
  * @srv_id: specify service for HSE to execute
  * @union: specify service parameters
@@ -347,6 +386,7 @@ struct hse_srv_desc {
 	u32 srv_id;
 	u8 reserved[4];
 	union {
+		struct hse_getset_attr_srv getset_attr_req;
 		struct hse_format_key_catalogs_srv format_catalogs_req;
 		struct hse_import_key_srv import_key_req;
 		struct hse_cr_install_srv cr_install_req;
@@ -362,6 +402,7 @@ struct hse_srv_desc {
  * @key_info: key data for insertion into catalog
  * @cr_entry: core reset entry data
  * @smr_entry: secure memory region data
+ * @mu_config: mu configuration data
  * @rsa2048_pub_modulus: public modulus of u-boot signature key
  * @rsa2048_pub_exponent: public exponent of u-boot signature key
  * @uboot_sign: copy of u-boot signature in ddr
@@ -378,6 +419,7 @@ struct hse_private {
 	struct hse_key_info key_info;
 	struct hse_cr_entry cr_entry;
 	struct hse_smr_entry smr_entry;
+	struct hse_mu_config mu_config;
 	u8 rsa2048_pub_modulus[256];
 	u8 rsa2048_pub_exponent[3];
 	u8 reserved1;

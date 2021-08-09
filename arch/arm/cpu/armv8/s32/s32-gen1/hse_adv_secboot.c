@@ -350,6 +350,53 @@ ret_fail:
 	return ret;
 }
 
+int hse_enable_mus(struct hse_private *priv, u32 *recv_buf)
+{
+	struct hse_getset_attr_srv *getset_attr_req;
+	int ret = 0;
+
+	printf("\tEnabling MUs...\n");
+
+	getset_attr_req = &(priv->srv_desc.getset_attr_req);
+
+	priv->srv_desc.srv_id = HSE_SRV_ID_SET_ATTR;
+
+	priv->mu_config.mu_instances[0].mu_config = HSE_MU_ACTIVATED;
+	priv->mu_config.mu_instances[0].xrdc_domain_id = 0u;
+	priv->mu_config.mu_instances[0].shared_mem_chunk_size = 0u;
+
+	priv->mu_config.mu_instances[1].mu_config = HSE_MU_ACTIVATED;
+	priv->mu_config.mu_instances[1].xrdc_domain_id = 0u;
+	priv->mu_config.mu_instances[1].shared_mem_chunk_size = 0u;
+
+	priv->mu_config.mu_instances[2].mu_config = HSE_MU_ACTIVATED;
+	priv->mu_config.mu_instances[2].xrdc_domain_id = 0u;
+	priv->mu_config.mu_instances[2].shared_mem_chunk_size = 0u;
+
+	priv->mu_config.mu_instances[3].mu_config = HSE_MU_ACTIVATED;
+	priv->mu_config.mu_instances[3].xrdc_domain_id = 0u;
+	priv->mu_config.mu_instances[3].shared_mem_chunk_size = 0u;
+
+	getset_attr_req->attr_id = HSE_MU_CONFIG_ATTR_ID;
+	getset_attr_req->attr_len = sizeof(struct hse_mu_config);
+	getset_attr_req->p_attr = (uintptr_t)&priv->mu_config;
+
+	flush_dcache_range((u64)priv,
+			   (u64)priv + sizeof(struct hse_private));
+
+	ret = hse_send_recv(HSE_CHANNEL_ADMIN,
+			    (u32)(uintptr_t)&priv->srv_desc,
+			    recv_buf);
+	if (ret) {
+		log_err("ERROR: enable MU failed!\n");
+		goto ret_fail;
+	}
+
+	ret = CMD_RET_SUCCESS;
+ret_fail:
+	return ret;
+}
+
 static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 				   int argc, char * const argv[])
 {
@@ -429,6 +476,10 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 			goto ret_fail;
 		}
 	}
+
+	ret = hse_enable_mus(priv, &hse_recv);
+	if (ret)
+		goto ret_fail;
 
 	ret = hse_format_key_store(priv, &hse_recv);
 	if (ret)
@@ -515,6 +566,10 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 		ret = CMD_RET_SUCCESS;
 		goto ret_fail;
 	}
+
+	ret = hse_enable_mus(priv, &hse_recv);
+	if (ret)
+		goto ret_fail;
 
 	ret = hse_format_key_store(priv, &hse_recv);
 	if (ret)
