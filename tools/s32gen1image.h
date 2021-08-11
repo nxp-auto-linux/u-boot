@@ -32,7 +32,9 @@ struct fip_image_data {
 #define LCCW_IN_FIELD			(1 << 1)
 #define LCCW_OEM_PROD			(1 << 0)
 
-#define DCD_HEADER			(0x600000d2)
+#define DCD_HEADER            (0x600000d2)
+#define MSCR25_SET_GPIO25_SRC (0x21c000)
+#define GPDO25_HIGH           (0x1)
 
 #define IVT_VERSION			(0x60)
 #define APPLICATION_BOOT_CODE_TAG	(0xd5)

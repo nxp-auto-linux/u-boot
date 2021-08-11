@@ -4,6 +4,7 @@
 #include <image.h>
 #include <generated/autoconf.h>
 #include <config.h>
+#include <asm/arch-s32/siul-s32-gen1.h>
 #include "imagetool.h"
 #include "s32_common.h"
 #include "s32gen1image.h"
@@ -66,10 +67,22 @@ static struct program_image image_layout = {
 
 static uint32_t dcd_data[] = {
 	DCD_HEADER,
+
+/*
+ * Enable VDD_EFUSE, so that HSE can read SYS_IMG.
+ * VDD_EFUSE is disabled by default on s32g274ardb2
+ */
+#ifdef CONFIG_S32G274ARDB2
+	DCD_WRITE_HEADER(1, PARAMS_BYTES(4)),
+	DCD_ADDR(SIUL2_0_MSCRn(25)), DCD_MASK(MSCR25_SET_GPIO25_SRC),
+	DCD_WRITE_HEADER(1, PARAMS_BYTES(1)),
+	DCD_ADDR(SIUL2_PDO_N(25)), DCD_MASK(GPDO25_HIGH),
+#else
 	DCD_NOP_HEADER,
 	DCD_NOP_HEADER,
 	DCD_NOP_HEADER,
 	DCD_NOP_HEADER,
+#endif
 };
 
 static struct ivt *get_ivt(struct program_image *image)
