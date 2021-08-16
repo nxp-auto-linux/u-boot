@@ -543,7 +543,12 @@ struct pfeng_config pfeng_s32g274a_config = {
 #if CONFIG_IS_ENABLED(OF_CONTROL)
 static int pfeng_ofdata_to_platdata(struct udevice *dev)
 {
+	int ret;
+	char node_name[100];
+	struct fdt_memory carveout;
+	int node = dev_of_offset(dev);
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
+	struct pfeng_priv *priv = dev_get_priv(dev);
 
 	if (!pdata) {
 		dev_err(dev, "no platform data");
@@ -555,6 +560,22 @@ static int pfeng_ofdata_to_platdata(struct udevice *dev)
 		dev_err(dev, "devfdt_get_addr() failed");
 		return -ENODEV;
 	}
+
+	ret = fdt_get_path(gd->fdt_blob, node, &node_name[0],
+			   sizeof(node_name));
+	if (ret) {
+		dev_err(dev, "PFE: Couldn't get path to reserved memory");
+		return -EINVAL;
+	}
+	ret = fdtdec_get_carveout(gd->fdt_blob, &node_name[0],
+				  "memory-region", 0, &carveout);
+	if (ret) {
+		dev_err(dev, "PFE: Couldn't get reserved memory regs");
+		return -EINVAL;
+	}
+
+	priv->pfe_cfg.bmu_addr = carveout.start;
+	priv->pfe_cfg.bmu_addr_size = carveout.end - carveout.start + 1;
 
 	pdata->config = (void *)dev_get_driver_data(dev);
 

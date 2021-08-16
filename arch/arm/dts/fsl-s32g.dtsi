@@ -30,6 +30,17 @@
 		};
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		pfe_reserved: pfe_reserved@0x83400000 {
+			no-map;
+			reg = <0 0x83400000 0 0x8000>; /* 32K */
+		};
+	};
+
 	serdes1: serdes@44180000 {
 		compatible = "fsl,s32gen1-serdes";
 		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
@@ -186,6 +197,7 @@
 			"pfe1_rgmii", "pfe1_sgmii",
 			"pfe2_rgmii", "pfe2_sgmii";
 		status = "disabled";
+		memory-region = <&pfe_reserved>;
 	};
 
 	siul2_0@4009C000 {

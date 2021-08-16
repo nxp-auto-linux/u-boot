@@ -61,6 +61,8 @@ struct pfe_platform_config {
 	u64 csr_clk_f;	/* CSR clk frequency */
 	char *fw_name;	/* FW name */
 	struct pfe_fw *fw;		/* Required firmware, embedded */
+	phys_addr_t bmu_addr;
+	phys_size_t bmu_addr_size;
 };
 
 struct pfe_platform {
@@ -88,6 +90,7 @@ struct pfe_platform {
 	void **gpi_base;	   /* The GPI blocks base */
 	void **emac_base;	   /* The EMAC blocks base */
 	void *hif_base;
+	struct pfe_platform_config *cfg;
 };
 
 /* Eth driver functionality */

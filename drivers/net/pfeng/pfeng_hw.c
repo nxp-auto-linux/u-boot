@@ -1126,7 +1126,12 @@ static int pfeng_hw_init_bmu(struct pfe_platform *platform)
 
 	platform->bmu_buffers_size = PFE_CFG_BMU2_BUF_COUNT *
 				     (1U << PFE_CFG_BMU2_BUF_SIZE);
-	platform->bmu_buffers_va = (void *)(u64)0x83400000;
+	if (platform->bmu_buffers_size != platform->cfg->bmu_addr_size) {
+		pr_err("PFE: BMU expecteted mem size is: 0x%llX check dtb config\n",
+		       platform->bmu_buffers_size);
+		return -EINVAL;
+	}
+	platform->bmu_buffers_va = (void *)(u64)platform->cfg->bmu_addr;
 	/* memalign(platform->bmu_buffers_size, platform->bmu_buffers_size);*/
 
 	if (!platform->bmu_buffers_va) {
@@ -1891,6 +1896,7 @@ int pfeng_hw_init(struct pfe_platform_config *config)
 
 	memset(&pfe, 0U, sizeof(struct pfe_platform));
 	pfe.fw = config->fw;
+	pfe.cfg = config;
 
 	/* Map CBUS address space */
 	pfe.cbus_baseaddr = (void *)config->cbus_base;
