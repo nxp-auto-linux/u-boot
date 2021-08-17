@@ -242,9 +242,7 @@ static inline void final_mmu_setup(void)
 	mem_map = final_map;
 
 	/* global data is already setup, no allocation yet */
-	gd->arch.tlb_addr = S32_SDRAM_MMU_TABLES_BASE;
 	gd->arch.tlb_fillptr = gd->arch.tlb_addr;
-	gd->arch.tlb_size = get_tlb_size();
 
 #if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
