@@ -32,6 +32,10 @@ choice
 	help
 	  S32 Target Board Selection
 
+config TARGET_S32V234HPCSOM
+	bool "Support HPC SOM Board"
+	select S32V2
+
 config TARGET_S32V234CCPB
 	bool "Support s32v234ccpb"
 	select S32V234CCPB

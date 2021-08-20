@@ -1,10 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 
 config MKIMAGE_T
 	string
-	default "s32v234image" if TARGET_S32V234EVB || TARGET_S32V234PCIE || \
-		TARGET_MPXS32V234 || TARGET_S32V234CCPB || \
-		TARGET_CAMPPS32V2 || TARGET_CAMPPS32V2_REVB
+	default "s32v234image" if S32V2
 	default "s32gen1image" if S32_GEN1
 	depends on ARCH_S32

@@ -1,0 +1,10 @@
+if TARGET_S32V234HPCSOM
+
+config SYS_BOARD
+	string
+	default "s32v234hpcsom"
+
+config SYS_CONFIG_NAME
+	string
+	default "s32v234hpcsom"
+endif
