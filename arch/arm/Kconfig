@@ -794,12 +794,14 @@ config ARCH_IMX8
 	bool "NXP i.MX8 platform"
 	select ARM64
 	select DM
+	select MACH_IMX
 	select OF_CONTROL
 	select ENABLE_ARM_SOC_BOOT0_HOOK
 
 config ARCH_IMX8M
 	bool "NXP i.MX8M platform"
 	select ARM64
+	select MACH_IMX
 	select DM
 	select SUPPORT_SPL
 	imply CMD_DM
@@ -809,33 +811,39 @@ config ARCH_IMXRT
 	select CPU_V7M
 	select DM
 	select DM_SERIAL
+	select MACH_IMX
 	select SUPPORT_SPL
 	imply CMD_DM
 
 config ARCH_MX23
 	bool "NXP i.MX23 family"
 	select CPU_ARM926EJS
+	select MACH_IMX
 	select PL011_SERIAL
 	select SUPPORT_SPL
 
 config ARCH_MX25
 	bool "NXP MX25"
 	select CPU_ARM926EJS
+	select MACH_IMX
 	imply MXC_GPIO
 
 config ARCH_MX28
 	bool "NXP i.MX28 family"
 	select CPU_ARM926EJS
 	select PL011_SERIAL
+	select MACH_IMX
 	select SUPPORT_SPL
 
 config ARCH_MX31
 	bool "NXP i.MX31 family"
 	select CPU_ARM1136
+	select MACH_IMX
 
 config ARCH_MX7ULP
 	bool "NXP MX7ULP"
 	select CPU_V7A
+	select MACH_IMX
 	select ROM_UNIFIED_SECTIONS
 	imply MXC_GPIO
 	imply SYS_THUMB_BUILD
@@ -845,6 +853,7 @@ config ARCH_MX7
 	select ARCH_MISC_INIT
 	select BOARD_EARLY_INIT_F
 	select CPU_V7A
+	select MACH_IMX
 	select SYS_FSL_HAS_SEC if IMX_HAB
 	select SYS_FSL_SEC_COMPAT_4
 	select SYS_FSL_SEC_LE
@@ -855,6 +864,7 @@ config ARCH_MX6
 	bool "Freescale MX6"
 	select CPU_V7A
 	select SYS_FSL_HAS_SEC if IMX_HAB
+	select MACH_IMX
 	select SYS_FSL_SEC_COMPAT_4
 	select SYS_FSL_SEC_LE
 	imply MXC_GPIO
@@ -869,6 +879,7 @@ config ARCH_MX5
 	bool "Freescale MX5"
 	select BOARD_EARLY_INIT_F
 	select CPU_V7A
+	select MACH_IMX
 	imply MXC_GPIO
 
 config ARCH_OWL
@@ -1034,6 +1045,7 @@ config ARCH_VERSAL
 config ARCH_VF610
 	bool "Freescale Vybrid"
 	select CPU_V7A
+	select MACH_IMX
 	select SYS_FSL_ERRATUM_ESDHC111
 	imply CMD_MTDPARTS
 	imply MTD_RAW_NAND
