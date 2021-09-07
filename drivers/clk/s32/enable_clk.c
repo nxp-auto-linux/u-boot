@@ -350,9 +350,11 @@ static int enable_cgm_div(struct s32gen1_clk_obj *module,
 
 	dc = (u32)(pfreq / div->freq);
 	if ((ulong)(pfreq / dc) != div->freq) {
-		pr_err("Cannot set CGM divider for input = %lu & output = %lu\n",
-		       (ulong)pfreq, div->freq);
+		pr_err("Cannot set CGM divider for input = %lu & output = %lu. Nearest freq = %lu\n",
+		       (ulong)pfreq, div->freq, (ulong)(pfreq / dc));
+#ifndef CONFIG_S32GEN1_SET_NEAREST_FREQ
 		return -EINVAL;
+#endif
 	}
 
 	mux = get_cgm_div_mux(div);
@@ -385,9 +387,11 @@ static int get_dfs_mfi_mfn(ulong dfs_freq, struct s32gen1_dfs_div *div,
 	div_freq = (double)in / (2 * (*mfi + (double)*mfn / 36.0));
 
 	if ((ulong)div_freq != div->freq) {
-		pr_err("Failed to find MFI and MFN settings for DFS DIV freq %lu\n",
-		       div->freq);
+		pr_err("Failed to find MFI and MFN settings for DFS DIV freq %lu. Nearest freq = %lu\n",
+		       div->freq, (ulong)div_freq);
+#ifndef CONFIG_S32GEN1_SET_NEAREST_FREQ
 		return -EINVAL;
+#endif
 	}
 
 	return 0;
@@ -544,9 +548,11 @@ int get_pll_mfi_mfn(ulong pll_vco, ulong ref_freq, u32 *mfi, u32 *mfn)
 	vco = ref_freq * (*mfi + (double)*mfn / 18432.0);
 
 	if ((ulong)vco != pll_vco) {
-		pr_err("Failed to find MFI and MFN settings for PLL freq %lu\n",
-		       pll_vco);
+		pr_err("Failed to find MFI and MFN settings for PLL freq %lu. Nearest freq = %lu\n",
+		       pll_vco, (ulong)vco);
+#ifndef CONFIG_S32GEN1_SET_NEAREST_FREQ
 		return -EINVAL;
+#endif
 	}
 
 	return 0;
@@ -867,9 +873,11 @@ static int enable_pll_div(struct s32gen1_clk_obj *module,
 
 	dc = (u32)(pfreq / div->freq);
 	if ((ulong)(pfreq / dc) != div->freq) {
-		pr_err("Cannot set PLL divider for input = %lu & output = %lu\n",
-		       (ulong)pfreq, div->freq);
+		pr_err("Cannot set PLL divider for input = %lu & output = %lu. Nearest freq = %lu\n",
+		       (ulong)pfreq, div->freq, (ulong)(pfreq / dc));
+#ifndef CONFIG_S32GEN1_SET_NEAREST_FREQ
 		return -EINVAL;
+#endif
 	}
 
 	config_pll_out_div(pll_addr, div->index, dc);
