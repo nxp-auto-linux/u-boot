@@ -13,4 +13,13 @@
 #define S32GEN1_OCOTP_DIE_PROCESS_ADDR	0x218
 #define S32GEN1_OCOTP_DIE_PROCESS_MASK	0x3
 
+#define S32GEN1_OCOTP_READ_FUSE_CMD	0x1
+#define S32GEN1_OCOTP_WRITE_FUSE_CMD	0x2
+
+struct s32gen1_ocotp_cmd {
+	int offset;
+	void *buf;
+	int size;
+};
+
 #endif
