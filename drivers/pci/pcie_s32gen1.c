@@ -766,7 +766,10 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	 * Bit 0: 2.5 GT/s (Gen1)
 	 * Bit 1: 5.0 GT/s (Gen2)
 	 * Bit 2: 8.0 GT/s (Gen3)
-	 * Bits 3-6: Reserved
+	 * Bit 3: 16.0 GT/s (Gen4)
+	 * Bit 4: 32.0 GT/s (Gen5)
+	 * Bit 5-6: Reserved -- for S32G3
+	 * Bits 3-6: Reserved -- for S32G2 and S32R
 	 */
 	if (verbose) {
 		u16 link_cap = readw(PCIE_CAP_LINK_CAP(pcie->dbi));
@@ -786,6 +789,8 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	 * 0001b - SUPPORT_LINK_SPEED_VECTOR bit 0 (Gen1)
 	 * 0010b - SUPPORT_LINK_SPEED_VECTOR bit 1 (Gen2)
 	 * 0011b - SUPPORT_LINK_SPEED_VECTOR bit 2 (Gen3)
+	 * 0100b - SUPPORT_LINK_SPEED_VECTOR bit 3 (Gen4) -- for S32G3
+	 * 0101b - SUPPORT_LINK_SPEED_VECTOR bit 4 (Gen5) -- for S32G3
 	 */
 	*speed = PCIE_BIT_VALUE(link_sta, PCIE_LINK_SPEED);
 	if (verbose)
