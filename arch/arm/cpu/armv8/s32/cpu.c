@@ -702,7 +702,8 @@ static int s32_gentimer_init(void)
 #endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 
-#if defined(CONFIG_SYS_FSL_DDRSS)
+#if defined(CONFIG_SYS_FSL_DDRSS) && \
+	!defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 #include "ddr_density.h"
 
 static inline bool get_intersection(unsigned long s1, unsigned long e1,
@@ -866,7 +867,8 @@ int dram_init_banksize(void)
 #endif
 	s32_init_ram_size();
 
-#ifdef CONFIG_SYS_FSL_DDRSS
+#if defined(CONFIG_SYS_FSL_DDRSS) && \
+	!defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 	s32_exclude_ecc_from_dram();
 #endif
 
@@ -886,7 +888,8 @@ phys_size_t __weak get_effective_memsize(void)
 #else
 	size = CONFIG_SYS_FSL_DRAM_SIZE1;
 
-#ifdef CONFIG_SYS_FSL_DDRSS
+#if defined(CONFIG_SYS_FSL_DDRSS) && \
+	!defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 	s32_exclude_ecc_range(CONFIG_SYS_FSL_DRAM_BASE1, &size);
 #endif
 
