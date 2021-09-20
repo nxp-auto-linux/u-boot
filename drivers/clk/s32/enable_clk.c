@@ -169,9 +169,6 @@ static int enable_part_block(struct s32gen1_clk_obj *module,
 	u32 cofb;
 
 	switch (block->block) {
-	case s32gen1_part_core0 ... s32gen1_part_core3:
-		/* Nothing to do here */
-		break;
 	case s32gen1_part_block0 ... s32gen1_part_block15:
 		cofb = block->block - s32gen1_part_block0;
 		enable_part_cofb(block->partition, cofb,

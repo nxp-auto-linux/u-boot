@@ -171,10 +171,6 @@ enum s32gen1_clkm_type {
 };
 
 enum s32gen1_part_block_type {
-	s32gen1_part_core0,
-	s32gen1_part_core1,
-	s32gen1_part_core2,
-	s32gen1_part_core3,
 	s32gen1_part_block0,
 	s32gen1_part_block1,
 	s32gen1_part_block2,
