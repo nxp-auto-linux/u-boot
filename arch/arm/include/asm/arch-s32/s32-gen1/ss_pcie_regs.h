@@ -127,10 +127,10 @@
 
 #define PCIE_BAR0_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x10)
 #define PCIE_BAR1_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x14)
-#define PCIE_BAR2_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x20)
-#define PCIE_BAR3_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x24)
-#define PCIE_BAR4_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x30)
-#define PCIE_BAR5_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x34)
+#define PCIE_BAR2_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x18)
+#define PCIE_BAR3_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x1C)
+#define PCIE_BAR4_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x20)
+#define PCIE_BAR5_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x24)
 
 /* Instance PCIE_IATU */
 
