@@ -32,7 +32,6 @@
 #define RGM_CORES_RESET_GROUP		1
 #define RGM_PFE_RESET_GROUP		2
 
-#define RGM_CORE_RST(num)		BIT((num) + 1)
 #define RGM_PERIPH_RST(num)		BIT(num)
 
 /* S32G */
@@ -45,6 +44,8 @@
 #define PRST_PCIE_1_SERDES		16
 #define PRST_PCIE_1_FUNC		17
 #define PRST_PFE			128
+
+u8 get_rgm_a53_bit(u8 core);
 
 #endif /* __ARCH_ARM_MACH_S32GEN1_MCRGM_REGS_H__ */
 

@@ -45,3 +45,20 @@ u8 mc_me_core2prtn_core_id(u8 part, u8 id)
 	return mc_me_m7_core_id[id];
 }
 
+u8 get_rgm_a53_bit(u8 core)
+{
+	static u8 periph_rgm_cores[] = {
+		/** Cluster 0, core 0*/
+		[0] = 65,
+		[1] = 66,
+		[2] = 69,
+		[3] = 70,
+		/** Cluster 1, core 0*/
+		[4] = 67,
+		[5] = 68,
+		[6] = 71,
+		[7] = 72,
+	};
+
+	return BIT(periph_rgm_cores[core] % 64);
+}

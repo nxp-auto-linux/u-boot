@@ -388,3 +388,12 @@ __weak u8 mc_me_core2prtn_core_id(u8 part, u8 id)
 {
 	return id;
 }
+
+__weak u8 get_rgm_a53_bit(u8 core)
+{
+	/**
+	 * Bit corresponding to CA53_n in the cores'
+	 * RGM reset partition (n=0..3)
+	 */
+	return BIT(core + 1);
+}

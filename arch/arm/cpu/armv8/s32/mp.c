@@ -110,7 +110,7 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 
 	/* Deassert core reset */
 	reset = readl(RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
-	resetc = RGM_CORE_RST(core);
+	resetc = get_rgm_a53_bit(core);
 	reset &= ~resetc;
 	writel(reset, RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
 	while ((readl(RGM_PSTAT(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP))
