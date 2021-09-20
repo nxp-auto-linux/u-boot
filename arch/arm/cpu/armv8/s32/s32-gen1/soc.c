@@ -383,3 +383,8 @@ __weak u32 get_sram_size(void)
 {
 	return S32_SRAM_SIZE;
 }
+
+__weak u8 mc_me_core2prtn_core_id(u8 part, u8 id)
+{
+	return id;
+}

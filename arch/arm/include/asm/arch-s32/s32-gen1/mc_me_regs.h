@@ -9,6 +9,7 @@
 #define __ARCH_ARM_MACH_S32GEN1_MCME_REGS_H__
 
 #ifndef __ASSEMBLY__
+#include <common.h>
 
 /* MC_ME registers. */
 #define MC_ME_CTL_KEY(MC_ME)		(UPTR(MC_ME) + 0x0)
@@ -45,7 +46,8 @@
 
 /* MC_ME partition 1 m M definitions. */
 #define MC_ME_PRTN_N_CORE_M(n, m)	(MC_ME_BASE_ADDR + 0x140 + \
-						(n) * 0x200 + (m) * 0x20)
+					 (n) * 0x200 + \
+					 mc_me_core2prtn_core_id(n, m) * 0x20)
 #define MC_ME_PRTN_N_CORE_M_PCONF(n, m)	(MC_ME_PRTN_N_CORE_M(n, m))
 #define MC_ME_PRTN_N_CORE_M_PUPD(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) + 0x4)
 #define MC_ME_PRTN_N_CORE_M_STAT(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) + 0x8)
@@ -71,6 +73,8 @@
 #define RDC_RD_INTERCONNECT_DISABLE_STAT (1 << 4)
 
 #define RDC_RD_STAT_XBAR_DISABLE_MASK	BIT(4)
+
+u8 mc_me_core2prtn_core_id(u8 part, u8 id);
 
 #endif
 
