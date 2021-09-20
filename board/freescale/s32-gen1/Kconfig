@@ -66,8 +66,6 @@ config SYS_MEM_SIZE
 	help
 	  U-boot SRAM size (8 MB for Gen1)
 
-if S32_GEN1
-
 config SYS_BOARD
 	string
 	default "s32-gen1"
@@ -139,8 +137,6 @@ choice
 		  U-Boot is started by the ARM Trusted Firmware (TF-A) and runs
 		  in the non-secure world.
 endchoice
-
-endif
 
 config S32GEN1_HWCONFIG
 	string "S32GEN1 HWConfig definition"

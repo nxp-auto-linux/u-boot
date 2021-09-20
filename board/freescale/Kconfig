@@ -2,6 +2,12 @@ config S32V2
 	bool
 	default false
 
+if !TARGET_MPXS32V234
+config SYS_VENDOR
+	string
+	default "freescale"
+endif
+
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
 	imply CMD_GPIO
@@ -44,12 +50,6 @@ config S32_SKIP_RELOC
 		memory. It's very useful for bring-up activities or when the DDR
 		memory is not stable.
 
-if !TARGET_MPXS32V234
-config SYS_VENDOR
-	string
-	default "freescale"
-endif
-
 config XEN_SUPPORT
 	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
 	default n
@@ -59,6 +59,8 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
+if S32_GEN1
+source "board/freescale/s32-gen1/Kconfig"
 endif
 
 if S32V2
@@ -96,6 +98,4 @@ config S32V234_FAST_BOOT
 
 endif
 
-if S32_GEN1
-source "board/freescale/s32-gen1/Kconfig"
 endif
