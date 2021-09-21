@@ -104,7 +104,6 @@ struct cmu {
 	bool fc;
 };
 
-void cmu_fixup(void);
 struct cmu *get_cmu_block(int index);
 int get_cmu_blocks_number(void);
 #endif

@@ -40,10 +40,6 @@
 #define SERDES_LINE_NAME_FMT	"serdes_lane%d"
 #define SERDES_LINE_NAME_LEN	sizeof(SERDES_LINE_NAME_FMT)
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
-#include <dt-bindings/clock/s32gen1-clock-freq.h>
-#endif
-
 #define S32_DDR_LIMIT_VAR "ddr_limitX"
 
 #ifdef CONFIG_MP
@@ -318,24 +314,6 @@ static void apply_ddr_limits(bd_t *bd)
 		ddr_limit[digit_pos]++;
 	};
 }
-
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
-static void ft_fixup_qspi_frequency(void *blob)
-{
-	const u32 qspi_freq_be = cpu_to_be32(is_s32gen1_soc_rev1() ?
-			S32G274A_REV1_QSPI_MAX_FREQ : S32GEN1_QSPI_MAX_FREQ);
-	const char *path = "/spi@40134000/mx25uw51245g@0";
-	int ret;
-
-	/* Update QSPI max frequency according to the SOC detected rev.
-	 */
-	ret = fdt_find_and_setprop(blob, path, "spi-max-frequency",
-				   &qspi_freq_be, sizeof(u32), 1);
-	if (ret)
-		printf("WARNING: Could not fix up QSPI device-tree max frequency, err=%s\n",
-		       fdt_strerror(ret));
-}
-#endif
 
 static void ft_fixup_memory(void *blob, bd_t *bd)
 {
@@ -923,9 +901,6 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	ft_fixup_clock_frequency(blob);
 #endif
 	ft_fixup_memory(blob, bd);
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
-	ft_fixup_qspi_frequency(blob);
-#endif
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 	ft_fixup_ddr_polling(blob);
 #endif

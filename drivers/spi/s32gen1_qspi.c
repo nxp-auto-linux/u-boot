@@ -682,12 +682,6 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 	mcr &= ~QSPI_MCR_MDIS_MASK;
 	qspi_write32(priv->flags, &regs->mcr, mcr);
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || \
-	defined(CONFIG_TARGET_S32G274ARDB) || \
-	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-	if (is_s32gen1_soc_rev1())
-		ddr_config.dllcr &= ~QSPI_DLLCR_FREQEN_EN;
-#endif
 #if defined(CONFIG_TARGET_S32R45EVB)
 	ddr_config.dllcr &= ~QSPI_DLLCR_FREQEN_EN;
 #endif
@@ -705,12 +699,6 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 }
 
 int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
-
-
-
-
-
-
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr;

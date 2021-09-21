@@ -152,11 +152,6 @@ static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 	struct qspi_params *s32g2xx_qspi_conf = get_s32g2xx_qspi_conf();
 
 	memcpy(qspi_params, s32g2xx_qspi_conf, sizeof(*qspi_params));
-#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB) || \
-	defined(CONFIG_TARGET_S32G274AEVB) ||\
-	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-	adjust_qspi_params(qspi_params);
-#endif
 }
 #endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
 #endif

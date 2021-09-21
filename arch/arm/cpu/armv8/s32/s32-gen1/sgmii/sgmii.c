@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  * The SerDes config code
  */
@@ -48,12 +48,6 @@
  *		pcie1:mode=sgmii,clock=int,fmhz=100,xpcs_mode=0
  *
  */
-
-#if defined(CONFIG_TARGET_S32G274AEVB) || \
-	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-/* rev. 1.0.1*/
-#define SGMII_MIN_SOC_REV_SUPPORTED 0x1
-#endif /* CONFIG_TARGET_S32G274AEVB */
 
 struct s32_xpcs_cfg {
 	enum serdes_xpcs_mode xpcs_mode;
@@ -241,24 +235,6 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		      enum serdes_clock clktype,
 		      enum serdes_clock_fmhz fmhz)
 {
-#ifdef SGMII_MIN_SOC_REV_SUPPORTED
-	u32 raw_rev = 0;
-
-	/* construct a revision number based on major, minor and subminor,
-	 * each part using one hex digit
-	 */
-	raw_rev = (get_siul2_midr1_major() << 8) |
-		  (get_siul2_midr1_minor() << 4) |
-		  (get_siul2_midr2_subminor());
-
-	if (raw_rev < SGMII_MIN_SOC_REV_SUPPORTED) {
-		printf("SGMII not supported on rev.");
-		printf("%d.%d.%d\n", get_siul2_midr1_major() + 1,
-		       get_siul2_midr1_minor(),
-		       get_siul2_midr2_subminor());
-		return -ENXIO;
-	}
-#endif /* SGMII_MIN_SOC_REV_SUPPORTED */
 	int retval = 0;
 	u32 xpcs0_base;
 	u32 xpcs1_base;

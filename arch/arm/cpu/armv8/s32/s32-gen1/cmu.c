@@ -333,8 +333,6 @@ static int get_fm_mon_freq(struct cmu *inst, double *mon_freq)
 	return 0;
 }
 
-__weak void cmu_fixup(void) {}
-
 static int do_verify_clocks(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
@@ -350,8 +348,6 @@ static int do_verify_clocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	puts("|       (MHz)       \n");
 	puts("-----------|------------------|-----------|----------");
 	puts("|--------------------\n");
-
-	cmu_fixup();
 
 	for (i = 0; i < get_cmu_blocks_number(); i++) {
 		inst = get_cmu_block(i);

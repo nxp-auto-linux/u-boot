@@ -136,6 +136,5 @@ struct program_image {
 };
 
 struct qspi_params *get_s32g2xx_qspi_conf(void);
-void adjust_qspi_params(struct qspi_params *qspi_params);
 
 #endif /* S32GEN1IMAGE_H */

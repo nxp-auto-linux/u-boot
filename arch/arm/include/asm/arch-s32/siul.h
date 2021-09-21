@@ -2,7 +2,7 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  *
  */
 
@@ -139,14 +139,5 @@ static inline int get_siul2_midr2_subminor(void)
 }
 
 #endif  /* CONFIG_S32_GEN1 */
-
-#if defined(CONFIG_NXP_S32G2XX)
-/* If SOC REV < 2, QSPI clock max frequency should be 133,33MHz. */
-static inline bool is_s32gen1_soc_rev1(void)
-{
-	return (get_siul2_midr1_major() < 1);
-}
-
-#endif
 
 #endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */

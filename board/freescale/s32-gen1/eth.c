@@ -151,27 +151,6 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 	}
 }
 
-static void ft_enet_compatible_fixup(void *fdt, int nodeoff)
-{
-#ifndef CONFIG_NXP_S32G3XX
-	if (!is_s32gen1_soc_rev1())
-		return;
-#endif
-
-	fdt_setprop_string(fdt, nodeoff, "compatible",
-			   "fsl,s32g274a-pfeng-cut1.1");
-}
-
-static void ft_enet_coherent_fixup(void *fdt, int nodeoff)
-{
-#ifndef CONFIG_NXP_S32G3XX
-	if (is_s32gen1_soc_rev1())
-		if (fdt_getprop(fdt, nodeoff, "dma-coherent", NULL))
-			if (fdt_delprop(fdt, nodeoff, "dma-coherent"))
-				pr_err("Failed to remove dma-coherent\n");
-#endif
-}
-
 static bool pfeng_drv_status_active(void)
 {
 	struct udevice *dev;
@@ -208,13 +187,6 @@ void ft_enet_fixup(void *fdt)
 			ft_enet_pfe_emac_fixup(0, fdt);
 			ft_enet_pfe_emac_fixup(1, fdt);
 			ft_enet_pfe_emac_fixup(2, fdt);
-
-			/*
-			 * Remove dma-coherent and change 'compatible'
-			 * for Rev 1
-			 */
-			ft_enet_coherent_fixup(fdt, nodeoff);
-			ft_enet_compatible_fixup(fdt, nodeoff);
 		}
 	}
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */

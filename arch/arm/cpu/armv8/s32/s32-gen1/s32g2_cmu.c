@@ -41,14 +41,6 @@ static struct cmu cmu_blocks[] = {
 
 };
 
-void cmu_fixup(void)
-{
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G274ARDB)
-	if (is_s32gen1_soc_rev1())
-		cmu_blocks[17].mon_freq = 133.33;
-#endif
-}
-
 struct cmu *get_cmu_block(int index)
 {
 	return &cmu_blocks[index];

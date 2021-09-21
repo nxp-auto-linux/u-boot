@@ -6,17 +6,6 @@
 #include "s32gen1image.h"
 
 #ifdef CONFIG_FLASH_BOOT
-/* Load U-Boot using DTR octal mode @ 133 MHz*/
-#if defined(CONFIG_S32G274ARDB) || defined(CONFIG_TARGET_S32R45EVB) || \
-	defined(CONFIG_TARGET_S32G274AEVB) || \
-	defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-void adjust_qspi_params(struct qspi_params *qspi_params)
-{
-	qspi_params->dllcr = 0x42860704;
-	qspi_params->dll_slv_upd_en = 0x01;
-	qspi_params->sflash_clk_freq = 133;
-}
-#endif
 static struct qspi_params s32g2xx_qspi_conf = {
 	.header   = 0x5a5a5a5a,
 	.mcr      = 0x010f00cc,

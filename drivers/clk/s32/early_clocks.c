@@ -161,13 +161,6 @@ static int enable_ddr_clock(void)
 	ddr_pll_freq = S32GEN1_DDR_PLL_VCO_FREQ;
 	ddr_freq = S32GEN1_DDR_FREQ;
 
-#ifdef CONFIG_NXP_S32G2XX
-	if (!is_s32gen1_soc_rev1()) {
-		ddr_pll_freq = S32G274A_REV2_DDR_PLL_VCO_FREQ;
-		ddr_freq = S32G274A_REV2_DDR_FREQ;
-	}
-#endif
-
 	ret = s32gen1_set_parent(&ddr_pll_mux, &fxosc);
 	if (ret)
 		return ret;
