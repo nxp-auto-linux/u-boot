@@ -45,6 +45,13 @@
 	pinctrl-0 = <&pinctrl0_dspi5 &pinctrl1_dspi5>;
 	pinctrl-names = "default";
 	status = "okay";
+
+	ethernet-switch@0 {
+		compatible = "nxp,sja1105-fw-loader";
+		spi-max-frequency = <1000000>;
+		reg = <0>;
+		spi-cpha;
+	};
 };
 
 &gmac0 {
