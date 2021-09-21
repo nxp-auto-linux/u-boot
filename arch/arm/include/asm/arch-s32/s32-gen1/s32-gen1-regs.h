@@ -108,7 +108,6 @@
 #define EDMA0_CHANNEL_31_BASE_ADDR		(PER_GROUP1_BASE + 0x00067000)
 #define PIT0_BASE_ADDR				(PER_GROUP1_BASE + 0x00088000)
 #define CRC0_BASE_ADDR				(PER_GROUP1_BASE + 0x00090000)
-#define MSCM_BASE_ADDR				(PER_GROUP1_BASE + 0x00098000)
 #define SRAM_CTL_BASE_ADDR			(PER_GROUP1_BASE + 0x0009C000)
 #define XRDC_BASE_ADDR				(PER_GROUP1_BASE + 0x000A4000)
 #ifdef CONFIG_NXP_S32R45
@@ -211,52 +210,6 @@
 #define MC_CGM2_BASE_ADDR			(PER_GROUP8_BASE + 0x00018000)
 #endif
 
-/* MSCM interrupt router */
-#define MSCM_IRSPRC_CPn_EN		0xF
-#define MSCM_IRSPRC_NUM			240
-
-#if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
-#include <asm/types.h>
-
-struct mscm_cpn {
-	u32 cpntype;		/* Processor n Type Register */
-	u32 cpnnum;		/* Processor n Number Register */
-	u32 cpnrev;		/* Processor n Count Register	*/
-	u32 cpncfg0;		/* Processor n Configuration 0 Register */
-	u32 cpncfg1;		/* Processor n Configuration 1 Register */
-	u32 cpncfg2;		/* Processor n Configuration 2 Register */
-	u32 cpncfg3;		/* Processor n Configuration 3 Register */
-	u32 reserved_1c;
-};
-
-struct mscm_ircp {
-	u32 isr0;		/* Interrupt Status Register. */
-	u32 gr0;		/* Interrupt Generation Register. */
-	u32 isr1;		/* Interrupt Status Register. */
-	u32 gr1;		/* Interrupt Generation Register. */
-	u32 isr2;		/* Interrupt Status Register. */
-	u32 gr2;		/* Interrupt Generation Register. */
-	u32 isr3;		/* Interrupt Status Register. */
-	u32 gr3;		/* Interrupt Generation Register. */
-};
-
-/* MSCM Interrupt Router */
-struct mscm_ir {
-	struct mscm_cpn cpx;		/* Processor x */
-	struct mscm_cpn cpn[7]; 	/* Processor 0-6 */
-	u32 reserved_0x080[64];
-	struct mscm_ircp ircp[7];
-	u32 reserved_0x2e0[72];
-	u32 ircpcfg;			/* Interrupt Router Configuration
-					   Register. */
-	u32 reserved_0x404[255];
-	u32 irnmic;			/* Interrupt Router Non-Maskable
-					   Interrupt Control Register */
-	u32 reserved_0x804[31];
-	u16 irsprc[MSCM_IRSPRC_NUM];	/* Interrupt Router Shared Peripheral
-					   Routing Control Register */
-};
-#endif
 #include "dma_macros.h"
 
 #endif	/* __ASM_ARCH_S32XXXX_GEN1_REGS_H__ */
