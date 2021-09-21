@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2018, 2020 NXP
+ * Copyright 2017-2018, 2020-2021 NXP
  */
 
 
@@ -16,7 +16,7 @@
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 #define SJA_DSPI_MODE	(SPI_CPHA | SPI_FMSZ_16)
-#define SJA_DSPI_HZ	5000
+#define SJA_DSPI_HZ	4000000
 
 #define sja_debug(fmt, ...) \
 	debug("[SJA1105]%s:%d " fmt, __func__, __LINE__, ##__VA_ARGS__);
