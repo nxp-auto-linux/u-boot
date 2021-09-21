@@ -310,7 +310,7 @@
 
 #ifdef CONFIG_FSL_PFENG
 #define PFENG_EXTRA_BOOT_ARGS " nohz=off coherent_pool=64M "
-#ifdef CONFIG_TARGET_S32G274AEVB
+#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G3XXAEVB)
 #define PFENG_MODE "enable,none,rgmii,rgmii"
 #define PFENG_EMAC "1"
 #endif

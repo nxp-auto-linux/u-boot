@@ -18,26 +18,25 @@
 #endif
 
 #include <configs/s32-gen1.h>
-#include <linux/sizes.h>
 
-#if !defined(CONFIG_PRAM) && defined(CONFIG_S32_ATF_BOOT_FLOW)
+#if defined(CONFIG_TARGET_S32G274AEVB)
+#define FDT_FILE fsl-s32g274a-evb.dtb
 
-/* 24 MB covering the following:
- *  - 22 MB for optee_os + shared memory between optee_os and linux kernel
- *  - 2 MB for the Secure Monitor
- */
-#define CONFIG_PRAM	24576	/* 24MB */
-
-#ifndef __ASSEMBLY__
-_Static_assert(CONFIG_PRAM * SZ_1K + INITRD_HIGH == INITRD_HIGH_DEFAULT,
-	       "Please adjust INITRD_HIGH when booting with TF-A");
-#endif
-
-#endif
-
-#if defined(CONFIG_TARGET_S32G274AEVB) && defined(CONFIG_USB)
+#if defined(CONFIG_USB)
 #define CONFIG_USB_EHCI_MX6
 #define CONFIG_MXC_USB_PORTSC        PORT_PTS_ULPI
 #endif
+
+#elif defined(CONFIG_TARGET_S32G274ARDB)
+#ifdef CONFIG_S32G274ARDB
+#define FDT_FILE fsl-s32g274a-rdb.dtb
+#else
+#define FDT_FILE fsl-s32g274a-rdb2.dtb
+#endif /* CONFIG_TARGET_S32G274ARDB */
+
+#elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
+#define FDT_FILE fsl-s32g274a-bluebox3.dtb
+#endif
+
 
 #endif

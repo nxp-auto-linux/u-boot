@@ -59,6 +59,8 @@ int checkboard(void)
 	printf("Board:\tNXP %s-RDB\n", get_s32g2_deriv_name());
 #elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 	puts("Board:\tNXP S32G274A BlueBox3\n");
+#elif defined(CONFIG_TARGET_S32G3XXAEVB)
+	puts("Board:\tNXP S32G399A-EVB\n");
 #elif defined(CONFIG_TARGET_S32G274ASIM)
 	puts("Board:\tVDK for NXP S32G274A VP\n");
 #elif defined(CONFIG_TARGET_S32G274AEMU)

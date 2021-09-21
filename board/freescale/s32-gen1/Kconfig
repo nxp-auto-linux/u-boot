@@ -142,7 +142,7 @@ config S32GEN1_HWCONFIG
 	string "S32GEN1 HWConfig definition"
 	depends on S32_GEN1 && (PCIE_S32GEN1 || FSL_PFENG)
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274ARDB
-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274AEVB
+	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  (TARGET_S32G274AEVB || TARGET_S32G3XXAEVB)
 	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274ABLUEBOX3
 	default "pcie0:mode=sgmii;pcie1:mode=sgmii" if (!PCIE_S32GEN1 && FSL_PFENG)
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int" if (PCIE_S32GEN1 && !FSL_PFENG)

@@ -170,7 +170,7 @@ config FSL_PCIE_EP_COMPAT
 config PCIE_S32GEN1
 	bool "S32GEN1 PCIe support"
 	depends on DM_PCI
-	depends on (NXP_S32G2XX || NXP_S32R45)
+	depends on (NXP_S32G2XX || NXP_S32R45 || NXP_S32G3XX)
 	depends on (!TARGET_TYPE_S32GEN1_SIMULATOR)
 	select DM_PCI_COMPAT
 	select OF_EMBED

@@ -16,7 +16,8 @@ endif
 
 obj-$(CONFIG_NETDEVICES) += eth.o
 
-obj-$(CONFIG_TARGET_S32G274AEVB) += s32g274aevb.o
+obj-$(CONFIG_TARGET_S32G274AEVB) += s32gxxxaevb.o
+obj-$(CONFIG_TARGET_S32G3XXAEVB) += s32gxxxaevb.o
 obj-$(CONFIG_TARGET_S32G274ARDB) += s32g274ardb.o
 obj-$(CONFIG_TARGET_S32G274ASIM) += s32g274asim.o
 obj-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.o
@@ -31,7 +32,7 @@ ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 
-ifneq ($(filter y,$(CONFIG_TARGET_S32G274ARDB) $(CONFIG_TARGET_S32G274AEVB) $(CONFIG_TARGET_S32G274ABLUEBOX3)),)
+ifneq ($(filter y,$(CONFIG_NXP_S32G2XX) $(CONFIG_NXP_S32G3XX)),)
 obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 				ddr_init.o \
 				ddr_utils.o \
@@ -61,6 +62,8 @@ endif
 
 ifdef CONFIG_TARGET_S32G274AEVB
 obj-$(CONFIG_SJA1105) += sja1105_cfg_evb.o
+else ifdef CONFIG_TARGET_S32G3XXAEVB
+obj-$(CONFIG_SJA1105) += sja1105_cfg_rdb.o
 else ifdef CONFIG_TARGET_S32G274ARDB
 obj-$(CONFIG_SJA1105) += sja1105_cfg_rdb.o
 endif

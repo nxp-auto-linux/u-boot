@@ -114,6 +114,10 @@ config TARGET_S32G398AEMU
 	bool "Support S32G398A ZeBu"
 	select NXP_S32G3XX
 
+config TARGET_S32G3XXAEVB
+	bool "Support for S32G3 EVB boards"
+	select NXP_S32G3XX
+
 endchoice
 
 if TARGET_S32V234EVB

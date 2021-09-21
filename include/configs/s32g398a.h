@@ -12,13 +12,14 @@
 
 #include <configs/s32-gen1.h>
 
-#if !defined(CONFIG_PRAM) && !defined(CONFIG_S32_SKIP_RELOC)
+#if defined(CONFIG_TARGET_S32G3XXAEVB)
+#define FDT_FILE			fsl-s32g3xxaevb.dtb
 
-/* 24 MB covering the following:
- *  - 22 MB for optee_os + shared memory between optee_os and linux kernel
- *  - 2 MB for the Secure Monitor
- */
-#define CONFIG_PRAM	24576	/* 24MB */
+#if defined(CONFIG_USB)
+#define CONFIG_USB_EHCI_MX6
+#define CONFIG_MXC_USB_PORTSC		PORT_PTS_ULPI
 #endif
+
+#endif /* CONFIG_TARGET_S32G3XXAEVB */
 
 #endif

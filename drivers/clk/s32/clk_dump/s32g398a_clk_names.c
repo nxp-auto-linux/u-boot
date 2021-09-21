@@ -3,6 +3,7 @@
  * Copyright 2021 NXP
  */
 #include <dt-bindings/clock/s32g-clock.h>
+#include <dt-bindings/clock/s32g3-clock.h>
 #include <linux/kernel.h>
 #include <s32g_clk_dump.h>
 

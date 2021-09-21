@@ -13,7 +13,7 @@ obj-y					+= ncore.o
 obj-y					+= soc.o
 obj-$(CONFIG_NXP_S32G2XX)		+= s32g274a.o
 obj-y					+= sram.o
-ifneq ($(filter y,$(CONFIG_NXP_S32G2XX) $(CONFIG_NXP_S32R45)),)
+ifdef CONFIG_S32_GEN1
 obj-$(CONFIG_NETDEVICES)		+= sgmii/sgmii.o sgmii/serdes_xpcs.o
 endif
 ccflags-y				+= -I./board/freescale/s32-gen1/

@@ -1,0 +1,353 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright 2019-2021 NXP
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include "fsl-s32g274a.dtsi"
+
+/ {
+	aliases {
+		usb0 = &usbotg;
+	};
+
+	usbotg: usb@44064000 {
+		compatible = "fsl,imx27-usb";
+		reg = <0x0 0x44064000 0x0 0x200>;
+		pinctrl-0 = <&pinctrl0_usb &pinctrl1_usb>;
+		pinctrl-names = "default";
+		phys = <&saf1508_phy>;
+	};
+
+	saf1508_phy: usb_phy@44064000 {
+		compatible = "nxp,saf1508bet";
+		reg = <0x0 0x44064000 0x0 0x200>;
+		#phy-cells = <0>;
+	};
+};
+
+&usdhc0 {
+	pinctrl-0 = <&pinctrl0_sd0>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <>;
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	status = "okay";
+};
+
+&dspi1 {
+	pinctrl-0 = <&pinctrl0_dspi1 &pinctrl1_dspi1>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&dspi5 {
+	pinctrl-0 = <&pinctrl0_dspi5 &pinctrl1_dspi5>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+	phy-mode = "rgmii";
+	phy-handle = <&mdio_c_phy4>;
+};
+
+&usbotg {
+	status = "okay";
+};
+
+&gmac0_mdio {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	/* ARQ107 on S32RGV-VNP-PLAT */
+	mdio_c_phy1: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <1>;
+	};
+	/* KSZ9031RNX on S32G-VNP-PROC */
+	mdio_c_phy4: ethernet-phy@4 {
+		reg = <4>;
+		max-speed = <1000>;
+	};
+	/* KSZ9031RNX on S32RGV-VNP-PLAT */
+	mdio_c_phy5: ethernet-phy@5 {
+		status = "disabled"; /* blocked by USB by default */
+		reg = <5>;
+		max-speed = <1000>;
+	};
+};
+
+&pfe {
+	status = "okay";
+};
+
+/* EEPROM */
+&i2c0 {
+	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
+	pinctrl-0 = <&pinctrl0_i2c0>;
+	pinctrl-1 = <&pinctrl0_i2c0_gpio>;
+	scl-gpios = <&gpio0 17 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 16 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	status = "okay";
+};
+
+/* Platform board PCI X16 EXPRESS - I2C_SCL_S0, I2C_SDA_S0  */
+&i2c1 {
+	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
+	pinctrl-0 = <&pinctrl0_i2c1 &pinctrl1_i2c1>;
+	pinctrl-1 = <&pinctrl0_i2c1_gpio &pinctrl1_i2c1_gpio>;
+	scl-gpios = <&gpio0 19 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 20 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	status = "okay";
+};
+
+/* Platform board GPIO_J3-17 (SDA), GPIO_J3-19 (SCL0)  */
+&i2c2 {
+	clock-frequency=<100000>;
+	pinctrl-names = "default", "gpio";
+	pinctrl-0 = <&pinctrl0_i2c2 &pinctrl1_i2c2>;
+	pinctrl-1 = <&pinctrl0_i2c2_gpio &pinctrl1_i2c2_gpio>;
+	scl-gpios = <&gpio0 21 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 22 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	status = "okay";
+};
+
+/* PMIC */
+&i2c4 {
+	status = "okay";
+	pinctrl-names = "default", "gpio";
+	pinctrl-0 = <&pinctrl0_i2c4 &pinctrl1_i2c4>;
+	pinctrl-1 = <&pinctrl0_i2c4_gpio &pinctrl1_i2c4_gpio>;
+	scl-gpios = <&gpio0 34 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	sda-gpios = <&gpio0 33 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	clock-frequency=<100000>;
+
+	vr5510 {
+		compatible = "fsl,vr5510";
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	vr5510_fsu {
+		compatible = "fsl,vr5510";
+		reg = <0x21>;
+		status = "okay";
+	};
+
+};
+
+&pinctrl0 {
+	board_pinctrl0 {
+		pinctrl0_i2c0: pinctrl0_i2c0 {
+			fsl,pins = <PB00_MSCR_S32G PB00_I2C0_SDA_CFG
+				    PB01_MSCR_S32G PB01_I2C0_SCL_CFG
+				    I2C0_SDA_IMCR PB00_I2C0_SDA_IN
+				    I2C0_SCL_IMCR PB01_I2C0_SCL_IN
+				    >;
+		};
+
+		pinctrl0_i2c0_gpio: pinctrl0_i2c0_gpio {
+			fsl,pins = <PB00_MSCR_S32G PB00_I2C0_SDA_GPIO
+				    PB01_MSCR_S32G PB01_I2C0_SCL_GPIO
+				    I2C0_SDA_IMCR IMCR_DISABLED
+				    I2C0_SCL_IMCR IMCR_DISABLED
+				    >;
+		};
+
+		pinctrl0_i2c1: pinctrl0_i2c1 {
+			fsl,pins = <PB03_MSCR_S32G PB03_I2C1_SCL_CFG
+				    PB04_MSCR_S32G PB04_I2C1_SDA_CFG
+				    >;
+		};
+
+		pinctrl0_i2c1_gpio: pinctrl0_i2c1_gpio {
+			fsl,pins = <PB03_MSCR_S32G PB03_I2C1_SCL_GPIO
+				    PB04_MSCR_S32G PB04_I2C1_SDA_GPIO
+				    >;
+		};
+
+		pinctrl0_i2c2: pinctrl0_i2c2 {
+			fsl,pins = <PB05_MSCR_S32G PB05_I2C2_SCL_CFG
+				    PB06_MSCR_S32G PB06_I2C2_SDA_CFG
+				    >;
+		};
+
+		pinctrl0_i2c2_gpio: pinctrl0_i2c2_gpio {
+			fsl,pins = <PB05_MSCR_S32G PB05_I2C2_SCL_GPIO
+				    PB06_MSCR_S32G PB06_I2C2_SDA_GPIO
+				    >;
+		};
+
+		pinctrl0_i2c4: pinctrl0_i2c4 {
+			fsl,pins = <PC01_MSCR_S32G PC01_I2C4_SDA_CFG
+				    PC02_MSCR_S32G PC02_I2C4_SCL_CFG
+				    >;
+		};
+
+		pinctrl0_i2c4_gpio: pinctrl0_i2c4_gpio {
+			fsl,pins = <PC01_MSCR_S32G PC01_I2C4_SDA_GPIO
+				    PC02_MSCR_S32G PC02_I2C4_SCL_GPIO
+				    >;
+		};
+
+		pinctrl0_qspi: pinctrl0_qspi {
+			fsl,pins = <PF05_MSCR_S32G PF05_QSPI_DATA_A0_CFG
+				    PF06_MSCR_S32G PF06_QSPI_DATA_A1_CFG
+				    PF07_MSCR_S32G PF07_QSPI_DATA_A2_CFG
+				    PF08_MSCR_S32G PF08_QSPI_DATA_A3_CFG
+				    PF09_MSCR_S32G PF09_QSPI_DATA_A4_CFG
+				    PF10_MSCR_S32G PF10_QSPI_DATA_A5_CFG
+				    PF11_MSCR_S32G PF11_QSPI_DATA_A6_CFG
+				    PF12_MSCR_S32G PF12_QSPI_DATA_A7_CFG
+				    PF13_MSCR_S32G PF13_QSPI_DQS_A_CFG
+				    PG00_MSCR_S32G PG00_QSPI_CLK_A_CFG
+				    PG01_MSCR_S32G PG01_QSPI_CLK_A_b_CFG
+				    PG02_MSCR_S32G PG02_QSPI_CLK_2A_CFG
+				    PG03_MSCR_S32G PG03_QSPI_CLK_2A_b_CFG
+				    PG04_MSCR_S32G PG04_QSPI_CS_A0
+				    PG05_MSCR_S32G PG05_QSPI_CS_A1
+				    QSPI_DATA0_A_IMCR PF05_QSPI_DATA_A0_IN
+				    QSPI_DATA1_A_IMCR PF06_QSPI_DATA_A1_IN
+				    QSPI_DATA2_A_IMCR PF07_QSPI_DATA_A2_IN
+				    QSPI_DATA3_A_IMCR PF08_QSPI_DATA_A3_IN
+				    QSPI_DATA4_A_IMCR PF09_QSPI_DATA_A4_IN
+				    QSPI_DATA5_A_IMCR PF10_QSPI_DATA_A5_IN
+				    QSPI_DATA6_A_IMCR PF11_QSPI_DATA_A6_IN
+				    QSPI_DATA7_A_IMCR PF12_QSPI_DATA_A7_IN
+				    QSPI_DQS_A_IMCR PF13_DQS_A_IN
+				    >;
+		};
+
+		pinctrl0_sd0: pinctrl0_sd0 {
+			fsl,pins = <PC14_MSCR_S32G PC14_SD0_CLK_CFG
+				    PC15_MSCR_S32G PC15_SD0_CMD_CFG
+				    PD00_MSCR_S32G PD00_SD0_D0_CFG
+				    PD01_MSCR_S32G PD01_SD0_D1_CFG
+				    PD02_MSCR_S32G PD02_SD0_D2_CFG
+				    PD03_MSCR_S32G PD03_SD0_D3_CFG
+				    PD04_MSCR_S32G PD04_SD0_D4_CFG
+				    PD05_MSCR_S32G PD05_SD0_D5_CFG
+				    PD06_MSCR_S32G PD06_SD0_D6_CFG
+				    PD07_MSCR_S32G PD07_SD0_D7_CFG
+				    PD08_MSCR_S32G PD08_SD0_RST_CFG
+				    PD09_MSCR_S32G PD09_SD0_VSELECT_CFG
+				    PD10_MSCR_S32G PD10_SD0_DQS_CFG
+				    SD0_CMD_IMCR PC15_SD0_CMD_IN
+				    SD0_D0_IMCR PD00_SD0_D0_IN
+				    SD0_D1_IMCR PD01_SD0_D1_IN
+				    SD0_D2_IMCR PD02_SD0_D2_IN
+				    SD0_D3_IMCR PD03_SD0_D3_IN
+				    SD0_D4_IMCR PD04_SD0_D4_IN
+				    SD0_D5_IMCR PD05_SD0_D5_IN
+				    SD0_D6_IMCR PD06_SD0_D6_IN
+				    SD0_D7_IMCR PD07_SD0_D7_IN
+				    SD0_DQS_IMCR PD10_SD0_DQS_IN
+				    >;
+		};
+
+		pinctrl0_dspi1: pinctrl0_dspi1 {
+			fsl,pins = <PA06_MSCR_S32G PA06_SPI1_SOUT_CFG
+				    PA07_MSCR_S32G PA07_SPI1_CS0_CFG
+				    PA08_MSCR_S32G PA08_SPI1_SCK_CFG
+				    PF15_MSCR_S32G PF15_SPI1_SIN_CFG
+				    >;
+		};
+
+		pinctrl0_dspi5: pinctrl0_dspi5 {
+			fsl,pins = <PA09_MSCR_S32G PA09_SPI5_SCK_CFG
+				    PA10_MSCR_S32G PA10_SPI5_SIN_CFG
+				    PA11_MSCR_S32G PA11_SPI5_SOUT_CFG
+				    PA12_MSCR_S32G PA12_SPI5_CS0_CFG
+				    >;
+		};
+
+		pinctrl0_usb: pinctrl0_usb {
+			fsl,pins = <PD14_MSCR_S32G PD14_USB_DATA0_CFG
+				    PD15_MSCR_S32G PD15_USB_DATA1_CFG
+				    PE00_MSCR_S32G PE00_USB_DATA2_CFG
+				    PE01_MSCR_S32G PE01_USB_DATA3_CFG
+				    >;
+		};
+	};
+};
+
+&pinctrl1 {
+	board_pinctrl1 {
+		pinctrl1_i2c1: pinctrl1_i2c1 {
+			fsl,pins = <I2C1_SCL_IMCR PB03_I2C1_SCL_IN
+				    I2C1_SDA_IMCR PB04_I2C1_SDA_IN
+				    >;
+		};
+
+		pinctrl1_i2c1_gpio: pinctrl1_i2c1_gpio {
+			fsl,pins = <I2C1_SCL_IMCR IMCR_DISABLED
+				    I2C1_SDA_IMCR IMCR_DISABLED
+				    >;
+		};
+
+		pinctrl1_i2c2: pinctrl1_i2c2 {
+			fsl,pins = <I2C2_SCL_IMCR PB05_I2C2_SCL_IN
+				    I2C2_SDA_IMCR PB06_I2C2_SDA_IN
+				    >;
+		};
+
+		pinctrl1_i2c2_gpio: pinctrl1_i2c2_gpio {
+			fsl,pins = <I2C2_SCL_IMCR IMCR_DISABLED
+				    I2C2_SDA_IMCR IMCR_DISABLED
+				    >;
+		};
+
+		pinctrl1_i2c4: pinctrl1_i2c4 {
+			fsl,pins = <I2C4_SDA_IMCR PC01_I2C4_SDA_IN
+				    I2C4_SCL_IMCR PC02_I2C4_SCL_IN
+				    >;
+		};
+
+		pinctrl1_i2c4_gpio: pinctrl1_i2c4_gpio {
+			fsl,pins = <I2C4_SDA_IMCR IMCR_DISABLED
+				    I2C4_SCL_IMCR IMCR_DISABLED
+				    >;
+		};
+
+		pinctrl1_dspi1: pinctrl1_dspi1 {
+			fsl,pins = <DSPI1_SIN_IMCR PF15_SPI1_SIN_IN
+				    >;
+		};
+
+		pinctrl1_dspi5: pinctrl1_dspi5 {
+			fsl,pins = <DSPI5_SIN_IMCR PA10_SPI5_SIN_IN
+				    >;
+		};
+
+		pinctrl1_usb: pinctrl1_usb {
+			fsl,pins = <PH00_MSCR_S32G PH00_USB_DATA7_CFG
+				    PL08_MSCR_S32G PL08_USB_CLK_CFG
+				    PL09_MSCR_S32G PL09_USB_DIR_CFG
+				    PL10_MSCR_S32G PL10_USB_STP_CFG
+				    PL11_MSCR_S32G PL11_USB_NXT_CFG
+				    PL12_MSCR_S32G PL12_USB_DATA4_CFG
+				    PL13_MSCR_S32G PL13_USB_DATA5_CFG
+				    PL14_MSCR_S32G PL14_USB_DATA6_CFG
+				    USB_ULPI_CLK_IMCR PL08_USB_CLK_IN
+				    USB_ULPI_DATA0_IMCR PD14_USB_DATA0_IN
+				    USB_ULPI_DATA1_IMCR PD15_USB_DATA1_IN
+				    USB_ULPI_DATA2_IMCR PE00_USB_DATA2_IN
+				    USB_ULPI_DATA3_IMCR PE01_USB_DATA3_IN
+				    USB_ULPI_DATA4_IMCR PL12_USB_DATA4_IN
+				    USB_ULPI_DATA5_IMCR PL13_USB_DATA5_IN
+				    USB_ULPI_DATA6_IMCR PL14_USB_DATA6_IN
+				    USB_ULPI_DATA7_IMCR PH00_USB_DATA7_IN
+				    USB_ULPI_DIR_IMCR PL09_USB_DIR_IN
+				    USB_ULPI_NXT_IMCR PL11_USB_NXT_IN
+				    >;
+		};
+	};
+};
+
+&qspi {
+	pinctrl-0 = <&pinctrl0_qspi>;
+	pinctrl-names = "default";
+};

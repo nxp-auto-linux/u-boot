@@ -12,6 +12,8 @@
 #ifndef __S32_GEN1_H
 #define __S32_GEN1_H
 
+#include <linux/sizes.h>
+
 #define CONFIG_SYS_FSL_DRAM_BASE1       0x80000000
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 #define CONFIG_SYS_FSL_DRAM_SIZE1       0x40000000
@@ -53,23 +55,6 @@
 #define CONFIG_BCM_SPEED	SPEED_1000
 #else
 #define CONFIG_FEC_MXC_PHYADDR  7
-#endif
-
-#if defined(CONFIG_TARGET_S32G274AEVB)
-#define FDT_FILE fsl-s32g274a-evb.dtb
-
-#elif defined(CONFIG_TARGET_S32G274ARDB)
-#ifdef CONFIG_S32G274ARDB
-#define FDT_FILE fsl-s32g274a-rdb.dtb
-#else
-#define FDT_FILE fsl-s32g274a-rdb2.dtb
-#endif /* CONFIG_TARGET_S32G274ARDB */
-
-#elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-#define FDT_FILE fsl-s32g274a-bluebox3.dtb
-
-#elif defined(CONFIG_TARGET_S32R45EVB)
-#define FDT_FILE fsl-s32r45-evb.dtb
 #endif
 
 #define CONFIG_LOADADDR		LOADADDR
@@ -145,4 +130,18 @@
 #define SDHC_REDUCED_MAP
 #endif
 
+#if !defined(CONFIG_PRAM) && defined(CONFIG_S32_ATF_BOOT_FLOW)
+
+/* 24 MB covering the following:
+ *  - 22 MB for optee_os + shared memory between optee_os and linux kernel
+ *  - 2 MB for the Secure Monitor
+ */
+#define CONFIG_PRAM	24576	/* 24MB */
+
+#ifndef __ASSEMBLY__
+_Static_assert(CONFIG_PRAM * SZ_1K + INITRD_HIGH == INITRD_HIGH_DEFAULT,
+	       "Please adjust INITRD_HIGH when booting with TF-A");
+#endif
+
+#endif
 #endif
