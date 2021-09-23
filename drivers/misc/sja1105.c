@@ -5,6 +5,7 @@
 
 
 #include <common.h>
+#include <dm/device.h>
 #include <linux/errno.h>
 #include <spi.h>
 #include "sja1105_ll.h"
@@ -103,7 +104,15 @@ static struct spi_slave *get_spi_slave(struct sja_parms *sjap)
 				 name, &dev, &slave);
 	if (ret)
 		return NULL;
-
+	/*
+	 * spi_get_bus_and_cs does not populate max_hz, mode and wordlen fields
+	 * when there is a node in dts.
+	 * In order to maintain the compatibility with the DM version of
+	 * the driver, these fields should be assigned manually.
+	 */
+	slave->max_hz = SJA_DSPI_HZ;
+	slave->mode = SJA_DSPI_MODE;
+	slave->wordlen = SPI_DEFAULT_WORDLEN;
 #else
 	slave = spi_setup_slave(sjap->bus, sjap->cs, SJA_DSPI_HZ,
 				SJA_DSPI_MODE);
@@ -683,6 +692,23 @@ int sja1105_probe(u32 cs, u32 bus)
 	return sja1105_configuration_load(&sjap);
 }
 
+static int sja11105_dm_probe(struct udevice *dev)
+{
+#ifdef CONFIG_DM_SPI
+	int cs = spi_chip_select(dev);
+	int bus = dev->parent->seq;
+#else
+	struct spi_slave *slave = dev_get_parent_priv(dev);
+	int cs = slave->cs;
+	int bus = slave->bus;
+#endif
+
+	if (cs < 0)
+		return cs;
+
+	return sja1105_probe(cs, bus);
+}
+
 static int sja1105_print_regs(struct sja_parms *sjap)
 {
 	u32 val32;
@@ -807,3 +833,15 @@ U_BOOT_CMD(
 	"          for ports, speed options [-|disable|10M|100M|1G] when \"-\" is set\n"
 	"          given port is not updated\n"
 );
+
+static const struct udevice_id sja1105_ids[] = {
+	{ .compatible = "nxp,sja1105-fw-loader" },
+	{}
+};
+
+U_BOOT_DRIVER(altera_sysid) = {
+	.name	= "sja1105_fw_loader",
+	.id	= UCLASS_MISC,
+	.of_match = sja1105_ids,
+	.probe	= sja11105_dm_probe,
+};
