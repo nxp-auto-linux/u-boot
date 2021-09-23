@@ -256,7 +256,7 @@ static int check_sgmii_cfg(int gmac_no)
 	int xpcs = 0;
 	enum serdes_xpcs_mode mode, desired_mode1, desired_mode2;
 
-#if defined(CONFIG_TARGET_S32G274AEVB) || \
+#if defined(CONFIG_TARGET_S32G2XXAEVB) || \
 	defined(CONFIG_TARGET_S32G3XXAEVB) || \
 	defined(CONFIG_TARGET_S32G274ARDB) || \
 	defined(CONFIG_TARGET_S32G274ASIM) || \

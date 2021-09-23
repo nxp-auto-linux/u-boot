@@ -193,7 +193,7 @@
  */
 #if defined(CONFIG_S32_GEN1)
 /* FXOSC_CLK; this will be further divided by "GPR00[26:24] + 1"
- * Note: CONFIG_TARGET_S32G274AEVB is a per-board configuration, as the value of
+ * Note: CONFIG_TARGET_S32G2XXAEVB is a per-board configuration, as the value of
  * FXOSC_CLK itself is board-specific.
  */
 #define COUNTER_FREQUENCY		(40 * 1000 * 1000)
@@ -310,7 +310,7 @@
 
 #ifdef CONFIG_FSL_PFENG
 #define PFENG_EXTRA_BOOT_ARGS " nohz=off coherent_pool=64M "
-#if defined(CONFIG_TARGET_S32G274AEVB) || defined(CONFIG_TARGET_S32G3XXAEVB)
+#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB)
 #define PFENG_MODE "enable,none,rgmii,rgmii"
 #define PFENG_EMAC "1"
 #endif

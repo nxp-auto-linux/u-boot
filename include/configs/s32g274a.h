@@ -19,7 +19,7 @@
 
 #include <configs/s32-gen1.h>
 
-#if defined(CONFIG_TARGET_S32G274AEVB)
+#if defined(CONFIG_TARGET_S32G2XXAEVB)
 #define FDT_FILE fsl-s32g274a-evb.dtb
 
 #if defined(CONFIG_USB)

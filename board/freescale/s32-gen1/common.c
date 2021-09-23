@@ -53,7 +53,7 @@ int board_init(void)
 
 int checkboard(void)
 {
-#if defined(CONFIG_TARGET_S32G274AEVB)
+#if defined(CONFIG_TARGET_S32G2XXAEVB)
 	printf("Board:\tNXP %s-EVB\n", get_s32g2_deriv_name());
 #elif defined(CONFIG_TARGET_S32G274ARDB)
 	printf("Board:\tNXP %s-RDB\n", get_s32g2_deriv_name());
