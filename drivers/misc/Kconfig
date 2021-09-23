@@ -415,6 +415,14 @@ config SPL_I2C_EEPROM
 	  This option is an SPL-variant of the I2C_EEPROM option.
 	  See the help of I2C_EEPROM for details.
 
+config SJA1105
+	bool "NXP SJA1105x driver"
+	depends on FSL_DSPI
+	help
+	  Enable the NXP SJA1105x driver.
+	  The NXP SJA1105x switch is used on several boards,
+	  such as S32G2XXEVB and S32G3XXEVB.
+
 config SYS_I2C_EEPROM_ADDR
 	hex "Chip address of the EEPROM device"
 	depends on ID_EEPROM || I2C_EEPROM || SPL_I2C_EEPROM || CMD_EEPROM || ENV_IS_IN_EEPROM
