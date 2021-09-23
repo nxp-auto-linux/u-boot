@@ -376,6 +376,13 @@ config ZYNQ_GEM_I2C_MAC_OFFSET
 	help
 	  Set the MAC offset for i2C.
 
+config SJA1105
+	bool "NXP SJA1105x driver"
+	depends on FSL_DSPI
+	help
+	  Enable the NXP SJA1105x driver.
+	  The NXP SJA1105x switch is used on several boards, such as S32V234EVB.
+
 if I2C_EEPROM
 
 config SYS_I2C_EEPROM_ADDR
