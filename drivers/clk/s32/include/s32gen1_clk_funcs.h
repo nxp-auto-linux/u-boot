@@ -32,4 +32,6 @@ uint32_t s32gen1_platclk2mux(uint32_t clk_id);
 
 int cc_compound_clk_get_pid(u32 id, u32 *parent_id);
 
+int s32gen1_get_early_clks_freqs(const struct siul2_freq_mapping **mapping);
+
 #endif /* S32GEN1_CLK_FUNCS_H */

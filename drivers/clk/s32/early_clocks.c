@@ -81,6 +81,8 @@ static int secboot_xbar_to_firc(void)
 }
 #endif
 
+static const struct siul2_freq_mapping *early_freqs;
+
 static int enable_a53_clock(void)
 {
 	int ret;
@@ -98,12 +100,19 @@ static int enable_a53_clock(void)
 	if (rate != S32GEN1_FXOSC_FREQ)
 		return -EINVAL;
 
-	rate = s32gen1_set_rate(&arm_pll_vco, S32GEN1_ARM_PLL_VCO_MAX_FREQ);
-	if (rate != S32GEN1_ARM_PLL_VCO_MAX_FREQ)
+	rate = s32gen1_set_rate(&arm_pll_vco,
+			early_freqs->arm_pll_vco_freq);
+	if (rate != early_freqs->arm_pll_vco_freq)
 		return -EINVAL;
 
-	rate = s32gen1_set_rate(&a53_clk, S32GEN1_A53_MAX_FREQ);
-	if (rate != S32GEN1_A53_MAX_FREQ)
+	rate = s32gen1_set_rate(&arm_pll_phi0,
+			early_freqs->arm_pll_phi0_freq);
+	if (rate != early_freqs->arm_pll_phi0_freq)
+		return -EINVAL;
+
+	rate = s32gen1_set_rate(&a53_clk,
+			early_freqs->a53_freq);
+	if (rate != early_freqs->a53_freq)
 		return -EINVAL;
 
 	return s32gen1_enable(&a53_clk);
@@ -118,8 +127,9 @@ static int enable_xbar_clock(void)
 	if (ret)
 		return ret;
 
-	rate = s32gen1_set_rate(&xbar_2x, S32GEN1_XBAR_2X_FREQ);
-	if (rate != S32GEN1_XBAR_2X_FREQ)
+	rate = s32gen1_set_rate(&xbar_2x,
+			early_freqs->xbar_2x_freq);
+	if (rate != early_freqs->xbar_2x_freq)
 		return -EINVAL;
 
 	return s32gen1_enable(&xbar_2x);
@@ -189,6 +199,10 @@ int enable_early_clocks(void)
 	if (ret)
 		return ret;
 #endif
+
+	ret = s32gen1_get_early_clks_freqs(&early_freqs);
+	if (ret < 0)
+		return -EINVAL;
 
 	ret = enable_a53_clock();
 	if (ret)

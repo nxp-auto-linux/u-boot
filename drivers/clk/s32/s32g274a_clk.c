@@ -5,9 +5,14 @@
 #include <asm/arch/siul.h>
 #include <dt-bindings/clock/s32g-clock.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
+#include <dt-bindings/clock/s32gen1-clock-freq.h>
 #include <s32g_clk_funcs.h>
 #include <s32gen1_clk_modules.h>
 #include <s32gen1_scmi_clk.h>
+
+#define SIUL2_MIDR2_FREQ_VAL1		(0xB)
+
+#define S32GEN1_XBAR_2X_MAX_FREQ	(800 * MHZ)
 
 /* GMAC_TS_CLK */
 static struct s32gen1_fixed_clock gmac_ext_ts =
@@ -143,3 +148,11 @@ int cc_compound_clk_get_pid(u32 id, u32 *parent_id)
 
 	return 0;
 }
+
+const struct siul2_freq_mapping siul2_clk_freq_map[] = {
+	SIUL2_FREQ_MAP(SIUL2_MIDR2_FREQ_VAL1, S32GEN1_A53_MAX_FREQ,
+			S32GEN1_ARM_PLL_VCO_MAX_FREQ,
+			S32GEN1_ARM_PLL_PHI0_MAX_FREQ,
+			S32GEN1_XBAR_2X_MAX_FREQ),
+	{} /* empty entry */
+};

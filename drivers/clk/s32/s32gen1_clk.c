@@ -2,6 +2,7 @@
 /*
  * Copyright 2020-2021 NXP
  */
+#include <asm/arch/siul.h>
 #include <dt-bindings/clock/s32gen1-clock.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
 #include <s32gen1_clk_funcs.h>
@@ -577,4 +578,22 @@ bool is_qspi2x_clk(uint32_t id)
 bool is_qspi_clk(uint32_t id)
 {
 	return is_qspi1x_clk(id) || is_qspi2x_clk(id);
+}
+
+int s32gen1_get_early_clks_freqs(const struct siul2_freq_mapping **mapping)
+{
+	u32 freq;
+	size_t i;
+
+	freq = get_siul2_midr2_freq();
+
+	/* Last entry is empty */
+	for (i = 0; siul2_clk_freq_map[i].siul2_midr2_freq != 0; i++)
+
+		if (siul2_clk_freq_map[i].siul2_midr2_freq == freq) {
+			*mapping = &siul2_clk_freq_map[i];
+			return 0;
+		}
+
+	return -EINVAL;
 }

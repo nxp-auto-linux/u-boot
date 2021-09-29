@@ -54,6 +54,10 @@
 #define SIUL2_MIDR1_MAJOR_SHIFT		(4)
 #define SIUL2_MIDR1_MAJOR_MASK		(0xF << SIUL2_MIDR1_MAJOR_SHIFT)
 
+/* SIUL2_MIDR2 masks */
+#define SIUL2_MIDR2_FREQ_SHIFT		(16)
+#define SIUL2_MIDR2_FREQ_MASK		(0xF << SIUL2_MIDR2_FREQ_SHIFT)
+
 #ifdef CONFIG_S32_GEN1
 #define SIUL2_MIDR2_SUBMINOR_SHIFT	(26)
 #define SIUL2_MIDR2_SUBMINOR_MASK	(0xF << SIUL2_MIDR2_SUBMINOR_SHIFT)
@@ -128,6 +132,12 @@ static inline int get_siul2_midr1_major(void)
 {
 	return ((readl(SIUL2_MIDR1) & SIUL2_MIDR1_MAJOR_MASK)
 			>> SIUL2_MIDR1_MAJOR_SHIFT);
+}
+
+static inline u32 get_siul2_midr2_freq(void)
+{
+	return ((readl(SIUL2_MIDR2) & SIUL2_MIDR2_FREQ_MASK)
+			>> SIUL2_MIDR2_FREQ_SHIFT);
 }
 
 #if defined(CONFIG_S32_GEN1) && !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
