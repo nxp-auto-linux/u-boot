@@ -60,5 +60,5 @@ u8 get_rgm_a53_bit(u8 core)
 		[7] = 72,
 	};
 
-	return BIT(periph_rgm_cores[core] % 64);
+	return periph_rgm_cores[core] % 64;
 }

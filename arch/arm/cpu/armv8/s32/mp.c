@@ -70,10 +70,8 @@ static unsigned long get_core_start_addr(int core)
 	return readl(MC_ME_PRTN_N_CORE_M_ADDR(MC_ME_CORES_PRTN, core));
 }
 
-static void fsl_s32_wake_secondary_core(int prtn, int core)
+static void enable_a53_core_cluster(int core)
 {
-	u32 reset, resetc;
-
 	/* For S32G2/S32R45 we have the following mapping:
 	 * MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1
 	 * MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1
@@ -81,10 +79,14 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 	 * MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1/2/3
 	 * MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1/2/3
 	 */
-	u32 pconf_index = (core % 4) & ~1;
+	u32 pconf_cluster = (core % 4) & ~1;
+	u32 prtn = MC_ME_CORES_PRTN;
+	u32 stat;
 
-	/* MC_ME holds the low 32 bits of the start_address */
-	writel(gd->relocaddr, MC_ME_PRTN_N_CORE_M_ADDR(prtn, core));
+	stat = readl(MC_ME_PRTN_PART(prtn, pconf_cluster) +
+		     MC_ME_PRTN_N_STAT_OFF);
+	if (stat & MC_ME_PRTN_N_CORE_M_STAT_CCS)
+		return;
 
 	/* If in performance (i.e. not lockstep) mode, the following bits used
 	 * in the core wakeup sequence are only defined for the first core of
@@ -94,23 +96,34 @@ static void fsl_s32_wake_secondary_core(int prtn, int core)
 	 * Enable core clock
 	 */
 	writel(MC_ME_PRTN_N_CORE_M_PCONF_CCE,
-	       MC_ME_PRTN_N_CORE_M_PCONF(prtn, pconf_index));
+	       MC_ME_PRTN_PART(prtn, pconf_cluster) + MC_ME_PRTN_N_PCONF_OFF);
 	writel(MC_ME_PRTN_N_CORE_M_PUPD_CCUPD,
-	       MC_ME_PRTN_N_CORE_M_PUPD(prtn, pconf_index));
+	       MC_ME_PRTN_PART(prtn, pconf_cluster) + MC_ME_PRTN_N_PUPD_OFF);
 
 	/* Write valid key sequence to trigger the update. */
 	writel(MC_ME_CTL_KEY_KEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 	writel(MC_ME_CTL_KEY_INVERTEDKEY, MC_ME_CTL_KEY(MC_ME_BASE_ADDR));
 
 	/* Wait for core clock enable status bit. */
-	while ((readl(MC_ME_PRTN_N_CORE_M_STAT(prtn, pconf_index)) &
-				MC_ME_PRTN_N_CORE_M_STAT_CCS) !=
-			MC_ME_PRTN_N_CORE_M_STAT_CCS)
-		;
+	do {
+		stat = readl(MC_ME_PRTN_PART(prtn, pconf_cluster) +
+			     MC_ME_PRTN_N_STAT_OFF);
+	} while ((stat & MC_ME_PRTN_N_CORE_M_STAT_CCS) !=
+		 MC_ME_PRTN_N_CORE_M_STAT_CCS);
+}
+
+static void fsl_s32_wake_secondary_core(u32 prtn, u32 core)
+{
+	u32 reset, resetc;
+
+	enable_a53_core_cluster(core);
+
+	/* MC_ME holds the low 32 bits of the start_address */
+	writel(gd->relocaddr, MC_ME_PRTN_N_CORE_M_ADDR(prtn, core));
 
 	/* Deassert core reset */
 	reset = readl(RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
-	resetc = get_rgm_a53_bit(core);
+	resetc = BIT(get_rgm_a53_bit(core));
 	reset &= ~resetc;
 	writel(reset, RGM_PRST(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP));
 	while ((readl(RGM_PSTAT(MC_RGM_BASE_ADDR, RGM_CORES_RESET_GROUP))
@@ -142,7 +155,7 @@ int fsl_s32_wake_secondary_cores(void)
 	 */
 	for (i = 1; i <= fls(mask); i++) {
 		if (test_bit(i, &mask))
-			fsl_s32_wake_secondary_core(1, i);
+			fsl_s32_wake_secondary_core(MC_ME_CORES_PRTN, i);
 	}
 
 	smp_kick_all_cpus();
