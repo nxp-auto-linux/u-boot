@@ -28,6 +28,7 @@
 #include <dm/pinctrl.h>
 #include <hwconfig.h>
 
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) || CONFIG_IS_ENABLED(FSL_PFENG)
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 				       void *fdt, int nodeoff)
 {
@@ -38,6 +39,7 @@ static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 		printf("DT: %s%i set to %pM\n", name, idx, ea);
 	}
 }
+#endif
 
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 __maybe_unused static bool intf_is_xmii(u32 intf)
