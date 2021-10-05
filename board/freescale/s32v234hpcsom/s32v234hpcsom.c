@@ -23,14 +23,6 @@ static void setup_iomux_uart(void)
 	writel(SIUL2_MSCR_PORT_CTRL_UART_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA11));
 	/* set UART0 RXD - IMCR[200] - to link to PA11 */
 	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART0_RXD));
-
-	/* set PA14 - MSCR[14] - for UART1 TXD*/
-	writel(SIUL2_MSCR_PORT_CTRL_UART_TXD, SIUL2_MSCRn(SIUL2_MSCR_PA14));
-
-	/* set PA13 - MSCR[13] - for UART1 RXD */
-	writel(SIUL2_MSCR_PORT_CTRL_UART_RXD, SIUL2_MSCRn(SIUL2_MSCR_PA13));
-	/* set UART1 RXD - IMCR[202] - to link to PA13 */
-	writel(SIUL2_IMCR_UART_RXD_to_pad, SIUL2_IMCRn(SIUL2_IMCR_UART1_RXD));
 }
 
 static void setup_iomux_i2c(void)
