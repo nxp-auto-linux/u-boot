@@ -106,6 +106,58 @@
 			status = "okay";
 		};
 	};
+
+	serdes1: serdes@44180000 {
+		compatible = "fsl,s32gen1-serdes";
+		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
+		       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
+		reg-names = "dbi", "ss";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci-generic";
+		device_id = <1>;
+		num-lanes = <1>; /* supports 1 lane */
+		clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+
+		assigned-clocks =
+			<&clks S32R45_CLK_SERDES1_LANE0_TX>,
+			<&clks S32R45_CLK_SERDES1_LANE0_CDR>;
+
+		assigned-clock-parents =
+			<&serdes1_lane0_ext_tx 0>,
+			<&serdes1_lane0_ext_cdr 0>;
+
+		status = "okay";
+	};
+
+	pcie1: pcie@44100000 {
+		compatible = "fsl,s32gen1-pcie";
+		reg =
+			<0x00 0x44100000 0x0 0x80000   /* dbi registers */
+			/* configuration space, 4KB each for cfg0 and cfg1
+			 * at the end of the outbound memory map
+			 */
+			0x4f 0xffffe000 0x0 0x00002000>;
+		reg-names = "dbi", "config";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		serdes-handle = <&serdes1>;
+		device_id = <1>;
+		num-lanes = <1>; /* supports max 1 pcie lane */
+		link-speed = <3>; /* supports Gen3 speed */
+		bus-range = <0x0 0xff>;
+		ranges =
+			/* downstream I/O, 64KB and aligned naturally just before
+			 * the config space to minimize fragmentation
+			 */
+			<0x81000000 0x0 0x00000000 0x4f 0xfffe0000 0x0 0x00010000
+			/* non-prefetchable memory, with best case size
+			 * and alignment
+			 */
+			 0x82000000 0x0 0x00000000 0x48 0x00000000 0x7 0xfffe0000>;
+		status = "okay";
+	};
 };
 
 &serdes0 {

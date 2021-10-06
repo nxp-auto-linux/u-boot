@@ -17,15 +17,6 @@ static struct s32gen1_osc firc =
 static struct s32gen1_osc sirc =
 		S32GEN1_OSC_INIT(S32GEN1_SIRC);
 
-static struct s32gen1_fixed_clock serdes1_lane1_tx =
-		S32GEN1_FIXED_CLK_INIT();
-struct s32gen1_clk serdes1_lane1_tx_clk =
-		S32GEN1_MODULE_CLK(serdes1_lane1_tx);
-static struct s32gen1_fixed_clock serdes1_lane1_cdr =
-		S32GEN1_FIXED_CLK_INIT();
-struct s32gen1_clk serdes1_lane1_cdr_clk =
-		S32GEN1_MODULE_CLK(serdes1_lane1_cdr);
-
 /* Muxes */
 static struct s32gen1_mux arm_pll_mux =
 	S32GEN1_MUX_INIT(S32GEN1_ARM_PLL, 0, 2,
@@ -331,6 +322,16 @@ static struct s32gen1_fixed_clock serdes0_lane0_cdr =
 		S32GEN1_FIXED_CLK_INIT();
 static struct s32gen1_clk serdes0_lane0_cdr_clk =
 		S32GEN1_MODULE_CLK(serdes0_lane0_cdr);
+
+/* S32GEN1_CLK_SERDES1_LANE0_TX */
+static struct s32gen1_fixed_clock serdes1_lane0_tx =
+		S32GEN1_FIXED_CLK_INIT();
+struct s32gen1_clk serdes1_lane0_tx_clk =
+		S32GEN1_MODULE_CLK(serdes1_lane0_tx);
+static struct s32gen1_fixed_clock serdes1_lane0_cdr =
+		S32GEN1_FIXED_CLK_INIT();
+struct s32gen1_clk serdes1_lane0_cdr_clk =
+		S32GEN1_MODULE_CLK(serdes1_lane0_cdr);
 
 /* SPI_CLK */
 static struct s32gen1_mux cgm0_mux16 =
