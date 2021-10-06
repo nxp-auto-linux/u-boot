@@ -131,7 +131,7 @@
 	};
 
 	pcie1: pcie@44100000 {
-		compatible = "fsl,s32gen1-pcie";
+		compatible = "fsl,s32r45-pcie";
 		reg =
 			<0x00 0x44100000 0x0 0x80000   /* dbi registers */
 			/* configuration space, 4KB each for cfg0 and cfg1
@@ -242,6 +242,7 @@
 };
 
 &pcie0 {
+	compatible = "fsl,s32r45-pcie";
 	status = "okay";
 
 	link-speed = <3>; /* Gen3 */

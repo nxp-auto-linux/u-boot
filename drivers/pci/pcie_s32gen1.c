@@ -41,6 +41,9 @@
 
 #define PCI_MAX_BUS_NUM	256
 
+#define PCI_OVERWRITE_DEVICE_ID	1
+#define PCI_DEVICE_ID_S32GEN1	0x4002
+
 DECLARE_GLOBAL_DATA_PTR;
 
 LIST_HEAD(s32_pcie_list);
@@ -887,6 +890,8 @@ static int s32_pcie_probe(struct udevice *dev)
 	struct uclass *uc = dev->uclass;
 	int ret = 0;
 	bool ltssm_en = false;
+	ulong dev_data = dev_get_driver_data(dev);
+
 	pcie->enabled = false;
 
 	debug("%s: probing %s\n", __func__, dev->name);
@@ -911,6 +916,24 @@ static int s32_pcie_probe(struct udevice *dev)
 	}
 
 	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
+
+	if (dev_data & PCI_OVERWRITE_DEVICE_ID) {
+		/* As per S32R45 Reference Manual rev 3 Draft D,
+		 * the device ID for the SoC has to be 0x4002.
+		 * Rev 2 sets it to 0x4003, and we need to fix it.
+		 * Apply this fix regardless of revision, since
+		 * penalty in time and complexity for checking
+		 * revision (2 registers) is bigger than just
+		 * applying the fix.
+		 */
+		s32_pcie_enable_dbi_rw(pcie->dbi);
+		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+			PCI_DEVICE_ID_S32GEN1, PCI_VENDOR_ID_FREESCALE);
+		W32(pcie->dbi + PCI_VENDOR_ID,
+			(PCI_DEVICE_ID_S32GEN1 << 16) |
+				PCI_VENDOR_ID_FREESCALE);
+		s32_pcie_disable_dbi_rw(pcie->dbi);
+	}
 
 	if (pcie->ep_mode)
 		return s32_pcie_probe_ep(pcie, uc);
@@ -1010,6 +1033,8 @@ static const struct dm_pci_ops s32_pcie_ops = {
 
 static const struct udevice_id s32_pcie_ids[] = {
 	{ .compatible = "fsl,s32gen1-pcie" },
+	{ .compatible = "fsl,s32r45-pcie",
+	  .data = PCI_OVERWRITE_DEVICE_ID },
 	{ }
 };
 
