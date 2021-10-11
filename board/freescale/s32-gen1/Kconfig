@@ -43,7 +43,7 @@ config CUSTOM_SYS_DATA_BASE
 
 config SYS_DATA_BASE
 	hex "Data Base" if CUSTOM_SYS_DATA_BASE
-	default 0xff800000 if S32_ATF_BOOT_FLOW
+	default 0xffa00000 if S32_ATF_BOOT_FLOW
 	default 0x34000000
 	help
 	  U-boot data base address (normally SRAM base address)
@@ -57,7 +57,7 @@ config CUSTOM_SYS_TEXT_BASE
 
 config SYS_TEXT_BASE
 	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
-	default 0xff8a0000 if S32_ATF_BOOT_FLOW
+	default 0xffaa0000 if S32_ATF_BOOT_FLOW
 	default 0x340a0000
 
 config SYS_MEM_SIZE
@@ -106,7 +106,7 @@ config CUSTOM_DTB_SRAM_ADDR
 
 config DTB_SRAM_ADDR
 	hex "SRAM address at which the dtb will be found" if CUSTOM_DTB_SRAM_ADDR
-	default 0xff890000 if S32_ATF_BOOT_FLOW
+	default 0xffa90000 if S32_ATF_BOOT_FLOW
 	default 0x34090000
 
 choice
