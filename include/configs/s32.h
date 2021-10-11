@@ -376,7 +376,7 @@
 
 /* Leave room for TF-A & OPTEE */
 #if defined(CONFIG_S32_ATF_BOOT_FLOW)
-#define INITRD_HIGH 0xFE7FFFFF
+#define INITRD_HIGH 0xFE1FFFFF
 #else
 #define INITRD_HIGH INITRD_HIGH_DEFAULT
 #endif
