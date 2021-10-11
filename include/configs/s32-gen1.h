@@ -130,18 +130,4 @@
 #define SDHC_REDUCED_MAP
 #endif
 
-#if !defined(CONFIG_PRAM) && defined(CONFIG_S32_ATF_BOOT_FLOW)
-
-/* 24 MB covering the following:
- *  - 22 MB for optee_os + shared memory between optee_os and linux kernel
- *  - 2 MB for the Secure Monitor
- */
-#define CONFIG_PRAM	24576	/* 24MB */
-
-#ifndef __ASSEMBLY__
-_Static_assert(CONFIG_PRAM * SZ_1K + INITRD_HIGH == INITRD_HIGH_DEFAULT,
-	       "Please adjust INITRD_HIGH when booting with TF-A");
-#endif
-
-#endif
 #endif

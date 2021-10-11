@@ -243,28 +243,6 @@ static void hide_sram(bd_t *bd)
 	}
 }
 
-#if (defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32G3XX)) && \
-	defined(CONFIG_PRAM)
-/* Fixup the DDR node in order to reserve "pram" amount of KB somewhere in the
- * available physical memory. This would typically be used by TF-A as a secure
- * memory, and enforced through XRDC. Making it "invisible" to Linux is only a
- * defensive means of keeping software out of trouble.
- * The point is, u-boot may not be able to probe the whole DRAM (and may not
- * care about all of it anyway), so using "mem=" bootargs would not be enough.
- */
-static void exclude_pram(bd_t *bd)
-{
-	int bank;
-
-	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
-		if (bd->bi_dram[bank].start == CONFIG_SYS_FSL_DRAM_BASE1) {
-			bd->bi_dram[bank].size -= CONFIG_PRAM * SZ_1K;
-			break;
-		}
-	}
-}
-#endif
-
 static void apply_memory_fixups(void *blob, bd_t *bd)
 {
 	u64 start[CONFIG_NR_DRAM_BANKS];
@@ -319,10 +297,6 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 {
 	hide_sram(bd);
 
-#if (defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32G3XX)) && \
-	defined(CONFIG_PRAM)
-	exclude_pram(bd);
-#endif
 	apply_ddr_limits(bd);
 
 	apply_memory_fixups(blob, bd);

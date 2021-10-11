@@ -893,10 +893,6 @@ phys_size_t __weak get_effective_memsize(void)
 	s32_exclude_ecc_range(CONFIG_SYS_FSL_DRAM_BASE1, &size);
 #endif
 
-#ifdef CONFIG_PRAM
-	/* ATF space */
-	size -= CONFIG_PRAM * SZ_1K;
-#endif
 #endif
 	return size;
 }
