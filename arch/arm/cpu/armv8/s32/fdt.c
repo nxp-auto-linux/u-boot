@@ -21,6 +21,8 @@
 #include <ddr_s32gen1_err050543.h>
 #endif
 
+DECLARE_GLOBAL_DATA_PTR;
+
 #define ID_TO_CORE(ID)	(((ID) & 3) | ((ID) >> 7))
 
 #define PCIE_ALIAS_FMT		"pcie%d"
@@ -471,6 +473,64 @@ static void ft_fixup_scmi(void *blob)
 		if (enable_scmi_smc(blob))
 			pr_err("Failed to enable 'arm,smc-mbox' or 'arm,scmi-smc' node\n");
 }
+
+static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
+{
+	int ret, off;
+	struct fdt_memory carveout;
+	struct fdt_resource reg;
+
+	/* Check FDT Headers */
+	if (fdt_check_header(old_blob)) {
+		pr_err("Invalid FDT Header for U-Boot DT Blob\n");
+		return -EINVAL;
+	}
+
+	if (fdt_check_header(new_blob)) {
+		pr_err("Invalid FDT Header for Linux DT Blob\n");
+		return -EINVAL;
+	}
+
+	/* Get atf reserved-memory node offset */
+	off = fdt_path_offset(old_blob, "/reserved-memory/atf");
+	if (off < 0) {
+		pr_err("Couldn't find 'atf' reserved-memory node\n");
+		return off;
+	}
+
+	/* Get value of 'reg' prop */
+	ret = fdt_get_resource(old_blob, off, "reg", 0, &reg);
+	if (ret) {
+		pr_err("Unable to get value of 'reg' prop of 'atf' node\n");
+		return ret;
+	}
+
+	carveout.start = reg.start;
+	carveout.end = reg.end;
+
+	/* Increase Linux DT size before adding new node */
+	ret = fdt_increase_size(new_blob, 512);
+	if (ret < 0) {
+		pr_err("Could not increase size of Linux DT: %s\n",
+		       fdt_strerror(ret));
+		return ret;
+	}
+
+	/* Add 'atf' node to Linux DT */
+	ret = fdtdec_add_reserved_memory(new_blob, "atf", &carveout, NULL);
+	if (ret < 0) {
+		pr_err("Unable to add 'atf' node to Linux DT\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static void ft_fixup_atf(const void *old_blob, void *new_blob)
+{
+	if (add_atf_reserved_memory(old_blob, new_blob))
+		pr_err("Copying 'atf' node from U-Boot DT to Linux DT failed!\n");
+}
 #endif
 
 #ifdef CONFIG_PCIE_S32GEN1
@@ -880,6 +940,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #endif
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
 	ft_fixup_scmi(blob);
+	ft_fixup_atf(gd->fdt_blob, blob);
 #endif
 #ifdef CONFIG_PCIE_S32GEN1
 	ft_fixup_serdes(blob);
