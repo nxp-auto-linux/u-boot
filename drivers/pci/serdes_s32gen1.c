@@ -387,10 +387,13 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 
 	if (IS_SERDES_PCIE(pcie->devtype)) {
 
-		/* Monitor Serdes MPLL state */
+		/* Monitor Serdes MPLL state, which is 1 when
+		 * either MPLLA is 1 (for Gen1 and 2) or
+		 * MPLLB is 1 (for Gen3)
+		 */
 		if (wait_read32((void *)(pcie->dbi + SS_PHY_MPLLA_CTRL),
-			MPLL_STATE | MPLLA_STATE,
-			MPLL_STATE | MPLLA_STATE,
+			MPLL_STATE,
+			MPLL_STATE,
 			PCIE_MPLL_LOCK_COUNT)) {
 			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
 				pcie->id);
