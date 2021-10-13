@@ -32,7 +32,7 @@ ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 
-ifneq ($(filter y,$(CONFIG_NXP_S32G2XX) $(CONFIG_NXP_S32G3XX)),)
+ifneq ($(filter y,$(CONFIG_NXP_S32G2XX)),)
 obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 				ddr_init.o \
 				ddr_utils.o \
@@ -43,6 +43,20 @@ obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 				s32g274a/dq_swap_cfg.o \
 				s32g274a/phy_cfg.o \
 				s32g274a/pie_cfg.o \
+
+endif
+
+ifneq ($(filter y,$(CONFIG_NXP_S32G3XX)),)
+obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
+				ddr_init.o \
+				ddr_utils.o \
+				ddrss_cfg.o \
+				imem_cfg.o \
+				s32g398a/ddrc_cfg.o \
+				s32g398a/dmem_cfg.o \
+				s32g398a/dq_swap_cfg.o \
+				s32g398a/phy_cfg.o \
+				s32g398a/pie_cfg.o \
 
 endif
 

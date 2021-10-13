@@ -37,6 +37,7 @@ static u32 ack_mail(void);
 static u32 init_memory_ecc_scrubber(void);
 static bool sel_clk_src(u32 clk_src);
 
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
 u8 polling_needed = 2;
 
 /* Modify bitfield value with delta, given bitfield position and mask */
@@ -53,6 +54,7 @@ bool update_bf(u32 *v, u8 pos, u32 mask, int32_t delta)
 
 	return ret;
 }
+#endif
 
 /*
  * Set the ddr clock source, FIRC or DDR_PLL_PHI0.
@@ -318,8 +320,9 @@ u32 post_train_setup(u8 options)
 		writel(PWRCTL_EN_DFI_DRAM_CLOCK_DIS_MASK | tmp32,
 		       DDRC_BASE_ADDR + OFFSET_DDRC_PWRCTL);
 
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
 		ret |= enable_derating_temp_errata();
-
+#endif
 		/*
 		 * Each platform has a different number of AXI ports so this
 		 * method should be implemented in hardware specific source
@@ -603,6 +606,7 @@ u32 write_lpddr4_mr(u8 mr_index, u8 mr_data)
 	return NO_ERR;
 }
 
+#ifdef CONFIG_SYS_ERRATUM_ERR050543
 /* Read Temperature Update Flag from lpddr4 MR4 register. */
 u8 read_tuf(void)
 {
@@ -731,3 +735,4 @@ u32 enable_derating_temp_errata(void)
 
 	return NO_ERR;
 }
+#endif
