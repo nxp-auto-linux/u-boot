@@ -33,23 +33,23 @@
 
 struct ddrss_config configs[] = {
 	{
-		.memory_type = LPDDR4,
-		.ddrc_cfg = &ddrc_cfg[0],
-		.ddrc_cfg_size = 0,
-		.dq_swap_cfg = &dq_swap_cfg[0],
-		.dq_swap_cfg_size = 0,
-		.phy_cfg = &phy_cfg[0],
-		.phy_cfg_size = 0,
-		.imem_1d = &imem_1d[0],
+		.memory_type = (u8)LPDDR4,
+		.ddrc = &ddrc_cfg[0],
+		.ddrc_size = 0,
+		.dq_swap = &dq_swap_cfg[0],
+		.dq_swap_size = 0,
+		.phy = &phy_cfg[0],
+		.phy_size = 0,
+		.imem_1d = &imem_1d_cfg[0],
 		.imem_1d_size = 0,
-		.dmem_1d = &dmem_1d[0],
+		.dmem_1d = &dmem_1d_cfg[0],
 		.dmem_1d_size = 0,
-		.imem_2d = &imem_2d[0],
+		.imem_2d = &imem_2d_cfg[0],
 		.imem_2d_size = 0,
-		.dmem_2d = &dmem_2d[0],
+		.dmem_2d = &dmem_2d_cfg[0],
 		.dmem_2d_size = 0,
-		.pie_cfg = &pie_cfg[0],
-		.pie_cfg_size = 0,
+		.pie = &pie_cfg[0],
+		.pie_size = 0,
 	}
 };
 
@@ -58,14 +58,14 @@ void init_image_sizes(void)
 	size_t i;
 
 	for (i = 0; i < ddrss_config_size; i++) {
-		configs[i].ddrc_cfg_size = ddrc_cfg_size;
-		configs[i].dq_swap_cfg_size = dq_swap_cfg_size;
-		configs[i].phy_cfg_size = phy_cfg_size;
-		configs[i].imem_1d_size = imem_1d_size;
-		configs[i].dmem_1d_size = dmem_1d_size;
-		configs[i].imem_2d_size = imem_2d_size;
-		configs[i].dmem_2d_size = dmem_2d_size;
-		configs[i].pie_cfg_size = pie_cfg_size;
+		configs[i].ddrc_size = ddrc_cfg_size;
+		configs[i].dq_swap_size = dq_swap_cfg_size;
+		configs[i].phy_size = phy_cfg_size;
+		configs[i].imem_1d_size = imem_1d_cfg_size;
+		configs[i].dmem_1d_size = dmem_1d_cfg_size;
+		configs[i].imem_2d_size = imem_2d_cfg_size;
+		configs[i].dmem_2d_size = dmem_2d_cfg_size;
+		configs[i].pie_size = pie_cfg_size;
 	}
 }
 

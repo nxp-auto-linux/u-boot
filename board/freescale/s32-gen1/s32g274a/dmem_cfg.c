@@ -31,7 +31,7 @@
 
 #include "ddr_init.h"
 
-u16 dmem_1d[] = {
+u16 dmem_1d_cfg[] = {
 	0x0000,
 	0x0000,
 	0x0000,
@@ -864,9 +864,9 @@ u16 dmem_1d[] = {
 	0x0000,
 };
 
-size_t dmem_1d_size = ARRAY_SIZE(dmem_1d);
+size_t dmem_1d_cfg_size = ARRAY_SIZE(dmem_1d_cfg);
 
-u16 dmem_2d[] = {
+u16 dmem_2d_cfg[] = {
 	0x0000,
 	0x0000,
 	0x0000,
@@ -1571,4 +1571,4 @@ u16 dmem_2d[] = {
 	0x0000,
 };
 
-size_t dmem_2d_size = ARRAY_SIZE(dmem_2d);
+size_t dmem_2d_cfg_size = ARRAY_SIZE(dmem_2d_cfg);
