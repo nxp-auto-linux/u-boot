@@ -1,0 +1,52 @@
+* NXP S32 PCIe interface *
+
+This PCIe host controller is based on the Synopsys DesignWare PCIe IP
+and thus inherits all the common properties defined in designware-pcie.txt.
+
+Required properties:
+- compatible:
+	- "fsl,s32gen1-pcie", for S32Gen1 SoCs (generic)
+	- "fsl,s32r45-pcie", for S32R45 SoCs in particular
+- reg: base address and length of the PCIe controller
+- device_type: must be "pci";
+
+Optional:
+- serdes-handle: handle to the corresponding SerDes alias, if the PCIe
+	controller has a dependency on other SerDes modules (e.g. PHYs);
+- device_id: Id of the devide, starting from 0, when there are more than one;
+- num-lanes: Number of lanes (default 1)
+- link-speed: Link speed (default 1 = Gen1);
+- ranges: Information used for address translation on the PCIe host bus
+	(see https://elinux.org/Device_Tree_Usage#PCI_Address_Translation)
+
+Example:
+
+	pcie0: pcie@40400000 {
+		compatible = "fsl,s32gen1-pcie";
+		reg =
+			<0x00 0x40400000 0x0 0x80000   /* dbi registers */
+			/* configuration space, 4KB each for cfg0 and cfg1
+			 * at the end of the outbound memory map
+			 */
+			0x5f 0xffffe000 0x0 0x00002000>;
+		reg-names = "dbi", "config";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		serdes-handle = <&serdes0>;
+		device_id = <0>;
+		num-lanes = <2>; /* supports max 2 lanes */
+		link-speed = <3>; /* supports Gen3 speed */
+
+		bus-range = <0x0 0xff>;
+		ranges =
+			/* downstream I/O, 64KB and aligned naturally just before
+			 * the config space to minimize fragmentation
+			 */
+			<0x81000000 0x0 0x00000000 0x5f 0xfffe0000 0x0 0x00010000
+			/* non-prefetchable memory, with best case size
+			 * and alignment
+			 */
+			 0x82000000 0x0 0x00000000 0x58 0x00000000 0x7 0xfffe0000>;
+		status = "disabled";
+	};
