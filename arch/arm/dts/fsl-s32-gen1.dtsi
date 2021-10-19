@@ -525,7 +525,7 @@
 	};
 
 	qspi: quadspi@40134000 {
-		compatible = "fsl,vf610-qspi";
+		compatible = "fsl,s32gen1-qspi";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x00000000 0x0 0x20000000>,
