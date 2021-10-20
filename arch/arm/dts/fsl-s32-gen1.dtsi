@@ -210,10 +210,6 @@
 				<&clks S32GEN1_CLK_ARM_PLL_PHI0>;
 			assigned-clock-parents =
 				<&clks S32GEN1_CLK_FXOSC>;
-			assigned-clock-rates =
-				<0>,
-				<S32GEN1_ARM_PLL_VCO_MAX_FREQ>,
-				<S32GEN1_ARM_PLL_PHI0_MAX_FREQ>;
 		};
 
 		armdfs: armdfs@40054000 {
@@ -224,7 +220,7 @@
 				<&clks S32GEN1_CLK_ARM_PLL_DFS1>,
 				<&clks S32GEN1_CLK_ARM_PLL_DFS2>;
 			assigned-clock-rates =
-				<S32GEN1_CLK_ARM_PLL_DFS1_FREQ>,
+				<0>,
 				<800000000>;
 		};
 
@@ -343,7 +339,7 @@
 				<0>,
 				<0>,
 				<80000000>,
-				<S32GEN1_XBAR_2X_FREQ>,
+				<0>,
 				<40000000>,
 				<40000000>,
 				<80000000>,
@@ -364,9 +360,6 @@
 			assigned-clock-parents =
 				<&clks S32GEN1_CLK_ARM_PLL_PHI0>,
 				<0>;
-			assigned-clock-rates =
-				<0>,
-				<S32GEN1_A53_MAX_FREQ>;
 		};
 
 		mc_cgm5: mc_cgm5@40068000 {
