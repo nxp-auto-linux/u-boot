@@ -62,7 +62,7 @@
 
 	firc: firc@0 {
 		compatible = "fixed-clock";
-		clock-frequency = <51000000>;
+		clock-frequency = <48000000>;
 		#clock-cells = <1>;
 	};
 
