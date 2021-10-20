@@ -43,6 +43,7 @@ config CUSTOM_SYS_DATA_BASE
 
 config SYS_DATA_BASE
 	hex "Data Base" if CUSTOM_SYS_DATA_BASE
+	default 0xbfa00000 if S32_ATF_BOOT_FLOW && TARGET_TYPE_S32GEN1_EMULATOR
 	default 0xffa00000 if S32_ATF_BOOT_FLOW
 	default 0x34000000
 	help
@@ -57,6 +58,7 @@ config CUSTOM_SYS_TEXT_BASE
 
 config SYS_TEXT_BASE
 	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
+	default 0xbfaa0000 if S32_ATF_BOOT_FLOW && TARGET_TYPE_S32GEN1_EMULATOR
 	default 0xffaa0000 if S32_ATF_BOOT_FLOW
 	default 0x340a0000
 
@@ -106,6 +108,7 @@ config CUSTOM_DTB_SRAM_ADDR
 
 config DTB_SRAM_ADDR
 	hex "SRAM address at which the dtb will be found" if CUSTOM_DTB_SRAM_ADDR
+	default 0xbfa90000 if S32_ATF_BOOT_FLOW && TARGET_TYPE_S32GEN1_EMULATOR
 	default 0xffa90000 if S32_ATF_BOOT_FLOW
 	default 0x34090000
 
