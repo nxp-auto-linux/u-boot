@@ -60,6 +60,7 @@ enum cmu_fc_clk {
 	XBAR_CLK_M7_0,
 	XBAR_CLK_M7_1,
 	XBAR_CLK_M7_2,
+	XBAR_CLK_M7_3,
 	XBAR_DIV3_CLK,
 	SERDES_REF_CLK,
 	PER_CLK,
@@ -89,6 +90,7 @@ enum cmu_fc_clk {
 	PFE_MAC_2_RX_CLK,
 	FTM_0_REF_CLK,
 	FTM_1_REF_CLK,
+	FLEXRAY_PE_CLK,
 };
 
 struct cmu {
