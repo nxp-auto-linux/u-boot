@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2018, 2020 NXP
+ * Copyright 2017-2018, 2020-2021 NXP
  */
 
 
@@ -564,6 +564,9 @@ static int sja1105_configuration_load(struct sja_parms *sjap)
 		return -ENXIO;
 	}
 
+	if (sja1105_fw_set_load(sjap->devid, sjap->cs))
+		printf("SJA1105 fw set configuration failed\n");
+
 	sja1105_port_cfg(sjap);
 
 	return 0;
@@ -665,10 +668,13 @@ int sja1105_probe(u32 cs, u32 bus)
 
 	sja_debug("devid %X\n", sjap.devid);
 
-	if (sja1105_post_cfg_load_check(&sjap)) {
-		sja_debug("SJA1105 configuration already done. Skipping switch configuration\n");
+	if (sja1105_fw_load_check(sjap.devid, sjap.cs)) {
+		printf("SJA1105 firmware already loaded\n");
 		return 0;
 	}
+
+	sja1105_write_reg32(&sjap, SJA1105_REG_RESET_CTRL, BIT(2));
+	mdelay(5);
 
 	printf("Loading SJA1105 firmware over SPI %d:%d\n", bus, cs);
 
