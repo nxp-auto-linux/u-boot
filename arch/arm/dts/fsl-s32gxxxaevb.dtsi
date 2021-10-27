@@ -3,9 +3,7 @@
  * Copyright 2019-2021 NXP
  */
 
-/dts-v1/;
 #include <dt-bindings/gpio/gpio.h>
-#include "fsl-s32g274a.dtsi"
 
 / {
 	aliases {

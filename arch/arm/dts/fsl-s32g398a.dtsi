@@ -9,9 +9,7 @@
  */
 #include <dt-bindings/clock/s32g3-clock.h>
 
-/dts-v1/;
-
-#include "fsl-s32g.dtsi"
+/delete-node/ &gic;
 / {
 	model = "NXP S32G3XX";
 	compatible = "fsl,s32g398", "fsl,s32gen1",
@@ -30,6 +28,20 @@
 	sram@34000000 {
 		device_type = "memory";
 		reg = <0 0x34000000 0 0x1400000>;
+	};
+
+	gic: interrupt-controller@50800000 {
+		compatible = "arm,gic-v3";
+		#interrupt-cells = <3>;
+		#address-cells = <2>;
+		#size-cells = <2>;
+		interrupt-controller;
+		reg = <0 0x50800000 0 0x10000>, /* GIC Dist */
+		      <0 0x50900000 0 0x200000>, /* GICR (RD_base + SGI_base) */
+		      <0 0x50400000 0 0x2000>, /* GICC */
+		      <0 0x50410000 0 0x2000>, /* GICH */
+		      <0 0x50420000 0 0x2000>; /* GICV */
+		interrupts = <1 9 0xf04>;
 	};
 };
 

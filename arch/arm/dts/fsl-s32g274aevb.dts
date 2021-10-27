@@ -4,4 +4,5 @@
  */
 
 /dts-v1/;
+#include "fsl-s32g274a.dtsi"
 #include "fsl-s32gxxxaevb.dtsi"
