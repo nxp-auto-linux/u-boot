@@ -329,9 +329,13 @@ static int enable_cgm_div(struct s32gen1_clk_obj *module,
 		return -EINVAL;
 	}
 
+	mux = get_cgm_div_mux(div);
+	if (!mux)
+		return -EINVAL;
+
 	if (!div->freq) {
-		pr_err("The frequency of the divider %d is not set\n",
-		       div->index);
+		pr_err("The frequency of the divider %d is not set (mux = %u)\n",
+		       div->index, mux->index);
 		return -EINVAL;
 	}
 
@@ -341,22 +345,20 @@ static int enable_cgm_div(struct s32gen1_clk_obj *module,
 
 	pfreq = (double)get_module_rate(div->parent, priv);
 	if (!pfreq) {
-		pr_err("Failed to get the frequency of CGM MUX\n");
+		pr_err("Failed to get the frequency of CGM MUX (id = %u)\n",
+		       mux->index);
 		return -EINVAL;
 	}
 
 	dc = (u32)(pfreq / div->freq);
 	if ((ulong)(pfreq / dc) != div->freq) {
-		pr_err("Cannot set CGM divider for input = %lu & output = %lu. Nearest freq = %lu\n",
-		       (ulong)pfreq, div->freq, (ulong)(pfreq / dc));
+		pr_err("Cannot set CGM divider (mux = %u div = %u) for input = %lu & output = %lu. Nearest freq = %lu\n",
+		       mux->index, div->index, (ulong)pfreq,
+		       div->freq, (ulong)(pfreq / dc));
 #ifndef CONFIG_S32GEN1_SET_NEAREST_FREQ
 		return -EINVAL;
 #endif
 	}
-
-	mux = get_cgm_div_mux(div);
-	if (!mux)
-		return -EINVAL;
 
 	cgm_addr = get_base_addr(mux->module, priv);
 	if (!cgm_addr) {

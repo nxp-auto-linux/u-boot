@@ -57,14 +57,16 @@ static int bind_clk_provider(struct udevice *pdev, const char *compatible,
 	/* Pre probe */
 	ret = clk_set_defaults(dev, 0);
 	if (ret) {
-		pr_err("Failed to set default clocks for '%s'\n", compatible);
+		pr_err("Failed to set default clocks(0) for '%s'\n",
+		       compatible);
 		return -EIO;
 	}
 
 	/* Post probe */
 	ret = clk_set_defaults(dev, 1);
 	if (ret) {
-		pr_err("Failed to set default clocks for '%s'\n", compatible);
+		pr_err("Failed to set default clocks(1) for '%s'\n",
+		       compatible);
 		return -EIO;
 	}
 
