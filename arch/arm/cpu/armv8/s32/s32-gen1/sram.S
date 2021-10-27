@@ -20,25 +20,39 @@
  * addr := ((addr >> 9) << 2) | ((addr >> 4) & 0x3);
  *
  * On S32G3
- * mem_addr[16:0] = {bus_addr[24:10], bus_addr[5:4]}
+ * mem_addr[16:0] = { (bus_addr[24:20] modulo 5), bus_addr[19:8], bus_addr[5:4]}
  *
- * addr := ((addr >> 10) << 2) | ((addr >> 4) & 0x3);
+ * addr := ((addr & 0x30) >> 4) |
+ *         (((addr & 0xFFF00) >> 8) << 2) |
+ *         (((addr & 0x1F00000) >> 20) % 5) << 14
  *
  * x0: SRAM bus address
  * ret: x0: Initialization address
  *
- * Clobber list: x0,x4,x5
+ * Clobber list: x0,x4,x5,x6
  */
 ENTRY(calc_sramc_addr)
 #if defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32R45)
 	lsr	x4, x0, #9
-#else /* CONFIG_NXP_S32G3XX */
-	lsr	x4, x0, #10
-#endif
 	lsl	x4, x4, #2
 	lsr	x5, x0, #4
 	and	x5, x5, #3
 	orr	x0, x4, x5
+#else /* CONFIG_NXP_S32G3XX */
+	ubfx	x5, x0, #20, #5
+	mov	w4, #0xcccd
+	movk	w4, #0xcccc, lsl #16
+	lsr	w6, w0, #6
+	and	w6, w6, #0x3ffc
+	ubfx	x0, x0, #4, #2
+	umull	x4, w5, w4
+	orr	w0, w0, w6
+	lsr	x4, x4, #32
+	lsr	w4, w4, #2
+	add	w4, w4, w4, lsl #2
+	sub	w4, w5, w4
+	orr	w0, w0, w4, lsl #14
+#endif
 	ret
 ENDPROC(calc_sramc_addr)
 
