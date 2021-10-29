@@ -85,6 +85,7 @@
 #define RDC_RD_STAT_XBAR_DISABLE_MASK	BIT(4)
 
 u8 mc_me_core2prtn_core_id(u8 part, u8 id);
+u32 mc_me_get_cluster_ptrn(u32 core);
 
 #endif
 

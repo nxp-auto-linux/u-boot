@@ -62,3 +62,13 @@ u8 get_rgm_a53_bit(u8 core)
 
 	return periph_rgm_cores[core] % 64;
 }
+
+u32 mc_me_get_cluster_ptrn(u32 core)
+{
+	/**
+	 * For G32G3 we have the following mapping:
+	 *     MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1/2/3
+	 *     MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1/2/3
+	 */
+	return mc_me_core2prtn_core_id(MC_ME_CORES_PRTN, core) & 2;
+}

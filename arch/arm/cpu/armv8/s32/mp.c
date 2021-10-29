@@ -72,14 +72,7 @@ static unsigned long get_core_start_addr(int core)
 
 static void enable_a53_core_cluster(int core)
 {
-	/* For S32G2/S32R45 we have the following mapping:
-	 * MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1
-	 * MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1
-	 * For G32G3 we have the following mapping:
-	 * MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1/2/3
-	 * MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1/2/3
-	 */
-	u32 pconf_cluster = (core % 4) & ~1;
+	u32 pconf_cluster = mc_me_get_cluster_ptrn(core);
 	u32 prtn = MC_ME_CORES_PRTN;
 	u32 stat;
 
