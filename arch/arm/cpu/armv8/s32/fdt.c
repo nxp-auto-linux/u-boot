@@ -23,8 +23,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define ID_TO_CORE(ID)	(((ID) & 3) | ((ID) >> 7))
-
 #define PCIE_ALIAS_FMT		"pcie%d"
 #define PCIE_ALIAS_SIZE		sizeof(PCIE_ALIAS_FMT)
 
@@ -142,7 +140,7 @@ void ft_fixup_cpu(void *blob)
 		}
 
 		core_id = fdt_read_number(reg, addr_cells);
-		if (!test_bit(ID_TO_CORE(core_id), &mask)) {
+		if (!test_bit(fdt_to_cpu_id(core_id), &mask)) {
 			fdt_del_node(blob, off);
 			off = off_prev;
 		} else {

@@ -42,10 +42,16 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+__weak u32 cpu_pos_lockstep_mask(void)
+{
+	return CPUMASK_LOCKSTEP;
+}
+
 __weak u32 cpu_pos_mask(void)
 {
 	if (is_a53_lockstep_enabled())
-		return cpu_pos_mask_cluster0();
+		return cpu_pos_lockstep_mask();
+
 	return cpu_pos_mask_cluster0() | cpu_pos_mask_cluster1();
 }
 
@@ -406,4 +412,9 @@ __weak u32 mc_me_get_cluster_ptrn(u32 core)
 	 *     MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1
 	 */
 	return (core % 4) & ~1;
+}
+
+__weak u64 fdt_to_cpu_id(u64 fdt_id)
+{
+	return (fdt_id & 0x3u) | (fdt_id >> 0x7u);
 }

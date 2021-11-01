@@ -19,6 +19,7 @@ void *get_spin_tbl_addr(void);
 phys_addr_t determine_mp_bootpg(void);
 void secondary_boot_func(void);
 u32 cpu_pos_mask(void);
+u64 fdt_to_cpu_id(u64 fdt_id);
 #endif
 
 #endif /* _S32_MP_H */

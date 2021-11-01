@@ -1155,3 +1155,8 @@ u32 get_sram_size(void)
 {
 	return S32_SRAM_SIZE;
 }
+
+u64 fdt_to_cpu_id(u64 fdt_id)
+{
+	return (fdt_id & 0x3u) | (fdt_id >> 0x7u);
+}
