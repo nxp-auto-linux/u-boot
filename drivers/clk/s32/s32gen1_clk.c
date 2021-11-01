@@ -589,7 +589,7 @@ int s32gen1_get_early_clks_freqs(const struct siul2_freq_mapping **mapping)
 	freq = get_siul2_midr2_freq();
 
 	/* Last entry is empty */
-	for (i = 0; siul2_clk_freq_map[i].siul2_midr2_freq != 0; i++)
+	for (i = 0; siul2_clk_freq_map[i].a53_freq != 0; i++)
 
 		if (siul2_clk_freq_map[i].siul2_midr2_freq == freq) {
 			*mapping = &siul2_clk_freq_map[i];

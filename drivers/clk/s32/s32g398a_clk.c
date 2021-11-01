@@ -194,5 +194,12 @@ const struct siul2_freq_mapping siul2_clk_freq_map[] = {
 			S32GEN1_ARM_PLL_VCO_MAX_FREQ,
 			S32GEN1_ARM_PLL_PHI0_MAX_FREQ,
 			S32GEN1_XBAR_2X_MAX_FREQ),
+
+	/* Test samples, let's assume it's S32G399A */
+	SIUL2_FREQ_MAP(0x0, S32GEN1_A53_MAX_FREQ,
+		       S32GEN1_ARM_PLL_VCO_MAX_FREQ,
+		       S32GEN1_ARM_PLL_PHI0_MAX_FREQ,
+		       S32GEN1_XBAR_2X_MAX_FREQ),
+
 	{} /* empty entry */
 };
