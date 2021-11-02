@@ -32,6 +32,9 @@
 #define WSP_VERSION_SILICON_G2		0x00050300
 #define WSP_VERSION_SILICON_G3		0x00000101
 
+#define WSP_FAIL_STOP_MODE_EN		(0xB4)
+#define WSP_FAIL_STOP_MODE_INT_EN	(0xC0)
+#define WSP_ECC_ERR_INT_EN		(0x130)
 #define WSP_DBUG_BUS1			(0xA4)
 
 #define SOFT_RESET_DONE			BIT(19)
@@ -1932,6 +1935,30 @@ static int pfeng_hw_soft_reset_g3(struct pfe_platform *platform)
 	return 0;
 }
 
+static void safety_clear(struct pfe_platform *pfe)
+{
+	u32 *addr;
+
+	if (pfe->on_g3) {
+		/* Disable S32G3 safety */
+
+		addr = (u32 *)(void *)((uint64_t)pfe->cbus_baseaddr +
+				    CBUS_GLOBAL_CSR_BASE_ADDR +
+				    WSP_FAIL_STOP_MODE_INT_EN);
+		writel(0x0, addr);
+
+		addr = (u32 *)(void *)((uint64_t)pfe->cbus_baseaddr +
+				    CBUS_GLOBAL_CSR_BASE_ADDR +
+				    WSP_FAIL_STOP_MODE_EN);
+		writel(0x0, addr);
+
+		addr = (u32 *)(void *)((uint64_t)pfe->cbus_baseaddr +
+				    CBUS_GLOBAL_CSR_BASE_ADDR +
+				    WSP_ECC_ERR_INT_EN);
+		writel(0x0, addr);
+	}
+}
+
 int pfeng_hw_init(struct pfe_platform_config *config)
 {
 	int ret = 0;
@@ -1969,6 +1996,8 @@ int pfeng_hw_init(struct pfe_platform_config *config)
 		pr_err("PFE: Silicon HW version is unknown: 0x%x\n", val);
 		pfe.on_g3 = false;
 	}
+
+	safety_clear(&pfe);
 
 	/* Init LMEM */
 	addr = (u32 *)(void *)((uint64_t)pfe.cbus_baseaddr +
