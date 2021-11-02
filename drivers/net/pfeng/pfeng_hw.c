@@ -28,6 +28,10 @@
 
 #include "pfe_cbus.h"
 
+#define WSP_VERSION			(0)
+#define WSP_VERSION_SILICON_G2		0x00050300
+#define WSP_VERSION_SILICON_G3		0x00000101
+
 static struct pfe_platform pfe;
 
 static const struct pfe_ct_hif_tx_hdr header[3U] = {
@@ -1905,6 +1909,25 @@ int pfeng_hw_init(struct pfe_platform_config *config)
 		goto exit;
 	}
 
+	/* Check version */
+	addr = (u32 *)((uint64_t)pfe.cbus_baseaddr +
+				 CBUS_GLOBAL_CSR_BASE_ADDR + WSP_VERSION);
+	val = readl(addr);
+	if (val == WSP_VERSION_SILICON_G2) {
+		/* S32G2 */
+		pr_debug("PFE: S32G2 detected\n");
+		pfe.on_g3 = false;
+	} else if (val == WSP_VERSION_SILICON_G3) {
+		/* S32G3 */
+		pr_debug("PFE: S32G3 detected\n");
+		pfe.on_g3 = true;
+	} else {
+		/* Unknown */
+		pr_err("PFE: Silicon HW version is unknown: 0x%x\n", val);
+		pfe.on_g3 = false;
+	}
+
+	/* Init LMEM */
 	addr = (u32 *)(void *)((uint64_t)pfe.cbus_baseaddr +
 				    CBUS_LMEM_BASE_ADDR);
 	pr_debug("Initializing LMEM (%d bytes)\n", (int)CBUS_LMEM_SIZE);

@@ -74,6 +74,7 @@ struct pfe_platform {
 	u32 hif_chnl_count; /* Number of HIF channels */
 	u32 emac_count;	    /* Number of EMAC blocks */
 	u8  emac_mdio_div;  /* Divider for mdio clk */
+	u8  on_g3;          /* True if running on S32G3 */
 	u32 gpi_total;	    /* Number of GPI/ETGPI/HGPI blocks */
 	u32 gpi_count;	    /* Number of GPI blocks */
 	u32 etgpi_count;	    /* Number of ETGPI blocks */
