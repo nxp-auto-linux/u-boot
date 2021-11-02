@@ -1041,13 +1041,16 @@ static int pfeng_hw_init_hif(struct pfe_platform *platform,
 	writel(0xffffffffU, base + HIF_RX_FIFO_ERR_INT_SRC);
 
 	/* SOFT RESET */
-	writel(0xfu, base + HIF_SOFT_RESET);
-	while (readl(base + HIF_SOFT_RESET)) {
-		if (++ii < 1000u)
+	writel(HIF_SOFT_RESET_CMD, base + HIF_SOFT_RESET);
+	while (readl(base + HIF_SOFT_RESET) & ~CSR_SW_RESET) {
+		if (++ii < 1000u) {
 			mdelay(1);
-		else
+		} else {
+			pr_err("HIF reset timed out.\n");
 			return -ETIMEDOUT;
+		}
 	}
+	writel(0, base + HIF_SOFT_RESET);
 
 	/* Numbers of poll cycles */
 	writel((0xff << 16) | (0xff), base + HIF_TX_POLL_CTRL);

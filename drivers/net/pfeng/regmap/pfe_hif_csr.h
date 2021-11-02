@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
  *  Copyright (c) 2020 Imagination Technologies Limited
- *  Copyright 2018-2020 NXP
+ *  Copyright 2018-2021 NXP
  */
 
 /**
@@ -316,6 +316,17 @@
 #define HIF_AXI_BDP_CSR_RX_BVALID_FIFO_INDERRUN_INT BIT(18)
 #define DXR_CSR_RX_BVALID_FIFO_UNDERRUN_INT	    BIT(19)
 #define HIF_AXI_DXR_CSR_RX_BVALID_FIFO_UNDERRUN_INT BIT(20)
+
+/*	HIF_SOFT_RESET bits */
+#define SYS_SW_RESET_RX_PATH			    BIT(0)
+#define SYS_SW_RESET_TX_PATH			    BIT(1)
+#define SYS_SW_RESET_RX_TX_PATH			    BIT(2)
+#define CSR_SW_RESET				    BIT(3)
+#define HIF_SOFT_RESET_CMD			    (SYS_SW_RESET_RX_PATH | \
+						     SYS_SW_RESET_TX_PATH | \
+						     SYS_SW_RESET_RX_TX_PATH | \
+						     CSR_SW_RESET)
+
 #endif /* PFE_HIF_CSR_H_ */
 
 /** @}*/
