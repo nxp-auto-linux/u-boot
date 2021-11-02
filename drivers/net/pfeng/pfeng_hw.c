@@ -32,6 +32,16 @@
 #define WSP_VERSION_SILICON_G2		0x00050300
 #define WSP_VERSION_SILICON_G3		0x00000101
 
+#define WSP_DBUG_BUS1			(0xA4)
+
+#define SOFT_RESET_DONE			BIT(19)
+#define BMU1_SOFT_RESET_DONE		BIT(20)
+#define BMU2_SOFT_RESET_DONE		BIT(21)
+
+#define SOFT_RESET_DONE_CLEAR		BIT(27)
+#define BMU1_SOFT_RESET_DONE_CLEAR	BIT(28)
+#define BMU2_SOFT_RESET_DONE_CLEAR	BIT(29)
+
 static struct pfe_platform pfe;
 
 static const struct pfe_ct_hif_tx_hdr header[3U] = {
@@ -1873,7 +1883,7 @@ int pfeng_hw_stop(struct pfe_platform *platform, int emac)
 	return 0;
 }
 
-int pfeng_hw_soft_reset(struct pfe_platform *platform)
+static int pfeng_hw_soft_reset_g2(struct pfe_platform *platform)
 {
 	void *addr;
 	u32 regval;
@@ -1887,6 +1897,36 @@ int pfeng_hw_soft_reset(struct pfe_platform *platform)
 	mdelay(100); /* 100ms (taken from reference code) */
 
 	regval &= ~(1U << 30);
+	writel(regval, addr);
+
+	return 0;
+}
+
+static int pfeng_hw_soft_reset_g3(struct pfe_platform *platform)
+{
+	void *addr, *addr2;
+	u32 regval;
+	u32 retries = 1000;
+
+	addr = (void *)(CBUS_GLOBAL_CSR_BASE_ADDR + 0x20U +
+			(uint64_t)(pfe.cbus_baseaddr));
+	regval = readl(addr) | (1U << 30);
+	writel(regval, addr);
+
+	mdelay(10);
+
+	addr2 = (void *)(CBUS_GLOBAL_CSR_BASE_ADDR + WSP_DBUG_BUS1 +
+			(uint64_t)(pfe.cbus_baseaddr));
+	while (!(readl(addr2) & (SOFT_RESET_DONE | BMU1_SOFT_RESET_DONE |
+				 BMU2_SOFT_RESET_DONE))) {
+		if (retries-- == 0)
+			return -ETIME;
+
+		mdelay(1);
+	}
+
+	regval = readl(addr) | SOFT_RESET_DONE_CLEAR |
+		 BMU1_SOFT_RESET_DONE_CLEAR | BMU2_SOFT_RESET_DONE_CLEAR;
 	writel(regval, addr);
 
 	return 0;
@@ -1978,8 +2018,14 @@ int pfeng_hw_init(struct pfe_platform_config *config)
 		goto exit;
 
 	/* SOFT RESET */
-	if (pfeng_hw_soft_reset(&pfe))
+	if (pfe.on_g3)
+		ret = pfeng_hw_soft_reset_g3(&pfe);
+	else
+		ret = pfeng_hw_soft_reset_g2(&pfe);
+	if (ret) {
 		pr_err("Platform reset failed\n");
+		goto exit;
+	}
 
 	/* HIF (HIF DOES NOT LIKE SOFT RESET ONCE HAS BEEN CONFIGURED...) */
 	ret = pfeng_hw_init_hif(&pfe, config);
