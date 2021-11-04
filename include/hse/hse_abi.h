@@ -256,6 +256,7 @@ struct hse_sign_scheme {
  * @sign_sch: auth scheme used to verify the SMR
  * @auth_tag: location of SMR signature in flash
  * @decrypt_key_handle: specifies parameters for smr decryption
+ * @version_offset: unused, must be set to 0
  */
 struct hse_smr_entry {
 	u32 smr_src;
@@ -270,6 +271,7 @@ struct hse_smr_entry {
 	u8 reserved2[4];
 	u32 decrypt_key_handle;
 	u8 reserved3[12];
+	u32 version_offset;
 } __packed;
 
 /**

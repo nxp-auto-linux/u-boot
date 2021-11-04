@@ -243,6 +243,7 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 	smr_entry->sign_sch.sch.hash_algo = HSE_HASH_ALGO_SHA_1;
 	smr_entry->auth_tag = HSE_AUTH_TAG_SD;
 	smr_entry->decrypt_key_handle = HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED;
+	smr_entry->version_offset = 0;
 
 	priv->srv_desc.srv_id = HSE_SRV_ID_SMR_ENTRY_INSTALL;
 	smr_install_req->access_mode = HSE_ACCESS_MODE_ONE_PASS;
