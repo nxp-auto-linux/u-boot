@@ -341,16 +341,15 @@ static int enable_saf1508bet(void)
 
 int arch_misc_init(void)
 {
-	int ret = 0;
-
 	clear_swt_faults();
 
 #ifdef CONFIG_SAF1508BET_USB_PHY
-	ret = enable_saf1508bet();
-	if (ret)
-		return ret;
+	/* The usb phy must be probed in u-boot in order to have a working USB
+	 * interface in linux.
+	 */
+	enable_saf1508bet();
 #endif
-	return ret;
+	return 0;
 }
 
 #ifdef CONFIG_FSL_DSPI
