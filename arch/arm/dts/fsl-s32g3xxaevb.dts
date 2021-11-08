@@ -7,3 +7,11 @@
 #include "fsl-s32g.dtsi"
 #include "fsl-s32g3.dtsi"
 #include "fsl-s32gxxxaevb.dtsi"
+
+&pcie0 {
+	no-check-serdes;
+};
+
+&pcie1 {
+	no-check-serdes;
+};

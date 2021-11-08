@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -152,6 +152,7 @@ struct s32_pcie {
 	int id;
 	bool enabled;
 	bool ep_mode;
+	bool no_check_serdes;
 	enum serdes_link_width linkwidth;
 	enum pcie_link_speed linkspeed;
 	int atu_out_num;

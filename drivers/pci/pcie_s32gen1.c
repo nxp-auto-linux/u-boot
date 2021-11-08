@@ -754,6 +754,9 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	/* get supported width (X1/X2) from device tree */
 	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
 
+	if (fdt_getprop(fdt, node, "no-check-serdes", NULL))
+		pcie->no_check_serdes = true;
+
 	return ret;
 }
 
@@ -893,6 +896,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	ulong dev_data = dev_get_driver_data(dev);
 
 	pcie->enabled = false;
+	pcie->no_check_serdes = false;
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
@@ -907,6 +911,13 @@ static int s32_pcie_probe(struct udevice *dev)
 	ret = s32_pcie_get_config_from_device_tree(pcie);
 	if (ret)
 		return ret;
+
+	if (!pcie->no_check_serdes) {
+		if (!is_serdes_subsystem_present()) {
+			printf("SerDes Subsystem is not present, skipping configuring PCIe\n");
+			return -ENODEV;
+		}
+	}
 
 	ltssm_en = is_s32gen1_pcie_ltssm_enabled(pcie);
 	if (!ltssm_en) {
