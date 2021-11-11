@@ -35,7 +35,7 @@ static u32 enable_axi_ports(void);
 static u32 get_mail(u32 *mail);
 static u32 ack_mail(void);
 static u32 init_memory_ecc_scrubber(void);
-static bool sel_clk_src(u32 clk_src);
+static void sel_clk_src(u32 clk_src, bool *already_set);
 
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 u8 polling_needed = 2;
@@ -59,18 +59,19 @@ bool update_bf(u32 *v, u8 pos, u32 mask, int32_t delta)
 /*
  * Set the ddr clock source, FIRC or DDR_PLL_PHI0.
  * @param clk_src - requested clock source
- * @return - true whether clock source has been changed, false otherwise
+ * @param already_set - whether clock source is already set to clk_src or not
  */
-static bool sel_clk_src(u32 clk_src)
+static void sel_clk_src(u32 clk_src, bool *already_set)
 {
 	u32 tmp32;
-	bool ret = true;
 
 	/* Check if the clock source is already set to clk_src*/
 	tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
 	if (((tmp32 & CSS_SELSTAT_MASK) >> CSS_SELSTAT_POS) == clk_src) {
-		ret = false;
+		*already_set = true;
 	} else {
+		*already_set = false;
+
 		/* To wait till clock switching is completed */
 		do {
 			tmp32 = readl(MC_CGM5_BASE_ADDR + OFFSET_MUX_0_CSS);
@@ -106,14 +107,13 @@ static bool sel_clk_src(u32 clk_src)
 		} while (((tmp32 & CSS_SELSTAT_MASK) >> CSS_SELSTAT_POS)
 			 != clk_src);
 	}
-	return ret;
 }
 
 /* Sets default AXI parity. */
 u32 set_axi_parity(void)
 {
 	u32 tmp32;
-	bool switched_to_firc;
+	bool already_set;
 
 	/* Enable Parity For All AXI Interfaces */
 	tmp32 = readl(DDR_SS_REG);
@@ -132,18 +132,18 @@ u32 set_axi_parity(void)
 
 	/*
 	 * Set ddr clock source on FIRC_CLK.
-	 * If it's already set on FIRC_CLK, it returns false.
+	 * If it's already set on FIRC_CLK, already_set becomes true.
 	 */
-	switched_to_firc = sel_clk_src(FIRC_CLK_SRC);
+	sel_clk_src(FIRC_CLK_SRC, &already_set);
 
 	/* De-assert Reset To Controller and AXI Ports */
 	tmp32 = readl(MC_RGM_PRST_0);
 	writel(~(FORCED_RESET_ON_PERIPH << PRST_0_PERIPH_3_RST_POS) &
 	       tmp32, MC_RGM_PRST_0);
 
-	/* Check if the initial clock source was not on FIRC */
-	if (switched_to_firc)
-		switched_to_firc = sel_clk_src(DDR_PHI0_PLL);
+	/* Check if the initial clock source was not already set FIRC */
+	if (!already_set)
+		sel_clk_src(DDR_PHI0_PLL, &already_set);
 
 	/* Enable HIF, CAM Queueing */
 	writel(DBG1_DISABLE_DE_QUEUEING, DDRC_BASE_ADDR + OFFSET_DDRC_DBG1);
@@ -336,24 +336,15 @@ u32 post_train_setup(u8 options)
 u32 wait_firmware_execution(void)
 {
 	u32 mail = 0;
-	u32 ret;
-	bool exit_loop = false;
+	u32 ret = NO_ERR;
 
-	while (!exit_loop) {
-		/* Obtain message from PHY (major message) */
+	while ((mail != TRAINING_OK_MSG) && (ret == NO_ERR)) {
 		ret = get_mail(&mail);
 
-		if (ret == NO_ERR) {
-			if (mail == TRAINING_OK_MSG) {
-				/* 0x07 means OK, 0xFF means failure */
-				exit_loop = true;
-			} else if (mail == TRAINING_FAILED_MSG) {
-				/* Training stage failed */
-				ret = TRAINING_FAILED;
-				exit_loop = true;
-			}
-		} else {
-			exit_loop = true;
+		/* 0x07 means OK, 0xFF means failure */
+		if (mail == TRAINING_FAILED_MSG) {
+			/* Training stage failed */
+			ret = TRAINING_FAILED;
 		}
 	}
 
@@ -556,7 +547,7 @@ u32 write_lpddr4_mr(u8 mr_index, u8 mr_data)
 
 	/* Set MRR_DDR_SEL_REG to 0x1 to enable LPDDR4 mode */
 	tmp32 = readl(PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
-	writel(tmp32 | MRCTRL0_MR_TYPE_READ,
+	writel(tmp32 | MRR_0_DDR_SEL_REG_MASK,
 	       PERF_BASE_ADDR + OFFSET_MRR_0_DATA_REG_ADDR);
 
 	/*

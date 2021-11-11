@@ -47,29 +47,29 @@
 #define BITFIELD_EXCEEDED   0x00000004U
 
 /* DDRC related */
-#define DDRC_BASE_ADDR                   0x403C0000U
-#define OFFSET_DDRC_SWCTL                0x320U
-#define OFFSET_DDRC_DFIMISC              0x1b0U
-#define OFFSET_DDRC_DFISTAT              0x1bcU
-#define OFFSET_DDRC_PWRCTL               0x30U
-#define OFFSET_DDRC_SWSTAT               0x324U
-#define OFFSET_DDRC_STAT                 0x04U
-#define OFFSET_DDRC_DBG1                 0x304U
-#define OFFSET_DDRC_ECCCFG0              0x70U
-#define OFFSET_DDRC_ECCCFG1              0x74U
-#define OFFSET_DDRC_SBRCTL               0xf24U
-#define OFFSET_DDRC_SBRSTAT              0xf28U
-#define OFFSET_DDRC_SBRWDATA0            0xf2cU
-#define OFFSET_DDRC_MRSTAT               0x18U
-#define OFFSET_DDRC_MRCTRL0              0x10U
-#define OFFSET_DDRC_MRCTRL1              0x14U
+#define DDRC_BASE_ADDR                   (u32)0x403C0000U
+#define OFFSET_DDRC_SWCTL                (u32)0x320U
+#define OFFSET_DDRC_DFIMISC              (u32)0x1b0U
+#define OFFSET_DDRC_DFISTAT              (u32)0x1bcU
+#define OFFSET_DDRC_PWRCTL               (u32)0x30U
+#define OFFSET_DDRC_SWSTAT               (u32)0x324U
+#define OFFSET_DDRC_STAT                 (u32)0x04U
+#define OFFSET_DDRC_DBG1                 (u32)0x304U
+#define OFFSET_DDRC_ECCCFG0              (u32)0x70U
+#define OFFSET_DDRC_ECCCFG1              (u32)0x74U
+#define OFFSET_DDRC_SBRCTL               (u32)0xf24U
+#define OFFSET_DDRC_SBRSTAT              (u32)0xf28U
+#define OFFSET_DDRC_SBRWDATA0            (u32)0xf2cU
+#define OFFSET_DDRC_MRSTAT               (u32)0x18U
+#define OFFSET_DDRC_MRCTRL0              (u32)0x10U
+#define OFFSET_DDRC_MRCTRL1              (u32)0x14U
 
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
-#define OFFSET_DDRC_DERATEEN             0x20U
-#define OFFSET_DDRC_RFSHTMG              0x64U
-#define OFFSET_DDRC_DRAMTMG0             0x100U
-#define OFFSET_DDRC_DRAMTMG1             0x104U
-#define OFFSET_DDRC_DRAMTMG4             0x110U
+#define OFFSET_DDRC_DERATEEN             (u32)0x20U
+#define OFFSET_DDRC_RFSHTMG              (u32)0x64U
+#define OFFSET_DDRC_DRAMTMG0             (u32)0x100U
+#define OFFSET_DDRC_DRAMTMG1             (u32)0x104U
+#define OFFSET_DDRC_DRAMTMG4             (u32)0x110U
 #endif
 
 /* DDRC masks and values */
@@ -83,7 +83,7 @@
 
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 #define RFSHTMG_VAL_SHIFT           16
-#define RFSHTMG_VAL                 0xfffUL
+#define RFSHTMG_VAL                 (u32)0xfffU
 #define RFSHTMG_MASK                (RFSHTMG_VAL << \
 	RFSHTMG_VAL_SHIFT)
 #define RFSHCTL3_UPDATE_SHIFT       1
@@ -147,58 +147,58 @@
 #define	DFISTAT_DFI_INIT_DONE		0x1U
 #define	DFISTAT_DFI_INIT_INCOMPLETE	0x0U
 #define	PWRCTL_SELFREF_SW_MASK		0x00000020U
-#define	STAT_OPERATING_MODE_MASK		0x7U
-#define	STAT_OPERATING_MODE_INIT		0x0U
+#define	STAT_OPERATING_MODE_MASK	0x7U
+#define	STAT_OPERATING_MODE_INIT	0x0U
 #define	RFSHCTL3_DIS_AUTO_REFRESH_MASK	0x00000001U
 #define	ECCCFG0_ECC_MODE_MASK		0x7U
 #define	ECCCFG0_ECC_DISABLED		0x0U
 #define	TRAINING_OK_MSG			0x07U
 #define	TRAINING_FAILED_MSG		0xFFU
-#define	ECCCFG1_REGION_PARITY_LOCKED	0x1UL
+#define	ECCCFG1_REGION_PARITY_LOCKED	(u32)0x1U
 #define	ECCCFG1_REGION_PARITY_LOCK_POS	4
-#define	SBRCTL_SCRUB_MODE_WRITE		0x1UL
+#define	SBRCTL_SCRUB_MODE_WRITE		(u32)0x1U
 #define	SBRCTL_SCRUB_MODE_POS		2
 
-#define	APBONLY_DCTWRITEPROT_ACK_EN	0
-#define	APBONLY_DCTWRITEPROT_ACK_DIS	1
-#define	SBRCTL_SCRUB_DURING_LOWPOWER_CONTINUED	0x1UL
-#define	SBRCTL_SCRUB_DURING_LOWPOWER_POS		1
+#define	APBONLY_DCTWRITEPROT_ACK_EN              0
+#define	APBONLY_DCTWRITEPROT_ACK_DIS             1
+#define	SBRCTL_SCRUB_DURING_LOWPOWER_CONTINUED   (u32)0x1U
+#define	SBRCTL_SCRUB_DURING_LOWPOWER_POS         1
 
-#define	SBRCTL_SCRUB_INTERVAL_FIELD	0x1FFFU
-#define	SBRCTL_SCRUB_INTERVAL_POS		8
-#define	SBRCTL_SCRUB_EN		0x1U
-#define	SBRSTAT_SCRUB_DONE_MASK		0x2U
-#define	SBRSTAT_SCRUBBER_NOT_DONE		0x0U
-#define	SBRSTAT_SCRUBBER_BUSY_MASK		0x1U
-#define	SBRSTAT_SCRUBBER_NOT_BUSY		0x0U
-#define	SBRCTL_SCRUB_INTERVAL_VALUE_1	0x1UL
-#define	MRR_0_DDR_SEL_REG_MASK	0x1U
+#define	SBRCTL_SCRUB_INTERVAL_FIELD     0x1FFFU
+#define	SBRCTL_SCRUB_INTERVAL_POS       8
+#define	SBRCTL_SCRUB_EN	                0x1U
+#define	SBRSTAT_SCRUB_DONE_MASK         0x2U
+#define	SBRSTAT_SCRUBBER_NOT_DONE       0x0U
+#define	SBRSTAT_SCRUBBER_BUSY_MASK      0x1U
+#define	SBRSTAT_SCRUBBER_NOT_BUSY       0x0U
+#define	SBRCTL_SCRUB_INTERVAL_VALUE_1   (u32)0x1U
+#define	MRR_0_DDR_SEL_REG_MASK          0x1U
 
-#define	MRSTAT_MR_BUSY			0x1U
-#define	MRSTAT_MR_NOT_BUSY			0x0U
-#define	MRCTRL0_MR_TYPE_READ		0x1U
-#define	MRCTRL0_RANK_ACCESS_POS		4
-#define	MRCTRL0_RANK_ACCESS_FIELD		0xfUL
-#define	MRCTRL0_RANK_0			0x1UL
-#define	MRCTRL1_MR_ADDRESS_FIELD		0xffUL
-#define	MRCTRL1_MR_ADDRESS_POS		8
-#define	MRCTRL0_WR_ENGAGE			0x1UL
-#define	MRCTRL0_WR_ENGAGE_POS		31
-#define	MRCTRL1_MR_DATA_ADDRESS_FIELD	0xffffUL
-#define	MRCTRL1_MR_DATA_ADDRESS_POS	16
-#define STORE_CSR_DISABLED			0x0U
-#define INIT_MEM_DISABLED			0x0U
+#define	MRSTAT_MR_BUSY                  0x1U
+#define	MRSTAT_MR_NOT_BUSY              0x0U
+#define	MRCTRL0_MR_TYPE_READ            0x1U
+#define	MRCTRL0_RANK_ACCESS_POS         4
+#define	MRCTRL0_RANK_ACCESS_FIELD       (u32)0xfU
+#define	MRCTRL0_RANK_0                  0x1U
+#define	MRCTRL1_MR_ADDRESS_FIELD        (u32)0xffU
+#define	MRCTRL1_MR_ADDRESS_POS          8
+#define	MRCTRL0_WR_ENGAGE               (u32)0x1U
+#define	MRCTRL0_WR_ENGAGE_POS           31
+#define	MRCTRL1_MR_DATA_ADDRESS_FIELD   (u32)0xffffU
+#define	MRCTRL1_MR_DATA_ADDRESS_POS     16
+#define STORE_CSR_DISABLED              0x0U
+#define INIT_MEM_DISABLED               0x0U
 
 /* Performance monitoring registers */
-#define PERF_BASE_ADDR                   0x403E0000U
-#define OFFSET_MRR_0_DATA_REG_ADDR       0x40U
-#define OFFSET_MRR_1_DATA_REG_ADDR       0x44U
+#define PERF_BASE_ADDR                   (u32)0x403E0000U
+#define OFFSET_MRR_0_DATA_REG_ADDR       (u32)0x40U
+#define OFFSET_MRR_1_DATA_REG_ADDR       (u32)0x44U
 
 /* uMCTL2 Multi-Port Registers */
-#define DDRC_UMCTL2_MP_BASE_ADDR         0x403C03F8U
-#define OFFSET_DDRC_PCTRL_0              0x98U
-#define OFFSET_DDRC_PCTRL_1              0x148U
-#define OFFSET_DDRC_PCTRL_2              0x1f8U
+#define DDRC_UMCTL2_MP_BASE_ADDR         (u32)0x403C03F8U
+#define OFFSET_DDRC_PCTRL_0              (u32)0x98U
+#define OFFSET_DDRC_PCTRL_1              (u32)0x148U
+#define OFFSET_DDRC_PCTRL_2              (u32)0x1f8U
 
 /* PHY related */
 #define DDR_PHYA_MASTER0_CALBUSY		0x4038165C
@@ -206,14 +206,14 @@
 #define UCT_WRITE_PROT_SHADOW_MASK              0x1U
 #define DDR_PHYA_DCTWRITEPROT			0x4038040C
 #define DDR_PHYA_APBONLY_UCTWRITEONLYSHADOW	0x40380410
-#define OFFSET_DDRC_RFSHCTL3			0x60U
+#define OFFSET_DDRC_RFSHCTL3			(u32)0x60U
 #define DDR_PHYA_UCCLKHCLKENABLES		0x40380BEC
 #define UCT_WRITE_PROT_SHADOW_ACK		0x0U
 
-#define SHIFT_BIT(nr)             ((1UL) << (nr))
+#define SHIFT_BIT(nr)             (((u32)0x1U) << (nr))
 #define UCCLKEN_MASK              SHIFT_BIT(0)
 #define HCLKEN_MASK               SHIFT_BIT(1)
-#define OFFSET_DDRC_INIT0         0xd0U
+#define OFFSET_DDRC_INIT0         (u32)0xd0U
 
 #define STORE_CSR_MASK            SHIFT_BIT(0)
 #define INIT_MEM_MASK             SHIFT_BIT(1)
@@ -238,10 +238,10 @@
 /* Reset Generation Module */
 #define MC_RGM_PRST_0             0x40078040
 #ifndef MC_CGM5_BASE_ADDR
-#define MC_CGM5_BASE_ADDR         0x40068000U
+#define MC_CGM5_BASE_ADDR         (u32)0x40068000U
 #endif
-#define OFFSET_MUX_0_CSS          0x304U
-#define OFFSET_MUX_0_CSC          0x300U
+#define OFFSET_MUX_0_CSS          (u32)0x304U
+#define OFFSET_MUX_0_CSC          (u32)0x300U
 #define FIRC_CLK_SRC              0x0U
 #define DDR_PHI0_PLL              0x24U
 
@@ -254,10 +254,10 @@
 
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 /* ERR050543 related defines */
-#define MR4_IDX 4
-#define MR4_MASK	0x7U
-#define MR4_SHIFT	16
-#define TUF_THRESHOLD 0x3U
+#define MR4_IDX            4
+#define MR4_MASK           0x7U
+#define MR4_SHIFT          16
+#define TUF_THRESHOLD      0x3U
 #define REQUIRED_OK_CHECKS 0x3U
 #endif
 

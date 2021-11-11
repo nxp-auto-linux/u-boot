@@ -204,7 +204,7 @@ static u32 load_phy_image(u32 start_addr, size_t size,
 
 	for (i = 0; i < size; i++) {
 		writel(image[i], (uintptr_t)current_addr);
-		current_addr += sizeof(u32);
+		current_addr += (u32)sizeof(u32);
 	}
 	return NO_ERR;
 }
