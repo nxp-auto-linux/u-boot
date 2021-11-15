@@ -55,8 +55,8 @@ int checkboard(void)
 	puts("Board:\tVDK for NXP S32G274A VP\n");
 #elif defined(CONFIG_TARGET_S32G274AEMU)
 	puts("Board:\tZeBu model for NXP S32G274A\n");
-#elif defined(CONFIG_TARGET_S32G398AEMU)
-	puts("Board:\tZeBu model for NXP S32G398A\n");
+#elif defined(CONFIG_TARGET_S32G399AEMU)
+	puts("Board:\tZeBu model for NXP S32G399A\n");
 #elif defined(CONFIG_TARGET_S32R45EVB)
 	puts("Board:\tNXP S32R45-EVB\n");
 #elif defined(CONFIG_TARGET_S32R45SIM)
@@ -86,7 +86,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 #if defined(CONFIG_TARGET_S32G274ASIM) || \
 	defined(CONFIG_TARGET_S32G274AEMU) || \
-	defined(CONFIG_TARGET_S32G398AEMU)
+	defined(CONFIG_TARGET_S32G399AEMU)
 void setup_iomux_uart1_pb09_pb10(void)
 {
 	/* Muxing for linflex1 */

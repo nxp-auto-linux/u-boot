@@ -4,11 +4,11 @@
  */
 
 /*
- * Configuration settings for all the Freescale S32G398A boards.
+ * Configuration settings for all the Freescale S32G399A boards.
  */
 
-#ifndef __S32G398A_H
-#define __S32G398A_H
+#ifndef __S32G399A_H
+#define __S32G399A_H
 
 #include <configs/s32-gen1.h>
 

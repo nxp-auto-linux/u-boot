@@ -181,7 +181,7 @@ int print_cpuinfo(void)
 	       get_siul2_midr1_minor(),
 		   !get_siul2_midr2_subminor());
 #elif defined(CONFIG_NXP_S32G3XX)
-	printf("CPU:\tNXP S32G398A\n");
+	printf("CPU:\tNXP S32G399A\n");
 #endif
 	printf("Reset cause: %s\n", get_reset_cause());
 

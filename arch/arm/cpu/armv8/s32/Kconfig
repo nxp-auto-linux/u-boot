@@ -111,8 +111,8 @@ config TARGET_S32G274AEMU
 	bool "Support s32g274a ZeBu"
 	select NXP_S32G2XX
 
-config TARGET_S32G398AEMU
-	bool "Support S32G398A ZeBu"
+config TARGET_S32G399AEMU
+	bool "Support S32G399A ZeBu"
 	select NXP_S32G3XX
 
 config TARGET_S32G3XXAEVB

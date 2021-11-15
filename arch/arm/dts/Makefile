@@ -392,7 +392,7 @@ dtb-$(CONFIG_TARGET_S32G274ABLUEBOX3) += fsl-s32g274abluebox3.dtb
 dtb-$(CONFIG_TARGET_S32G2XXAEVB) += fsl-s32g274aevb.dtb
 dtb-$(CONFIG_TARGET_S32G3XXAEVB) += fsl-s32g3xxaevb.dtb
 dtb-$(CONFIG_TARGET_S32G274AEMU) += fsl-s32g274aemu.dtb
-dtb-$(CONFIG_TARGET_S32G398AEMU) += fsl-s32g398aemu.dtb
+dtb-$(CONFIG_TARGET_S32G399AEMU) += fsl-s32g399aemu.dtb
 dtb-$(CONFIG_S32G274ARDB2) += fsl-s32g274ardb2.dtb
 dtb-$(CONFIG_TARGET_S32R45EVB) += fsl-s32r45.dtb
 
