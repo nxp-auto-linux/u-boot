@@ -52,11 +52,11 @@ obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 				ddr_utils.o \
 				ddrss_cfg.o \
 				imem_cfg.o \
-				s32g398a/ddrc_cfg.o \
-				s32g398a/dmem_cfg.o \
-				s32g398a/dq_swap_cfg.o \
-				s32g398a/phy_cfg.o \
-				s32g398a/pie_cfg.o \
+				s32g3/ddrc_cfg.o \
+				s32g3/dmem_cfg.o \
+				s32g3/dq_swap_cfg.o \
+				s32g3/phy_cfg.o \
+				s32g3/pie_cfg.o \
 
 endif
 
