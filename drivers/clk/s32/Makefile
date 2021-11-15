@@ -12,7 +12,7 @@ obj-y += clk_utils.o
 obj-y += s32gen1_scmi_ids.o
 obj-y += s32gen1_scmi_clk.o
 obj-$(CONFIG_NXP_S32G2XX) += s32g274a_clk.o s32g_clk.o s32g_scmi_ids.o
-obj-$(CONFIG_NXP_S32G3XX) += s32g398a_clk.o s32g_clk.o s32g_scmi_ids.o
+obj-$(CONFIG_NXP_S32G3XX) += s32g3_clk.o s32g_clk.o s32g_scmi_ids.o
 obj-$(CONFIG_NXP_S32R45) += s32r45_clk.o s32r45_scmi_ids.o
 obj-$(CONFIG_CMD_CLK) += clk_dump/
 

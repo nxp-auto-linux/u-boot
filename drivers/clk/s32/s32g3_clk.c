@@ -103,14 +103,14 @@ static struct s32gen1_clk gmac0_ref_div_clk =
 static struct s32gen1_clk gmac0_ref_clk =
 		S32GEN1_CHILD_CLK(cgm6_mux3_clk, 0, 50 * MHZ);
 
-static struct s32gen1_clk *s32g398a_clocks[] = {
+static struct s32gen1_clk *s32g3_clocks[] = {
 	[ARR_CLK(S32G_CLK_MC_CGM6_MUX0)] = &cgm6_mux0_clk,
 	[ARR_CLK(S32G_CLK_MC_CGM6_MUX1)] = &cgm6_mux1_clk,
 	[ARR_CLK(S32G_CLK_MC_CGM6_MUX2)] = &cgm6_mux2_clk,
 	[ARR_CLK(S32G_CLK_MC_CGM6_MUX3)] = &cgm6_mux3_clk,
 };
 
-static struct s32gen1_clk *s32g398a_cc_clocks[] = {
+static struct s32gen1_clk *s32g3_cc_clocks[] = {
 	[CC_ARR_CLK(S32GEN1_CLK_GMAC0_TX)] = &gmac_tx_clk,
 	[CC_ARR_CLK(S32GEN1_CLK_GMAC0_EXT_TS)] = &gmac_ext_ts_clk,
 	[CC_ARR_CLK(S32GEN1_CLK_GMAC0_TS)] = &gmac_ts_clk,
@@ -126,10 +126,10 @@ struct s32gen1_clk *s32g_get_plat_cc_clock(uint32_t id)
 {
 	id = s32gen1_platclk2mux(id);
 
-	if (id >= ARRAY_SIZE(s32g398a_cc_clocks))
+	if (id >= ARRAY_SIZE(s32g3_cc_clocks))
 		return NULL;
 
-	return s32g398a_cc_clocks[id];
+	return s32g3_cc_clocks[id];
 }
 
 struct s32gen1_clk *s32g_get_plat_clock(uint32_t id)
@@ -139,10 +139,10 @@ struct s32gen1_clk *s32g_get_plat_clock(uint32_t id)
 
 	id -= S32GEN1_PLAT_CLK_ID_BASE;
 
-	if (id >= ARRAY_SIZE(s32g398a_clocks))
+	if (id >= ARRAY_SIZE(s32g3_clocks))
 		return NULL;
 
-	return s32g398a_clocks[id];
+	return s32g3_clocks[id];
 }
 
 ulong s32gen1_plat_set_rate(struct clk *c, ulong rate)
