@@ -5,5 +5,5 @@
 
 /dts-v1/;
 #include "fsl-s32g.dtsi"
-#include "fsl-s32g398a.dtsi"
+#include "fsl-s32g3.dtsi"
 #include "fsl-s32gxxxaevb.dtsi"
