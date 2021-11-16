@@ -80,7 +80,7 @@ config SYS_CONFIG_NAME
 
 config SYS_ERRATUM_ERR050543
 	bool "Workaround for NXP Erratum ERR050543"
-	default y if S32_LPDDR4 && (NXP_S32G2XX || NXP_S32R45) && \
+	default y if (NXP_S32G2XX || NXP_S32R45) && \
 			!TARGET_TYPE_S32GEN1_EMULATOR
 	help
 	  This option enables a workaround for NXP Erratum ERR050543

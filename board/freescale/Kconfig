@@ -52,6 +52,4 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
-if S32_GEN1
 source "board/freescale/s32-gen1/Kconfig"
-endif

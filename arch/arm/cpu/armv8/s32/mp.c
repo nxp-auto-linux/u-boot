@@ -16,46 +16,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef CONFIG_S32V234
-static bool is_core_active(int core)
-{
-	u32 core_mask = MC_ME_CS_A53(core);
-
-	return (readl(MC_ME_CS) & core_mask) == core_mask;
-}
-
-static unsigned long get_core_start_addr(int core)
-{
-	return readl(MC_ME_CADDR_A53(core)) & MC_ME_CADDRn_ADDR_MASK;
-}
-
-int fsl_s32_wake_secondary_cores(void)
-{
-	u32 start_addr = (u32)(uintptr_t)gd->relocaddr;
-
-	/* program the cores possible running modes */
-	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL2);
-	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL3);
-	writew(MC_ME_CCTL_DEASSERT_CORE, MC_ME_CCTL4);
-
-	/* write the cores' start address */
-	writel(start_addr | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR2);
-	writel(start_addr | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR3);
-	writel(start_addr | MC_ME_CADDRn_ADDR_EN, MC_ME_CADDR4);
-
-	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_KEY, MC_ME_MCTL );
-	writel( MC_ME_MCTL_RUN0 | MC_ME_MCTL_INVERTEDKEY, MC_ME_MCTL );
-
-	while( (readl(MC_ME_GS) & MC_ME_GS_S_MTRANS) != 0x00000000 );
-
-	smp_kick_all_cpus();
-
-	printf("All (%d) cores are up.\n", cpu_numcores());
-
-	return 0;
-}
-
-#elif defined(CONFIG_S32_GEN1)
 static bool is_core_active(int core)
 {
 	u32 mask = MC_ME_PRTN_N_CORE_M_STAT_CCS;
@@ -157,9 +117,6 @@ int fsl_s32_wake_secondary_cores(void)
 
 	return 0;
 }
-#else
-#error "Incomplete platform definition"
-#endif
 
 #ifdef CONFIG_MP
 int is_core_valid(unsigned int core)

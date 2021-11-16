@@ -62,7 +62,6 @@ FIT_SIG_OBJS-$(CONFIG_FIT_SIGNATURE) := common/image-sig.o
 FIT_CIPHER_OBJS-$(CONFIG_FIT_CIPHER) := common/image-cipher.o
 
 S32_COMMON-$(CONFIG_ARCH_S32) := s32_common.o
-S32V234IMAGE-$(CONFIG_S32V234) := s32v234image.o
 S32GEN1IMAGE-$(CONFIG_S32_GEN1) := s32gen1image.o
 ifdef CONFIG_S32_GEN1
 S32GEN1IMAGE-$(CONFIG_SPI_FLASH_MACRONIX) += s32gen1image_qspi_macronix.o
@@ -104,7 +103,6 @@ dumpimage-mkimage-objs := aisimage.o \
 			imagetool.o \
 			imximage.o \
 			$(S32_COMMON-y) \
-			$(S32V234IMAGE-y) \
 			$(S32GEN1IMAGE-y) \
 			imx8image.o \
 			imx8mimage.o \

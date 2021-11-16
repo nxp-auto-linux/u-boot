@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2018,2020 NXP
+ * (C) Copyright 2018,2020-2021 NXP
  * (C) Copyright 2009 Ilya Yanok, Emcraft Systems Ltd <yanok@emcraft.com>
  * (C) Copyright 2008,2009 Eric Jarrige <eric.jarrige@armadeus.org>
  * (C) Copyright 2008 Armadeus Systems nc
@@ -625,10 +625,8 @@ static int fec_init(struct eth_device *dev, bd_t *bd)
 			writel(0, i);
 		for (i = mib_ptr_start2; i < mib_ptr_end2; i++)
 			writel(0, i);
-#if !defined(CONFIG_S32V234)
 		/* FIFO receive start register */
 		writel(0x520, &fec->eth->r_fstart);
-#endif
 	}
 
 	/* size and address of each buffer */

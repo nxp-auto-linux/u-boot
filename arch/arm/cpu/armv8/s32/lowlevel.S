@@ -23,7 +23,7 @@ ENTRY(lowlevel_init)
 
 	mov	x29, lr			/* Save LR */
 
-#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 reset_registers_for_lockstep:
 	/*
 	 * Timers reset must be done when lockstep is enabled to avoid RCCU
@@ -78,23 +78,6 @@ reset_registers_for_lockstep:
 	branch_if_slave x0, 1f
 #endif
 
-#if defined(CONFIG_S32V234)
-watchdog_cortexm_disable:
-	/* disable SWT4 watchdog*/
-	ldr x0, =SWT_SR(SWT4_BASE_ADDR)
-	ldr w1, =0xC520
-	str w1, [x0]
-	ldr w1, =0xD928
-	str w1, [x0]
-	ldr x0, =SWT4_BASE_ADDR
-	ldr x1, [x0]
-	and x1, x1, 0xFFFFFFFE
-	str x1, [x0]
-	ldr x1, [x0]
-	orr x1, x1, 0x40
-	str x1, [x0]
-#endif
-
 /* Skip SRAM initialization if running with ATF and U-Boot in DDR */
 #if !(defined(CONFIG_S32_ATF_BOOT_FLOW) && defined(CONFIG_S32_SKIP_RELOC))
 sram_init:
@@ -107,12 +90,9 @@ sram_init:
 	ldr x0,  =__bss_start
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	ldr x1, =__bss_end
-#elif defined CONFIG_S32_GEN1
+#else
 	ldr x1, =CONFIG_SYS_TEXT_BASE
 	add x1, x1, #CONFIG_UBOOT_SRAM_FOOTPRINT
-#else	/* S32V234 */
-	ldr x1, = S32_SRAM_BASE
-	add x1, x1, S32_SRAM_SIZE
 #endif
 	sub x1, x1, x0
 

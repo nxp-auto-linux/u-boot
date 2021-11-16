@@ -67,20 +67,12 @@ static struct mm_region early_map[] = {
 	  S32_SRAM_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
-#ifdef CONFIG_S32_GEN1
 	{
 	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
 	  CONFIG_SYS_FSL_PERIPH_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
-#else	/* S32V234 */
-	{
-	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
-	  CONFIG_SYS_FSL_PERIPH_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE
-	},
-#endif /* CONFIG_S32_GEN1 */
 #if defined(CONFIG_SYS_FSL_DRAM_BASE2)
 #if !defined(CONFIG_S32_SKIP_RELOC) || \
 	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
@@ -129,20 +121,12 @@ static struct mm_region final_map[] = {
 	  S32_SRAM_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
-#ifdef CONFIG_S32_GEN1
 	{
 	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
 	  CONFIG_SYS_FSL_PERIPH_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
-#else
-	{
-	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
-	  CONFIG_SYS_FSL_PERIPH_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE
-	},
-#endif /* CONFIG_S32_GEN1 */
 #if defined(CONFIG_SYS_FSL_DRAM_BASE2)
 #if !defined(CONFIG_S32_SKIP_RELOC) || \
 	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
@@ -188,25 +172,9 @@ static struct mm_region final_map[] = {
 
 struct mm_region *mem_map = early_map;
 
-#ifdef CONFIG_S32V234
-static void enable_snooping(void)
-{
-	struct ccsr_cci400 *cci = (struct ccsr_cci400 *)CCI400_BASE_ADDR;
-
-	out_le32(&cci->slave[3].snoop_ctrl,
-		 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
-	out_le32(&cci->slave[4].snoop_ctrl,
-		 CCI400_DVM_MESSAGE_REQ_EN | CCI400_SNOOP_REQ_EN);
-}
-#endif
-
 static unsigned long get_tlb_size(void)
 {
-#ifdef CONFIG_S32V234
-	return CONFIG_SYS_TEXT_BASE - S32_IRAM_MMU_TABLES_BASE;
-#else
 	return CONFIG_DTB_SRAM_ADDR - S32_IRAM_MMU_TABLES_BASE;
-#endif
 }
 
 static inline void early_mmu_setup(void)
@@ -219,9 +187,6 @@ static inline void early_mmu_setup(void)
 	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
 #endif
 
-#ifdef CONFIG_S32V234
-	enable_snooping();
-#endif
 	mmu_setup();
 	set_sctlr(get_sctlr() | CR_C);
 }
@@ -280,7 +245,7 @@ static inline void final_mmu_setup(void)
 	set_sctlr(get_sctlr() | CR_M);
 }
 
-#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 /*
  * This function is a temporary fix for drivers without clock bindings.
  *
@@ -577,7 +542,7 @@ int arch_cpu_init(void)
 		return ret;
 #endif
 
-#if defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
+#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	/* Platforms with Concerto/Ncore have to explicitly initialize
 	 * the interconnect before any cache operations are performed.
 	 * Also, ensure that clocks are initialized before the interconnect.
@@ -612,9 +577,7 @@ void enable_caches(void)
 {
 	final_mmu_setup();
 	__asm_invalidate_tlb_all();
-#ifdef CONFIG_S32_GEN1
 	dcache_enable();
-#endif
 }
 
 #endif
@@ -637,17 +600,14 @@ int arch_early_init_r(void)
 	if (rv)
 		printf("Did not wake secondary cores\n");
 
-#ifdef CONFIG_S32_GEN1
 	/* Reconfigure Concerto before actually waking the cores */
 	ncore_init(cpu_pos_mask());
-#endif
 	asm volatile("sev");
 #endif
 
-#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
+#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	return enable_periph_clocks();
 #endif
-
 	return rv;
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
@@ -656,25 +616,6 @@ int arch_early_init_r(void)
  * the EL3 software (e.g. the TF-A) will initialize the generic timer.
  */
 #if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-#ifdef CONFIG_S32V234
-static int s32_gentimer_init(void)
-{
-	if (get_siul2_midr1_major() >= 1)
-		return 0;
-
-	/* For CUT1 chip version, update with accurate clock frequency for all cores. */
-
-	/* update for secondary cores */
-	__real_cntfrq = COUNTER_FREQUENCY_CUT1;
-	flush_dcache_range((unsigned long)&__real_cntfrq,
-			   (unsigned long)&__real_cntfrq + 8);
-
-
-	/* Update made for main core. */
-	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
-	return 0;
-}
-#elif defined(CONFIG_S32_GEN1) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 /* The base counter frequency (FXOSC on the S32G) is actually board-dependent.
  * Moreoever, only software running at the highest implemented Exception level
  * can write to CNTFRQ_EL0, so we won't even define this function if we are
@@ -697,9 +638,6 @@ static int s32_gentimer_init(void)
 
 	return 0;
 }
-#else
-#error "S32 platform should provide ARMv8 generic timer initialization"
-#endif
 #endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 
 #if defined(CONFIG_SYS_FSL_DDRSS) && \
@@ -843,27 +781,11 @@ int dram_init_banksize(void)
 	gd->bd->bi_dram[2].start = 0x0;
 	gd->bd->bi_dram[2].size = 0x0;
 #else
-#ifdef CONFIG_S32_GEN1
 	int ret;
 
 	ret = fdtdec_setup_memory_banksize();
 	if (ret)
 		return ret;
-#else
-	gd->bd->bi_dram[0].start = CONFIG_SYS_FSL_DRAM_BASE1;
-	gd->bd->bi_dram[0].size = CONFIG_SYS_FSL_DRAM_SIZE1;
-
-#if defined(CONFIG_SYS_FSL_DRAM_BASE2)
-	gd->bd->bi_dram[1].start = CONFIG_SYS_FSL_DRAM_BASE2;
-	gd->bd->bi_dram[1].size = CONFIG_SYS_FSL_DRAM_SIZE2;
-#else
-	gd->bd->bi_dram[1].start = 0x0;
-	gd->bd->bi_dram[1].size = 0x0;
-#endif
-
-	gd->bd->bi_dram[2].start = S32_SRAM_BASE;
-	gd->bd->bi_dram[2].size = get_sram_size();
-#endif
 #endif
 	s32_init_ram_size();
 

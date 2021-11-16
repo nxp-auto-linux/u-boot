@@ -16,11 +16,7 @@
 
 #define CONFIG_SYS_FSL_PERIPH_BASE      0x40000000
 
-#if defined(CONFIG_S32V234)
-#define CONFIG_SYS_FSL_PERIPH_SIZE      0x40000000
-#elif defined(CONFIG_S32_GEN1)
 #define CONFIG_SYS_FSL_PERIPH_SIZE      0x20000000
-#endif
 
 #ifdef CONFIG_PCIE_S32GEN1
 /* TODO: These should go to defconfig, or even better,

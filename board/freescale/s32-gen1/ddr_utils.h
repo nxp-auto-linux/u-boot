@@ -32,12 +32,7 @@
 #ifndef DDR_UTILS_H_
 #define DDR_UTILS_H_
 
-#ifndef CONFIG_S32_GEN1
-#include "io.h"
-#else
 #include <asm/io.h>
-#endif
-
 #include <stdbool.h>
 
 /* Possible errors */

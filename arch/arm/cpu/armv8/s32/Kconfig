@@ -101,38 +101,6 @@ endchoice
 
 endif
 
-choice
-	prompt "Select DDR type"
-	default S32_LPDDR2
-	help
-	  S32 DDR Configuration
-
-config S32_LPDDR2
-	bool "LPDDR2 Support"
-	help
-	  Enable the support for Micron LPDDR2,
-	  2*32-bit, up to 1066 MHz data rate, 2*1 GB addressable.
-
-config S32_LPDDR4
-	bool "LPDDR4 Support"
-	help
-	  Enable the support for Micron LPDDR4
-
-config S32_DDR3
-	bool "DDR3 Support"
-	help
-	  Enable the support for Micron DDR3,
-	  2*32-bit, up to 1066 MHz data rate, 2*1 GB addressable.
-
-endchoice
-
-config DDR_HANDSHAKE_AT_RESET
-	bool "Enable DDR handshake"
-	default y
-	help
-	  Enable DDR handshake after functional reset.
-	  Execute additional checks in case of a functional reset.
-
 config S32_CMU
 	bool "Enable Clock Monitoring Unit-Frequency Check"
 	default y

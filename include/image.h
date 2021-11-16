@@ -260,7 +260,6 @@ enum {
 	IH_TYPE_FLATDT,			/* Binary Flat Device Tree Blob	*/
 	IH_TYPE_KWBIMAGE,		/* Kirkwood Boot Image		*/
 	IH_TYPE_IMXIMAGE,		/* Freescale IMXBoot Image	*/
-	IH_TYPE_S32V234IMAGE,		/* NXP S32V234 Boot Image	*/
 	IH_TYPE_S32GEN1IMAGE,		/* NXP S32GEN1 Boot Image	*/
 	IH_TYPE_UBLIMAGE,		/* Davinci UBL Image		*/
 	IH_TYPE_OMAPIMAGE,		/* TI OMAP Config Header Image	*/

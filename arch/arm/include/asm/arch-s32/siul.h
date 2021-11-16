@@ -12,9 +12,8 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <linux/bitops.h>
-#include "ddr.h"
 
-#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
+#if !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
 #define SIUL2_MIDR1				(SIUL2_0_BASE_ADDR + 0x00000004)
 #define SIUL2_MIDR2				(SIUL2_0_BASE_ADDR + 0x00000008)
 #define SIUL2_DISR0				(SIUL2_0_BASE_ADDR + 0x00000010)
@@ -74,13 +73,7 @@
 
 #define TREERUNNER_GENERATION_2_MAJOR	1
 
-#if defined(CONFIG_S32V234)
-#include "siul-s32v234.h"
-#elif defined(CONFIG_S32_GEN1)
 #include "siul-s32-gen1.h"
-#else
-#error "Incomplete platform definition"
-#endif
 
 #ifdef CONFIG_NXP_S32G2XX
 enum s32g2_derivative {
@@ -147,7 +140,7 @@ static inline u32 get_siul2_midr2_freq(void)
 			>> SIUL2_MIDR2_FREQ_SHIFT);
 }
 
-#if defined(CONFIG_S32_GEN1) && !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
+#if !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
 
 static inline int get_siul2_midr2_subminor(void)
 {
@@ -162,4 +155,4 @@ static inline int is_serdes_subsystem_present(void)
 
 #endif  /* CONFIG_S32_GEN1 */
 
-#endif /*__ARCH_ARM_MACH_S32V234_SIUL_H__ */
+#endif /*____ARCH_ARM_MACH_S32_SIUL_H__ */

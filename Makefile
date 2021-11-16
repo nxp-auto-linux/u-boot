@@ -988,7 +988,6 @@ ifneq ($(CONFIG_DM),y)
 	@echo >&2 "See doc/driver-model/migration.rst for more info."
 	@echo >&2 "===================================================="
 endif
-ifeq (,$(CONFIG_S32V234))
 ifeq ($(CONFIG_MMC),y)
 ifneq ($(CONFIG_DM_MMC)$(CONFIG_OF_CONTROL)$(CONFIG_BLK),yyy)
 	@echo >&2 "===================== WARNING ======================"
@@ -997,7 +996,6 @@ ifneq ($(CONFIG_DM_MMC)$(CONFIG_OF_CONTROL)$(CONFIG_BLK),yyy)
 	@echo >&2 "Failure to update by the deadline may result in board removal."
 	@echo >&2 "See doc/driver-model/migration.rst for more info."
 	@echo >&2 "===================================================="
-endif
 endif
 endif
 ifeq ($(CONFIG_USB),y)
@@ -1031,7 +1029,6 @@ ifneq ($(CONFIG_AHCI),y)
 	@echo >&2 "===================================================="
 endif
 endif
-ifeq (,$(CONFIG_S32V234))
 ifeq ($(CONFIG_PCI),y)
 ifneq ($(CONFIG_DM_PCI),y)
 	@echo >&2 "===================== WARNING ======================"
@@ -1040,7 +1037,6 @@ ifneq ($(CONFIG_DM_PCI),y)
 	@echo >&2 "Failure to update by the deadline may result in board removal."
 	@echo >&2 "See doc/driver-model/migration.rst for more info."
 	@echo >&2 "===================================================="
-endif
 endif
 endif
 ifneq ($(CONFIG_LCD)$(CONFIG_VIDEO),)

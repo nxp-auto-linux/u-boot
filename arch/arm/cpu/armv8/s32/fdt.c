@@ -171,43 +171,6 @@ void ft_fixup_cpu(void *blob)
 }
 #endif /* CONFIG_MP */
 
-#ifdef CONFIG_S32V234
-void ft_fixup_soc_revision(void *blob)
-{
-	const u32 socmask_info = readl(SIUL2_MIDR1) &
-		(SIUL2_MIDR1_MINOR_MASK | SIUL2_MIDR1_MAJOR_MASK);
-	const char *path = "/chosen";
-	int ret;
-
-	/* The booting guest may implement its own fixups based on the chip
-	 * revision. One such example is PCIe erratum ERR009852, which can be
-	 * safely ignored iff the chip is newer than revision 0.
-	 * So pass this piece of info along in the FDT.
-	 */
-	ret = fdt_find_and_setprop(blob, path, "soc_revision", &socmask_info,
-			sizeof(u32), 1);
-	if (ret)
-		printf("WARNING: Could not fix up the S32V234 device-tree, err=%s\n",
-			fdt_strerror(ret));
-}
-
-void ft_fixup_clock_frequency(void *blob)
-{
-	const u32 cntfrq_be = cpu_to_be32(get_siul2_midr1_major() < 1 ?
-			COUNTER_FREQUENCY_CUT1 : COUNTER_FREQUENCY);
-	const char *path = "/timer";
-	int ret;
-
-	/* Update system clock_frequency according to the cpu detected version.
-	 */
-	ret = fdt_find_and_setprop(blob, path, "clock-frequency", &cntfrq_be,
-			sizeof(u32), 1);
-	if (ret)
-		printf("WARNING: Could not fix up the S32V234 device-tree clock frequency, err=%s\n",
-			fdt_strerror(ret));
-}
-#endif
-
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 static void ft_fixup_ddr_polling(void *blob)
 {
@@ -928,10 +891,6 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	ft_fixup_cpu(blob);
 #endif
 
-#ifdef CONFIG_S32V234
-	ft_fixup_soc_revision(blob);
-	ft_fixup_clock_frequency(blob);
-#endif
 	ft_fixup_memory(blob, bd);
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
 	ft_fixup_ddr_polling(blob);

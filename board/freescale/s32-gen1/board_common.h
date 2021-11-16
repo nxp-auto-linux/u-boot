@@ -16,9 +16,7 @@ void setup_iomux_uart(void);
 	void setup_iomux_dspi(void);
 #endif
 
-#if defined(CONFIG_S32_GEN1)
 void setup_iomux_uart0_pc09_pc10(void);
-#endif
 
 #if defined(CONFIG_TARGET_S32G274ASIM) || \
 	defined(CONFIG_TARGET_S32G274AEMU) || \

@@ -6,7 +6,7 @@
 
 /*
  * s32cc:
- *    NXP S32G/S32R/S32V chips.
+ *    NXP S32G and S32R chips.
  *    Based on Synopsys DW EQOS MAC 5.10a
  *
  */

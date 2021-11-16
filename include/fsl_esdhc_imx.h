@@ -273,8 +273,7 @@ struct fsl_esdhc_cfg {
 #error "Endianess is not defined: please fix to continue"
 #endif
 
-#if defined(CONFIG_S32V234) || defined(CONFIG_IMX8) || \
-	defined(CONFIG_IMX8M)
+#if defined(CONFIG_IMX8) || defined(CONFIG_IMX8M)
 #define CORE_64BIT_PERIPHERALS_32BIT
 #endif
 

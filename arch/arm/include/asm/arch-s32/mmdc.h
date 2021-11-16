@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015 Freescale Semiconductor, Inc.
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  */
 
-#ifndef __ARCH_ARM_MACH_S32V234_MMDC_H__
-#define __ARCH_ARM_MACH_S32V234_MMDC_H__
+#ifndef __ARCH_ARM_MACH_S32_MMDC_H__
+#define __ARCH_ARM_MACH_S32_MMDC_H__
 
 #define MMDC0				0
 #define MMDC1				1

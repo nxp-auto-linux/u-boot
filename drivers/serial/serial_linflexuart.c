@@ -16,10 +16,6 @@
 
 #define LINCR1_INIT			BIT(0)
 #define LINCR1_MME			BIT(4)
-/* This bit is marked as Reserved on S32GEN1 */
-#ifdef CONFIG_S32V234
-#define LINCR1_BF			BIT(7)
-#endif
 #define LINSR_LINS_INITMODE		(0x00001000)
 #define LINSR_LINS_MASK			(0x0000F000)
 #define UARTCR_UART			BIT(0)
@@ -101,9 +97,6 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 	/* set the Linflex in master|init mode and activate by-pass filter
 	 * (where supported) */
 	ctrl = LINCR1_MME | LINCR1_INIT;
-#ifdef CONFIG_S32V234
-	ctrl |= LINCR1_BF;
-#endif
 	__raw_writel(ctrl, &base->lincr1);
 
 	/* waiting for init mode entry - TODO: add a timeout */

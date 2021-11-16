@@ -19,10 +19,6 @@
 
 #define CONFIG_REMAKE_ELF
 
-#if defined(CONFIG_S32V234)
-#define CONFIG_STANDALONE_LOAD_ADDR	0x80100000
-#endif /* CONFIG_S32V234/CONFIG_S32_GEN1 */
-
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */
@@ -58,9 +54,6 @@
 #else
 #define CONFIG_FSL_CSE3_SETTINGS
 #endif /* CONFIG_FSL_CSE3 */
-
-/* DDR chips on S32V234 boards have 32 bits cells */
-#define RAM_CELL_SIZE		32
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
@@ -120,21 +113,12 @@
 
 #endif
 
-#ifdef CONFIG_S32_GEN1
 #define S32_LOAD_FLASH_IMAGES_CMD\
 	"sf probe 6:0;"\
 	"sf read ${loadaddr} ${kernel_flashaddr} ${kernel_maxsize};"\
 	"sf read ${fdt_addr} ${fdt_flashaddr} ${fdt_maxsize};"\
 	"sf read ${ramdisk_addr} ${ramdisk_flashaddr} "\
 	" ${ramdisk_maxsize};"
-
-#else
-#define S32_LOAD_FLASH_IMAGES_CMD\
-	"cp.b ${kernel_flashaddr} ${loadaddr} ${kernel_maxsize};"\
-	"cp.b ${fdt_flashaddr} ${fdt_addr} ${fdt_maxsize};"\
-	"cp.b ${ramdisk_flashaddr} ${ramdisk_addr} ${ramdisk_maxsize};"
-
-#endif
 
 /* Note: The *_FLASH_ADDR and *_FLASH_MAXSIZE macros are used
  * with the 'setexpr' command. Therefore ensure none of them expand
@@ -148,15 +132,9 @@
 #define RAMDISK_FLASH_MAXSIZE		0x2000000
 #define UBOOT_FLASH_ADDR		(CONFIG_SYS_FSL_FLASH0_BASE + 0x0)
 
-#ifdef CONFIG_S32_GEN1
-#  define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x1f0000)
-#  define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xff0000)
-#  define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x10f0000)
-#else
-#  define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x100000)
-#  define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xf00000)
-#  define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x1000000)
-#endif
+#define KERNEL_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x1f0000)
+#define FDT_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0xff0000)
+#define RAMDISK_FLASH_ADDR	(CONFIG_SYS_FSL_FLASH0_BASE + 0x10f0000)
 
 #if defined(CONFIG_ENV_IS_IN_FLASH) || defined(CONFIG_ENV_IS_IN_SPI_FLASH)
 
@@ -179,12 +157,8 @@
 #error "FDT and Ramdisk would overlap in flash memory"
 #endif
 
-#if defined(CONFIG_S32_GEN1)
 #define ENV_FDTCONTROLADDR \
 			"fdtcontroladdr=" __stringify(CONFIG_DTB_SRAM_ADDR) "\0"
-#else
-#define ENV_FDTCONTROLADDR ""
-#endif
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_ARCH_TIMER)
@@ -197,9 +171,6 @@
  * FXOSC_CLK itself is board-specific.
  */
 #define COUNTER_FREQUENCY		(40 * 1000 * 1000)
-#elif defined(CONFIG_S32V234)
-#define COUNTER_FREQUENCY               (10000000)     /* 10MHz*/
-#define COUNTER_FREQUENCY_CUT1          (12000000)     /* 12MHz*/
 #elif defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 #define COUNTER_FREQUENCY				(1000)		    /* 1Khz */
 #endif
@@ -221,35 +192,6 @@
 #define CONFIG_SYS_UART_PORT		(1)
 
 #undef CONFIG_CMD_IMLS
-
-/* Regarding S32G, some of these are already controlled (read: duplicated)
- * in the defconfig; others are unused throughout the arch, board or
- * platform code; others yet are still unnecessary because we only plan to
- * enable them later (e.g CONFIG_FEC_MXC/MII or CONFIG_CMD_I2C)
- */
-#ifndef CONFIG_S32_GEN1
-
-#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
-#define CONFIG_SYS_FSL_ESDHC_NUM	1
-
-/* Ethernet config */
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-#define CONFIG_FEC_MXC_PHYADDR (0x484a53)
-#define CONFIG_BCM_DUPLEX_MODE	DUPLEX_FULL
-#endif
-
-/* I2C Configs */
-#ifndef CONFIG_DM_I2C
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1	/* enable I2C bus 1 */
-#define CONFIG_SYS_I2C_MXC_I2C2	/* enable I2C bus 2 */
-#define CONFIG_SYS_I2C_MXC_I2C3	/* enable I2C bus 3 */
-#define CONFIG_SYS_I2C_SPEED	100000
-#define CONFIG_SYS_SPD_BUS_NUM	0
-#endif
-
-#endif
 
 #define CONFIG_HWCONFIG
 
@@ -276,13 +218,6 @@
 
 #ifndef CONFIG_DCU_EXTRA_ENV_SETTINGS
 #define CONFIG_DCU_EXTRA_ENV_SETTINGS	""
-#endif
-
-#ifdef CONFIG_FEC_MXC
-#define S32V234_FEC_DEFAULT_ADDR "00:1b:c3:12:34:22"
-#define FEC_EXTRA_ENV_SETTINGS	"ethaddr=" S32V234_FEC_DEFAULT_ADDR
-#else
-#define FEC_EXTRA_ENV_SETTINGS	""
 #endif
 
 #ifndef S32_DEFAULT_IP
@@ -498,7 +433,6 @@
 	PFE_EXTRA_ENV_SETTINGS \
 	PCIE_EXTRA_ENV_SETTINGS \
 	PCIE_MSIS_ENV_SETTINGS \
-	FEC_EXTRA_ENV_SETTINGS
 
 #undef CONFIG_BOOTCOMMAND
 
@@ -579,21 +513,7 @@
 
 #define CONFIG_BOOTP_BOOTFILESIZE
 
-#if !defined(CONFIG_S32_GEN1)
-/* TODO: update S32V234 defconfigs so that definitions below to not apply
- * to all S32's or find a smarter way to make S32G and S32V PCI coexist
- */
-#ifdef CONFIG_CMD_PCI
-#define CONFIG_GICSUPPORT
-#define CONFIG_CMD_IRQ
-#define CONFIG_PCIE_S32V234
-#define CONFIG_PCI
-#define CONFIG_PCI_PNP
-#define CONFIG_PCI_SCAN_SHOW
-#endif
-#else
 #define CONFIG_SYS_PCI_64BIT
-#endif  /* !CONFIG_S32_GEN1 */
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
 

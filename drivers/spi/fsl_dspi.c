@@ -7,7 +7,7 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
- * Copyright 2017, 2019-2020 NXP
+ * Copyright 2017, 2019-2021 NXP
  */
 
 #include <common.h>
@@ -808,7 +808,6 @@ static const struct dm_spi_ops fsl_dspi_ops = {
 
 static const struct udevice_id fsl_dspi_ids[] = {
 	{ .compatible = "fsl,vf610-dspi" },
-	{ .compatible = "fsl,s32v234-dspi" },
 	{ }
 };
 
