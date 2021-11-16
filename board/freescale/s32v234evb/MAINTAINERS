@@ -1,6 +1,0 @@
-S32V234 Evaluation BOARD
-M:	-
-S:	Maintained
-F:	board/freescale/s32v234evb/
-F:	include/configs/s32v234evb_29288.h
-F:	configs/s32v234evb_defconfig

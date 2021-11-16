@@ -28,7 +28,7 @@ config NXP_S32R45
 
 choice
 	prompt "Select S32 Target Board Support"
-	default TARGET_S32V234EVB
+	default TARGET_S32G274ARDB
 	help
 	  S32 Target Board Selection
 
@@ -218,6 +218,5 @@ config BOARD_NFS_BOOT_INTERFACE
 	default "eth0"
 
 source "board/freescale/Kconfig"
-source "board/microsys/mpxs32v234/Kconfig"
 
 endif

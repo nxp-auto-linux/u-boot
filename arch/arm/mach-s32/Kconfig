@@ -3,6 +3,5 @@
 
 config MKIMAGE_T
 	string
-	default "s32v234image" if S32V2
 	default "s32gen1image" if S32_GEN1
 	depends on ARCH_S32

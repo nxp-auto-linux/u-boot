@@ -65,16 +65,6 @@ source "board/freescale/s32-gen1/Kconfig"
 endif
 
 if S32V2
-source "board/freescale/s32v234evb/Kconfig"
-
-source "board/freescale/s32v234pcie/Kconfig"
-
-source "board/freescale/s32v234ccpb/Kconfig"
-
-source "board/freescale/campps32v2/Kconfig"
-
-source "board/freescale/s32v234hpcsom/Kconfig"
-
 config SYS_DATA_BASE
 	hex "Data Base"
 	default 0x3E800000
