@@ -119,7 +119,7 @@ config PINCTRL_S32
 	help
 	  Say Y here to enable the S32 pinctrl driver.
 	  This driver is the pinctrl driver for SIUL2 that is available on the
-	  following SoCs: S32G2XX, S32V234, S32R45.
+	  following SoCs: S32G2XX, S32R45.
 
 config PINCTRL_VYBRID
 	bool "Vybrid (vf610) pinctrl driver"

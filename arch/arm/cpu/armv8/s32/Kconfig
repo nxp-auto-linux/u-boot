@@ -32,49 +32,6 @@ choice
 	help
 	  S32 Target Board Selection
 
-config TARGET_S32V234HPCSOM
-	bool "Support HPC SOM Board"
-	select S32V2
-
-config TARGET_S32V234CCPB
-	bool "Support s32v234ccpb"
-	select S32V234CCPB
-	select S32V2
-
-config TARGET_S32V234EVB
-	bool "Support s32v234evb"
-	select SYS_FSL_ERRATUM_ESDHC111
-	select S32V2
-	help
-	  S32V Evaluation System for high-performance, safe computation-intensive
-	  front vision, surround vision and sensor fusion applications.
-
-config TARGET_S32V234PCIE
-	bool "Support s32v234pcie"
-	select S32V2
-	help
-	  S32V234 board with PCIe Edge connector.
-
-config TARGET_MPXS32V234
-	bool "Support s32v234sbc"
-	select S32V234EVB_29288
-	select S32V2
-
-config TARGET_CAMPPS32V2
-	bool "Support Camera card"
-	select S32V2
-	help
-	  Enable Camera card target.
-	  Camera card is a development board with 6x S32V.
-	  This config always will target the latest revision of the board.
-
-config TARGET_CAMPPS32V2_REVB
-	bool "Support Camera card rev B"
-	select S32V2
-	help
-	  Enable Camera card Rev B target.
-	  Camera card is a development board with 6x S32V.
-
 config TARGET_S32R45EVB
 	bool "Support s32r45evb"
 	select NXP_S32R45
@@ -121,41 +78,13 @@ config TARGET_S32G3XXAEVB
 
 endchoice
 
-if TARGET_S32V234EVB
-
-choice
-	prompt "S32V234EVB Board Family Member"
-	default S32V234EVB_29288
-	help
-	  S32V234EVB Board Family Members.
-	  Default selection is S32V234EVB_29288.
-
-config S32V234EVB_28899
-	bool "S32V234EVB_28899"
-	help
-	  First S32V234EVB generation.
-
-config S32V234EVB_29288
-	bool "S32V234EVB_29288"
-	help
-	  Second S32V234EVB generation.
-
-config S32V234BBMINI_29406
-	bool "S32V234BBMINI_29406"
-	help
-	  S32V234EVB mini bluebox.
-
-endchoice
-
-endif
-
 if TARGET_S32G274ARDB
 
 choice
-	prompt "S32V234G274ARDB Revision"
+	prompt "S32G274ARDB Revision"
 	default S32G274ARDB2
 	help
-	  S32V234G274ARDB Revision.
+	  S32G274ARDB Revision.
 	  Default selection is S32G274ARDB2
 
 config S32G274ARDB

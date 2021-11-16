@@ -1,12 +1,6 @@
-config S32V2
-	bool
-	default false
-
-if !TARGET_MPXS32V234
 config SYS_VENDOR
 	string
 	default "freescale"
-endif
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
@@ -30,8 +24,6 @@ config S32_GEN1
 	select ARM_ERRATA_855873 if S32_STANDALONE_BOOT_FLOW
 	help
 	  Platform Selection
-
-if S32V2 || S32_GEN1
 
 config EXTRA_KERNEL_BOOT_ARGS
 	string "Additional boot arguments for Linux kernel"
@@ -62,31 +54,4 @@ config XEN_SUPPORT
 
 if S32_GEN1
 source "board/freescale/s32-gen1/Kconfig"
-endif
-
-if S32V2
-config SYS_DATA_BASE
-	hex "Data Base"
-	default 0x3E800000
-	help
-	  U-boot data base address (normally SRAM base address)
-
-config SYS_TEXT_BASE
-	default 0x3E820000
-
-config SYS_MEM_SIZE
-	hex "RAM Memory Size"
-	default 0x00400000
-	help
-	  U-boot SRAM size (8 MB for Gen1, 4 MB for older architectures)
-
-config S32V234_FAST_BOOT
-	bool "Configure DCD and RUNMODE for a fast-boot efused board"
-	default n
-	help
-	  Configure DCD and RUNMODE for a board that has been efused such that
-	  OCOTP_CFG6:[19]FAST_BOOT_ENABLE = 0 and OCOTP_CFG6:[18]NO_PLL = 1.
-
-endif
-
 endif
