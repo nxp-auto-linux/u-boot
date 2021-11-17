@@ -326,18 +326,13 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 	 */
 	if (pcie->phy_mode == CRSS || pcie->phy_mode == SRIS) {
 		if (IS_SERDES_PCIE(pcie->devtype) &&
-		    !IS_SERDES_SGMII(pcie->devtype)) {
-			if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-						SERDES_MODE_PCIE_PCIE))
-				return false;
-		} else {
+		    !IS_SERDES_SGMII(pcie->devtype))
+			pcie->ss_mode = SERDES_MODE_PCIE_PCIE;
+		else
 			return false;
-		}
 	} else if (IS_SERDES_PCIE(pcie->devtype) &&
 			!IS_SERDES_SGMII(pcie->devtype)) {
-		if (s32_serdes_set_mode(pcie->dbi, pcie->id,
-					SERDES_MODE_PCIE_PCIE))
-			return false;
+		pcie->ss_mode = SERDES_MODE_PCIE_PCIE;
 	} else if (IS_SERDES_PCIE(pcie->devtype) &&
 		   IS_SERDES_SGMII(pcie->devtype)) {
 		if (pcie->xpcs_mode != SGMII_XPCS0 &&
