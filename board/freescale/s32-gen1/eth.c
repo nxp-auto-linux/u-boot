@@ -288,22 +288,21 @@ static ulong gmac_calc_link_speed(u32 speed)
 static int get_gmac_clocks(u32 mode, const char **rx,
 			   const char **tx, const char **ts)
 {
+	if (ts)
+		*ts = "ts";
+
 	switch (mode) {
 	case PHY_INTERFACE_MODE_SGMII:
 		if (rx)
 			*rx = "rx_sgmii";
 		if (tx)
 			*tx = "tx_sgmii";
-		if (ts)
-			*ts = "ts_sgmii";
 		break;
 	case PHY_INTERFACE_MODE_RGMII:
 		if (rx)
 			*rx = "rx_rgmii";
 		if (tx)
 			*tx = "tx_rgmii";
-		if (ts)
-			*ts = "ts_rgmii";
 		break;
 	case PHY_INTERFACE_MODE_RMII:
 	case PHY_INTERFACE_MODE_MII:

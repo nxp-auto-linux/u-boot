@@ -138,8 +138,7 @@ int cc_compound_clk_get_pid(u32 id, u32 *parent_id)
 	case S32GEN1_SCMI_CLK_GMAC0_TX_SGMII:
 		*parent_id = S32GEN1_CLK_MC_CGM0_MUX10;
 		break;
-	case S32GEN1_SCMI_CLK_GMAC0_TS_RGMII:
-	case S32GEN1_SCMI_CLK_GMAC0_TS_SGMII:
+	case S32GEN1_SCMI_CLK_GMAC0_TS:
 		*parent_id = S32GEN1_CLK_MC_CGM0_MUX9;
 		break;
 	default:
