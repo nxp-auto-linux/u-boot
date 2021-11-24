@@ -249,16 +249,14 @@
 };
 
 &gmac0 {
-	clocks = <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
+	clocks = <&clks S32GEN1_SCMI_CLK_GMAC0_TS>,
+		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
 		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_SGMII>,
-		 <&clks S32GEN1_SCMI_CLK_GMAC0_TS_SGMII>,
 		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_RGMII>,
 		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_RGMII>,
-		 <&clks S32GEN1_SCMI_CLK_GMAC0_TS_RGMII>,
 		 <&clks S32GEN1_SCMI_CLK_GMAC0_AXI>;
-	clock-names = "rx_sgmii", "tx_sgmii", "ts_sgmii",
-		      "rx_rgmii", "tx_rgmii", "ts_rgmii",
-		      "axi";
+	clock-names = "ts", "rx_sgmii", "tx_sgmii",
+		      "rx_rgmii", "tx_rgmii", "axi";
 	pinctrl-0 = <&pinctrl0_gmac0 &pinctrl0_gmac0_mdio>;
 	pinctrl-1 = <&pinctrl0_gmac0_mdio>;
 	pinctrl-names = "gmac_rgmii", "gmac_sgmii";
