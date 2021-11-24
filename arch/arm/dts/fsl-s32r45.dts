@@ -18,6 +18,11 @@
 	model = "NXP S32R45";
 	compatible = "fsl,s32r45", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
+	aliases {
+		eth0 = &gmac0;
+		eth1 = &gmac1;
+	};
+
 	memory@80000000 {
 		device_type = "memory";
 		reg = <0 0x80000000 0 0x80000000>;
@@ -128,6 +133,28 @@
 			<&serdes1_lane0_ext_cdr 0>;
 
 		status = "okay";
+	};
+
+	gmac1: ethernet@44010000 {
+		compatible = "fsl,s32cc-dwmac";
+		clocks = <&clks S32R45_SCMI_CLK_GMAC1_TS>,
+				<&clks S32R45_SCMI_CLK_GMAC1_RX_SGMII>,
+				<&clks S32R45_SCMI_CLK_GMAC1_TX_SGMII>,
+				<&clks S32R45_SCMI_CLK_GMAC1_RX_RGMII>,
+				<&clks S32R45_SCMI_CLK_GMAC1_TX_RGMII>,
+				<&clks S32R45_SCMI_CLK_GMAC1_AXI>;
+		clock-names = "ts", "rx_sgmii", "tx_sgmii",
+						"rx_rgmii", "tx_rgmii", "axi";
+		status = "okay";
+		reg = <0x0 0x44010000 0x0 0x2000>,
+		      <0x0 0x4007CA00 0x0 0x4>;
+		tx-fifo-depth = <20480>;
+		rx-fifo-depth = <20480>;
+		phy-mode = "sgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
+		};
 	};
 
 	pcie1: pcie@44100000 {
