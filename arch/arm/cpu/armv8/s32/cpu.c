@@ -83,18 +83,6 @@ static struct mm_region early_map[] = {
 	},
 #endif
 #endif
-	{
-	  CONFIG_SYS_FSL_FLASH0_BASE, CONFIG_SYS_FSL_FLASH0_BASE,
-	  CONFIG_SYS_FSL_FLASH0_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
-	},
-#ifdef CONFIG_SYS_FSL_FLASH1_BASE
-	{
-	  CONFIG_SYS_FSL_FLASH1_BASE, CONFIG_SYS_FSL_FLASH1_BASE,
-	  CONFIG_SYS_FSL_FLASH1_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
-	},
-#endif
 	/* list terminator */
 	{},
 };
@@ -568,6 +556,29 @@ int arch_cpu_init(void)
 	return ret;
 }
 
+static void disable_qspi_mmu_entry(void)
+{
+	struct mm_region *region;
+	int offset;
+	size_t i;
+
+	offset = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
+					       "fsl,s32gen1-qspi");
+	if (offset > 0) {
+		if (fdtdec_get_is_enabled(gd->fdt_blob, offset))
+			return;
+	}
+
+	/* Skip AHB mapping by setting its size to 0 */
+	for (i = 0; i < ARRAY_SIZE(final_map); i++) {
+		region = &final_map[i];
+		if (region->phys == CONFIG_SYS_FSL_FLASH0_BASE) {
+			region->size = 0U;
+			break;
+		}
+	}
+}
+
 /*
  * This function is called from lib/board.c.
  * It recreates MMU table in main memory. MMU and d-cache are enabled earlier.
@@ -575,6 +586,7 @@ int arch_cpu_init(void)
  */
 void enable_caches(void)
 {
+	disable_qspi_mmu_entry();
 	final_mmu_setup();
 	__asm_invalidate_tlb_all();
 	dcache_enable();
