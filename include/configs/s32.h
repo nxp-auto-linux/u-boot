@@ -236,12 +236,20 @@
 #define NFSRAMFS_TFTP_CMD ""
 #endif
 
+#ifdef CONFIG_TARGET_S32R45EVB
+#define GMAC1_ENABLE_VAR_VALUE \
+	"s32cc_gmac1_mode=enable\0"
+#else
+#define GMAC1_ENABLE_VAR_VALUE ""
+#endif /* CONFIG_TARGET_S32R45EVB */
+
 #ifdef CONFIG_DWC_ETH_QOS_S32CC
 #define GMAC_EXTRA_ENV_SETTINGS \
-	"s32cc_gmac_mode=enable\0"
+	"s32cc_gmac_mode=enable\0"\
+	GMAC1_ENABLE_VAR_VALUE
 #else
 #define GMAC_EXTRA_ENV_SETTINGS ""
-#endif
+#endif /* CONFIG_DWC_ETH_QOS_S32CC */
 
 #ifdef CONFIG_FSL_PFENG
 #define PFENG_EXTRA_BOOT_ARGS " nohz=off coherent_pool=64M "

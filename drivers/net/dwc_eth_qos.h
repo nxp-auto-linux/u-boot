@@ -308,6 +308,7 @@ struct eqos_priv {
 	void *rx_pkt;
 	bool started;
 	bool reg_access_ok;
+	void *priv;
 };
 
 /* Generic caching code */
@@ -316,5 +317,9 @@ void eqos_inval_desc_generic(void *desc);
 void eqos_flush_desc_generic(void *desc);
 void eqos_inval_buffer_generic(void *buf, size_t size);
 void eqos_flush_buffer_generic(void *buf, size_t size);
+
+/* Helper functions */
+void eqos_name(char *str, u32 cardnum);
+int eqos_num(struct udevice *dev);
 
 #endif /* DWC_ETH_QOS_H */

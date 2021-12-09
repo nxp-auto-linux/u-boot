@@ -28,7 +28,7 @@
 #include <dm/pinctrl.h>
 #include <hwconfig.h>
 
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) || CONFIG_IS_ENABLED(FSL_PFENG)
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 				       void *fdt, int nodeoff)
 {
@@ -41,7 +41,6 @@ static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 }
 #endif
 
-#if CONFIG_IS_ENABLED(FSL_PFENG)
 __maybe_unused static bool intf_is_xmii(u32 intf)
 {
 	return intf == PHY_INTERFACE_MODE_MII ||
@@ -49,6 +48,7 @@ __maybe_unused static bool intf_is_xmii(u32 intf)
 		intf == PHY_INTERFACE_MODE_RGMII;
 }
 
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 #ifdef CONFIG_TARGET_S32G274ARDB
 static int get_phy_handle(const void *fdt, int nodeoffset)
 {
@@ -195,31 +195,43 @@ void ft_enet_fixup(void *fdt)
 
 	/* GMAC */
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32cc-dwmac");
-	if (nodeoff >= 0) {
+	bool gmac0_ena = true;
 
-		if (s32ccgmac_cfg_get_mode() == S32CCGMAC_MODE_DISABLE) {
-			ena = false;
 #if CONFIG_IS_ENABLED(FSL_PFENG)
-		} else if (intf_is_xmii(s32ccgmac_cfg_get_interface()) &&
-			   intf_is_xmii(pfeng_cfg_emac_get_interface(1)) &&
-			   pfeng_drv_status_active()) {
-			ena = false;
+	if (intf_is_xmii(s32ccgmac_cfg_get_interface(0)) &&
+	    intf_is_xmii(pfeng_cfg_emac_get_interface(1)) &&
+	    pfeng_drv_status_active())
+		gmac0_ena = false;
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
-		} else
-			ena = true;
+
+	nodeoff = 0;
+	bool seek = true;
+
+	while (seek) {
+		bool ena;
+		int idx = -1;
+
+		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff,
+							"fsl,s32cc-dwmac");
+		if (nodeoff < 0)
+			return;
+
+		if (fdtdec_get_alias_seq(fdt, "gmac", nodeoff, &idx)) {
+			/* No alias = single gmac */
+			seek = false;
+			idx = 0;
+		}
+
+		ena = (idx == 0) ? gmac0_ena : true;
+
+		if (s32ccgmac_cfg_get_mode(idx) == S32CCGMAC_MODE_DISABLE)
+			ena = false;
 
 		if (!ena) {
-			printf("DT: Disabling GMAC\n");
+			printf("DT: Disabling GMAC%d\n", idx);
 			fdt_status_disabled(fdt, nodeoff);
-		} else {
-			printf("DT: Enabling GMAC\n");
-			fdt_status_okay(fdt, nodeoff);
-
-			/* sync MAC HW addr to DT [local-mac-address] */
-			ft_update_eth_addr_by_name("eth", 0, fdt, nodeoff);
 		}
-	}
+	} /* while */
 #endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
 }
 

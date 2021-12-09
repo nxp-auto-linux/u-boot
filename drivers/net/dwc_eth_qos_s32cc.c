@@ -27,6 +27,7 @@
 #include <asm/arch/soc.h>
 #include <asm/io.h>
 
+#include "board_common.h"
 #include "serdes_regs.h"
 #include "serdes_xpcs_regs.h"
 
@@ -37,45 +38,100 @@
 #include <s32gen1_gmac_utils.h>
 #include <dm/device.h>
 
-#define S32CCGMAC_ENV_VAR_MODE_NAME "s32cc_gmac_mode"
-
 /* S32 SRC register for phyif selection */
 #define PHY_INTF_SEL_SGMII	0x01
 #define PHY_INTF_SEL_RGMII	0x02
 #define PHY_INTF_SEL_RMII	0x08
 #define PHY_INTF_SEL_MII	0x00
 #define S32CC_GMAC_0_CTRL_STS		0x4007C004
+#define S32CC_GMAC_1_CTRL_STS		0x4007CA00
 
-static u32 mac_intf = PHY_INTERFACE_MODE_NONE;
-static u32 s32ccgmac_mode = S32CCGMAC_MODE_UNINITED;
+struct s32cc_priv {
+	u32 mac_intf;
+	u32 gmac_mode;
+};
 
 static bool s32ccgmac_set_interface(struct udevice *dev, u32 mode);
 
-u32 s32ccgmac_cfg_get_mode(void)
+static struct s32cc_priv *s32ccgmac_get_priv(struct udevice *dev)
 {
-	return s32ccgmac_mode;
+	struct eqos_priv *eqos = dev_get_priv(dev);
+
+	return eqos->priv;
+}
+
+static struct udevice *s32ccgmac_get_dev_by_idx(int cardnum)
+{
+	char devname[20];
+	struct udevice *dev = NULL;
+
+	eqos_name(devname, cardnum);
+	uclass_get_device_by_name(UCLASS_ETH, devname, &dev);
+	return dev;
+}
+
+static void s32ccgmac_alloc_priv(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+
+	eqos->priv = malloc(sizeof(struct s32cc_priv));
+
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+
+	s32cc->mac_intf = PHY_INTERFACE_MODE_NONE;
+	s32cc->gmac_mode = S32CCGMAC_MODE_UNINITED;
+}
+
+static const char *env_var_mode_name(struct udevice *dev)
+{
+	static char *prefix = "s32cc_gmac";
+	static char *postfix = "_mode";
+	static char name[sizeof(prefix) + sizeof(postfix) + 4];
+
+	int cardnum = eqos_num(dev);
+
+	if (cardnum > 0)
+		sprintf(name, "%s%d%s",	prefix, cardnum, postfix);
+	else
+		sprintf(name, "%s%s", prefix, postfix);
+
+	return name;
+}
+
+u32 s32ccgmac_cfg_get_mode(int cardnum)
+{
+	struct s32cc_priv *s32cc;
+	struct udevice *dev = s32ccgmac_get_dev_by_idx(cardnum);
+
+	s32cc = s32ccgmac_get_priv(dev);
+	return s32cc->gmac_mode;
 }
 
 static int s32ccgmac_cfg_set_mode(struct udevice *dev, u32 mode)
 {
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+	const char *env_var = env_var_mode_name(dev);
 	int ret;
 
-	if (s32ccgmac_mode == mode)
+	if (s32cc->gmac_mode == mode)
 		/* already in the same mode */
 		return 0;
 
 	switch (mode) {
 	case S32CCGMAC_MODE_DISABLE:
 		/* TODO: GMAC IP: stop the driver, stop clocks and power down */
-		env_set(S32CCGMAC_ENV_VAR_MODE_NAME, "disable");
+		env_set(env_var, "disable");
 		ret = 0;
 		break;
 	case S32CCGMAC_MODE_ENABLE:
-		ret = s32ccgmac_set_interface(dev, mac_intf) ? 0 : -EINVAL;
+		if (s32ccgmac_set_interface(dev, s32cc->mac_intf))
+			ret = 0;
+		else
+			ret = -EINVAL;
 		if (ret)
 			goto err;
 
-		env_set(S32CCGMAC_ENV_VAR_MODE_NAME, "enable");
+		env_set(env_var, "enable");
 		break;
 	default:
 		/* invalid mode */
@@ -83,7 +139,7 @@ static int s32ccgmac_cfg_set_mode(struct udevice *dev, u32 mode)
 		goto err;
 	}
 
-	s32ccgmac_mode = mode;
+	s32cc->gmac_mode = mode;
 
 err:
 	return ret;
@@ -91,6 +147,8 @@ err:
 
 static bool s32ccgmac_cfg_set_interface(struct udevice *dev, u32 mode)
 {
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+
 	if (mode != PHY_INTERFACE_MODE_NONE &&
 	    mode != PHY_INTERFACE_MODE_SGMII &&
 	    mode != PHY_INTERFACE_MODE_RGMII &&
@@ -103,35 +161,44 @@ static bool s32ccgmac_cfg_set_interface(struct udevice *dev, u32 mode)
 	if (!s32ccgmac_set_interface(dev, mode))
 		return false;
 
-	mac_intf = mode;
+	s32cc->mac_intf = mode;
 
 	return true;
 }
 
-static const char *s32ccgmac_cfg_get_interface_mode_str(void)
+static const char *
+s32ccgmac_cfg_get_interface_mode_str(struct s32cc_priv *s32cc)
 {
+	u32 mac_intf = s32cc->mac_intf;
+
 	return strlen(phy_string_for_interface(mac_intf)) ?
 		phy_string_for_interface(mac_intf) : "none";
 }
 
 static bool s32ccgmac_set_interface(struct udevice *dev, u32 mode)
 {
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+
 	setup_iomux_enet_gmac(dev, mode);
 	setup_clocks_enet_gmac(mode, dev);
-
-	mac_intf = mode;
+	s32cc->mac_intf = mode;
 
 	return true;
 }
 
-phy_interface_t s32ccgmac_cfg_get_interface(void)
+phy_interface_t s32ccgmac_cfg_get_interface(int cardnum)
 {
-	return mac_intf;
+	struct udevice *dev = s32ccgmac_get_dev_by_idx(cardnum);
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+
+	return s32cc->mac_intf;
 }
 
 phy_interface_t eqos_get_interface_s32cc(struct udevice *dev)
 {
-	return s32ccgmac_cfg_get_interface();
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+
+	return s32cc->mac_intf;
 }
 
 static int eqos_start_clks_s32cc(struct udevice *dev)
@@ -152,6 +219,7 @@ static void eqos_stop_clks_s32cc(struct udevice *dev)
 static int eqos_start_resets_s32cc(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
+	int gmac_no = eqos_num(dev);
 	u32 mode;
 
 	/* set the interface mode */
@@ -186,7 +254,10 @@ static int eqos_start_resets_s32cc(struct udevice *dev)
 		return -1;
 	}
 
-	writel(mode, S32CC_GMAC_0_CTRL_STS);
+	if (gmac_no == 0)
+		writel(mode, S32CC_GMAC_0_CTRL_STS);
+	else
+		writel(mode, S32CC_GMAC_1_CTRL_STS);
 
 	/* reset DMA to reread phyif config */
 	writel(EQOS_DMA_MODE_SWR, &eqos->dma_regs->mode);
@@ -280,8 +351,8 @@ static int check_sgmii_cfg(int gmac_no)
 	mode = s32_get_xpcs_mode(serdes, 0);
 
 	if (mode != desired_mode1 && mode != desired_mode2) {
-		printf("Invalid SGMII configuration for GMAC%d", gmac_no);
-		printf("Check hwconfig env. var.\n");
+		pr_err("Invalid SGMII configuration for GMAC%d\n", gmac_no);
+		pr_err("Check hwconfig env. var.\n");
 		return -EINVAL;
 	}
 
@@ -293,37 +364,35 @@ static int check_sgmii_cfg(int gmac_no)
 static int eqos_probe_resources_s32cc(struct udevice *dev)
 {
 	struct eqos_pdata *pdata = dev_get_platdata(dev);
-	char *env_mode = env_get(S32CCGMAC_ENV_VAR_MODE_NAME);
+	const char *env_var = env_var_mode_name(dev);
+	char *env_mode = env_get(env_var);
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+	int gmac_no = eqos_num(dev);
 
-	debug("%s(dev=%p):\n", __func__, dev);
+	s32cc->mac_intf = pdata->eth.phy_interface;
 
-	mac_intf = pdata->eth.phy_interface;
-
-	if (mac_intf == PHY_INTERFACE_MODE_NONE) {
+	if (s32cc->mac_intf == PHY_INTERFACE_MODE_NONE) {
 		pr_err("Invalid PHY interface\n");
 		return -EINVAL;
 	}
 
-	if (!s32ccgmac_cfg_set_interface(dev, mac_intf)) {
+	if (!s32ccgmac_cfg_set_interface(dev, s32cc->mac_intf)) {
 		pr_err("HW setting error\n");
 		return -EINVAL;
 	}
 
 	if (env_mode && !strcmp(env_mode, "disable")) {
 		return s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_DISABLE);
-	} else {
-		if (eqos_get_interface_s32cc(dev) == PHY_INTERFACE_MODE_SGMII) {
-			int ret = check_sgmii_cfg(0);
-
-			if (ret)
-				return ret;
-		}
-
-		return s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_ENABLE);
 	}
 
-	debug("%s: OK\n", __func__);
-	return 0;
+	if (eqos_get_interface_s32cc(dev) == PHY_INTERFACE_MODE_SGMII) {
+		int ret = check_sgmii_cfg(gmac_no);
+
+		if (ret)
+			return ret;
+	}
+
+	return s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_ENABLE);
 }
 
 static int eqos_remove_resources_s32cc(struct udevice *dev)
@@ -333,8 +402,10 @@ static int eqos_remove_resources_s32cc(struct udevice *dev)
 
 static int eqos_pre_init_s32cc(struct udevice *dev)
 {
-	char *env_mode = env_get(S32CCGMAC_ENV_VAR_MODE_NAME);
+	const char *env_var = env_var_mode_name(dev);
+	char *env_mode = env_get(env_var);
 
+	s32ccgmac_alloc_priv(dev);
 	if (env_mode && !strcmp(env_mode, "disable"))
 		return s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_DISABLE);
 	else
@@ -371,72 +442,67 @@ struct eqos_config eqos_s32cc_config = {
 	.ops = &eqos_s32cc_ops
 };
 
-static struct udevice *get_fake_gmac_dev(void)
-{
-	static struct udevice gmac_dev;
-	ofnode node;
-
-	if (gmac_dev.node.np)
-		return &gmac_dev;
-
-	node = ofnode_by_compatible(ofnode_null(), "fsl,s32cc-dwmac");
-	if (!node.np) {
-		pr_err("Could not find 'fsl,s32cc-dwmac' node\n");
-		return NULL;
-	}
-
-	gmac_dev.node = node;
-	return &gmac_dev;
-}
-
 /* command line */
 static int do_s32ccgmac_cmd(cmd_tbl_t *cmdtp, int flag,
 			    int argc, char * const argv[])
 {
-	struct udevice *gmac_dev = get_fake_gmac_dev();
+	unsigned long devnum;
+	int coffs;
+	/* check if device index was entered */
+	devnum = simple_strtoul(argv[1], NULL, 10);
+	if (strict_strtoul(argv[1], 10, &devnum)) {
+		devnum = 0;
+		coffs = 0;
+	} else {
+		coffs = 1;
+	}
+
+	struct udevice *dev = s32ccgmac_get_dev_by_idx(devnum);
+	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+
+	if (!dev) {
+		pr_err("ERROR: device instance %lu does't exist\n", devnum);
+		return CMD_RET_FAILURE;
+	}
 
 	/* process command */
-	if (!strcmp(argv[1], "info")) {
-		printf("GMAC mode: %s\n",
-		       s32ccgmac_cfg_get_mode() == S32CCGMAC_MODE_DISABLE
+	if (!strcmp(argv[1 + coffs], "info")) {
+		printf("GMAC%lu mode: %s\n", devnum,
+		       s32ccgmac_cfg_get_mode(devnum) == S32CCGMAC_MODE_DISABLE
 		       ? "disabled" : "enabled");
 		printf("interface: %s\n",
-		       s32ccgmac_cfg_get_interface_mode_str());
+		       s32ccgmac_cfg_get_interface_mode_str(s32cc));
 		return 0;
-	} else if (!strcmp(argv[1], "disable")) {
-		s32ccgmac_cfg_set_mode(gmac_dev, S32CCGMAC_MODE_DISABLE);
+	} else if (!strcmp(argv[1 + coffs], "enable")) {
+		s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_ENABLE);
+	} else if (!strcmp(argv[1 + coffs], "disable")) {
+		s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_DISABLE);
 		return 0;
-	} else if (!strcmp(argv[1], "enable")) {
-		s32ccgmac_cfg_set_mode(gmac_dev, S32CCGMAC_MODE_ENABLE);
-		return 0;
-	} else if (!strcmp(argv[1], "emac")) {
+	} else if (!strcmp(argv[1 + coffs], "emac")) {
 		if (argc < 3) {
-			printf("interface: %s%s\n",
-			       s32ccgmac_cfg_get_interface_mode_str(),
-			       s32ccgmac_cfg_get_mode() == S32CCGMAC_MODE_DISABLE
-			       ? "/disabled" : "");
-		} else {
-			int new_intf = -1;
+			printf("interface: %s\n",
+			       s32ccgmac_cfg_get_interface_mode_str(s32cc));
+	} else {
+		int new_intf = -1;
 
-			if (!strcmp(argv[2], "sgmii")) {
-				new_intf = PHY_INTERFACE_MODE_SGMII;
-			} else if (!strcmp(argv[2], "rgmii")) {
-				new_intf = PHY_INTERFACE_MODE_RGMII;
-			} else if (!strcmp(argv[2], "rmii")) {
-				new_intf = PHY_INTERFACE_MODE_RMII;
-			} else if (!strcmp(argv[2], "mii")) {
-				new_intf = PHY_INTERFACE_MODE_MII;
-			} else if (!strcmp(argv[2], "none")) {
-				new_intf = PHY_INTERFACE_MODE_NONE;
-			} else {
-				pr_err("Invalid PHY interface type '%s'\n",
-				       argv[2]);
-				return CMD_RET_USAGE;
-			}
-			if (new_intf > -1)
-				s32ccgmac_cfg_set_interface(gmac_dev, new_intf);
+		if (!strcmp(argv[2 + coffs], "sgmii")) {
+			new_intf = PHY_INTERFACE_MODE_SGMII;
+		} else if (!strcmp(argv[2 + coffs], "rgmii")) {
+			new_intf = PHY_INTERFACE_MODE_RGMII;
+		} else if (!strcmp(argv[2 + coffs], "rmii")) {
+			new_intf = PHY_INTERFACE_MODE_RMII;
+		} else if (!strcmp(argv[2 + coffs], "mii")) {
+			new_intf = PHY_INTERFACE_MODE_MII;
+		} else if (!strcmp(argv[2 + coffs], "none")) {
+			new_intf = PHY_INTERFACE_MODE_NONE;
+		} else {
+			pr_err("Invalid PHY interface type '%s'\n",
+			       argv[2 + coffs]);
+			return CMD_RET_USAGE;
 		}
-		return 0;
+		if (new_intf > -1)
+			s32ccgmac_cfg_set_interface(dev, new_intf);
+	}
 	}
 
 	return CMD_RET_USAGE;
@@ -445,8 +511,8 @@ static int do_s32ccgmac_cmd(cmd_tbl_t *cmdtp, int flag,
 U_BOOT_CMD(
 	   s32ccgmac, 3, 0, do_s32ccgmac_cmd,
 	   "NXP S32cc GMAC controller info",
-	   /*      */"info               - important hw info\n"
-	   "s32ccgmac [disable|enable]   - disable/enable gmac/eqos subsystem\n"
-	   "s32ccgmac emac [<inf-mode>]  - read or set MAC interface mode\n"
-	   "eqos help                    - additional gmac commands"
+	   /*      */"[idx] info			  - important hw info\n"
+	   "s32ccgmac [idx] [disable|enable]  - disable/enable gmac/eqos subsystem\n"
+	   "s32ccgmac [idx] emac [<inf-mode>] - read or set MAC interface mode\n"
+	   "s32ccgmac help					  - additional gmac commands"
 );

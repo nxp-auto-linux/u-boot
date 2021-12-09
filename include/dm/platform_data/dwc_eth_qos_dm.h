@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  */
 
 #ifndef DWC_ETH_QOS_DM_H
@@ -32,8 +32,9 @@ enum {
 	S32CCGMAC_MODE_ENABLE,
 };
 
-u32 s32ccgmac_cfg_get_mode(void);
-phy_interface_t s32ccgmac_cfg_get_interface(void);
+u32 s32ccgmac_cfg_get_mode(int cardnum);
+phy_interface_t s32ccgmac_cfg_get_interface(int cardnum);
+const char *s32ccgmac_cfg_get_ifmode_str_by_num(int cardum);
 #endif
 
 /* Supported implementations */

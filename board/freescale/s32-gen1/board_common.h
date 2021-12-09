@@ -26,7 +26,7 @@ void setup_iomux_uart1_pb09_pb10(void);
 
 #if CONFIG_IS_ENABLED(NETDEVICES)
 void ft_enet_fixup(void *fdt);
-u32 s32ccgmac_cfg_get_mode(void);
+u32 s32ccgmac_cfg_get_mode(int cardnum);
 #endif
 
 #if defined(CONFIG_SAF1508BET_USB_PHY)

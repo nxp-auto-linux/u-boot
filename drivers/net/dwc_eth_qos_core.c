@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  * Portions based on U-Boot's rtl8169.c.
  */
@@ -179,7 +179,7 @@ static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
 			EQOS_MAC_MDIO_ADDRESS_GB;
 	} else {
-		/* Clause 45 */	
+		/* Clause 45 */
 		writel(mdio_reg << EQOS_MAC_MDIO_DATA_RA_SHIFT, &eqos->mac_regs->mdio_data);
 		val = readl(&eqos->mac_regs->mdio_address);
 
@@ -1148,8 +1148,12 @@ static int eqos_probe(struct udevice *dev)
 	}
 
 	/* Try to sync ethaddr to environment */
-	if (!env_get("ethaddr") && is_valid_ethaddr(pdata->eth.enetaddr))
-		eth_env_set_enetaddr("ethaddr", pdata->eth.enetaddr);
+	int idx = eqos_num(dev);
+	u8 enetaddr[6];
+
+	if (!eth_env_get_enetaddr_by_index("eth", idx, enetaddr) &&
+	    is_valid_ethaddr(pdata->eth.enetaddr))
+		eth_env_set_enetaddr_by_index("eth", idx, pdata->eth.enetaddr);
 
 	debug("%s: OK\n", __func__);
 	return 0;
@@ -1181,13 +1185,30 @@ static int eqos_remove(struct udevice *dev)
 	return 0;
 }
 
-static void eqos_name(char *str, u32 cardnum)
+void eqos_name(char *str, u32 cardnum)
 {
 	if (cardnum)
 		sprintf(str, "eth_eqos%i", cardnum);
 	else
-		/* backcompatibility name for instance 0 */
+		/* backwards compatibility name for instance 0 */
 		strcpy(str, "eth_eqos");
+}
+
+int eqos_num(struct udevice *dev)
+{
+	int n = dev->req_seq;
+
+	if (n < 0) {
+		/* No alias */
+		if (dev->seq != 0) {
+			pr_err("Multiple instances requires aliases ");
+			pr_err("eth0, eth1... in DT\n");
+			debug("dev->seq=%d", dev->seq);
+		}
+		/* backwards compatibility for single instance and no alias */
+		return 0;
+	}
+	return n;
 }
 
 static int eqos_bind(struct udevice *dev)
