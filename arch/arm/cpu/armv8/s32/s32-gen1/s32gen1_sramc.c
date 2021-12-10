@@ -81,7 +81,7 @@ static void clear_sram_range(struct sram_ctrl *c, uintptr_t start_addr,
 	end_addr -= c->min_sram_addr;
 
 	start_offset = c->a53_to_sramc_offset(start_addr);
-	end_offset = c->a53_to_sramc_offset(end_addr);
+	end_offset = c->a53_to_sramc_offset(end_addr) - 1;
 
 	clear_sramc_range(base, start_offset, end_offset);
 }
