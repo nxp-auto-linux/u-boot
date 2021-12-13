@@ -8,3 +8,11 @@ config SYS_CONFIG_NAME
 	string
 	default "s32v234hpcsom"
 endif
+
+config S32V234_HWCONFIG
+	string "S32V234 HWConfig definition"
+	default "pcie:mode=ep,clock=ext"
+
+	help
+	  The configuration for the PCIe controllers, stored in
+	  the variable 'hwconfig'

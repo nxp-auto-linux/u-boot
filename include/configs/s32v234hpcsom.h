@@ -37,8 +37,6 @@
 #define CONFIG_CMD_IRQ
 #endif
 
-#define PCIE_EXTRA_ENV_SETTINGS "hwconfig=pcie:mode=ep,clock=ext"
-
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32v234_common.h>
 
