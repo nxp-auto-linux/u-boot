@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2018,2020 NXP
+ * Copyright 2018,2020-2021 NXP
  */
 
 #include <asm/arch-s32/soc.h>
@@ -13,7 +13,7 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 			char * const argv[])
 {
 	unsigned long addr;
-	unsigned size, max_size, ret_size;
+	unsigned int size, max_size, ret;
 	char *ep;
 
 	if (argc < 3)
@@ -52,22 +52,18 @@ static int do_init_sram(cmd_tbl_t *cmdtp, int flag, int argc,
 	}
 
 	invalidate_dcache_range(addr, addr + size);
-	ret_size = sram_clr(addr, size);
-
-	if (!ret_size) {
+	ret = sram_clr(addr, size);
+	if (!ret) {
 		printf("Init SRAM failed\n");
 		return CMD_RET_FAILURE;
 	}
-
-	printf("Init SRAM region at address 0x%08lX, size 0x%X bytes ...\n",
-	       addr, ret_size);
 
 	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
 		initsram,	3,	1,	do_init_sram,
-		"DMA init SRAM from address",
+		"Initialize SRAM from address",
 		"startAddress[hex] size[hex]"
 	  );
 
