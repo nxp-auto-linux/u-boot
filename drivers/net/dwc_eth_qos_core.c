@@ -1196,7 +1196,12 @@ void eqos_name(char *str, u32 cardnum)
 
 int eqos_num(struct udevice *dev)
 {
-	int n = dev->req_seq;
+	int n;
+
+	if (!dev)
+		return -EINVAL;
+
+	n = dev->req_seq;
 
 	if (n < 0) {
 		/* No alias */
