@@ -105,7 +105,7 @@ static u32 u32_get_digits(u32 val)
 	return digits;
 }
 
-static u32 get_ndigits(double val)
+static u32 get_ndigits(double val, u32 precision)
 {
 	u32 digits = 0;
 	u32 val32 = (u32)val;
@@ -116,21 +116,34 @@ static u32 get_ndigits(double val)
 	digits++;
 
 	/* Fractional part */
-	digits += 3;
+	precision /= 10;
+	while (precision) {
+		digits++;
+		precision /= 10;
+	}
 
 	return digits;
 }
 
-static void print_double(double val, u32 space)
+static void print_double(double val, u32 space, u32 precision)
 {
 	size_t i;
+	size_t ndigits;
 	u32 val32 = (u32)val;
-	u32 frac = (u32)((val - (double)val32) * 1000.0);
+	u32 frac = (u32)((val - (double)val32) * (double)precision);
 
-	for (i = 0; i < space - get_ndigits(val); i++)
-		printf(" ");
+	ndigits = get_ndigits(val, precision);
+	if (space > ndigits) {
+		for (i = 0; i < space - ndigits; i++)
+			printf(" ");
+	}
 
-	printf("%" PRIu32 ".%03" PRIu32, val32, frac);
+	if (precision == 1000)
+		printf("%" PRIu32 ".%03" PRIu32, val32, frac);
+	else if (precision == 100)
+		printf("%" PRIu32 ".%02" PRIu32, val32, frac);
+	else
+		printf("%" PRIu32 ".%01" PRIu32, val32, frac);
 }
 
 static int calc_cmu_ref_cnt(double ref_clk, double mon_clk,
@@ -292,12 +305,20 @@ static int get_fc_mon_freq(struct cmu *inst,
 	return _get_fc_mon_freq(inst, freq_int, MAX_DEPTH);
 }
 
+static double get_max_exp_freq(struct cmu *inst)
+{
+	if (inst->has_exp_range)
+		return inst->exp_range.max;
+
+	return inst->exp_freq;
+}
+
 static int get_fm_mon_freq(struct cmu *inst, double *mon_freq)
 {
 	struct cmu_fm_params cmu_fm;
 	u32 met_cnt, sr;
 
-	if (get_fm_params(inst->ref_freq, inst->mon_freq, &cmu_fm))
+	if (get_fm_params(inst->ref_freq, get_max_exp_freq(inst), &cmu_fm))
 		return -1;
 
 	/* Disable the module*/
@@ -333,6 +354,18 @@ static int get_fm_mon_freq(struct cmu *inst, double *mon_freq)
 	return 0;
 }
 
+static void print_expected_freq(struct cmu *inst)
+{
+	if (inst->has_exp_range) {
+		print_double(inst->exp_range.min, 5, 10);
+		puts(" - ");
+		print_double(inst->exp_range.max, 5, 10);
+		return;
+	}
+
+	print_double(inst->exp_freq, 12, 1);
+}
+
 static int do_verify_clocks(cmd_tbl_t *cmdtp, int flag, int argc,
 			    char * const argv[])
 {
@@ -342,12 +375,12 @@ static int do_verify_clocks(cmd_tbl_t *cmdtp, int flag, int argc,
 	double max_var;
 	double mon_freq = 0;
 
-	puts("    CMU    |     Monitored    | Reference | Expected ");
-	puts("|  Verified interval \n");
-	puts("  Address  |       clock      |   clock   |   (MHz)  ");
-	puts("|       (MHz)       \n");
-	puts("-----------|------------------|-----------|----------");
-	puts("|--------------------\n");
+	puts(" CMU       | Monitored    | Reference | Expected      |");
+	puts(" Verified\n");
+	puts(" Address   | clock        | clock     | range (MHz)   |");
+	puts(" range (MHz)\n");
+	puts("-----------|--------------|-----------|---------------|");
+	puts("--------------------\n");
 
 	for (i = 0; i < get_cmu_blocks_number(); i++) {
 		inst = get_cmu_block(i);
@@ -365,16 +398,18 @@ static int do_verify_clocks(cmd_tbl_t *cmdtp, int flag, int argc,
 
 		printf("0x%" PRIxPTR " |", inst->addr);
 		max_var = min(inst->mon_var, inst->ref_var);
-		printf(" %16s | ", inst->mon_name);
+		printf(" %12s | ", inst->mon_name);
 		printf("%9s | ", inst->ref_name);
-		print_double(inst->mon_freq, 8);
+		print_expected_freq(inst);
 		printf(" | ");
 		if (inst->fc) {
-			print_double(get_min_freq(freq_int.min, max_var), 8);
+			print_double(get_min_freq(freq_int.min, max_var),
+				     8, 1000);
 			printf(" - ");
-			print_double(get_max_freq(freq_int.max, max_var), 8);
+			print_double(get_max_freq(freq_int.max, max_var),
+				     8, 1000);
 		} else {
-			print_double(mon_freq, 19);
+			print_double(mon_freq, 19, 1000);
 		}
 		printf("\n");
 	}
