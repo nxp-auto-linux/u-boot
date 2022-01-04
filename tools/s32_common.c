@@ -13,6 +13,15 @@ int image_parts_comp(const void *p1, const void *p2)
 	const struct image_comp **part1 = (typeof(part1))p1;
 	const struct image_comp **part2 = (typeof(part2))p2;
 
+	if (!*part1 && !*part2)
+		return 0;
+
+	if (!*part1)
+		return -1;
+
+	if (!*part2)
+		return 1;
+
 	if ((*part2)->offset > (*part1)->offset)
 		return -1;
 
@@ -40,10 +49,15 @@ void check_overlap(struct image_comp *comp1,
 void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 {
 	size_t i;
+	size_t start_index = 0U;
 
-	for (i = 0U; i < n_parts; i++) {
+	/* Skip empty entries */
+	while (!parts[start_index])
+		start_index++;
+
+	for (i = start_index; i < n_parts; i++) {
 		if (parts[i]->offset == S32_AUTO_OFFSET) {
-			if (i == 0) {
+			if (i == start_index) {
 				parts[i]->offset = 0U;
 				continue;
 			}
@@ -57,7 +71,7 @@ void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 			parts[i]->offset = ROUND(parts[i]->offset,
 						 parts[i]->alignment);
 
-		if (i != 0)
+		if (i != start_index)
 			check_overlap(parts[i - 1], parts[i]);
 	}
 }

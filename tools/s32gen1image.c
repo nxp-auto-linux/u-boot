@@ -12,32 +12,37 @@
 
 #define UNSPECIFIED	-1
 
-#ifdef CONFIG_HSE_SECBOOT
-#  define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80000ul
-#endif
+#define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80000ul
 
-#ifdef CONFIG_QSPI_BOOT
-#  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
-#endif
-
-#ifdef CONFIG_QSPI_BOOT
-#  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
-#endif
+#define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
 
 #define S32GEN1_IVT_OFFSET_0		0x0
 #define S32GEN1_IVT_OFFSET_1000		0x1000
+
+struct image_config {
+	struct {
+		uint32_t offset;
+		uint32_t size;
+	} env;
+	uint32_t entrypoint;
+	uint32_t dtb_addr;
+	bool flash_boot;
+	bool secboot;
+	bool is_rdb2;
+	bool is_emu;
+};
+
+static struct image_config iconfig;
 
 static struct program_image image_layout = {
 	.ivt = {
 		.offset = S32GEN1_IVT_OFFSET_0,
 		.size = sizeof(struct ivt),
 	},
-#ifdef CONFIG_QSPI_BOOT
 	.qspi_params = {
 		.offset = S32GEN1_QSPI_PARAMS_OFFSET,
 		.size = S32GEN1_QSPI_PARAMS_SIZE,
 	},
-#endif
 	.ivt_duplicate = {
 		.offset = S32GEN1_IVT_OFFSET_1000,
 		.size = sizeof(struct ivt),
@@ -47,13 +52,11 @@ static struct program_image image_layout = {
 		.alignment = 0x200U,
 		.size = DCD_MAXIMUM_SIZE,
 	},
-#ifdef CONFIG_HSE_SECBOOT
 	.hse_reserved = {
 		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x2000U,
 		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
 	},
-#endif
 	.app_code = {
 		.offset = S32_AUTO_OFFSET,
 		.alignment = 0x200U,
@@ -66,25 +69,36 @@ static struct program_image image_layout = {
 	},
 };
 
-static uint32_t dcd_data[] = {
+static uint32_t default_dcd_data[] = {
 	DCD_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+	DCD_NOP_HEADER,
+};
 
-/*
- * Enable VDD_EFUSE, so that HSE can read SYS_IMG.
- * VDD_EFUSE is disabled by default on s32g274ardb2
- */
-#ifdef CONFIG_S32G274ARDB2
+static uint32_t s32g274ardb2_dcd_data[] = {
+	DCD_HEADER,
+	/*
+	 * Enable VDD_EFUSE, so that HSE can read SYS_IMG.
+	 * VDD_EFUSE is disabled by default on s32g274ardb2
+	 */
 	DCD_WRITE_HEADER(1, PARAMS_BYTES(4)),
 	DCD_ADDR(SIUL2_0_MSCRn(25)), DCD_MASK(MSCR25_SET_GPIO25_SRC),
 	DCD_WRITE_HEADER(1, PARAMS_BYTES(1)),
 	DCD_ADDR(SIUL2_PDO_N(25)), DCD_MASK(GPDO25_HIGH),
-#else
-	DCD_NOP_HEADER,
-	DCD_NOP_HEADER,
-	DCD_NOP_HEADER,
-	DCD_NOP_HEADER,
-#endif
 };
+
+static uint32_t *get_dcd_data(size_t *size)
+{
+	if (iconfig.is_rdb2) {
+		*size = sizeof(s32g274ardb2_dcd_data);
+		return &s32g274ardb2_dcd_data[0];
+	}
+
+	*size = sizeof(default_dcd_data);
+	return &default_dcd_data[0];
+}
 
 static struct ivt *get_ivt(struct program_image *image)
 {
@@ -105,8 +119,6 @@ static struct application_boot_code *get_app_code(struct program_image *image)
 {
 	return (struct application_boot_code *)image->app_code.data;
 }
-
-#ifndef CONFIG_QSPI_BOOT
 
 /* Areas of SRAM reserved by BootROM according to the
  * Reset and Boot: Boot: Program Image section of the Reference Manual,
@@ -141,8 +153,6 @@ static void enforce_reserved_ranges(void *image_start, int image_length)
 		}
 }
 
-#else
-#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 static struct qspi_params *get_qspi_params(struct program_image *image)
 {
 	return (struct qspi_params *)image->qspi_params.data;
@@ -154,17 +164,16 @@ static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 
 	memcpy(qspi_params, s32g2xx_qspi_conf, sizeof(*qspi_params));
 }
-#endif /* CONFIG_TARGET_TYPE_S32GEN1_EMULATOR */
-#endif
 
 static void set_data_pointers(struct program_image *layout, void *header)
 {
 	uint8_t *data = (uint8_t *)header;
 
 	layout->ivt.data = data + layout->ivt.offset;
-#ifdef CONFIG_QSPI_BOOT
-	layout->qspi_params.data = data + layout->qspi_params.offset;
-#endif
+
+	if (iconfig.flash_boot)
+		layout->qspi_params.data = data + layout->qspi_params.offset;
+
 	layout->ivt_duplicate.data = data + layout->ivt_duplicate.offset;
 	layout->dcd.data = data + layout->dcd.offset;
 	layout->app_code.data = data + layout->app_code.offset;
@@ -210,22 +219,25 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 {
 	size_t code_length;
 	size_t pre_code_padding;
+	size_t dcd_data_size;
 	uint8_t *dcd;
 	struct ivt *ivt;
 	struct ivt *ivt_duplicate;
 	struct application_boot_code *app_code;
 	struct fip_image_data fip_data;
+	uint32_t *dcd_data;
 
 	set_data_pointers(&image_layout, header);
+	dcd_data = get_dcd_data(&dcd_data_size);
 
 	dcd = get_dcd(&image_layout);
-	if (sizeof(dcd_data) > DCD_MAXIMUM_SIZE) {
+	if (dcd_data_size > DCD_MAXIMUM_SIZE) {
 		fprintf(stderr, "DCD exceeds the maximum size\n");
 		exit(EXIT_FAILURE);
 	}
-	memcpy(dcd, &dcd_data[0], sizeof(dcd_data));
+	memcpy(dcd, &dcd_data[0], dcd_data_size);
 	*(uint16_t *)(dcd + DCD_HEADER_LENGTH_OFFSET) =
-						cpu_to_be16(sizeof(dcd_data));
+						cpu_to_be16(dcd_data_size);
 
 	ivt = get_ivt(&image_layout);
 	app_code = get_app_code(&image_layout);
@@ -238,9 +250,8 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
-#ifdef CONFIG_HSE_SECBOOT
-	ivt->hse_h_firmware_pointer = image_layout.hse_reserved.offset;
-#endif
+	if (iconfig.secboot)
+		ivt->hse_h_firmware_pointer = image_layout.hse_reserved.offset;
 
 	ivt_duplicate = get_ivt_duplicate(&image_layout);
 	memcpy(ivt_duplicate, ivt, sizeof(struct ivt));
@@ -259,13 +270,9 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		code_length += pre_code_padding;
 		app_code->code_length = code_length;
 
-#if CONFIG_SYS_TEXT_BASE < CONFIG_DTB_SRAM_ADDR
-#error "mkimage: CONFIG_DTB_SRAM_ADDR is higher than CONFIG_SYS_TEXT_BASE"
-#endif
-
-		app_code->ram_start_pointer = CONFIG_DTB_SRAM_ADDR
+		app_code->ram_start_pointer = iconfig.dtb_addr
 							- pre_code_padding;
-		app_code->ram_entry_pointer = CONFIG_SYS_TEXT_BASE;
+		app_code->ram_entry_pointer = iconfig.entrypoint;
 	} else {
 		printf("mkimage: s32gen1image: %s is a FIP image\n",
 		       tool_params->datafile);
@@ -283,15 +290,14 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	 */
 	app_code->code_length = ROUND(app_code->code_length, 512);
 
-#ifndef CONFIG_QSPI_BOOT
-	enforce_reserved_ranges((void *)(__u64)
-				app_code->ram_start_pointer,
-				app_code->code_length);
-#else
-#ifndef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	s32gen1_set_qspi_params(get_qspi_params(&image_layout));
-#endif
-#endif
+	if (!iconfig.flash_boot) {
+		enforce_reserved_ranges((void *)(__u64)
+					app_code->ram_start_pointer,
+					app_code->code_length);
+	} else {
+		if (!iconfig.is_emu)
+			s32gen1_set_qspi_params(get_qspi_params(&image_layout));
+	}
 
 	image_layout.code.size = sbuf->st_size - image_layout.app_code.offset -
 		image_layout.app_code.size;
@@ -306,21 +312,35 @@ static int s32gen1_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
+static struct image_comp *
+get_image_qspi_params(struct program_image *program_image)
+{
+	if (iconfig.flash_boot)
+		return &program_image->qspi_params;
+
+	return NULL;
+}
+
+static struct image_comp *
+get_image_hse_params(struct program_image *program_image)
+{
+	if (iconfig.secboot)
+		return &program_image->hse_reserved;
+
+	return NULL;
+}
+
 static int s32g2xx_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
 	uint8_t *image_layout;
 	struct image_comp *parts[] = {&program_image->ivt,
-#ifdef CONFIG_QSPI_BOOT
-		&program_image->qspi_params,
-#endif
 		&program_image->ivt_duplicate,
 		&program_image->dcd,
-#ifdef CONFIG_HSE_SECBOOT
-		&program_image->hse_reserved,
-#endif
 		&program_image->app_code,
 		&program_image->code,
+		get_image_qspi_params(program_image),
+		get_image_hse_params(program_image),
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
@@ -341,12 +361,43 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	return 0;
 }
 
+static void s32gen1_init_iconfig(void)
+{
+#ifdef CONFIG_FLASH_BOOT
+	iconfig.flash_boot = true;
+#endif
+#ifdef CONFIG_HSE_SECBOOT
+	iconfig.secboot = true;
+#endif
+#ifdef CONFIG_S32G274ARDB2
+	iconfig.is_rdb2 = true;
+#endif
+#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+	iconfig.is_emu = true;
+#endif
+	iconfig.entrypoint = CONFIG_SYS_TEXT_BASE;
+	iconfig.dtb_addr = CONFIG_DTB_SRAM_ADDR;
+
+	if (iconfig.entrypoint < iconfig.dtb_addr) {
+		fprintf(stderr,
+			"The entrypoint is higher than the DTB base (0x%x < 0x%x)\n",
+			iconfig.entrypoint, iconfig.dtb_addr);
+		exit(1);
+	}
+
+#if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
+	iconfig.env.offset = CONFIG_ENV_OFFSET;
+	iconfig.env.size = CONFIG_ENV_SIZE;
+#endif
+}
+
 static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 			       struct image_type_params *type_params)
 {
 	size_t header_size;
 	void *image = NULL;
 
+	s32gen1_init_iconfig();
 	s32g2xx_build_layout(&image_layout, &header_size, &image);
 	type_params->header_size = header_size;
 	type_params->hdr = image;
@@ -359,33 +410,38 @@ static void s32gen1_print_header(const void *header)
 	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.ivt.offset,
 		(unsigned int)image_layout.ivt.size);
-#ifdef CONFIG_QSPI_BOOT
-	fprintf(stderr, "QSPI Parameters:\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.qspi_params.offset,
-		(unsigned int)image_layout.qspi_params.size);
-#endif
+
+	if (iconfig.flash_boot)
+		fprintf(stderr,
+			"QSPI Parameters:\tOffset: 0x%x\t\tSize: 0x%x\n",
+			(unsigned int)image_layout.qspi_params.offset,
+			(unsigned int)image_layout.qspi_params.size);
+
 	fprintf(stderr, "IVT (duplicate):\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.ivt_duplicate.offset,
 		(unsigned int)image_layout.ivt_duplicate.size);
 	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.dcd.offset,
 		(unsigned int)image_layout.dcd.size);
-#ifdef CONFIG_HSE_SECBOOT
-	fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.hse_reserved.offset,
-		(unsigned int)image_layout.hse_reserved.size);
-#endif
+
+	if (iconfig.secboot)
+		fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+			(unsigned int)image_layout.hse_reserved.offset,
+			(unsigned int)image_layout.hse_reserved.size);
+
 	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.app_code.offset,
 		(unsigned int)image_layout.app_code.size);
 	fprintf(stderr, "U-Boot/FIP:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.code.offset,
 		(unsigned int)image_layout.code.size);
-#if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
-	fprintf(stderr, "U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",
-		(unsigned int)CONFIG_ENV_OFFSET,
-		(unsigned int)CONFIG_ENV_SIZE);
-#endif
+
+	if (iconfig.env.offset && iconfig.env.size)
+		fprintf(stderr,
+			"U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",
+			(unsigned int)iconfig.env.offset,
+			(unsigned int)iconfig.env.size);
+
 	fprintf(stderr, "\n");
 }
 

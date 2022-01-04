@@ -75,7 +75,6 @@ struct application_boot_code {
 	__u8		code[0];
 } __attribute__((packed));
 
-#ifdef CONFIG_QSPI_BOOT
 struct flash_write {
 	union {
 		struct {
@@ -118,18 +117,13 @@ struct qspi_params {
 	__u32 command_seq[80];
 	struct flash_write writes[10];
 };
-#endif
 
 struct program_image {
 	struct image_comp ivt;
-#ifdef CONFIG_QSPI_BOOT
 	struct image_comp qspi_params;
-#endif
 	struct image_comp ivt_duplicate;
 	struct image_comp dcd;
-#ifdef CONFIG_HSE_SECBOOT
 	struct image_comp hse_reserved;
-#endif
 	struct image_comp app_code;
 	struct image_comp code;
 	__u8 *header;
