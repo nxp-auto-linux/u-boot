@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 #include <common.h>
@@ -181,7 +181,10 @@ int print_cpuinfo(void)
 	       get_siul2_midr1_minor(),
 		   !get_siul2_midr2_subminor());
 #elif defined(CONFIG_NXP_S32G3XX)
-	printf("CPU:\tNXP S32G399A\n");
+	printf("CPU:\tNXP S32G399A");
+	printf(" rev. %d.%d\n",
+	       get_siul2_midr1_major() + 1,
+	       get_siul2_midr1_minor());
 #endif
 	printf("Reset cause: %s\n", get_reset_cause());
 
