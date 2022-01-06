@@ -1,14 +1,15 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /* Copyright 2019-2022 NXP */
 
+#include <ctype.h>
 #include <image.h>
-#include <generated/autoconf.h>
-#include <config.h>
-#include <asm/arch-s32/siul-s32-gen1.h>
-#include <asm/arch-s32/s32-gen1/s32-gen1-regs.h>
-#include "imagetool.h"
-#include "s32_common.h"
-#include "s32gen1image.h"
+#include <imagetool.h>
+#include <inttypes.h>
+#include <linux/kernel.h>
+#include <s32gen1image.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define UNSPECIFIED	-1
 
@@ -19,17 +20,110 @@
 #define S32GEN1_IVT_OFFSET_0		0x0
 #define S32GEN1_IVT_OFFSET_1000		0x1000
 
+#define S32_AUTO_OFFSET ((size_t)(-1))
+
+#define IVT_TAG				(0xd1)
+
+#define DCD_HEADER			(0x600000d2)
+#define DCD_MAXIMUM_SIZE		(8192)
+#define DCD_HEADER_LENGTH_OFFSET	(1)
+
+#define DCD_COMMAND_HEADER(tag, len, params) ((tag) | \
+					      (cpu_to_be16((len)) << 8) | \
+					      (params) << 24)
+#define DCD_WRITE_TAG	(0xcc)
+#define DCD_CHECK_TAG	(0xcf)
+#define DCD_NOP_TAG	(0xc0)
+
+#define DCD_PARAMS(SET, MASK, LEN) \
+	(((LEN) & 0x7) | \
+	((SET) ? (1 << 4) : 0x0) | \
+	((MASK) ? (1 << 3) : 0x0))
+
+#define DCD_WRITE_HEADER(n, params)	DCD_COMMAND_HEADER(DCD_WRITE_TAG, \
+							   4 + (n) * 8, \
+							   (params))
+#define DCD_CHECK_HEADER(params)	DCD_COMMAND_HEADER(DCD_CHECK_TAG, \
+							   16, \
+							   (params))
+#define DCD_CHECK_HEADER_NO_COUNT(params) \
+					DCD_COMMAND_HEADER(DCD_CHECK_TAG, \
+							   12, \
+							   (params))
+#define DCD_NOP_HEADER			DCD_COMMAND_HEADER(DCD_NOP_TAG, 4, 0)
+
+#define DCD_ADDR(x)	cpu_to_be32((x))
+#define DCD_MASK(x)	cpu_to_be32((x))
+#define DCD_COUNT(x)	cpu_to_be32((x))
+
+typedef int (*parser_handler_t)(char *);
+
 struct image_config {
 	struct {
-		uint32_t offset;
-		uint32_t size;
-	} env;
-	uint32_t entrypoint;
-	uint32_t dtb_addr;
+		uint32_t *data;
+		size_t size;
+		size_t allocated_size;
+	} dcd;
+	struct {
+		uint8_t *data;
+		size_t size;
+	} qspi_params;
 	bool flash_boot;
 	bool secboot;
-	bool is_rdb2;
-	bool is_emu;
+};
+
+struct fip_image_data {
+	__u32		toc_header_name;
+	__u32		dont_care1;
+	__u64		dont_care2;
+	__u8		uuid[16];
+	__u64		offset;
+	__u64		size;
+	__u8		dont_care3[0];
+};
+
+struct line_parser {
+	const char *tag;
+	parser_handler_t parse;
+};
+
+enum boot_type {
+	QSPI_BOOT,
+	SD_BOOT,
+	EMMC_BOOT,
+	INVALID_BOOT
+};
+
+enum dcd_cmd {
+	WRITE,
+	CLEAR_MASK,
+	SET_MASK,
+	CHECK_MASK_CLEAR,
+	CHECK_MASK_SET,
+	CHECK_NOT_MASK,
+	CHECK_NOT_CLEAR,
+	INVALID_DCD_CMD,
+};
+
+struct dcd_args {
+	enum dcd_cmd cmd;
+	uint32_t addr;
+	union {
+		uint32_t mask;
+		uint32_t value;
+	};
+	uint32_t nbytes;
+	uint32_t count;
+};
+
+static const char * const dcd_cmds[] = {
+	[WRITE] = "WRITE",
+	[CLEAR_MASK] = "CLEAR_MASK",
+	[SET_MASK] = "SET_MASK",
+	[CHECK_MASK_CLEAR] = "CHECK_MASK_CLEAR",
+	[CHECK_MASK_SET] = "CHECK_MASK_SET",
+	[CHECK_NOT_MASK] = "CHECK_NOT_MASK",
+	[CHECK_NOT_CLEAR] = "CHECK_NOT_CLEAR",
 };
 
 static struct image_config iconfig;
@@ -69,7 +163,7 @@ static struct program_image image_layout = {
 	},
 };
 
-static uint32_t default_dcd_data[] = {
+static const uint32_t default_dcd_data[] = {
 	DCD_HEADER,
 	DCD_NOP_HEADER,
 	DCD_NOP_HEADER,
@@ -77,23 +171,11 @@ static uint32_t default_dcd_data[] = {
 	DCD_NOP_HEADER,
 };
 
-static uint32_t s32g274ardb2_dcd_data[] = {
-	DCD_HEADER,
-	/*
-	 * Enable VDD_EFUSE, so that HSE can read SYS_IMG.
-	 * VDD_EFUSE is disabled by default on s32g274ardb2
-	 */
-	DCD_WRITE_HEADER(1, PARAMS_BYTES(4)),
-	DCD_ADDR(SIUL2_0_MSCRn(25)), DCD_MASK(MSCR25_SET_GPIO25_SRC),
-	DCD_WRITE_HEADER(1, PARAMS_BYTES(1)),
-	DCD_ADDR(SIUL2_PDO_N(25)), DCD_MASK(GPDO25_HIGH),
-};
-
-static uint32_t *get_dcd_data(size_t *size)
+static const uint32_t *get_dcd_data(size_t *size)
 {
-	if (iconfig.is_rdb2) {
-		*size = sizeof(s32g274ardb2_dcd_data);
-		return &s32g274ardb2_dcd_data[0];
+	if (iconfig.dcd.data) {
+		*size = iconfig.dcd.size;
+		return iconfig.dcd.data;
 	}
 
 	*size = sizeof(default_dcd_data);
@@ -153,6 +235,74 @@ static void enforce_reserved_ranges(void *image_start, int image_length)
 		}
 }
 
+static int image_parts_comp(const void *p1, const void *p2)
+{
+	const struct image_comp **part1 = (typeof(part1))p1;
+	const struct image_comp **part2 = (typeof(part2))p2;
+
+	if (!*part1 && !*part2)
+		return 0;
+
+	if (!*part1)
+		return -1;
+
+	if (!*part2)
+		return 1;
+
+	if ((*part2)->offset > (*part1)->offset)
+		return -1;
+
+	if ((*part2)->offset < (*part1)->offset)
+		return 1;
+
+	return 0;
+}
+
+static void check_overlap(struct image_comp *comp1,
+			  struct image_comp *comp2)
+{
+	size_t end1 = comp1->offset + comp1->size;
+	size_t end2 = comp2->offset + comp2->size;
+
+	if (end1 > comp2->offset && end2 > comp1->offset) {
+		fprintf(stderr,
+			"Detected overlap between 0x%zx@0x%zx and 0x%zx@0x%zx\n",
+			comp1->size, comp1->offset,
+			comp2->size, comp2->offset);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
+{
+	size_t i;
+	size_t start_index = 0U;
+
+	/* Skip empty entries */
+	while (!parts[start_index])
+		start_index++;
+
+	for (i = start_index; i < n_parts; i++) {
+		if (parts[i]->offset == S32_AUTO_OFFSET) {
+			if (i == start_index) {
+				parts[i]->offset = 0U;
+				continue;
+			}
+
+			parts[i]->offset = parts[i - 1]->offset +
+			    parts[i - 1]->size;
+		}
+
+		/* Apply alignment constraints */
+		if (parts[i]->alignment != 0U)
+			parts[i]->offset = ROUND(parts[i]->offset,
+						 parts[i]->alignment);
+
+		if (i != start_index)
+			check_overlap(parts[i - 1], parts[i]);
+	}
+}
+
 static struct qspi_params *get_qspi_params(struct program_image *image)
 {
 	return (struct qspi_params *)image->qspi_params.data;
@@ -160,9 +310,8 @@ static struct qspi_params *get_qspi_params(struct program_image *image)
 
 static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 {
-	struct qspi_params *s32g2xx_qspi_conf = get_s32g2xx_qspi_conf();
-
-	memcpy(qspi_params, s32g2xx_qspi_conf, sizeof(*qspi_params));
+	memcpy(qspi_params, iconfig.qspi_params.data,
+	       iconfig.qspi_params.size);
 }
 
 static void set_data_pointers(struct program_image *layout, void *header)
@@ -225,7 +374,7 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	struct ivt *ivt_duplicate;
 	struct application_boot_code *app_code;
 	struct fip_image_data fip_data;
-	uint32_t *dcd_data;
+	const uint32_t *dcd_data;
 
 	set_data_pointers(&image_layout, header);
 	dcd_data = get_dcd_data(&dcd_data_size);
@@ -263,6 +412,13 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 				- image_layout.app_code.offset
 				- image_layout.app_code.size;
 
+	if (tool_params->ep < tool_params->addr) {
+		fprintf(stderr,
+			"The entrypoint is higher than the load address (0x%x < 0x%x)\n",
+			tool_params->ep, tool_params->addr);
+		exit(1);
+	}
+
 	if (read_fip_image(tool_params, &fip_data)) {
 		code_length = sbuf->st_size
 				- image_layout.app_code.offset
@@ -270,9 +426,9 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		code_length += pre_code_padding;
 		app_code->code_length = code_length;
 
-		app_code->ram_start_pointer = iconfig.dtb_addr
+		app_code->ram_start_pointer = tool_params->addr
 							- pre_code_padding;
-		app_code->ram_entry_pointer = iconfig.entrypoint;
+		app_code->ram_entry_pointer = tool_params->ep;
 	} else {
 		printf("mkimage: s32gen1image: %s is a FIP image\n",
 		       tool_params->datafile);
@@ -295,13 +451,17 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 					app_code->ram_start_pointer,
 					app_code->code_length);
 	} else {
-		if (!iconfig.is_emu)
-			s32gen1_set_qspi_params(get_qspi_params(&image_layout));
+		s32gen1_set_qspi_params(get_qspi_params(&image_layout));
 	}
 
 	image_layout.code.size = sbuf->st_size - image_layout.app_code.offset -
 		image_layout.app_code.size;
-	s32_check_env_overlap(sbuf->st_size);
+
+	if (iconfig.dcd.data)
+		free(iconfig.dcd.data);
+
+	if (iconfig.qspi_params.data)
+		munmap(iconfig.qspi_params.data, iconfig.qspi_params.size);
 }
 
 static int s32gen1_check_image_type(uint8_t type)
@@ -361,43 +521,12 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	return 0;
 }
 
-static void s32gen1_init_iconfig(void)
-{
-#ifdef CONFIG_FLASH_BOOT
-	iconfig.flash_boot = true;
-#endif
-#ifdef CONFIG_HSE_SECBOOT
-	iconfig.secboot = true;
-#endif
-#ifdef CONFIG_S32G274ARDB2
-	iconfig.is_rdb2 = true;
-#endif
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	iconfig.is_emu = true;
-#endif
-	iconfig.entrypoint = CONFIG_SYS_TEXT_BASE;
-	iconfig.dtb_addr = CONFIG_DTB_SRAM_ADDR;
-
-	if (iconfig.entrypoint < iconfig.dtb_addr) {
-		fprintf(stderr,
-			"The entrypoint is higher than the DTB base (0x%x < 0x%x)\n",
-			iconfig.entrypoint, iconfig.dtb_addr);
-		exit(1);
-	}
-
-#if defined(CONFIG_ENV_OFFSET) && defined(CONFIG_ENV_SIZE)
-	iconfig.env.offset = CONFIG_ENV_OFFSET;
-	iconfig.env.size = CONFIG_ENV_SIZE;
-#endif
-}
-
 static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 			       struct image_type_params *type_params)
 {
 	size_t header_size;
 	void *image = NULL;
 
-	s32gen1_init_iconfig();
 	s32g2xx_build_layout(&image_layout, &header_size, &image);
 	type_params->header_size = header_size;
 	type_params->hdr = image;
@@ -436,13 +565,344 @@ static void s32gen1_print_header(const void *header)
 		(unsigned int)image_layout.code.offset,
 		(unsigned int)image_layout.code.size);
 
-	if (iconfig.env.offset && iconfig.env.size)
-		fprintf(stderr,
-			"U-Boot Environment:\tOffset: 0x%x\tSize: 0x%x\n",
-			(unsigned int)iconfig.env.offset,
-			(unsigned int)iconfig.env.size);
-
 	fprintf(stderr, "\n");
+}
+
+static char *ltrim(char *s)
+{
+	while (isspace((int)*s))
+		s++;
+
+	return s;
+}
+
+static int parse_boot_cmd(char *line)
+{
+	size_t i, len;
+	enum boot_type boot = INVALID_BOOT;
+	static const char * const bsources[] = {
+		[QSPI_BOOT] = "qspi",
+		[SD_BOOT] = "sd",
+		[EMMC_BOOT] = "emmc",
+	};
+
+	for (i = 0; i < ARRAY_SIZE(bsources); i++) {
+		len = strlen(bsources[i]);
+		if (strncmp(bsources[i], line, len))
+			continue;
+
+		boot = (enum boot_type)i;
+		break;
+	}
+
+	if (boot == INVALID_BOOT) {
+		fprintf(stderr, "Invalid boot type: %s", line);
+		return -EINVAL;
+	}
+
+	if (boot == QSPI_BOOT)
+		iconfig.flash_boot = true;
+
+	return 0;
+}
+
+static int parse_secboot_cmd(char *line)
+{
+	iconfig.secboot = true;
+
+	return 0;
+}
+
+static int get_dcd_cmd_args(char *line, struct dcd_args *dcd)
+{
+	int ret;
+	size_t i;
+	char cmd[sizeof(dcd_cmds) / 2];
+
+	/**
+	 * Info:
+	 * %[^ \t]  - Read everything up to space or tab character
+	 * %*[^0] - ignore everything up to character '0'
+	 */
+	ret = sscanf(line,
+		     "%[^ \t]%*[^0]0x%" PRIx32
+		     "%*[^0]0x%" PRIx32
+		     "%*[^0]0x%" PRIx32
+		     "%*[^0]0x%" PRIx32,
+		     cmd, &dcd->nbytes, &dcd->addr, &dcd->value, &dcd->count);
+	/* 4 or 5 tokens are expected */
+	if (ret < 4) {
+		fprintf(stderr, "Failed to interpret DCD line: %s\n", line);
+		return -EINVAL;
+	}
+
+	if (ret == 4)
+		dcd->count = 0;
+
+	dcd->cmd = INVALID_DCD_CMD;
+	for (i = 0; i < ARRAY_SIZE(dcd_cmds); i++) {
+		if (strcmp(cmd, dcd_cmds[i]))
+			continue;
+
+		dcd->cmd = (enum dcd_cmd)i;
+	}
+
+	if (dcd->cmd == INVALID_DCD_CMD) {
+		fprintf(stderr, "Invalid DCD command: %s\n", cmd);
+		return -EINVAL;
+	}
+
+	if (dcd->nbytes != 1 && dcd->nbytes != 2 && dcd->nbytes != 4) {
+		fprintf(stderr, "Unsupported DCD address length: 0x%x\n",
+			dcd->nbytes);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int push_to_dcd_array(uint32_t data)
+{
+	size_t elem;
+	size_t elem_size = sizeof(iconfig.dcd.data[0]);
+	void *backup;
+
+	if (iconfig.dcd.allocated_size <= iconfig.dcd.size + elem_size) {
+		if (!iconfig.dcd.allocated_size)
+			iconfig.dcd.allocated_size = 2 * elem_size;
+		else
+			iconfig.dcd.allocated_size *= 2;
+
+		backup = iconfig.dcd.data;
+		iconfig.dcd.data = realloc(backup, iconfig.dcd.allocated_size);
+		if (!iconfig.dcd.data) {
+			free(backup);
+			fprintf(stderr,
+				"Failed to allocate %zu bytes for DCD array\n",
+				iconfig.dcd.allocated_size);
+			iconfig.dcd.allocated_size = 0;
+			return -ENOMEM;
+		}
+	}
+
+	elem = iconfig.dcd.size / elem_size;
+	iconfig.dcd.data[elem] = data;
+
+	iconfig.dcd.size += elem_size;
+
+	return 0;
+}
+
+static int add_to_dcd(struct dcd_args *dcd_arg)
+{
+	int ret;
+	uint8_t set, mask;
+	bool write = false;
+	uint32_t params, header;
+
+	if (!iconfig.dcd.data) {
+		ret = push_to_dcd_array(DCD_HEADER);
+		if (ret)
+			return ret;
+	}
+
+	switch (dcd_arg->cmd) {
+	case WRITE:
+		write = true;
+	case CHECK_MASK_CLEAR:
+		mask = 0;
+		set = 0;
+		break;
+	case CHECK_MASK_SET:
+		mask = 0;
+		set = 1;
+		break;
+	case CLEAR_MASK:
+		write = true;
+	case CHECK_NOT_MASK:
+		mask = 1;
+		set = 0;
+		break;
+	case SET_MASK:
+		write = true;
+	case CHECK_NOT_CLEAR:
+		mask = 1;
+		set = 1;
+		break;
+	default:
+		fprintf(stderr, "%s: Received an invalid DCD command %d\n",
+			__func__, dcd_arg->cmd);
+		return -EINVAL;
+	}
+
+	params = DCD_PARAMS(set, mask, dcd_arg->nbytes);
+	if (write) {
+		header = DCD_WRITE_HEADER(1, params);
+	} else {
+		if (dcd_arg->count)
+			header = DCD_CHECK_HEADER(params);
+		else
+			header = DCD_CHECK_HEADER_NO_COUNT(params);
+	}
+
+	ret = push_to_dcd_array(header);
+	if (ret)
+		return ret;
+	ret = push_to_dcd_array(DCD_ADDR(dcd_arg->addr));
+	if (ret)
+		return ret;
+	ret = push_to_dcd_array(DCD_MASK(dcd_arg->value));
+	if (ret)
+		return ret;
+
+	if (!write && dcd_arg->count) {
+		ret = push_to_dcd_array(DCD_COUNT(dcd_arg->count));
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static int parse_dcd_cmd(char *line)
+{
+	int ret;
+	struct dcd_args dcd;
+
+	ret = get_dcd_cmd_args(line, &dcd);
+	if (ret)
+		return ret;
+
+	ret = add_to_dcd(&dcd);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+static int parse_qspi_cmd(char *line)
+{
+	int fd, ret;
+	struct stat stat;
+	char *path = line;
+	uint8_t *data;
+	size_t len;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open '%s'\n", path);
+		perror("open error");
+		return -errno;
+	}
+
+	ret = fstat(fd, &stat);
+	if (ret) {
+		close(fd);
+		fprintf(stderr, "Failed to stat '%s'\n", path);
+		perror("stat error");
+		return -errno;
+	}
+
+	len = stat.st_size;
+
+	data = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
+	close(fd);
+	if (data == MAP_FAILED) {
+		fprintf(stderr, "Failed to map '%s'\n", path);
+		perror("mmap error");
+		return -errno;
+	}
+
+	iconfig.qspi_params.data = data;
+	iconfig.qspi_params.size = len;
+
+	return 0;
+}
+
+static const struct line_parser parsers[] = {
+	{
+		.tag = "BOOT_FROM",
+		.parse = parse_boot_cmd,
+	},
+	{
+		.tag = "SECBOOT",
+		.parse = parse_secboot_cmd,
+	},
+	{
+		.tag = "DCD",
+		.parse = parse_dcd_cmd,
+	},
+	{
+		.tag = "QSPI_PARAMS_FILE",
+		.parse = parse_qspi_cmd,
+	},
+};
+
+static int parse_config_line(char *line)
+{
+	size_t i, len;
+	const struct line_parser *parser;
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		parser = &parsers[i];
+
+		len = strlen(parser->tag);
+		if (strncmp(parser->tag, line, len))
+			continue;
+
+		return parser->parse(ltrim(line + len));
+	}
+
+	fprintf(stderr, "Failed to parse line: %s", line);
+	return -EINVAL;
+}
+
+static int build_conf(FILE *fconf)
+{
+	int ret;
+	char *line;
+	char buffer[256];
+	size_t len;
+
+	while (!feof(fconf)) {
+		memset(buffer, 0, sizeof(buffer));
+		line = fgets(buffer, sizeof(buffer), fconf);
+		if (!line)
+			break;
+
+		line = ltrim(line);
+		len = strlen(line);
+
+		if (line[0] == '#' || !line[0])
+			continue;
+
+		if (line[len - 1] == '\n')
+			line[len - 1] = 0;
+
+		ret = parse_config_line(line);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+int s32gen1_parse_config(int outfd, struct image_tool_params *mparams)
+{
+	FILE *fconf;
+	int ret;
+
+	fconf = fopen(mparams->imagename, "r");
+	if (!fconf) {
+		fprintf(stderr, "Could not open input file %s\n",
+			mparams->imagename);
+		exit(EXIT_FAILURE);
+	}
+
+	ret = build_conf(fconf);
+
+	fclose(fconf);
+	return ret;
 }
 
 U_BOOT_IMAGE_TYPE(

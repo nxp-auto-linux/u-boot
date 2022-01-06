@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0+
 /* Copyright 2019-2022 NXP */
 
-#include <generated/autoconf.h>
-#include "s32_common.h"
 #include "s32gen1image.h"
 
-#ifdef CONFIG_QSPI_BOOT
 static struct qspi_params s32g2xx_qspi_conf = {
 	.header   = 0x5a5a5a5a,
 	.mcr      = 0x030f00cc,
@@ -62,8 +59,7 @@ static struct qspi_params s32g2xx_qspi_conf = {
 	},
 };
 
-struct qspi_params *get_s32g2xx_qspi_conf(void)
+struct qspi_params *get_macronix_qspi_conf(void)
 {
 	return &s32g2xx_qspi_conf;
 }
-#endif

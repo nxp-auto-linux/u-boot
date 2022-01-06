@@ -5,7 +5,7 @@
 #define S32GEN1IMAGE_H
 
 #include <asm/types.h>
-#include <generated/autoconf.h>
+#include <stddef.h>
 
 #define FIP_TOC_HEADER_NAME		(0xaa640001)
 #define FIP_BL2_UUID			{0x5f, 0xf9, 0xec, 0x0b, \
@@ -14,16 +14,6 @@
 					0x81, 0xc7, 0x3f, 0x0a}
 #define FIP_BL2_OFFSET			(0x200)
 
-struct fip_image_data {
-	__u32		toc_header_name;
-	__u32		dont_care1;
-	__u64		dont_care2;
-	__u8		uuid[16];
-	__u64		offset;
-	__u64		size;
-	__u8		dont_care3[0];
-};
-
 #define BCW_BOOT_SEQ			(1 << 3)
 #define BCW_SWT				(1 << 2)
 #define BCW_BOOT_TARGET_M7_0		(0)
@@ -31,10 +21,6 @@ struct fip_image_data {
 
 #define LCCW_IN_FIELD			(1 << 1)
 #define LCCW_OEM_PROD			(1 << 0)
-
-#define DCD_HEADER            (0x600000d2)
-#define MSCR25_SET_GPIO25_SRC (0x21c000)
-#define GPDO25_HIGH           (0x1)
 
 #define IVT_VERSION			(0x60)
 #define APPLICATION_BOOT_CODE_TAG	(0xd5)
@@ -118,6 +104,13 @@ struct qspi_params {
 	struct flash_write writes[10];
 };
 
+struct image_comp {
+	size_t offset;
+	size_t size;
+	size_t alignment;
+	__u8 *data;
+};
+
 struct program_image {
 	struct image_comp ivt;
 	struct image_comp qspi_params;
@@ -129,6 +122,7 @@ struct program_image {
 	__u8 *header;
 };
 
-struct qspi_params *get_s32g2xx_qspi_conf(void);
+struct qspi_params *get_macronix_qspi_conf(void);
+struct qspi_params *get_micron_qspi_conf(void);
 
 #endif /* S32GEN1IMAGE_H */

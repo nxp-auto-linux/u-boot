@@ -61,13 +61,6 @@ FIT_OBJS-$(CONFIG_FIT) := fit_common.o fit_image.o image-host.o common/image-fit
 FIT_SIG_OBJS-$(CONFIG_FIT_SIGNATURE) := common/image-sig.o
 FIT_CIPHER_OBJS-$(CONFIG_FIT_CIPHER) := common/image-cipher.o
 
-S32_COMMON-$(CONFIG_ARCH_S32) := s32_common.o
-S32GEN1IMAGE-$(CONFIG_S32_GEN1) := s32gen1image.o
-ifdef CONFIG_S32_GEN1
-S32GEN1IMAGE-$(CONFIG_SPI_FLASH_MACRONIX) += s32gen1image_qspi_macronix.o
-S32GEN1IMAGE-$(CONFIG_SPI_FLASH_STMICRO) += s32gen1image_qspi_micron.o
-endif
-
 # The following files are synced with upstream DTC.
 # Use synced versions from scripts/dtc/libfdt/.
 LIBFDT_SRCS_SYNCED := fdt.c fdt_wip.c fdt_sw.c fdt_rw.c \
@@ -102,8 +95,7 @@ dumpimage-mkimage-objs := aisimage.o \
 			common/image.o \
 			imagetool.o \
 			imximage.o \
-			$(S32_COMMON-y) \
-			$(S32GEN1IMAGE-y) \
+			s32gen1image.o \
 			imx8image.o \
 			imx8mimage.o \
 			kwbimage.o \

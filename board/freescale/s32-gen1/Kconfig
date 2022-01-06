@@ -175,3 +175,7 @@ config S32GEN1_HWCONFIG
 	  Available 'xpcs_mode' are depedent on platform:
 	  	s32g274a - supports '0','1','both' and '2G5'
 	  	s32r45   - supports '0' and '2G5'
+
+config S32GEN1_CONFIG_FILE
+	string
+	default "board/freescale/s32-gen1/s32gen1.cfg"
