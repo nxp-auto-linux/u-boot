@@ -522,33 +522,102 @@ static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 	return 0;
 }
 
-static void s32gen1_print_header(const void *header)
+static bool is_ivt_header(const void *ptr)
 {
-	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.ivt.offset,
-		(unsigned int)image_layout.ivt.size);
+	struct ivt *ivt = (struct ivt *)ptr;
 
-	if (iconfig.flash_boot)
+	if (ivt->tag != IVT_TAG)
+		return false;
+
+	if (ivt->version != IVT_VERSION)
+		return false;
+
+	if (ivt->length != cpu_to_be16(sizeof(struct ivt)))
+		return false;
+
+	return true;
+}
+
+static struct ivt *get_ivt_from_raw_blob(const unsigned char *ptr, int size,
+					 bool *qspi_ivt)
+{
+	uint32_t offset, min_size;
+
+	offset = S32GEN1_QSPI_IVT_OFFSET;
+	min_size = offset + sizeof(struct ivt);
+
+	if (size < min_size)
+		return NULL;
+
+	if (is_ivt_header(ptr)) {
+		if (qspi_ivt)
+			*qspi_ivt = true;
+		return (struct ivt *)ptr;
+	}
+
+	offset = S32GEN1_SD_IVT_OFFSET;
+	min_size = offset + sizeof(struct ivt);
+
+	if (size < min_size)
+		return NULL;
+
+	ptr += offset;
+	if (is_ivt_header(ptr)) {
+		if (qspi_ivt)
+			*qspi_ivt = false;
+		return (struct ivt *)ptr;
+	}
+
+	return NULL;
+}
+
+static void s32gen1_print_header(const void *data)
+{
+	const struct ivt *ivt;
+	const uint8_t *data8 = data;
+	const uint16_t *dcd_len;
+	const struct application_boot_code *app;
+	bool qspi_boot;
+	int min_size = S32GEN1_SD_IVT_OFFSET + sizeof(struct ivt);
+
+	ivt = get_ivt_from_raw_blob(data, min_size, &qspi_boot);
+	if (!ivt)
+		return;
+
+	app = (data + ivt->application_boot_code_pointer);
+	dcd_len = (uint16_t *)(data8 + ivt->dcd_pointer
+			      + DCD_HEADER_LENGTH_OFFSET);
+
+	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+		(unsigned int)((void *)ivt - data),
+		(unsigned int)sizeof(struct ivt));
+
+	if (qspi_boot)
 		fprintf(stderr,
 			"QSPI Parameters:\tOffset: 0x%x\t\tSize: 0x%x\n",
-			(unsigned int)image_layout.qspi_params.offset,
-			(unsigned int)image_layout.qspi_params.size);
+			(unsigned int)S32GEN1_QSPI_PARAMS_OFFSET,
+			(unsigned int)S32GEN1_QSPI_PARAMS_SIZE);
 
 	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.dcd.offset,
-		(unsigned int)image_layout.dcd.size);
+		(unsigned int)ivt->dcd_pointer,
+		(unsigned int)be16_to_cpu(*dcd_len));
 
-	if (iconfig.secboot)
+	if (ivt->hse_h_firmware_pointer)
 		fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-			(unsigned int)image_layout.hse_reserved.offset,
-			(unsigned int)image_layout.hse_reserved.size);
+			(unsigned int)ivt->hse_h_firmware_pointer,
+			(unsigned int)S32GEN1_SECBOOT_HSE_RES_SIZE);
 
 	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.app_code.offset,
-		(unsigned int)image_layout.app_code.size);
-	fprintf(stderr, "U-Boot/FIP:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.code.offset,
-		(unsigned int)image_layout.code.size);
+		(unsigned int)ivt->application_boot_code_pointer,
+		(unsigned int)sizeof(*app));
+
+	fprintf(stderr, "U-Boot/FIP:\t\tOffset: 0x%x\t\tSize: 0x%x\n\n",
+		(unsigned int)((uint8_t *)app->code - data8),
+		(unsigned int)app->code_length);
+
+	fprintf(stderr, "Load address:\t0x%x\nEntry point:\t0x%x\n",
+		(unsigned int)app->ram_start_pointer,
+		(unsigned int)app->ram_entry_pointer);
 
 	fprintf(stderr, "\n");
 }
@@ -894,13 +963,46 @@ int s32gen1_parse_config(int outfd, struct image_tool_params *mparams)
 	return ret;
 }
 
+static int s32gen1_check_params(struct image_tool_params *params)
+{
+	if (!params)
+		return -EINVAL;
+
+	if (!strlen(params->imagename)) {
+		fprintf(stderr,
+			"Error: %s - Configuration file not specified, it is needed for s32gen1image generation\n",
+			params->cmdname);
+		return -EINVAL;
+	}
+
+	/*
+	 * Check parameters:
+	 * XIP is not allowed and verify that incompatible
+	 * parameters are not sent at the same time
+	 * For example, if list is required a data image must not be provided
+	 */
+	return	(params->dflag && (params->fflag || params->lflag)) ||
+		(params->fflag && (params->dflag || params->lflag)) ||
+		(params->lflag && (params->dflag || params->fflag)) ||
+		(params->xflag) || !(strlen(params->imagename));
+}
+
+static int s32gen1_verify_header(unsigned char *ptr, int image_size,
+				 struct image_tool_params *params)
+{
+	if (!get_ivt_from_raw_blob(ptr, image_size, NULL))
+		return -FDT_ERR_BADSTRUCTURE;
+
+	return 0;
+}
+
 U_BOOT_IMAGE_TYPE(
 	s32gen1_image,
 	"NXP S32GEN1 Boot Image",
 	0,
 	NULL,
-	NULL,
-	NULL,
+	s32gen1_check_params,
+	s32gen1_verify_header,
 	s32gen1_print_header,
 	s32gen1_set_header,
 	NULL,
