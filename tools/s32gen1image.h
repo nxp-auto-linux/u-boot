@@ -22,12 +22,6 @@
 #define LCCW_IN_FIELD			(1 << 1)
 #define LCCW_OEM_PROD			(1 << 0)
 
-#define IVT_VERSION			(0x60)
-#define APPLICATION_BOOT_CODE_TAG	(0xd5)
-#define APPLICATION_BOOT_CODE_VERSION	(0x60)
-
-#define S32GEN1_QSPI_PARAMS_SIZE	(0x200)
-
 struct ivt {
 	__u8		tag;
 	__u16		length;
@@ -114,7 +108,6 @@ struct image_comp {
 struct program_image {
 	struct image_comp ivt;
 	struct image_comp qspi_params;
-	struct image_comp ivt_duplicate;
 	struct image_comp dcd;
 	struct image_comp hse_reserved;
 	struct image_comp app_code;

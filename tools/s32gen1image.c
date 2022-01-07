@@ -13,16 +13,20 @@
 
 #define UNSPECIFIED	-1
 
+#define S32GEN1_QSPI_IVT_OFFSET		0x0
+#define S32GEN1_SD_IVT_OFFSET		0x1000
+#define IVT_VERSION			(0x60)
+#define IVT_TAG				(0xd1)
+
+#define S32GEN1_QSPI_PARAMS_SIZE	(0x200U)
+#define S32GEN1_QSPI_PARAMS_OFFSET	(0x200U)
+
 #define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80000ul
 
-#define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
-
-#define S32GEN1_IVT_OFFSET_0		0x0
-#define S32GEN1_IVT_OFFSET_1000		0x1000
+#define APPLICATION_BOOT_CODE_TAG	(0xd5)
+#define APPLICATION_BOOT_CODE_VERSION	(0x60)
 
 #define S32_AUTO_OFFSET ((size_t)(-1))
-
-#define IVT_TAG				(0xd1)
 
 #define DCD_HEADER			(0x600000d2)
 #define DCD_MAXIMUM_SIZE		(8192)
@@ -130,16 +134,11 @@ static struct image_config iconfig;
 
 static struct program_image image_layout = {
 	.ivt = {
-		.offset = S32GEN1_IVT_OFFSET_0,
 		.size = sizeof(struct ivt),
 	},
 	.qspi_params = {
 		.offset = S32GEN1_QSPI_PARAMS_OFFSET,
 		.size = S32GEN1_QSPI_PARAMS_SIZE,
-	},
-	.ivt_duplicate = {
-		.offset = S32GEN1_IVT_OFFSET_1000,
-		.size = sizeof(struct ivt),
 	},
 	.dcd = {
 		.offset = S32_AUTO_OFFSET,
@@ -185,11 +184,6 @@ static const uint32_t *get_dcd_data(size_t *size)
 static struct ivt *get_ivt(struct program_image *image)
 {
 	return (struct ivt *)image->ivt.data;
-}
-
-static struct ivt *get_ivt_duplicate(struct program_image *image)
-{
-	return (struct ivt *)image->ivt_duplicate.data;
 }
 
 static uint8_t *get_dcd(struct program_image *image)
@@ -323,7 +317,6 @@ static void set_data_pointers(struct program_image *layout, void *header)
 	if (iconfig.flash_boot)
 		layout->qspi_params.data = data + layout->qspi_params.offset;
 
-	layout->ivt_duplicate.data = data + layout->ivt_duplicate.offset;
 	layout->dcd.data = data + layout->dcd.offset;
 	layout->app_code.data = data + layout->app_code.offset;
 }
@@ -371,7 +364,6 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	size_t dcd_data_size;
 	uint8_t *dcd;
 	struct ivt *ivt;
-	struct ivt *ivt_duplicate;
 	struct application_boot_code *app_code;
 	struct fip_image_data fip_data;
 	const uint32_t *dcd_data;
@@ -401,9 +393,6 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 
 	if (iconfig.secboot)
 		ivt->hse_h_firmware_pointer = image_layout.hse_reserved.offset;
-
-	ivt_duplicate = get_ivt_duplicate(&image_layout);
-	memcpy(ivt_duplicate, ivt, sizeof(struct ivt));
 
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
@@ -495,7 +484,6 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 {
 	uint8_t *image_layout;
 	struct image_comp *parts[] = {&program_image->ivt,
-		&program_image->ivt_duplicate,
 		&program_image->dcd,
 		&program_image->app_code,
 		&program_image->code,
@@ -546,9 +534,6 @@ static void s32gen1_print_header(const void *header)
 			(unsigned int)image_layout.qspi_params.offset,
 			(unsigned int)image_layout.qspi_params.size);
 
-	fprintf(stderr, "IVT (duplicate):\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)image_layout.ivt_duplicate.offset,
-		(unsigned int)image_layout.ivt_duplicate.size);
 	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.dcd.offset,
 		(unsigned int)image_layout.dcd.size);
@@ -600,8 +585,12 @@ static int parse_boot_cmd(char *line)
 		return -EINVAL;
 	}
 
-	if (boot == QSPI_BOOT)
+	if (boot == QSPI_BOOT) {
 		iconfig.flash_boot = true;
+		image_layout.ivt.offset = S32GEN1_QSPI_IVT_OFFSET;
+	} else {
+		image_layout.ivt.offset = S32GEN1_SD_IVT_OFFSET;
+	}
 
 	return 0;
 }
