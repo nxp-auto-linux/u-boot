@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2019-2021 NXP */
+/* Copyright 2019-2022 NXP */
 
 #ifndef S32GEN1IMAGE_H
 #define S32GEN1IMAGE_H
@@ -75,7 +75,7 @@ struct application_boot_code {
 	__u8		code[0];
 } __attribute__((packed));
 
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 struct flash_write {
 	union {
 		struct {
@@ -122,7 +122,7 @@ struct qspi_params {
 
 struct program_image {
 	struct image_comp ivt;
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 	struct image_comp qspi_params;
 #endif
 	struct image_comp ivt_duplicate;

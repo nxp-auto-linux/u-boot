@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0+
-/* Copyright 2019-2021 NXP */
+/* Copyright 2019-2022 NXP */
 
 #include <generated/autoconf.h>
 #include "s32_common.h"
 #include "s32gen1image.h"
 
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 static struct qspi_params s32g2xx_qspi_conf = {
 	.header   = 0x5a5a5a5a,
 	.mcr      = 0x030f00cc,

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2019-2021 NXP */
+/* Copyright 2019-2022 NXP */
 
 #include <image.h>
 #include <generated/autoconf.h>
@@ -15,11 +15,11 @@
 #  define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80000ul
 #endif
 
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 #  define S32G2XX_COMMAND_SEQ_FILL_OFF 20
 #endif
 
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 #  define S32GEN1_QSPI_PARAMS_OFFSET 0x200U
 #endif
 
@@ -31,7 +31,7 @@ static struct program_image image_layout = {
 		.offset = S32GEN1_IVT_OFFSET_0,
 		.size = sizeof(struct ivt),
 	},
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 	.qspi_params = {
 		.offset = S32GEN1_QSPI_PARAMS_OFFSET,
 		.size = S32GEN1_QSPI_PARAMS_SIZE,
@@ -105,7 +105,7 @@ static struct application_boot_code *get_app_code(struct program_image *image)
 	return (struct application_boot_code *)image->app_code.data;
 }
 
-#ifndef CONFIG_FLASH_BOOT
+#ifndef CONFIG_QSPI_BOOT
 
 /* Areas of SRAM reserved by BootROM according to the
  * Reset and Boot: Boot: Program Image section of the Reference Manual,
@@ -161,7 +161,7 @@ static void set_data_pointers(struct program_image *layout, void *header)
 	uint8_t *data = (uint8_t *)header;
 
 	layout->ivt.data = data + layout->ivt.offset;
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 	layout->qspi_params.data = data + layout->qspi_params.offset;
 #endif
 	layout->ivt_duplicate.data = data + layout->ivt_duplicate.offset;
@@ -282,7 +282,7 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	 */
 	app_code->code_length = ROUND(app_code->code_length, 512);
 
-#ifndef CONFIG_FLASH_BOOT
+#ifndef CONFIG_QSPI_BOOT
 	enforce_reserved_ranges((void *)(__u64)
 				app_code->ram_start_pointer,
 				app_code->code_length);
@@ -310,7 +310,7 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 {
 	uint8_t *image_layout;
 	struct image_comp *parts[] = {&program_image->ivt,
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 		&program_image->qspi_params,
 #endif
 		&program_image->ivt_duplicate,
@@ -358,7 +358,7 @@ static void s32gen1_print_header(const void *header)
 	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.ivt.offset,
 		(unsigned int)image_layout.ivt.size);
-#ifdef CONFIG_FLASH_BOOT
+#ifdef CONFIG_QSPI_BOOT
 	fprintf(stderr, "QSPI Parameters:\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)image_layout.qspi_params.offset,
 		(unsigned int)image_layout.qspi_params.size);

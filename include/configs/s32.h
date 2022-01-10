@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 /*
@@ -456,7 +456,7 @@
 	defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
 #  define CONFIG_BOOTCOMMAND \
 		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
-#elif defined(CONFIG_FLASH_BOOT)
+#elif defined(CONFIG_QSPI_BOOT)
 #  define CONFIG_BOOTCOMMAND \
 	PFE_INIT_CMD "run flashboot"
 #elif defined(CONFIG_SD_BOOT)
@@ -522,7 +522,7 @@
 #define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */
 #endif
 
-#if defined(CONFIG_FLASH_BOOT)
+#if defined(CONFIG_QSPI_BOOT)
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
 #define CONFIG_SYS_MAX_FLASH_SECT 	(0x4000000 / CONFIG_ENV_SECT_SIZE)
 #endif
