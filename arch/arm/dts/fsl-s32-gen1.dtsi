@@ -2,9 +2,10 @@
 /*
  * Device Tree Include file for Freescale S32Gen1 family SoC.
  *
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  */
 
+#include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/clock/s32gen1-clock-freq.h>
 #include <dt-bindings/clock/s32gen1-clock.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
@@ -587,6 +588,24 @@
 
 	ocotp: ocotp@400A4000 {
 		reg = <0x0 0x400A4000 0x0 0x400>;
+		status = "okay";
+	};
+
+	saradc0: saradc0 {
+		compatible = "fsl,s32gen1-adc";
+		reg = <0x0 0x401f8000 0x0 0x1000>;
+		interrupts = <0 70 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clks S32GEN1_SCMI_CLK_SAR_ADC_BUS>;
+		clock-names = "adc";
+		status = "okay";
+	};
+
+	saradc1: saradc1 {
+		compatible = "fsl,s32gen1-adc";
+		reg = <0x0 0x402e8000 0x0 0x1000>;
+		interrupts = <0 71 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clks S32GEN1_SCMI_CLK_SAR_ADC_BUS>;
+		clock-names = "adc";
 		status = "okay";
 	};
 };

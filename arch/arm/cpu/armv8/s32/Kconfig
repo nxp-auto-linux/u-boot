@@ -52,6 +52,8 @@ config TARGET_S32G2XXAEVB
 config TARGET_S32G274ARDB
 	bool "Support s32g274ardb"
 	select NXP_S32G2XX
+	select ADC
+	select S32_SARADC
 
 config TARGET_S32G274ABLUEBOX3
 	bool "Support s32g274abluebox3"

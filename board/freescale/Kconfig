@@ -4,8 +4,11 @@ config SYS_VENDOR
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
+	imply CMD_ADC
 	imply CMD_GPIO
 	imply CMD_FUSE
+	imply ADC if !TARGET_S32G274ARDB
+	imply S32_SARADC if !TARGET_S32G274ARDB
 	imply MISC
 	select ARM_SMCCC
 	select CLK
