@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/soc.h>
 #include <fdt_support.h>

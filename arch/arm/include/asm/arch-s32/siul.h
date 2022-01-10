@@ -2,15 +2,15 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
  * (C) Copyright 2017 MicroSys Electronics GmbH
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  *
  */
 
 #ifndef __ARCH_ARM_MACH_S32_SIUL_H__
 #define __ARCH_ARM_MACH_S32_SIUL_H__
 
+#include "s32-gen1/s32-gen1-regs.h"
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
 #include <linux/bitops.h>
 
 #if !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *

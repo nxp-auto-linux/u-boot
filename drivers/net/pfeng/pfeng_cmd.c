@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  */
 
 #include <common.h>
 #include <command.h>
 #include <phy.h>
-#include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/soc.h>
 #include <asm/io.h>

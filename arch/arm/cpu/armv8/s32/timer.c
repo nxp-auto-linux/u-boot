@@ -1,12 +1,13 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * (C) Copyright 2013-2015 Freescale Semiconductor, Inc.
+ * Copyright 2022 NXP
  */
 
 #include <common.h>
 #include <asm/io.h>
 #include <div64.h>
-#include <asm/arch/imx-regs.h>
+#include "s32-gen1/s32-gen1-regs.h"
 #include <asm/arch/clock.h>
 
 static struct pit_reg *cur_pit = (struct pit_reg *)PIT0_BASE_ADDR;

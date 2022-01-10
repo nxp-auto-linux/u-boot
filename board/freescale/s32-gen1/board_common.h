@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2018-2021 NXP
+ * Copyright 2018-2022 NXP
  */
 
 #ifndef __S32_GEN1_BOARD_COMMON_H__
 #define __S32_GEN1_BOARD_COMMON_H__
 
 #include <config.h>
+#include <asm/types.h>
 
 void setup_iomux_i2c(void);
 void setup_iomux_sdhc(void);

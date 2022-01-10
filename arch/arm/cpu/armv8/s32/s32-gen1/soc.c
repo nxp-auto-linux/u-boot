@@ -6,13 +6,11 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/soc.h>
-#include <fsl_esdhc_imx.h>
 #include <mmc.h>
 #include <div64.h>
 #include <errno.h>
 #include <hang.h>
 #include <asm/arch/cse.h>
-#include <asm/arch/imx-regs.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/mc_me_regs.h>

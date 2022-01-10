@@ -5,6 +5,7 @@
 #include <generated/autoconf.h>
 #include <config.h>
 #include <asm/arch-s32/siul-s32-gen1.h>
+#include <asm/arch-s32/s32-gen1/s32-gen1-regs.h>
 #include "imagetool.h"
 #include "s32_common.h"
 #include "s32gen1image.h"

@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015 Freescale Semiconductor
- * (C) Copyright 2017-2018,2020-2021 NXP
+ * Copyright 2017-2018,2020-2022 NXP
  */
 #ifndef __ARCH_S32_SOC_H
 #define __ARCH_S32_SOC_H
 
-#include <asm/arch/imx-regs.h>
+#include "s32-gen1/s32-gen1-regs.h"
 #include <asm/arch/siul.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/mc_cgm_regs.h>

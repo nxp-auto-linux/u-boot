@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  */
 
@@ -22,7 +22,6 @@
 #include <phy.h>
 #include <reset.h>
 #include <wait_bit.h>
-#include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/soc.h>
 #include <asm/io.h>

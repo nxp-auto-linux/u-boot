@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 #ifndef __S32_CMU_H
 #define __S32_CMU_H
 
 #include <common.h>
+#include "s32-gen1-regs.h"
 
 #ifndef __STR
 #define __STR(x) #x
