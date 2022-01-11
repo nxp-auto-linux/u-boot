@@ -279,18 +279,6 @@
 #define PFE_INIT_CMD ""
 #endif
 
-#ifdef CONFIG_PCIE_S32GEN1
-#define PCIE_SET_MSI_CONTROLLER \
-	"fdt_pcie_set_gic=fdt addr ${fdt_addr}; fdt resize; " \
-		"fdt get value gic_phandle " \
-		"/interrupt-controller@50800000 phandle; " \
-		"fdt set /pcie@\\${pcie_addr} msi-parent <\\${gic_phandle}>;\0"
-#endif
-
-#ifndef PCIE_MSIS_ENV_SETTINGS
-#define PCIE_MSIS_ENV_SETTINGS	""
-#endif
-
 #if !defined(PCIE_EXTRA_ENV_SETTINGS)
 #if defined(CONFIG_PCIE_S32GEN1) || defined(CONFIG_FSL_PFENG)
 #define PCIE_EXTRA_ENV_SETTINGS \
@@ -448,7 +436,6 @@
 	GMAC_EXTRA_ENV_SETTINGS \
 	PFE_EXTRA_ENV_SETTINGS \
 	PCIE_EXTRA_ENV_SETTINGS \
-	PCIE_MSIS_ENV_SETTINGS \
 
 #undef CONFIG_BOOTCOMMAND
 
