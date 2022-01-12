@@ -1376,8 +1376,29 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 			val |= (priv->tuning_step) << ESDHC_TUNING_STEP_SHIFT;
 			writel(val, &regs->tuning_ctrl);
 		}
-	}
 
+		/*
+		 * UHS doesn't have explicit ESDHC flags, so if it's
+		 * not supported, disable it in config.
+		 */
+		if (CONFIG_IS_ENABLED(MMC_UHS_SUPPORT))
+			cfg->host_caps |= UHS_CAPS;
+
+		if (CONFIG_IS_ENABLED(MMC_HS200_SUPPORT)) {
+			if (priv->flags & ESDHC_FLAG_HS200)
+				cfg->host_caps |= MMC_CAP(MMC_HS_200);
+		}
+
+		if (CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)) {
+			if (priv->flags & ESDHC_FLAG_HS400)
+				cfg->host_caps |= MMC_CAP(MMC_HS_400);
+		}
+
+		if (CONFIG_IS_ENABLED(MMC_HS400_ES_SUPPORT)) {
+			if (priv->flags & ESDHC_FLAG_HS400_ES)
+				cfg->host_caps |= MMC_CAP(MMC_HS_400_ES);
+		}
+	}
 	return 0;
 }
 
