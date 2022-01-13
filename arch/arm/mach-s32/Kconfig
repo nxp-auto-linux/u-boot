@@ -12,6 +12,7 @@ config SYS_VENDOR
 
 config NXP_S32CC
 	bool
+	imply MISC
 	select BINMAN
 	select CLK
 	select CLK_SCMI
