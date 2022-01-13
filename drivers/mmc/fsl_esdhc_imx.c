@@ -1145,7 +1145,7 @@ static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	esdhc_write32(&regs->dllctrl, 0x0);
 #endif
 
-#ifndef ARCH_MXC
+#if !defined(ARCH_MXC) && !defined(SDHC_REDUCED_MAP)
 	/* Enable cache snooping */
 	esdhc_write32(&regs->scr, 0x00000040);
 #endif
