@@ -60,6 +60,7 @@ obj-$(CONFIG_ROCKCHIP_EFUSE) += rockchip-efuse.o
 obj-$(CONFIG_ROCKCHIP_OTP) += rockchip-otp.o
 obj-$(CONFIG_S32_GEN1) += s32gen1_fuse.o
 obj-$(CONFIG_S32_GEN1) += s32gen1_ocotp.o
+obj-$(CONFIG_S32_GEN1) += s32gen1_siul2_nvram.o
 obj-$(CONFIG_SANDBOX) += syscon_sandbox.o misc_sandbox.o
 obj-$(CONFIG_SMSC_LPC47M) += smsc_lpc47m.o
 obj-$(CONFIG_SMSC_SIO1007) += smsc_sio1007.o
