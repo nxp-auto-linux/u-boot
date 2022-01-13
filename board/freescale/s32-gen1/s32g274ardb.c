@@ -1,42 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2021 NXP
+ * Copyright 2018-2022 NXP
  */
 #include <asm/arch/soc.h>
 #include <board_common.h>
 #include <common.h>
+#include <dm/uclass.h>
+#include <adc.h>
 #include <s32g274a_common.h>
 
-#define ADC_TIMEOUT_VALUE 0x1000000
-
-#define SARADC_MCR		0x0
-#define SARADC_MSR		0x4
-#define SARADC_ISR		0x10
-#define SARADC_CTR0		0x94
-#define SARADC_NCMR0	0xA4
-#define SARADC_PCDR(x)	(0x100 + (x) * 4)
-
-#define SARADC_MCR_PWDN			BIT(0)
-#define SARADC_MCR_ADCLKSE		BIT(8)
-#define SARADC_MCR_TSAMP_MASK	(BIT(10) | BIT(9))
-#define SARADC_MCR_AVGEN		BIT(13)
-#define SARADC_MCR_CALSTART		BIT(14)
-#define SARADC_MCR_NSTART		BIT(24)
-#define SARADC_MCR_SCAN_MODE	BIT(29)
-#define SARADC_MCR_WLSIDE		BIT(30)
-#define SARADC_MCR_OWREN		BIT(31)
-
-#define SARADC_MSR_CALBUSY		BIT(29)
-#define SARADC_MSR_CALFAIL		BIT(30)
-
-#define SARADC_ISR_ECH			BIT(0)
-
-#define SARADC_CTR0_INPSAMP(x)	(x)
-
-#define SARADC_NCMR0_CH5		BIT(5)
-
-#define SARADC_PCDR_VALID		BIT(19)
-#define SARADC_PCDR_CDATA(x)	((x) & 0xfff)
+#define SARADC0_DEV	"saradc0"
+#define SARADC0_CH5	5
+#define SARADC0_TOLERANCE	200
 
 void setup_iomux_uart(void)
 {
@@ -64,88 +39,6 @@ void setup_iomux_uart(void)
 #endif
 }
 
-uint32_t read_ch5_adc_value(void)
-{
-	u32 result = (uint32_t)-1;
-	u32 tmp;
-	u32 timeout = ADC_TIMEOUT_VALUE;
-
-	/* Start calibration */
-	/* 1) Power down */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) | SARADC_MCR_PWDN;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	/* 2) Configure clock = bus clock /2 */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) & ~SARADC_MCR_ADCLKSE;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	/* 3) Power up */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) & ~SARADC_MCR_PWDN;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	/* 4) Set: avgen = 1, tsamp = 0, calstart = 1 */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR);
-	tmp |= SARADC_MCR_AVGEN;
-	tmp &= ~SARADC_MCR_TSAMP_MASK;
-	tmp |= SARADC_MCR_CALSTART;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	/* 4) Waiting for calibration done */
-	do {
-		tmp = readl(SARADC0_BASE_ADDR + SARADC_MSR);
-	} while (tmp & SARADC_MSR_CALBUSY);
-
-	if (tmp & SARADC_MSR_CALFAIL)
-		goto power_down;
-
-	/* Conversion CH5 */
-	/* 1) Power down */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) | SARADC_MCR_PWDN;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	/* 2) Configure clock = 1 */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) | SARADC_MCR_ADCLKSE;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	writel(SARADC_CTR0_INPSAMP(0xFF), SARADC0_BASE_ADDR + SARADC_CTR0);
-
-	/* 3) Power up */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) & ~SARADC_MCR_PWDN;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	/* 4) Enable CH5 */
-	writel(SARADC_NCMR0_CH5, SARADC0_BASE_ADDR + SARADC_NCMR0);
-
-	/* 5) Set: owren=1, wlside=0, mode=0, nstart=1 */
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR);
-	tmp |= SARADC_MCR_OWREN;
-	tmp &= ~SARADC_MCR_WLSIDE;
-	tmp &= ~SARADC_MCR_SCAN_MODE;
-	tmp |= SARADC_MCR_NSTART;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-
-	while (--timeout) {
-		if (!(readl(SARADC0_BASE_ADDR + SARADC_ISR) & SARADC_ISR_ECH))
-			continue;
-
-		/* clear status */
-		writel(SARADC_ISR_ECH, SARADC0_BASE_ADDR + SARADC_ISR);
-
-		/* wait channel data  */
-		do {
-			tmp = readl(SARADC0_BASE_ADDR + SARADC_PCDR(5));
-		} while (!(tmp & SARADC_PCDR_VALID));
-
-		result = SARADC_PCDR_CDATA(tmp);
-		break;
-	}
-
-power_down:
-	tmp = readl(SARADC0_BASE_ADDR + SARADC_MCR) | SARADC_MCR_PWDN;
-	writel(tmp, SARADC0_BASE_ADDR + SARADC_MCR);
-	return result;
-}
-
 static const struct {
 	const char *rev;
 	const char *desc;
@@ -161,14 +54,14 @@ static const struct {
 	{ /* 0.8v */
 		.rev = "C",
 		.desc = "RDB2/GLDBOX Revision C",
-		.lower = 1820 - 200,
-		.upper = 1820 + 200,
+		.lower = 1820 - SARADC0_TOLERANCE,
+		.upper = 1820 + SARADC0_TOLERANCE,
 	},
 	{ /* 1.0v */
 		.rev = "D",
 		.desc = "RDB2/GLDBOX Revision D",
-		.lower = 2275 - 200,
-		.upper = 2275 + 200,
+		.lower = 2275 - SARADC0_TOLERANCE,
+		.upper = 2275 + SARADC0_TOLERANCE,
 	},
 };
 
@@ -184,30 +77,42 @@ static int find_rdb_rev(uint32_t adc_value)
 	return -1;
 }
 
-static int check_rdb_rev(uint32_t *adc_value)
-{
-	u32 adc_result;
-	int rev_idx;
-	u32 i;
-
-	for (i = 0; i < 3; i++) {
-		adc_result = read_ch5_adc_value();
-		rev_idx = find_rdb_rev(adc_result);
-		if (rev_idx != -1)
-			break;
-	}
-
-	if (adc_value)
-		*adc_value = adc_result;
-	return rev_idx;
-}
-
 int board_late_init(void)
 {
 	int rev_idx;
 	u32 adc_value;
+	struct udevice *saradc0;
+	int ret;
 
-	rev_idx = check_rdb_rev(&adc_value);
+	ret = uclass_get_device_by_name(UCLASS_ADC, SARADC0_DEV,
+					&saradc0);
+	if (ret) {
+		printf("%s: No SARADC0 (err = %d)\n", __func__, ret);
+		return ret;
+	}
+
+	ret = adc_start_channel(saradc0, SARADC0_CH5);
+	if (ret) {
+		printf(":%s: Error on starting SARADC0 channel 5 (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	ret = adc_channel_data(saradc0, SARADC0_CH5, &adc_value);
+	if (ret) {
+		printf(":%s: Error on reading value from SARADC0 channel 5 (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	ret = adc_stop(saradc0);
+	if (ret) {
+		printf(":%s: Error on stopping SARADC0 channel 5 (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	rev_idx = find_rdb_rev(adc_value);
 	if (rev_idx != -1) {
 		env_set("board_rev", rdb_revisions[rev_idx].rev);
 		switch (rdb_revisions[rev_idx].rev[0]) {
