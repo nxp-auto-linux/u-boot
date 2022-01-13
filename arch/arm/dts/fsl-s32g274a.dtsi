@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,4 +28,8 @@
 		device_type = "memory";
 		reg = <0 0x34000000 0 0x800000>;
 	};
+};
+
+&siul2_1_nvram {
+	compatible = "fsl,s32g2-siul2_1-nvram";
 };

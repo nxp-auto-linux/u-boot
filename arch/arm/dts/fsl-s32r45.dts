@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,6 +68,7 @@
 		compatible = "simple-mfd";
 		status = "okay";
 		reg = <0x0 0x4009C000 0x0 0x2000>;
+		u-boot,dm-pre-reloc;
 
 		pinctrl0: siul2-pinctrl0 {
 			compatible = "fsl,s32-gen1-siul2-pinctrl";
@@ -86,12 +87,19 @@
 			gpio-ranges = <&pinctrl0 0 0 102>;
 			status = "okay";
 		};
+
+		siul2_0_nvram {
+			compatible = "fsl,s32-gen1-siul2_0-nvram";
+			status = "okay";
+			u-boot,dm-pre-reloc;
+		};
 	};
 
 	siul2_1@4403C000 {
 		compatible = "simple-mfd";
 		status = "okay";
 		reg = <0x0 0x4403C000 0x0 0x2000>;
+		u-boot,dm-pre-reloc;
 
 		pinctrl1: siul2-pinctrl1 {
 			compatible = "fsl,s32-gen1-siul2-pinctrl";
@@ -109,6 +117,12 @@
 			gpio-controller;
 			gpio-ranges = <&pinctrl1 0 102 32>;
 			status = "okay";
+		};
+
+		siul2_1_nvram {
+			compatible = "fsl,s32r-siul2_1-nvram";
+			status = "okay";
+			u-boot,dm-pre-reloc;
 		};
 	};
 
