@@ -25,3 +25,4 @@ ccflags-y				+= -I./board/freescale/s32-gen1/
 ccflags-y				+= -I./arch/arm/cpu/armv8/s32/s32-gen1/include
 ccflags-y				+= -I./arch/arm/include/asm/arch-s32/s32-gen1/
 ccflags-y				+= -I./drivers/clk/s32/include/
+ccflags-y				+= -I./drivers/misc/

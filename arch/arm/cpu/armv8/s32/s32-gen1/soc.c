@@ -28,6 +28,9 @@
 #endif
 #include <dt-bindings/clock/s32gen1-clock.h>
 #include <s32gen1_clk_utils.h>
+#include <misc.h>
+#include <dm/uclass.h>
+#include <s32gen1_siul2_nvram.h>
 
 /* FCCU registers */
 #ifndef CONFIG_S32_ATF_BOOT_FLOW
@@ -160,28 +163,71 @@ void reset_cpu(ulong addr)
 
 int print_cpuinfo(void)
 {
-#ifdef CONFIG_NXP_S32G2XX
-	printf("CPU: NXP %s", get_s32g2_deriv_name());
-	#ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
-	printf("\n");
-	#else
-	printf(" rev. %d.%d.%d\n",
-		   get_siul2_midr1_major() + 1,
-		   get_siul2_midr1_minor(),
-		   get_siul2_midr2_subminor());
-	#endif  /* CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR */
-#elif defined(CONFIG_NXP_S32R45)
-	printf("CPU:\tNXP S32R45");
-	printf(" rev. %d.%d.%d\n",
-	       get_siul2_midr1_major() + 1,
-	       get_siul2_midr1_minor(),
-		   !get_siul2_midr2_subminor());
-#elif defined(CONFIG_NXP_S32G3XX)
-	printf("CPU:\tNXP S32G399A");
-	printf(" rev. %d.%d\n",
-	       get_siul2_midr1_major() + 1,
-	       get_siul2_midr1_minor());
-#endif
+	struct udevice *siul20_nvmem, *siul21_nvmem;
+	int ret;
+	bool has_subminor = false;
+	u32 letter, part_number, major, minor, subminor;
+
+	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_0_nvram",
+					&siul20_nvmem);
+	if (ret) {
+		printf("%s: No SIUL20 NVMEM (err = %d)\n", __func__, ret);
+		return ret;
+	}
+
+	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_1_nvram",
+					&siul21_nvmem);
+	if (ret) {
+		printf("%s: No SIUL21 NVMEM (err = %d)\n", __func__, ret);
+		return ret;
+	}
+
+	ret = misc_read(siul20_nvmem, S32GEN1_SOC_LETTER, &letter,
+			sizeof(letter));
+	if (ret != sizeof(letter)) {
+		printf("%s: Failed to read SoC's letter (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
+	ret = misc_read(siul20_nvmem, S32GEN1_SOC_PART_NO, &part_number,
+			sizeof(part_number));
+	if (ret != sizeof(part_number)) {
+		printf("%s: Failed to read SoC's part number (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
+	ret = misc_read(siul20_nvmem, S32GEN1_SOC_MAJOR, &major,
+			sizeof(major));
+	if (ret != sizeof(major)) {
+		printf("%s: Failed to read SoC's major (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
+	ret = misc_read(siul20_nvmem, S32GEN1_SOC_MINOR, &minor,
+			sizeof(minor));
+	if (ret != sizeof(minor)) {
+		printf("%s: Failed to read SoC's minor (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
+	/* It might be unavailable */
+	ret = misc_read(siul21_nvmem, S32GEN1_SOC_SUBMINOR, &subminor,
+			sizeof(subminor));
+	if (ret == sizeof(subminor))
+		has_subminor = true;
+
+	printf("CPU: NXP S32%c%uA rev. %u.%u", (char)letter, part_number,
+	       major, minor);
+
+	if (has_subminor)
+		printf(".%u", subminor);
+
+	puts("\n");
+
 	printf("Reset cause: %s\n", get_reset_cause());
 
 	return 0;
