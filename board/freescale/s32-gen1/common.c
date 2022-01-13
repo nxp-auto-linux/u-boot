@@ -13,6 +13,13 @@
 #include <asm/arch/s32-gen1/ncore.h>
 #include <asm/arch/siul-s32r45.h>
 
+#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB) ||\
+	defined(CONFIG_TARGET_S32G274ARDB)
+#include <dm/uclass.h>
+#include <misc.h>
+#include <s32gen1_siul2_nvram.h>
+#endif
+
 #include "board_common.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -42,14 +49,35 @@ int board_init(void)
 
 int checkboard(void)
 {
-#if defined(CONFIG_TARGET_S32G2XXAEVB)
-	printf("Board:\tNXP %s-EVB\n", get_s32g2_deriv_name());
+#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB) ||\
+	defined(CONFIG_TARGET_S32G274ARDB)
+
+	u32 part_number;
+	struct udevice *siul20_nvmem;
+	int ret;
+
+	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_0_nvram",
+					&siul20_nvmem);
+	if (ret) {
+		printf("%s: No SIUL20 NVMEM (err = %d)\n", __func__, ret);
+		return ret;
+	}
+
+	ret = misc_read(siul20_nvmem, S32GEN1_SOC_PART_NO, &part_number,
+			sizeof(part_number));
+	if (ret != sizeof(part_number)) {
+		printf("%s: Failed to read SoC's part number (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+#endif
+
+#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB)
+	printf("Board:\tNXP S32G%d-EVB\n", part_number);
 #elif defined(CONFIG_TARGET_S32G274ARDB)
-	printf("Board:\tNXP %s-RDB\n", get_s32g2_deriv_name());
+	printf("Board:\tNXP S32G%d-RDB\n", part_number);
 #elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
 	puts("Board:\tNXP S32G274A BlueBox3\n");
-#elif defined(CONFIG_TARGET_S32G3XXAEVB)
-	puts("Board:\tNXP S32G399A-EVB\n");
 #elif defined(CONFIG_TARGET_S32G274ASIM)
 	puts("Board:\tVDK for NXP S32G274A VP\n");
 #elif defined(CONFIG_TARGET_S32G274AEMU)
