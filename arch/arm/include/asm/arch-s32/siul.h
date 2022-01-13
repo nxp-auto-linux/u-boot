@@ -58,7 +58,6 @@
 #define SIUL2_MIDR2_FREQ_SHIFT		(16)
 #define SIUL2_MIDR2_FREQ_MASK		(0xF << SIUL2_MIDR2_FREQ_SHIFT)
 
-#ifdef CONFIG_S32_GEN1
 #ifdef CONFIG_NXP_S32R45
 #define SIUL2_MIDR2_SUBMINOR_SHIFT	(0)
 #define SIUL2_MIDR2_SUBMINOR_MASK	(0x1 << SIUL2_MIDR2_SUBMINOR_SHIFT)
@@ -69,9 +68,6 @@
 #define SIUL2_MIDR1_DERIV_MASK		(0xFFFF0000U)
 #define SIUL2_MIDR1_OFF			(16U)
 #define SIUL2_MIDR2_SERDES			BIT(15)
-#endif  /* CONFIG_S32_GEN1 */
-
-#define TREERUNNER_GENERATION_2_MAJOR	1
 
 #include "siul-s32-gen1.h"
 
@@ -123,36 +119,10 @@ static inline const char *get_s32g2_deriv_name(void)
 }
 #endif
 
-static inline int get_siul2_midr1_minor(void)
-{
-	return (readl(SIUL2_MIDR1) & SIUL2_MIDR1_MINOR_MASK);
-}
-
-static inline int get_siul2_midr1_major(void)
-{
-	return ((readl(SIUL2_MIDR1) & SIUL2_MIDR1_MAJOR_MASK)
-			>> SIUL2_MIDR1_MAJOR_SHIFT);
-}
-
 static inline u32 get_siul2_midr2_freq(void)
 {
 	return ((readl(SIUL2_MIDR2) & SIUL2_MIDR2_FREQ_MASK)
 			>> SIUL2_MIDR2_FREQ_SHIFT);
 }
-
-#if !defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
-
-static inline int get_siul2_midr2_subminor(void)
-{
-	return ((readl(SIUL2_1_MIDR2) & SIUL2_MIDR2_SUBMINOR_MASK)
-			>> SIUL2_MIDR2_SUBMINOR_SHIFT);
-}
-
-static inline int is_serdes_subsystem_present(void)
-{
-	return (readl(SIUL2_1_MIDR2) & SIUL2_MIDR2_SERDES);
-}
-
-#endif  /* CONFIG_S32_GEN1 */
 
 #endif /*____ARCH_ARM_MACH_S32_SIUL_H__ */

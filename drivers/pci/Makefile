@@ -4,6 +4,7 @@
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
 ccflags-$(CONFIG_SERDES_S32GEN1) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-gen1
+ccflags-$(CONFIG_PCIE_S32GEN1) += -Idrivers/misc
 
 ifneq ($(CONFIG_DM_PCI),)
 obj-$(CONFIG_DM_VIDEO) += pci_rom.o

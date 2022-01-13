@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -15,6 +15,9 @@
 #include <dm/device-internal.h>
 #include <asm/arch-s32/siul.h>
 #include <hwconfig.h>
+#include <dm/uclass.h>
+#include <misc.h>
+#include <s32gen1_siul2_nvram.h>
 
 /* CFG1 is used in linux when finding devices on the bus.
  * It is actually the upper half of the config space
@@ -894,9 +897,32 @@ static int s32_pcie_probe(struct udevice *dev)
 	int ret = 0;
 	bool ltssm_en = false;
 	ulong dev_data = dev_get_driver_data(dev);
+	u32 soc_serdes_presence;
+	struct udevice *siul21_nvmem = NULL;
 
 	pcie->enabled = false;
 	pcie->no_check_serdes = false;
+
+	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_1_nvram",
+					&siul21_nvmem);
+	if (ret) {
+		printf("%s: No SIUL21 NVMEM (err = %d)\n", __func__, ret);
+		return ret;
+	}
+
+	ret = misc_read(siul21_nvmem, S32GEN1_SERDES_PRESENCE,
+			&soc_serdes_presence,
+			sizeof(soc_serdes_presence));
+	if (ret != sizeof(soc_serdes_presence)) {
+		printf("%s: Failed to read SoC's SerDes capability (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
+	if (!soc_serdes_presence) {
+		printf("SerDes Subsystem is not present, skipping configuring PCIe\n");
+		return -ENODEV;
+	}
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
@@ -911,13 +937,6 @@ static int s32_pcie_probe(struct udevice *dev)
 	ret = s32_pcie_get_config_from_device_tree(pcie);
 	if (ret)
 		return ret;
-
-	if (!pcie->no_check_serdes) {
-		if (!is_serdes_subsystem_present()) {
-			printf("SerDes Subsystem is not present, skipping configuring PCIe\n");
-			return -ENODEV;
-		}
-	}
 
 	ltssm_en = is_s32gen1_pcie_ltssm_enabled(pcie);
 	if (!ltssm_en) {
