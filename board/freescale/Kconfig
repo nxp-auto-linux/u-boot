@@ -8,10 +8,13 @@ config S32_GEN1
 	imply CMD_CPU
 	imply CMD_GPIO
 	imply CMD_FUSE
+	imply CMD_TIMER
 	imply FSL_LINFLEXUART
 	imply ADC if !NXP_S32GRDB_BOARD
 	imply S32_SARADC if !NXP_S32GRDB_BOARD
 	imply MISC
+	imply TIMER
+	imply S32_TIMER
 	select ARM_SMCCC
 	select CLK
 	select CLK_SCMI

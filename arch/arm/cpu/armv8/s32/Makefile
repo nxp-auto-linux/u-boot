@@ -10,7 +10,6 @@ obj-$(CONFIG_S32_GEN1)		+= s32-gen1/
 obj-$(CONFIG_S32_GEN1)		+= scmi_reset_agent.o
 obj-y				+= cpu.o
 obj-y				+= lowlevel.o
-obj-$(CONFIG_SYS_PIT_TIMER)	+= timer.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
