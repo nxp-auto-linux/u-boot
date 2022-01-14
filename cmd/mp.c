@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2008-2009 Freescale Semiconductor, Inc.
+ * Copyright 2022 NXP
  */
 
 #include <command.h>
@@ -27,7 +28,7 @@ static int cpu_status_all(void)
 }
 
 static int
-cpu_cmd(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+mp_cmd(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	unsigned long cpuid;
 
@@ -66,12 +67,12 @@ cpu_cmd(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	return 0;
 }
 
-U_BOOT_LONGHELP(cpu,
+U_BOOT_LONGHELP(mp,
 	    "<num> reset                 - Reset cpu <num>\n"
-	"cpu status                      - Status of all cpus\n"
-	"cpu <num> status                - Status of cpu <num>\n"
-	"cpu <num> disable               - Disable cpu <num>\n"
-	"cpu <num> release <addr> [args] - Release cpu <num> at <addr> with [args]"
+	"mp status                      - Status of all cpus\n"
+	"mp <num> status                - Status of cpu <num>\n"
+	"mp <num> disable               - Disable cpu <num>\n"
+	"mp <num> release <addr> [args] - Release cpu <num> at <addr> with [args]"
 #ifdef CONFIG_PPC
 	"\n"
 	"                         [args] : <pir> <r3> <r6>\n" \
@@ -88,6 +89,6 @@ U_BOOT_LONGHELP(cpu,
 	);
 
 U_BOOT_CMD(
-	cpu, CONFIG_SYS_MAXARGS, 1, cpu_cmd,
-	"Multiprocessor CPU boot manipulation and release", cpu_help_text
+	mp, CONFIG_SYS_MAXARGS, 1, mp_cmd,
+	"Multiprocessor CPU boot manipulation and release", mp_help_text
 );
