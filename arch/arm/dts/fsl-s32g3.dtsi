@@ -46,6 +46,33 @@
 };
 
 /delete-node/ &mc_cgm0;
+
+&cpus {
+	cpu4: cpu@2 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x0 0x2>;
+	};
+
+	cpu5: cpu@3 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x0 0x3>;
+	};
+
+	cpu6: cpu@102 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x0 0x102>;
+	};
+
+	cpu7: cpu@103 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x0 0x103>;
+	};
+};
+
 &clks {
 	mc_cgm0: mc_cgm0@40030000 {
 		compatible = "fsl,s32gen1-mc_cgm0";
