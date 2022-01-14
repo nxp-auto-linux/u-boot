@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2018,2020-2021 NXP
  * (C) Copyright 2009 Ilya Yanok, Emcraft Systems Ltd <yanok@emcraft.com>
  * (C) Copyright 2008,2009 Eric Jarrige <eric.jarrige@armadeus.org>
  * (C) Copyright 2008 Armadeus Systems nc
@@ -583,11 +582,8 @@ static int fec_init(struct eth_device *dev, bd_t *bd)
 #else
 	struct fec_priv *fec = (struct fec_priv *)dev->priv;
 #endif
-	u32 *mib_ptr_start1 = (u32 *)&fec->eth->rmon_t_drop;
-	u32 *mib_ptr_end1 = (u32 *)&fec->eth->res13;
-	u32 *mib_ptr_start2 = (u32 *)&fec->eth->rmon_r_packets;
-	u32 *mib_ptr_end2 = (u32 *)&fec->eth->res14;
-	u32 *i;
+	u8 *mib_ptr = (uint8_t *)&fec->eth->rmon_t_drop;
+	u8 *i;
 	ulong addr;
 
 	/* Initialize MAC address */
@@ -618,13 +614,10 @@ static int fec_init(struct eth_device *dev, bd_t *bd)
 
 	/* Do not access reserved register */
 	if (!is_mx6ul() && !is_mx6ull() && !is_imx8() && !is_imx8m()) {
-		/* clear MIB RAM: avoid the reserved
-		 * space from FEC memory map.
-		 */
-		for (i = mib_ptr_start1; i < mib_ptr_end1; i++)
+		/* clear MIB RAM */
+		for (i = mib_ptr; i <= mib_ptr + 0xfc; i += 4)
 			writel(0, i);
-		for (i = mib_ptr_start2; i < mib_ptr_end2; i++)
-			writel(0, i);
+
 		/* FIFO receive start register */
 		writel(0x520, &fec->eth->r_fstart);
 	}
@@ -1181,7 +1174,6 @@ static int fec_probe(bd_t *bd, int dev_id, uint32_t base_addr,
 		if (!env_get(mac))
 			eth_env_set_enetaddr(mac, ethaddr);
 	}
-
 	return ret;
 err4:
 	fec_free_descs(fec);

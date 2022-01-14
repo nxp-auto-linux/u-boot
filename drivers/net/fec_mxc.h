@@ -96,6 +96,7 @@ struct ethernet_regs {
 	uint32_t ieee_t_sqe;		/* MBAR_ETH + 0x26C */
 	uint32_t t_fdxfc;		/* MBAR_ETH + 0x270 */
 	uint32_t ieee_t_octets_ok;	/* MBAR_ETH + 0x274 */
+
 	uint32_t res13[2];		/* MBAR_ETH + 0x278-27C */
 	uint32_t rmon_r_drop;		/* MBAR_ETH + 0x280 */
 	uint32_t rmon_r_packets;	/* MBAR_ETH + 0x284 */
@@ -213,18 +214,15 @@ struct ethernet_regs {
 #define MIIGSK_ENR_EN			(1 << 1)
 #endif
 
-typedef uintptr_t __attribute__((__may_alias__)) uintptr_t_a;
-
 /**
  * @brief Receive & Transmit Buffer Descriptor definitions
  *
  * Note: The first BD must be aligned (see DB_ALIGNMENT)
  */
-struct __attribute__((__may_alias__)) fec_bd
-{
-	volatile uint16_t data_length;		/* payload's length in bytes */
-	volatile uint16_t status;			/* BD's staus (see datasheet) */
-	volatile uint32_t data_pointer;		/* payload's buffer address */
+struct fec_bd {
+	uint16_t data_length;		/* payload's length in bytes */
+	uint16_t status;		/* BD's staus (see datasheet) */
+	uint32_t data_pointer;		/* payload's buffer address */
 };
 
 /* Supported phy types on this platform */
@@ -236,10 +234,8 @@ enum xceiver_type {
 	RGMII,		/* RGMII */
 };
 
-/**
- * @brief i.MX27-FEC private structure
- */
-struct __attribute__((__may_alias__)) fec_priv {
+/* @brief i.MX27-FEC private structure */
+struct fec_priv {
 	struct ethernet_regs *eth;	/* pointer to register'S base */
 	enum xceiver_type xcv_type;	/* transceiver type */
 	struct fec_bd *rbd_base;	/* RBD ring */

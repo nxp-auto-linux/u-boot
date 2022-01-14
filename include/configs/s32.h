@@ -32,28 +32,6 @@
 
 #define CONFIG_LOADADDR		LOADADDR
 
-/* Init CSE3 from u-boot */
-#ifdef CONFIG_FSL_CSE3
-
-#define CONFIG_ARCH_MISC_INIT
-#define KIA_BASE		(S32_SRAM_BASE + 0x5000UL)
-/* Secure Boot */
-#ifdef CONFIG_SECURE_BOOT
-#define SECURE_BOOT_KEY_ID	0x4UL
-#endif
-/* start address and size of firmware+keyimage binary blob */
-#define CSE_BLOB_BASE		(S32_SRAM_BASE + 0x1000UL)
-#define CSE_BLOB_SIZE		0x00004500UL
-
-#define CONFIG_FSL_CSE3_SETTINGS \
-	"cse_addr=" __stringify(CSE_BLOB_BASE) "\0" \
-	"cse_file=cse.bin\0" \
-	"sec_boot_key_id=" __stringify(SECURE_BOOT_KEY_ID) "\0" \
-
-#else
-#define CONFIG_FSL_CSE3_SETTINGS
-#endif /* CONFIG_FSL_CSE3 */
-
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* Enable passing of ATAGs */
@@ -350,7 +328,6 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	CONFIG_FSL_CSE3_SETTINGS \
 	"update_sd_firmware_filename=u-boot.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
