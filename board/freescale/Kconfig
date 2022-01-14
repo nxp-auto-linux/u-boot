@@ -5,6 +5,7 @@ config SYS_VENDOR
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
 	imply CMD_ADC
+	imply CMD_CPU
 	imply CMD_GPIO
 	imply CMD_FUSE
 	imply ADC if !TARGET_S32G274ARDB
@@ -26,6 +27,7 @@ config S32_GEN1
 	select MMC_HS400_ES_SUPPORT if !TARGET_TYPE_S32GEN1_EMULATOR
 	select ARM_ERRATA_855873 if S32_STANDALONE_BOOT_FLOW
 	select SYS_MALLOC_F
+	select CPU
 	help
 	  Platform Selection
 
