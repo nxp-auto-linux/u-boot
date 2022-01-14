@@ -913,12 +913,6 @@ config ARCH_SNAPDRAGON
 	select SPMI
 	imply CMD_DM
 
-config TARGET_SAC58R
-	bool "Support sac58r"
-
-config TARGET_SAC58RFVB
-	bool "Support sac58rfvb"
-
 config ARCH_SOCFPGA
 	bool "Altera SOCFPGA family"
 	select ARCH_EARLY_INIT_R
@@ -1864,8 +1858,6 @@ source "board/freescale/ls1012ardb/Kconfig"
 source "board/freescale/ls1012afrdm/Kconfig"
 source "board/freescale/lx2160a/Kconfig"
 source "board/freescale/mx35pdk/Kconfig"
-source "board/freescale/sac58r/Kconfig"
-source "board/freescale/sac58rfvb/Kconfig"
 source "board/grinn/chiliboard/Kconfig"
 source "board/gumstix/pepper/Kconfig"
 source "board/hisilicon/hikey/Kconfig"

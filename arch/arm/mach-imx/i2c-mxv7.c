@@ -61,9 +61,6 @@ exit:
 }
 
 static void * const i2c_bases[] = {
-#ifdef CONFIG_SAC58R
-	(void *)I2C0_BASE_ADDR,
-#endif
 	(void *)I2C1_BASE_ADDR,
 	(void *)I2C2_BASE_ADDR,
 #ifdef I2C3_BASE_ADDR

@@ -575,13 +575,6 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 
 		do {
 			irqstat = esdhc_read32(&regs->irqstat);
-#ifdef CONFIG_SAC58R
-			/* HACK: For some reason, we need a delay here in
-			 * sac58r, otherwise, we get stuck in this loop.
-			 * To be further investigated and REMOVED
-			 */
-			udelay(100);
-#endif
 
 			if (irqstat & IRQSTAT_DTOE) {
 				err = -ETIMEDOUT;

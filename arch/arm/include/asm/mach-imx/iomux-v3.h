@@ -182,7 +182,7 @@ typedef u64 iomux_v3_cfg_t;
 /* i.MX6SLL */
 #define PAD_CTL_IPD_BIT		(1 << 27)
 
-#elif defined(CONFIG_VF610) || defined(CONFIG_SAC58R) || \
+#elif defined(CONFIG_VF610) || \
 	defined(CONFIG_MAC57D5XH)
 
 #define PAD_MUX_MODE_SHIFT	20
