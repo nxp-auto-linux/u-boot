@@ -28,9 +28,6 @@
 #endif
 #include <dt-bindings/clock/s32gen1-clock.h>
 #include <s32gen1_clk_utils.h>
-#include <misc.h>
-#include <dm/uclass.h>
-#include <s32gen1_siul2_nvram.h>
 
 /* FCCU registers */
 #ifndef CONFIG_S32_ATF_BOOT_FLOW
@@ -111,41 +108,6 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	return 0;
 }
 
-#if defined(CONFIG_DISPLAY_CPUINFO)
-static const char *get_reset_cause(void)
-{
-	u32 val;
-
-	val = readl(RGM_DES(MC_RGM_BASE_ADDR));
-	if (val & RGM_DES_POR) {
-		/* Clear bit */
-		writel(RGM_DES_POR, RGM_DES(MC_RGM_BASE_ADDR));
-		return "Power-On Reset";
-	}
-
-	if (val) {
-		writel(~RGM_DES_POR, RGM_DES(MC_RGM_BASE_ADDR));
-		return "Destructive Reset";
-	}
-
-	val = readl(RGM_FES(MC_RGM_BASE_ADDR));
-	if (val & RGM_FES_EXT) {
-		writel(RGM_FES_EXT, RGM_FES(MC_RGM_BASE_ADDR));
-		return "External Reset";
-	}
-
-	if (val) {
-		writel(~RGM_FES_EXT, RGM_FES(MC_RGM_BASE_ADDR));
-		return "Functional Reset";
-	}
-
-	val = readl(MC_ME_MODE_STAT(MC_ME_BASE_ADDR));
-	if ((val & MC_ME_MODE_STAT_PREVMODE) == 0)
-		return "Reset";
-
-	return "unknown reset";
-}
-
 void reset_cpu(ulong addr)
 {
 	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF(MC_ME_BASE_ADDR));
@@ -160,79 +122,6 @@ void reset_cpu(ulong addr)
 	printf("FATAL: Reset Failed!\n");
 	hang();
 }
-
-int print_cpuinfo(void)
-{
-	struct udevice *siul20_nvmem, *siul21_nvmem;
-	int ret;
-	bool has_subminor = false;
-	u32 letter, part_number, major, minor, subminor;
-
-	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_0_nvram",
-					&siul20_nvmem);
-	if (ret) {
-		printf("%s: No SIUL20 NVMEM (err = %d)\n", __func__, ret);
-		return ret;
-	}
-
-	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_1_nvram",
-					&siul21_nvmem);
-	if (ret) {
-		printf("%s: No SIUL21 NVMEM (err = %d)\n", __func__, ret);
-		return ret;
-	}
-
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_LETTER, &letter,
-			sizeof(letter));
-	if (ret != sizeof(letter)) {
-		printf("%s: Failed to read SoC's letter (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_PART_NO, &part_number,
-			sizeof(part_number));
-	if (ret != sizeof(part_number)) {
-		printf("%s: Failed to read SoC's part number (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_MAJOR, &major,
-			sizeof(major));
-	if (ret != sizeof(major)) {
-		printf("%s: Failed to read SoC's major (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_MINOR, &minor,
-			sizeof(minor));
-	if (ret != sizeof(minor)) {
-		printf("%s: Failed to read SoC's minor (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	/* It might be unavailable */
-	ret = misc_read(siul21_nvmem, S32GEN1_SOC_SUBMINOR, &subminor,
-			sizeof(subminor));
-	if (ret == sizeof(subminor))
-		has_subminor = true;
-
-	printf("CPU: NXP S32%c%uA rev. %u.%u", (char)letter, part_number,
-	       major, minor);
-
-	if (has_subminor)
-		printf(".%u", subminor);
-
-	puts("\n");
-
-	printf("Reset cause: %s\n", get_reset_cause());
-
-	return 0;
-}
-#endif
 
 #if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 extern struct ddrss_conf ddrss_conf;
