@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 #ifndef __ASM_ARCH_S32_GEN1_REGS_H__
@@ -209,7 +209,5 @@
 #define SIUL2_1_BASE_ADDR			(PER_GROUP8_BASE + 0x00010000)
 #define MC_CGM2_BASE_ADDR			(PER_GROUP8_BASE + 0x00018000)
 #endif
-
-#include "dma_macros.h"
 
 #endif	/* __ASM_ARCH_S32XXXX_GEN1_REGS_H__ */
