@@ -20,9 +20,6 @@
 #include <ddr_init.h>
 #endif
 #include <board_common.h>
-#ifdef CONFIG_FSL_DSPI
-#include <fsl_dspi.h>
-#endif
 #ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
 #include <dm/device-internal.h>
@@ -357,39 +354,6 @@ int arch_misc_init(void)
 #endif
 	return 0;
 }
-
-#ifdef CONFIG_FSL_DSPI
-int mmap_dspi(unsigned short bus, struct dspi **base_addr)
-{
-	unsigned long addr;
-
-	switch (bus) {
-	case 0:
-		addr = SPI0_BASE_ADDR;
-		break;
-	case 1:
-		addr = SPI1_BASE_ADDR;
-		break;
-	case 2:
-		addr = SPI2_BASE_ADDR;
-		break;
-	case 3:
-		addr = SPI3_BASE_ADDR;
-		break;
-	case 4:
-		addr = SPI4_BASE_ADDR;
-		break;
-	case 5:
-		addr = SPI5_BASE_ADDR;
-		break;
-	default:
-		return -ENODEV;
-	}
-
-	*base_addr = (struct dspi *)addr;
-	return 0;
-}
-#endif
 
 __weak u32 get_sram_size(void)
 {
