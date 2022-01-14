@@ -15,7 +15,7 @@
 /dts-v1/;
 #include "fsl-s32-gen1.dtsi"
 / {
-	model = "NXP S32R45";
+	model = "NXP S32R458-EVB";
 	compatible = "fsl,s32r45", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 
 	aliases {

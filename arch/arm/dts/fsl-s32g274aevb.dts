@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 /dts-v1/;
 #include "fsl-s32g274a.dtsi"
 #include "fsl-s32gxxxaevb.dtsi"
+
+/ {
+	model = "NXP S32G2XXX-EVB";
+	compatible = "fsl,s32gen1", "arm,vexpress,v2p-aarch64", "arm,vexpress";
+};

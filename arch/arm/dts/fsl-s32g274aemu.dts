@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 /dts-v1/;
 #include "fsl-s32g274a.dtsi"
+
+/ {
+	model = "ZeBu model for NXP S32G274A";
+};
 
 &usdhc0 {
 	status = "okay";

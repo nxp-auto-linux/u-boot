@@ -1,6 +1,9 @@
+// SPDX-License-Identifier:     GPL-2.0+
+/*
+ * Copyright 2019,2022 NXP
+ */
 /dts-v1/;
 / {
-	model = "S32xx public key";
 	compatible = "fsl,s32gen1";
 	signature {
 		key-boot_key {

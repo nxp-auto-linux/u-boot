@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 /dts-v1/;
@@ -10,6 +10,7 @@
 /delete-node/ &mem1;
 /delete-node/ &mem2;
 / {
+	model = "ZeBu model for NXP S32G399A";
 
 	mem1: memory@80000000 {
 		device_type = "memory";
