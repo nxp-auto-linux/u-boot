@@ -177,16 +177,6 @@ struct anadig_reg {
 #define CCM_CSCDR2_ESDHC1_CLK_DIV_OFFSET	20
 #define CCM_CSCDR2_ESDHC1_CLK_DIV_MASK		(0xf << 20)
 #define CCM_CSCDR2_ESDHC1_CLK_DIV(v)		(((v) & 0xf) << 20)
-#define CCM_CSCDR2_NFC_CLK_INV					(1 << 14)
-#define CCM_CSCDR2_NFC_CLK_FRAC_DIV_EN			(1 << 13)
-#define CCM_CSCDR2_NFC_EN						(1 << 9)
-#define CCM_CSCDR2_NFC_CLK_FRAC_DIV_OFFSET		4
-#define CCM_CSCDR2_NFC_CLK_FRAC_DIV_MASK		(0xf << 4)
-#define CCM_CSCDR2_NFC_CLK_FRAC_DIV(v)			(((v) & 0xf) << 4)
-
-#define CCM_CSCDR3_NFC_PRE_DIV_OFFSET			13
-#define CCM_CSCDR3_NFC_PRE_DIV_MASK				(0x7 << 13)
-#define CCM_CSCDR3_NFC_PRE_DIV(v)				(((v) & 0x7) << 13)
 
 #define CCM_CSCDR3_DCU1_EN			(1 << 23)
 #define CCM_CSCDR3_DCU1_DIV_MASK		(0x7 << 20)

@@ -16,9 +16,6 @@
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
-#include <asm/arch/dmachmux-vf610.h>
-
-#include "vf610twr_int_routing.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -321,9 +318,7 @@ static void clock_init(void)
 		CCM_CSCDR1_RMII_CLK_EN);
 	clrsetbits_le32(&ccm->cscdr2, CCM_REG_CTRL_MASK,
 		CCM_CSCDR2_ESDHC1_EN | CCM_CSCDR2_ESDHC1_CLK_DIV(0) |
-		CCM_CSCDR2_NFC_CLK_INV | CCM_CSCDR2_NFC_EN | CCM_CSCDR2_NFC_CLK_FRAC_DIV(4));
-	clrsetbits_le32(&ccm->cscdr3,CCM_CSCDR3_NFC_PRE_DIV_MASK,
-		CCM_CSCDR3_NFC_PRE_DIV(1));
+		CCM_CSCDR2_NFC_EN);
 	clrsetbits_le32(&ccm->cscdr3, CCM_REG_CTRL_MASK,
 		CCM_CSCDR3_QSPI0_EN | CCM_CSCDR3_QSPI0_DIV(1) |
 		CCM_CSCDR3_QSPI0_X2_DIV(1) | CCM_CSCDR3_QSPI0_X4_DIV(3) |
@@ -337,25 +332,9 @@ static void mscm_init(void)
 	struct mscm_ir *mscmir = (struct mscm_ir *)MSCM_IR_BASE_ADDR;
 	int i;
 
-	/* Interrupt routing configuration */
 	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-			writew(int_routing_conf[i], &mscmir->irsprc[i]);
-
+		writew(MSCM_IRSPRC_CP0_EN, &mscmir->irsprc[i]);
 }
-
-
-static void dmamux_init(void)
-{
-	/*Example DMA CHANNEL MUXING FOR VF610. This function is not called */
-	static const dmamux_cfg_t dma_channels [] = {
-		DMAMUX_CHANNEL(DMAMUX_0, 0, VF610_DMAREQSRC_UART0_RX, 0, 1), /* DMAMUX 0, Channel 0 => UART0_RX, no trigger, channel enable */
-		DMAMUX_CHANNEL(DMAMUX_1, 8, VF610_DMAREQSRC_UART4_RX, 0, 1), /* DMAMUX 1, Channel 8 => UART0_RX, no trigger, channel enable */
-		DMAMUX_CHANNEL(DMAMUX_2, 4, VF610_DMAREQSRC_SPI2_RX, 0, 1), /* DMAMUX 2, Channel 4  => SPI2_RX, no trigger, channel enable */
-		DMAMUX_CHANNEL(DMAMUX_3, 12, VF610_DMAREQSRC_I2C1_TX, 0, 1), /* DMAMUX 3, Channel 12 => I2C1_TX, no trigger, channel enable */
-	};
-	imx_dmamux_setup_multiple_channels(dma_channels, ARRAY_SIZE(dma_channels));
-}
-
 
 int board_phy_config(struct phy_device *phydev)
 {
