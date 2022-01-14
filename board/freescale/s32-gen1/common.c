@@ -47,57 +47,6 @@ int board_init(void)
 	return 0;
 }
 
-int checkboard(void)
-{
-#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB) ||\
-	defined(CONFIG_TARGET_S32G274ARDB)
-
-	u32 part_number;
-	struct udevice *siul20_nvmem;
-	int ret;
-
-	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_0_nvram",
-					&siul20_nvmem);
-	if (ret) {
-		printf("%s: No SIUL20 NVMEM (err = %d)\n", __func__, ret);
-		return ret;
-	}
-
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_PART_NO, &part_number,
-			sizeof(part_number));
-	if (ret != sizeof(part_number)) {
-		printf("%s: Failed to read SoC's part number (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-#endif
-
-#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB)
-	printf("Board:\tNXP S32G%d-EVB\n", part_number);
-#elif defined(CONFIG_TARGET_S32G274ARDB)
-	printf("Board:\tNXP S32G%d-RDB\n", part_number);
-#elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-	puts("Board:\tNXP S32G274A BlueBox3\n");
-#elif defined(CONFIG_TARGET_S32G274ASIM)
-	puts("Board:\tVDK for NXP S32G274A VP\n");
-#elif defined(CONFIG_TARGET_S32G274AEMU)
-	puts("Board:\tZeBu model for NXP S32G274A\n");
-#elif defined(CONFIG_TARGET_S32G399AEMU)
-	puts("Board:\tZeBu model for NXP S32G399A\n");
-#elif defined(CONFIG_TARGET_S32R45EVB)
-	puts("Board:\tNXP S32R45-EVB\n");
-#elif defined(CONFIG_TARGET_S32R45SIM)
-	puts("Board:\tVDK for NXP S32R45 VP\n");
-#elif defined(CONFIG_TARGET_S32R45EMU)
-	puts("Board:\tZeBu model for NXP S32R45\n");
-#else
-	puts("Board:\tNXP S32-gen1-xxxxxxx\n");
-#endif
-
-	return 0;
-}
-
-
 #if defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
 {
