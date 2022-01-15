@@ -876,12 +876,7 @@ config CMD_FASTBOOT
 
 	  See doc/android/fastboot.rst for more information.
 
-config CUSTOM_CMD_FLASH
-	bool
-	default n
-
 config CMD_FLASH
-	depends on !CUSTOM_CMD_FLASH
 	bool "flinfo, erase, protect"
 	default y
 	depends on MTD || FLASH_CFI_DRIVER || MTD_NOR_FLASH
