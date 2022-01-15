@@ -3,7 +3,6 @@
  *  EFI application loader
  *
  *  Copyright (c) 2016 Alexander Graf
- *  Copyright 2021 NXP
  */
 
 #include <common.h>
@@ -23,8 +22,6 @@
 #include <linux/linkage.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
-#define SAFE_FDT_LOCATION	0x7f00000
 
 static struct efi_device_path *bootefi_image_path;
 static struct efi_device_path *bootefi_device_path;
@@ -104,6 +101,17 @@ static efi_status_t copy_fdt(void **fdtp)
 	uint fdt_size;
 	int i;
 
+	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+		u64 ram_start = gd->bd->bi_dram[i].start;
+		u64 ram_size = gd->bd->bi_dram[i].size;
+
+		if (!ram_size)
+			continue;
+
+		if (ram_start < fdt_ram_start)
+			fdt_ram_start = ram_start;
+	}
+
 	/*
 	 * Give us at least 12 KiB of breathing room in case the device tree
 	 * needs to be expanded later.
@@ -112,25 +120,12 @@ static efi_status_t copy_fdt(void **fdtp)
 	fdt_pages = efi_size_in_pages(fdt_totalsize(fdt) + 0x3000);
 	fdt_size = fdt_pages << EFI_PAGE_SHIFT;
 
-	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
-		u64 ram_start = gd->bd->bi_dram[i].start;
-		u64 ram_size = gd->bd->bi_dram[i].size;
-
-		if (!ram_size)
-			continue;
-
-		if (ram_start < fdt_ram_start && ram_size >
-			(SAFE_FDT_LOCATION + fdt_size))
-			fdt_ram_start = ram_start;
-	}
-
 	/*
 	 * Safe fdt location is at 127 MiB.
 	 * On the sandbox convert from the sandbox address space.
 	 */
-	new_fdt_addr = (uintptr_t)map_sysmem(fdt_ram_start +
-					     SAFE_FDT_LOCATION + fdt_size, 0);
-
+	new_fdt_addr = (uintptr_t)map_sysmem(fdt_ram_start + 0x7f00000 +
+					     fdt_size, 0);
 	ret = efi_allocate_pages(EFI_ALLOCATE_MAX_ADDRESS,
 				 EFI_BOOT_SERVICES_DATA, fdt_pages,
 				 &new_fdt_addr);
