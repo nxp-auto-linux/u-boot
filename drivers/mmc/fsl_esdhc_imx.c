@@ -80,8 +80,8 @@ struct fsl_esdhc {
 	uint    vendorspec;
 	uint    mmcboot;
 	uint    vendorspec2;
-#ifndef SDHC_REDUCED_MAP
 	uint    tuning_ctrl;	/* on i.MX6/7/8/RT */
+#ifndef CONFIG_S32_GEN1
 	char	reserved5[44];
 	uint    hostver;	/* Host controller version register */
 	char    reserved6[4];	/* reserved */
@@ -148,12 +148,10 @@ struct fsl_esdhc_priv {
 	int vs18_enable;
 	u32 flags;
 	u32 caps;
-#if !defined(SDHC_REDUCED_MAP)
 	u32 tuning_step;
 	u32 tuning_start_tap;
 	u32 strobe_dll_delay_target;
 	u32 signal_voltage;
-#endif
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
 	struct udevice *vqmmc_dev;
 	struct udevice *vmmc_dev;
@@ -1138,7 +1136,7 @@ static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	esdhc_write32(&regs->dllctrl, 0x0);
 #endif
 
-#if !defined(ARCH_MXC) && !defined(SDHC_REDUCED_MAP)
+#if !defined(ARCH_MXC) && !defined(CONFIG_S32_GEN1)
 	/* Enable cache snooping */
 	esdhc_write32(&regs->scr, 0x00000040);
 #endif
@@ -1368,7 +1366,6 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
 
 	writel(0, &regs->dllctrl);
-#ifndef SDHC_REDUCED_MAP
 	if (priv->flags & ESDHC_FLAG_USDHC) {
 		if (priv->flags & ESDHC_FLAG_STD_TUNING) {
 			u32 val = readl(&regs->tuning_ctrl);
@@ -1382,7 +1379,6 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 		}
 	}
 
-#endif
 	return 0;
 }
 
@@ -1493,10 +1489,8 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct fsl_esdhc_plat *plat = dev_get_platdata(dev);
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
-#ifndef SDHC_REDUCED_MAP
 	const void *fdt = gd->fdt_blob;
 	int node = dev_of_offset(dev);
-#endif
 	struct esdhc_soc_data *data =
 		(struct esdhc_soc_data *)dev_get_driver_data(dev);
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
@@ -1533,7 +1527,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
 					 ESDHC_FLAG_HS400 |
 					 ESDHC_FLAG_HS400_ES);
 
-#ifndef SDHC_REDUCED_MAP
 	val = fdtdec_get_int(fdt, node, "fsl,tuning-step", 1);
 	priv->tuning_step = val;
 	val = fdtdec_get_int(fdt, node, "fsl,tuning-start-tap",
@@ -1542,7 +1535,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	val = fdtdec_get_int(fdt, node, "fsl,strobe-dll-delay-target",
 			     ESDHC_STROBE_DLL_CTRL_SLV_DLY_TARGET_DEFAULT);
 	priv->strobe_dll_delay_target = val;
-#endif
 
 	if (dev_read_bool(dev, "broken-cd"))
 		priv->broken_cd = 1;
