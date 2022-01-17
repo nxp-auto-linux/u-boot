@@ -28,7 +28,7 @@ config NXP_S32R45
 
 choice
 	prompt "Select S32 Target Board Support"
-	default TARGET_S32G274ARDB
+	default TARGET_S32G274ARDB2
 	help
 	  S32 Target Board Selection
 
@@ -45,8 +45,8 @@ config TARGET_S32G2XXAEVB
 	select NXP_S32G2XX
 	select MISC_INIT_R if SJA1105
 
-config TARGET_S32G274ARDB
-	bool "Support s32g274ardb"
+config TARGET_S32G274ARDB2
+	bool "Support s32g274ardb2"
 	select NXP_S32G2XX
 	select ADC
 	select S32_SARADC
@@ -71,29 +71,6 @@ config TARGET_S32G3XXAEVB
 	select NXP_S32G3XX
 
 endchoice
-
-if TARGET_S32G274ARDB
-
-choice
-	prompt "S32G274ARDB Revision"
-	default S32G274ARDB2
-	help
-	  S32G274ARDB Revision.
-	  Default selection is S32G274ARDB2
-
-config S32G274ARDB
-	bool "S32G274ARDB (Rev B)"
-	help
-	  S32G274ARDB Revision B SCH-46384.
-
-config S32G274ARDB2
-	bool "S32G274ARDB2 (Rev C)"
-	help
-	  S32G274ARDB Revision C SCH-47440.
-
-endchoice
-
-endif
 
 config S32_CMU
 	bool "Enable Clock Monitoring Unit-Frequency Check"

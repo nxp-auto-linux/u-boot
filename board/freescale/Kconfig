@@ -9,8 +9,8 @@ config S32_GEN1
 	imply CMD_GPIO
 	imply CMD_FUSE
 	imply FSL_LINFLEXUART
-	imply ADC if !TARGET_S32G274ARDB
-	imply S32_SARADC if !TARGET_S32G274ARDB
+	imply ADC if !NXP_S32GRDB_BOARD
+	imply S32_SARADC if !NXP_S32GRDB_BOARD
 	imply MISC
 	select ARM_SMCCC
 	select CLK

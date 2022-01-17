@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 /*
@@ -20,7 +20,7 @@
 #define CONFIG_MXC_USB_PORTSC        PORT_PTS_ULPI
 #endif
 
-#elif defined(CONFIG_TARGET_S32G274ARDB)
+#elif defined(CONFIG_TARGET_S32G274ARDB2)
 #define FDT_FILE fsl-s32g274a-rdb2.dtb
 
 #elif defined(CONFIG_TARGET_S32G274ABLUEBOX3)

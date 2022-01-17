@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  */
 #include <common.h>
 #include <dm.h>
@@ -49,7 +49,7 @@ __maybe_unused static bool intf_is_xmii(u32 intf)
 }
 
 #if CONFIG_IS_ENABLED(FSL_PFENG)
-#ifdef CONFIG_TARGET_S32G274ARDB
+#ifdef CONFIG_NXP_S32GRDB_BOARD
 static int get_phy_handle(const void *fdt, int nodeoffset)
 {
 	const int *php;
@@ -141,7 +141,7 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 			/* sync MAC HW addr to DT [local-mac-address] */
 			ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
 
-#ifdef CONFIG_TARGET_S32G274ARDB
+#ifdef CONFIG_NXP_S32GRDB_BOARD
 			ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
 
 			if (idx == 0)

@@ -13,7 +13,7 @@
 #include <asm/arch/s32-gen1/ncore.h>
 
 #if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G3XXAEVB) ||\
-	defined(CONFIG_TARGET_S32G274ARDB)
+	defined(CONFIG_NXP_S32GRDB_BOARD)
 #include <dm/uclass.h>
 #include <misc.h>
 #include <s32gen1_siul2_nvram.h>

@@ -230,7 +230,7 @@
 #define PFENG_MODE "enable,none,rgmii,rgmii"
 #define PFENG_EMAC "1"
 #endif
-#ifdef CONFIG_TARGET_S32G274ARDB
+#ifdef CONFIG_NXP_S32GRDB_BOARD
 #define PFENG_MODE "enable,sgmii,none,rgmii"
 #define PFENG_EMAC "2"
 #endif
