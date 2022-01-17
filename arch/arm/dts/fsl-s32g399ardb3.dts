@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2019-2020, 2022 NXP
+ * Copyright 2022 NXP
  */
 
 /dts-v1/;
-#include "fsl-s32g274a.dtsi"
+#include "fsl-s32g.dtsi"
+#include "fsl-s32g3.dtsi"
 #include "fsl-s32gxxxardb.dtsi"
 
 / {
-	model = "NXP S32G274A-RDB2";
+	model = "NXP S32G399A-RDB3";
 };

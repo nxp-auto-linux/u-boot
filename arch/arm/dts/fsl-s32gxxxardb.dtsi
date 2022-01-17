@@ -3,9 +3,7 @@
  * Copyright 2019-2022 NXP
  */
 
-/dts-v1/;
 #include <dt-bindings/gpio/gpio.h>
-#include "fsl-s32g274a.dtsi"
 
 &usdhc0 {
 	/* By default sd0 pins were able to work at 100Mhz and 200Mhz */
@@ -85,6 +83,46 @@
 		compatible = "fsl,vr5510";
 		reg = <0x21>;
 		status = "okay";
+	};
+
+	pf5020_a {
+		compatible = "nxp,pf5020";
+		reg = <0x9>;
+		status = "okay";
+	};
+
+	pf5020_b {
+		compatible = "nxp,pf5020";
+		reg = <0x8>;
+		status = "okay";
+	};
+
+	fs5600 {
+		compatible = "nxp,fs5600";
+		reg = <0x18>;
+		status = "okay";
+	};
+};
+
+&gmac0 {
+	status = "okay";
+	phy-mode = "rgmii";
+	/* Connected to KSZ9031 MDIO_A */
+	phy-handle = <&mdio_a_phy1>;
+};
+
+&gmac0_mdio {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	/* KSZ9031 GMAC */
+	mdio_a_phy1: ethernet-phy@1 {
+		max-speed = <1000>;
+		reg = <1>;
+	};
+	/* ARQ107 */
+	mdio_a_phy3: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <3>;
 	};
 };
 
