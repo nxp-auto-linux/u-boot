@@ -11,15 +11,11 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <errno.h>
 
+#include <dt-bindings/pinctrl/s32-gen1-pinctrl.h>
+
 #define MSCR_OFF	0x0240
 #define GPDO_BASE	0x1300
 #define GPDI_BASE	0x1500
-
-/* S32-GEN1 SIUL2_MSCR masks */
-#define SIUL2_MSCR_S32_G1_OBE		BIT(21)
-#define SIUL2_MSCR_S32_G1_ODE		BIT(20)
-#define SIUL2_MSCR_S32_G1_IBE		BIT(19)
-#define SIUL2_MSCR_S32_G1_SSS_MASK	GENMASK(2, 0)
 
 #define SIUL2_MAX_VALID_RANGES		4
 

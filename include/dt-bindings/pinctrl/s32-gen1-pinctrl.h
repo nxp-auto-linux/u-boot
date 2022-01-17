@@ -6,16 +6,15 @@
 #ifndef S32_GEN1_PINCTRL_H
 #define S32_GEN1_PINCTRL_H
 
-#ifndef BIT
-#define BIT(nr)		(1U << (nr))
-#endif
-
-#define SIUL2_MSCR_S32_G1_OBE		BIT(21) /* Output buffer enable. */
-#define SIUL2_MSCR_S32_G1_ODE		BIT(20) /* Open drain eable. */
-#define SIUL2_MSCR_S32_G1_IBE		BIT(19) /* Input buffer enable. */
-#define SIUL2_MSCR_S32_G1_PUE		BIT(13) /* Pull enable. */
-#define SIUL2_MSCR_S32_G1_PUS		BIT(12) /* Pull-up enalbe. */
-#define SIUL2_MSCR_S32_G1_SMC_DIS	BIT(5) /* Safe mode conrol disable*/
+#define SIUL2_MSCR_S32_G1_OBE		(1 << 21) /* Output buffer enable. */
+#define SIUL2_MSCR_S32_G1_ODE		(1 << 20) /* Open drain eable. */
+#define SIUL2_MSCR_S32_G1_IBE		(1 << 19) /* Input buffer enable. */
+#define SIUL2_MSCR_S32_G1_PUE		(1 << 13) /* Pull enable. */
+#define SIUL2_MSCR_S32_G1_PUS		(1 << 12) /* Pull-up enalbe. */
+#define SIUL2_MSCR_S32_G1_SMC_DIS	(1 << 5) /* Safe mode conrol disable. */
+#define SIUL2_MSCR_S32_G1_SSS_MASK	(7 << 0) /* Source sig. select. */
+#define SIUL2_MSCR_S32_G1_RCVR_DBL	(0 << 10)
+#define SIUL2_MSCR_S32_G1_RCVR_SNGL	(1 << 10)
 
 #define SIUL2_MSCR_S32_G1_SRC_208_1V8_166_3V3_MHZ	(0 << 14)
 #define SIUL2_MSCR_S32_G1_SRC_166_1V8_150_3V3_MHZ	(4 << 14)
