@@ -494,6 +494,6 @@
 
 #define CONFIG_SYS_PCI_64BIT
 
-#define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/s32/u-boot.lds"
+#define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/u-boot.lds"
 
 #endif /* __S32_H */
