@@ -100,4 +100,3 @@ obj-$(CONFIG_ESM_PMIC) += esm_pmic.o
 obj-$(CONFIG_SL28CPLD) += sl28cpld.o
 obj-$(CONFIG_SPL_SOCFPGA_DT_REG) += socfpga_dtreg.o
 obj-$(CONFIG_SJA1105) += sja1105.o
-obj-$(CONFIG_SJA1105) += sja1105_cfg.o

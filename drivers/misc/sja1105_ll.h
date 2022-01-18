@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
 * AVB switch driver module for SJA1105
-* Copyright 2017, 2020, 2023 NXP
+* Copyright 2017, 2020,2022-2023 NXP
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -286,7 +286,5 @@ enum sja1105_gen_status_reg {
 };
 
 #define SJA1105_PORT_NB 5
-
-int sja1105_get_cfg(u32 devid, u32 cs, u32 *bin_len, u8 **cfg_bin);
 
 #endif
