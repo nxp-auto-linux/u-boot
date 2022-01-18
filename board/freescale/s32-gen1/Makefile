@@ -74,15 +74,6 @@ obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 				s32r45/pie_cfg.o \
 
 endif
-
-ifdef CONFIG_TARGET_S32G2XXAEVB
-obj-$(CONFIG_SJA1105) += sja1105_cfg_evb.o
-else ifdef CONFIG_TARGET_S32G3XXAEVB
-obj-$(CONFIG_SJA1105) += sja1105_cfg_rdb.o
-else ifdef CONFIG_TARGET_S32G274ARDB
-obj-$(CONFIG_SJA1105) += sja1105_cfg_rdb.o
-endif
-
 endif
 
 #########################################################################

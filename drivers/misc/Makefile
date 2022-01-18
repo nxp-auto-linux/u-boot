@@ -76,4 +76,3 @@ obj-$(CONFIG_JZ4780_EFUSE) += jz4780_efuse.o
 obj-$(CONFIG_MICROCHIP_FLEXCOM) += microchip_flexcom.o
 obj-$(CONFIG_K3_AVS0) += k3_avs.o
 obj-$(CONFIG_SJA1105) += sja1105.o
-obj-$(CONFIG_SJA1105) += sja1105_cfg.o

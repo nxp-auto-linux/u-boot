@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  */
 
 #include <dt-bindings/gpio/gpio.h>
@@ -45,7 +45,7 @@
 	status = "okay";
 
 	ethernet-switch@0 {
-		compatible = "nxp,sja1105-fw-loader";
+		compatible = "nxp,sja1105-s32gevb-fw-loader";
 		spi-max-frequency = <1000000>;
 		reg = <0>;
 		spi-cpha;
