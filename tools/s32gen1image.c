@@ -77,6 +77,9 @@ struct image_config {
 		uint8_t *data;
 		size_t size;
 	} qspi_params;
+	struct {
+		uint32_t size;
+	} data_file;
 	bool flash_boot;
 	bool secboot;
 };
@@ -114,6 +117,11 @@ enum dcd_cmd {
 	INVALID_DCD_CMD,
 };
 
+enum data_file_cmd {
+	SET_SIZE,
+	INVALID_DATA_FILE_CMD
+};
+
 struct dcd_args {
 	enum dcd_cmd cmd;
 	uint32_t addr;
@@ -133,6 +141,10 @@ static const char * const dcd_cmds[] = {
 	[CHECK_MASK_SET] = "CHECK_MASK_SET",
 	[CHECK_NOT_MASK] = "CHECK_NOT_MASK",
 	[CHECK_NOT_CLEAR] = "CHECK_NOT_CLEAR",
+};
+
+static const char * const data_file_cmds[] = {
+	[SET_SIZE] = "SIZE",
 };
 
 static struct image_config iconfig;
@@ -952,6 +964,48 @@ static int parse_qspi_cmd(char *line)
 	return 0;
 }
 
+static int parse_data_file_cmd(char *line)
+{
+	int ret;
+	size_t i;
+	char cmd_str[sizeof(data_file_cmds)];
+	uint32_t addr;
+	enum data_file_cmd cmd = INVALID_DATA_FILE_CMD;
+
+	ret = sscanf(line, "%[^ \t]%*[^0]0x%" PRIx32, cmd_str, &addr);
+	/* 2 tokens are expected */
+	if (ret < 2) {
+		fprintf(stderr, "Failed to interpret DATA_FILE line: %s\n",
+			line);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(data_file_cmds); i++) {
+		if (strcmp(cmd_str, data_file_cmds[i]))
+			continue;
+
+		cmd = (enum data_file_cmd)i;
+	}
+
+	if (cmd == INVALID_DATA_FILE_CMD) {
+		fprintf(stderr, "Failed to interpret DATA_FILE command: %s\n",
+			cmd_str);
+		return -EINVAL;
+	}
+
+	switch (cmd) {
+	case SET_SIZE:
+		iconfig.data_file.size = addr;
+		break;
+	default:
+		fprintf(stderr, "Failed to interpret DATA_FILE command: %s\n",
+			cmd_str);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static const struct line_parser parsers[] = {
 	{
 		.tag = "BOOT_FROM",
@@ -968,6 +1022,10 @@ static const struct line_parser parsers[] = {
 	{
 		.tag = "QSPI_PARAMS_FILE",
 		.parse = parse_qspi_cmd,
+	},
+	{
+		.tag = "DATA_FILE",
+		.parse = parse_data_file_cmd,
 	},
 };
 

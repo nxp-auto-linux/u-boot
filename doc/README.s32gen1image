@@ -103,6 +103,28 @@ Available commands
 	Usage:
 		QSPI_PARAMS_FILE qspi_params_MX25UW51245G.bin
 
+5. DATA_FILE
+	Sets the parameters to be applied to the file given using -d parameter (data_file).
+	It's useful when using a composite file and only a small part of it needs to be loaded by
+	BootROM.
+	E.g. A image that contains multiple stages plus U-Boot, and only one early stage
+	before U-Boot should be loaded by BootROM
+
+	Each entry must have the format:
+	Command      Value
+
+	where:
+		Command:   SIZE
+		Value:     Offset or size
+
+	Commands interpretation:
+		SIZE:		Sets the size starting from OFFSET
+
+	Usage:
+		DATA_FILE SIZE   0x3CB47
+
+	This will make BootROM to load the range: [0x0, 0x3CB47]
+
 Typical example of s32gen1.cfg file:
 -----------------------------------
 # Boot from QSPI
