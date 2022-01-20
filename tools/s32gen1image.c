@@ -84,16 +84,6 @@ struct image_config {
 	bool secboot;
 };
 
-struct fip_image_data {
-	__u32		toc_header_name;
-	__u32		dont_care1;
-	__u64		dont_care2;
-	__u8		uuid[16];
-	__u64		offset;
-	__u64		size;
-	__u8		dont_care3[0];
-};
-
 struct line_parser {
 	const char *tag;
 	parser_handler_t parse;
@@ -231,9 +221,9 @@ static void enforce_reserved_ranges(void *image_start, int image_length)
 	for (i = 0; i < ARRAY_SIZE(reserved_sram); i++)
 		if (image_start < reserved_sram[i].end &&
 		    image_end > reserved_sram[i].start) {
-			fprintf(stderr, "Loading data of size 0x%x at 0x%p "
+			fprintf(stderr, "Loading data of size 0x%x at %p "
 				"forbidden.", image_length, image_start);
-			fprintf(stderr, " Range 0x%p --- 0x%p is reserved!\n",
+			fprintf(stderr, " Range %p --- %p is reserved!\n",
 				reserved_sram[i].start, reserved_sram[i].end);
 			exit(EXIT_FAILURE);
 		}
@@ -363,51 +353,13 @@ static void set_data_pointers(struct program_image *layout, void *header)
 	layout->app_code.data = data + layout->app_code.offset;
 }
 
-static int read_fip_image(struct image_tool_params *tool_params,
-			  struct fip_image_data *fip_data)
-{
-	FILE *f;
-	uint8_t bl2_uuid[] = FIP_BL2_UUID;
-
-	f = fopen(tool_params->datafile, "rb");
-	if (!f) {
-		fprintf(stderr, "Cannot open %s\n", tool_params->datafile);
-		exit(EXIT_FAILURE);
-	}
-
-	if (fread(fip_data, sizeof(struct fip_image_data), 1, f) != 1) {
-		fprintf(stderr, "Cannot read from %s\n", tool_params->datafile);
-		exit(EXIT_FAILURE);
-	}
-
-	if (fip_data->toc_header_name != FIP_TOC_HEADER_NAME) {
-		fclose(f);
-		return -EINVAL;
-	}
-
-	if (fip_data->offset != FIP_BL2_OFFSET ||
-	    memcmp(&fip_data->uuid[0], &bl2_uuid[0], sizeof(bl2_uuid))) {
-		fprintf(stderr,
-			"s32gen1image: FIP image does not have a BL2"
-			" at offset %x\n",
-		FIP_BL2_OFFSET);
-		exit(EXIT_FAILURE);
-	}
-
-	fclose(f);
-	return 0;
-}
-
 static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 			       struct image_tool_params *tool_params)
 {
-	size_t code_length;
-	size_t pre_code_padding;
 	size_t dcd_data_size;
 	uint8_t *dcd;
 	struct ivt *ivt;
 	struct application_boot_code *app_code;
-	struct fip_image_data fip_data;
 	const uint32_t *dcd_data;
 
 	set_data_pointers(&image_layout, header);
@@ -442,9 +394,6 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
 
-	pre_code_padding = image_layout.code.offset
-				- image_layout.app_code.offset
-				- image_layout.app_code.size;
 
 	if (tool_params->ep < tool_params->addr) {
 		fprintf(stderr,
@@ -453,35 +402,21 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		exit(1);
 	}
 
-	if (read_fip_image(tool_params, &fip_data)) {
-		code_length = sbuf->st_size
-				- image_layout.app_code.offset
-				- offsetof(struct application_boot_code, code);
-		code_length += pre_code_padding;
-		app_code->code_length = code_length;
+	if (iconfig.data_file.size)
+		app_code->code_length = iconfig.data_file.size;
+	else
+		app_code->code_length = sbuf->st_size;
 
-		app_code->ram_start_pointer = tool_params->addr
-							- pre_code_padding;
-		app_code->ram_entry_pointer = tool_params->ep;
-	} else {
-		printf("mkimage: s32gen1image: %s is a FIP image\n",
-		       tool_params->datafile);
-		app_code->ram_start_pointer =
-					tool_params->addr
-					- FIP_BL2_OFFSET
-					- pre_code_padding;
-		app_code->ram_entry_pointer = tool_params->ep;
-		app_code->code_length = fip_data.size
-					+ FIP_BL2_OFFSET
-					+ pre_code_padding;
-	}
-	/* The ' code_length', like plenty of entries in the Program
+	/* The 'code_length', like plenty of entries in the Program
 	 * Image structure, must be 512 bytes aligned.
 	 */
 	app_code->code_length = ROUND(app_code->code_length, 512);
 
+	app_code->ram_start_pointer = tool_params->addr;
+	app_code->ram_entry_pointer = tool_params->ep;
+
 	if (!iconfig.flash_boot) {
-		enforce_reserved_ranges((void *)(__u64)
+		enforce_reserved_ranges((void *)(uintptr_t)
 					app_code->ram_start_pointer,
 					app_code->code_length);
 	} else {
@@ -698,7 +633,7 @@ static void s32gen1_print_header(const void *data)
 		(unsigned int)ivt->application_boot_code_pointer,
 		(unsigned int)sizeof(*app));
 
-	fprintf(stderr, "U-Boot/FIP:\t\tOffset: 0x%x\t\tSize: 0x%x\n\n",
+	fprintf(stderr, "Application:\t\tOffset: 0x%x\t\tSize: 0x%x\n\n",
 		(unsigned int)((uint8_t *)app->code - data8),
 		(unsigned int)app->code_length);
 

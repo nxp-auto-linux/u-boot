@@ -7,13 +7,6 @@
 #include <asm/types.h>
 #include <stddef.h>
 
-#define FIP_TOC_HEADER_NAME		(0xaa640001)
-#define FIP_BL2_UUID			{0x5f, 0xf9, 0xec, 0x0b, \
-					0x4d, 0x22, 0x3e, 0x4d, \
-					0xa5, 0x44, 0xc3, 0x9d, \
-					0x81, 0xc7, 0x3f, 0x0a}
-#define FIP_BL2_OFFSET			(0x200)
-
 #define BCW_BOOT_SEQ			(1 << 3)
 #define BCW_SWT				(1 << 2)
 #define BCW_BOOT_TARGET_M7_0		(0)
