@@ -30,8 +30,7 @@ obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
 else
 
 ifneq ($(filter y,$(CONFIG_NXP_S32G2XX)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
-				ddr_init.o \
+obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_init.o \
 				ddr_utils.o \
 				ddrss_cfg.o \
 				imem_cfg.o \
@@ -44,8 +43,7 @@ obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 endif
 
 ifneq ($(filter y,$(CONFIG_NXP_S32G3XX)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
-				ddr_init.o \
+obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_init.o \
 				ddr_utils.o \
 				ddrss_cfg.o \
 				imem_cfg.o \
@@ -58,8 +56,7 @@ obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
 endif
 
 ifneq ($(filter y,$(CONFIG_TARGET_S32R45EVB)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_density.o \
-				ddr_init.o \
+obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_init.o \
 				ddr_utils.o \
 				ddrss_cfg.o \
 				imem_cfg.o \
