@@ -509,19 +509,6 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	return 0;
 }
 
-static int s32gen1_vrec_header(struct image_tool_params *tool_params,
-			       struct image_type_params *type_params)
-{
-	size_t header_size;
-	void *image = NULL;
-
-	s32g2xx_build_layout(&image_layout, &header_size, &image);
-	type_params->header_size = header_size;
-	type_params->hdr = image;
-
-	return 0;
-}
-
 static bool is_ivt_header(const void *ptr)
 {
 	struct ivt *ivt = (struct ivt *)ptr;
@@ -945,7 +932,7 @@ static int build_conf(FILE *fconf)
 	return 0;
 }
 
-int s32gen1_parse_config(int outfd, struct image_tool_params *mparams)
+static int s32gen1_parse_config(struct image_tool_params *mparams)
 {
 	FILE *fconf;
 	int ret;
@@ -961,6 +948,24 @@ int s32gen1_parse_config(int outfd, struct image_tool_params *mparams)
 
 	fclose(fconf);
 	return ret;
+}
+
+static int s32gen1_vrec_header(struct image_tool_params *tool_params,
+			       struct image_type_params *type_params)
+{
+	size_t header_size;
+	void *image = NULL;
+	int ret;
+
+	ret = s32gen1_parse_config(tool_params);
+	if (ret)
+		return ret;
+
+	s32g2xx_build_layout(&image_layout, &header_size, &image);
+	type_params->header_size = header_size;
+	type_params->hdr = image;
+
+	return 0;
 }
 
 static int s32gen1_check_params(struct image_tool_params *params)

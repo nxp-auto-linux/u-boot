@@ -554,15 +554,6 @@ int main(int argc, char **argv)
 				return ret;
 		} else {
 			copy_file(ifd, params.datafile, pad_len);
-
-			if (params.type == IH_TYPE_S32GEN1IMAGE) {
-				/* S32GEN1 has special Image format */
-				int ret;
-
-				ret = s32gen1_parse_config(ifd, &params);
-				if (ret)
-					return ret;
-			}
 		}
 		if (params.type == IH_TYPE_FIRMWARE_IVT) {
 			/* Add alignment and IVT */
