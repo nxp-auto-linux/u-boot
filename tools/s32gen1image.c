@@ -277,21 +277,25 @@ static void check_overlap(struct image_comp *comp1,
 static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 {
 	size_t i;
-	size_t start_index = 0U;
+	size_t start_index = 0U, previous;
 
 	/* Skip empty entries */
 	while (!parts[start_index])
 		start_index++;
 
+	previous = start_index;
 	for (i = start_index; i < n_parts; i++) {
+		if (!parts[i])
+			continue;
+
 		if (parts[i]->offset == S32_AUTO_OFFSET) {
 			if (i == start_index) {
 				parts[i]->offset = 0U;
 				continue;
 			}
 
-			parts[i]->offset = parts[i - 1]->offset +
-			    parts[i - 1]->size;
+			parts[i]->offset = parts[previous]->offset +
+			    parts[previous]->size;
 		}
 
 		/* Apply alignment constraints */
@@ -300,7 +304,9 @@ static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 						 parts[i]->alignment);
 
 		if (i != start_index)
-			check_overlap(parts[i - 1], parts[i]);
+			check_overlap(parts[previous], parts[i]);
+
+		previous = i;
 	}
 }
 
@@ -486,23 +492,35 @@ get_image_hse_params(struct program_image *program_image)
 	return NULL;
 }
 
+static struct image_comp *
+get_image_mbr(struct program_image *program_image)
+{
+	/* Available on SD only */
+	if (!iconfig.flash_boot)
+		return &program_image->mbr_reserved;
+
+	return NULL;
+}
+
 static int s32g2xx_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
 	uint8_t *image_layout;
-	struct image_comp *parts[] = {&program_image->ivt,
+	struct image_comp *parts[] = {
+		get_image_mbr(program_image),
+		get_image_qspi_params(program_image),
+		&program_image->ivt,
 		&program_image->dcd,
+		get_image_hse_params(program_image),
 		&program_image->app_code,
 		&program_image->code,
-		get_image_qspi_params(program_image),
-		get_image_hse_params(program_image),
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
-	qsort(&parts[0], ARRAY_SIZE(parts), sizeof(parts[0]), image_parts_comp);
-
 	/* Compute auto-offsets */
 	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
+
+	qsort(&parts[0], ARRAY_SIZE(parts), sizeof(parts[0]), image_parts_comp);
 
 	*header_size = parts[last_comp]->offset + parts[last_comp]->size;
 
