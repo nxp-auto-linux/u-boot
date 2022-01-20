@@ -2,7 +2,7 @@
 /*
  * HSE ABI for secure boot in u-boot
  *
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  */
 
 #ifndef HSE_ABI_H
@@ -26,8 +26,7 @@
 #define HSE_SYS_IMG_SD       0x76000u
 #define HSE_AUTH_TAG_SD      0x82000u
 
-#define HSE_PIVT_BLK       0
-#define HSE_DIVT_BLK       8
+#define HSE_IVT_BLK        8
 #define HSE_SYS_IMG_BLK    944
 #define HSE_UBOOT_SIGN_BLK 1040
 #define HSE_UBOOT_BIN_BLK  1057
@@ -151,7 +150,8 @@ struct ivt {
 	u32 app_bsb_ext_flash_type;
 	u8 reserved3[168];
 	u32 gmac[4];
-	u8 reserved4[256]; // MBR
+	/* pad to block size - 512 bytes */
+	u8 reserved4[256];
 } __packed;
 
 /**

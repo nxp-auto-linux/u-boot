@@ -330,18 +330,10 @@ int hse_write_sys_img(struct hse_private *priv, bool secure)
 	if (secure)
 		priv->ivt.boot_cfg |= HSE_IVT_BOOTSEQ_BIT;
 
-	/* write primary ivt */
-	ret = hse_mmc_write(&priv->ivt, HSE_PIVT_BLK, 1);
+	/* write ivt */
+	ret = hse_mmc_write(&priv->ivt, HSE_IVT_BLK, 1);
 	if (ret) {
-		log_err("ERROR: primary ivt write failed!\n");
-		ret = CMD_RET_FAILURE;
-		goto ret_fail;
-	}
-
-	/* write duplicate ivt */
-	ret = hse_mmc_write(&priv->ivt, HSE_DIVT_BLK, 1);
-	if (ret) {
-		log_err("ERROR: duplicate ivt write failed!\n");
+		log_err("ERROR: ivt write failed!\n");
 		ret = CMD_RET_FAILURE;
 		goto ret_fail;
 	}
@@ -433,15 +425,11 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	priv = (struct hse_private *)hse_resmem;
 	memset((void *)priv, 0, sizeof(struct hse_private));
 
-	/* can only read from mmc in blocks of 512B */
-	ret = hse_mmc_read((void *)&priv->ivt, HSE_PIVT_BLK, 1);
+	/* read ivt block */
+	ret = hse_mmc_read((void *)&priv->ivt, HSE_IVT_BLK, 1);
 	if (ret) {
-		/* try reading duplicate ivt */
-		ret = hse_mmc_read((void *)&priv->ivt, HSE_DIVT_BLK, 1);
-		if (ret) {
-			log_err("ERROR: ivt read failed!\n");
-			goto ret_fail;
-		}
+		log_err("ERROR: ivt read failed!\n");
+		goto ret_fail;
 	}
 
 	/* check if sys_img already exists */
@@ -458,18 +446,11 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 			printf("\tSetting BOOTSEQ bit...\n");
 			priv->ivt.boot_cfg |= HSE_IVT_BOOTSEQ_BIT;
 
-			/* write primary ivt */
-			ret = hse_mmc_write(&priv->ivt, HSE_PIVT_BLK, 1);
+			/* write ivt */
+			ret = hse_mmc_write(&priv->ivt, HSE_IVT_BLK, 1);
 			if (ret) {
-				log_err("ERROR: primary ivt write failed!\n");
+				log_err("ERROR: ivt write failed!\n");
 				ret = CMD_RET_FAILURE;
-				goto ret_fail;
-			}
-
-			/* write duplicate ivt */
-			ret = hse_mmc_write(&priv->ivt, HSE_DIVT_BLK, 1);
-			if (ret) {
-				log_err("ERROR: duplicate ivt write failed!\n");
 				goto ret_fail;
 			}
 
@@ -550,15 +531,11 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 	priv = (struct hse_private *)hse_resmem;
 	memset((void *)priv, 0, sizeof(struct hse_private));
 
-	/* can only read from mmc in blocks of 512B */
-	ret = hse_mmc_read((void *)&priv->ivt, HSE_PIVT_BLK, 1);
+	/* read ivt */
+	ret = hse_mmc_read((void *)&priv->ivt, HSE_IVT_BLK, 1);
 	if (ret) {
-		/* try reading duplicate ivt */
-		ret = hse_mmc_read((void *)&priv->ivt, HSE_DIVT_BLK, 1);
-		if (ret) {
-			log_err("ERROR: ivt read failed!\n");
-			goto ret_fail;
-		}
+		log_err("ERROR: ivt read failed!\n");
+		goto ret_fail;
 	}
 
 	/* check if sys_img already exists */
