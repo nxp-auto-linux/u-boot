@@ -169,14 +169,6 @@ static struct program_image image_layout = {
 	},
 };
 
-static const uint32_t default_dcd_data[] = {
-	DCD_HEADER,
-	DCD_NOP_HEADER,
-	DCD_NOP_HEADER,
-	DCD_NOP_HEADER,
-	DCD_NOP_HEADER,
-};
-
 static const uint32_t *get_dcd_data(size_t *size)
 {
 	if (iconfig.dcd.data) {
@@ -184,8 +176,8 @@ static const uint32_t *get_dcd_data(size_t *size)
 		return iconfig.dcd.data;
 	}
 
-	*size = sizeof(default_dcd_data);
-	return &default_dcd_data[0];
+	*size = 0;
+	return NULL;
 }
 
 static struct ivt *get_ivt(struct program_image *image)
@@ -389,9 +381,11 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		fprintf(stderr, "DCD exceeds the maximum size\n");
 		exit(EXIT_FAILURE);
 	}
-	memcpy(dcd, &dcd_data[0], dcd_data_size);
-	*(uint16_t *)(dcd + DCD_HEADER_LENGTH_OFFSET) =
-						cpu_to_be16(dcd_data_size);
+	if (dcd_data) {
+		memcpy(dcd, &dcd_data[0], dcd_data_size);
+		*(uint16_t *)(dcd + DCD_HEADER_LENGTH_OFFSET) =
+		    cpu_to_be16(dcd_data_size);
+	}
 
 	ivt = get_ivt(&image_layout);
 	app_code = get_app_code(&image_layout);
@@ -400,7 +394,8 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->length = cpu_to_be16(sizeof(struct ivt));
 	ivt->version = IVT_VERSION;
 
-	ivt->dcd_pointer = image_layout.dcd.offset;
+	if (dcd_data)
+		ivt->dcd_pointer = image_layout.dcd.offset;
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
@@ -502,6 +497,27 @@ get_image_mbr(struct program_image *program_image)
 	return NULL;
 }
 
+static struct image_comp *
+get_image_dcd(struct program_image *program_image)
+{
+	if (!iconfig.dcd.size)
+		return NULL;
+
+	return &program_image->dcd;
+}
+
+static void set_dcd_size(struct program_image *program_image)
+{
+	if (program_image->dcd.size > DCD_MAXIMUM_SIZE) {
+		fprintf(stderr,
+			"DCD area exceeds the maximum allowed size (0x%x\n)",
+			DCD_MAXIMUM_SIZE);
+		exit(EXIT_FAILURE);
+	}
+
+	program_image->dcd.size = iconfig.dcd.size;
+}
+
 static int s32g2xx_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
@@ -510,12 +526,14 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		get_image_mbr(program_image),
 		get_image_qspi_params(program_image),
 		&program_image->ivt,
-		&program_image->dcd,
+		get_image_dcd(program_image),
 		get_image_hse_params(program_image),
 		&program_image->app_code,
 		&program_image->code,
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
+
+	set_dcd_size(program_image);
 
 	/* Compute auto-offsets */
 	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
@@ -610,9 +628,10 @@ static void s32gen1_print_header(const void *data)
 			(unsigned int)S32GEN1_QSPI_PARAMS_OFFSET,
 			(unsigned int)S32GEN1_QSPI_PARAMS_SIZE);
 
-	fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)ivt->dcd_pointer,
-		(unsigned int)be16_to_cpu(*dcd_len));
+	if (ivt->dcd_pointer)
+		fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+			(unsigned int)ivt->dcd_pointer,
+			(unsigned int)be16_to_cpu(*dcd_len));
 
 	if (ivt->hse_h_firmware_pointer)
 		fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
