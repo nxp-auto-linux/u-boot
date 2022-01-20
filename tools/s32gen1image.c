@@ -13,6 +13,9 @@
 
 #define UNSPECIFIED	-1
 
+#define MBR_OFFSET			0x0
+#define MBR_SIZE			0x200
+
 #define S32GEN1_QSPI_IVT_OFFSET		0x0
 #define S32GEN1_SD_IVT_OFFSET		0x1000
 #define IVT_VERSION			(0x60)
@@ -133,6 +136,10 @@ static const char * const dcd_cmds[] = {
 static struct image_config iconfig;
 
 static struct program_image image_layout = {
+	.mbr_reserved = {
+		.offset = MBR_OFFSET,
+		.size = MBR_SIZE,
+	},
 	.ivt = {
 		.size = sizeof(struct ivt),
 	},

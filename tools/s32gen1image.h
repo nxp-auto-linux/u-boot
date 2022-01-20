@@ -106,6 +106,7 @@ struct image_comp {
 };
 
 struct program_image {
+	struct image_comp mbr_reserved;
 	struct image_comp ivt;
 	struct image_comp qspi_params;
 	struct image_comp dcd;
