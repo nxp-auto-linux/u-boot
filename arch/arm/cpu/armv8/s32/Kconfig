@@ -70,6 +70,10 @@ config TARGET_S32G3XXAEVB
 	bool "Support for S32G3 EVB boards"
 	select NXP_S32G3XX
 
+config TARGET_S32G399ARDB3
+	bool "Support s32g399ardb3"
+	select NXP_S32G3XX
+
 endchoice
 
 config S32_CMU

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 /*
@@ -20,6 +20,9 @@
 #define CONFIG_MXC_USB_PORTSC		PORT_PTS_ULPI
 #endif
 
-#endif /* CONFIG_TARGET_S32G3XXAEVB */
+#elif defined(CONFIG_TARGET_S32G399ARDB3)
+#define FDT_FILE			'fsl-s32g399a-rdb3.dtb'
+
+#endif
 
 #endif
