@@ -164,7 +164,7 @@ static struct program_image image_layout = {
 	},
 	.code = {
 		.offset = S32_AUTO_OFFSET,
-		.alignment = 0x200U,
+		.alignment = 0x8U,
 		.size = 0,
 	},
 };
