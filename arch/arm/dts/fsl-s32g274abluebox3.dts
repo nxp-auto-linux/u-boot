@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  *
  */
 
@@ -41,6 +41,36 @@
 
 &pcie1 {
 	status = "disabled";
+};
+
+&gpio0 {
+	PA12 {
+		gpio-hog;
+		gpios = <12 0>;
+		output-high;
+		line-name = "RST_EPHY3";
+	};
+
+	PB02 {
+		gpio-hog;
+		gpios = <18 0>;
+		output-high;
+		line-name = "RST_EPHY4";
+	};
+
+	PC00 {
+		gpio-hog;
+		gpios = <32 0>;
+		output-high;
+		line-name = "MAIN_PWR_KILL";
+	};
+
+	PC05 {
+		gpio-hog;
+		gpios = <37 0>;
+		output-high;
+		line-name = "SW3_RST";
+	};
 };
 
 &i2c0 {
