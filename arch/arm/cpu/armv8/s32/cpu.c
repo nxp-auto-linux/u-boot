@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 #include <common.h>
@@ -27,7 +27,6 @@
 #include <misc.h>
 #include <linux/sizes.h>
 #include <power/pmic.h>
-#include <power/vr5510.h>
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
@@ -288,229 +287,6 @@ static inline int clear_after_bss(void)
 }
 #endif
 
-#if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-static int watchdog_refresh(struct udevice *pmic)
-{
-	uint seed, wd_cfg;
-	int ret;
-
-	seed = pmic_reg_read(pmic, VR5510_FS_WD_SEED);
-
-	/* Challenger watchdog refresh */
-	seed = ((~(seed * 4 + 2) & 0xFFFFFFFFU) / 4) & 0xFFFFU;
-
-	ret = pmic_reg_write(pmic, VR5510_FS_WD_ANSWER, seed);
-	if (ret) {
-		pr_err("Failed to write VR5510 WD answer\n");
-		return ret;
-	}
-
-	wd_cfg = pmic_reg_read(pmic, VR5510_FS_I_WD_CFG);
-	if (VR5510_ERR_CNT(wd_cfg)) {
-		pr_err("Failed to refresh watchdog\n");
-		return -EIO;
-	}
-
-	return 0;
-}
-
-static int disable_vr5510_wdg(struct udevice *pmic)
-{
-	uint wd_window, safe_input, fs_states, diag;
-	int ret;
-
-	ret = pmic_get(VR5510_FSU_NAME, &pmic);
-	if (ret)
-		return ret;
-
-	fs_states = pmic_reg_read(pmic, VR5510_FS_STATES);
-	if (VR5510_STATE(fs_states) != INIT_FS) {
-		pr_warn("VR5510 is not in INIT_FS state\n");
-		return 0;
-	}
-
-	/* Disable watchdog */
-	wd_window = pmic_reg_read(pmic, VR5510_FS_WD_WINDOW);
-	wd_window &= ~VR5510_WD_WINDOW_MASK;
-	ret = pmic_reg_write(pmic, VR5510_FS_WD_WINDOW, wd_window);
-	if (ret) {
-		pr_err("Failed write watchdog window\n");
-		return ret;
-	}
-
-	wd_window = ~wd_window & 0xFFFFU;
-	ret = pmic_reg_write(pmic, VR5510_FS_NOT_WD_WINDOW, wd_window);
-	if (ret) {
-		pr_err("Failed write watchdog window\n");
-		return ret;
-	}
-
-	diag = pmic_reg_read(pmic, VR5510_FS_DIAG_SAFETY);
-	if (!VR5510_ABIST1_OK(diag)) {
-		pr_err("VR5510 is not in ABIST1 state\n");
-		return ret;
-	}
-
-	/* Disable FCCU monitoring */
-	safe_input = pmic_reg_read(pmic, VR5510_FS_I_SAFE_INPUTS);
-	safe_input &= ~VR5510_FCCU_CFG_MASK;
-	ret = pmic_reg_write(pmic, VR5510_FS_I_SAFE_INPUTS, safe_input);
-	if (ret) {
-		pr_err("Failed to disable FCCU\n");
-		return ret;
-	}
-
-	safe_input = ~safe_input & 0xFFFFU;
-	ret = pmic_reg_write(pmic, VR5510_FS_I_NOT_SAFE_INPUTS, safe_input);
-	if (ret) {
-		pr_err("Failed to disable FCCU\n");
-		return ret;
-	}
-
-	return watchdog_refresh(pmic);
-}
-
-#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-static int vr5510_reset_flt_err_cnt(struct udevice *pmic)
-{
-	uint fs_i_fssm, flt_err_cnt, flt_err_cnt_lmt;
-	int ret;
-
-	fs_i_fssm = pmic_reg_read(pmic, VR5510_FS_I_FSSM);
-	flt_err_cnt_lmt = VR5510_ERR_CNT_LMT(fs_i_fssm);
-	flt_err_cnt = VR5510_ERR_CNT(fs_i_fssm);
-
-	switch (flt_err_cnt_lmt) {
-	case ERR_CNT_LIMIT_00:
-		flt_err_cnt_lmt = 2;
-		break;
-	case ERR_CNT_LIMIT_10:
-		flt_err_cnt_lmt = 8;
-		break;
-	case ERR_CNT_LIMIT_11:
-		flt_err_cnt_lmt = 12;
-		break;
-	case ERR_CNT_LIMIT_01:
-	default:
-		flt_err_cnt_lmt = 6;
-		break;
-	}
-
-	/* Reset FLT_ERR_CNT only for its intermediate value. */
-	if (!flt_err_cnt || flt_err_cnt < (flt_err_cnt_lmt / 2) - 1)
-		return 0;
-
-	pr_warn("VR5510 FLT_ERR_CNT counter at %d, resetting to 0\n",
-		flt_err_cnt);
-	while (flt_err_cnt) {
-		ret = watchdog_refresh(pmic);
-		if (ret)
-			return ret;
-
-		fs_i_fssm = pmic_reg_read(pmic, VR5510_FS_I_FSSM);
-		flt_err_cnt = VR5510_ERR_CNT(fs_i_fssm);
-	}
-
-	return 0;
-}
-#endif /* CONFIG_TARGET_S32G274ABLUEBOX3 */
-
-static int is_svs_needed(bool *status)
-{
-	struct udevice *dev;
-	int ret;
-	u32 val;
-
-	ret = uclass_get_device_by_driver(UCLASS_MISC,
-					  DM_GET_DRIVER(s32gen1_ocotp),
-					  &dev);
-	if (ret) {
-		pr_err("Failed to get 's32gen1_ocotp' driver\n");
-		return ret;
-	}
-
-	ret = misc_read(dev, S32GEN1_OCOTP_DIE_PROCESS_ADDR, &val,
-			S32GEN1_OCOTP_WORD_SIZE);
-
-	/* Read less than 4 bytes */
-	if (ret != S32GEN1_OCOTP_WORD_SIZE && ret > 0)
-		return -EIO;
-
-	if (ret < 0)
-		return ret;
-
-	*status = !!(val & S32GEN1_OCOTP_DIE_PROCESS_MASK);
-
-	return 0;
-}
-
-static int apply_svs(struct udevice *pmic)
-{
-	int ret;
-	uint svs, fs_states;
-	bool enable_svs;
-
-	ret = is_svs_needed(&enable_svs);
-	if (ret)
-		return ret;
-
-	if (!enable_svs)
-		return 0;
-
-	fs_states = pmic_reg_read(pmic, VR5510_FS_STATES);
-	if (VR5510_STATE(fs_states) != INIT_FS) {
-		pr_err("Cannot apply SVS in state %u\n",
-			VR5510_STATE(fs_states));
-		return -1;
-	}
-
-	/**
-	 * Targeted voltage according to S32G & S32R DS : 0.76875V ->
-	 * 5 SVS steps
-	 */
-	svs = 5 << VR5510_FS_I_SVS_SVS_OFFSET;
-	ret = pmic_reg_write(pmic, VR5510_FS_I_SVS, svs);
-	if (ret) {
-		pr_err("Failed to write SVS\n");
-		return ret;
-	}
-
-	svs = ~svs & 0xFFFFU;
-	ret = pmic_reg_write(pmic, VR5510_FS_I_NOT_SVS, svs);
-	if (ret) {
-		pr_err("Failed to write NOT_SVS\n");
-		return ret;
-	}
-
-	return 0;
-}
-
-static int setup_vr5510(void)
-{
-	struct udevice *pmic;
-	int ret;
-
-	ret = pmic_get(VR5510_FSU_NAME, &pmic);
-	if (ret)
-		return ret;
-
-#if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
-	ret = vr5510_reset_flt_err_cnt(pmic);
-	if (ret)
-		return ret;
-#endif
-	ret = apply_svs(pmic);
-	if (ret)
-		return ret;
-
-	ret = disable_vr5510_wdg(pmic);
-	if (ret)
-		return ret;
-
-	return ret;
-}
-#endif
-
 int arch_cpu_init(void)
 {
 	int ret = 0;
@@ -598,12 +374,6 @@ void enable_caches(void)
 int arch_early_init_r(void)
 {
 	int rv = 0;
-
-#if defined(CONFIG_DM_PMIC_VR5510) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	rv = setup_vr5510();
-	if (rv)
-		return rv;
-#endif
 
 #if !defined(CONFIG_S32_ATF_BOOT_FLOW)
 	asm volatile("dsb sy");
