@@ -36,6 +36,12 @@ static const struct {
 		.lower = 2275 - SARADC0_TOLERANCE,
 		.upper = 2275 + SARADC0_TOLERANCE,
 	},
+	{ /* 1.2v */
+		.rev = "E",
+		.desc = "RDB3",
+		.lower = 2730 - SARADC0_TOLERANCE,
+		.upper = 2730 + SARADC0_TOLERANCE,
+	},
 };
 
 static int find_rdb_rev(uint32_t adc_value)
@@ -94,6 +100,9 @@ int board_late_init(void)
 			break;
 		case 'D':
 			env_set("pfe1_phy_addr", "8");
+			break;
+		case 'E':
+			env_set("pfe1_phy_addr", "1");
 			break;
 		default:
 			env_set("pfe1_phy_addr", NULL);

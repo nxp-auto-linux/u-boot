@@ -73,6 +73,8 @@ config TARGET_S32G3XXAEVB
 config TARGET_S32G399ARDB3
 	bool "Support s32g399ardb3"
 	select NXP_S32G3XX
+	select ADC
+	select S32_SARADC
 
 endchoice
 
