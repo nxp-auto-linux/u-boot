@@ -367,15 +367,12 @@ static int check_sgmii_cfg(int gmac_no)
 #if defined(CONFIG_TARGET_S32G2XXAEVB) || \
 	defined(CONFIG_TARGET_S32G3XXAEVB) || \
 	defined(CONFIG_TARGET_S32G274ARDB) || \
-	defined(CONFIG_TARGET_S32G274ASIM) || \
-	defined(CONFIG_TARGET_S32G274ASIM) || \
 	defined(CONFIG_TARGET_S32G399AEMU)
 
 	desired_mode1 = SGMII_XPCS_1G_OP;
 	desired_mode2 = SGMII_XPCS_1G_OP;
 
 #elif defined(CONFIG_TARGET_S32R45EVB) || \
-	defined(CONFIG_TARGET_S32R45SIM) || \
 	defined(CONFIG_TARGET_S32R45EMU)
 
 	desired_mode1 = SGMII_XPCS_1G_OP;

@@ -9,7 +9,7 @@ config SYS_FSL_DDRSS
 	bool "DDR Subsystem support"
 	help
 	  Select DDR Subsystem support.
-	default y if (S32_GEN1 && !TARGET_TYPE_S32GEN1_SIMULATOR)
+	default y if S32_GEN1
 
 config SYS_FSL_MMDC
 	bool

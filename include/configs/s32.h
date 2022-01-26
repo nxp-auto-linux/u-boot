@@ -60,11 +60,7 @@
 #define CONFIG_SYS_BOOTM_LEN    (64 << 20)
 
 /* Flat device tree definitions */
-#  ifdef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
-#      define FDT_ADDR		0x82000000
-#   else
-#      define FDT_ADDR		0x83E00000
-#endif
+#define FDT_ADDR		0x83E00000
 
 /*Kernel image load address */
 #  define LOADADDR		0x80000000
@@ -415,8 +411,7 @@
 
 #undef CONFIG_BOOTCOMMAND
 
-#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR) || \
-	defined(CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR)
+#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
 #  define CONFIG_BOOTCOMMAND \
 		"${boot_mtd} ${loadaddr} - ${fdt_addr}"
 #elif defined(CONFIG_QSPI_BOOT)

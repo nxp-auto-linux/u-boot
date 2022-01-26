@@ -1,6 +1,6 @@
 #
 # (C) Copyright 2013-2015 Freescale Semiconductor, Inc.
-# Copyright 2018-2021 NXP
+# Copyright 2018-2022 NXP
 #
 # SPDX-License-Identifier:	GPL-2.0+
 #
@@ -20,13 +20,11 @@ obj-$(CONFIG_NETDEVICES) += eth.o
 obj-$(CONFIG_TARGET_S32G2XXAEVB) += s32gxxxaevb.o
 obj-$(CONFIG_TARGET_S32G3XXAEVB) += s32gxxxaevb.o
 obj-$(CONFIG_TARGET_S32G274ARDB) += s32g274ardb.o
-obj-$(CONFIG_TARGET_S32G274ASIM) += s32g274asim.o
 obj-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.o
 obj-$(CONFIG_TARGET_S32G274AEMU) += s32g_emu.o
 obj-$(CONFIG_TARGET_S32G399AEMU) += s32g_emu.o
 
 obj-$(CONFIG_TARGET_S32R45EVB) += s32r45evb.o
-obj-$(CONFIG_TARGET_S32R45SIM) += s32r45sim.o
 obj-$(CONFIG_TARGET_S32R45EMU) += s32r45emu.o
 
 ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR

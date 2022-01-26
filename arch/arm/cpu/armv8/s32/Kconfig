@@ -36,10 +36,6 @@ config TARGET_S32R45EVB
 	bool "Support s32r45evb"
 	select NXP_S32R45
 
-config TARGET_S32R45SIM
-	bool "Support s32r45 VDK"
-	select NXP_S32R45
-
 config TARGET_S32R45EMU
 	bool "Support s32r45 ZeBu"
 	select NXP_S32R45
@@ -61,10 +57,6 @@ config TARGET_S32G274ABLUEBOX3
 	help
 	  Enable Microsys S32G SoM Bluebox 3 target.
 	  S32G works as PCIE EP.
-
-config TARGET_S32G274ASIM
-	bool "Support s32g274a VDK"
-	select NXP_S32G2XX
 
 config TARGET_S32G274AEMU
 	bool "Support s32g274a ZeBu"

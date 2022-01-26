@@ -60,8 +60,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 }
 #endif /* defined(CONFIG_OF_FDT) && defined(CONFIG_OF_BOARD_SETUP) */
 
-#if defined(CONFIG_TARGET_S32G274ASIM) || \
-	defined(CONFIG_TARGET_S32G274AEMU) || \
+#if defined(CONFIG_TARGET_S32G274AEMU) || \
 	defined(CONFIG_TARGET_S32G399AEMU)
 void setup_iomux_uart1_pb09_pb10(void)
 {

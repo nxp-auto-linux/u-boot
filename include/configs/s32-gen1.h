@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  *
  */
 
@@ -105,11 +105,7 @@
 
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
-#ifdef TARGET_TYPE_S32GEN1_SIMULATOR
-#define S32_SRAM_BASE		0x38000000
-#else
 #define S32_SRAM_BASE		0x34000000
-#endif
 
 #ifdef CONFIG_NXP_S32G3XX
 #define S32_SRAM_SIZE		(20 * SZ_1M)

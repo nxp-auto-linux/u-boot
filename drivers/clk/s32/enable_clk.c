@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  */
 #include <linux/bitops.h>
 #include <asm/arch/mc_cgm_regs.h>
@@ -132,7 +132,6 @@ static void enable_part_cofb(u32 partition_n, u32 block,
 	if (!(MC_ME_PRTN_N_PCS & part_status))
 		enable_partition(partition_n, priv);
 
-#ifndef CONFIG_TARGET_TYPE_S32GEN1_SIMULATOR
 	writel(readl(MC_ME_PRTN_N_COFB0_CLKEN(mc_me, partition_n)) | block_mask,
 	       MC_ME_PRTN_N_COFB0_CLKEN(mc_me, partition_n));
 
@@ -145,7 +144,6 @@ static void enable_part_cofb(u32 partition_n, u32 block,
 		while (!(readl(MC_ME_PRTN_N_COFB0_STAT(mc_me, partition_n)) &
 			 block_mask))
 			;
-#endif
 }
 
 static int enable_clock(struct s32gen1_clk_obj *module,

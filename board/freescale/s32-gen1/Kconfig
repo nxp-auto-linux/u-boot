@@ -8,16 +8,6 @@ config TARGET_TYPE_S32GEN1_EMULATOR
 
 endif
 
-if TARGET_S32G274ASIM || TARGET_S32R45SIM
-
-config TARGET_TYPE_S32GEN1_SIMULATOR
-	bool
-	default y
-	help
-	  Target Type S32 Gen1 Simulator
-
-endif
-
 config S32GEN1_SET_NEAREST_FREQ
 	bool "Set the frequency to the nearest available"
 	default n
