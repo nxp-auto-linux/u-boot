@@ -29,7 +29,7 @@ quiet_cmd_cpp_cfg = CFGS    $@
 
 S32GEN1_CONFIG_FILE = $(CONFIG_S32GEN1_CONFIG_FILE:"%"=%)
 
-ifdef CONFIG_FLASH_BOOT
+ifdef CONFIG_QSPI_BOOT
 $(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32gen1_qspiparam FORCE
 	$(Q)$(objtree)/arch/arm/mach-s32/s32gen1_qspiparam \
 		-m $(QSPI_MEMORY) \
