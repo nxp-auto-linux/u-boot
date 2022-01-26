@@ -7,7 +7,6 @@
 #include <common.h>
 #include <dm/uclass.h>
 #include <adc.h>
-#include <s32g274a_common.h>
 
 #define SARADC0_DEV	"saradc0"
 #define SARADC0_CH5	5

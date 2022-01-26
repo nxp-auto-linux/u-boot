@@ -9,13 +9,7 @@
 #include <config.h>
 #include <asm/types.h>
 
-void setup_iomux_i2c(void);
-void setup_iomux_sdhc(void);
 void setup_iomux_uart(void);
-
-#ifdef CONFIG_FSL_DSPI
-	void setup_iomux_dspi(void);
-#endif
 
 void setup_iomux_uart0_pc09_pc10(void);
 
@@ -28,10 +22,6 @@ void setup_iomux_uart1_pb09_pb10(void);
 #if CONFIG_IS_ENABLED(NETDEVICES)
 void ft_enet_fixup(void *fdt);
 u32 s32ccgmac_cfg_get_mode(int cardnum);
-#endif
-
-#if defined(CONFIG_SAF1508BET_USB_PHY)
-void setup_iomux_usb(void);
 #endif
 
 #endif /* __S32_GEN1_BOARD_COMMON_H__ */

@@ -5,7 +5,6 @@
 #include <asm/arch/soc.h>
 #include <board_common.h>
 #include <common.h>
-#include <s32g274a_common.h>
 #include <miiphy.h>
 #include <phy.h>
 #include <i2c.h>

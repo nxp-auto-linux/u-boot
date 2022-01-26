@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2021 NXP
+ * Copyright 2018-2022 NXP
  */
 #include <asm/arch/soc.h>
 #include <board_common.h>
 #include <common.h>
 #include <dm/uclass.h>
-#include <s32g274a_common.h>
 
 #define SJA1105_NAME	"ethernet-switch@0"
 
