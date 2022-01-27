@@ -553,8 +553,6 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		&program_image->ivt,
 		get_image_dcd(program_image),
 		get_image_hse_params(program_image),
-		&program_image->app_code,
-		&program_image->code,
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
@@ -563,9 +561,15 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	/* Compute auto-offsets */
 	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
 
-	qsort(&parts[0], ARRAY_SIZE(parts), sizeof(parts[0]), image_parts_comp);
+	/**
+	 * Place APP header at the end of the image header as the APP code
+	 * will be glued to it.
+	 */
+	place_after(parts[last_comp], &program_image->app_code);
+	place_after(&program_image->app_code, &program_image->code);
 
-	*header_size = parts[last_comp]->offset + parts[last_comp]->size;
+	*header_size = program_image->app_code.offset +
+	    program_image->app_code.size;
 
 	image_layout = calloc(*header_size, sizeof(*image_layout));
 	if (!image_layout) {
