@@ -34,6 +34,9 @@
 #define DCD_MAXIMUM_SIZE		(8192)
 #define DCD_HEADER_LENGTH_OFFSET	(1)
 
+#define BOOTROM_QSPI_ALIGNMENT		(0x8)
+#define BOOTROM_SD_ALIGNMENT		(0x200)
+
 #define DCD_COMMAND_HEADER(tag, len, params) ((tag) | \
 					      (cpu_to_be16((len)) << 8) | \
 					      (params) << 24)
@@ -148,17 +151,14 @@ static struct program_image image_layout = {
 	},
 	.dcd = {
 		.offset = S32_AUTO_OFFSET,
-		.alignment = 0x200U,
 		.size = DCD_MAXIMUM_SIZE,
 	},
 	.hse_reserved = {
 		.offset = S32_AUTO_OFFSET,
-		.alignment = 0x2000U,
 		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
 	},
 	.app_code = {
 		.offset = S32_AUTO_OFFSET,
-		.alignment = 0x200U,
 		.size = sizeof(struct application_boot_code),
 	},
 	.code = {
@@ -543,6 +543,20 @@ static void set_dcd_size(struct program_image *program_image)
 	program_image->dcd.size = iconfig.dcd.size;
 }
 
+static void set_headers_alignment(struct program_image *program_image)
+{
+	size_t alignment;
+
+	if (iconfig.flash_boot)
+		alignment = BOOTROM_QSPI_ALIGNMENT;
+	else
+		alignment = BOOTROM_SD_ALIGNMENT;
+
+	program_image->dcd.alignment = alignment;
+	program_image->hse_reserved.alignment = alignment;
+	program_image->app_code.alignment = alignment;
+}
+
 static int s32g2xx_build_layout(struct program_image *program_image,
 				size_t *header_size, void **image)
 {
@@ -557,6 +571,7 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
 	set_dcd_size(program_image);
+	set_headers_alignment(program_image);
 
 	/* Compute auto-offsets */
 	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
