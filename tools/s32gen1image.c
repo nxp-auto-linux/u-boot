@@ -5,7 +5,6 @@
 #include <image.h>
 #include <imagetool.h>
 #include <inttypes.h>
-#include <linux/kernel.h>
 #include <s32gen1image.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -251,54 +250,80 @@ static int image_parts_comp(const void *p1, const void *p2)
 	return 0;
 }
 
-static void check_overlap(struct image_comp *comp1,
+static bool is_in_overlap(struct image_comp *comp1,
 			  struct image_comp *comp2)
 {
 	size_t end1 = comp1->offset + comp1->size;
 	size_t end2 = comp2->offset + comp2->size;
 
-	if (end1 > comp2->offset && end2 > comp1->offset) {
-		fprintf(stderr,
-			"Detected overlap between 0x%zx@0x%zx and 0x%zx@0x%zx\n",
-			comp1->size, comp1->offset,
-			comp2->size, comp2->offset);
-		exit(EXIT_FAILURE);
-	}
+	if (end1 > comp2->offset && end2 > comp1->offset)
+		return true;
+
+	return false;
+}
+
+static void place_after(struct image_comp *first, struct image_comp *second)
+{
+	second->offset = first->offset + first->size;
+
+	/* Apply alignment constraints */
+	if (second->alignment != 0U)
+		second->offset = ROUND(second->offset, second->alignment);
 }
 
 static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 {
 	size_t i;
-	size_t start_index = 0U, previous;
+	size_t start_index = 0U, aindex;
+
+	qsort(&parts[0], n_parts, sizeof(parts[0]), image_parts_comp);
 
 	/* Skip empty entries */
-	while (!parts[start_index])
+	while (start_index < n_parts && !*parts) {
+		start_index++;
+		parts++;
+	}
+	n_parts -= start_index;
+	start_index = 0;
+
+	/* First image with auto offset */
+	while ((start_index < n_parts) &&
+	       (parts[start_index]->offset != S32_AUTO_OFFSET))
 		start_index++;
 
-	previous = start_index;
-	for (i = start_index; i < n_parts; i++) {
-		if (!parts[i])
+	for (aindex = start_index; aindex < n_parts; aindex++) {
+		if (aindex == 0) {
+			parts[aindex]->offset = 0U;
 			continue;
+		}
 
-		if (parts[i]->offset == S32_AUTO_OFFSET) {
-			if (i == start_index) {
-				parts[i]->offset = 0U;
+		/* Look for an empty spot between existing allocations */
+		for (i = 1; i < aindex; i++) {
+
+			place_after(parts[i - 1], parts[aindex]);
+
+			/* Does it fit between i - 1 and i ? */
+			if (is_in_overlap(parts[aindex], parts[i])) {
+				parts[aindex]->offset = S32_AUTO_OFFSET;
 				continue;
 			}
 
-			parts[i]->offset = parts[previous]->offset +
-			    parts[previous]->size;
+			if (is_in_overlap(parts[aindex], parts[i - 1])) {
+				parts[aindex]->offset = S32_AUTO_OFFSET;
+				continue;
+			}
+
+			break;
 		}
 
-		/* Apply alignment constraints */
-		if (parts[i]->alignment != 0U)
-			parts[i]->offset = ROUND(parts[i]->offset,
-						 parts[i]->alignment);
+		if (parts[aindex]->offset != S32_AUTO_OFFSET) {
+			/* Move freshly allocated aindex */
+			qsort(&parts[0], aindex + 1, sizeof(parts[0]),
+			      image_parts_comp);
+			continue;
+		}
 
-		if (i != start_index)
-			check_overlap(parts[previous], parts[i]);
-
-		previous = i;
+		place_after(parts[aindex - 1], parts[aindex]);
 	}
 }
 
