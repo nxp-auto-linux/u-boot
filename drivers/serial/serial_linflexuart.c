@@ -60,7 +60,7 @@ static void _linflex_serial_setbrg(struct linflex_fsl *base, int baudrate)
 		baudrate = CONFIG_BAUDRATE;
 
 	divisr = clk;
-	dividr = (u32)(gd->baudrate * linflex_ldiv_multiplier(base));
+	dividr = (u32)(baudrate * linflex_ldiv_multiplier(base));
 
 	ibr = (u32)(divisr / dividr);
 	fbr = (u32)((divisr % dividr) * 16 / dividr) & 0xF;
@@ -117,7 +117,7 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 		     &base->uartcr);
 
 	/* provide data bits, parity, stop bit, etc */
-	serial_setbrg();
+	_linflex_serial_setbrg(base, CONFIG_BAUDRATE);
 
 	ctrl = __raw_readl(&base->lincr1);
 	ctrl &= ~LINCR1_INIT;
@@ -165,13 +165,6 @@ static int linflex_serial_pending(struct udevice *dev, bool input)
 		return uartsr & UARTSR_DTF ? 0 : 1;
 }
 
-static void linflex_serial_init_internal(struct linflex_fsl *lfuart)
-{
-	_linflex_serial_init(lfuart);
-	_linflex_serial_setbrg(lfuart, CONFIG_BAUDRATE);
-	return;
-}
-
 static int linflex_serial_probe(struct udevice *dev)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
@@ -180,7 +173,7 @@ static int linflex_serial_probe(struct udevice *dev)
 	if (priv->lfuart == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
-	linflex_serial_init_internal(priv->lfuart);
+	_linflex_serial_init(priv->lfuart);
 
 	return 0;
 }
@@ -215,7 +208,7 @@ static inline void _debug_uart_init(void)
 {
 	struct linflex_fsl *base = (struct linflex_fsl *)CONFIG_DEBUG_UART_BASE;
 
-	linflex_serial_init_internal(base);
+	_linflex_serial_init(base);
 }
 
 static inline void _debug_uart_putc(int ch)
