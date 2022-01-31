@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2021 NXP
+ * Copyright 2018-2022 NXP
  */
 
-#include "asm/arch-s32/siul-s32r45.h"
 #include "board_common.h"
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 #include "s32gen1_gmac_utils.h"
@@ -16,18 +15,6 @@
 #endif
 
 #define S32R_PHY_ADDR_1 0x01
-
-void setup_iomux_uart(void)
-{
-#if (CONFIG_FSL_LINFLEX_MODULE == 0)
-
-	/* Muxing for linflex0 */
-	setup_iomux_uart0_pc09_pc10();
-
-#else
-#error "Unsupported UART pinmuxing configuration"
-#endif
-}
 
 /**
  * Due to the hardware design of the reset circuit on S32R45,

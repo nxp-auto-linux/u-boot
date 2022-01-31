@@ -21,11 +21,8 @@ obj-$(CONFIG_TARGET_S32G2XXAEVB) += s32gxxxaevb.o
 obj-$(CONFIG_TARGET_S32G3XXAEVB) += s32gxxxaevb.o
 obj-$(CONFIG_TARGET_S32G274ARDB) += s32g274ardb.o
 obj-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.o
-obj-$(CONFIG_TARGET_S32G274AEMU) += s32g_emu.o
-obj-$(CONFIG_TARGET_S32G399AEMU) += s32g_emu.o
 
 obj-$(CONFIG_TARGET_S32R45EVB) += s32r45evb.o
-obj-$(CONFIG_TARGET_S32R45EMU) += s32r45emu.o
 
 ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o

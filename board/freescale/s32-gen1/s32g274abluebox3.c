@@ -13,17 +13,6 @@
 #define BLUEBOX3_S32G_PHY_ADDR_5	0x05
 #define BLUEBOX3_S32G_PHY_ADDR_6	0x06
 
-void setup_iomux_uart(void)
-{
-#if (CONFIG_FSL_LINFLEX_MODULE == 0)
-
-	/* Muxing for linflex0 */
-	setup_iomux_uart0_pc09_pc10();
-#else
-#error "Unsupported UART pinmuxing configuration"
-#endif
-}
-
 int last_stage_init(void)
 {
 	struct udevice *eth;
