@@ -71,7 +71,7 @@ static void _linflex_serial_setbrg(struct linflex_fsl *base, int baudrate)
 
 static int _linflex_serial_getc(struct linflex_fsl *base)
 {
-	while (__raw_readl(&base->uartsr) & UARTSR_RFE == UARTSR_RFE)
+	while ((__raw_readl(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
 		;
 
 	return __raw_readb(&base->bdrm);
@@ -84,6 +84,8 @@ static int _linflex_serial_putc(struct linflex_fsl *base, const char c)
 		;
 
 	__raw_writeb(c, &base->bdrl);
+
+	return 0;
 }
 
 /*
@@ -168,11 +170,13 @@ static int linflex_serial_pending(struct udevice *dev, bool input)
 static int linflex_serial_probe(struct udevice *dev)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
+	fdt_addr_t base_addr;
 
-	priv->lfuart = (struct linflex_fsl *)devfdt_get_addr(dev);
-	if (priv->lfuart == FDT_ADDR_T_NONE)
+	base_addr = devfdt_get_addr(dev);
+	if (base_addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
+	priv->lfuart = (struct linflex_fsl *)base_addr;
 	_linflex_serial_init(priv->lfuart);
 
 	return 0;
