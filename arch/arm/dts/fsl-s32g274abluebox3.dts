@@ -268,6 +268,12 @@
 				    SD0_DQS_IMCR PD10_SD0_DQS_IN
 				    >;
 		};
+
+		pinctrl0_uart0: pinctrl0_uart0 {
+			fsl,pins = <PC09_MSCR_S32G PC09_LIN0_TX_CFG
+				    PC10_MSCR_S32G PC10_LIN0_RX_CFG
+				    LIN0_RX_IMCR PC10_LIN0_RX_IN>;
+		};
 	};
 };
 
@@ -337,4 +343,10 @@
 		spi-rx-bus-width = <8>;
 		reg = <0>;
 	};
+};
+
+&uart0 {
+	pinctrl-0 = <&pinctrl0_uart0>;
+	pinctrl-names = "default";
+	status = "okay";
 };

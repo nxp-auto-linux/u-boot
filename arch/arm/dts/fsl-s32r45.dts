@@ -476,6 +476,12 @@
 				    SD0_D7_IMCR PD07_SD0_D7_IN
 				    >;
 		};
+
+		pinctrl0_uart0: pinctrl0_uart0 {
+			fsl,pins = <PC09_MSCR_S32R45 PC09_LIN0_TX_CFG
+				    PC10_MSCR_S32R45 PC10_LIN0_RX_CFG
+				    LIN0_RX_IMCR PC10_LIN0_RX_IN>;
+		};
 	};
 };
 
@@ -545,4 +551,10 @@
 
 &ocotp {
 	compatible = "fsl,s32r45-ocotp";
+};
+
+&uart0 {
+	pinctrl-0 = <&pinctrl0_uart0>;
+	pinctrl-names = "default";
+	status = "okay";
 };

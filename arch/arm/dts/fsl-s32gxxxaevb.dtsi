@@ -276,6 +276,12 @@
 				    PE01_MSCR_S32G PE01_USB_DATA3_CFG
 				    >;
 		};
+
+		pinctrl0_uart0: pinctrl0_uart0 {
+			fsl,pins = <PC09_MSCR_S32G PC09_LIN0_TX_CFG
+				    PC10_MSCR_S32G PC10_LIN0_RX_CFG
+				    LIN0_RX_IMCR PC10_LIN0_RX_IN>;
+		};
 	};
 };
 
@@ -355,4 +361,10 @@
 &qspi {
 	pinctrl-0 = <&pinctrl0_qspi>;
 	pinctrl-names = "default";
+};
+
+&uart0 {
+	pinctrl-0 = <&pinctrl0_uart0>;
+	pinctrl-names = "default";
+	status = "okay";
 };
