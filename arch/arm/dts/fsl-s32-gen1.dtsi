@@ -33,6 +33,11 @@
 		pcie0 = &pcie0;
 		mmc0 = &usdhc0;
 		clks = &clks;
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
 	};
 
 	cpus: cpus {
