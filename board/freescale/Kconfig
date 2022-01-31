@@ -8,6 +8,7 @@ config S32_GEN1
 	imply CMD_CPU
 	imply CMD_GPIO
 	imply CMD_FUSE
+	imply FSL_LINFLEXUART
 	imply ADC if !TARGET_S32G274ARDB
 	imply S32_SARADC if !TARGET_S32G274ARDB
 	imply MISC
@@ -15,6 +16,7 @@ config S32_GEN1
 	select CLK
 	select CLK_SCMI
 	select DM_GPIO
+	select DM_SERIAL
 	select OF_CONTROL
 	select OF_SEPARATE
 	select PINCTRL
