@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 #include "s32-gen1-pinctrl.h"
@@ -14,6 +14,8 @@
 #define I2C2_SDA_IMCR		(720)
 #define I2C4_SDA_IMCR		(724)
 #define I2C4_SCL_IMCR		(723)
+
+#define LIN1_RX_IMCR		(736)
 
 #define PFE0_MDIO_IMCR		(837)
 #define PFE0_RX_CLK_IMCR	(839)
@@ -95,6 +97,8 @@
 
 /* PA13 */
 #define PA13_MSCR_S32G		(13)
+#define PA13_LIN1_TX_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_2 | \
+	LIN_TX_CFG)
 #define PA13_SPI0_SCK_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_1 | \
 	DSPI_SCK_PIN_CFG)
 
@@ -114,6 +118,8 @@
 	I2C_PIN_CFG)
 #define PB00_I2C0_SDA_IN	(SIUL2_MSCR_S32_G1_MUX_ID_2)
 #define PB00_I2C0_SDA_GPIO	(SIUL2_MSCR_GPIO)
+#define PB00_LIN1_RX_CFG	(LIN_RX_CFG)
+#define PB00_LIN1_RX_IN		(SIUL2_MSCR_S32_G1_MUX_ID_3)
 
 /* PB01 */
 #define PB01_MSCR_S32G		(17)
@@ -152,11 +158,15 @@
 
 /* PB09 */
 #define PB09_MSCR_S32G		(25)
+#define PB09_LIN1_TX_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_1 | \
+	LIN_TX_CFG)
 #define PB09_SPI0_CS1_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_5 | \
 	DSPI_CS_PIN_CFG)
 
 /* PB10 */
 #define PB10_MSCR_S32G		(26)
+#define PB10_LIN1_RX_CFG	(LIN_RX_CFG)
+#define PB10_LIN1_RX_IN		(SIUL2_MSCR_S32_G1_MUX_ID_3)
 #define PB10_SPI0_CS2_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_3 | \
 	DSPI_CS_PIN_CFG)
 
@@ -187,6 +197,26 @@
 	I2C_PIN_CFG)
 #define PC02_I2C4_SCL_IN	(SIUL2_MSCR_S32_G1_MUX_ID_3)
 #define PC02_I2C4_SCL_GPIO	(SIUL2_MSCR_GPIO)
+
+/* PC04 */
+#define PC04_MSCR_S32G		(36)
+#define PC04_LIN1_RX_CFG	(LIN_RX_CFG)
+#define PC04_LIN1_RX_IN		(SIUL2_MSCR_S32_G1_MUX_ID_4)
+
+/* PC08 */
+#define PC08_MSCR_S32G		(40)
+#define PC08_LIN1_TX_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_2 | \
+	LIN_TX_CFG)
+
+/* PC09 */
+#define PC09_MSCR_S32G		(41)
+#define PC09_LIN0_TX_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_1 | \
+	LIN_TX_CFG)
+
+/* PC10 */
+#define PC10_MSCR_S32G		(42)
+#define PC10_LIN0_RX_CFG	(LIN_RX_CFG)
+#define PC10_LIN0_RX_IN		(SIUL2_MSCR_S32_G1_MUX_ID_2)
 
 /* PC14 */
 #define PC14_MSCR_S32G		(46)

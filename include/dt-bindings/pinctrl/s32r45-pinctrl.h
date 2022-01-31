@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 #include "s32-gen1-pinctrl.h"
@@ -15,6 +15,18 @@
 #define DSPI2_SIN_IMCR		(681)
 #define DSPI3_SIN_IMCR		(645)
 #define DSPI5_SIN_IMCR		(750)
+
+#define LIN1_RX_IMCR		(674)
+
+/* PA11 */
+#define PA11_MSCR_S32R45	(11)
+#define PA11_LIN1_RX_CFG	(LIN_RX_CFG)
+#define PA11_LIN1_RX_IN		(SIUL2_MSCR_S32_G1_MUX_ID_2)
+
+/* PA12 */
+#define PA12_MSCR_S32R45	(12)
+#define PA12_LIN1_TX_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_3 | \
+	LIN_TX_CFG)
 
 /* PA14 */
 #define PA14_MSCR_S32R45	(14)
@@ -137,6 +149,16 @@
 #define PC08_MSCR_S32R45	(40)
 #define PC08_SPI3_CS1_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_1 | \
 	DSPI_CS_PIN_CFG)
+
+/* PC09 */
+#define PC09_MSCR_S32R45	(41)
+#define PC09_LIN0_TX_CFG	(SIUL2_MSCR_S32_G1_MUX_ID_1 | \
+	LIN_TX_CFG)
+
+/* PC10 */
+#define PC10_MSCR_S32R45	(42)
+#define PC10_LIN0_RX_CFG	(LIN_RX_CFG)
+#define PC10_LIN0_RX_IN		(SIUL2_MSCR_S32_G1_MUX_ID_2)
 
 /* PC13 */
 #define PC13_MSCR_S32R45	(45)
