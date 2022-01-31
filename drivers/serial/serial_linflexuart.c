@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * Copyright 2017, 2019, 2021 NXP
+ * Copyright 2017, 2019, 2021-2022 NXP
  */
 
 #include <common.h>
@@ -195,9 +195,14 @@ static const struct dm_serial_ops linflex_serial_ops = {
 	.setbrg = linflex_serial_setbrg,
 };
 
+static const struct udevice_id linflex_serial_ids[] = {
+	{ .compatible = "fsl,s32-linflexuart", },
+};
+
 U_BOOT_DRIVER(serial_linflex) = {
 	.name	= "serial_linflex",
 	.id	= UCLASS_SERIAL,
+	.of_match = linflex_serial_ids,
 	.probe = linflex_serial_probe,
 	.ops	= &linflex_serial_ops,
 	.flags = DM_FLAG_PRE_RELOC,
