@@ -8,6 +8,10 @@
 
 / {
 	model = "ZeBu model for NXP S32G274A";
+
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
 };
 
 &usdhc0 {
