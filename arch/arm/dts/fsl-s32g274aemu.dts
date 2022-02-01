@@ -4,6 +4,7 @@
  */
 
 /dts-v1/;
+#include <dt-bindings/pinctrl/s32g-pinctrl.h>
 #include "fsl-s32g274a.dtsi"
 
 / {
@@ -12,6 +13,29 @@
 	chosen {
 		stdout-path = "serial1:115200n8";
 	};
+};
+
+&pinctrl0 {
+	board_pinctrl0 {
+		pinctrl0_uart1: pinctrl0_uart1 {
+			fsl,pins = <PB09_MSCR_S32G PB09_LIN1_TX_CFG
+				    PB10_MSCR_S32G PB10_LIN1_RX_CFG>;
+		};
+	};
+};
+
+&pinctrl1 {
+	board_pinctrl1 {
+		pinctrl1_uart1: pinctrl1_uart1 {
+			fsl,pins = <LIN1_RX_IMCR PB10_LIN1_RX_IN>;
+		};
+	};
+};
+
+&uart1{
+	pinctrl-0 = <&pinctrl0_uart1 &pinctrl1_uart1>;
+	pinctrl-names = "default";
+	status = "okay";
 };
 
 &usdhc0 {
