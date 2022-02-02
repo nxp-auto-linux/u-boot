@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2017,2019-2021 NXP
+ * (C) Copyright 2017,2019-2022 NXP
  */
 
 #include <common.h>
@@ -17,9 +17,6 @@
 #include <dt-bindings/phy/phy.h>
 #include <linux/ctype.h>
 #include "mp.h"
-#ifdef CONFIG_SYS_ERRATUM_ERR050543
-#include <ddr_s32gen1_err050543.h>
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -175,9 +172,6 @@ void ft_fixup_cpu(void *blob)
 static void ft_fixup_ddr_polling(void *blob)
 {
 	int off, ret;
-
-	if (polling_needed != 1)
-		return;
 
 	off = fdt_path_offset(blob, "/ddr");
 	if (off < 0) {

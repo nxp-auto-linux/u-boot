@@ -14,11 +14,6 @@
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <asm/arch/s32-gen1/mc_me_regs.h>
 #include <asm/arch/s32-gen1/mc_rgm_regs.h>
-#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
-#include <asm/arch/s32-gen1/ddrss.h>
-#elif defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-#include <ddr_init.h>
-#endif
 #include <board_common.h>
 #ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
@@ -123,37 +118,10 @@ void reset_cpu(ulong addr)
 	hang();
 }
 
-#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
-extern struct ddrss_conf ddrss_conf;
-extern struct ddrss_firmware ddrss_firmware;
-#endif
-
-#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-void store_csr(void) {}
-#endif
-
-#ifdef CONFIG_S32_SKIP_RELOC
 __weak int dram_init(void)
 {
 	return 0;
 }
-#else
-__weak int dram_init(void)
-{
-#if defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
-	ddrss_init(&ddrss_conf, &ddrss_firmware);
-#elif defined(CONFIG_SYS_FSL_DDRSS) && defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-	uint32_t ret = 0;
-	ret = ddr_init();
-	if (ret) {
-		printf("Error %d on ddr_init\n", ret);
-		return ret;
-	}
-#endif
-
-	return 0;
-}
-#endif
 
 static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {

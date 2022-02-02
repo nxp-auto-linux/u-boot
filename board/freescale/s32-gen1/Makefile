@@ -25,48 +25,4 @@ obj-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.o
 
 obj-$(CONFIG_TARGET_S32R45EVB) += s32r45evb.o
 
-ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-obj-$(CONFIG_SYS_FSL_DDRSS) += ddrss_regconf_emu.o ddrss_firmware_emu.o
-else
-
-ifneq ($(filter y,$(CONFIG_NXP_S32G2XX)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_init.o \
-				ddr_utils.o \
-				ddrss_cfg.o \
-				imem_cfg.o \
-				s32g274a/ddrc_cfg.o \
-				s32g274a/dmem_cfg.o \
-				s32g274a/dq_swap_cfg.o \
-				s32g274a/phy_cfg.o \
-				s32g274a/pie_cfg.o \
-
-endif
-
-ifneq ($(filter y,$(CONFIG_NXP_S32G3XX)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_init.o \
-				ddr_utils.o \
-				ddrss_cfg.o \
-				imem_cfg.o \
-				s32g3/ddrc_cfg.o \
-				s32g3/dmem_cfg.o \
-				s32g3/dq_swap_cfg.o \
-				s32g3/phy_cfg.o \
-				s32g3/pie_cfg.o \
-
-endif
-
-ifneq ($(filter y,$(CONFIG_TARGET_S32R45EVB)),)
-obj-$(CONFIG_SYS_FSL_DDRSS) +=	ddr_init.o \
-				ddr_utils.o \
-				ddrss_cfg.o \
-				imem_cfg.o \
-				s32r45/ddrc_cfg.o \
-				s32r45/dmem_cfg.o \
-				s32r45/dq_swap_cfg.o \
-				s32r45/phy_cfg.o \
-				s32r45/pie_cfg.o \
-
-endif
-endif
-
 #########################################################################

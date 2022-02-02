@@ -10,14 +10,12 @@ M:	-
 S:	Maintained
 F:	configs/s32g274aevb_defconfig
 F:	include/configs/s32g274a.h
-F:	drivers/ddr/fsl/ddrss.c
 
 S32G274A-RDB BOARD
 M:	-
 S:	Maintained
 F:	configs/s32g274ardb_defconfig
 F:	include/configs/s32g274a.h
-F:	drivers/ddr/fsl/ddrss.c
 
 S32R45 BOARD
 M:	-

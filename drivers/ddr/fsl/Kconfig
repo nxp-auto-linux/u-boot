@@ -5,12 +5,6 @@ config SYS_FSL_DDR
 	  PowerPC- based SoCs (such as mpc83xx, mpc85xx, mpc86xx) and ARM-
 	  based Layerscape SoCs (such as ls2080a).
 
-config SYS_FSL_DDRSS
-	bool "DDR Subsystem support"
-	help
-	  Select DDR Subsystem support.
-	default y if S32_GEN1
-
 config SYS_FSL_MMDC
 	bool
 	help
