@@ -519,14 +519,14 @@ static int do_s32ccgmac_cmd(cmd_tbl_t *cmdtp, int flag,
 		       s32ccgmac_cfg_get_interface_mode_str(s32cc));
 		return 0;
 	} else if (!strcmp(argv[1 + coffs], "enable")) {
-		s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_ENABLE);
+		return s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_ENABLE);
 	} else if (!strcmp(argv[1 + coffs], "disable")) {
-		s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_DISABLE);
-		return 0;
+		return s32ccgmac_cfg_set_mode(dev, S32CCGMAC_MODE_DISABLE);
 	} else if (!strcmp(argv[1 + coffs], "emac")) {
-		if (argc < 3) {
+		if (argc < 3 + coffs) {
 			printf("interface: %s\n",
 				   s32ccgmac_cfg_get_interface_mode_str(s32cc));
+			return 0;
 		} else {
 			phy_interface_t new_intf;
 
@@ -545,7 +545,7 @@ static int do_s32ccgmac_cmd(cmd_tbl_t *cmdtp, int flag,
 				       argv[2 + coffs]);
 				return CMD_RET_USAGE;
 			}
-			s32ccgmac_cfg_set_interface(dev, new_intf);
+			return s32ccgmac_cfg_set_interface(dev, new_intf);
 		}
 	}
 
@@ -553,7 +553,7 @@ static int do_s32ccgmac_cmd(cmd_tbl_t *cmdtp, int flag,
 }
 
 U_BOOT_CMD(
-	   s32ccgmac, 3, 0, do_s32ccgmac_cmd,
+	   s32ccgmac, 4, 0, do_s32ccgmac_cmd,
 	   "NXP S32cc GMAC controller info",
 	   /*      */"[idx] info			  - important hw info\n"
 	   "s32ccgmac [idx] [disable|enable]  - disable/enable gmac/eqos subsystem\n"
