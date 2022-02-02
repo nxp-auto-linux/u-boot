@@ -23,7 +23,7 @@
 #define S32GEN1_QSPI_PARAMS_SIZE	(0x200U)
 #define S32GEN1_QSPI_PARAMS_OFFSET	(0x200U)
 
-#define S32GEN1_SECBOOT_HSE_RES_SIZE 0x80000ul
+#define S32GEN1_HSE_FW_MAX_SIZE		0x80000ul
 
 #define APPLICATION_BOOT_CODE_TAG	(0xd5)
 #define APPLICATION_BOOT_CODE_VERSION	(0x60)
@@ -80,8 +80,12 @@ struct image_config {
 	struct {
 		uint32_t size;
 	} data_file;
+	struct {
+		bool enable;
+		uint8_t *fw_data;
+		size_t fw_size;
+	} secboot;
 	bool flash_boot;
-	bool secboot;
 };
 
 struct line_parser {
@@ -155,9 +159,9 @@ static struct program_image image_layout = {
 		.offset = S32_AUTO_OFFSET,
 		.size = DCD_MAXIMUM_SIZE,
 	},
-	.hse_reserved = {
+	.hse_fw = {
 		.offset = S32_AUTO_OFFSET,
-		.size = S32GEN1_SECBOOT_HSE_RES_SIZE,
+		.size = S32GEN1_HSE_FW_MAX_SIZE,
 	},
 	.app_code = {
 		.offset = S32_AUTO_OFFSET,
@@ -340,6 +344,14 @@ static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
 	       iconfig.qspi_params.size);
 }
 
+static void s32gen1_set_hse_fw(struct program_image *image)
+{
+	uint8_t *data = iconfig.secboot.fw_data;
+	size_t size = iconfig.secboot.fw_size;
+
+	memcpy(image->hse_fw.data, data, size);
+}
+
 static void set_data_pointers(struct program_image *layout, void *header)
 {
 	uint8_t *data = (uint8_t *)header;
@@ -351,6 +363,7 @@ static void set_data_pointers(struct program_image *layout, void *header)
 
 	layout->dcd.data = data + layout->dcd.offset;
 	layout->app_code.data = data + layout->app_code.offset;
+	layout->hse_fw.data = data + layout->hse_fw.offset;
 }
 
 static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
@@ -388,8 +401,8 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
-	if (iconfig.secboot)
-		ivt->hse_h_firmware_pointer = image_layout.hse_reserved.offset;
+	if (iconfig.secboot.enable)
+		ivt->hse_firmware_pointer = image_layout.hse_fw.offset;
 
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
@@ -423,6 +436,9 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		s32gen1_set_qspi_params(get_qspi_params(&image_layout));
 	}
 
+	if (iconfig.secboot.enable)
+		s32gen1_set_hse_fw(&image_layout);
+
 	image_layout.code.size = sbuf->st_size - image_layout.app_code.offset -
 		image_layout.app_code.size;
 
@@ -451,10 +467,10 @@ get_image_qspi_params(struct program_image *program_image)
 }
 
 static struct image_comp *
-get_image_hse_params(struct program_image *program_image)
+get_image_hse_fw(struct program_image *program_image)
 {
-	if (iconfig.secboot)
-		return &program_image->hse_reserved;
+	if (iconfig.secboot.enable)
+		return &program_image->hse_fw;
 
 	return NULL;
 }
@@ -478,8 +494,9 @@ get_image_dcd(struct program_image *program_image)
 	return &program_image->dcd;
 }
 
-static void set_dcd_size(struct program_image *program_image)
+static void set_headers_size(struct program_image *program_image)
 {
+	program_image->dcd.size = iconfig.dcd.size;
 	if (program_image->dcd.size > DCD_MAXIMUM_SIZE) {
 		fprintf(stderr,
 			"DCD area exceeds the maximum allowed size (0x%x\n)",
@@ -487,7 +504,13 @@ static void set_dcd_size(struct program_image *program_image)
 		exit(EXIT_FAILURE);
 	}
 
-	program_image->dcd.size = iconfig.dcd.size;
+	program_image->hse_fw.size = iconfig.secboot.fw_size;
+	if (program_image->hse_fw.size > S32GEN1_HSE_FW_MAX_SIZE) {
+		fprintf(stderr,
+			"HSE FW area exceeds the maximum allowed size (0x%lx\n)",
+			S32GEN1_HSE_FW_MAX_SIZE);
+		exit(EXIT_FAILURE);
+	}
 }
 
 static void set_headers_alignment(struct program_image *program_image)
@@ -500,7 +523,7 @@ static void set_headers_alignment(struct program_image *program_image)
 		alignment = BOOTROM_SD_ALIGNMENT;
 
 	program_image->dcd.alignment = alignment;
-	program_image->hse_reserved.alignment = alignment;
+	program_image->hse_fw.alignment = alignment;
 	program_image->app_code.alignment = alignment;
 }
 
@@ -513,11 +536,11 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		get_image_qspi_params(program_image),
 		&program_image->ivt,
 		get_image_dcd(program_image),
-		get_image_hse_params(program_image),
+		get_image_hse_fw(program_image),
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
-	set_dcd_size(program_image);
+	set_headers_size(program_image);
 	set_headers_alignment(program_image);
 
 	/* Compute auto-offsets */
@@ -624,10 +647,9 @@ static void s32gen1_print_header(const void *data)
 			(unsigned int)ivt->dcd_pointer,
 			(unsigned int)be16_to_cpu(*dcd_len));
 
-	if (ivt->hse_h_firmware_pointer)
-		fprintf(stderr, "HSE Reserved:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-			(unsigned int)ivt->hse_h_firmware_pointer,
-			(unsigned int)S32GEN1_SECBOOT_HSE_RES_SIZE);
+	if (ivt->hse_firmware_pointer)
+		fprintf(stderr, "HSE Firmware:\t\tOffset: 0x%x\n",
+			(unsigned int)ivt->hse_firmware_pointer);
 
 	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)ivt->application_boot_code_pointer,
@@ -692,11 +714,60 @@ static int parse_boot_cmd(char *line)
 	return 0;
 }
 
-static int parse_secboot_cmd(char *line)
+static int map_file(const char *path, uint8_t **data, size_t *size)
 {
-	iconfig.secboot = true;
+	int fd, ret;
+	struct stat stat;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open '%s'\n", path);
+		perror("open error");
+		return -errno;
+	}
+
+	ret = fstat(fd, &stat);
+	if (ret) {
+		close(fd);
+		fprintf(stderr, "Failed to stat '%s'\n", path);
+		perror("stat error");
+		return -errno;
+	}
+
+	*size = stat.st_size;
+
+	*data = mmap(NULL, *size, PROT_READ, MAP_PRIVATE, fd, 0);
+	close(fd);
+	if (*data == MAP_FAILED) {
+		fprintf(stderr, "Failed to map '%s'\n", path);
+		perror("mmap error");
+		return -errno;
+	}
 
 	return 0;
+}
+
+static int parse_secboot_cmd(char *line)
+{
+	int ret;
+	char *path;
+
+	path = calloc(strnlen(line, 256), sizeof(*path));
+	if (!path)
+		return -ENOMEM;
+
+	ret = sscanf(line, "\"%[^\"]\"", path);
+	if (ret != 1) {
+		ret = -EINVAL;
+		goto free_mem;
+	}
+
+	iconfig.secboot.enable = true;
+	ret = map_file(path, &iconfig.secboot.fw_data,
+		       &iconfig.secboot.fw_size);
+free_mem:
+	free(path);
+	return ret;
 }
 
 static int get_dcd_cmd_args(char *line, struct dcd_args *dcd)
@@ -868,39 +939,13 @@ static int parse_dcd_cmd(char *line)
 
 static int parse_qspi_cmd(char *line)
 {
-	int fd, ret;
-	struct stat stat;
+	int ret;
 	char *path = line;
-	uint8_t *data;
-	size_t len;
 
-	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open '%s'\n", path);
-		perror("open error");
-		return -errno;
-	}
-
-	ret = fstat(fd, &stat);
-	if (ret) {
-		close(fd);
-		fprintf(stderr, "Failed to stat '%s'\n", path);
-		perror("stat error");
-		return -errno;
-	}
-
-	len = stat.st_size;
-
-	data = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
-	close(fd);
-	if (data == MAP_FAILED) {
-		fprintf(stderr, "Failed to map '%s'\n", path);
-		perror("mmap error");
-		return -errno;
-	}
-
-	iconfig.qspi_params.data = data;
-	iconfig.qspi_params.size = len;
+	ret = map_file(path, &iconfig.qspi_params.data,
+		       &iconfig.qspi_params.size);
+	if (ret)
+		return ret;
 
 	return 0;
 }

@@ -49,7 +49,7 @@ Available commands
 	This enables secure boot when added to configuration file.
 
 	Usage:
-		SECBOOT
+		SECBOOT "s32gen1_hse_fw.bin"
 
 2. BOOT_FROM
 	Selects the boot storage.

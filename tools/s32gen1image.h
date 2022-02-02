@@ -24,8 +24,8 @@ struct ivt {
 	__u32		self_test_dcd_pointer_backup;
 	__u32		dcd_pointer;
 	__u32		dcd_pointer_backup;
-	__u32		hse_h_firmware_pointer;
-	__u32		hse_h_firmware_pointer_backup;
+	__u32		hse_firmware_pointer;
+	__u32		hse_firmware_pointer_backup;
 	__u32		application_boot_code_pointer;
 	__u32		application_boot_code_pointer_backup;
 	__u32		boot_configuration_word;
@@ -103,7 +103,7 @@ struct program_image {
 	struct image_comp ivt;
 	struct image_comp qspi_params;
 	struct image_comp dcd;
-	struct image_comp hse_reserved;
+	struct image_comp hse_fw;
 	struct image_comp app_code;
 	struct image_comp code;
 	__u8 *header;
