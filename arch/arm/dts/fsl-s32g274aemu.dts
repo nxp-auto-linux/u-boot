@@ -17,7 +17,9 @@
 
 &pinctrl0 {
 	board_pinctrl0 {
+		u-boot,dm-pre-reloc;
 		pinctrl0_uart1: pinctrl0_uart1 {
+			u-boot,dm-pre-reloc;
 			fsl,pins = <PB09_MSCR_S32G PB09_LIN1_TX_CFG
 				    PB10_MSCR_S32G PB10_LIN1_RX_CFG>;
 		};
@@ -26,7 +28,9 @@
 
 &pinctrl1 {
 	board_pinctrl1 {
+		u-boot,dm-pre-reloc;
 		pinctrl1_uart1: pinctrl1_uart1 {
+			u-boot,dm-pre-reloc;
 			fsl,pins = <LIN1_RX_IMCR PB10_LIN1_RX_IN>;
 		};
 	};

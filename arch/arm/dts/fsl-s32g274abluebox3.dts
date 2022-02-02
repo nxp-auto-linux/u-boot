@@ -144,6 +144,7 @@
 
 &pinctrl0 {
 	board_pinctrl0 {
+		u-boot,dm-pre-reloc;
 		pinctrl0_dspi0: pinctrl0_dspi0 {
 			fsl,pins = <PA13_MSCR_S32G PA13_SPI0_SCK_CFG
 				    PA14_MSCR_S32G PA14_SPI0_SIN_CFG
@@ -270,6 +271,7 @@
 		};
 
 		pinctrl0_uart0: pinctrl0_uart0 {
+			u-boot,dm-pre-reloc;
 			fsl,pins = <PC09_MSCR_S32G PC09_LIN0_TX_CFG
 				    PC10_MSCR_S32G PC10_LIN0_RX_CFG
 				    LIN0_RX_IMCR PC10_LIN0_RX_IN>;
