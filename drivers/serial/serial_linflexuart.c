@@ -173,9 +173,11 @@ static int linflex_serial_pending(struct udevice *dev, bool input)
 	uint32_t uartsr = __raw_readl(&priv->lfuart->uartsr);
 
 	if (input)
-		return ((uartsr & UARTSR_RFE) && (uartsr & UARTSR_RMB)) ? 1 : 0;
+		/* RX FIFO not empty. */
+		return !(uartsr & UARTSR_RFE);
 	else
-		return uartsr & UARTSR_DTF ? 0 : 1;
+		/* TX FIFO not full. */
+		return !(uartsr & UARTSR_DTF);
 }
 
 static int linflex_serial_probe(struct udevice *dev)
