@@ -51,3 +51,11 @@ config HSE_SECBOOT
 	depends on S32_GEN1
 	help
 		Enable HSE-provided Advanced Secure Boot
+
+config HSE_FW_FILE
+	string "HSE Firmware file"
+	default "s32gen1_hse_fw.bin"
+	depends on HSE_SECBOOT
+	help
+		File to be used as firmware for NXP HSE
+		(Hardware Security Engine) accelerator.
