@@ -169,21 +169,41 @@ void ft_fixup_cpu(void *blob)
 #endif /* CONFIG_MP */
 
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
-static void ft_fixup_ddr_polling(void *blob)
+static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 {
 	int off, ret;
+	const char *status;
+	const char *exp_compatible = "fsl,s32gen1-ddr";
 
-	off = fdt_path_offset(blob, "/ddr");
+	/* Get node offset in U-Boot DT */
+	off = fdt_node_offset_by_compatible(old_blob, -1, exp_compatible);
 	if (off < 0) {
-		printf("%s: error at \"ddr\" node: %s\n", __func__,
-				fdt_strerror(off));
+		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
+		       exp_compatible, fdt_strerror(off));
 		return;
 	}
 
-	ret = fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
+	/* Check "status" property */
+	status = fdt_getprop(old_blob, off, "status", NULL);
+	if (!status) {
+		printf("%s: Node \"%s\" does not have \"status\" set",
+		       __func__, exp_compatible);
+		return;
+	}
+
+	/* Get node offset in Linux DT */
+	off = fdt_node_offset_by_compatible(new_blob, -1, exp_compatible);
+	if (off < 0) {
+		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
+		       exp_compatible, fdt_strerror(off));
+		return;
+	}
+
+	/* Copy the status from the U-Boot DT */
+	ret = fdt_setprop_string(new_blob, off, "status", status);
 	if (ret)
-		printf("WARNING: Could not fix up the S32GEN1 device-tree ddr, err=%s\n",
-				fdt_strerror(ret));
+		printf("WARNING: Could not fix up the Linux DT, err=%s\n",
+		       fdt_strerror(ret));
 }
 #endif
 
@@ -887,7 +907,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 
 	ft_fixup_memory(blob, bd);
 #ifdef CONFIG_SYS_ERRATUM_ERR050543
-	ft_fixup_ddr_polling(blob);
+	ft_fixup_ddr_polling(gd->fdt_blob, blob);
 #endif
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
 	ft_fixup_scmi(blob);
