@@ -1107,8 +1107,6 @@ config ARCH_ZYNQMP
 config ARCH_S32
 	bool "Support S32 SOCs"
 	select ARM64
-	select ARMV8_MULTIENTRY
-	select ARMV8_SPIN_TABLE
 
 config TEGRA
 	bool "NVIDIA Tegra"
