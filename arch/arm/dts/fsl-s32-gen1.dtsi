@@ -219,6 +219,12 @@
 		};
 	};
 
+	ddr: ddr@403C0000 {
+		compatible = "fsl,s32gen1-ddr";
+		/* Will be modified by ATF */
+		status = "disabled";
+	};
+
 	clks: clks {
 		compatible = "fsl,s32-gen1-clocking";
 		#address-cells = <2>;
