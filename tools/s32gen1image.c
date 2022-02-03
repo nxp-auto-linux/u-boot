@@ -633,6 +633,41 @@ static struct ivt *get_ivt_from_raw_blob(const unsigned char *ptr, int size,
 	return NULL;
 }
 
+struct layout_comp {
+	uint32_t offset;
+	uint32_t size;
+	const char *line_desc;
+};
+
+static int layout_comparator(const void *p1, const void *p2)
+{
+	const struct layout_comp **part1 = (typeof(part1))p1;
+	const struct layout_comp **part2 = (typeof(part2))p2;
+
+	return (*part1)->offset - (*part2)->offset;
+}
+
+static void print_layout(struct layout_comp **comps, size_t n)
+{
+	size_t i;
+
+	fprintf(stderr, "\nImage Layout\n");
+	for (i = 0u; i < n; i++) {
+		if (!comps[i]->offset && !comps[i]->size)
+			continue;
+
+		fprintf(stderr, "\t%sOffset: 0x%x\t\t",
+			comps[i]->line_desc, comps[i]->offset);
+
+		if (comps[i]->size)
+			fprintf(stderr, "Size: 0x%x", comps[i]->size);
+
+		fprintf(stderr, "\n");
+	}
+
+	fprintf(stderr, "\n");
+}
+
 static void s32gen1_print_header(const void *data)
 {
 	const struct ivt *ivt;
@@ -641,47 +676,56 @@ static void s32gen1_print_header(const void *data)
 	const struct application_boot_code *app;
 	bool qspi_boot;
 	int min_size = S32GEN1_SD_IVT_OFFSET + sizeof(struct ivt);
+	struct layout_comp ivt_comp, qspi, dcd, hse_fw,
+			   hse_img, app_hdr, app_comp;
+	struct layout_comp *comps[] = { &ivt_comp, &qspi, &dcd, &hse_fw,
+		&hse_img, &app_hdr, &app_comp };
 
 	ivt = get_ivt_from_raw_blob(data, min_size, &qspi_boot);
 	if (!ivt)
 		return;
 
+	ivt_comp.offset = (uint32_t)((void *)ivt - data);
+	ivt_comp.size = (uint32_t)sizeof(struct ivt);
+	ivt_comp.line_desc = "IVT:\t\t\t";
+
+	if (qspi_boot) {
+		qspi.offset = S32GEN1_QSPI_PARAMS_OFFSET;
+		qspi.size = S32GEN1_QSPI_PARAMS_SIZE;
+		qspi.line_desc = "QSPI Parameters:\t";
+	}
+
+	if (ivt->dcd_pointer) {
+		dcd_len = (uint16_t *)(data8 + ivt->dcd_pointer
+				       + DCD_HEADER_LENGTH_OFFSET);
+		dcd.offset = ivt->dcd_pointer;
+		dcd.size = (uint32_t)be16_to_cpu(*dcd_len);
+		dcd.line_desc = "DCD:\t\t\t";
+	}
+
+	if (ivt->hse_firmware_pointer) {
+		hse_fw.offset = ivt->hse_firmware_pointer;
+		hse_fw.line_desc = "HSE Firmware:\t\t";
+	}
+
+	if (ivt->hse_sys_img_pointer) {
+		hse_img.offset = ivt->hse_sys_img_pointer;
+		hse_img.size = S32GEN1_HSE_SYS_IMG_MAX_SIZE;
+		hse_img.line_desc = "HSE SYS Image:\t\t";
+	}
+
 	app = (data + ivt->application_boot_code_pointer);
-	dcd_len = (uint16_t *)(data8 + ivt->dcd_pointer
-			      + DCD_HEADER_LENGTH_OFFSET);
 
-	fprintf(stderr, "\nIVT:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)((void *)ivt - data),
-		(unsigned int)sizeof(struct ivt));
+	app_hdr.offset = ivt->application_boot_code_pointer;
+	app_hdr.size = (uint32_t)sizeof(*app);
+	app_hdr.line_desc = "AppBootCode Header:\t";
 
-	if (qspi_boot)
-		fprintf(stderr,
-			"QSPI Parameters:\tOffset: 0x%x\t\tSize: 0x%x\n",
-			(unsigned int)S32GEN1_QSPI_PARAMS_OFFSET,
-			(unsigned int)S32GEN1_QSPI_PARAMS_SIZE);
+	app_comp.offset = (uint32_t)((uint8_t *)app->code - data8);
+	app_comp.size = app->code_length;
+	app_comp.line_desc = "Application:\t\t";
 
-	if (ivt->dcd_pointer)
-		fprintf(stderr, "DCD:\t\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-			(unsigned int)ivt->dcd_pointer,
-			(unsigned int)be16_to_cpu(*dcd_len));
-
-	if (ivt->hse_firmware_pointer)
-		fprintf(stderr, "HSE Firmware:\t\tOffset: 0x%x\n",
-			(unsigned int)ivt->hse_firmware_pointer);
-
-	if (ivt->hse_sys_img_pointer)
-		fprintf(stderr,
-			"HSE SYS Image:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
-			(unsigned int)ivt->hse_sys_img_pointer,
-			(unsigned int)S32GEN1_HSE_SYS_IMG_MAX_SIZE);
-
-	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
-		(unsigned int)ivt->application_boot_code_pointer,
-		(unsigned int)sizeof(*app));
-
-	fprintf(stderr, "Application:\t\tOffset: 0x%x\t\tSize: 0x%x\n\n",
-		(unsigned int)((uint8_t *)app->code - data8),
-		(unsigned int)app->code_length);
+	qsort(comps, ARRAY_SIZE(comps), sizeof(comps[0]), layout_comparator);
+	print_layout(comps, ARRAY_SIZE(comps));
 
 	fprintf(stderr, "IVT Location:\t");
 	if (qspi_boot)
