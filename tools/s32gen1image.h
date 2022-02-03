@@ -31,7 +31,8 @@ struct ivt {
 	__u32		boot_configuration_word;
 	__u32		lifecycle_configuration_word;
 	__u8		reserved2[4];
-	__u8		reserved_for_hse_h_fw[32];
+	__u32		hse_sys_img_pointer;
+	__u8		reserved_for_hse_h_fw[28];
 	__u8		reserved3[156];
 	__u32		gmac[4];
 } __attribute__((packed));
@@ -104,6 +105,7 @@ struct program_image {
 	struct image_comp qspi_params;
 	struct image_comp dcd;
 	struct image_comp hse_fw;
+	struct image_comp hse_sys_img;
 	struct image_comp app_code;
 	struct image_comp code;
 	__u8 *header;

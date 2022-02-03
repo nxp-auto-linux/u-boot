@@ -23,7 +23,8 @@
 #define S32GEN1_QSPI_PARAMS_SIZE	(0x200U)
 #define S32GEN1_QSPI_PARAMS_OFFSET	(0x200U)
 
-#define S32GEN1_HSE_FW_MAX_SIZE		0x80000ul
+#define S32GEN1_HSE_FW_MAX_SIZE		(0x80000ul)
+#define S32GEN1_HSE_SYS_IMG_MAX_SIZE	(0xc000ul)
 
 #define APPLICATION_BOOT_CODE_TAG	(0xd5)
 #define APPLICATION_BOOT_CODE_VERSION	(0x60)
@@ -162,6 +163,10 @@ static struct program_image image_layout = {
 	.hse_fw = {
 		.offset = S32_AUTO_OFFSET,
 		.size = S32GEN1_HSE_FW_MAX_SIZE,
+	},
+	.hse_sys_img = {
+		.offset = S32_AUTO_OFFSET,
+		.size = S32GEN1_HSE_SYS_IMG_MAX_SIZE,
 	},
 	.app_code = {
 		.offset = S32_AUTO_OFFSET,
@@ -401,8 +406,10 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
-	if (iconfig.secboot.enable)
+	if (iconfig.secboot.enable) {
 		ivt->hse_firmware_pointer = image_layout.hse_fw.offset;
+		ivt->hse_sys_img_pointer = image_layout.hse_sys_img.offset;
+	}
 
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
@@ -476,6 +483,15 @@ get_image_hse_fw(struct program_image *program_image)
 }
 
 static struct image_comp *
+get_image_hse_sys_img(struct program_image *program_image)
+{
+	if (iconfig.secboot.enable)
+		return &program_image->hse_sys_img;
+
+	return NULL;
+}
+
+static struct image_comp *
 get_image_mbr(struct program_image *program_image)
 {
 	/* Available on SD only */
@@ -524,6 +540,7 @@ static void set_headers_alignment(struct program_image *program_image)
 
 	program_image->dcd.alignment = alignment;
 	program_image->hse_fw.alignment = alignment;
+	program_image->hse_sys_img.alignment = alignment;
 	program_image->app_code.alignment = alignment;
 }
 
@@ -537,6 +554,7 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		&program_image->ivt,
 		get_image_dcd(program_image),
 		get_image_hse_fw(program_image),
+		get_image_hse_sys_img(program_image),
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 
@@ -650,6 +668,12 @@ static void s32gen1_print_header(const void *data)
 	if (ivt->hse_firmware_pointer)
 		fprintf(stderr, "HSE Firmware:\t\tOffset: 0x%x\n",
 			(unsigned int)ivt->hse_firmware_pointer);
+
+	if (ivt->hse_sys_img_pointer)
+		fprintf(stderr,
+			"HSE SYS Image:\t\tOffset: 0x%x\t\tSize: 0x%x\n",
+			(unsigned int)ivt->hse_sys_img_pointer,
+			(unsigned int)S32GEN1_HSE_SYS_IMG_MAX_SIZE);
 
 	fprintf(stderr, "AppBootCode Header:\tOffset: 0x%x\t\tSize: 0x%x\n",
 		(unsigned int)ivt->application_boot_code_pointer,
@@ -1091,7 +1115,7 @@ static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 
 	ret = s32gen1_parse_config(tool_params);
 	if (ret)
-		return ret;
+		exit(ret);
 
 	s32g2xx_build_layout(&image_layout, &header_size, &image);
 	type_params->header_size = header_size;
