@@ -10,7 +10,6 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <miiphy.h>
-#include <asm/arch/s32-gen1/ncore.h>
 
 #include "board_common.h"
 
