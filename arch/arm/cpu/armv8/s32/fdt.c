@@ -168,7 +168,6 @@ void ft_fixup_cpu(void *blob)
 }
 #endif /* CONFIG_MP */
 
-#ifdef CONFIG_SYS_ERRATUM_ERR050543
 static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 {
 	int off, ret;
@@ -205,7 +204,6 @@ static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 		printf("WARNING: Could not fix up the Linux DT, err=%s\n",
 		       fdt_strerror(ret));
 }
-#endif
 
 static void hide_sram(bd_t *bd)
 {
@@ -906,9 +904,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #endif
 
 	ft_fixup_memory(blob, bd);
-#ifdef CONFIG_SYS_ERRATUM_ERR050543
 	ft_fixup_ddr_polling(gd->fdt_blob, blob);
-#endif
 #ifdef CONFIG_S32_ATF_BOOT_FLOW
 	ft_fixup_scmi(blob);
 	ft_fixup_atf(gd->fdt_blob, blob);
