@@ -13,7 +13,6 @@
 #include <asm/arch/siul.h>
 #include <asm-generic/sections.h>
 #include "mp.h"
-#include "sram.h"
 #include "scmi_reset_agent.h"
 #include "s32gen1_ocotp.h"
 #include <asm/arch/soc.h>
@@ -170,10 +169,6 @@ static inline void early_mmu_setup(void)
 	gd->arch.tlb_addr = S32_IRAM_MMU_TABLES_BASE;
 	gd->arch.tlb_size = get_tlb_size();
 
-#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
-#endif
-
 	mmu_setup();
 	set_sctlr(get_sctlr() | CR_C);
 }
@@ -203,9 +198,6 @@ static inline void final_mmu_setup(void)
 	/* global data is already setup, no allocation yet */
 	gd->arch.tlb_fillptr = gd->arch.tlb_addr;
 
-#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	sram_clr(gd->arch.tlb_addr, gd->arch.tlb_size);
-#endif
 	setup_pgtables();
 
 	/* flush new MMU table */
@@ -270,23 +262,6 @@ static int enable_periph_clocks(void)
 }
 #endif
 
-#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-static inline int clear_after_bss(void)
-{
-	int base, size, ret;
-	/*
-	 * Assumption: lowlevel.S will clear at least [__bss_start - __bss_end]
-	 */
-	base = (uintptr_t)&__bss_end;
-	size = S32_SRAM_BASE + S32_SRAM_SIZE - base;
-	ret = sram_clr(base, size);
-	if (!ret)
-		return ret;
-
-	return 0;
-}
-#endif
-
 int arch_cpu_init(void)
 {
 	int ret = 0;
@@ -300,11 +275,6 @@ int arch_cpu_init(void)
 	gd->flags |= GD_FLG_SKIP_RELOC;
 #endif
 
-#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	ret = clear_after_bss();
-	if (ret)
-		return ret;
-#endif
 
 #if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
 	/* Platforms with Concerto/Ncore have to explicitly initialize

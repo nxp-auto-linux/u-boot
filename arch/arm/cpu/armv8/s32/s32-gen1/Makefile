@@ -12,11 +12,6 @@ obj-$(CONFIG_HSE_SECBOOT)		+= hse_adv_secboot.o
 obj-y					+= ncore.o
 obj-y					+= soc.o
 obj-$(CONFIG_NXP_S32G2XX)		+= s32g274a.o
-obj-$(CONFIG_NXP_S32G3XX)		+= s32g3_sramc.o
-obj-$(CONFIG_NXP_S32G2XX)		+= s32gen1_common_sramc.o
-obj-$(CONFIG_NXP_S32R45)		+= s32gen1_common_sramc.o
-obj-y					+= sram.o
-obj-y					+= s32gen1_sramc.o
 ifdef CONFIG_S32_GEN1
 obj-$(CONFIG_NETDEVICES)		+= sgmii/sgmii.o sgmii/serdes_xpcs.o
 endif
