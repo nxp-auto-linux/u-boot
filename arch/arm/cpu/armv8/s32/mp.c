@@ -14,7 +14,7 @@
 #include <asm/spin_table.h>
 #include "mp.h"
 
-#if defined(CONFIG_S32_ATF_BOOT_FLOW) && defined(CONFIG_MP)
+#if defined(CONFIG_MP)
 #include <dm/uclass.h>
 #include <linux/psci.h>
 #include <malloc.h>
@@ -34,7 +34,6 @@ struct cpu_desc {
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_MP)
-#if defined(CONFIG_S32_ATF_BOOT_FLOW)
 static struct cpu_desc *cpus;
 static u32 n_cpus;
 
@@ -223,5 +222,4 @@ int cpu_release(u32 nr, int argc, char * const argv[])
 
 	return 0;
 }
-#endif
 #endif

@@ -25,8 +25,6 @@ void mmu_setup(void);
 #ifndef CONFIG_SYS_DCACHE_OFF
 
 static struct mm_region early_map[] = {
-#if !defined(CONFIG_S32_SKIP_RELOC) || \
-	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
@@ -43,7 +41,6 @@ static struct mm_region early_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
 	},
 #endif
-#endif
 	{
 	  S32_SRAM_BASE, S32_SRAM_BASE,
 	  S32_SRAM_SIZE,
@@ -56,22 +53,17 @@ static struct mm_region early_map[] = {
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 #if defined(CONFIG_SYS_FSL_DRAM_BASE2)
-#if !defined(CONFIG_S32_SKIP_RELOC) || \
-	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
 	  CONFIG_SYS_FSL_DRAM_SIZE2,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
 	},
 #endif
-#endif
 	/* list terminator */
 	{},
 };
 
 static struct mm_region final_map[] = {
-#if !defined(CONFIG_S32_SKIP_RELOC) || \
-	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
@@ -85,7 +77,6 @@ static struct mm_region final_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
 #endif
-#endif
 	{
 	  S32_SRAM_BASE, S32_SRAM_BASE,
 	  S32_SRAM_SIZE,
@@ -98,14 +89,11 @@ static struct mm_region final_map[] = {
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 #if defined(CONFIG_SYS_FSL_DRAM_BASE2)
-#if !defined(CONFIG_S32_SKIP_RELOC) || \
-	(defined(CONFIG_S32_SKIP_RELOC) && defined(CONFIG_S32_ATF_BOOT_FLOW))
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
 	  CONFIG_SYS_FSL_DRAM_SIZE2,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
-#endif
 #endif
 	{
 	  CONFIG_SYS_FSL_FLASH0_BASE, CONFIG_SYS_FSL_FLASH0_BASE,
@@ -212,14 +200,10 @@ int arch_cpu_init(void)
 {
 	int ret = 0;
 
-#ifdef CONFIG_S32_ATF_BOOT_FLOW
 	/* Clear the BSS. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
-#endif
 
-#ifdef CONFIG_S32_SKIP_RELOC
 	gd->flags |= GD_FLG_SKIP_RELOC;
-#endif
 
 	set_sctlr(get_sctlr() & ~CR_M);
 	icache_enable();
@@ -342,7 +326,6 @@ phys_size_t __weak get_effective_memsize(void)
 	return size;
 }
 
-#ifdef CONFIG_S32_ATF_BOOT_FLOW
 void board_prep_linux(bootm_headers_t *images)
 {
 	int ret;
@@ -351,4 +334,3 @@ void board_prep_linux(bootm_headers_t *images)
 	if (ret)
 		pr_err("Failed to reset SCMI agent's settings\n");
 }
-#endif

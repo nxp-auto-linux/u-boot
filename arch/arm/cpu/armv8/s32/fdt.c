@@ -133,7 +133,6 @@ static void ft_fixup_memory(void *blob, bd_t *bd)
 	apply_memory_fixups(blob, bd);
 }
 
-#ifdef CONFIG_S32_ATF_BOOT_FLOW
 static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
 {
 	int ret, off;
@@ -191,7 +190,6 @@ static void ft_fixup_atf(const void *old_blob, void *new_blob)
 	if (add_atf_reserved_memory(old_blob, new_blob))
 		pr_err("Copying 'atf' node from U-Boot DT to Linux DT failed!\n");
 }
-#endif
 
 #ifdef CONFIG_PCIE_S32GEN1
 static int fdt_alias2node(void *blob, const char *alias_fmt, int alias_id)
@@ -588,9 +586,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 {
 	ft_fixup_memory(blob, bd);
 	ft_fixup_ddr_polling(gd->fdt_blob, blob);
-#ifdef CONFIG_S32_ATF_BOOT_FLOW
 	ft_fixup_atf(gd->fdt_blob, blob);
-#endif
 #ifdef CONFIG_PCIE_S32GEN1
 	ft_fixup_serdes(blob);
 #endif
