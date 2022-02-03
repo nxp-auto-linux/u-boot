@@ -160,7 +160,7 @@ struct mm_region *mem_map = early_map;
 
 static unsigned long get_tlb_size(void)
 {
-	return CONFIG_DTB_SRAM_ADDR - S32_IRAM_MMU_TABLES_BASE;
+	return CONFIG_DTB_ADDR - S32_IRAM_MMU_TABLES_BASE;
 }
 
 static inline void early_mmu_setup(void)

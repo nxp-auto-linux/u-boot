@@ -131,7 +131,7 @@
 #endif
 
 #define ENV_FDTCONTROLADDR \
-			"fdtcontroladdr=" __stringify(CONFIG_DTB_SRAM_ADDR) "\0"
+			"fdtcontroladdr=" __stringify(CONFIG_DTB_ADDR) "\0"
 
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_ARCH_TIMER)

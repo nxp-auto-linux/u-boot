@@ -2,7 +2,7 @@
 /*
  * HSE advanced secure boot preparatory command demo
  *
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  */
 
 #include <common.h>
@@ -230,10 +230,10 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 
 	/**
 	 * no address of actual code start, need to reference app bl header
-	 * CONFIG_DTB_SRAM_ADDR used bc smr contains dtb and code
+	 * CONFIG_DTB_ADDR used bc smr contains dtb and code
 	 */
 	smr_entry->smr_src = priv->ivt.app_boot + 0x200;
-	smr_entry->smr_dst_addr = CONFIG_DTB_SRAM_ADDR;
+	smr_entry->smr_dst_addr = CONFIG_DTB_ADDR;
 	smr_entry->smr_size = HSE_UBOOT_MAX_SIZE;
 	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
 				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
