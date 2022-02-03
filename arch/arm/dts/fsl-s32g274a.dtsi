@@ -23,11 +23,6 @@
 		device_type = "memory";
 		reg = <0x8 0x80000000 0 0x80000000>;
 	};
-
-	sram@34000000 {
-		device_type = "memory";
-		reg = <0 0x34000000 0 0x800000>;
-	};
 };
 
 &siul2_1_nvram {

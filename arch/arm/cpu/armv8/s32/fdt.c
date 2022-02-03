@@ -76,19 +76,6 @@ static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 		       fdt_strerror(ret));
 }
 
-static void hide_sram(bd_t *bd)
-{
-	int bank;
-
-	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
-		if (bd->bi_dram[bank].start == S32_SRAM_BASE) {
-			bd->bi_dram[bank].start = 0;
-			bd->bi_dram[bank].size = 0;
-			break;
-		}
-	}
-}
-
 static void apply_memory_fixups(void *blob, bd_t *bd)
 {
 	u64 start[CONFIG_NR_DRAM_BANKS];
@@ -141,12 +128,9 @@ static void apply_ddr_limits(bd_t *bd)
 
 static void ft_fixup_memory(void *blob, bd_t *bd)
 {
-	hide_sram(bd);
-
 	apply_ddr_limits(bd);
 
 	apply_memory_fixups(blob, bd);
-
 }
 
 #ifdef CONFIG_S32_ATF_BOOT_FLOW

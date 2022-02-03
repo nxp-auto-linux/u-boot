@@ -407,10 +407,6 @@ static void s32_init_ram_size(void)
 		start = gd->bd->bi_dram[i].start;
 		size = gd->bd->bi_dram[i].size;
 
-		/* Don't advertise SRAM */
-		if (start == S32_SRAM_BASE)
-			continue;
-
 		if (!start && !size)
 			continue;
 
@@ -420,22 +416,12 @@ static void s32_init_ram_size(void)
 
 int dram_init_banksize(void)
 {
-#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	gd->bd->bi_dram[0].start = S32_SRAM_BASE;
-	gd->bd->bi_dram[0].size = get_sram_size();
-
-	gd->bd->bi_dram[1].start = 0x0;
-	gd->bd->bi_dram[1].size = 0x0;
-
-	gd->bd->bi_dram[2].start = 0x0;
-	gd->bd->bi_dram[2].size = 0x0;
-#else
 	int ret;
 
 	ret = fdtdec_setup_memory_banksize();
 	if (ret)
 		return ret;
-#endif
+
 	s32_init_ram_size();
 
 	return 0;
@@ -451,11 +437,7 @@ phys_size_t __weak get_effective_memsize(void)
 	 * Restrict U-Boot area to the first bank of the DDR memory.
 	 * Note: gd->bd isn't initialized yet
 	 */
-#if defined(CONFIG_S32_SKIP_RELOC) && !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	size = get_sram_size();
-#else
 	size = CONFIG_SYS_FSL_DRAM_SIZE1;
-#endif
 
 	/* Get first DDR bank size from DT 'memory' node */
 	while ((nodeoff = fdt_node_offset_by_prop_value(gd->fdt_blob, nodeoff,
