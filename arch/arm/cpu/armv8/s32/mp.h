@@ -14,7 +14,6 @@ extern u64 __spin_table[];
 extern u64 __real_cntfrq;
 extern u64 *secondary_boot_page;
 extern size_t __secondary_boot_page_size;
-int fsl_s32_wake_secondary_cores(void);
 void *get_spin_tbl_addr(void);
 phys_addr_t determine_mp_bootpg(void);
 void secondary_boot_func(void);

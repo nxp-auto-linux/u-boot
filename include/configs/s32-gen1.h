@@ -86,23 +86,6 @@
 
 #define IMX_FEC_BASE            ENET0_BASE_ADDR
 
-#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-/* In secure boot scenarios, the Trusted Firmware runs at EL3, while U-Boot runs
- * in the non-secure world. This produces errors while U-Boot attempts to
- * configure the secure GIC registers. As a result, GICv3 initialization on S32G
- * is done by the Trusted Firmware - unless we run U-Boot at EL3.
- */
-#define CONFIG_GICV3
-#define GIC_BASE	0x50800000
-#define GICD_BASE	GIC_BASE
-#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR) || \
-	defined(CONFIG_NXP_S32G3XX)
-#define GICR_BASE	(GIC_BASE + 0x100000)
-#else
-#define GICR_BASE	(GIC_BASE + 0x80000)
-#endif
-#endif
-
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
 #define S32_SRAM_BASE		0x34000000

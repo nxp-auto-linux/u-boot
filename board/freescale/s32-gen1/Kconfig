@@ -83,34 +83,12 @@ config DTB_ADDR
 	default 0xbfa90000 if TARGET_TYPE_S32GEN1_EMULATOR
 	default 0xffa90000
 
-choice
-	prompt "Select boot flow configuration"
-	default S32_STANDALONE_BOOT_FLOW
+config S32_ATF_BOOT_FLOW
+	bool "Boot flow with TF-A"
+	select S32_SKIP_RELOC
 	help
-	  In secure boot and power management aware scenarios, there would be a
-	  Trusted Firmware running at EL3 just before U-Boot, while the latter
-	  runs at EL2 or EL1. Running in the non-secure world prevents U-Boot
-	  from configuring certain registers, in particular secure GICv3.
-	  While the secure boot feature and the Trusted Firmware are still in
-	  development, this choice will enable the U-Boot and firmware developer
-	  to switch between TF-A and standalone boot flows. The default
-	  is standalone, to allow for backward compatibility with the existing,
-	  stable configurations.
-
-	config S32_STANDALONE_BOOT_FLOW
-		bool "Standalone boot flow"
-		help
-		  U-Boot runs at EL3 as the first component in the boot flow.
-		  This boot flow does not accommodate an ARM Trusted Firmware
-		  (TF-A) for this platform.
-
-	config S32_ATF_BOOT_FLOW
-		bool "Boot flow with TF-A"
-		select S32_SKIP_RELOC
-		help
-		  U-Boot is started by the ARM Trusted Firmware (TF-A) and runs
-		  in the non-secure world.
-endchoice
+	  U-Boot is started by the ARM Trusted Firmware (TF-A) and runs
+	  in the non-secure world.
 
 config S32GEN1_HWCONFIG
 	string "S32GEN1 HWConfig definition"

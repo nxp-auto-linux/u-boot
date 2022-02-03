@@ -9,32 +9,16 @@
 #include <asm/io.h>
 #include <asm/system.h>
 #include <asm/arch/cpu.h>
-#include <asm/arch/mc_me_regs.h>
-#include <asm/arch/siul.h>
 #include <asm-generic/sections.h>
-#include "mp.h"
 #include "scmi_reset_agent.h"
-#include "s32gen1_ocotp.h"
 #include <asm/arch/soc.h>
-#include <asm/arch/s32-gen1/a53_cluster_gpr.h>
-#include <asm/arch/s32-gen1/ncore.h>
-#include <s32gen1_clk_utils.h>
 #include <asm-generic/sections.h>
-#include <clk.h>
-#include <dm/device.h>
-#include <dm/uclass.h>
-#include <misc.h>
 #include <linux/sizes.h>
-#include <power/pmic.h>
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
 
 DECLARE_GLOBAL_DATA_PTR;
-
-#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-static int s32_gentimer_init(void);
-#endif
 
 void mmu_setup(void);
 
@@ -224,44 +208,6 @@ static inline void final_mmu_setup(void)
 	set_sctlr(get_sctlr() | CR_M);
 }
 
-#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
-/*
- * This function is a temporary fix for drivers without clock bindings.
- *
- * It should be removed once Linux kernel is able to enable all
- * needed clocks and all U-Boot drivers have clock bindings.
- *
- * E.g. QSPI, FTM, etc.
- */
-static int enable_periph_clocks(void)
-{
-	struct udevice *dev;
-	struct clk_bulk bulk;
-	int ret;
-
-	ret = uclass_get_device_by_name(UCLASS_CLK, "clks", &dev);
-	if (ret) {
-		pr_err("Failed to get 'clk' device\n");
-		return ret;
-	}
-
-	ret = clk_get_bulk(dev, &bulk);
-	if (ret == -EINVAL)
-		return 0;
-
-	if (ret)
-		return ret;
-
-	ret = clk_enable_bulk(&bulk);
-	if (ret) {
-		clk_release_bulk(&bulk);
-		return ret;
-	}
-
-	return 0;
-}
-#endif
-
 int arch_cpu_init(void)
 {
 	int ret = 0;
@@ -275,30 +221,12 @@ int arch_cpu_init(void)
 	gd->flags |= GD_FLG_SKIP_RELOC;
 #endif
 
-
-#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-	/* Platforms with Concerto/Ncore have to explicitly initialize
-	 * the interconnect before any cache operations are performed.
-	 * Also, ensure that clocks are initialized before the interconnect.
-	 *
-	 * Note: TF-A has already initialized these, so don't do it again if
-	 * we're running at EL2.
-	 */
-	ret = enable_early_clocks();
-	if (ret)
-		return ret;
-
-	ncore_init(0x1);
-#endif
 	set_sctlr(get_sctlr() & ~CR_M);
 	icache_enable();
 	__asm_invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
 	early_mmu_setup();
 
-#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-	s32_gentimer_init();
-#endif
 	return ret;
 }
 
@@ -345,52 +273,9 @@ int arch_early_init_r(void)
 {
 	int rv = 0;
 
-#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	asm volatile("dsb sy");
-	rv = fsl_s32_wake_secondary_cores();
-
-	if (rv)
-		printf("Did not wake secondary cores\n");
-
-	/* Reconfigure Concerto before actually waking the cores */
-	ncore_init(cpu_pos_mask());
-	asm volatile("sev");
-#endif
-
-#if !defined(CONFIG_S32_ATF_BOOT_FLOW)
-	return enable_periph_clocks();
-#endif
 	return rv;
 }
 #endif /* CONFIG_ARCH_EARLY_INIT_R */
-
-/* For configurations with U-Boot *not* at EL3, it is presumed that
- * the EL3 software (e.g. the TF-A) will initialize the generic timer.
- */
-#if defined(CONFIG_S32_STANDALONE_BOOT_FLOW)
-/* The base counter frequency (FXOSC on the S32G) is actually board-dependent.
- * Moreoever, only software running at the highest implemented Exception level
- * can write to CNTFRQ_EL0, so we won't even define this function if we are
- * running with TF-A.
- */
-static int s32_gentimer_init(void)
-{
-	u32 clk_div;
-
-	clk_div = readl(A53_CLUSTER_GPR_GPR(0)) & GPR00_CA53_COUNTER_CLK_DIV_VAL_MASK;
-	clk_div = (clk_div >> GPR00_CA53_COUNTER_CLK_DIV_VAL_SHIFT) + 1;
-
-	__real_cntfrq = COUNTER_FREQUENCY / clk_div;
-	flush_dcache_range((unsigned long)&__real_cntfrq,
-			   (unsigned long)&__real_cntfrq +
-			   sizeof(__real_cntfrq));
-
-	/* Primary core updated here, secondaries in start_slave_cores */
-	asm volatile("msr cntfrq_el0, %0" : : "r" (__real_cntfrq) : "memory");
-
-	return 0;
-}
-#endif /* CONFIG_S32_STANDALONE_BOOT_FLOW */
 
 static void s32_init_ram_size(void)
 {
