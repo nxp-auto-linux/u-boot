@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017,2019-2021 NXP
+ * Copyright 2017,2019-2022 NXP
  *
  */
 #ifndef _FSL_S32_CPU_H
@@ -33,21 +33,5 @@
 #endif
 
 #endif
-
-#if defined(CONFIG_NXP_S32G3XX)
-#define CPUMASK_CLUSTER0	(BIT(0) | BIT(1) | BIT(4) | BIT(5))
-#define CPUMASK_CLUSTER1	(BIT(2) | BIT(3) | BIT(6) | BIT(7))
-#define CPUMASK_LOCKSTEP	(BIT(0) | BIT(1) | BIT(2) | BIT(3))
-#elif defined(CONFIG_NXP_S32G2XX) || defined(CONFIG_NXP_S32R45)
-#define CPUMASK_CLUSTER0	(BIT(0) | BIT(1))
-#define CPUMASK_CLUSTER1	(BIT(2) | BIT(3))
-#define CPUMASK_LOCKSTEP	CPUMASK_CLUSTER0
-#endif
-
-u32 cpu_mask(void);
-int cpu_numcores(void);
-u32 cpu_pos_mask_cluster0(void);
-u32 cpu_pos_mask_cluster1(void);
-u32 cpu_pos_lockstep_mask(void);
 
 #endif /* _FSL_S32_CPU_H */

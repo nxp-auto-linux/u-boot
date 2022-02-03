@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <hang.h>
 #include <asm/arch/cpu.h>
-#include <asm/arch/s32-gen1/a53_cluster_gpr.h>
 #include <board_common.h>
 #ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
@@ -32,8 +31,6 @@
 #define MC_RGM_PSTAT_CM7		(0)
 #define PSTAT_PERIPH_n_STAT(n)		BIT(n)
 #define PSTAT_PERIPH_CM7n_STAT(n)	PSTAT_PERIPH_n_STAT(n)
-
-#define RGM_CORES_RESET_GROUP		1
 
 /* MC_ME registers. */
 #define MC_ME_CTL_KEY(MC_ME)		(UPTR(MC_ME) + 0x0)
@@ -68,48 +65,6 @@
 #define MC_ME_CM7_PRTN		(0)
 
 DECLARE_GLOBAL_DATA_PTR;
-
-__weak u32 cpu_pos_lockstep_mask(void)
-{
-	return CPUMASK_LOCKSTEP;
-}
-
-__weak u32 cpu_pos_mask(void)
-{
-	if (is_a53_lockstep_enabled())
-		return cpu_pos_lockstep_mask();
-
-	return cpu_pos_mask_cluster0() | cpu_pos_mask_cluster1();
-}
-
-__weak u32 cpu_pos_mask_cluster0(void)
-{
-	return CPUMASK_CLUSTER0;
-}
-
-__weak u32 cpu_pos_mask_cluster1(void)
-{
-	return CPUMASK_CLUSTER1;
-}
-
-u32 cpu_mask(void)
-{
-	u32 rgm_stat = readl(RGM_PSTAT(MC_RGM_BASE_ADDR,
-				       RGM_CORES_RESET_GROUP));
-	/* 0 means out of reset. */
-	/* Bit 0 corresponds to cluster reset and is 0 if any
-	 * of the other bits 1-4 are 0.
-	 */
-	return ((~(rgm_stat)) >> 1) & cpu_pos_mask();
-}
-
-/*
- * Return the number of cores on this SOC.
- */
-int cpu_numcores(void)
-{
-	return hweight32(cpu_mask());
-}
 
 __weak int dram_init(void)
 {
