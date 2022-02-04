@@ -14,8 +14,6 @@
 
 #include <generated/autoconf.h>
 
-#undef CONFIG_RUN_FROM_IRAM_ONLY
-
 #define CONFIG_REMAKE_ELF
 
 #define CONFIG_MACH_TYPE		4146
@@ -150,11 +148,7 @@
 #endif
 
 /* Size of malloc() pool */
-#if defined(CONFIG_RUN_FROM_IRAM_ONLY)
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 512 * 1024)
-#else
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
-#endif
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -439,10 +433,6 @@
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_HZ			1000
-
-#ifdef CONFIG_RUN_FROM_IRAM_ONLY
-#define CONFIG_SYS_MALLOC_BASE		(CONFIG_SYS_FSL_DRAM_BASE1)
-#endif
 
 #define CONFIG_SYS_SDRAM_BASE		CONFIG_SYS_FSL_DRAM_BASE1
 

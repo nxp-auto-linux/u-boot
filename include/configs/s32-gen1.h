@@ -26,8 +26,6 @@
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32.h */
 
-#undef CONFIG_RUN_FROM_IRAM_ONLY
-
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */

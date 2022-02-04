@@ -16,9 +16,6 @@
 #include <asm/gic.h>
 #include "mp.h"
 
-#define SWT_SR(SWTn_BASE_ADDR) (SWTn_BASE_ADDR + 0x10)
-
-
 ENTRY(lowlevel_init)
 
 	mov	x29, lr			/* Save LR */
