@@ -27,7 +27,6 @@
 #define HSE_AUTH_TAG_SD      0x82000u
 
 #define HSE_IVT_BLK        8
-#define HSE_SYS_IMG_BLK    944
 #define HSE_UBOOT_SIGN_BLK 1040
 #define HSE_UBOOT_BIN_BLK  1057
 
@@ -37,8 +36,9 @@
 #define HSE_CHANNEL_ADMIN   0u
 #define HSE_CHANNEL_GENERAL 1u
 
-#define HSE_STATUS_INIT_OK  BIT(8)
-#define HSE_IVT_BOOTSEQ_BIT BIT(3)
+#define HSE_STATUS_INIT_OK        BIT(8)
+#define HSE_STATUS_PRIMARY_SYSIMG BIT(14)
+#define HSE_IVT_BOOTSEQ_BIT       BIT(3)
 
 #define HSE_SRV_ID_SET_ATTR                 0x00000001ul
 #define HSE_SRV_ID_PUBLISH_SYS_IMAGE        0x00000011ul

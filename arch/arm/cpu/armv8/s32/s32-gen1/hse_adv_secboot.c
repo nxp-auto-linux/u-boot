@@ -308,13 +308,15 @@ hse_send_fail:
 int hse_write_sys_img(struct hse_private *priv, bool secure)
 {
 	int ret = 0;
+	u32 sys_img_blk;
 
 	printf("\tWriting SYS_IMG to SDcard...\n");
 
 	flush_dcache_range((u64)priv,
 			   (u64)priv + sizeof(struct hse_private));
 
-	ret = hse_mmc_write(&priv->sys_img, HSE_SYS_IMG_BLK, 96);
+	sys_img_blk = priv->ivt.sys_img / 512;
+	ret = hse_mmc_write(&priv->sys_img, sys_img_blk, 96);
 	if (ret) {
 		log_err("ERROR: sys-img write failed!\n");
 		ret = CMD_RET_FAILURE;
@@ -324,7 +326,6 @@ int hse_write_sys_img(struct hse_private *priv, bool secure)
 	printf("\tUpdating SYS_IMG pointer...\n");
 
 	/* set the sys img address, external flash type, flash page size */
-	priv->ivt.sys_img = HSE_SYS_IMG_SD;
 	priv->ivt.sys_img_ext_flash_type = HSE_EXT_FLASH_SD;
 	priv->ivt.sys_img_flash_page_size = HSE_EXT_FLASH_PAGE;
 
@@ -435,30 +436,10 @@ static int do_hse_adv_secboot_prep(cmd_tbl_t *cmdtp, int flag,
 	}
 
 	/* check if sys_img already exists */
-	if (priv->ivt.sys_img) {
-		printf("CHECK: SYS_IMG already exists\n");
-		if (priv->ivt.boot_cfg & HSE_IVT_BOOTSEQ_BIT) {
-			/* do nothing */
-			printf("CHECK: BOOTSEQ bit already set\n");
-
-			ret = CMD_RET_SUCCESS;
-			goto ret_fail;
-		} else {
-			/* set bootseq bit in boot cfg word */
-			printf("\tSetting BOOTSEQ bit...\n");
-			priv->ivt.boot_cfg |= HSE_IVT_BOOTSEQ_BIT;
-
-			/* write ivt */
-			ret = hse_mmc_write(&priv->ivt, HSE_IVT_BLK, 1);
-			if (ret) {
-				log_err("ERROR: ivt write failed!\n");
-				ret = CMD_RET_FAILURE;
-				goto ret_fail;
-			}
-
-			ret = CMD_RET_SUCCESS;
-			goto ret_fail;
-		}
+	if (hse_status_ret & HSE_STATUS_PRIMARY_SYSIMG) {
+		printf("CHECK: SYS_IMG already loaded\n");
+		ret = CMD_RET_FAILURE;
+		goto ret_fail;
 	}
 
 	ret = hse_enable_mus(priv, &hse_recv);
@@ -541,8 +522,8 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 	}
 
 	/* check if sys_img already exists */
-	if (priv->ivt.sys_img) {
-		printf("CHECK: SYS_IMG already exists\n");
+	if (hse_status_ret & HSE_STATUS_PRIMARY_SYSIMG) {
+		printf("CHECK: SYS_IMG already loaded\n");
 		ret = CMD_RET_SUCCESS;
 		goto ret_fail;
 	}
