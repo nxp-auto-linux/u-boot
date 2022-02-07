@@ -202,9 +202,9 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			status = "disabled";
+			status = "okay";
 
-			protocol@14 {
+			clks: protocol@14 {
 				#address-cells = <2>;
 				#size-cells = <2>;
 
@@ -225,12 +225,12 @@
 		status = "disabled";
 	};
 
-	clks: clks {
+	clks {
 		compatible = "fsl,s32-gen1-clocking";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		#clock-cells = <1>;
-		status = "okay";
+		status = "disabled";
 
 		assigned-clocks =
 			<&clks S32GEN1_SCMI_CLK_SERDES_REF>,
