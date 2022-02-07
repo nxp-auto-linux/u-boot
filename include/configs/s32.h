@@ -207,8 +207,6 @@
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
-#define INITRD_HIGH_DEFAULT 0xffffffff
-
 /* Leave room for TF-A & OPTEE */
 #define INITRD_HIGH 0xFE1FFFFF
 
