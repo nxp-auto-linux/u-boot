@@ -637,6 +637,12 @@ static void s32gen1_print_header(const void *data)
 		(unsigned int)((uint8_t *)app->code - data8),
 		(unsigned int)app->code_length);
 
+	fprintf(stderr, "IVT Location:\t");
+	if (qspi_boot)
+		fprintf(stderr, "QSPI\n");
+	else
+		fprintf(stderr, "SD/eMMC\n");
+
 	fprintf(stderr, "Load address:\t0x%x\nEntry point:\t0x%x\n",
 		(unsigned int)app->ram_start_pointer,
 		(unsigned int)app->ram_entry_pointer);
