@@ -12,9 +12,6 @@
 
 #include <generated/autoconf.h>
 
-/* Config CACHE */
-#define CONFIG_CMD_CACHE
-
 /* Flat device tree definitions */
 #define CONFIG_OF_FDT
 #define CONFIG_OF_BOARD_SETUP
