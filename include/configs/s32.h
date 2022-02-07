@@ -17,8 +17,6 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
-/* SMP definitions */
-#define CONFIG_MAX_CPUS			(4)
 #define SECONDARY_CPU_BOOT_PAGE		(CONFIG_SYS_FSL_DRAM_BASE1)
 #define CPU_RELEASE_ADDR		SECONDARY_CPU_BOOT_PAGE
 #define CONFIG_FSL_SMP_RELEASE_ALL
