@@ -40,8 +40,6 @@
 /* we include this file here because it depends on the above definitions */
 #include <configs/s32.h>
 
-#define IMX_FEC_BASE            ENET0_BASE_ADDR
-
 #define CONFIG_SYS_TEXT_OFFSET      0x00020000
 
 #define S32_SRAM_BASE		0x34000000
