@@ -12,8 +12,6 @@
 
 #include <generated/autoconf.h>
 
-#define CONFIG_REMAKE_ELF
-
 #define CONFIG_MACH_TYPE		4146
 
 /* Config CACHE */
