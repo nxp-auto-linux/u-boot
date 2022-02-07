@@ -26,8 +26,6 @@
 /* The configurations of this board depend on the definitions in this file and
 * the ones in the header included at the end, configs/s32.h */
 
-#define CONFIG_MACH_TYPE		4146
-
 #define CONFIG_MP
 
 /* Config CACHE */
