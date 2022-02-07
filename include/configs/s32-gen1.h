@@ -23,15 +23,6 @@
 #define CONFIG_SYS_FSL_DRAM_SIZE2       0x80000000
 #endif
 
-/* CONFIG_PHY_RGMII_DIRECT_CONNECTED should be enabled when
- * BCM switch is configured.
- */
-#ifdef CONFIG_PHY_RGMII_DIRECT_CONNECTED
-#define CONFIG_BCM_SPEED	SPEED_1000
-#else
-#define CONFIG_FEC_MXC_PHYADDR  7
-#endif
-
 #ifdef CONFIG_CMD_IRQ
 #define CONFIG_GICSUPPORT
 #define CONFIG_USE_IRQ
