@@ -23,13 +23,6 @@
 #define CONFIG_SYS_FSL_DRAM_SIZE2       0x80000000
 #endif
 
-/* The configurations of this board depend on the definitions in this file and
-* the ones in the header included at the end, configs/s32.h */
-
-#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC_BASE_ADDR
-
-/* #define CONFIG_CMD_EXT2 EXT2 Support */
-
 /* Ethernet config */
 
 #define CONFIG_FEC_XCV_TYPE     RGMII
