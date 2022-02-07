@@ -25,31 +25,13 @@
 #define RAMDISK_NAME		rootfs.uimg
 
 /* Increase image size */
-#define CONFIG_SYS_BOOTM_LEN    (64 << 20)
+#define CONFIG_SYS_BOOTM_LEN    SZ_64M
 
 /* Flat device tree definitions */
 #define FDT_ADDR		0x83E00000
 
 /* Ramdisk load address */
-#  define RAMDISK_ADDR		0x84000000
-
-#if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
-
-/* Flash Size and Num need to be updated according to the board's flash type */
-#define FSL_QSPI_FLASH_SIZE            SZ_128M
-#define FSL_QSPI_FLASH_NUM             2
-
-#define QSPI0_BASE_ADDR                QSPI_BASE_ADDR
-#define QSPI0_AMBA_BASE                CONFIG_SYS_FSL_FLASH0_BASE
-
-#else
-
-/* Flash comand disabled until implemented */
-#undef CONFIG_CMD_FLASH
-
-#define FLASH_BASE_ADR2		(CONFIG_SYS_FSL_FLASH0_BASE + 0x4000000)
-
-#endif
+#define RAMDISK_ADDR		0x84000000
 
 #define S32_LOAD_FLASH_IMAGES_CMD\
 	"sf probe 6:0;"\
