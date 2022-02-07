@@ -17,7 +17,6 @@
 /* Enable passing of ATAGs */
 #define CONFIG_CMDLINE_TAG
 
-#define CONFIG_FSL_SMP_RELEASE_ALL
 #ifndef CONFIG_XEN_SUPPORT
 #define CONFIG_ARMV8_SWITCH_TO_EL1
 #endif
