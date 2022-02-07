@@ -1119,6 +1119,7 @@ config ARCH_ZYNQMP
 config ARCH_S32
 	bool "Support S32 SOCs"
 	select ARM64
+	select OF_BOARD_SETUP
 
 config TEGRA
 	bool "NVIDIA Tegra"

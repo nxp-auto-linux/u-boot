@@ -28,9 +28,6 @@
 
 #define CONFIG_MP
 
-/* Flat device tree definitions */
-#define CONFIG_OF_BOARD_SETUP
-
 /* System Timer */
 /* #define CONFIG_SYS_PIT_TIMER */
 
