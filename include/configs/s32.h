@@ -114,10 +114,6 @@
 
 #endif
 
-#ifndef CONFIG_DCU_EXTRA_ENV_SETTINGS
-#define CONFIG_DCU_EXTRA_ENV_SETTINGS	""
-#endif
-
 #ifndef S32_DEFAULT_IP
 #define S32_DEFAULT_IP "10.0.0.100\0"
 #endif
@@ -217,7 +213,6 @@
 #define INITRD_HIGH 0xFE1FFFFF
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	CONFIG_DCU_EXTRA_ENV_SETTINGS \
 	"ipaddr=" S32_DEFAULT_IP \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
