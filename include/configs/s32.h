@@ -12,9 +12,6 @@
 
 #include <generated/autoconf.h>
 
-/* System Timer */
-/* #define CONFIG_SYS_PIT_TIMER */
-
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* Enable passing of ATAGs */
