@@ -1053,7 +1053,6 @@ ifneq ($(CONFIG_DM_VIDEO),y)
 	@echo >&2 "===================================================="
 endif
 endif
-ifeq (,$(CONFIG_S32))
 ifeq ($(CONFIG_OF_EMBED),y)
 	@echo >&2 "===================== WARNING ======================"
 	@echo >&2 "CONFIG_OF_EMBED is enabled. This option should only"
@@ -1061,7 +1060,6 @@ ifeq ($(CONFIG_OF_EMBED),y)
 	@echo >&2 "CONFIG_OF_SEPARATE for boards in mainline."
 	@echo >&2 "See doc/README.fdt-control for more info."
 	@echo >&2 "===================================================="
-endif
 endif
 ifeq ($(CONFIG_SPI_FLASH),y)
 ifneq ($(CONFIG_DM_SPI_FLASH)$(CONFIG_OF_CONTROL),yy)

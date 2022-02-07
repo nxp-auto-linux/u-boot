@@ -10,8 +10,6 @@
 #ifndef __S32_H
 #define __S32_H
 
-#define CONFIG_S32
-
 #include <generated/autoconf.h>
 
 #define CONFIG_REMAKE_ELF
