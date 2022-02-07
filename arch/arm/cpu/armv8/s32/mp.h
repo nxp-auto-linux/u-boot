@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier:     GPL-2.0+ */
 /*
  * Copyright 2014, Freescale Semiconductor
- * Copyright 2017-2018, 2020-2021 NXP
+ * Copyright 2017-2018, 2020-2022 NXP
  */
 
 #ifndef _S32_MP_H
@@ -19,7 +19,6 @@ void *get_spin_tbl_addr(void);
 phys_addr_t determine_mp_bootpg(void);
 void secondary_boot_func(void);
 u32 cpu_pos_mask(void);
-u64 fdt_to_cpu_id(u64 fdt_id);
 #endif
 
 #endif /* _S32_MP_H */

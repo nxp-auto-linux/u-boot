@@ -286,8 +286,3 @@ __weak u32 mc_me_get_cluster_ptrn(u32 core)
 	 */
 	return (core % 4) & ~1;
 }
-
-__weak u64 fdt_to_cpu_id(u64 fdt_id)
-{
-	return (fdt_id & 0x3u) | (fdt_id >> 0x7u);
-}
