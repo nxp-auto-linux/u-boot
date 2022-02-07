@@ -23,10 +23,6 @@
 #define CONFIG_SYS_FSL_DRAM_SIZE2       0x80000000
 #endif
 
-/* Ethernet config */
-
-#define CONFIG_FEC_XCV_TYPE     RGMII
-
 /* CONFIG_PHY_RGMII_DIRECT_CONNECTED should be enabled when
  * BCM switch is configured.
  */
