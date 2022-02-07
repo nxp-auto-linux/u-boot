@@ -19,8 +19,6 @@
 /* System Timer */
 /* #define CONFIG_SYS_PIT_TIMER */
 
-#define CONFIG_LOADADDR		LOADADDR
-
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* Enable passing of ATAGs */
@@ -43,9 +41,6 @@
 
 /* Flat device tree definitions */
 #define FDT_ADDR		0x83E00000
-
-/*Kernel image load address */
-#  define LOADADDR		0x80000000
 
 /* Ramdisk load address */
 #  define RAMDISK_ADDR		0x84000000
@@ -420,6 +415,8 @@
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_FSL_DRAM_BASE1 + \
 					 CONFIG_SYS_FSL_DRAM_SIZE1)
 
+/*Kernel image load address */
+#define CONFIG_LOADADDR			0x80000000
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_HZ			1000
 
