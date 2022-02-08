@@ -53,37 +53,6 @@ start_slave_cores:
 	branch_if_master x0, x1, 2f
 
 	/*
-	 * Slave should wait for master clearing spin table and
-	 * the mmu page tables.
-	 * This sync prevent salves observing incorrect
-	 * value of spin table and jumping to wrong place.
-	 */
-
-	wfe
-	tlbi	alle3
-	dsb	sy
-	isb
-	isb
-
-	ldr	x0, =s32_tlb_addr
-	ldr	x0, [x0]
-	msr	ttbr0_el3, x0
-	msr	ttbr0_el2, x0
-
-	ldr	x0, =s32_tcr
-	ldr	x0, [x0]
-	msr	tcr_el3, x0
-	msr	tcr_el2, x0
-
-	ldr	x0,=MEMORY_ATTRIBUTES
-	msr	mair_el3, x0
-	msr	mair_el2, x0
-
-	ldr	x0, =__real_cntfrq
-	ldr     x0, [x0]
-	msr	cntfrq_el0, x0	/* set with real frequency */
-	dsb	sy
-	/*
 	 * All slaves will enter EL2 and optionally EL1.
 	 */
 	adr	x4, lowlevel_in_el2

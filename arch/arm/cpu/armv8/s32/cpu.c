@@ -148,22 +148,6 @@ static inline void early_mmu_setup(void)
 	set_sctlr(get_sctlr() | CR_C);
 }
 
-/* Saved TLB settings for secondaries */
-uintptr_t s32_tlb_addr;
-u64 s32_tcr;
-
-static inline void save_tlb(void)
-{
-	s32_tlb_addr = gd->arch.tlb_addr;
-	s32_tcr = get_tcr(current_el(), NULL, NULL);
-
-	flush_dcache_range((unsigned long)&s32_tlb_addr,
-			   (unsigned long)&s32_tlb_addr + sizeof(s32_tlb_addr));
-
-	flush_dcache_range((unsigned long)&s32_tcr,
-			   (unsigned long)&s32_tcr + sizeof(s32_tcr));
-}
-
 static inline void final_mmu_setup(void)
 {
 	unsigned int el = current_el();
@@ -187,8 +171,6 @@ static inline void final_mmu_setup(void)
 
 	/* gd->arch.tlb_emerg is used by mmu_set_region_dcache_behaviour */
 	gd->arch.tlb_emerg = gd->arch.tlb_addr;
-
-	save_tlb();
 
 	/*
 	 * MMU is already enabled, just need to invalidate TLB to load the
