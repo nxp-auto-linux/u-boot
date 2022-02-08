@@ -14,7 +14,6 @@
 #include <asm/armv8/mmu.h>
 #include <asm/macro.h>
 #include <asm/gic.h>
-#include "mp.h"
 
 ENTRY(lowlevel_init)
 
@@ -79,7 +78,4 @@ ENDPROC(lowlevel_init)
 
 	/* 64 bit alignment for elements accessed as data */
 	.align 4
-	.global __real_cntfrq
-__real_cntfrq:
-	.quad COUNTER_FREQUENCY
 

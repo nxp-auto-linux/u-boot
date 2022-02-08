@@ -16,7 +16,6 @@
 #include <asm/arch-s32/s32-gen1/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
 #include <linux/ctype.h>
-#include "mp.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 

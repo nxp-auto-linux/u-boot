@@ -28,6 +28,8 @@
 
 #define CONFIG_MACH_TYPE		4146
 
+#define CONFIG_MP
+
 /* Config CACHE */
 #define CONFIG_CMD_CACHE
 

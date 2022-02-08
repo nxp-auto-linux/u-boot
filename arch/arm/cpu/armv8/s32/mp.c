@@ -5,22 +5,9 @@
  */
 
 #include <common.h>
-#include <cpu_func.h>
-#include <asm/io.h>
-#include <asm/system.h>
-#include <asm/io.h>
-#include <asm/arch/mc_me_regs.h>
-#include <asm/arch/mc_rgm_regs.h>
-#include <asm/spin_table.h>
-#include "mp.h"
-
-#if defined(CONFIG_MP)
 #include <dm/uclass.h>
 #include <linux/psci.h>
 #include <malloc.h>
-
-#define CORE_SHIFT	0U
-#define CORE_MASK	GENMASK(3, CORE_SHIFT)
 
 #define CLUSTER_SHIFT	8U
 #define CLUSTER_MASK	GENMASK(11, CLUSTER_SHIFT)
@@ -29,11 +16,9 @@ struct cpu_desc {
 	u32 psci_id;
 	bool on;
 };
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if defined(CONFIG_MP)
 static struct cpu_desc *cpus;
 static u32 n_cpus;
 
@@ -222,4 +207,3 @@ int cpu_release(u32 nr, int argc, char * const argv[])
 
 	return 0;
 }
-#endif

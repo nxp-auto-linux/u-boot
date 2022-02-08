@@ -44,9 +44,6 @@
 #define CONFIG_ARMV8_SWITCH_TO_EL1
 #endif
 
-/* SMP Spin Table Definitions */
-#define CONFIG_MP
-
 /* Ramdisk name */
 #define RAMDISK_NAME		rootfs.uimg
 
