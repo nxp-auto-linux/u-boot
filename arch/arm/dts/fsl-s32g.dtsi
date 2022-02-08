@@ -51,18 +51,6 @@
 		device_id = <1>;
 		num-lanes = <2>; /* supports max 2 lanes */
 		clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
-
-		assigned-clocks =
-			<&clks S32G_CLK_SERDES1_LANE0_TX>,
-			<&clks S32G_CLK_SERDES1_LANE0_CDR>,
-			<&clks S32G_CLK_SERDES1_LANE1_TX>,
-			<&clks S32G_CLK_SERDES1_LANE1_CDR>;
-		assigned-clock-parents =
-			<&serdes1_lane0_ext_tx 0>,
-			<&serdes1_lane0_ext_cdr 0>,
-			<&serdes1_lane1_ext_tx 0>,
-			<&serdes1_lane1_ext_cdr 0>;
-
 		status = "okay";
 	};
 
@@ -256,96 +244,6 @@
 	};
 };
 
-&clks {
-	clocks = <&clks S32GEN1_SCMI_CLK_FTM0_SYS>,
-		<&clks S32GEN1_SCMI_CLK_FTM1_SYS>,
-		<&clks S32GEN1_SCMI_CLK_FTM0_EXT>,
-		<&clks S32GEN1_SCMI_CLK_FTM1_EXT>,
-		<&clks S32GEN1_SCMI_CLK_FLEXCAN_CAN>,
-		<&clks S32GEN1_SCMI_CLK_SPI_REG>,
-		<&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>;
-
-	mc_cgm2: mc_cgm2@44018000 {
-		compatible = "fsl,s32gen1-mc_cgm2";
-		reg = <0x0 0x44018000 0x0 0x3000>;
-
-		assigned-clocks =
-			<&clks S32G_CLK_PFE_MAC0_EXT_REF>,
-			<&clks S32G_CLK_PFE_MAC1_EXT_REF>,
-			<&clks S32G_CLK_PFE_MAC2_EXT_REF>,
-			<&clks S32G_CLK_MC_CGM2_MUX0>,
-			/* PFE MAC0 */
-			<&clks S32G_CLK_MC_CGM2_MUX7>,
-			<&clks S32G_CLK_MC_CGM2_MUX4>,
-			<&clks S32G_CLK_MC_CGM2_MUX1>,
-			/* PFE MAC1 */
-			<&clks S32G_CLK_MC_CGM2_MUX8>,
-			<&clks S32G_CLK_MC_CGM2_MUX5>,
-			<&clks S32G_CLK_MC_CGM2_MUX2>,
-			/* PFE MAC2 */
-			<&clks S32G_CLK_MC_CGM2_MUX9>,
-			<&clks S32G_CLK_MC_CGM2_MUX6>,
-			<&clks S32G_CLK_MC_CGM2_MUX3>,
-
-			<&clks S32G_CLK_PFE_PE>,
-			<&clks S32G_CLK_PFE_MAC0_REF_DIV>,
-			<&clks S32G_CLK_PFE_MAC0_RX>,
-			<&clks S32G_CLK_PFE_MAC0_TX_DIV>,
-			<&clks S32G_CLK_PFE_MAC1_REF_DIV>,
-			<&clks S32G_CLK_PFE_MAC1_RX>,
-			<&clks S32G_CLK_PFE_MAC1_TX>,
-			<&clks S32G_CLK_PFE_MAC2_REF_DIV>,
-			<&clks S32G_CLK_PFE_MAC2_RX>,
-			<&clks S32G_CLK_PFE_MAC2_TX>;
-		assigned-clock-parents =
-			<&pfe_mac0_ext_ref 0>,
-			<&pfe_mac1_ext_ref 0>,
-			<&pfe_mac2_ext_ref 0>,
-			<&clks S32G_CLK_ACCEL_PLL_PHI1>,
-			/* PFE MAC0 */
-			<&clks S32G_CLK_PFE_MAC0_EXT_REF>,
-			<&clks S32G_CLK_SERDES1_LANE0_CDR>,
-			<&clks S32G_CLK_SERDES1_LANE0_TX>,
-			/* PFE MAC1 */
-			<&clks S32G_CLK_PFE_MAC1_EXT_REF>,
-			<&clks S32G_CLK_SERDES1_LANE1_CDR>,
-			<&clks S32G_CLK_SERDES1_LANE1_TX>,
-			/* PFE MAC2 */
-			<&clks S32G_CLK_PFE_MAC2_EXT_REF>,
-			<&clks S32G_CLK_SERDES0_LANE1_CDR>,
-			<&clks S32G_CLK_SERDES0_LANE1_TX>;
-		assigned-clock-rates =
-			<0>, <0>, <0>, <0>, <0>, <0>, <0>,
-			<0>, <0>, <0>, <0>, <0>, <0>,
-			<600000000>,
-			<50000000>,
-			<125000000>,
-			<125000000>,
-			<50000000>,
-			<125000000>,
-			<125000000>,
-			<50000000>,
-			<125000000>,
-			<125000000>;
-
-	};
-};
-
-&accelpll {
-	assigned-clocks =
-		<&clks S32GEN1_CLK_ACCEL_PLL_MUX>,
-		<&clks S32GEN1_CLK_ACCEL_PLL_VCO>,
-		<&clks S32G_CLK_ACCEL_PLL_PHI0>,
-		<&clks S32G_CLK_ACCEL_PLL_PHI1>;
-	assigned-clock-parents =
-		<&clks S32GEN1_CLK_FXOSC>;
-	assigned-clock-rates =
-		<0>,
-		<1800000000>,
-		<600000000>,
-		<600000000>;
-};
-
 &gmac0 {
 	clocks = <&clks S32GEN1_SCMI_CLK_GMAC0_TS>,
 		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
@@ -391,18 +289,6 @@
 };
 
 &serdes0 {
-	assigned-clocks =
-		<&clks S32GEN1_CLK_SERDES0_LANE0_TX>,
-		<&clks S32GEN1_CLK_SERDES0_LANE0_CDR>,
-		<&clks S32G_CLK_SERDES0_LANE1_TX>,
-		<&clks S32G_CLK_SERDES0_LANE1_CDR>;
-
-	assigned-clock-parents =
-		<&serdes0_lane0_ext_tx 0>,
-		<&serdes0_lane0_ext_cdr 0>,
-		<&serdes0_lane1_ext_tx 0>,
-		<&serdes0_lane1_ext_cdr 0>;
-
 	status = "okay";
 };
 
