@@ -208,25 +208,6 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 		      enum serdes_clock clktype,
 		      enum serdes_clock_fmhz fmhz)
 {
-#ifdef SGMII_MIN_SOC_REV_SUPPORTED
-	u32 raw_rev = 0;
-
-	/* construct a revision number based on major, minor and subminor,
-	 * each part using one hex digit
-	 */
-	raw_rev = (get_siul2_midr1_major() << 8) |
-		  (get_siul2_midr1_minor() << 4) |
-		  (get_siul2_midr2_subminor());
-
-	if (raw_rev < SGMII_MIN_SOC_REV_SUPPORTED) {
-		printf("SGMII not supported on rev.");
-		printf("%d.%d.%d\n", get_siul2_midr1_major() + 1,
-		       get_siul2_midr1_minor(),
-		       get_siul2_midr2_subminor());
-		return -ENXIO;
-	}
-#endif /* SGMII_MIN_SOC_REV_SUPPORTED */
-
 	struct s32_xpcs_cfg *serdes = s32_get_serdes_priv(platform_serdes_id);
 	int ret = 0;
 	u32 init_flags = 0;
