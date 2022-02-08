@@ -190,27 +190,3 @@ __weak u32 get_sram_size(void)
 {
 	return S32_SRAM_SIZE;
 }
-
-__weak u8 mc_me_core2prtn_core_id(u8 part, u8 id)
-{
-	return id;
-}
-
-__weak u8 get_rgm_a53_bit(u8 core)
-{
-	/**
-	 * Bit corresponding to CA53_n in the cores'
-	 * RGM reset partition (n=0..3)
-	 */
-	return core + 1;
-}
-
-__weak u32 mc_me_get_cluster_ptrn(u32 core)
-{
-	/**
-	 * For S32G2/S32R45 we have the following mapping:
-	 *     MC_ME_PRTN1_CORE0_* -> CA53 cluster0 core0/1
-	 *     MC_ME_PRTN1_CORE2_* -> CA53 cluster1 core0/1
-	 */
-	return (core % 4) & ~1;
-}

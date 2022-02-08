@@ -41,8 +41,8 @@
 #define MC_ME_PRTN_PART(PART, PRTN)	(MC_ME_BASE_ADDR + 0x140UL + \
 					 (PART) * 0x200UL + \
 					 (PRTN) * 0x20UL)
-#define MC_ME_PRTN_N_CORE_M(n, m)	\
-	MC_ME_PRTN_PART(n, mc_me_core2prtn_core_id((n), (m)))
+#define MC_ME_PRTN_N_CORE_M(n, m)      \
+	MC_ME_PRTN_PART(n, m)
 
 #define MC_ME_PRTN_N_PCONF_OFF	0x0
 #define MC_ME_PRTN_N_PUPD_OFF	0x4
@@ -77,9 +77,6 @@
 #define RDC_RD_INTERCONNECT_DISABLE_STAT (1 << 4)
 
 #define RDC_RD_STAT_XBAR_DISABLE_MASK	BIT(4)
-
-u8 mc_me_core2prtn_core_id(u8 part, u8 id);
-u32 mc_me_get_cluster_ptrn(u32 core);
 
 #endif
 
