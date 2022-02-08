@@ -1,15 +1,15 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2022 NXP
  */
 
 #include <asm/arch/clock.h>
 #include <dm/uclass.h>
 #include <dt-bindings/clock/s32gen1-clock.h>
-#include <s32gen1_clk_utils.h>
+#include "s32gen1_clk_utils.h"
 #include <s32gen1_clk_funcs.h>
 
-struct udevice *get_clk_device(void)
+static struct udevice *get_clk_device(void)
 {
 	static struct udevice *dev;
 	int ret;
@@ -66,47 +66,6 @@ int s32gen1_enable_dev_clk(const char *name, struct udevice *dev)
 		printf("Failed to get %s\n", name);
 		return ret;
 	}
-
-	ret = clk_enable(&clk);
-	(void)clk_free(&clk);
-
-	return ret;
-}
-
-ulong s32gen1_get_plat_clk_rate(ulong clk_id)
-{
-	struct clk clk;
-	struct udevice *clkdev = get_clk_device();
-	ulong rate;
-	int ret;
-
-	if (!clkdev)
-		return -EINVAL;
-
-	clk.id = clk_id;
-	ret = clk_request(clkdev, &clk);
-	if (ret)
-		return 0;
-
-	rate = clk_get_rate(&clk);
-
-	(void)clk_free(&clk);
-	return rate;
-}
-
-int s32gen1_enable_plat_clk(ulong clk_id)
-{
-	struct clk clk;
-	struct udevice *clkdev = get_clk_device();
-	int ret = 0;
-
-	if (!clkdev)
-		return -EINVAL;
-
-	clk.id = clk_id;
-	ret = clk_request(clkdev, &clk);
-	if (ret)
-		return ret;
 
 	ret = clk_enable(&clk);
 	(void)clk_free(&clk);

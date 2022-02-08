@@ -16,10 +16,6 @@
 #define SIUL2_MIDR1				(SIUL2_0_BASE_ADDR + 0x00000004)
 #define SIUL2_MIDR2				(SIUL2_0_BASE_ADDR + 0x00000008)
 
-/* SIUL2_MIDR2 masks */
-#define SIUL2_MIDR2_FREQ_SHIFT		(16)
-#define SIUL2_MIDR2_FREQ_MASK		(0xF << SIUL2_MIDR2_FREQ_SHIFT)
-
 #define SIUL2_MIDR1_DERIV_MASK		(0xFFFF0000U)
 #define SIUL2_MIDR1_OFF			(16U)
 
@@ -70,11 +66,5 @@ static inline const char *get_s32g2_deriv_name(void)
 	return "INVAL";
 }
 #endif
-
-static inline u32 get_siul2_midr2_freq(void)
-{
-	return ((readl(SIUL2_MIDR2) & SIUL2_MIDR2_FREQ_MASK)
-			>> SIUL2_MIDR2_FREQ_SHIFT);
-}
 
 #endif /*____ARCH_ARM_MACH_S32_SIUL_H__ */
