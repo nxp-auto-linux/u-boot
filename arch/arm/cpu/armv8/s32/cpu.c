@@ -23,60 +23,18 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-void mmu_setup(void);
-
 #ifndef CONFIG_SYS_DCACHE_OFF
 
-static struct mm_region early_map[] = {
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+static struct mm_region s32_mem_map[] = {
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
 	  CONFIG_SYS_FSL_DRAM_SIZE1,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE | PTE_BLOCK_NS
 	},
-#else
-	/* DRAM_SIZE1 is configurable via defconfig, but there are both
-	 * address and size alignment restrictions in the MMU table lookup code
-	 */
-	{
-	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
-	  CONFIG_SYS_FSL_DRAM_SIZE1,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
-	},
-#endif
-	{
-	  S32_SRAM_BASE, S32_SRAM_BASE,
-	  S32_SRAM_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
-	},
-	{
-	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
-	  CONFIG_SYS_FSL_PERIPH_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
-	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	},
-#if defined(CONFIG_SYS_FSL_DRAM_BASE2)
+#ifdef CONFIG_SYS_FSL_DRAM_BASE2
 	{
 	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
 	  CONFIG_SYS_FSL_DRAM_SIZE2,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) | PTE_BLOCK_OUTER_SHARE
-	},
-#endif
-	/* list terminator */
-	{},
-};
-
-static struct mm_region final_map[] = {
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	{
-	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
-	  CONFIG_SYS_FSL_DRAM_SIZE1,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
-	},
-#else
-	{
-	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
-	  CONFIG_SYS_FSL_DRAM_SIZE1,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
 #endif
@@ -91,29 +49,12 @@ static struct mm_region final_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
-#if defined(CONFIG_SYS_FSL_DRAM_BASE2)
-	{
-	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
-	  CONFIG_SYS_FSL_DRAM_SIZE2,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
-	},
-#endif
 	{
 	  CONFIG_SYS_FSL_FLASH0_BASE, CONFIG_SYS_FSL_FLASH0_BASE,
 	  CONFIG_SYS_FSL_FLASH0_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
-#ifdef CONFIG_SYS_FSL_FLASH1_BASE
-	{
-	  CONFIG_SYS_FSL_FLASH1_BASE, CONFIG_SYS_FSL_FLASH1_BASE,
-	  CONFIG_SYS_FSL_FLASH1_SIZE,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
-	},
-#endif
 #if defined(CONFIG_PCIE_S32GEN1)
-	/* TODO: for CONFIG_DM_PCI, we should get address/size from
-	 * device tree
-	 */
 	{
 	  CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
 	  CONFIG_SYS_PCIE0_PHYS_SIZE_HI,
@@ -131,76 +72,7 @@ static struct mm_region final_map[] = {
 	{},
 };
 
-struct mm_region *mem_map = early_map;
-
-static unsigned long get_tlb_size(void)
-{
-	return CONFIG_DTB_ADDR - S32_IRAM_MMU_TABLES_BASE;
-}
-
-static inline void early_mmu_setup(void)
-{
-	/* global data is already setup, no allocation yet */
-	gd->arch.tlb_addr = S32_IRAM_MMU_TABLES_BASE;
-	gd->arch.tlb_size = get_tlb_size();
-
-	mmu_setup();
-	set_sctlr(get_sctlr() | CR_C);
-}
-
-static inline void final_mmu_setup(void)
-{
-	unsigned int el = current_el();
-
-	mem_map = final_map;
-
-	/* global data is already setup, no allocation yet */
-	gd->arch.tlb_fillptr = gd->arch.tlb_addr;
-
-	setup_pgtables();
-
-	/* flush new MMU table */
-	/* Disable cache and MMU */
-	dcache_disable();   /* TLBs are invalidated */
-	invalidate_icache_all();
-
-	/* point TTBR to the new table */
-	set_ttbr_tcr_mair(el, gd->arch.tlb_addr, get_tcr(el, NULL, NULL),
-			  MEMORY_ATTRIBUTES);
-	__asm_invalidate_tlb_all();
-
-	/* gd->arch.tlb_emerg is used by mmu_set_region_dcache_behaviour */
-	gd->arch.tlb_emerg = gd->arch.tlb_addr;
-
-	/*
-	 * MMU is already enabled, just need to invalidate TLB to load the
-	 * new table. The new table is compatible with the current table, if
-	 * MMU somehow walks through the new table before invalidation TLB,
-	 * it still works. So we don't need to turn off MMU here.
-	 */
-	set_sctlr(get_sctlr() | CR_M);
-}
-
-int arch_cpu_init(void)
-{
-	int ret = 0;
-
-	/* Clear the BSS. */
-	memset(__bss_start, 0, __bss_end - __bss_start);
-
-	gd->flags |= GD_FLG_SKIP_RELOC;
-
-	set_sctlr(get_sctlr() & ~CR_M);
-	icache_enable();
-	__asm_invalidate_dcache_all();
-	__asm_invalidate_tlb_all();
-	early_mmu_setup();
-
-#if defined(CONFIG_DEBUG_UART)
-	debug_uart_init();
-#endif
-	return ret;
-}
+struct mm_region *mem_map = s32_mem_map;
 
 static void disable_qspi_mmu_entry(void)
 {
@@ -216,29 +88,35 @@ static void disable_qspi_mmu_entry(void)
 	}
 
 	/* Skip AHB mapping by setting its size to 0 */
-	for (i = 0; i < ARRAY_SIZE(final_map); i++) {
-		region = &final_map[i];
+	for (i = 0; i < ARRAY_SIZE(s32_mem_map); i++) {
+		region = &s32_mem_map[i];
 		if (region->phys == CONFIG_SYS_FSL_FLASH0_BASE) {
 			region->size = 0U;
 			break;
 		}
 	}
 }
-
-/*
- * This function is called from lib/board.c.
- * It recreates MMU table in main memory. MMU and d-cache are enabled earlier.
- * There is no need to disable d-cache for this operation.
- */
-void enable_caches(void)
+#else
+static void disable_qspi_mmu_entry(void)
 {
-	disable_qspi_mmu_entry();
-	final_mmu_setup();
-	__asm_invalidate_tlb_all();
-	dcache_enable();
 }
-
 #endif
+
+int arch_cpu_init(void)
+{
+	/* Clear the BSS. */
+	memset(__bss_start, 0, __bss_end - __bss_start);
+
+	disable_qspi_mmu_entry();
+
+	gd->flags |= GD_FLG_SKIP_RELOC;
+
+#if defined(CONFIG_DEBUG_UART)
+	debug_uart_init();
+#endif
+
+	return 0;
+}
 
 static void s32_init_ram_size(void)
 {

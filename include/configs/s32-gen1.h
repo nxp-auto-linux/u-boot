@@ -96,9 +96,6 @@
 #define S32_SRAM_SIZE		(8 * SZ_1M)
 #endif
 
-#define IRAM_BASE_ADDR  CONFIG_SYS_DATA_BASE
-#define IRAM_SIZE		CONFIG_SYS_MEM_SIZE
-
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 #define CONFIG_SYS_FSL_QSPI_AHB
 
