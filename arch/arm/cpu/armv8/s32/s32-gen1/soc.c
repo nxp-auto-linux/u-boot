@@ -83,20 +83,6 @@ int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
 	return 0;
 }
 
-/* return clocks in Hz */
-unsigned int mxc_get_clock(enum mxc_clock clk)
-{
-	switch (clk) {
-	case MXC_UART_CLK:
-		return S32GEN1_LIN_BAUD_CLK_FREQ;
-	default:
-		break;
-	}
-	printf("Error: Unsupported function to read the frequency!\n");
-	printf("Please define it correctly!\n");
-	return 0;
-}
-
 void reset_cpu(ulong addr)
 {
 	writel(MC_ME_MODE_CONF_FUNC_RST, MC_ME_MODE_CONF(MC_ME_BASE_ADDR));
