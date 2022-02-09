@@ -12,7 +12,7 @@
 #include <serial.h>
 #include <linux/compiler.h>
 #include <asm/arch/imx-regs.h>
-#include <asm/arch/clock.h>
+#include <clk.h>
 
 #define LINCR1_INIT			BIT(0)
 #define LINCR1_MME			BIT(4)
@@ -58,12 +58,13 @@ static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
 	return mul;
 }
 
-static void _linflex_serial_setbrg(struct linflex_fsl *base, int baudrate)
+static void _linflex_serial_setbrg(struct linflex_fsl *base, ulong rate,
+				   int baudrate)
 {
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 	u32 clk = LIN_CLK;
 #else
-	u32 clk = mxc_get_clock(MXC_UART_CLK);
+	u32 clk = rate;
 #endif
 	u32 ibr, fbr, divisr, dividr;
 
@@ -103,7 +104,7 @@ static int _linflex_serial_putc(struct linflex_fsl *base, const char c)
  * Initialise the serial port with the given baudrate. The settings
  * are always 8 data bits, no parity, 1 stop bit, no start bits.
  */
-static int _linflex_serial_init(struct linflex_fsl *base)
+static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 {
 	volatile u32 ctrl;
 
@@ -130,7 +131,7 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 		     &base->uartcr);
 
 	/* provide data bits, parity, stop bit, etc */
-	_linflex_serial_setbrg(base, CONFIG_BAUDRATE);
+	_linflex_serial_setbrg(base, rate, CONFIG_BAUDRATE);
 
 	ctrl = __raw_readl(&base->lincr1);
 	ctrl &= ~LINCR1_INIT;
@@ -141,13 +142,15 @@ static int _linflex_serial_init(struct linflex_fsl *base)
 
 struct linflex_serial_priv {
 	struct linflex_fsl *lfuart;
+	struct clk clk;
 };
 
 int linflex_serial_setbrg(struct udevice *dev, int baudrate)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
 
-	_linflex_serial_setbrg(priv->lfuart, baudrate);
+	_linflex_serial_setbrg(priv->lfuart, clk_get_rate(&priv->clk),
+			       baudrate);
 
 	return 0;
 }
@@ -184,13 +187,30 @@ static int linflex_serial_probe(struct udevice *dev)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
 	fdt_addr_t base_addr;
+	ulong rate;
+	const char *clk_name = "lin";
+	int ret;
 
 	base_addr = devfdt_get_addr(dev);
 	if (base_addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
+	ret = clk_get_by_name(dev, clk_name, &priv->clk);
+	if (ret) {
+		printf("Failed to get %s clock %d\n", clk_name, ret);
+		return ret;
+	}
+
+	ret = clk_enable(&priv->clk);
+	if (ret) {
+		printf("Failed to enable %s clock %d\n", clk_name, ret);
+		return ret;
+	}
+
+	rate = clk_get_rate(&priv->clk);
+
 	priv->lfuart = (struct linflex_fsl *)base_addr;
-	_linflex_serial_init(priv->lfuart);
+	_linflex_serial_init(priv->lfuart, rate);
 
 	return 0;
 }
@@ -225,7 +245,7 @@ static inline void _debug_uart_init(void)
 {
 	struct linflex_fsl *base = (struct linflex_fsl *)CONFIG_DEBUG_UART_BASE;
 
-	_linflex_serial_init(base);
+	_linflex_serial_init(base, CONFIG_DEBUG_UART_CLOCK);
 }
 
 static inline void _debug_uart_putc(int ch)
