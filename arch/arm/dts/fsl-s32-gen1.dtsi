@@ -196,7 +196,10 @@
 	};
 
 	firmware {
+		u-boot,dm-pre-reloc;
+
 		scmi {
+			u-boot,dm-pre-reloc;
 			compatible = "arm,scmi-smc";
 			arm,smc-id = <0xc20000fe>;
 			shmem = <&scmi_shbuf>;
@@ -206,6 +209,7 @@
 			status = "okay";
 
 			clks: protocol@14 {
+				u-boot,dm-pre-reloc;
 				#address-cells = <2>;
 				#size-cells = <2>;
 
@@ -422,6 +426,8 @@
 		device_type = "serial";
 		compatible = "fsl,s32-linflexuart";
 		reg = <0x0 0x401C8000 0x0 0x3000>;
+		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
+		clock-names = "lin";
 		interrupts = <0 82 1>;
 		clock-frequency = <0>;	/* updated dynamically if 0 */
 	};
@@ -430,6 +436,8 @@
 		device_type = "serial";
 		compatible = "fsl,s32-linflexuart";
 		reg = <0x0 0x401CC000 0x0 0x3000>;
+		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
+		clock-names = "lin";
 		interrupts = <0 83 1>;
 		clock-frequency = <0>;	/* updated dynamically if 0 */
 	};
@@ -438,6 +446,8 @@
 		device_type = "serial";
 		compatible = "fsl,s32-linflexuart";
 		reg = <0x0 0x402BC000 0x0 0x3000>;
+		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
+		clock-names = "lin";
 		interrupts = <0 84 1>;
 		clock-frequency = <0>;	/* updated dynamically if 0 */
 	};
