@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013-2015 Freescale Semiconductor, Inc.
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  *
  * Freescale Quad Serial Peripheral Interface (QSPI) driver
  */
 #include <malloc.h>
 #include <spi.h>
+#include <clk.h>
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <linux/iopoll.h>
@@ -956,6 +957,32 @@ static int fsl_qspi_child_pre_probe(struct udevice *dev)
 	return 0;
 }
 
+static __maybe_unused ulong fsl_qspi_clk_get_rate(struct udevice *bus)
+{
+	int ret;
+	struct clk clk_qspi_en, clk_qspi;
+
+	ret = clk_get_by_name(bus, "qspi_en", &clk_qspi_en);
+	if (ret)
+		return ret;
+
+	ret = clk_get_by_name(bus, "qspi", &clk_qspi);
+	if (ret)
+		return ret;
+
+	ret = clk_enable(&clk_qspi_en);
+	if (ret)
+		return ret;
+
+	ret = clk_enable(&clk_qspi);
+	if (ret) {
+		clk_disable(&clk_qspi_en);
+		return ret;
+	}
+
+	return clk_get_rate(&clk_qspi);
+}
+
 static int fsl_qspi_probe(struct udevice *bus)
 {
 	u32 amba_size_per_chip;
@@ -967,7 +994,15 @@ static int fsl_qspi_probe(struct udevice *bus)
 
 	dm_spi_bus = bus->uclass_priv;
 
+#if defined(CONFIG_S32_GEN1)
+	dm_spi_bus->max_hz = fsl_qspi_clk_get_rate(bus);
+	if (!dm_spi_bus->max_hz) {
+		printf("Invalid clk rate: %u\n", dm_spi_bus->max_hz);
+		return -EINVAL;
+	}
+#else
 	dm_spi_bus->max_hz = plat->speed_hz;
+#endif
 
 	priv->regs = (struct fsl_qspi_regs *)(uintptr_t)plat->reg_base;
 	priv->flags = plat->flags;
@@ -980,7 +1015,11 @@ static int fsl_qspi_probe(struct udevice *bus)
 	s32gen1_reset_bootrom_settings(priv);
 #endif
 
+#if defined(CONFIG_S32_GEN1)
+	priv->speed_hz = dm_spi_bus->max_hz;
+#else
 	priv->speed_hz = plat->speed_hz;
+#endif
 	/*
 	 * QSPI SFADR width is 32bits, the max dest addr is 4GB-1.
 	 * AMBA memory zone should be located on the 0~4GB space
