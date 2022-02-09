@@ -257,6 +257,10 @@
 		"fdt rm /usdhc no-1-8-v; " \
 		"fdt resize; \0" \
 
+#define FDT_OVERRIDE \
+	"fdt_override=" \
+		" \0"
+
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 
 #ifdef CONFIG_XEN_SUPPORT
@@ -334,8 +338,9 @@
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadramdisk=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${ramdisk}\0" \
 	FDT_ENABLE_HS400ES \
+	FDT_OVERRIDE \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
-		 "${fdt_override}\0" \
+		 "run fdt_override;\0" \
 	"jtagboot=echo Booting using jtag...; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
