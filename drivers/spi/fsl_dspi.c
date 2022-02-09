@@ -11,6 +11,7 @@
  */
 
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <errno.h>
 #include <common.h>
@@ -187,6 +188,29 @@ static void dspi_halt(struct fsl_dspi_priv *priv, u8 halt)
 
 	dspi_write32(priv->flags, &priv->regs->mcr, mcr_val);
 }
+
+#if defined(CONFIG_S32_GEN1)
+static ulong fsl_dspi_get_clk_freq(struct udevice *bus)
+{
+	struct clk clk;
+	const char *clk_name = "dspi";
+	int ret;
+
+	ret = clk_get_by_name(bus, clk_name, &clk);
+	if (ret) {
+		printf("Failed to get %s clock: %d\n", clk_name, ret);
+		return ret;
+	}
+
+	ret = clk_enable(&clk);
+	if (ret) {
+		printf("Failed to enable %s clock: %d\n", clk_name, ret);
+		return ret;
+	}
+
+	return clk_get_rate(&clk);
+}
+#endif
 
 static void fsl_dspi_init_mcr(struct fsl_dspi_priv *priv, uint cfg_val)
 {
@@ -511,6 +535,12 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 
 #ifdef CONFIG_M68K
 	dspi->priv.bus_clk = gd->bus_clk;
+#elif defined(CONFIG_S32_GEN1)
+	dspi->priv.bus_clk = fsl_dspi_get_clk_freq(dspi->slave.dev);
+	if (!dspi->priv.bus_clk) {
+		printf("Invalid clk rate: %u\n", dspi->priv.bus_clk);
+		return -EINVAL;
+	}
 #else
 	dspi->priv.bus_clk = mxc_get_clock(MXC_DSPI_CLK);
 #endif
@@ -643,6 +673,12 @@ static int fsl_dspi_probe(struct udevice *bus)
 	priv->flags = plat->flags;
 #ifdef CONFIG_M68K
 	priv->bus_clk = gd->bus_clk;
+#elif defined(CONFIG_S32_GEN1)
+	priv->bus_clk = fsl_dspi_get_clk_freq(bus);
+	if (!priv->bus_clk) {
+		printf("Invalid clk rate: %u\n", priv->bus_clk);
+		return -EINVAL;
+	}
 #else
 	priv->bus_clk = mxc_get_clock(MXC_DSPI_CLK);
 #endif

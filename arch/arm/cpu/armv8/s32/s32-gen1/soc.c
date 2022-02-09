@@ -89,12 +89,6 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	switch (clk) {
 	case MXC_UART_CLK:
 		return S32GEN1_LIN_BAUD_CLK_FREQ;
-	case MXC_I2C_CLK:
-		return s32gen1_get_plat_clk_rate(S32GEN1_CLK_XBAR_DIV3);
-	case MXC_ESDHC_CLK:
-		return s32gen1_get_plat_clk_rate(S32GEN1_CLK_SDHC);
-	case MXC_DSPI_CLK:
-		return s32gen1_get_plat_clk_rate(S32GEN1_CLK_SPI);
 	default:
 		break;
 	}
