@@ -118,24 +118,6 @@ config FSL_PFENG_FW_PART
 	  For "sdcard", it is usually the first device's first (boot) partition, so "0:1".
 	  For "qspi" it is the addrees of reserved memory partition.
 
-config FSL_PFENG_EMAC_0_RGMII
-	bool "Allow RGMII on PFE EMAC_0"
-	depends on TARGET_S32G2XXAEVB || NXP_S32GRDB_BOARD || TARGET_S32G3XXAEVB
-	default n
-	help
-	  PFE EMAC_0 and EMAC_2 share RGMII interface on S32G-VNP-PROC
-	  and S32G-VNP-RDB boards. Enable possibility to switch EMAC_0
-	  to RGMII.
-
-config FSL_PFENG_EMAC_1_RGMII
-	bool "Allow RGMII on PFE EMAC 1"
-	depends on TARGET_S32G2XXAEVB || NXP_S32GRDB_BOARD || TARGET_S32G3XXAEVB
-	default n
-	help
-	  PFE EMAC_1 and GMAC share RGMII interface on S32G-VNP-PROC
-	  and S32G-VNP-RDB boards. Enable possibility to switch EMAC_1
-	  to RGMII.
-
 endif # FSL_PFENG
 
 config PHY_GIGE

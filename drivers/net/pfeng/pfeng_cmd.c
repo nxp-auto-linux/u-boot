@@ -251,14 +251,8 @@ static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
 		tx = "mac0_tx_sgmii";
 		break;
 	case PHY_INTERFACE_MODE_RGMII:
-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
-		CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD) || \
-		CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
-#if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
 		rx = "mac0_rx_rgmii";
 		tx = "mac0_tx_rgmii";
-#endif
-#endif
 		break;
 	case PHY_INTERFACE_MODE_RMII:
 	case PHY_INTERFACE_MODE_MII:
@@ -293,14 +287,8 @@ static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
 		tx = "mac1_tx_sgmii";
 		break;
 	case PHY_INTERFACE_MODE_RGMII:
-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
-		CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD) || \
-		CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
-#if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_1_RGMII)
 		rx = "mac1_rx_rgmii";
 		tx = "mac1_tx_rgmii";
-#endif
-#endif
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
@@ -337,14 +325,8 @@ static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
 		tx = "mac2_tx_sgmii";
 		break;
 	case PHY_INTERFACE_MODE_RGMII:
-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
-		CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD) || \
-		CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
-#if !CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
 		rx = "mac2_rx_rgmii";
 		tx = "mac2_tx_rgmii";
-#endif
-#endif
 		break;
 	case PHY_INTERFACE_MODE_RMII:
 	case PHY_INTERFACE_MODE_MII:
@@ -425,13 +407,7 @@ static void setup_iomux_pfe(struct udevice *dev,
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
-		CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD) || \
-		CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
-#if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
 		pinctrl_select_state(dev, "pfe0_rgmii");
-#endif
-#endif
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
@@ -454,13 +430,7 @@ static void setup_iomux_pfe(struct udevice *dev,
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
-		CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD) || \
-		CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
-#if CONFIG_IS_ENABLED(FSL_PFENG_EMAC_1_RGMII)
 		pinctrl_select_state(dev, "pfe1_rgmii");
-#endif
-#endif
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
@@ -483,13 +453,7 @@ static void setup_iomux_pfe(struct udevice *dev,
 		break;
 
 	case PHY_INTERFACE_MODE_RGMII:
-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
-		CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD) || \
-		CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
-#if !CONFIG_IS_ENABLED(FSL_PFENG_EMAC_0_RGMII)
 		pinctrl_select_state(dev, "pfe2_rgmii");
-#endif
-#endif
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
