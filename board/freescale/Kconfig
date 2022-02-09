@@ -4,36 +4,49 @@ config SYS_VENDOR
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
-	imply CMD_ADC
-	imply CMD_CPU
-	imply CMD_GPIO
-	imply CMD_FUSE
-	imply CMD_TIMER
+	imply DM_ETH
+	imply DM_I2C
+	imply DM_PCI
+	imply DM_PMIC
+	imply DM_PMIC_VR5510
+	imply DM_SPI
+	imply DM_SPI_FLASH
+	imply DWC_ETH_QOS_DEVICES
+	imply DWC_ETH_QOS_S32CC
+	imply FSL_DSPI
 	imply FSL_LINFLEXUART
-	imply ADC if !NXP_S32GRDB_BOARD
-	imply S32_SARADC if !NXP_S32GRDB_BOARD
+	imply FSL_PFENG
+	imply FSL_QSPI
+	imply FSL_USDHC
 	imply MISC
-	imply TIMER
+	imply MMC_HS400_ES_SUPPORT
+	imply PCI
+	imply PCIE_S32GEN1
 	imply S32_TIMER
+	imply SPI
+	imply SYS_I2C_MXC
+	imply TIMER
+	select ARCH_MISC_INIT
 	select ARM_SMCCC
 	select CLK
 	select CLK_SCMI
+	select CPU
+	select DISTRO_DEFAULTS
+	select DM
 	select DM_GPIO
+	select DM_MMC
 	select DM_SERIAL
+	select MMC_HS400_SUPPORT
 	select OF_CONTROL
 	select OF_SEPARATE
 	select PINCTRL
 	select PINCTRL_FULL
 	select PINCTRL_S32
-	select SCMI_FIRMWARE
-	select ARCH_MISC_INIT
 	select S32_GPIO
-	select MMC_HS400_SUPPORT if !TARGET_TYPE_S32GEN1_EMULATOR
-	select MMC_HS400_ES_SUPPORT if !TARGET_TYPE_S32GEN1_EMULATOR
-	select SYS_MALLOC_F
+	select SCMI_FIRMWARE
 	select SYSRESET
 	select SYSRESET_PSCI
-	select CPU
+	select SYS_MALLOC_F
 	help
 	  Platform Selection
 

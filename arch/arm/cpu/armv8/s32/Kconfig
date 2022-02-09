@@ -34,7 +34,12 @@ choice
 
 config TARGET_S32R45EVB
 	bool "Support s32r45evb"
+	imply ADC
+	imply I2C_EEPROM
+	imply PHY_AQUANTIA
+	imply S32_SARADC
 	select NXP_S32R45
+	select SPI_FLASH_MACRONIX
 
 config TARGET_S32R45EMU
 	bool "Support s32r45 ZeBu"
@@ -42,18 +47,43 @@ config TARGET_S32R45EMU
 
 config TARGET_S32G2XXAEVB
 	bool "Support s32g274aevb"
-	select NXP_S32G2XX
+	imply ADC
+	imply DM_USB
+	imply I2C_EEPROM
+	imply PHY
+	imply PHY_AQUANTIA
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply S32_SARADC
+	imply SAF1508BET_USB_PHY
+	imply SJA1105
+	imply USB
+	imply USB_EHCI_HCD
 	select MISC_INIT_R if SJA1105
+	select NXP_S32G2XX
+	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G274ARDB2
 	bool "Support s32g274ardb2"
-	select NXP_S32G2XX
+	imply DM_PMIC_PF5020
+	imply DM_PMIC_FS5600
+	imply PHY_ATHEROS
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
 	select ADC
+	select NXP_S32G2XX
 	select S32_SARADC
+	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G274ABLUEBOX3
 	bool "Support s32g274abluebox3"
+	imply ADC
+	imply I2C_EEPROM
+	imply PHY
+	imply PHYLIB
+	imply S32_SARADC
 	select NXP_S32G2XX
+	select SPI_FLASH_STMICRO
 	help
 	  Enable Microsys S32G SoM Bluebox 3 target.
 	  S32G works as PCIE EP.
@@ -68,13 +98,33 @@ config TARGET_S32G399AEMU
 
 config TARGET_S32G3XXAEVB
 	bool "Support for S32G3 EVB boards"
+	imply ADC
+	imply DM_USB
+	imply I2C_EEPROM
+	imply PHY
+	imply PHY_AQUANTIA
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply S32_SARADC
+	imply SAF1508BET_USB_PHY
+	imply SJA1105
+	imply USB
+	imply USB_EHCI_HCD
 	select NXP_S32G3XX
+	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G399ARDB3
 	bool "Support s32g399ardb3"
-	select NXP_S32G3XX
+	imply DM_PMIC_PF5020
+	imply DM_PMIC_FS5600
+	imply I2C_EEPROM
+	imply PHY_ATHEROS
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
 	select ADC
+	select NXP_S32G3XX
 	select S32_SARADC
+	select SPI_FLASH_MACRONIX
 
 endchoice
 
