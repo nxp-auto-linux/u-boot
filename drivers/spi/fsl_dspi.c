@@ -13,6 +13,7 @@
 #include <asm/global_data.h>
 #include <linux/math64.h>
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <errno.h>
 #include <common.h>
@@ -22,7 +23,9 @@
 #include <asm/io.h>
 #include <fdtdec.h>
 #ifndef CONFIG_M68K
+#if !defined(CONFIG_CLK)
 #include <asm/arch/clock.h>
+#endif
 #endif
 #include <fsl_dspi.h>
 #include <linux/bitops.h>
@@ -143,6 +146,27 @@ static void dspi_halt(struct fsl_dspi_priv *priv, u8 halt)
 		mcr_val &= ~DSPI_MCR_HALT;
 
 	dspi_write32(priv->flags, &priv->regs->mcr, mcr_val);
+}
+
+static ulong fsl_dspi_get_clk_freq(struct udevice *bus)
+{
+	struct clk clk;
+	const char *clk_name = "dspi";
+	int ret;
+
+	ret = clk_get_by_name(bus, clk_name, &clk);
+	if (ret) {
+		printf("Failed to get %s clock: %d\n", clk_name, ret);
+		return ret;
+	}
+
+	ret = clk_enable(&clk);
+	if (ret) {
+		printf("Failed to enable %s clock: %d\n", clk_name, ret);
+		return ret;
+	}
+
+	return clk_get_rate(&clk);
 }
 
 static void fsl_dspi_init_mcr(struct fsl_dspi_priv *priv, uint cfg_val)
@@ -510,11 +534,21 @@ static int fsl_dspi_probe(struct udevice *bus)
 	/* get input clk frequency */
 	priv->regs = (struct dspi *)plat->regs_addr;
 	priv->flags = plat->flags;
+
+	if (CONFIG_IS_ENABLED(CLK)) {
+		priv->bus_clk = fsl_dspi_get_clk_freq(bus);
+		if (!priv->bus_clk) {
+			printf("Invalid clk rate: %u\n", priv->bus_clk);
+			return -EINVAL;
+		}
+	}
+
 #ifdef CONFIG_M68K
 	priv->bus_clk = gd->bus_clk;
-#else
+#elif !CONFIG_IS_ENABLED(CLK)
 	priv->bus_clk = mxc_get_clock(MXC_DSPI_CLK);
 #endif
+
 	priv->num_chipselect = plat->num_chipselect;
 	priv->speed_hz = plat->speed_hz;
 	/* frame data length in bits, default 8bits */
