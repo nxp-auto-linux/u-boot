@@ -9,6 +9,7 @@
 
 #include <pci.h>
 #include <dm.h>
+#include <asm/arch/s32-gen1/s32-gen1-regs.h>
 #include <asm/io.h>
 
 #include "serdes_regs.h"

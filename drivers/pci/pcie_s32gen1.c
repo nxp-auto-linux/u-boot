@@ -13,7 +13,6 @@
 #include <asm/arch/clock.h>
 #include <linux/sizes.h>
 #include <dm/device-internal.h>
-#include <asm/arch-s32/siul.h>
 #include <hwconfig.h>
 #include <dm/uclass.h>
 #include <misc.h>

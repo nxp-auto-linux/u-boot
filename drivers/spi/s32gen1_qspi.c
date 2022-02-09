@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  */
 #include "fsl_qspi.h"
 #include <cpu_func.h>
 #include <asm/io.h>
-#include <asm/arch/siul.h>
 #include <linux/mtd/spi-nor.h>
 #include <spi-mem.h>
 #include <inttypes.h>

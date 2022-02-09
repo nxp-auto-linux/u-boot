@@ -15,8 +15,6 @@
 #include <log.h>
 #include <dm.h>
 
-#include <asm/arch-s32/siul.h>
-
 #include <serdes_regs.h>
 #include <serdes_xpcs_regs.h>
 

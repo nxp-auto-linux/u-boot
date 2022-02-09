@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  */
 
-#include <asm/arch/siul.h>
+#include <common.h>
 #include <cmu.h>
 
 static struct cmu cmu_blocks[] = {

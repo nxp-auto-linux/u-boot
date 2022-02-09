@@ -14,7 +14,6 @@
 #include <linux/sizes.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
-#include <asm/arch-s32/siul.h>
 #include <hwconfig.h>
 #include <clk.h>
 

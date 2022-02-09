@@ -7,7 +7,6 @@
 #define __ARCH_S32_SOC_H
 
 #include "s32-gen1/s32-gen1-regs.h"
-#include <asm/arch/siul.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/mmdc.h>
 

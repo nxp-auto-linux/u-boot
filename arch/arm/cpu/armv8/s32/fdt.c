@@ -10,7 +10,6 @@
 #include <fdt_support.h>
 #include <fdtdec.h>
 #include <asm/io.h>
-#include <asm/arch/siul.h>
 #include <linux/sizes.h>
 #include <hwconfig.h>
 #include <asm/arch-s32/s32-gen1/serdes_hwconfig.h>
