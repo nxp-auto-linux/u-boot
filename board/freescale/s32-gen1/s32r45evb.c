@@ -3,16 +3,12 @@
  * Copyright 2018-2022 NXP
  */
 
-#include "board_common.h"
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-#include "s32gen1_gmac_utils.h"
-#endif
 #include <asm/arch/soc.h>
 #include <common.h>
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 #include <linux/err.h>
 #include <miiphy.h>
-#endif
+
+#include "s32gen1_gmac_utils.h"
 
 #define S32R_PHY_ADDR_1 0x01
 
