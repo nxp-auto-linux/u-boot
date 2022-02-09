@@ -252,15 +252,6 @@ void enable_caches(void)
 
 #endif
 
-#if defined(CONFIG_ARCH_EARLY_INIT_R)
-int arch_early_init_r(void)
-{
-	int rv = 0;
-
-	return rv;
-}
-#endif /* CONFIG_ARCH_EARLY_INIT_R */
-
 static void s32_init_ram_size(void)
 {
 	int i;
