@@ -25,6 +25,7 @@
 #define UARTCR_PC1			BIT(6)
 #define UARTCR_TFBM			BIT(8)
 #define UARTCR_RFBM			BIT(9)
+#define UARTCR_TFC			GENMASK(15, 13)
 #define UARTSR_DTF			BIT(1)
 #define UARTSR_RFE			BIT(2)
 #define UARTSR_RMB			BIT(9)
@@ -128,6 +129,10 @@ static int _linflex_serial_putc(struct linflex_fsl *base, const char c)
 static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 {
 	volatile u32 ctrl;
+
+	/* wait the TX fifo to be empty */
+	while (__raw_readl(&base->uartcr) & UARTCR_TFC)
+		;
 
 	/* set the Linflex in master|init mode and activate by-pass filter
 	 * (where supported) */
