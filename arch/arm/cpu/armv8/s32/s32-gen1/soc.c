@@ -68,14 +68,6 @@ int cpu_numcores(void)
 	return hweight32(cpu_mask());
 }
 
-int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
-{
-	if (enable)
-		return s32gen1_enable_plat_clk(S32GEN1_CLK_XBAR_DIV3);
-
-	return 0;
-}
-
 __weak int dram_init(void)
 {
 	return 0;
