@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
  * Copyright (C) 2010 Freescale Semiconductor, Inc.
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  */
 
 #include <common.h>
@@ -12,7 +12,9 @@
 #include <linux/compiler.h>
 #include <usb/ehci-ci.h>
 #include <asm/io.h>
+#if defined(CONFIG_MACH_IMX)
 #include <asm/arch/imx-regs.h>
+#endif
 #include <asm/arch/clock.h>
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/mach-imx/sys_proto.h>

@@ -10,13 +10,15 @@
  *  Copyright (C) 2005 Matthias Blaschke <blaschke at synertronixx.de>
  *  Copyright (C) 2007 RightHand Technologies, Inc.
  *  Copyright (C) 2008 Darius Augulis <darius.augulis at teltonika.lt>
- *  Copyright 2020-2021 NXP
+ *  Copyright 2020-2022 NXP
  *
  */
 
 #include <common.h>
 #include <asm/arch/clock.h>
+#if defined(CONFIG_MACH_IMX)
 #include <asm/arch/imx-regs.h>
+#endif
 #include <dm/device_compat.h>
 #include <linux/errno.h>
 #include <asm/mach-imx/mxc_i2c.h>

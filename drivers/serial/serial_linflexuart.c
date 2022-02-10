@@ -11,7 +11,6 @@
 #include <asm/io.h>
 #include <serial.h>
 #include <linux/compiler.h>
-#include <asm/arch/imx-regs.h>
 #include <clk.h>
 
 #define LINCR1_INIT			BIT(0)
@@ -41,6 +40,28 @@
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
+
+struct linflex_fsl {
+	u32 lincr1;
+	u32 linier;
+	u32 linsr;
+	u32 linesr;
+	u32 uartcr;
+	u32 uartsr;
+	u32 lintcsr;
+	u32 linocr;
+	u32 lintocr;
+	u32 linfbrr;
+	u32 linibrr;
+	u32 lincfr;
+	u32 lincr2;
+	u32 bidr;
+	u32 bdrl;
+	u32 bdrm;
+	u32 reserved[3];
+	u32 gcr;
+	u32 uartpto;
+};
 
 static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
 {
