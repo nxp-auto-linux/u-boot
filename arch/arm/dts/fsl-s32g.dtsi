@@ -83,60 +83,6 @@
 		status = "disabled";
 	};
 
-	pfe_mac0_ext_rx: pfe_mac0_ext_rx@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <312500000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac0_ext_tx: pfe_mac0_ext_tx@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <300000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac0_ext_ref: pfe_mac0_ext_ref@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <50000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac1_ext_rx: pfe_mac1_ext_rx@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <300000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac1_ext_tx: pfe_mac1_ext_tx@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <300000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac1_ext_ref: pfe_mac1_ext_ref@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <50000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac2_ext_rx: pfe_mac2_ext_rx@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <300000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac2_ext_tx: pfe_mac2_ext_tx@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <300000000>;
-		#clock-cells = <1>;
-	};
-
-	pfe_mac2_ext_ref: pfe_mac2_ext_ref@0 {
-		compatible = "fixed-clock";
-		clock-frequency = <50000000>;
-		#clock-cells = <1>;
-	};
-
 	pfe: ethernet@46080000 {
 		compatible = "fsl,s32g274a-pfe";
 		reg = <0x0 0x46000000 0x0 0x1000000>;
