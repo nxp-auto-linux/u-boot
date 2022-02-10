@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2022 NXP
  */
 
 #ifndef __ARCH_ARM_MACH_S32GEN1_MCME_REGS_H__
@@ -14,12 +14,6 @@
 #define MC_ME_CTL_KEY(MC_ME)		(UPTR(MC_ME) + 0x0)
 #define MC_ME_CTL_KEY_KEY		(0x00005AF0)
 #define MC_ME_CTL_KEY_INVERTEDKEY	(0x0000A50F)
-
-#define MC_ME_MODE_CONF(MC_ME)		(UPTR(MC_ME) + 0x00000004)
-#define MC_ME_MODE_CONF_FUNC_RST	(0x1 << 1)
-
-#define MC_ME_MODE_UPD(MC_ME)		(UPTR(MC_ME) + 0x00000008)
-#define MC_ME_MODE_UPD_UPD		(0x1 << 0)
 
 #define MC_ME_MODE_STAT(MC_ME)		(UPTR(MC_ME) + 0x0000000C)
 #define MC_ME_MODE_STAT_PREVMODE	(0x1 << 0)

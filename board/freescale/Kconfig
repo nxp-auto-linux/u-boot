@@ -31,6 +31,8 @@ config S32_GEN1
 	select MMC_HS400_SUPPORT if !TARGET_TYPE_S32GEN1_EMULATOR
 	select MMC_HS400_ES_SUPPORT if !TARGET_TYPE_S32GEN1_EMULATOR
 	select SYS_MALLOC_F
+	select SYSRESET
+	select SYSRESET_PSCI
 	select CPU
 	help
 	  Platform Selection
