@@ -264,9 +264,11 @@ U_BOOT_DRIVER(serial_linflex) = {
 
 static inline void _debug_uart_init(void)
 {
+#ifndef CONFIG_DEBUG_UART_SKIP_INIT
 	struct linflex_fsl *base = (struct linflex_fsl *)CONFIG_DEBUG_UART_BASE;
 
 	_linflex_serial_init(base, CONFIG_DEBUG_UART_CLOCK);
+#endif
 }
 
 static inline void _debug_uart_putc(int ch)
