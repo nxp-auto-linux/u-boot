@@ -6,7 +6,6 @@
 #include <asm/arch/clock.h>
 #include <dm/uclass.h>
 #include "s32gen1_clk_utils.h"
-#include <s32gen1_clk_funcs.h>
 
 static struct udevice *get_clk_device(void)
 {

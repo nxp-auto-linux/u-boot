@@ -5,4 +5,4 @@
 obj-y += clk_utils.o
 
 ccflags-y += -Iarch/arm/include/asm/arch-s32/s32-gen1
-ccflags-y += -Idrivers/clk/s32/include
+ccflags-y += -Idrivers/net/s32

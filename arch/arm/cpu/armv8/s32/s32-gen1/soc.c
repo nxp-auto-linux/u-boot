@@ -21,7 +21,6 @@
 #include <dm/uclass.h>
 #include <generic-phy.h>
 #endif
-#include <s32gen1_clk_utils.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

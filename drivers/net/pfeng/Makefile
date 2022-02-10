@@ -29,4 +29,4 @@ ccflags-y += -Idrivers/net/pfeng/regmap
 ccflags-y += -Idrivers/net/pfeng/hw_abi
 ccflags-y += -Wno-date-time
 ccflags-y += -I./arch/arm/include/asm/arch-s32/s32-gen1
-ccflags-y += -I./drivers/clk/s32/include
+ccflags-y += -I./drivers/net/s32

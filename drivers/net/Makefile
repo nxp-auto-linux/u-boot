@@ -4,7 +4,7 @@
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
 ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-gen1
-ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Idrivers/clk/s32/include
+ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Idrivers/net/s32
 ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/freescale/s32-gen1
 
 obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
@@ -90,3 +90,4 @@ obj-y += mscc_eswitch/
 obj-$(CONFIG_HIGMACV300_ETH) += higmacv300.o
 obj-$(CONFIG_MDIO_SANDBOX) += mdio_sandbox.o
 obj-$(CONFIG_FSL_ENETC) += fsl_enetc.o fsl_enetc_mdio.o
+obj-$(CONFIG_S32_GEN1) += s32/

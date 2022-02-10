@@ -13,6 +13,5 @@ obj-y				+= lowlevel.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
-ccflags-y			+= -Idrivers/clk/s32/include
 ccflags-y			+= -Idrivers/misc
 ccflags-y			+= -Iboard/freescale/s32-gen1
