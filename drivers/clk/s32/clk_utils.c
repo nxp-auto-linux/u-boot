@@ -5,7 +5,6 @@
 
 #include <asm/arch/clock.h>
 #include <dm/uclass.h>
-#include <dt-bindings/clock/s32gen1-clock.h>
 #include "s32gen1_clk_utils.h"
 #include <s32gen1_clk_funcs.h>
 

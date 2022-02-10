@@ -21,7 +21,6 @@
 #endif
 #include <fdt_support.h>
 #include <clk.h>
-#include <dt-bindings/clock/s32gen1-clock.h>
 #include <s32gen1_clk_utils.h>
 #include <s32gen1_gmac_utils.h>
 #include <dm/device_compat.h>

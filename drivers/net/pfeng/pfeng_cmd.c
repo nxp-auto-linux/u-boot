@@ -19,7 +19,6 @@
 #include <asm/arch/s32-gen1/serdes_xpcs_regs.h>
 #include <linux/string.h>
 #include <clk.h>
-#include <dt-bindings/clock/s32g-clock.h>
 #include <s32gen1_clk_utils.h>
 #include <dm/device_compat.h>
 #include <dm/pinctrl.h>
