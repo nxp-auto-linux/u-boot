@@ -305,6 +305,13 @@ config DEBUG_UART_APBUART
 	  will need to provide parameters to make this work. The driver will
 	  be available until the real driver model serial is running.
 
+config DEBUG_UART_LINFLEXUART
+	bool "Linflex UART"
+	select FSL_LINFLEXUART
+	help
+	  Select this to enable debug UART for Linflex module found on NXP
+	  Automotive SoCs like S32G/S32R.
+
 config DEBUG_UART_PL010
 	bool "pl010"
 	help
