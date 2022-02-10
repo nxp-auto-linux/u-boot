@@ -11,13 +11,18 @@
  *  Copyright (C) 2005 Matthias Blaschke <blaschke at synertronixx.de>
  *  Copyright (C) 2007 RightHand Technologies, Inc.
  *  Copyright (C) 2008 Darius Augulis <darius.augulis at teltonika.lt>
+ *  Copyright 2020-2022 NXP
  *
  */
 
 #include <common.h>
 #include <log.h>
+#if !defined(CONFIG_CLK)
 #include <asm/arch/clock.h>
+#endif
+#if defined(CONFIG_MACH_IMX)
 #include <asm/arch/imx-regs.h>
+#endif
 #include <asm/global_data.h>
 #include <dm/device_compat.h>
 #include <linux/delay.h>
@@ -316,6 +321,10 @@ static int i2c_init_transfer_(struct mxc_i2c_bus *i2c_bus, u8 chip,
 
 	return 0;
 }
+
+#if defined(CONFIG_DM) && !defined(I2C1_BASE_ADDR)
+#define I2C1_BASE_ADDR	0
+#endif
 
 #if !defined(I2C2_BASE_ADDR)
 #define I2C2_BASE_ADDR	0
