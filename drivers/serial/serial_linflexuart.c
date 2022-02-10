@@ -64,6 +64,34 @@ struct linflex_fsl {
 	u32 uartpto;
 };
 
+static void _linflex_enter_init(struct linflex_fsl *base)
+{
+	u32 ctrl;
+
+	/* wait the TX fifo to be empty */
+	while (__raw_readl(&base->uartcr) & UARTCR_TFC)
+		;
+
+	/* set the Linflex in init mode */
+	ctrl = __raw_readl(&base->lincr1);
+	ctrl |= LINCR1_INIT;
+	__raw_writel(ctrl, &base->lincr1);
+
+	/* waiting for init mode entry - TODO: add a timeout */
+	while ((__raw_readl(&base->linsr) & LINSR_LINS_MASK) !=
+	       LINSR_LINS_INITMODE)
+		;
+}
+
+static void _linflex_exit_init(struct linflex_fsl *base)
+{
+	u32 ctrl;
+
+	ctrl = __raw_readl(&base->lincr1);
+	ctrl &= ~LINCR1_INIT;
+	__raw_writel(ctrl, &base->lincr1);
+}
+
 static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
 {
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
@@ -130,18 +158,11 @@ static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 {
 	volatile u32 ctrl;
 
-	/* wait the TX fifo to be empty */
-	while (__raw_readl(&base->uartcr) & UARTCR_TFC)
-		;
+	_linflex_enter_init(base);
 
-	/* set the Linflex in master|init mode and activate by-pass filter
-	 * (where supported) */
-	ctrl = LINCR1_MME | LINCR1_INIT;
+	ctrl = __raw_readl(&base->lincr1);
+	ctrl |= LINCR1_MME;
 	__raw_writel(ctrl, &base->lincr1);
-
-	/* waiting for init mode entry - TODO: add a timeout */
-	while ((__raw_readl(&base->linsr) & LINSR_LINS_MASK) !=
-	       LINSR_LINS_INITMODE);
 
 	/* set UART bit to allow writing other bits */
 	__raw_writel(UARTCR_UART, &base->uartcr);
@@ -159,9 +180,7 @@ static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 	/* provide data bits, parity, stop bit, etc */
 	_linflex_serial_setbrg(base, rate, CONFIG_BAUDRATE);
 
-	ctrl = __raw_readl(&base->lincr1);
-	ctrl &= ~LINCR1_INIT;
-	__raw_writel(ctrl, &base->lincr1);	/* end init mode */
+	_linflex_exit_init(base);
 
 	return 0;
 }
@@ -175,8 +194,10 @@ int linflex_serial_setbrg(struct udevice *dev, int baudrate)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
 
+	_linflex_enter_init(priv->lfuart);
 	_linflex_serial_setbrg(priv->lfuart, clk_get_rate(&priv->clk),
 			       baudrate);
+	_linflex_exit_init(priv->lfuart);
 
 	return 0;
 }
