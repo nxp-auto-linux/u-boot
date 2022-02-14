@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -13,14 +13,12 @@
 
 #include "serdes_regs.h"
 #include "ss_pcie_regs.h"
-#include "mc_rgm_regs.h"
 #include "serdes_s32gen1_io.h"
 
 #define PCIE_LINK_UP_COUNT 100
 #define PCIE_MPLL_LOCK_COUNT 10
 #define PCIE_RESET_COUNT 50
 #define DELAY_QUANTUM 1000
-
 
 #define LTSSM_STATE_L0		0x11 /* L0 state */
 
@@ -44,6 +42,18 @@
 #define RST_CTRL		0x3010
 #define WARM_RST		0x2
 #define COLD_RST		0x1
+
+/* RGM peripheral reset registers */
+#define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
+					((per) * 0x8))
+#define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
+					 ((per) * 0x8))
+#define RGM_PERIPH_RST(num)		BIT(num)
+
+#define PRST_PCIE_0_SERDES		4
+#define PRST_PCIE_0_FUNC		5
+#define PRST_PCIE_1_SERDES		16
+#define PRST_PCIE_1_FUNC		17
 
 enum serdes_link_width {
 	X1 = 0x1,

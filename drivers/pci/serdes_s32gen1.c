@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2022 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -19,7 +19,6 @@
 #include <clk.h>
 
 #include "serdes_s32gen1.h"
-#include "mc_rgm_regs.h"
 
 #define PCIE_DEFAULT_INTERNAL_CLK	CLK_INT
 #define PCIE_DEFAULT_INTERNAL_CLK_FMHZ	CLK_100MHZ
