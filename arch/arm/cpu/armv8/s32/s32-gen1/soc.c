@@ -12,8 +12,6 @@
 #include <hang.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/s32-gen1/a53_cluster_gpr.h>
-#include <asm/arch/s32-gen1/mc_me_regs.h>
-#include <asm/arch/s32-gen1/mc_rgm_regs.h>
 #include <board_common.h>
 #ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
@@ -21,6 +19,53 @@
 #include <dm/uclass.h>
 #include <generic-phy.h>
 #endif
+
+#define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
+					 ((per) * 0x8))
+
+#define MC_RGM_PRST_CM7			(0)
+#define PRST_PERIPH_n_RST(n)		BIT(n)
+#define PRST_PERIPH_CM7n_RST(n)		PRST_PERIPH_n_RST(n)
+
+#define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
+					 ((per) * 0x8))
+#define MC_RGM_PSTAT_CM7		(0)
+#define PSTAT_PERIPH_n_STAT(n)		BIT(n)
+#define PSTAT_PERIPH_CM7n_STAT(n)	PSTAT_PERIPH_n_STAT(n)
+
+#define RGM_CORES_RESET_GROUP		1
+
+/* MC_ME registers. */
+#define MC_ME_CTL_KEY(MC_ME)		(UPTR(MC_ME) + 0x0)
+#define MC_ME_CTL_KEY_KEY		(0x00005AF0)
+#define MC_ME_CTL_KEY_INVERTEDKEY	(0x0000A50F)
+
+/* MC_ME partition 1 m M definitions. */
+#define MC_ME_PRTN_PART(PART, PRTN)	(MC_ME_BASE_ADDR + 0x140UL + \
+					 (PART) * 0x200UL + \
+					 (PRTN) * 0x20UL)
+#define MC_ME_PRTN_N_CORE_M(n, m)      \
+	MC_ME_PRTN_PART(n, m)
+
+#define MC_ME_PRTN_N_PCONF_OFF	0x0
+#define MC_ME_PRTN_N_PUPD_OFF	0x4
+#define MC_ME_PRTN_N_STAT_OFF	0x8
+#define MC_ME_PRTN_N_ADDR_OFF	0xC
+
+#define MC_ME_PRTN_N_CORE_M_PCONF(n, m)	(MC_ME_PRTN_N_CORE_M(n, m))
+#define MC_ME_PRTN_N_CORE_M_PUPD(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) +\
+					 MC_ME_PRTN_N_PUPD_OFF)
+#define MC_ME_PRTN_N_CORE_M_STAT(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) +\
+					 MC_ME_PRTN_N_STAT_OFF)
+#define MC_ME_PRTN_N_CORE_M_ADDR(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) +\
+					 MC_ME_PRTN_N_ADDR_OFF)
+
+/* MC_ME_PRTN_N_CORE_M_* registers fields. */
+#define MC_ME_PRTN_N_CORE_M_PCONF_CCE		BIT(0)
+#define MC_ME_PRTN_N_CORE_M_PUPD_CCUPD		BIT(0)
+#define MC_ME_PRTN_N_CORE_M_STAT_CCS		BIT(0)
+
+#define MC_ME_CM7_PRTN		(0)
 
 DECLARE_GLOBAL_DATA_PTR;
 

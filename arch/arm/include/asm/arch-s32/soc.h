@@ -9,9 +9,6 @@
 #include "s32-gen1/s32-gen1-regs.h"
 #include <asm/arch/siul.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/mc_cgm_regs.h>
-#include <asm/arch/mc_me_regs.h>
-#include <asm/arch/mc_rgm_regs.h>
 #include <asm/arch/mmdc.h>
 
 u32 get_sram_size(void);
