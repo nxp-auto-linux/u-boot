@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  * The SerDes config code
  */
@@ -16,7 +16,6 @@
 #include <dm.h>
 
 #include <asm/arch-s32/siul.h>
-#include <asm/arch-s32/mc_rgm_regs.h>
 
 #include <serdes_regs.h>
 #include <serdes_xpcs_regs.h>
