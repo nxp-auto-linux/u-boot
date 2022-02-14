@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  */
 
@@ -58,6 +58,48 @@ enum {
 };
 
 #define PFENG_MODE_DEFAULT PFENG_MODE_ENABLE
+
+/* MC_ME partition definitions */
+#define UPTR(PTR)				((uintptr_t)(PTR))
+#define MC_ME_PRTN_N(MC_ME, n)			(UPTR(MC_ME) + 0x100 + \
+						 (n) * 0x200)
+#define MC_ME_PRTN_N_PCONF(MC_ME, n)		(MC_ME_PRTN_N(MC_ME, n))
+#define MC_ME_PRTN_N_PUPD(MC_ME, n)		(MC_ME_PRTN_N(MC_ME, n) + 0x4)
+#define MC_ME_PRTN_N_STAT(MC_ME, n)		(MC_ME_PRTN_N(MC_ME, n) + 0x8)
+#define MC_ME_PRTN_N_COFB0_STAT(MC_ME, n)	(MC_ME_PRTN_N(MC_ME, n) + 0x10)
+#define MC_ME_PRTN_N_COFB0_CLKEN(MC_ME, n)	(MC_ME_PRTN_N(MC_ME, n) + 0x30)
+
+/* MC_ME_PRTN_N_* register fields */
+#define MC_ME_PRTN_N_PCE		BIT(0)
+#define MC_ME_PRTN_N_PCUD		BIT(0)
+#define MC_ME_PRTN_N_PCS		BIT(0)
+#define MC_ME_PRTN_N_OSSE		BIT(2)
+#define MC_ME_PRTN_N_OSSUD		BIT(2)
+#define MC_ME_PRTN_N_OSSS		BIT(2)
+#define MC_ME_PRTN_N_BLOCK(n)		BIT(n)
+#define MC_ME_PRTN_N_REQ(n)		BIT(n)
+
+#define MC_ME_CTL_KEY(MC_ME)		(UPTR(MC_ME) + 0x0)
+#define MC_ME_CTL_KEY_KEY		(0x00005AF0)
+#define MC_ME_CTL_KEY_INVERTEDKEY	(0x0000A50F)
+
+/* RGM peripheral reset registers */
+#define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
+					 ((per) * 0x8))
+#define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
+					 ((per) * 0x8))
+#define PRST_PFE			128
+
+/* Reset domain definitions */
+#define RDC_RD_N_CTRL(RDC, N)			(UPTR(RDC) + (0x4 * (N)))
+#define RDC_RD_N_STATUS(RDC, N)			(UPTR(RDC) + 0x80 + (0x4 * (N)))
+#define RD_CTRL_UNLOCK_MASK			(0x80000000)
+#define RD_XBAR_DISABLE_MASK			(0x00000008)
+#define RDC_RD_CTRL_UNLOCK			BIT(31)
+#define RDC_RD_INTERCONNECT_DISABLE		BIT(3)
+#define RDC_RD_INTERCONNECT_DISABLE_REQ_STAT	BIT(3)
+#define RDC_RD_INTERCONNECT_DISABLE_STAT	BIT(4)
+#define RDC_RD_STAT_XBAR_DISABLE_MASK		BIT(4)
 
 struct pfe_hif_ring_my;
 
