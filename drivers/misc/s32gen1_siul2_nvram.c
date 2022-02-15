@@ -43,6 +43,17 @@
 #define S32G2_SUBMINOR_SHIFT	26
 #define S32G2_SUBMINOR_MASK	GENMASK(27, 26)
 
+#define S32G_MIN_PART_NO	233
+#define S32G_MAX_PART_NO	399
+#define S32R_PART_NO_MIN	450
+
+#define CPUMASK_S32G2		((BIT(0) | BIT(1) | BIT(2) | BIT(3)))
+#define CPUMASK_S32G2_DERIVATIVE	(BIT(0) | BIT(2))
+#define CPUMASK_S32G3		(BIT(0) | BIT(1) | BIT(2) | BIT(3) | \
+				 BIT(4) | BIT(5) | BIT(6) | BIT(7))
+#define CPUMASK_S32G3_DERIVATIVE	(BIT(0) | BIT(1) | BIT(2) | BIT(3))
+#define CPUMASK_S32R		((BIT(0) | BIT(1) | BIT(2) | BIT(3)))
+
 struct siul2_nvram;
 
 struct siul_mapping {
@@ -63,6 +74,16 @@ struct siul2_nvram {
 	const struct siul_platdata *platdata;
 	fdt_addr_t base;
 };
+
+static inline u32 get_second_digit(u32 val)
+{
+	return (val / 10) % 10;
+}
+
+static inline u32 get_third_digit(u32 val)
+{
+	return (val / 100) % 10;
+}
 
 static u32 adjust_letter(u32 value, struct siul2_nvram *nvram)
 {
@@ -94,6 +115,92 @@ static u32 adjust_freq(u32 value, struct siul2_nvram *nvram)
 
 	if (value < ARRAY_SIZE(freqs))
 		return freqs[value];
+
+	return 0;
+}
+
+static u32 adjust_s32r_max_cores_per_cluster(u32 value,
+					     struct siul2_nvram *nvram)
+{
+	u32 vert_slot, plat_gen;
+
+	if (value < S32R_PART_NO_MIN)
+		return 0;
+
+	/* Get Platform Generation */
+	plat_gen = get_third_digit(value);
+
+	/* Get Number of Cores */
+	vert_slot = get_second_digit(value);
+
+	if (plat_gen == 4 && vert_slot == 5)
+		return 2;
+
+	return 0;
+}
+
+static u32 adjust_s32g_max_cores_per_cluster(u32 value,
+					     struct siul2_nvram *nvram)
+{
+	u32 series;
+
+	if (value < S32G_MIN_PART_NO || value > S32G_MAX_PART_NO)
+		return 0;
+
+	/* Get S32G platform flavour (S32G2/S32G3) */
+	series = get_third_digit(value);
+
+	if (series == 3)
+		return 4;
+
+	return 2;
+}
+
+static u32 adjust_s32r_derivative_cores(u32 value,
+					struct siul2_nvram *nvram)
+{
+	u32 vert_slot, plat_gen;
+
+	if (value < S32R_PART_NO_MIN)
+		return 0;
+
+	/* Get Platform Generation */
+	plat_gen = get_third_digit(value);
+
+	/* Get Number of Cores */
+	vert_slot = get_second_digit(value);
+
+	if (plat_gen == 4 && vert_slot == 5)
+		return CPUMASK_S32R;
+
+	return 0;
+}
+
+static u32 adjust_s32g_derivative_cores(u32 value,
+					struct siul2_nvram *nvram)
+{
+	u32 series;
+	u32 perf_id;
+
+	if (value < S32G_MIN_PART_NO || value > S32G_MAX_PART_NO)
+		return 0;
+
+	perf_id = get_second_digit(value);
+
+	/* Get S32G platform flavour (S32G2/S32G3) */
+	series = get_third_digit(value);
+
+	if (series == 3) {
+		if (perf_id == 9)
+			return CPUMASK_S32G3;
+		else if (perf_id == 7)
+			return CPUMASK_S32G3_DERIVATIVE;
+	} else if (series == 2) {
+		if (perf_id == 3 || perf_id == 5)
+			return CPUMASK_S32G2_DERIVATIVE;
+		else if (perf_id == 7)
+			return CPUMASK_S32G2;
+	}
 
 	return 0;
 }
@@ -149,6 +256,40 @@ static const struct siul_mapping siul21_mappings[] = {
 	},
 };
 
+static const struct siul_mapping s32g_siul20_mappings[] = {
+	{
+		.nvram_off = S32GEN1_MAX_A53_CORES_PER_CLUSTER,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_s32g_max_cores_per_cluster,
+	},
+	{
+		.nvram_off = S32GEN1_A53_CORES_MASK,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_s32g_derivative_cores,
+	},
+};
+
+static const struct siul_mapping s32r_siul20_mappings[] = {
+	{
+		.nvram_off = S32GEN1_MAX_A53_CORES_PER_CLUSTER,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_s32r_max_cores_per_cluster,
+	},
+	{
+		.nvram_off = S32GEN1_A53_CORES_MASK,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_s32r_derivative_cores,
+	},
+};
+
 static const struct siul_mapping s32g2_siul21_mappings[] = {
 	{
 		.nvram_off = S32GEN1_SOC_SUBMINOR,
@@ -166,6 +307,18 @@ static const struct siul_platdata siul20_platdata = {
 static const struct siul_platdata siul21_platdata = {
 	.mappings = &siul21_mappings[0],
 	.n_mappings = ARRAY_SIZE(siul21_mappings),
+};
+
+static const struct siul_platdata s32g_siul20_platdata = {
+	.mappings = &s32g_siul20_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32g_siul20_mappings),
+	.next = &siul20_platdata,
+};
+
+static const struct siul_platdata s32r_siul20_platdata = {
+	.mappings = &s32r_siul20_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32r_siul20_mappings),
+	.next = &siul20_platdata,
 };
 
 static const struct siul_platdata s32g2_siul21_platdata = {
@@ -220,8 +373,12 @@ static const struct misc_ops siul2_nvram_ops = {
 
 static const struct udevice_id siul2_nvram_ids[] = {
 	{
-		.compatible = "fsl,s32-gen1-siul2_0-nvram",
-		.data = (ulong)&siul20_platdata
+		.compatible = "fsl,s32g-siul2_0-nvram",
+		.data = (ulong)&s32g_siul20_platdata,
+	},
+	{
+		.compatible = "fsl,s32r-siul2_0-nvram",
+		.data = (ulong)&s32r_siul20_platdata,
 	},
 	{
 		.compatible = "fsl,s32g2-siul2_1-nvram",

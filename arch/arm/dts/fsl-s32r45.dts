@@ -65,7 +65,7 @@
 		};
 
 		siul2_0_nvram {
-			compatible = "fsl,s32-gen1-siul2_0-nvram";
+			compatible = "fsl,s32r-siul2_0-nvram";
 			status = "okay";
 			u-boot,dm-pre-reloc;
 		};
