@@ -300,7 +300,7 @@
 	"boot_mtd=" __stringify(BOOT_MTD) "\0" \
 	"image=" __stringify(IMAGE_NAME) "\0" \
 	"ramdisk=" __stringify(RAMDISK_NAME) "\0"\
-	"console=ttyLF" __stringify(CONFIG_FSL_LINFLEX_MODULE) "\0" \
+	"console=ttyLF0\0" \
 	"fdt_high=0xa0000000\0" \
 	"initrd_high=" __stringify(INITRD_HIGH) "\0" \
 	"fdt_file="  __stringify(FDT_FILE) "\0" \
