@@ -20,19 +20,13 @@ Command syntax:
 
 Example:
 	./tools/mkimage -T "s32gen1image" \
-			-n u-boot.cfg \
-			-a 0x34090000 \
-			-e 0x340a0000 \
-			-d u-boot.bin u-boot.s32
+			-n fip.cfgout \
+			-a 0x34300910 \
+			-e 0x34302000 \
+			-d fip.bin fip.s32
 
 s32gen1image support available with mkimage utility will generate a S32GEN1 boot
-image that can be flashed on the board's QSPI, EMMC or SD. The make target which
-uses mkimage to produce such an image is "u-boot.s32".  For example:
-
-  export KBUILD_OUTPUT=/tmp/build
-  make distclean
-  make yourboard_config
-  make u-boot.s32
+image that can be flashed on the board's QSPI, EMMC or SD.
 
 Board specific configuration file specifications:
 ------------------------------------------------

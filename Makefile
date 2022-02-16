@@ -926,6 +926,10 @@ ifeq ($(CONFIG_ARCH_ROCKCHIP)$(CONFIG_SPL),yy)
 ALL-y += u-boot-rockchip.bin
 endif
 
+ifeq ($(CONFIG_S32_GEN1),y)
+ALL-y += u-boot-s32.bin u-boot-s32.cfgout
+endif
+
 LDFLAGS_u-boot += $(LDFLAGS_FINAL)
 
 # Avoid 'Not enough room for program headers' error on binutils 2.28 onwards.
@@ -1173,11 +1177,12 @@ endif
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
 ifeq ($(CONFIG_S32_GEN1),y)
-S32_DEPS = u-boot.dtb
-endif
-
-%.s32: %.bin $(S32_DEPS)
+%.cfgout: FORCE
 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32 $@
+
+u-boot-s32.bin: u-boot.dtb u-boot-nodtb.bin
+	$(call if_changed,binman)
+endif
 
 quiet_cmd_copy = COPY    $@
       cmd_copy = cp $< $@

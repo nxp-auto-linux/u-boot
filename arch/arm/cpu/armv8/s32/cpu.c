@@ -202,3 +202,15 @@ void board_prep_linux(bootm_headers_t *images)
 	if (ret)
 		pr_err("Failed to reset SCMI agent's settings\n");
 }
+
+void *board_fdt_blob_setup(void)
+{
+	void *dtb;
+
+	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32GEN1_MAX_DTB_SIZE);
+
+	if (fdt_magic(dtb) != FDT_MAGIC)
+		panic("DTB is not passed via %p\n", dtb);
+
+	return dtb;
+}

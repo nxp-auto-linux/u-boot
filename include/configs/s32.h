@@ -121,9 +121,6 @@
 #error "FDT and Ramdisk would overlap in flash memory"
 #endif
 
-#define ENV_FDTCONTROLADDR \
-			"fdtcontroladdr=" __stringify(CONFIG_DTB_ADDR) "\0"
-
 /* Generic Timer Definitions */
 #if defined(CONFIG_SYS_ARCH_TIMER)
 /* COUNTER_FREQUENCY value will be used at startup but will be replaced
@@ -282,7 +279,6 @@
 	CONFIG_BOARD_EXTRA_ENV_SETTINGS  \
 	CONFIG_DCU_EXTRA_ENV_SETTINGS \
 	"ipaddr=" S32_DEFAULT_IP \
-	ENV_FDTCONTROLADDR \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
@@ -311,7 +307,7 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"update_sd_firmware_filename=u-boot.s32\0" \
+	"update_sd_firmware_filename=fip.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \

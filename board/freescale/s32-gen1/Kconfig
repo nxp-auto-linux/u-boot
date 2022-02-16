@@ -62,17 +62,9 @@ config SYS_CONFIG_NAME
 	default "s32r45" if NXP_S32R45
 	default "s32g399a" if NXP_S32G3XX
 
-config CUSTOM_DTB_ADDR
-	bool "Use a custom DTB_ADDR"
-	help
-	  Enable this if you need to use a custom DTB_ADDR.
-	  When disabled, a suitable DTB_ADDR address is calculated
-	  automatically.
-
-config DTB_ADDR
-	hex "Address at which the dtb will be found" if CUSTOM_DTB_ADDR
-	default 0xbfa90000 if TARGET_TYPE_S32GEN1_EMULATOR
-	default 0xffa90000
+config S32GEN1_MAX_DTB_SIZE
+	hex "Max size reserved for device tree in image layout"
+	default 0x7000
 
 config S32GEN1_HWCONFIG
 	string "S32GEN1 HWConfig definition"
