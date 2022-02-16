@@ -409,5 +409,15 @@
 		clock-names = "pit";
 		status = "okay";
 	};
+
+	binman {
+		filename = "u-boot-s32.bin";
+		u-boot-dtb {
+		};
+		u-boot-nodtb {
+			offset = <CONFIG_S32GEN1_MAX_DTB_SIZE>;
+		};
+	};
+
 };
 
