@@ -28,6 +28,7 @@ config S32_GEN1
 	imply TIMER
 	select ARCH_MISC_INIT
 	select ARM_SMCCC
+	select BINMAN
 	select CLK
 	select CLK_SCMI
 	select CPU
