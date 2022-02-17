@@ -21,7 +21,8 @@ properties:
     description: |-
       Each compatible string provides an interface for
       SIUL2_0 or SIUL2_1 module.
-      const: fsl,s32-gen1-siul2_0-nvram
+      const: fsl,s32g-siul2_0-nvram
+      const: fsl,s32r-siul2_0-nvram
       const: fsl,s32g2-siul2_1-nvram
       const: fsl,s32g3-siul2_1-nvram
       const: fsl,s32r-siul2_1-nvram
@@ -48,7 +49,7 @@ unevaluatedProperties: false
 examples:
   - |
     nvram: nvram@4009C000 {
-      compatible = "fsl,s32gen1-siul2_0-nvmem";
+      compatible = "fsl,s32g-siul2_0-nvmem";
       reg = <0x0 10>;
       #address-cells = <1>;
       #size-cells = <1>;
