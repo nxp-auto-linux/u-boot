@@ -61,8 +61,8 @@ static struct mm_region s32_mem_map[] = {
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 	{
-	  CONFIG_SYS_FSL_FLASH0_BASE, CONFIG_SYS_FSL_FLASH0_BASE,
-	  CONFIG_SYS_FSL_FLASH0_SIZE,
+	  CONFIG_SYS_FLASH_BASE, CONFIG_SYS_FLASH_BASE,
+	  CONFIG_SYS_FLASH_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
 #if defined(CONFIG_PCIE_S32GEN1)
@@ -101,7 +101,7 @@ static void disable_qspi_mmu_entry(void)
 	/* Skip AHB mapping by setting its size to 0 */
 	for (i = 0; i < ARRAY_SIZE(s32_mem_map); i++) {
 		region = &s32_mem_map[i];
-		if (region->phys == CONFIG_SYS_FSL_FLASH0_BASE) {
+		if (region->phys == CONFIG_SYS_FLASH_BASE) {
 			region->size = 0U;
 			break;
 		}

@@ -29,8 +29,9 @@
 #endif
 
 /* memory mapped external flash */
-#define CONFIG_SYS_FSL_FLASH0_BASE      0x0
-#define CONFIG_SYS_FSL_FLASH0_SIZE      0x20000000
+#define CONFIG_SYS_FLASH_BASE		0x0
+#define CONFIG_SYS_FLASH_SIZE		0x20000000
+
 #define QSPI_BASE_ADDR		        0x40134000
 
 #if defined(CONFIG_TARGET_S32G274ABLUEBOX3)
