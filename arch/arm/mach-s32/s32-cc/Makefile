@@ -18,10 +18,6 @@ obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
 ccflags-y			+= -Idrivers/misc
 ccflags-y			+= -Iboard/nxp/s32-cc
 
-obj-$(CONFIG_S32_CMU)		+= cmu.o
-obj-$(CONFIG_ARCH_S32G2)	+= s32g2_cmu.o
-obj-$(CONFIG_ARCH_S32G3)	+= s32g3_cmu.o
-obj-$(CONFIG_ARCH_S32R45)	+= s32r45_cmu.o
 obj-$(CONFIG_HSE_SECBOOT)	+= hse_adv_secboot.o
 ifdef CONFIG_NXP_S32CC
 obj-$(CONFIG_NETDEVICES)	+= sgmii/sgmii.o sgmii/serdes_xpcs.o

@@ -39,6 +39,12 @@
 		tick-timer = &pit0;
 	};
 
+	cmu: cmu@4005c000 {
+		reg = <0x0 0x4005c000 0x0 0x1000>;
+		clocks = <&clks S32GEN1_SCMI_CLK_CMU_MODULE>,
+			 <&clks S32GEN1_SCMI_CLK_CMU_REG>;
+	};
+
 	cpus: cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;

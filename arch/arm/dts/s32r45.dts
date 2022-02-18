@@ -249,6 +249,10 @@
 	};
 };
 
+&cmu {
+	compatible = "nxp,s32r45-cmu";
+};
+
 &usdhc0 {
 	pinctrl-0 = <&pinctrl0_sd0>;
 	pinctrl-names = "default";
