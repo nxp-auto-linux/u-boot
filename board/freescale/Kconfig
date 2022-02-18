@@ -20,6 +20,7 @@ config S32_GEN1
 	imply FSL_USDHC
 	imply MISC
 	imply MMC_HS400_ES_SUPPORT
+	imply MP
 	imply PCI
 	imply PCIE_S32GEN1
 	imply S32_TIMER
