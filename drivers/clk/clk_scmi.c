@@ -71,7 +71,7 @@ static int scmi_clk_gate(struct clk *clk, int enable)
 					  in, out);
 	int ret;
 
-	ret = devm_scmi_process_msg(clk->dev->parent, &msg);
+	ret = devm_scmi_process_msg(clk->dev, &msg);
 	if (ret)
 		return ret;
 
@@ -99,7 +99,7 @@ static ulong scmi_clk_get_rate(struct clk *clk)
 					  in, out);
 	int ret;
 
-	ret = devm_scmi_process_msg(clk->dev->parent, &msg);
+	ret = devm_scmi_process_msg(clk->dev, &msg);
 	if (ret < 0)
 		return ret;
 
@@ -124,7 +124,7 @@ static ulong scmi_clk_set_rate(struct clk *clk, ulong rate)
 					  in, out);
 	int ret;
 
-	ret = devm_scmi_process_msg(clk->dev->parent, &msg);
+	ret = devm_scmi_process_msg(clk->dev, &msg);
 	if (ret < 0)
 		return ret;
 
