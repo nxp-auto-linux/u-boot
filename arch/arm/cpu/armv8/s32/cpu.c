@@ -6,9 +6,9 @@
 
 #include <common.h>
 #include <cpu_func.h>
+#include <asm/armv8/mmu.h>
 #include <asm/io.h>
 #include <asm/system.h>
-#include <asm/arch/cpu.h>
 #include <asm-generic/sections.h>
 #include "scmi_reset_agent.h"
 #include <asm/arch/soc.h>
@@ -20,6 +20,18 @@
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
+
+#ifndef CONFIG_SYS_DCACHE_OFF
+#define CONFIG_SYS_FSL_PERIPH_BASE      0x40000000
+#define CONFIG_SYS_FSL_PERIPH_SIZE      0x20000000
+
+#ifdef CONFIG_PCIE_S32GEN1
+#define CONFIG_SYS_PCIE0_PHYS_ADDR_HI       0x5800000000ULL
+#define CONFIG_SYS_PCIE1_PHYS_ADDR_HI       0x4800000000ULL
+#define CONFIG_SYS_PCIE0_PHYS_SIZE_HI       0x0800000000ULL
+#define CONFIG_SYS_PCIE1_PHYS_SIZE_HI       0x0800000000ULL
+#endif
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 

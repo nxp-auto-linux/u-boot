@@ -6,7 +6,6 @@
 #include <dm.h>
 #include <linux/sizes.h>
 #include <misc.h>
-#include <asm/arch/cpu.h>
 #include <s32gen1_siul2_nvram.h>
 
 enum s32g2_derivative {

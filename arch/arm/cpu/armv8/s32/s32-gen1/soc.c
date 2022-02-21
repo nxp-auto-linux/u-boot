@@ -10,7 +10,6 @@
 #include <div64.h>
 #include <errno.h>
 #include <hang.h>
-#include <asm/arch/cpu.h>
 #include <board_common.h>
 #ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
