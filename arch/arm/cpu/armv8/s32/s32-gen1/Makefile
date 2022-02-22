@@ -13,6 +13,7 @@ obj-$(CONFIG_NXP_S32G2XX)		+= s32g274a.o
 ifdef CONFIG_S32_GEN1
 obj-$(CONFIG_NETDEVICES)		+= sgmii/sgmii.o sgmii/serdes_xpcs.o
 endif
+obj-y					+= start_m7.o
 ccflags-y				+= -I./board/freescale/s32-gen1/
 ccflags-y				+= -I./arch/arm/cpu/armv8/s32/s32-gen1/include
 ccflags-y				+= -I./arch/arm/include/asm/arch-s32/s32-gen1/
