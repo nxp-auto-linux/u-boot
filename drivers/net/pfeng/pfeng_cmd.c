@@ -9,7 +9,6 @@
 #include <command.h>
 #include <phy.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/soc.h>
 #include <asm/io.h>
 
 #include <asm/arch/s32-gen1/serdes_regs.h>

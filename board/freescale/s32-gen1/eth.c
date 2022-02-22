@@ -12,7 +12,6 @@
 #include <phy.h>
 #include <malloc.h>
 #include <asm/types.h>
-#include <asm/arch/soc.h>
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 #endif

@@ -60,6 +60,9 @@ enum {
 #define PFENG_MODE_DEFAULT PFENG_MODE_ENABLE
 
 /* MC_ME partition definitions */
+#define MC_ME_BASE_ADDR				0x40088000
+#define MC_RGM_BASE_ADDR			0x40078000
+
 #define UPTR(PTR)				((uintptr_t)(PTR))
 #define MC_ME_PRTN_N(MC_ME, n)			(UPTR(MC_ME) + 0x100 + \
 						 (n) * 0x200)
@@ -91,6 +94,7 @@ enum {
 #define PRST_PFE			128
 
 /* Reset domain definitions */
+#define RDC_BASE_ADDR				0x40080000
 #define RDC_RD_N_CTRL(RDC, N)			(UPTR(RDC) + (0x4 * (N)))
 #define RDC_RD_N_STATUS(RDC, N)			(UPTR(RDC) + 0x80 + (0x4 * (N)))
 #define RD_CTRL_UNLOCK_MASK			(0x80000000)

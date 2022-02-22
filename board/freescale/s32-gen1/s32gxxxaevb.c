@@ -2,7 +2,6 @@
 /*
  * Copyright 2018-2022 NXP
  */
-#include <asm/arch/soc.h>
 #include <board_common.h>
 #include <common.h>
 #include <dm/uclass.h>

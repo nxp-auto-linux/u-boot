@@ -5,7 +5,6 @@
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/soc.h>
 #include <mmc.h>
 #include <div64.h>
 #include <errno.h>

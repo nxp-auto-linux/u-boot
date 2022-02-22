@@ -11,7 +11,6 @@
 #include <asm/system.h>
 #include <asm-generic/sections.h>
 #include "scmi_reset_agent.h"
-#include <asm/arch/soc.h>
 #include <asm-generic/sections.h>
 #include <linux/sizes.h>
 #if defined(CONFIG_DEBUG_UART)

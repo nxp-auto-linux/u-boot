@@ -3,7 +3,6 @@
  * Copyright 2018-2022 NXP
  */
 
-#include <asm/arch/soc.h>
 #include <common.h>
 #include <linux/err.h>
 #include <miiphy.h>

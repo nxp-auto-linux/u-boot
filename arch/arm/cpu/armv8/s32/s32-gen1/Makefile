@@ -9,7 +9,6 @@ obj-$(CONFIG_NXP_S32G3XX)		+= s32g3_cmu.o
 obj-$(CONFIG_NXP_S32R45)		+= s32r45_cmu.o
 obj-$(CONFIG_HSE_SECBOOT)		+= hse_adv_secboot.o
 obj-y					+= soc.o
-obj-$(CONFIG_NXP_S32G2XX)		+= s32g274a.o
 ifdef CONFIG_S32_GEN1
 obj-$(CONFIG_NETDEVICES)		+= sgmii/sgmii.o sgmii/serdes_xpcs.o
 endif

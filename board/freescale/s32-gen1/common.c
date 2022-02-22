@@ -6,7 +6,6 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/soc.h>
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <miiphy.h>

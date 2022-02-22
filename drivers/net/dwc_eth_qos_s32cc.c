@@ -23,7 +23,6 @@
 #include <reset.h>
 #include <wait_bit.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/soc.h>
 #include <asm/io.h>
 
 #include "board_common.h"
