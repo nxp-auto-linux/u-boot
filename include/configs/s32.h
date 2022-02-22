@@ -256,7 +256,7 @@
 
 #define FDT_OVERRIDE \
 	"fdt_override=" \
-		" \0"
+		";\0"
 
 #define CONFIG_FLASHBOOT_RAMDISK " ${ramdisk_addr} "
 
