@@ -7,7 +7,6 @@
 #define __S32_CMU_H
 
 #include <common.h>
-#include "s32-gen1-regs.h"
 
 #ifndef __STR
 #define __STR(x) #x
@@ -23,6 +22,8 @@
 #define FIRC_FREQ			((double)48)
 #define FXOSC_FREQ			((double)40)
 #define SIRC_FREQ			((double)0.032)
+
+#define	CMU_BASE_ADDR			(0x4005C000)
 
 #define CMU(ID, REF_CLK, MON_CLK, REF_FRQ, EXP_FRQ, REF_VAR, MON_VAR, FC) \
 {\

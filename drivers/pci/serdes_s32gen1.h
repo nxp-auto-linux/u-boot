@@ -9,7 +9,6 @@
 
 #include <pci.h>
 #include <dm.h>
-#include <asm/arch/s32-gen1/s32-gen1-regs.h>
 #include <asm/io.h>
 
 #include "serdes_regs.h"
@@ -45,6 +44,7 @@
 #define COLD_RST		0x1
 
 /* RGM peripheral reset registers */
+#define UPTR(PTR)			((uintptr_t)(PTR))
 #define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
 					((per) * 0x8))
 #define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
@@ -55,6 +55,8 @@
 #define PRST_PCIE_0_FUNC		5
 #define PRST_PCIE_1_SERDES		16
 #define PRST_PCIE_1_FUNC		17
+
+#define MC_RGM_BASE_ADDR		(0x40078000)
 
 enum serdes_link_width {
 	X1 = 0x1,
