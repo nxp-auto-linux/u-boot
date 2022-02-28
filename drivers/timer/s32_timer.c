@@ -52,6 +52,25 @@ static int s32_timer_get_count(struct udevice *dev, u64 *count)
 	return 0;
 }
 
+ulong timer_get_boot_us(void)
+{
+	u64 ticks = 0, us;
+	u32 rate;
+	int ret;
+
+	ret = dm_timer_init();
+
+	if (ret)
+		return 0;
+
+	/* The timer is available */
+	rate = timer_get_rate(gd->timer);
+	timer_get_count(gd->timer, &ticks);
+
+	us = (ticks * 1000000) / rate;
+	return us;
+}
+
 static int s32_timer_probe(struct udevice *dev)
 {
 	struct s32_timer_priv *priv = dev_get_priv(dev);
