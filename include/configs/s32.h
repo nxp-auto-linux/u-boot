@@ -151,8 +151,12 @@
 #define PFENG_EMAC "1"
 #endif
 #ifdef CONFIG_NXP_S32GRDB_BOARD
+#ifdef CONFIG_NXP_S32G3XX
+#define PFENG_MODE "enable,sgmii,sgmii,rgmii"
+#else
 #define PFENG_MODE "enable,sgmii,none,rgmii"
-#define PFENG_EMAC "2"
+#endif
+#define PFENG_EMAC "0"
 #endif
 #ifdef CONFIG_TARGET_S32G274ABLUEBOX3
 #define PFENG_MODE "enable,sgmii,none,none"

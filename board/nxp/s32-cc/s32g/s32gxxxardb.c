@@ -101,7 +101,7 @@ int board_late_init(void)
 			env_set("pfe1_phy_addr", "8");
 			break;
 		case 'E':
-			env_set("pfe1_phy_addr", "1");
+			env_set("pfe1_phy_addr", "8");
 			break;
 		default:
 			env_set("pfe1_phy_addr", NULL);
