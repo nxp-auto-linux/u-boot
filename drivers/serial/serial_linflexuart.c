@@ -4,14 +4,13 @@
  * Copyright 2017, 2019, 2021-2022 NXP
  */
 
+#include <asm/io.h>
+#include <clk.h>
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
-#include <watchdog.h>
-#include <asm/io.h>
-#include <serial.h>
 #include <linux/compiler.h>
-#include <clk.h>
+#include <serial.h>
 
 #define LINCR1_INIT			BIT(0)
 #define LINCR1_MME			BIT(4)
@@ -29,7 +28,7 @@
 #define UARTSR_DTF			BIT(1)
 #define UARTSR_RFE			BIT(2)
 #define UARTSR_RMB			BIT(9)
-#define LINFLEXD_UARTCR_OSR_MASK	(0xF<<24)
+#define LINFLEXD_UARTCR_OSR_MASK	(0xF << 24)
 #define LINFLEXD_UARTCR_OSR(uartcr)	(((uartcr) \
 					& LINFLEXD_UARTCR_OSR_MASK) >> 24)
 
@@ -62,7 +61,7 @@ struct linflex_fsl {
 	u32 reserved[3];
 	u32 gcr;
 	u32 uartpto;
-};
+} __packed;
 
 static void _linflex_enter_init(struct linflex_fsl *base)
 {
@@ -290,11 +289,12 @@ U_BOOT_DRIVER(serial_linflex) = {
 
 static inline void _debug_uart_init(void)
 {
-#ifndef CONFIG_DEBUG_UART_SKIP_INIT
 	struct linflex_fsl *base = (struct linflex_fsl *)CONFIG_DEBUG_UART_BASE;
 
+	if (IS_ENABLED(CONFIG_DEBUG_UART_SKIP_INIT))
+		return;
+
 	_linflex_serial_init(base, CONFIG_DEBUG_UART_CLOCK);
-#endif
 }
 
 static inline void _debug_uart_putc(int ch)

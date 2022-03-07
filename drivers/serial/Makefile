@@ -54,11 +54,7 @@ obj-$(CONFIG_SANDBOX_SERIAL) += sandbox.o
 obj-$(CONFIG_SCIF_CONSOLE) += serial_sh.o
 obj-$(CONFIG_ZYNQ_SERIAL) += serial_zynq.o
 obj-$(CONFIG_FSL_LPUART) += serial_lpuart.o
-ifdef CONFIG_DM_SERIAL
 obj-$(CONFIG_FSL_LINFLEXUART) += serial_linflexuart.o
-else
-obj-$(CONFIG_FSL_LINFLEXUART) += serial_linflexuart_nondm.o
-endif
 obj-$(CONFIG_MXS_AUART) += mxs_auart.o
 obj-$(CONFIG_ARC_SERIAL) += serial_arc.o
 obj-$(CONFIG_UNIPHIER_SERIAL) += serial_uniphier.o
