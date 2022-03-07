@@ -1,50 +1,119 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ * Copyright 2017, 2019, 2021-2022 NXP
  */
 
+#include <asm/io.h>
+#include <clk.h>
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
-#include <watchdog.h>
-#include <asm/global_data.h>
-#include <asm/io.h>
-#include <serial.h>
 #include <linux/compiler.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/clock.h>
+#include <serial.h>
 
-#define US1_TDRE            (1 << 7)
-#define US1_RDRF            (1 << 5)
-#define UC2_TE              (1 << 3)
-#define LINCR1_INIT         (1 << 0)
-#define LINCR1_MME          (1 << 4)
-#define LINCR1_BF           (1 << 7)
-#define LINSR_LINS_INITMODE (0x00001000)
-#define LINSR_LINS_MASK     (0x0000F000)
-#define UARTCR_UART         (1 << 0)
-#define UARTCR_WL0          (1 << 1)
-#define UARTCR_PCE          (1 << 2)
-#define UARTCR_PC0          (1 << 3)
-#define UARTCR_TXEN         (1 << 4)
-#define UARTCR_RXEN         (1 << 5)
-#define UARTCR_PC1          (1 << 6)
-#define UARTSR_DTF          (1 << 1)
-#define UARTSR_DRF          (1 << 2)
-#define UARTSR_RMB          (1 << 9)
+#define LINCR1_INIT			BIT(0)
+#define LINCR1_MME			BIT(4)
+#define LINSR_LINS_INITMODE		(0x00001000)
+#define LINSR_LINS_MASK			(0x0000F000)
+#define UARTCR_UART			BIT(0)
+#define UARTCR_WL0			BIT(1)
+#define UARTCR_PC0			BIT(3)
+#define UARTCR_TXEN			BIT(4)
+#define UARTCR_RXEN			BIT(5)
+#define UARTCR_PC1			BIT(6)
+#define UARTCR_TFBM			BIT(8)
+#define UARTCR_RFBM			BIT(9)
+#define UARTCR_TFC			GENMASK(15, 13)
+#define UARTSR_DTF			BIT(1)
+#define UARTSR_RFE			BIT(2)
+#define UARTSR_RMB			BIT(9)
+#define LINFLEXD_UARTCR_OSR_MASK	(0xF << 24)
+#define LINFLEXD_UARTCR_OSR(uartcr)	(((uartcr) \
+					& LINFLEXD_UARTCR_OSR_MASK) >> 24)
+
+#define LINFLEXD_UARTCR_ROSE		BIT(23)
+#define LINFLEX_LDIV_MULTIPLIER		(16)
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static void _linflex_serial_setbrg(struct linflex_fsl *base, int baudrate)
+struct linflex_fsl {
+	u32 lincr1;
+	u32 linier;
+	u32 linsr;
+	u32 linesr;
+	u32 uartcr;
+	u32 uartsr;
+	u32 lintcsr;
+	u32 linocr;
+	u32 lintocr;
+	u32 linfbrr;
+	u32 linibrr;
+	u32 lincfr;
+	u32 lincr2;
+	u32 bidr;
+	u32 bdrl;
+	u32 bdrm;
+	u32 reserved[3];
+	u32 gcr;
+	u32 uartpto;
+} __packed;
+
+static void _linflex_enter_init(struct linflex_fsl *base)
 {
-	u32 clk = mxc_get_clock(MXC_UART_CLK);
-	u32 ibr, fbr;
+	u32 ctrl;
+
+	/* wait the TX fifo to be empty */
+	while (__raw_readl(&base->uartcr) & UARTCR_TFC)
+		;
+
+	/* set the Linflex in init mode */
+	ctrl = __raw_readl(&base->lincr1);
+	ctrl |= LINCR1_INIT;
+	__raw_writel(ctrl, &base->lincr1);
+
+	/* waiting for init mode entry - TODO: add a timeout */
+	while ((__raw_readl(&base->linsr) & LINSR_LINS_MASK) !=
+	       LINSR_LINS_INITMODE)
+		;
+}
+
+static void _linflex_exit_init(struct linflex_fsl *base)
+{
+	u32 ctrl;
+
+	ctrl = __raw_readl(&base->lincr1);
+	ctrl &= ~LINCR1_INIT;
+	__raw_writel(ctrl, &base->lincr1);
+}
+
+static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
+{
+	u32 mul = LINFLEX_LDIV_MULTIPLIER;
+	u32 cr;
+
+	cr = __raw_readl(&base->uartcr);
+
+	if (cr & LINFLEXD_UARTCR_ROSE)
+		mul = LINFLEXD_UARTCR_OSR(cr);
+
+	return mul;
+}
+
+static void _linflex_serial_setbrg(struct linflex_fsl *base, ulong rate,
+				   int baudrate)
+{
+	u32 clk = rate;
+	u32 ibr, fbr, divisr, dividr;
 
 	if (!baudrate)
 		baudrate = CONFIG_BAUDRATE;
 
-	ibr = (u32) (clk / (16 * gd->baudrate));
-	fbr = (u32) (clk % (16 * gd->baudrate)) * 16;
+	divisr = clk;
+	dividr = (u32)(baudrate * linflex_ldiv_multiplier(base));
+
+	ibr = (u32)(divisr / dividr);
+	fbr = (u32)((divisr % dividr) * 16 / dividr) & 0xF;
 
 	__raw_writel(ibr, &base->linibrr);
 	__raw_writel(fbr, &base->linfbrr);
@@ -52,29 +121,19 @@ static void _linflex_serial_setbrg(struct linflex_fsl *base, int baudrate)
 
 static int _linflex_serial_getc(struct linflex_fsl *base)
 {
-	char c;
+	while ((__raw_readl(&base->uartsr) & UARTSR_RFE) == UARTSR_RFE)
+		;
 
-	if (!(__raw_readb(&base->uartsr) & UARTSR_DRF))
-		return -EAGAIN;
-
-	if (!(__raw_readl(&base->uartsr) & UARTSR_RMB))
-		return -EAGAIN;
-
-	c = __raw_readl(&base->bdrm);
-	__raw_writeb((__raw_readb(&base->uartsr) | (UARTSR_DRF | UARTSR_RMB)),
-		     &base->uartsr);
-	return c;
+	return __raw_readb(&base->bdrm);
 }
 
 static int _linflex_serial_putc(struct linflex_fsl *base, const char c)
 {
+	/* wait for Tx FIFO not full */
+	while (__raw_readb(&base->uartsr) & UARTSR_DTF)
+		;
+
 	__raw_writeb(c, &base->bdrl);
-
-
-	if (!(__raw_readb(&base->uartsr) & UARTSR_DTF))
-		return -EAGAIN;
-
-	__raw_writeb((__raw_readb(&base->uartsr) | UARTSR_DTF), &base->uartsr);
 
 	return 0;
 }
@@ -83,53 +142,45 @@ static int _linflex_serial_putc(struct linflex_fsl *base, const char c)
  * Initialise the serial port with the given baudrate. The settings
  * are always 8 data bits, no parity, 1 stop bit, no start bits.
  */
-static int _linflex_serial_init(struct linflex_fsl *base)
+static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 {
 	volatile u32 ctrl;
 
-	/* set the Linflex in master mode amd activate by-pass filter */
-	ctrl = LINCR1_BF | LINCR1_MME;
-	__raw_writel(ctrl, &base->lincr1);
+	_linflex_enter_init(base);
 
-	/* init mode */
-	ctrl |= LINCR1_INIT;
+	ctrl = __raw_readl(&base->lincr1);
+	ctrl |= LINCR1_MME;
 	__raw_writel(ctrl, &base->lincr1);
-
-	/* waiting for init mode entry - TODO: add a timeout */
-	while ((__raw_readl(&base->linsr) & LINSR_LINS_MASK) !=
-	       LINSR_LINS_INITMODE);
 
 	/* set UART bit to allow writing other bits */
 	__raw_writel(UARTCR_UART, &base->uartcr);
 
-	/* provide data bits, parity, stop bit, etc */
-	serial_setbrg();
-
 	/* 8 bit data, no parity, Tx and Rx enabled, UART mode */
 	__raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
-		     | UARTCR_WL0 | UARTCR_UART, &base->uartcr);
+		     | UARTCR_WL0 | UARTCR_UART | UARTCR_RFBM | UARTCR_TFBM,
+		     &base->uartcr);
 
-	ctrl = __raw_readl(&base->lincr1);
-	ctrl &= ~LINCR1_INIT;
-	__raw_writel(ctrl, &base->lincr1);	/* end init mode */
+	/* provide data bits, parity, stop bit, etc */
+	_linflex_serial_setbrg(base, rate, CONFIG_BAUDRATE);
+
+	_linflex_exit_init(base);
 
 	return 0;
 }
 
-struct linflex_serial_plat {
-	struct linflex_fsl *base_addr;
-	u8 port_id; /* do we need this? */
-};
-
 struct linflex_serial_priv {
 	struct linflex_fsl *lfuart;
+	struct clk clk;
 };
 
 int linflex_serial_setbrg(struct udevice *dev, int baudrate)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
 
-	_linflex_serial_setbrg(priv->lfuart, baudrate);
+	_linflex_enter_init(priv->lfuart);
+	_linflex_serial_setbrg(priv->lfuart, clk_get_rate(&priv->clk),
+			       baudrate);
+	_linflex_exit_init(priv->lfuart);
 
 	return 0;
 }
@@ -155,25 +206,41 @@ static int linflex_serial_pending(struct udevice *dev, bool input)
 	uint32_t uartsr = __raw_readl(&priv->lfuart->uartsr);
 
 	if (input)
-		return ((uartsr & UARTSR_DRF) && (uartsr & UARTSR_RMB)) ? 1 : 0;
+		/* RX FIFO not empty. */
+		return !(uartsr & UARTSR_RFE);
 	else
-		return uartsr & UARTSR_DTF ? 0 : 1;
-}
-
-static void linflex_serial_init_internal(struct linflex_fsl *lfuart)
-{
-	_linflex_serial_init(lfuart);
-	_linflex_serial_setbrg(lfuart, CONFIG_BAUDRATE);
-	return;
+		/* TX FIFO not full. */
+		return !(uartsr & UARTSR_DTF);
 }
 
 static int linflex_serial_probe(struct udevice *dev)
 {
-	struct linflex_serial_plat *plat = dev_get_plat(dev);
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
+	fdt_addr_t base_addr;
+	ulong rate;
+	const char *clk_name = "lin";
+	int ret;
 
-	priv->lfuart = (struct linflex_fsl *)plat->base_addr;
-	linflex_serial_init_internal(priv->lfuart);
+	base_addr = devfdt_get_addr(dev);
+	if (base_addr == FDT_ADDR_T_NONE)
+		return -EINVAL;
+
+	ret = clk_get_by_name(dev, clk_name, &priv->clk);
+	if (ret) {
+		printf("Failed to get %s clock %d\n", clk_name, ret);
+		return ret;
+	}
+
+	ret = clk_enable(&priv->clk);
+	if (ret) {
+		printf("Failed to enable %s clock %d\n", clk_name, ret);
+		return ret;
+	}
+
+	rate = clk_get_rate(&priv->clk);
+
+	priv->lfuart = (struct linflex_fsl *)base_addr;
+	_linflex_serial_init(priv->lfuart, rate);
 
 	return 0;
 }
@@ -185,9 +252,14 @@ static const struct dm_serial_ops linflex_serial_ops = {
 	.setbrg = linflex_serial_setbrg,
 };
 
+static const struct udevice_id linflex_serial_ids[] = {
+	{ .compatible = "nxp,s32-cc-linflexuart", },
+};
+
 U_BOOT_DRIVER(serial_linflex) = {
 	.name	= "serial_linflex",
 	.id	= UCLASS_SERIAL,
+	.of_match = linflex_serial_ids,
 	.probe = linflex_serial_probe,
 	.ops	= &linflex_serial_ops,
 	.flags = DM_FLAG_PRE_RELOC,
@@ -203,7 +275,10 @@ static inline void _debug_uart_init(void)
 {
 	struct linflex_fsl *base = (struct linflex_fsl *)CONFIG_DEBUG_UART_BASE;
 
-	linflex_serial_init_internal(base);
+	if (IS_ENABLED(CONFIG_DEBUG_UART_SKIP_INIT))
+		return;
+
+	_linflex_serial_init(base, CONFIG_DEBUG_UART_CLOCK);
 }
 
 static inline void _debug_uart_putc(int ch)
