@@ -49,7 +49,7 @@
 #define KERNEL_FLASH_MAXSIZE		0xe00000
 #define FDT_FLASH_MAXSIZE		0x100000
 #define RAMDISK_FLASH_MAXSIZE		0x2000000
-#define UBOOT_FLASH_ADDR		CONFIG_SYS_FLASH_BASE
+#define FIP_FLASH_ADDR			CONFIG_SYS_FLASH_BASE
 
 #define KERNEL_FLASH_ADDR	(CONFIG_SYS_FLASH_BASE + 0x1f0000)
 #define FDT_FLASH_ADDR	(CONFIG_SYS_FLASH_BASE + 0xff0000)
@@ -306,7 +306,7 @@
 	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
 		" root=/dev/ram rw earlycon " \
 		PFENG_EXTRA_BOOT_ARGS ";" \
-		"setexpr uboot_flashaddr " __stringify(UBOOT_FLASH_ADDR) ";" \
+		"setexpr fip_flashaddr " __stringify(FIP_FLASH_ADDR) ";" \
 		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
