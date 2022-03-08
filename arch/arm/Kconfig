@@ -7,6 +7,7 @@ config SYS_ARCH
 config ARM64
 	bool
 	select 64BIT
+	select HAVE_ARCH_IOREMAP
 	select SPL_64BIT if SPL
 	select PHYS_64BIT
 	select SYS_CACHE_SHIFT_6
@@ -1019,6 +1020,10 @@ config ARCH_MX5
 	select GPIO_EXTRA_HEADER
 	select MACH_IMX
 	imply MXC_GPIO
+
+config ARCH_S32G2
+	bool "NXP S32G2 platform"
+	select NXP_S32_CC
 
 config ARCH_NEXELL
 	bool "Nexell S5P4418/S5P6818 SoC"
@@ -2313,6 +2318,8 @@ source "arch/arm/mach-mvebu/Kconfig"
 source "arch/arm/mach-octeontx/Kconfig"
 
 source "arch/arm/mach-octeontx2/Kconfig"
+
+source "arch/arm/mach-s32/Kconfig"
 
 source "arch/arm/cpu/armv7/ls102xa/Kconfig"
 

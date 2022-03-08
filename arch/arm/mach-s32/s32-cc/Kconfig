@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if NXP_S32_CC
+
+config SYS_TEXT_BASE
+	default 0xffaa0000
+
+config SYS_LOAD_ADDR
+	default 0x80000000
+
+config SYS_DATA_BASE
+	hex "Data Base"
+	default 0xffa00000
+	help
+	  U-Boot data base address in DDR.
+
+config S32_CC_MAX_DTB_SIZE
+	hex "Max size reserved for device tree in image layout"
+	default 0x7000
+
+config SYS_MALLOC_F_LEN
+	default 0x2000
+
+endif
+
+source "arch/arm/mach-s32/s32g2/Kconfig"

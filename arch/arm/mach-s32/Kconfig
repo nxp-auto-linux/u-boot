@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+config MACH_S32
+	bool
+	select ARM64
+	select DM
+
+config SYS_VENDOR
+	string
+	default "nxp"
+
+config NXP_S32_CC
+	bool
+	select BINMAN
+	select CLK
+	select CLK_SCMI
+	select FSL_LINFLEXUART
+	select MACH_S32
+	select OF_CONTROL
+	select SCMI_FIRMWARE
+	select SYSRESET
+	select SYSRESET_PSCI
+
+source "arch/arm/mach-s32/s32-cc/Kconfig"

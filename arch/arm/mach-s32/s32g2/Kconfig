@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if ARCH_S32G2
+
+choice
+	prompt "S32G2 board select"
+	default TARGET_S32G274ARDB2
+
+config TARGET_S32G274ARDB2
+	bool "Support S32G274ARDB2 board"
+	help
+	  This board is based on S32G274A SoC. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports, PCIe slot,
+	  USB, serial port, 18 CAN ports, I2C and DSPI.
+
+endchoice
+
+source "board/nxp/s32g274ardb2/Kconfig"
+
+endif
