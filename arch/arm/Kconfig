@@ -916,6 +916,10 @@ config ARCH_MX5
 	select MACH_IMX
 	imply MXC_GPIO
 
+config ARCH_S32G2
+	bool "NXP S32G2 platform"
+	select NXP_S32_CC
+
 config ARCH_NEXELL
 	bool "Nexell S5P4418/S5P6818 SoC"
 	select ENABLE_ARM_SOC_BOOT0_HOOK
@@ -2117,6 +2121,8 @@ source "arch/arm/mach-mvebu/Kconfig"
 source "arch/arm/mach-octeontx/Kconfig"
 
 source "arch/arm/mach-octeontx2/Kconfig"
+
+source "arch/arm/mach-s32/Kconfig"
 
 source "arch/arm/cpu/armv7/ls102xa/Kconfig"
 
