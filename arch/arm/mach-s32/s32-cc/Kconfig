@@ -20,7 +20,7 @@ config ARCH_S32G3
 	help
 	  Platforms having S32G3XXX SoC
 
-config NXP_S32R45
+config ARCH_S32R45
 	bool
 	select S32_GEN1
 	help
@@ -38,12 +38,12 @@ config TARGET_S32R45EVB
 	imply I2C_EEPROM
 	imply PHY_AQUANTIA
 	imply S32_SARADC
-	select NXP_S32R45
+	select ARCH_S32R45
 	select SPI_FLASH_MACRONIX
 
 config TARGET_S32R45EMU
 	bool "Support s32r45 ZeBu"
-	select NXP_S32R45
+	select ARCH_S32R45
 
 config TARGET_S32G2XXAEVB
 	bool "Support s32g274aevb"
