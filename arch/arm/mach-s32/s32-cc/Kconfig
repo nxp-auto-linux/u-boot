@@ -8,7 +8,7 @@ config BAUDRATE
 	int "Serial baudrate"
 	default 115200
 
-config NXP_S32G2XX
+config ARCH_S32G2
 	bool
 	select S32_GEN1
 	help
@@ -60,7 +60,7 @@ config TARGET_S32G2XXAEVB
 	imply USB
 	imply USB_EHCI_HCD
 	select MISC_INIT_R if SJA1105
-	select NXP_S32G2XX
+	select ARCH_S32G2
 	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G274ARDB2
@@ -71,7 +71,7 @@ config TARGET_S32G274ARDB2
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
 	select ADC
-	select NXP_S32G2XX
+	select ARCH_S32G2
 	select S32_SARADC
 	select SPI_FLASH_MACRONIX
 
@@ -82,7 +82,7 @@ config TARGET_S32G274ABLUEBOX3
 	imply PHY
 	imply PHYLIB
 	imply S32_SARADC
-	select NXP_S32G2XX
+	select ARCH_S32G2
 	select SPI_FLASH_STMICRO
 	help
 	  Enable Microsys S32G SoM Bluebox 3 target.
@@ -90,7 +90,7 @@ config TARGET_S32G274ABLUEBOX3
 
 config TARGET_S32G274AEMU
 	bool "Support s32g274a ZeBu"
-	select NXP_S32G2XX
+	select ARCH_S32G2
 
 config TARGET_S32G399AEMU
 	bool "Support S32G399A ZeBu"
