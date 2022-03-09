@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if ARCH_S32G2
+
+choice
+	prompt "S32G2 board select"
+	default TARGET_S32G274ARDB2
+
+config TARGET_S32G274ARDB2
+	bool "Support S32G274ARDB2 board"
+	imply DM_PMIC_FS5600
+	imply DM_PMIC_PF5020
+	imply PHY_ATHEROS
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	select ADC
+	select NXP_S32GRDB_BOARD
+	select S32_SARADC
+	select SPI_FLASH_MACRONIX
+
+config TARGET_S32G2XXAEVB
+	bool "Support S32G274AEVB board"
+	imply ADC
+	imply DM_USB
+	imply I2C_EEPROM
+	imply PHY
+	imply PHY_AQUANTIA
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply S32_SARADC
+	imply SAF1508BET_USB_PHY
+	imply SJA1105
+	imply USB
+	imply USB_EHCI_HCD
+	select MISC_INIT_R if SJA1105
+	select NXP_S32GEVB_BOARD
+	select SPI_FLASH_MACRONIX
+
+config TARGET_S32G274ABLUEBOX3
+	bool "Support S32G274A BlueBox3 board"
+	imply ADC
+	imply I2C_EEPROM
+	imply PHY
+	imply PHYLIB
+	imply S32_SARADC
+	select SPI_FLASH_STMICRO
+
+config TARGET_S32G274AEMU
+	bool "Support S32G274A ZeBu"
+	select TARGET_TYPE_S32GEN1_EMULATOR
+
+endchoice
+
+source "board/nxp/s32-cc/s32g/Kconfig"
+source "board/nxp/s32g274ardb2/Kconfig"
+source "board/nxp/s32g2xxaevb/Kconfig"
+source "board/nxp/s32g274abluebox3/Kconfig"
+source "board/nxp/s32g274aemu/Kconfig"
+
+endif

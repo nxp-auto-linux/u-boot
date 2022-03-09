@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if TARGET_S32G274ABLUEBOX3
+
+config SYS_CONFIG_NAME
+	default "s32g274abluebox3"
+
+config SYS_BOARD
+	default "s32g274abluebox3"
+
+config NR_DRAM_BANKS
+	default 2
+
+config S32GEN1_HWCONFIG
+	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG)
+
+endif

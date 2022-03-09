@@ -2,7 +2,6 @@
 /*
  * Copyright 2017-2022 NXP
  */
-
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
@@ -10,7 +9,7 @@
 #include <linux/libfdt.h>
 #include <miiphy.h>
 
-#include "board_common.h"
+#include <board_common.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

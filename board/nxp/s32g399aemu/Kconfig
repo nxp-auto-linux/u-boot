@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if TARGET_S32G399AEMU
+
+config SYS_CONFIG_NAME
+	default "s32g399aemu"
+
+config SYS_BOARD
+	default "s32g399aemu"
+
+config NR_DRAM_BANKS
+	default 2
+
+endif

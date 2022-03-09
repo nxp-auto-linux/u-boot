@@ -1,11 +1,66 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright 2020-2022 NXP
 
+config SYS_SOC
+	string
+	default "s32"
+
+config MACH_S32
+	bool
+	select ARM64
+	select DM
+	select OF_BOARD_SETUP
+
 config SYS_VENDOR
 	string
 	default "nxp"
 
-config MKIMAGE_T
-	string
-	default "s32gen1image" if NXP_S32_CC
-	depends on MACH_S32
+config NXP_S32_CC
+	bool
+	imply DM_ETH
+	imply DM_I2C
+	imply DM_PCI
+	imply DM_PMIC
+	imply DM_PMIC_VR5510
+	imply DM_SPI
+	imply DM_SPI_FLASH
+	imply DWC_ETH_QOS_DEVICES
+	imply DWC_ETH_QOS_S32CC
+	imply FSL_DSPI
+	imply FSL_PFENG
+	imply FSL_QSPI
+	imply FSL_USDHC
+	imply MISC
+	imply MMC_HS400_ES_SUPPORT
+	imply MP
+	imply PCI
+	imply PCIE_S32GEN1
+	imply S32_TIMER
+	imply SPI
+	imply SYS_I2C_MXC
+	imply TIMER
+	select ARCH_MISC_INIT
+	select ARM_SMCCC
+	select BINMAN
+	select CLK
+	select CLK_SCMI
+	select CPU
+	select DISTRO_DEFAULTS
+	select DM_GPIO
+	select DM_MMC
+	select DM_SERIAL
+	select FSL_LINFLEXUART
+	select MACH_S32
+	select MMC_HS400_SUPPORT
+	select OF_CONTROL
+	select OF_SEPARATE
+	select PINCTRL
+	select PINCTRL_FULL
+	select PINCTRL_S32
+	select S32_GPIO
+	select SCMI_FIRMWARE
+	select SYSRESET
+	select SYSRESET_PSCI
+	select SYS_MALLOC_F
+
+source "arch/arm/mach-s32/s32-cc/Kconfig"

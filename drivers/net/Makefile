@@ -3,9 +3,10 @@
 # (C) Copyright 2006
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
-ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc
+ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/arm/include/asm/arch-s32/s32-cc
+ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/arm/mach-s32/s32-cc/include
+ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/nxp/s32-cc/include
 ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Idrivers/net/s32
-ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/nxp/s32-cc
 
 obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
 obj-$(CONFIG_AG7XXX) += ag7xxx.o

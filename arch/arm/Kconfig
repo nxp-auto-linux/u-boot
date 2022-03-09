@@ -882,6 +882,18 @@ config ARCH_MX5
 	select MACH_IMX
 	imply MXC_GPIO
 
+config ARCH_S32G2
+	bool "NXP S32G2 platform"
+	select NXP_S32_CC
+
+config ARCH_S32G3
+	bool "NXP S32G3 platform"
+	select NXP_S32_CC
+
+config ARCH_S32R45
+	bool "NXP S32R45 platform"
+	select NXP_S32_CC
+
 config ARCH_OWL
 	bool "Actions Semi OWL SoCs"
 	select ARM64
@@ -1115,11 +1127,6 @@ config ARCH_ZYNQMP
 	imply FAT_WRITE
 	imply MP
 	imply DM_USB_GADGET
-
-config MACH_S32
-	bool "Support S32 SOCs"
-	select ARM64
-	select OF_BOARD_SETUP
 
 config TEGRA
 	bool "NVIDIA Tegra"
@@ -1723,7 +1730,6 @@ config ISW_ENTRY_ADDR
 endif
 
 source "arch/arm/mach-s32/Kconfig"
-source "arch/arm/mach-s32/s32-cc/Kconfig"
 
 source "arch/arm/mach-aspeed/Kconfig"
 

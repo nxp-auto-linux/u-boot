@@ -3,8 +3,10 @@
 # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
 # (C) Copyright 2016-2018, 2020-2022 NXP
 #
-ccflags-y += -I./board/nxp/common/
 ccflags-y += -I./arch/arm/mach-s32/s32-cc/
+ccflags-y += -I./board/nxp/common/
+ccflags-y += -I./board/nxp/s32-cc/include/
+ccflags-y += -I./drivers/net/s32/
 
 obj-$(CONFIG_NXP_S32_CC)		+= scmi_reset_agent.o
 obj-y				+= cpu.o
@@ -28,3 +30,5 @@ ccflags-y			+= -I./board/nxp/s32-cc/
 ccflags-y			+= -I./arch/arm/mach-s32/s32-cc/include
 ccflags-y			+= -I./arch/arm/include/asm/arch-s32/s32-cc/
 ccflags-y			+= -I./drivers/misc/
+
+obj-$(CONFIG_NETDEVICES)	+= eth.o
