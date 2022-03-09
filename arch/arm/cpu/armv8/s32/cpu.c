@@ -38,15 +38,15 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static struct mm_region s32_mem_map[] = {
 	{
-	  CONFIG_SYS_FSL_DRAM_BASE1, CONFIG_SYS_FSL_DRAM_BASE1,
-	  CONFIG_SYS_FSL_DRAM_SIZE1,
+	  PHYS_SDRAM_1, PHYS_SDRAM_1,
+	  PHYS_SDRAM_1_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE | PTE_BLOCK_NS
 	},
-#ifdef CONFIG_SYS_FSL_DRAM_BASE2
+#ifdef PHYS_SDRAM_2
 	{
-	  CONFIG_SYS_FSL_DRAM_BASE2, CONFIG_SYS_FSL_DRAM_BASE2,
-	  CONFIG_SYS_FSL_DRAM_SIZE2,
-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+	  PHYS_SDRAM_2, PHYS_SDRAM_2,
+	  PHYS_SDRAM_2_SIZE,
+	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE | PTE_BLOCK_NS
 	},
 #endif
 	{
@@ -55,8 +55,7 @@ static struct mm_region s32_mem_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
 	{
-	  CONFIG_SYS_FSL_PERIPH_BASE, CONFIG_SYS_FSL_PERIPH_BASE,
-	  CONFIG_SYS_FSL_PERIPH_SIZE,
+	  PERIPH_BASE, PERIPH_BASE, PERIPH_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
@@ -174,7 +173,7 @@ phys_size_t __weak get_effective_memsize(void)
 	 * Restrict U-Boot area to the first bank of the DDR memory.
 	 * Note: gd->bd isn't initialized yet
 	 */
-	size = CONFIG_SYS_FSL_DRAM_SIZE1;
+	size = PHYS_SDRAM_1_SIZE;
 
 	/* Get first DDR bank size from DT 'memory' node */
 	while ((nodeoff = fdt_node_offset_by_prop_value(gd->fdt_blob, nodeoff,
@@ -185,7 +184,7 @@ phys_size_t __weak get_effective_memsize(void)
 			pr_err("Unable to get 'reg' values of memory node\n");
 			return ret;
 		}
-		if (res.start == CONFIG_SYS_FSL_DRAM_BASE1) {
+		if (res.start == PHYS_SDRAM_1) {
 			size = res.end - res.start + 1;
 			break;
 		}

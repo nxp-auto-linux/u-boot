@@ -25,7 +25,7 @@ int board_phy_config(struct phy_device *phydev)
 int board_init(void)
 {
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = CONFIG_SYS_FSL_DRAM_SIZE1 + 0x100;
+	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
 	return 0;
 }

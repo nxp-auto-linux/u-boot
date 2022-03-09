@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -31,8 +31,8 @@
 
 /* Used for setting iATU windows for EP mode */
 #ifndef CONFIG_SYS_PCI_EP_MEMORY_BASE
-#define CONFIG_SYS_PCI_EP_MEMORY_BASE (CONFIG_SYS_FSL_DRAM_BASE1 + \
-				       (CONFIG_SYS_FSL_DRAM_SIZE1 / 2))
+#define CONFIG_SYS_PCI_EP_MEMORY_BASE (PHYS_SDRAM_1 + \
+				       (PHYS_SDRAM_1_SIZE / 2))
 #endif
 
 #define PCIE_BIT_VALUE(reg_val, bit_name) \
