@@ -26,5 +26,5 @@ endif
 obj-y				+= start_m7.o
 ccflags-y			+= -I./board/nxp/s32-gen1/
 ccflags-y			+= -I./arch/arm/mach-s32/s32-cc/include
-ccflags-y			+= -I./arch/arm/include/asm/arch-s32/s32-gen1/
+ccflags-y			+= -I./arch/arm/include/asm/arch-s32/s32-cc/
 ccflags-y			+= -I./drivers/misc/

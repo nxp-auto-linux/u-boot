@@ -12,7 +12,7 @@
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <hwconfig.h>
-#include <asm/arch-s32/s32-gen1/serdes_hwconfig.h>
+#include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
 #include <linux/ctype.h>
 #include <dm/uclass.h>

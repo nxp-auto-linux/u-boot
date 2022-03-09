@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  * The SerDes module header file.
  */
@@ -8,7 +8,7 @@
 #ifndef SERDES_REGS_H
 #define SERDES_REGS_H
 
-#include <asm/arch-s32/s32-gen1/serdes_hwconfig.h>
+#include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
 #include "linux/types.h"
 #include "linux/errno.h"
 

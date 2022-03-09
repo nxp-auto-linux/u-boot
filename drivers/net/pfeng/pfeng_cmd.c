@@ -11,8 +11,8 @@
 #include <asm/arch/clock.h>
 #include <asm/io.h>
 
-#include <asm/arch/s32-gen1/serdes_regs.h>
-#include <asm/arch/s32-gen1/serdes_xpcs_regs.h>
+#include <asm/arch/s32-cc/serdes_regs.h>
+#include <asm/arch/s32-cc/serdes_xpcs_regs.h>
 #include <linux/string.h>
 #include <clk.h>
 #include <s32gen1_clk_utils.h>
