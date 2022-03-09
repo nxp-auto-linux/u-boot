@@ -230,12 +230,12 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 
 	/**
 	 * no address of actual code start, need to reference app bl header
-	 * (CONFIG_SYS_TEXT_BASE - CONFIG_S32GEN1_MAX_DTB_SIZE) used bc smr
+	 * (CONFIG_SYS_TEXT_BASE - CONFIG_S32_CC_MAX_DTB_SIZE) used bc smr
 	 * contains dtb and code
 	 */
 	smr_entry->smr_src = priv->ivt.app_boot + 0x200;
 	smr_entry->smr_dst_addr = CONFIG_SYS_TEXT_BASE -
-	    CONFIG_S32GEN1_MAX_DTB_SIZE;
+	    CONFIG_S32_CC_MAX_DTB_SIZE;
 	smr_entry->smr_size = HSE_UBOOT_MAX_SIZE;
 	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
 				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);

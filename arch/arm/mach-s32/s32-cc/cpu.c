@@ -203,7 +203,7 @@ void *board_fdt_blob_setup(void)
 {
 	void *dtb;
 
-	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32GEN1_MAX_DTB_SIZE);
+	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32_CC_MAX_DTB_SIZE);
 
 	if (fdt_magic(dtb) != FDT_MAGIC)
 		panic("DTB is not passed via %p\n", dtb);

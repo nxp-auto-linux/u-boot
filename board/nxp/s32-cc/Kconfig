@@ -63,7 +63,7 @@ config SYS_CONFIG_NAME
 	default "s32r45" if ARCH_S32R45
 	default "s32g399a" if ARCH_S32G3
 
-config S32GEN1_MAX_DTB_SIZE
+config S32_CC_MAX_DTB_SIZE
 	hex "Max size reserved for device tree in image layout"
 	default 0x7000
 
