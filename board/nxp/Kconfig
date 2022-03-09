@@ -3,7 +3,7 @@ config SYS_VENDOR
 	default "nxp"
 
 config NXP_S32_CC
-	bool "S32 GEN1 Common Chassis"
+	bool
 	imply DM_ETH
 	imply DM_I2C
 	imply DM_PCI
@@ -72,4 +72,4 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
-source "board/nxp/s32-gen1/Kconfig"
+source "board/nxp/s32-cc/Kconfig"

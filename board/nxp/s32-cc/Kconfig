@@ -55,7 +55,7 @@ config SYS_MEM_SIZE
 
 config SYS_BOARD
 	string
-	default "s32-gen1"
+	default "s32-cc"
 
 config SYS_CONFIG_NAME
 	string
@@ -104,4 +104,4 @@ config S32GEN1_HWCONFIG
 
 config S32GEN1_CONFIG_FILE
 	string
-	default "board/nxp/s32-gen1/s32gen1.cfg"
+	default "board/nxp/s32-cc/s32gen1.cfg"

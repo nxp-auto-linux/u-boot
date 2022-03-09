@@ -1,7 +1,7 @@
-S32-GEN1 BOARD
+S32-CC BOARD
 M:	-
 S:	Maintained
-F:	board/nxp/s32-gen1/
+F:	board/nxp/s32-cc/
 F:	arch/arm/mach-s32/s32-cc
 F:	arch/arm/include/asm/arch-s32
 
