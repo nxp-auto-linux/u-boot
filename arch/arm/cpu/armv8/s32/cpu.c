@@ -13,9 +13,7 @@
 #include "scmi_reset_agent.h"
 #include <asm-generic/sections.h>
 #include <linux/sizes.h>
-#if defined(CONFIG_DEBUG_UART)
 #include <debug_uart.h>
-#endif
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
@@ -121,9 +119,8 @@ int arch_cpu_init(void)
 
 	gd->flags |= GD_FLG_SKIP_RELOC;
 
-#if defined(CONFIG_DEBUG_UART)
-	debug_uart_init();
-#endif
+	if (IS_ENABLED(CONFIG_DEBUG_UART))
+		debug_uart_init();
 
 	return 0;
 }
