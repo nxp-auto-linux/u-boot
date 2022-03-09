@@ -14,7 +14,7 @@ config ARCH_S32G2
 	help
 	  Platforms having S32G2XXX SoC
 
-config NXP_S32G3XX
+config ARCH_S32G3
 	bool
 	select S32_GEN1
 	help
@@ -94,7 +94,7 @@ config TARGET_S32G274AEMU
 
 config TARGET_S32G399AEMU
 	bool "Support S32G399A ZeBu"
-	select NXP_S32G3XX
+	select ARCH_S32G3
 
 config TARGET_S32G3XXAEVB
 	bool "Support for S32G3 EVB boards"
@@ -110,7 +110,7 @@ config TARGET_S32G3XXAEVB
 	imply SJA1105
 	imply USB
 	imply USB_EHCI_HCD
-	select NXP_S32G3XX
+	select ARCH_S32G3
 	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G399ARDB3
@@ -122,7 +122,7 @@ config TARGET_S32G399ARDB3
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
 	select ADC
-	select NXP_S32G3XX
+	select ARCH_S32G3
 	select S32_SARADC
 	select SPI_FLASH_MACRONIX
 

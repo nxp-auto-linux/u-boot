@@ -61,7 +61,7 @@ config SYS_CONFIG_NAME
 	string
 	default "s32g274a" if ARCH_S32G2
 	default "s32r45" if NXP_S32R45
-	default "s32g399a" if NXP_S32G3XX
+	default "s32g399a" if ARCH_S32G3
 
 config S32GEN1_MAX_DTB_SIZE
 	hex "Max size reserved for device tree in image layout"

@@ -43,7 +43,7 @@
 
 #define S32_SRAM_BASE		0x34000000
 
-#ifdef CONFIG_NXP_S32G3XX
+#ifdef CONFIG_ARCH_S32G3
 #define S32_SRAM_SIZE		(20 * SZ_1M)
 #else
 #define S32_SRAM_SIZE		(8 * SZ_1M)
