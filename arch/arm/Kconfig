@@ -1116,7 +1116,7 @@ config ARCH_ZYNQMP
 	imply MP
 	imply DM_USB_GADGET
 
-config ARCH_S32
+config MACH_S32
 	bool "Support S32 SOCs"
 	select ARM64
 	select OF_BOARD_SETUP

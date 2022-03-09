@@ -72,7 +72,7 @@ struct dspi {
 #define DSPI_CTAR_CPHA			0x02000000
 #define DSPI_CTAR_LSBFE			0x01000000
 #define DSPI_CTAR_PCSSCK(x)		(((x) & 0x03) << 22)
-#ifdef CONFIG_ARCH_S32
+#ifdef CONFIG_MACH_S32
 #define DSPI_CTAR_PCSSCK_7CLK		0x00C00000
 #else
 #define DSPI_CTAR_PCSSCK_7CLK		0x00A00000

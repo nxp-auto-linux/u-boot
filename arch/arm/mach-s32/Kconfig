@@ -4,4 +4,4 @@
 config MKIMAGE_T
 	string
 	default "s32gen1image" if S32_GEN1
-	depends on ARCH_S32
+	depends on MACH_S32

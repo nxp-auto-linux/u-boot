@@ -1,4 +1,4 @@
-if ARCH_S32
+if MACH_S32
 
 config SYS_SOC
 	string
