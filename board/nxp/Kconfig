@@ -1,6 +1,6 @@
 config SYS_VENDOR
 	string
-	default "freescale"
+	default "nxp"
 
 config S32_GEN1
 	bool "S32 GEN1 Common Chassis"
@@ -72,4 +72,4 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
-source "board/freescale/s32-gen1/Kconfig"
+source "board/nxp/s32-gen1/Kconfig"

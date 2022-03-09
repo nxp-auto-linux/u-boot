@@ -6,7 +6,7 @@
 #
 
 ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
-ccflags-$(CONFIG_S32_GEN1) += -Iboard/freescale/s32-gen1
+ccflags-$(CONFIG_S32_GEN1) += -Iboard/nxp/s32-gen1
 ccflags-$(CONFIG_S32_GEN1) += -Idrivers/net/s32
 ccflags-$(CONFIG_S32_GEN1) += -Idrivers/misc
 obj-y := common.o

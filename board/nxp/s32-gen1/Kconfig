@@ -104,4 +104,4 @@ config S32GEN1_HWCONFIG
 
 config S32GEN1_CONFIG_FILE
 	string
-	default "board/freescale/s32-gen1/s32gen1.cfg"
+	default "board/nxp/s32-gen1/s32gen1.cfg"

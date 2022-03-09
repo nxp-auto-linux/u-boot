@@ -141,6 +141,6 @@ config BOARD_NFS_BOOT_INTERFACE
 	default "br0" if TARGET_S32G274ABLUEBOX3
 	default "eth0"
 
-source "board/freescale/Kconfig"
+source "board/nxp/Kconfig"
 
 endif
