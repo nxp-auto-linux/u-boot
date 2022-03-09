@@ -31,7 +31,6 @@ endif
 obj-$(CONFIG_$(SPL_)ARMV8_SEC_FIRMWARE_SUPPORT) += sec_firmware.o sec_firmware_asm.o
 
 obj-$(CONFIG_FSL_LAYERSCAPE) += fsl-layerscape/
-obj-$(CONFIG_ARCH_S32) += s32/
 obj-$(CONFIG_TARGET_HIKEY) += hisilicon/
 obj-$(CONFIG_ARMV8_PSCI) += psci.o
 obj-$(CONFIG_ARCH_SUNXI) += lowlevel_init.o

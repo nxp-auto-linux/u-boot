@@ -5,6 +5,8 @@
 # (C) Copyright 2011 Freescale Semiconductor, Inc.
 # Copyright 2019-2020,2022 NXP
 
+obj-$(CONFIG_S32_GEN1) += s32-cc/
+
 ifdef CONFIG_SPI_FLASH_MACRONIX
 QSPI_MEMORY = MX25UW51245G
 endif

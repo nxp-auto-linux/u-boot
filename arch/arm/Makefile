@@ -118,5 +118,9 @@ ifneq (,$(filter $(SOC), kirkwood))
 libs-y += arch/arm/mach-mvebu/
 endif
 
+ifeq ($(CONFIG_ARCH_S32),y)
+libs-y += arch/arm/mach-s32/
+endif
+
 # deprecated
 -include $(machdirs)/config.mk

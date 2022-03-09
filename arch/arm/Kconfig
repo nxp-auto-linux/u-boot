@@ -1722,6 +1722,9 @@ config ISW_ENTRY_ADDR
 	  image headers.
 endif
 
+source "arch/arm/mach-s32/Kconfig"
+source "arch/arm/mach-s32/s32-cc/Kconfig"
+
 source "arch/arm/mach-aspeed/Kconfig"
 
 source "arch/arm/mach-at91/Kconfig"
@@ -1820,13 +1823,9 @@ source "arch/arm/mach-zynqmp-r5/Kconfig"
 
 source "arch/arm/cpu/armv7/Kconfig"
 
-source "arch/arm/cpu/armv8/s32/Kconfig"
-
 source "arch/arm/cpu/armv8/Kconfig"
 
 source "arch/arm/mach-imx/Kconfig"
-
-source "arch/arm/mach-s32/Kconfig"
 
 source "board/bosch/shc/Kconfig"
 source "board/bosch/guardian/Kconfig"

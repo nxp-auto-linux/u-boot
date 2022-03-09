@@ -2,7 +2,7 @@ S32-GEN1 BOARD
 M:	-
 S:	Maintained
 F:	board/nxp/s32-gen1/
-F:	arch/arm/cpu/armv8/s32
+F:	arch/arm/mach-s32/s32-cc
 F:	arch/arm/include/asm/arch-s32
 
 S32G274A-EVB BOARD
