@@ -270,7 +270,7 @@ static const struct dm_serial_ops linflex_serial_ops = {
 };
 
 static const struct udevice_id linflex_serial_ids[] = {
-	{ .compatible = "fsl,s32-linflexuart", },
+	{ .compatible = "nxp,s32-cc-linflexuart", },
 };
 
 U_BOOT_DRIVER(serial_linflex) = {
