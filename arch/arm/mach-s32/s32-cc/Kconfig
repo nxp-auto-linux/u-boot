@@ -10,19 +10,19 @@ config BAUDRATE
 
 config ARCH_S32G2
 	bool
-	select S32_GEN1
+	select NXP_S32_CC
 	help
 	  Platforms having S32G2XXX SoC
 
 config ARCH_S32G3
 	bool
-	select S32_GEN1
+	select NXP_S32_CC
 	help
 	  Platforms having S32G3XXX SoC
 
 config ARCH_S32R45
 	bool
-	select S32_GEN1
+	select NXP_S32_CC
 	help
 	  Platforms having S32R45 SoC
 
@@ -131,7 +131,7 @@ endchoice
 config S32_CMU
 	bool "Enable Clock Monitoring Unit-Frequency Check"
 	default y
-	depends on S32_GEN1
+	depends on NXP_S32_CC
 	help
 	  Checks if the frequency of a monitored clock (monitored_clock)
 	  is within a programmable frequency range specified by the user.

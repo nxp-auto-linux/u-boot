@@ -21,8 +21,8 @@ Building U-Boot with HSE secure boot support
 
 The follow config options must be set:
 
-    CONFIG_S32_GEN1="y"
-    CONFIG_HSE_SECBOOT="y" (depends on CONFIG_S32_GEN1)
+    CONFIG_NXP_S32_CC="y"
+    CONFIG_HSE_SECBOOT="y" (depends on CONFIG_NXP_S32_CC)
     CONFIG_CMD_HSE_ADVANCED_SECBOOT="y" (depends on CONFIG_HSE_SECBOOT)
 
 Preparing U-Boot for secure booting

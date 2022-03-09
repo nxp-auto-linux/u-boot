@@ -2,7 +2,7 @@ config SYS_VENDOR
 	string
 	default "nxp"
 
-config S32_GEN1
+config NXP_S32_CC
 	bool "S32 GEN1 Common Chassis"
 	imply DM_ETH
 	imply DM_I2C

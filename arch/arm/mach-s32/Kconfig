@@ -3,5 +3,5 @@
 
 config MKIMAGE_T
 	string
-	default "s32gen1image" if S32_GEN1
+	default "s32gen1image" if NXP_S32_CC
 	depends on MACH_S32

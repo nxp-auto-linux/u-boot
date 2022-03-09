@@ -32,10 +32,10 @@ obj-$(CONFIG_FSL_DSPI) += fsl_dspi.o
 obj-$(CONFIG_FSL_ESPI) += fsl_espi.o
 obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
 ifdef CONFIG_FSL_QSPI
-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi.o
-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi_macronix.o
-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi_micron.o
-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi_mem_common.o
+obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi.o
+obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi_macronix.o
+obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi_micron.o
+obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi_mem_common.o
 endif
 obj-$(CONFIG_ICH_SPI) +=  ich.o
 obj-$(CONFIG_KIRKWOOD_SPI) += kirkwood_spi.o

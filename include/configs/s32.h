@@ -81,7 +81,7 @@
 /* COUNTER_FREQUENCY value will be used at startup but will be replaced
  * if an older chip version is determined at runtime.
  */
-#if defined(CONFIG_S32_GEN1)
+#if defined(CONFIG_NXP_S32_CC)
 /* FXOSC_CLK; this will be further divided by "GPR00[26:24] + 1"
  * Note: CONFIG_TARGET_S32G2XXAEVB is a per-board configuration, as the value of
  * FXOSC_CLK itself is board-specific.
@@ -377,7 +377,7 @@
 #define MMC_PART_EXT			2
 #define CONFIG_MMC_PART			MMC_PART_FAT
 
-#ifdef CONFIG_S32_GEN1
+#ifdef CONFIG_NXP_S32_CC
 #define FLASH_SECTOR_SIZE               (64 * 1024) /* 64 KB */
 #else
 #define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */

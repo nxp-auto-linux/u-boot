@@ -9,8 +9,8 @@
  * Configuration settings for the Freescale/NXP S32-GEN1.
  */
 
-#ifndef __S32_GEN1_H
-#define __S32_GEN1_H
+#ifndef __NXP_S32_CC_H
+#define __NXP_S32_CC_H
 
 #include <linux/sizes.h>
 

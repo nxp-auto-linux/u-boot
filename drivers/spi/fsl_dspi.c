@@ -189,7 +189,7 @@ static void dspi_halt(struct fsl_dspi_priv *priv, u8 halt)
 	dspi_write32(priv->flags, &priv->regs->mcr, mcr_val);
 }
 
-#if defined(CONFIG_S32_GEN1)
+#if defined(CONFIG_NXP_S32_CC)
 static ulong fsl_dspi_get_clk_freq(struct udevice *bus)
 {
 	struct clk clk;
@@ -535,7 +535,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 
 #ifdef CONFIG_M68K
 	dspi->priv.bus_clk = gd->bus_clk;
-#elif defined(CONFIG_S32_GEN1)
+#elif defined(CONFIG_NXP_S32_CC)
 	dspi->priv.bus_clk = fsl_dspi_get_clk_freq(dspi->slave.dev);
 	if (!dspi->priv.bus_clk) {
 		printf("Invalid clk rate: %u\n", dspi->priv.bus_clk);
@@ -673,7 +673,7 @@ static int fsl_dspi_probe(struct udevice *bus)
 	priv->flags = plat->flags;
 #ifdef CONFIG_M68K
 	priv->bus_clk = gd->bus_clk;
-#elif defined(CONFIG_S32_GEN1)
+#elif defined(CONFIG_NXP_S32_CC)
 	priv->bus_clk = fsl_dspi_get_clk_freq(bus);
 	if (!priv->bus_clk) {
 		printf("Invalid clk rate: %u\n", priv->bus_clk);

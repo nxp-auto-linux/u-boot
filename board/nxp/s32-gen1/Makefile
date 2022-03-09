@@ -5,10 +5,10 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
-ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
-ccflags-$(CONFIG_S32_GEN1) += -Iboard/nxp/s32-gen1
-ccflags-$(CONFIG_S32_GEN1) += -Idrivers/net/s32
-ccflags-$(CONFIG_S32_GEN1) += -Idrivers/misc
+ccflags-$(CONFIG_NXP_S32_CC) += -Iarch/$(ARCH)/cpu/armv8/s32
+ccflags-$(CONFIG_NXP_S32_CC) += -Iboard/nxp/s32-gen1
+ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/net/s32
+ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/misc
 obj-y := common.o
 
 ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
