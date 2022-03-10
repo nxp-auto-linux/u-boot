@@ -8,10 +8,22 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <miiphy.h>
+#include <fdtdec.h>
 
 #include <board_common.h>
+#include <scmi_reset_agent.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+int dram_init(void)
+{
+	return fdtdec_setup_mem_size_base();
+}
+
+int dram_init_banksize(void)
+{
+	return fdtdec_setup_memory_banksize();
+}
 
 int board_phy_config(struct phy_device *phydev)
 {
@@ -29,14 +41,34 @@ int board_init(void)
 	return 0;
 }
 
+void board_prep_linux(bootm_headers_t *images)
+{
+	int ret;
+
+	ret = scmi_reset_agent();
+	if (ret)
+		pr_err("Failed to reset SCMI agent's settings\n");
+}
+
+void *board_fdt_blob_setup(void)
+{
+	void *dtb;
+
+	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32_CC_MAX_DTB_SIZE);
+
+	if (fdt_magic(dtb) != FDT_MAGIC)
+		panic("DTB is not passed via %p\n", dtb);
+
+	return dtb;
+}
+
 #if defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	ft_cpu_setup(blob, bd);
 
-#if CONFIG_IS_ENABLED(NETDEVICES)
-	ft_enet_fixup(blob);
-#endif
+	if (IS_ENABLED(CONFIG_NETDEVICES))
+		ft_enet_fixup(blob);
 
 	return 0;
 }
