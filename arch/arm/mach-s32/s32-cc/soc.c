@@ -11,12 +11,10 @@
 #include <hang.h>
 #include <board_common.h>
 #include <fdtdec.h>
-#ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
 #include <dm/device-internal.h>
 #include <dm/uclass.h>
 #include <generic-phy.h>
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -25,7 +23,6 @@ __weak int dram_init(void)
 	return fdtdec_setup_mem_size_base();
 }
 
-#ifdef CONFIG_SAF1508BET_USB_PHY
 static int enable_saf1508bet(void)
 {
 	int ret = 0;
@@ -67,15 +64,14 @@ static int enable_saf1508bet(void)
 
 	return ret;
 }
-#endif
 
 int arch_misc_init(void)
 {
-#ifdef CONFIG_SAF1508BET_USB_PHY
 	/* The usb phy must be probed in u-boot in order to have a working USB
 	 * interface in linux.
 	 */
-	enable_saf1508bet();
-#endif
+	if (IS_ENABLED(CONFIG_SAF1508BET_USB_PHY))
+		enable_saf1508bet();
+
 	return 0;
 }
