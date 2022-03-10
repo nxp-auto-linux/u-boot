@@ -14,6 +14,7 @@
 #include <asm-generic/sections.h>
 #include <linux/sizes.h>
 #include <debug_uart.h>
+#include <fdtdec.h>
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
@@ -125,39 +126,9 @@ int arch_cpu_init(void)
 	return 0;
 }
 
-static void s32_init_ram_size(void)
-{
-	int i;
-	unsigned long start, size;
-
-	if (!gd->bd) {
-		pr_err("gd->bd isn't initialized\n");
-		return;
-	}
-
-	gd->ram_size = 0;
-	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
-		start = gd->bd->bi_dram[i].start;
-		size = gd->bd->bi_dram[i].size;
-
-		if (!start && !size)
-			continue;
-
-		gd->ram_size += get_ram_size((long *)start, size);
-	}
-}
-
 int dram_init_banksize(void)
 {
-	int ret;
-
-	ret = fdtdec_setup_memory_banksize();
-	if (ret)
-		return ret;
-
-	s32_init_ram_size();
-
-	return 0;
+	return fdtdec_setup_memory_banksize();
 }
 
 phys_size_t __weak get_effective_memsize(void)

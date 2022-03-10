@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <hang.h>
 #include <board_common.h>
+#include <fdtdec.h>
 #ifdef CONFIG_SAF1508BET_USB_PHY
 #include <dm/device.h>
 #include <dm/device-internal.h>
@@ -21,7 +22,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 __weak int dram_init(void)
 {
-	return 0;
+	return fdtdec_setup_mem_size_base();
 }
 
 #ifdef CONFIG_SAF1508BET_USB_PHY
