@@ -675,11 +675,15 @@ static void s32gen1_print_header(const void *data)
 	const uint16_t *dcd_len;
 	const struct application_boot_code *app;
 	bool qspi_boot;
+	size_t i;
 	int min_size = S32GEN1_SD_IVT_OFFSET + sizeof(struct ivt);
 	struct layout_comp ivt_comp, qspi, dcd, hse_fw,
 			   hse_img, app_hdr, app_comp;
 	struct layout_comp *comps[] = { &ivt_comp, &qspi, &dcd, &hse_fw,
 		&hse_img, &app_hdr, &app_comp };
+
+	for (i = 0; i < ARRAY_SIZE(comps); i++)
+		memset(comps[i], 0, sizeof(*comps[i]));
 
 	ivt = get_ivt_from_raw_blob(data, min_size, &qspi_boot);
 	if (!ivt)
