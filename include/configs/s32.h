@@ -249,7 +249,8 @@
 		"if mmc dev ${mmcdev}; then "	\
 			"if ${get_cmd} ${update_sd_firmware_filename}; then " \
 				"setexpr fw_sz ${filesize} / 0x200; " \
-				"setexpr fw_sz ${fw_sz} + 1; "	\
+				"setexpr fw_sz ${fw_sz} - 7; "	\
+				"setexpr loadaddr ${loadaddr} + 0x1000; " \
 				"mmc write ${loadaddr} 0x8 ${fw_sz}; " \
 			"fi; "	\
 		"fi\0" \
