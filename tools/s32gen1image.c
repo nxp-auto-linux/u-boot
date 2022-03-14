@@ -177,6 +177,11 @@ static struct program_image image_layout = {
 		.alignment = 0x8U,
 		.size = 0,
 	},
+	.reserved = {
+		.offset = 0x1200,
+		.alignment = 0x8U,
+		.size = 0x200,
+	},
 };
 
 static const uint32_t *get_dcd_data(size_t *size)
@@ -492,6 +497,15 @@ get_image_hse_sys_img(struct program_image *program_image)
 }
 
 static struct image_comp *
+get_reserved_area(struct program_image *program_image)
+{
+	if (iconfig.secboot.enable)
+		return &program_image->reserved;
+
+	return NULL;
+}
+
+static struct image_comp *
 get_image_mbr(struct program_image *program_image)
 {
 	/* Available on SD only */
@@ -555,6 +569,7 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 		get_image_dcd(program_image),
 		get_image_hse_fw(program_image),
 		get_image_hse_sys_img(program_image),
+		get_reserved_area(program_image),
 	};
 	size_t last_comp = ARRAY_SIZE(parts) - 1;
 

@@ -28,7 +28,7 @@
 
 #define HSE_SYS_IMG_MAX_SIZE 0xC000u
 #define HSE_FIP_AUTH_LEN     0x100u
-#define HSE_AUTH_TAG_OFFSET  0x200u
+#define HSE_AUTH_TAG_OFFSET  0x1200u
 
 #define HSE_IVT_BLK      8
 

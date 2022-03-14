@@ -450,7 +450,9 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 		goto out;
 	}
 
-	ret = hse_mmc_read((void *)priv->fip_signature, 1, 1);
+	/* read signature */
+	ret = hse_mmc_read((void *)priv->fip_signature,
+			   (HSE_AUTH_TAG_OFFSET / 512), 1);
 	if (ret) {
 		printf("ERROR: FIP signature read failed!\n");
 		goto out;

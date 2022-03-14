@@ -108,6 +108,7 @@ struct program_image {
 	struct image_comp hse_sys_img;
 	struct image_comp app_code;
 	struct image_comp code;
+	struct image_comp reserved;
 	__u8 *header;
 };
 
