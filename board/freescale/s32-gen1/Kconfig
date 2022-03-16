@@ -12,6 +12,7 @@ config NXP_S32GRDB_BOARD
 	bool
 	default y
 	depends on TARGET_S32G274ARDB2 || TARGET_S32G399ARDB3
+	imply NVME
 
 config S32GEN1_DRAM_INLINE_ECC
 	bool "S32 GEN1 inline ECC"
