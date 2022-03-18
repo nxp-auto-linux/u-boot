@@ -1,0 +1,135 @@
+---------------------------------------------
+S32 Common Chassis Boot Image generation using mkimage
+---------------------------------------------
+
+This document describes the U-Boot feature as it
+is implemented for the SoCs part of NXP S32 Common Chassis family.
+
+The S32CC SoC's can boot directly from QSPI, EMMC and SD
+using its internal BootROM support.
+
+For more details refer chapter 'Boot' from SoC's Reference Manual.
+
+Command syntax:
+--------------
+./tools/mkimage -T "s32ccimage" \
+		-n <board specific configuration file> \
+		-a <load address> \
+		-e <execution entrypoit> \
+		-d <binary path> <output image>
+
+Example:
+	./tools/mkimage -T "s32ccimage" \
+			-n fip.cfgout \
+			-a 0x34300910 \
+			-e 0x34302000 \
+			-d fip.bin fip.s32
+
+s32ccimage support available with mkimage utility will generate a S32CC boot
+image that can be flashed on the board's QSPI, EMMC or SD.
+
+Board specific configuration file specifications:
+------------------------------------------------
+1. This file must be specified using CONFIG_S32CC_CONFIG_FILE
+2. This file can have empty lines and lines starting with "#" as first
+   character to put comments
+3. This file can have configuration command lines as mentioned below,
+   any other information in this file is treated as invalid.
+
+Available commands
+------------------
+
+1. SECBOOT
+	This enables secure boot when added to configuration file.
+
+	Usage:
+		SECBOOT "s32cc_hse_fw.bin"
+
+2. BOOT_FROM
+	Selects the boot storage.
+	It can accept the following arguments: qspi/sd/emmc
+
+	Usage:
+		BOOT_FROM qspi
+
+3. DCD
+	This will add device configuration data commands.
+
+	Each entry must have the format:
+	Command      Addr-type      Address      Value/Mask      [Count]
+
+	where:
+		Command:   WRITE, CLEAR_MASK, SET_MASK,
+			   CHECK_MASK_CLEAR, CHECK_MASK_SET, CHECK_NOT_MASK, CHECK_NOT_CLEAR
+		Addr-type: Register length (1,2 or 4 bytes)
+		Address:   Absolute address of the register
+		Value:     Value to be stored in the register
+		Count:     Optional poll count argument for CHECK_* commands.
+			   By default, all CHECK_* commands will poll indefinitely until
+			   the exit condition is met. For a finite value, 'Count' argument
+			   must be used.
+
+	Note: '0x[hex]' format must be used for 'Addr-type', 'Address', 'Value/Mask' and
+	      'Count' fields.
+
+	Commands interpretation:
+		WRITE:            *Address = Value
+		CLEAR_MASK:       *Address &= ~Value
+		SET_MASK:         *Address |= Value
+		CHECK_MASK_CLEAR: *Address & Mask == 0
+		CHECK_MASK_SET:   *Address & Mask == Mask
+		CHECK_NOT_MASK:   *Address & Mask != Mask
+		CHECK_NOT_CLEAR:  *Address & Mask != 0
+
+	Usage:
+		DCD WRITE 0x4 0x45235400 0x40
+		DCD CLEAR_MASK 0x4 0x45165400 0x3
+		DCD SET_MASK 0x4 0x45165400 0x3
+		DCD CHECK_NOT_MASK 0x4 0x45165400 0x3 0x200
+		DCD CHECK_NOT_MASK 0x4 0x45165400 0x3
+
+4. QSPI_PARAMS_FILE
+	Selects a file to be used as QSPI initialization parameters in IVT. The referenced file
+	must contain the QSPI configuration using the format described in subsection 'QuadSPI
+	configuration parameters' from SoC's Reference Manual. This file is usually generated
+	using 'arch/arm/mach-s32/s32-cc/s32cc_qspiparams' tool.
+
+	Usage:
+		QSPI_PARAMS_FILE qspi_params_MX25UW51245G.bin
+
+5. DATA_FILE
+	Sets the parameters to be applied to the file given using -d parameter (data_file).
+	It's useful when using a composite file and only a small part of it needs to be loaded by
+	BootROM.
+	E.g. A image that contains multiple stages plus U-Boot, and only one early stage
+	before U-Boot should be loaded by BootROM
+
+	Each entry must have the format:
+	Command      Value
+
+	where:
+		Command:   SIZE
+		Value:     Offset or size
+
+	Commands interpretation:
+		SIZE:		Sets the size starting from OFFSET
+
+	Usage:
+		DATA_FILE SIZE   0x3CB47
+
+	This will make BootROM to load the range: [0x0, 0x3CB47]
+
+Typical example of s32cc.cfg file:
+-----------------------------------
+# Boot from QSPI
+BOOT_FROM qspi
+
+# Enable GPIO 25
+DCD WRITE 0x4 0x4009c2a4 0x21c000
+DCD WRITE 0x1 0x4009d31a 0x1
+
+# Use QSPI initialization parameters from qspi_params_MX25UW51245G.bin
+QSPI_PARAMS_FILE qspi_params_MX25UW51245G.bin
+
+------------------------------------------------
+Author: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
