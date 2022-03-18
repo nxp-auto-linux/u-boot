@@ -95,9 +95,9 @@ dumpimage-mkimage-objs := aisimage.o \
 			common/image.o \
 			imagetool.o \
 			imximage.o \
-			s32gen1image.o \
 			imx8image.o \
 			imx8mimage.o \
+			s32ccimage.o \
 			kwbimage.o \
 			lib/md5.o \
 			lpc32xximage.o \
