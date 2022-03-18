@@ -39,4 +39,6 @@ else
 $(QSPI_PARAMS_FILE):
 endif
 
-
+%.cfgout: $(S32CC_CONFIG_FILE) $(QSPI_PARAMS_FILE) FORCE
+	$(Q)mkdir -p $(dir $@)
+	$(call if_changed_dep,cpp_cfg)
