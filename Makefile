@@ -1176,7 +1176,7 @@ endif
 
 ifeq ($(CONFIG_NXP_S32_CC),y)
 %.cfgout: FORCE
-	$(Q)$(MAKE) $(build)=arch/arm/mach-s32 $@
+	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
 
 u-boot-s32.bin: u-boot.dtb u-boot-nodtb.bin
 	$(call if_changed,binman)

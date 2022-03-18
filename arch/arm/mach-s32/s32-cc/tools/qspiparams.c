@@ -25,7 +25,7 @@ const char *mem_names[] = {
 static void show_usage(char *arg)
 {
 	fprintf(stderr, "This tool is used to generate QSPI parameters ");
-	fprintf(stderr, "binary for S32GEN1 platforms.\n");
+	fprintf(stderr, "binary for S32CC platforms.\n");
 	fprintf(stderr,
 		"The resulted binary will be added to IVT by mkimage tool.\n\n");
 	fprintf(stderr, "Usage: %s -m MEMORY -o FILE\n\n", arg);

@@ -3,7 +3,7 @@
 
 #include <s32cc_image_params.h>
 
-static struct qspi_params s32g2xx_qspi_conf = {
+static struct qspi_params macronix_qspi_conf = {
 	.header   = 0x5a5a5a5a,
 	.mcr      = 0x030f00cc,
 	.flshcr   = 0x00010303,
@@ -61,5 +61,5 @@ static struct qspi_params s32g2xx_qspi_conf = {
 
 struct qspi_params *get_macronix_qspi_conf(void)
 {
-	return &s32g2xx_qspi_conf;
+	return &macronix_qspi_conf;
 }

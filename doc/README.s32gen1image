@@ -92,7 +92,7 @@ Available commands
 	Selects a file to be used as QSPI initialization parameters in IVT. The referenced file
 	must contain the QSPI configuration using the format described in subsection 'QuadSPI
 	configuration parameters' from SoC's Reference Manual. This file is usually generated
-	using 'arch/arm/mach-s32/s32gen1_qspiparam' tool.
+	using 'arch/arm/mach-s32/s32-cc/s32cc_qspiparams' tool.
 
 	Usage:
 		QSPI_PARAMS_FILE qspi_params_MX25UW51245G.bin
