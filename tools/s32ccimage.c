@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+
 /* Copyright 2019-2022 NXP */
 
 #include <ctype.h>
@@ -280,14 +280,15 @@ static struct reserved_range reserved_sram[] = {
 
 static void enforce_reserved_ranges(void *image_start, int image_length)
 {
-	void *image_end = (void*)((__u8*)image_start + image_length);
+	void *image_end = (void *)((__u8 *)image_start + image_length);
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(reserved_sram); i++)
 		if (image_start < reserved_sram[i].end &&
 		    image_end > reserved_sram[i].start) {
-			fprintf(stderr, "Loading data of size 0x%x at %p "
-				"forbidden.", image_length, image_start);
+			fprintf(stderr,
+				"Loading data of size 0x%x at %p forbidden.",
+				image_length, image_start);
 			fprintf(stderr, " Range %p --- %p is reserved!\n",
 				reserved_sram[i].start, reserved_sram[i].end);
 			exit(EXIT_FAILURE);
@@ -366,7 +367,6 @@ static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 
 		/* Look for an empty spot between existing allocations */
 		for (i = 1; i < aindex; i++) {
-
 			place_after(parts[i - 1], parts[aindex]);
 
 			/* Does it fit between i - 1 and i ? */
@@ -469,7 +469,6 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
 
 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
-
 
 	if (tool_params->ep < tool_params->addr) {
 		fprintf(stderr,
