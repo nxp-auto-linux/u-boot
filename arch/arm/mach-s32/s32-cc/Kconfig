@@ -65,10 +65,6 @@ config SYS_MEM_SIZE
 	help
 	  U-boot SRAM size (8 MB for Gen1)
 
-config MKIMAGE_T
-	string
-	default "s32gen1image"
-
 config S32GEN1_HWCONFIG
 	string "S32GEN1 HWConfig definition"
 	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG)
