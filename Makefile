@@ -991,6 +991,10 @@ endif
 endif
 endif
 
+ifeq ($(CONFIG_NXP_S32_CC),y)
+INPUTS-y += u-boot-s32.cfgout
+endif
+
 INPUTS-$(CONFIG_X86) += u-boot-x86-start16.bin u-boot-x86-reset16.bin \
 	$(if $(CONFIG_SPL_X86_16BIT_INIT),spl/u-boot-spl.bin) \
 	$(if $(CONFIG_TPL_X86_16BIT_INIT),tpl/u-boot-tpl.bin)
@@ -1220,6 +1224,11 @@ endif
 
 %.vyb: %.imx
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
+
+ifeq ($(CONFIG_NXP_S32_CC),y)
+%.cfgout: FORCE
+	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
+endif
 
 quiet_cmd_copy = COPY    $@
       cmd_copy = cp $< $@
