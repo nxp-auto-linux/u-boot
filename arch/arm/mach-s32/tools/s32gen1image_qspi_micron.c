@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /* Copyright 2019-2022 NXP */
 
-#include "s32gen1image.h"
+#include <s32cc_image_params.h>
 
 static struct qspi_params s32g2xx_qspi_conf = {
 	.header   = 0x5a5a5a5a,

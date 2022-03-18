@@ -5,12 +5,15 @@
 #include <image.h>
 #include <imagetool.h>
 #include <inttypes.h>
-#include <s32gen1image.h>
+#include <s32cc_image_params.h>
+#include <stddef.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #define UNSPECIFIED	-1
+
+#define BCW_BOOT_TARGET_A53_0		(1)
 
 #define MBR_OFFSET			0x0
 #define MBR_SIZE			0x200
@@ -65,6 +68,59 @@
 #define DCD_ADDR(x)	cpu_to_be32((x))
 #define DCD_MASK(x)	cpu_to_be32((x))
 #define DCD_COUNT(x)	cpu_to_be32((x))
+
+struct ivt {
+	__u8		tag;
+	__u16		length;
+	__u8		version;
+	__u8		reserved1[4];
+	__u32		self_test_dcd_pointer;
+	__u32		self_test_dcd_pointer_backup;
+	__u32		dcd_pointer;
+	__u32		dcd_pointer_backup;
+	__u32		hse_firmware_pointer;
+	__u32		hse_firmware_pointer_backup;
+	__u32		application_boot_code_pointer;
+	__u32		application_boot_code_pointer_backup;
+	__u32		boot_configuration_word;
+	__u32		lifecycle_configuration_word;
+	__u8		reserved2[4];
+	__u32		hse_sys_img_pointer;
+	__u8		reserved_for_hse_h_fw[28];
+	__u8		reserved3[156];
+	__u32		gmac[4];
+} __packed;
+
+struct application_boot_code {
+	__u8		tag;
+	__u8		reserved1[2];
+	__u8		version;
+	__u32		ram_start_pointer;
+	__u32		ram_entry_pointer;
+	__u32		code_length;
+	__u32		auth_mode;
+	__u8		reserved2[44];
+	__u8		code[0];
+} __packed;
+
+struct image_comp {
+	size_t offset;
+	size_t size;
+	size_t alignment;
+	__u8 *data;
+};
+
+struct program_image {
+	struct image_comp mbr_reserved;
+	struct image_comp ivt;
+	struct image_comp qspi_params;
+	struct image_comp dcd;
+	struct image_comp hse_fw;
+	struct image_comp hse_sys_img;
+	struct image_comp app_code;
+	struct image_comp code;
+	__u8 *header;
+};
 
 typedef int (*parser_handler_t)(char *);
 

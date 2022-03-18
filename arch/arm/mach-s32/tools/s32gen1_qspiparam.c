@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /* Copyright 2022 NXP */
 
-#include <s32gen1image.h>
+#include <s32cc_image_params.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
