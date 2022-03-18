@@ -1,36 +1,36 @@
 ---------------------------------------------
-S32GEN1 Boot Image generation using mkimage
+S32 Common Chassis Boot Image generation using mkimage
 ---------------------------------------------
 
 This document describes the U-Boot feature as it
-is implemented for the NXP S32GEN1 family of SoCs.
+is implemented for the SoCs part of NXP S32 Common Chassis family.
 
-The S32GEN1 SoC's can boot directly from QSPI, EMMC and SD
+The S32CC SoC's can boot directly from QSPI, EMMC and SD
 using its internal BootROM support.
 
 For more details refer chapter 'Boot' from SoC's Reference Manual.
 
 Command syntax:
 --------------
-./tools/mkimage -T "s32gen1image" \
+./tools/mkimage -T "s32ccimage" \
 		-n <board specific configuration file> \
 		-a <load address> \
 		-e <execution entrypoit> \
 		-d <binary path> <output image>
 
 Example:
-	./tools/mkimage -T "s32gen1image" \
+	./tools/mkimage -T "s32ccimage" \
 			-n fip.cfgout \
 			-a 0x34300910 \
 			-e 0x34302000 \
 			-d fip.bin fip.s32
 
-s32gen1image support available with mkimage utility will generate a S32GEN1 boot
+s32ccimage support available with mkimage utility will generate a S32CC boot
 image that can be flashed on the board's QSPI, EMMC or SD.
 
 Board specific configuration file specifications:
 ------------------------------------------------
-1. This file must be specified using CONFIG_S32GEN1_CONFIG_FILE
+1. This file must be specified using CONFIG_S32CC_CONFIG_FILE
 2. This file can have empty lines and lines starting with "#" as first
    character to put comments
 3. This file can have configuration command lines as mentioned below,
@@ -43,7 +43,7 @@ Available commands
 	This enables secure boot when added to configuration file.
 
 	Usage:
-		SECBOOT "s32gen1_hse_fw.bin"
+		SECBOOT "s32cc_hse_fw.bin"
 
 2. BOOT_FROM
 	Selects the boot storage.
@@ -119,7 +119,7 @@ Available commands
 
 	This will make BootROM to load the range: [0x0, 0x3CB47]
 
-Typical example of s32gen1.cfg file:
+Typical example of s32cc.cfg file:
 -----------------------------------
 # Boot from QSPI
 BOOT_FROM qspi

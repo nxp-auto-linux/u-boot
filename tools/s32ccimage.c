@@ -11,28 +11,28 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define UNSPECIFIED	-1
+#define UNSPECIFIED			-1
 
 #define BCW_BOOT_TARGET_A53_0		(1)
 
 #define MBR_OFFSET			0x0
 #define MBR_SIZE			0x200
 
-#define S32GEN1_QSPI_IVT_OFFSET		0x0
-#define S32GEN1_SD_IVT_OFFSET		0x1000
+#define QSPI_IVT_OFFSET			0x0
+#define SD_IVT_OFFSET			0x1000
 #define IVT_VERSION			(0x60)
 #define IVT_TAG				(0xd1)
 
-#define S32GEN1_QSPI_PARAMS_SIZE	(0x200U)
-#define S32GEN1_QSPI_PARAMS_OFFSET	(0x200U)
+#define QSPI_PARAMS_SIZE		(0x200U)
+#define QSPI_PARAMS_OFFSET		(0x200U)
 
-#define S32GEN1_HSE_FW_MAX_SIZE		(0x80000ul)
-#define S32GEN1_HSE_SYS_IMG_MAX_SIZE	(0xc000ul)
+#define HSE_FW_MAX_SIZE			(0x80000ul)
+#define HSE_SYS_IMG_MAX_SIZE		(0xc000ul)
 
 #define APPLICATION_BOOT_CODE_TAG	(0xd5)
 #define APPLICATION_BOOT_CODE_VERSION	(0x60)
 
-#define S32_AUTO_OFFSET ((size_t)(-1))
+#define AUTO_OFFSET			((size_t)(-1))
 
 #define DCD_HEADER			(0x600000d2)
 #define DCD_MAXIMUM_SIZE		(8192)
@@ -209,27 +209,27 @@ static struct program_image image_layout = {
 		.size = sizeof(struct ivt),
 	},
 	.qspi_params = {
-		.offset = S32GEN1_QSPI_PARAMS_OFFSET,
-		.size = S32GEN1_QSPI_PARAMS_SIZE,
+		.offset = QSPI_PARAMS_OFFSET,
+		.size = QSPI_PARAMS_SIZE,
 	},
 	.dcd = {
-		.offset = S32_AUTO_OFFSET,
+		.offset = AUTO_OFFSET,
 		.size = DCD_MAXIMUM_SIZE,
 	},
 	.hse_fw = {
-		.offset = S32_AUTO_OFFSET,
-		.size = S32GEN1_HSE_FW_MAX_SIZE,
+		.offset = AUTO_OFFSET,
+		.size = HSE_FW_MAX_SIZE,
 	},
 	.hse_sys_img = {
-		.offset = S32_AUTO_OFFSET,
-		.size = S32GEN1_HSE_SYS_IMG_MAX_SIZE,
+		.offset = AUTO_OFFSET,
+		.size = HSE_SYS_IMG_MAX_SIZE,
 	},
 	.app_code = {
-		.offset = S32_AUTO_OFFSET,
+		.offset = AUTO_OFFSET,
 		.size = sizeof(struct application_boot_code),
 	},
 	.code = {
-		.offset = S32_AUTO_OFFSET,
+		.offset = AUTO_OFFSET,
 		.alignment = 0x8U,
 		.size = 0,
 	},
@@ -355,7 +355,7 @@ static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 
 	/* First image with auto offset */
 	while ((start_index < n_parts) &&
-	       (parts[start_index]->offset != S32_AUTO_OFFSET))
+	       (parts[start_index]->offset != AUTO_OFFSET))
 		start_index++;
 
 	for (aindex = start_index; aindex < n_parts; aindex++) {
@@ -371,19 +371,19 @@ static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 
 			/* Does it fit between i - 1 and i ? */
 			if (is_in_overlap(parts[aindex], parts[i])) {
-				parts[aindex]->offset = S32_AUTO_OFFSET;
+				parts[aindex]->offset = AUTO_OFFSET;
 				continue;
 			}
 
 			if (is_in_overlap(parts[aindex], parts[i - 1])) {
-				parts[aindex]->offset = S32_AUTO_OFFSET;
+				parts[aindex]->offset = AUTO_OFFSET;
 				continue;
 			}
 
 			break;
 		}
 
-		if (parts[aindex]->offset != S32_AUTO_OFFSET) {
+		if (parts[aindex]->offset != AUTO_OFFSET) {
 			/* Move freshly allocated aindex */
 			qsort(&parts[0], aindex + 1, sizeof(parts[0]),
 			      image_parts_comp);
@@ -399,13 +399,13 @@ static struct qspi_params *get_qspi_params(struct program_image *image)
 	return (struct qspi_params *)image->qspi_params.data;
 }
 
-static void s32gen1_set_qspi_params(struct qspi_params *qspi_params)
+static void s32cc_set_qspi_params(struct qspi_params *qspi_params)
 {
 	memcpy(qspi_params, iconfig.qspi_params.data,
 	       iconfig.qspi_params.size);
 }
 
-static void s32gen1_set_hse_fw(struct program_image *image)
+static void s32cc_set_hse_fw(struct program_image *image)
 {
 	uint8_t *data = iconfig.secboot.fw_data;
 	size_t size = iconfig.secboot.fw_size;
@@ -427,8 +427,8 @@ static void set_data_pointers(struct program_image *layout, void *header)
 	layout->hse_fw.data = data + layout->hse_fw.offset;
 }
 
-static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
-			       struct image_tool_params *tool_params)
+static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
+			     struct image_tool_params *tool_params)
 {
 	size_t dcd_data_size;
 	uint8_t *dcd;
@@ -496,11 +496,11 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 					app_code->ram_start_pointer,
 					app_code->code_length);
 	} else {
-		s32gen1_set_qspi_params(get_qspi_params(&image_layout));
+		s32cc_set_qspi_params(get_qspi_params(&image_layout));
 	}
 
 	if (iconfig.secboot.enable)
-		s32gen1_set_hse_fw(&image_layout);
+		s32cc_set_hse_fw(&image_layout);
 
 	image_layout.code.size = sbuf->st_size - image_layout.app_code.offset -
 		image_layout.app_code.size;
@@ -512,9 +512,9 @@ static void s32gen1_set_header(void *header, struct stat *sbuf, int unused,
 		munmap(iconfig.qspi_params.data, iconfig.qspi_params.size);
 }
 
-static int s32gen1_check_image_type(uint8_t type)
+static int s32cc_check_image_type(uint8_t type)
 {
-	if (type == IH_TYPE_S32GEN1IMAGE)
+	if (type == IH_TYPE_S32CCIMAGE)
 		return EXIT_SUCCESS;
 	else
 		return EXIT_FAILURE;
@@ -577,10 +577,10 @@ static void set_headers_size(struct program_image *program_image)
 	}
 
 	program_image->hse_fw.size = iconfig.secboot.fw_size;
-	if (program_image->hse_fw.size > S32GEN1_HSE_FW_MAX_SIZE) {
+	if (program_image->hse_fw.size > HSE_FW_MAX_SIZE) {
 		fprintf(stderr,
 			"HSE FW area exceeds the maximum allowed size (0x%lx\n)",
-			S32GEN1_HSE_FW_MAX_SIZE);
+			HSE_FW_MAX_SIZE);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -661,7 +661,7 @@ static struct ivt *get_ivt_from_raw_blob(const unsigned char *ptr, int size,
 {
 	uint32_t offset, min_size;
 
-	offset = S32GEN1_QSPI_IVT_OFFSET;
+	offset = QSPI_IVT_OFFSET;
 	min_size = offset + sizeof(struct ivt);
 
 	if (size < min_size)
@@ -673,7 +673,7 @@ static struct ivt *get_ivt_from_raw_blob(const unsigned char *ptr, int size,
 		return (struct ivt *)ptr;
 	}
 
-	offset = S32GEN1_SD_IVT_OFFSET;
+	offset = SD_IVT_OFFSET;
 	min_size = offset + sizeof(struct ivt);
 
 	if (size < min_size)
@@ -724,7 +724,7 @@ static void print_layout(struct layout_comp **comps, size_t n)
 	fprintf(stderr, "\n");
 }
 
-static void s32gen1_print_header(const void *data)
+static void s32cc_print_header(const void *data)
 {
 	const struct ivt *ivt;
 	const uint8_t *data8 = data;
@@ -732,7 +732,7 @@ static void s32gen1_print_header(const void *data)
 	const struct application_boot_code *app;
 	bool qspi_boot;
 	size_t i;
-	int min_size = S32GEN1_SD_IVT_OFFSET + sizeof(struct ivt);
+	int min_size = SD_IVT_OFFSET + sizeof(struct ivt);
 	struct layout_comp ivt_comp, qspi, dcd, hse_fw,
 			   hse_img, app_hdr, app_comp;
 	struct layout_comp *comps[] = { &ivt_comp, &qspi, &dcd, &hse_fw,
@@ -750,8 +750,8 @@ static void s32gen1_print_header(const void *data)
 	ivt_comp.line_desc = "IVT:\t\t\t";
 
 	if (qspi_boot) {
-		qspi.offset = S32GEN1_QSPI_PARAMS_OFFSET;
-		qspi.size = S32GEN1_QSPI_PARAMS_SIZE;
+		qspi.offset = QSPI_PARAMS_OFFSET;
+		qspi.size = QSPI_PARAMS_SIZE;
 		qspi.line_desc = "QSPI Parameters:\t";
 	}
 
@@ -770,7 +770,7 @@ static void s32gen1_print_header(const void *data)
 
 	if (ivt->hse_sys_img_pointer) {
 		hse_img.offset = ivt->hse_sys_img_pointer;
-		hse_img.size = S32GEN1_HSE_SYS_IMG_MAX_SIZE;
+		hse_img.size = HSE_SYS_IMG_MAX_SIZE;
 		hse_img.line_desc = "HSE SYS Image:\t\t";
 	}
 
@@ -834,9 +834,9 @@ static int parse_boot_cmd(char *line)
 
 	if (boot == QSPI_BOOT) {
 		iconfig.flash_boot = true;
-		image_layout.ivt.offset = S32GEN1_QSPI_IVT_OFFSET;
+		image_layout.ivt.offset = QSPI_IVT_OFFSET;
 	} else {
-		image_layout.ivt.offset = S32GEN1_SD_IVT_OFFSET;
+		image_layout.ivt.offset = SD_IVT_OFFSET;
 	}
 
 	return 0;
@@ -1192,7 +1192,7 @@ static int build_conf(FILE *fconf)
 	return 0;
 }
 
-static int s32gen1_parse_config(struct image_tool_params *mparams)
+static int s32cc_parse_config(struct image_tool_params *mparams)
 {
 	FILE *fconf;
 	int ret;
@@ -1210,14 +1210,14 @@ static int s32gen1_parse_config(struct image_tool_params *mparams)
 	return ret;
 }
 
-static int s32gen1_vrec_header(struct image_tool_params *tool_params,
-			       struct image_type_params *type_params)
+static int s32cc_vrec_header(struct image_tool_params *tool_params,
+			     struct image_type_params *type_params)
 {
 	size_t header_size;
 	void *image = NULL;
 	int ret;
 
-	ret = s32gen1_parse_config(tool_params);
+	ret = s32cc_parse_config(tool_params);
 	if (ret)
 		exit(ret);
 
@@ -1228,14 +1228,14 @@ static int s32gen1_vrec_header(struct image_tool_params *tool_params,
 	return 0;
 }
 
-static int s32gen1_check_params(struct image_tool_params *params)
+static int s32cc_check_params(struct image_tool_params *params)
 {
 	if (!params)
 		return -EINVAL;
 
 	if (!strlen(params->imagename)) {
 		fprintf(stderr,
-			"Error: %s - Configuration file not specified, it is needed for s32gen1image generation\n",
+			"Error: %s - Configuration file not specified, it is needed for s32ccimage generation\n",
 			params->cmdname);
 		return -EINVAL;
 	}
@@ -1252,8 +1252,8 @@ static int s32gen1_check_params(struct image_tool_params *params)
 		(params->xflag) || !(strlen(params->imagename));
 }
 
-static int s32gen1_verify_header(unsigned char *ptr, int image_size,
-				 struct image_tool_params *params)
+static int s32cc_verify_header(unsigned char *ptr, int image_size,
+			       struct image_tool_params *params)
 {
 	if (!get_ivt_from_raw_blob(ptr, image_size, NULL))
 		return -FDT_ERR_BADSTRUCTURE;
@@ -1262,16 +1262,16 @@ static int s32gen1_verify_header(unsigned char *ptr, int image_size,
 }
 
 U_BOOT_IMAGE_TYPE(
-	s32gen1_image,
-	"NXP S32GEN1 Boot Image",
+	s32ccimage,
+	"NXP S32 Common Chassis Boot Image",
 	0,
 	NULL,
-	s32gen1_check_params,
-	s32gen1_verify_header,
-	s32gen1_print_header,
-	s32gen1_set_header,
+	s32cc_check_params,
+	s32cc_verify_header,
+	s32cc_print_header,
+	s32cc_set_header,
 	NULL,
-	s32gen1_check_image_type,
+	s32cc_check_image_type,
 	NULL,
-	s32gen1_vrec_header
+	s32cc_vrec_header
 );
