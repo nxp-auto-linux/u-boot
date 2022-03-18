@@ -81,7 +81,7 @@ struct fsl_esdhc {
 	uint    mmcboot;
 	uint    vendorspec2;
 	uint    tuning_ctrl;	/* on i.MX6/7/8/RT */
-#ifndef CONFIG_NXP_S32_CC
+#ifndef CONFIG_NXP_S32CC
 	char	reserved5[44];
 	uint    hostver;	/* Host controller version register */
 	char    reserved6[4];	/* reserved */
@@ -629,7 +629,7 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 {
 	struct fsl_esdhc *regs = priv->esdhc_regs;
 	int div = 1;
-#if defined(ARCH_MXC) || defined(CONFIG_NXP_S32_CC)
+#if defined(ARCH_MXC) || defined(CONFIG_NXP_S32CC)
 #ifdef CONFIG_MX53
 	/* For i.MX53 eSDHCv3, SYSCTL.SDCLKFS may not be set to 0. */
 	int pre_div = (regs == (struct fsl_esdhc *)MMC_SDHC3_BASE_ADDR) ? 2 : 1;
@@ -1136,7 +1136,7 @@ static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	esdhc_write32(&regs->dllctrl, 0x0);
 #endif
 
-#if !defined(ARCH_MXC) && !defined(CONFIG_NXP_S32_CC)
+#if !defined(ARCH_MXC) && !defined(CONFIG_NXP_S32CC)
 	/* Enable cache snooping */
 	esdhc_write32(&regs->scr, 0x00000040);
 #endif

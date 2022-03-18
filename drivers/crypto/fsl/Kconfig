@@ -48,7 +48,7 @@ config SYS_FSL_SEC_LE
 
 config HSE_SECBOOT
 	bool "HSE Secure Boot"
-	depends on NXP_S32_CC
+	depends on NXP_S32CC
 	help
 		Enable HSE-provided Advanced Secure Boot
 

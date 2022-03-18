@@ -415,7 +415,7 @@
 		u-boot-dtb {
 		};
 		u-boot-nodtb {
-			offset = <CONFIG_S32_CC_MAX_DTB_SIZE>;
+			offset = <CONFIG_S32CC_MAX_DTB_SIZE>;
 		};
 	};
 

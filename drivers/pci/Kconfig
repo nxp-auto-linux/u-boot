@@ -219,7 +219,7 @@ endif
 
 config SERDES_S32GEN1
 	bool "S32GEN1 SerDes support"
-	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG || DWC_ETH_QOS_S32CC)
+	depends on NXP_S32CC && (PCIE_S32GEN1 || FSL_PFENG || DWC_ETH_QOS_S32CC)
 	help
 	  Support for S32GEN1 SerDes. The S32GEN1 SoC may have one or two
 	  SerDes modules.

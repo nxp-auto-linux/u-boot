@@ -4,12 +4,12 @@
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
 
-ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/misc
+ccflags-$(CONFIG_NXP_S32CC) += -Idrivers/misc
 obj-$(CONFIG_CPU) += cpu-uclass.o
 
 obj-$(CONFIG_ARCH_BMIPS) += bmips_cpu.o
 obj-$(CONFIG_ARCH_IMX8) += imx8_cpu.o
 obj-$(CONFIG_CPU_MPC83XX) += mpc83xx_cpu.o
 obj-$(CONFIG_CPU_RISCV) += riscv_cpu.o
-obj-$(CONFIG_NXP_S32_CC) += s32gen1_cpu.o
+obj-$(CONFIG_NXP_S32CC) += s32gen1_cpu.o
 obj-$(CONFIG_SANDBOX) += cpu_sandbox.o

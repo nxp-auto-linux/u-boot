@@ -8,7 +8,7 @@ ccflags-y += -I./board/nxp/common/
 ccflags-y += -I./board/nxp/s32-cc/include/
 ccflags-y += -I./drivers/net/s32/
 
-obj-$(CONFIG_NXP_S32_CC)		+= scmi_reset_agent.o
+obj-$(CONFIG_NXP_S32CC)		+= scmi_reset_agent.o
 obj-y				+= cpu.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
 obj-$(CONFIG_MP)		+= mp.o
@@ -21,7 +21,7 @@ obj-$(CONFIG_ARCH_S32G2)	+= s32g2_cmu.o
 obj-$(CONFIG_ARCH_S32G3)	+= s32g3_cmu.o
 obj-$(CONFIG_ARCH_S32R45)	+= s32r45_cmu.o
 obj-$(CONFIG_HSE_SECBOOT)	+= hse_adv_secboot.o
-ifdef CONFIG_NXP_S32_CC
+ifdef CONFIG_NXP_S32CC
 obj-$(CONFIG_NETDEVICES)	+= sgmii/sgmii.o sgmii/serdes_xpcs.o
 endif
 obj-y				+= start_m7.o

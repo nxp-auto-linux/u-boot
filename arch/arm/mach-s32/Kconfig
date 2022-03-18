@@ -15,7 +15,7 @@ config SYS_VENDOR
 	string
 	default "nxp"
 
-config NXP_S32_CC
+config NXP_S32CC
 	bool
 	imply DM_ETH
 	imply DM_I2C

@@ -192,7 +192,7 @@ static inline u32 qspi_endian_xchg(struct fsl_qspi_priv *priv, u32 data)
 		return data;
 }
 
-#ifndef CONFIG_NXP_S32_CC
+#ifndef CONFIG_NXP_S32CC
 static void qspi_set_lut(struct fsl_qspi_priv *priv)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
@@ -470,7 +470,7 @@ static void qspi_ahb_read(struct fsl_qspi_priv *priv, u8 *rxbuf, int len)
 
 static void qspi_enable_ddr_mode(struct fsl_qspi_priv *priv)
 {
-#ifndef CONFIG_NXP_S32_CC
+#ifndef CONFIG_NXP_S32CC
 	u32 reg;
 	u32 reg2;
 	struct fsl_qspi_regs *regs = priv->regs;
@@ -994,7 +994,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 
 	dm_spi_bus = bus->uclass_priv;
 
-#if defined(CONFIG_NXP_S32_CC)
+#if defined(CONFIG_NXP_S32CC)
 	dm_spi_bus->max_hz = fsl_qspi_clk_get_rate(bus);
 	if (!dm_spi_bus->max_hz) {
 		printf("Invalid clk rate: %u\n", dm_spi_bus->max_hz);
@@ -1010,12 +1010,12 @@ static int fsl_qspi_probe(struct udevice *bus)
 	priv->ddr_mode = false;
 	priv->num_pads = 1;
 
-#if defined(CONFIG_NXP_S32_CC) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
+#if defined(CONFIG_NXP_S32CC) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
 	defined(CONFIG_SPI_FLASH_STMICRO))
 	s32gen1_reset_bootrom_settings(priv);
 #endif
 
-#if defined(CONFIG_NXP_S32_CC)
+#if defined(CONFIG_NXP_S32CC)
 	priv->speed_hz = dm_spi_bus->max_hz;
 #else
 	priv->speed_hz = plat->speed_hz;
@@ -1052,14 +1052,14 @@ static int fsl_qspi_probe(struct udevice *bus)
 	}
 
 	mcr_val = 0;
-	if (IS_ENABLED(CONFIG_NXP_S32_CC))
+	if (IS_ENABLED(CONFIG_NXP_S32CC))
 		mcr_val = QSPI_MCR_DQS_EN;
 
 	qspi_write32(priv->flags, &priv->regs->mcr,
 		     QSPI_MCR_RESERVED_MASK | QSPI_MCR_MDIS_MASK |
 		     QSPI_MCR_END_CFD_LE | mcr_val);
 
-#ifndef CONFIG_NXP_S32_CC
+#ifndef CONFIG_NXP_S32CC
 	qspi_cfg_smpr(priv, ~(QSPI_SMPR_FSDLY_MASK | QSPI_SMPR_DDRSMP_MASK |
 		QSPI_SMPR_FSPHS_MASK | QSPI_SMPR_HSENA_MASK), 0);
 #endif
@@ -1118,7 +1118,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 		return -EINVAL;
 	}
 
-#ifndef CONFIG_NXP_S32_CC
+#ifndef CONFIG_NXP_S32CC
 	qspi_set_lut(priv);
 #else
 	s32gen1_enable_spi(priv, true);
@@ -1257,7 +1257,7 @@ static const struct dm_spi_ops fsl_qspi_ops = {
 	.xfer		= fsl_qspi_xfer,
 	.set_speed	= fsl_qspi_set_speed,
 	.set_mode	= fsl_qspi_set_mode,
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 	.mem_ops	= &s32gen1_mem_ops,
 #endif
 };

@@ -3,8 +3,8 @@
  * Copyright 2021-2022 NXP
  */
 
-#ifndef NXP_S32_CC_PINCTRL_H
-#define NXP_S32_CC_PINCTRL_H
+#ifndef NXP_S32CC_PINCTRL_H
+#define NXP_S32CC_PINCTRL_H
 
 #define SIUL2_MSCR_S32_G1_OBE		(1 << 21) /* Output buffer enable. */
 #define SIUL2_MSCR_S32_G1_ODE		(1 << 20) /* Open drain eable. */

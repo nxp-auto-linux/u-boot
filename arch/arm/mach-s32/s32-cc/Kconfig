@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright 2022 NXP
 
-if NXP_S32_CC
+if NXP_S32CC
 
 config CUSTOM_SYS_TEXT_BASE
 	bool "Use a custom SYS_TEXT_BASE"
@@ -33,7 +33,7 @@ config SYS_DATA_BASE
 	help
 	  U-Boot data base address in DDR.
 
-config S32_CC_MAX_DTB_SIZE
+config S32CC_MAX_DTB_SIZE
 	hex "Max size reserved for device tree in image layout"
 	default 0x7000
 
@@ -67,7 +67,7 @@ config SYS_MEM_SIZE
 
 config S32GEN1_HWCONFIG
 	string "S32GEN1 HWConfig definition"
-	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG)
+	depends on NXP_S32CC && (PCIE_S32GEN1 || FSL_PFENG)
 	default "pcie0:mode=sgmii;pcie1:mode=sgmii" if (!PCIE_S32GEN1 && FSL_PFENG)
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int" if (PCIE_S32GEN1 && !FSL_PFENG)
 	help

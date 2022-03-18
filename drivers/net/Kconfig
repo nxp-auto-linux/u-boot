@@ -71,7 +71,7 @@ if NETDEVICES
 
 config FSL_PFENG
 	bool "Enable PFEng on S32G support"
-	depends on NET && DM_ETH && NXP_S32_CC
+	depends on NET && DM_ETH && NXP_S32CC
 	select OF_EMBED
 	select OF_CONTROL
 	imply SERDES_S32GEN1

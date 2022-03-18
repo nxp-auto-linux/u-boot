@@ -27,7 +27,7 @@ struct fsl_qspi_regs {
 	u32 buf0ind;
 	u32 buf1ind;
 	u32 buf2ind;
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 	u32 rsvd2[5];
 	u32 awrcr;
 	u32 rsvd21[3];
@@ -37,7 +37,7 @@ struct fsl_qspi_regs {
 	u32 rsvd2[49];
 #endif
 	u32 sfar;
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 	u32 sfacr;
 #else
 	u32 rsvd3[1];
@@ -45,7 +45,7 @@ struct fsl_qspi_regs {
 	u32 smpr;
 	u32 rbsr;
 	u32 rbct;
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 	u32 rsvd31[3];
 	u32 awrsr;
 	u32 rsvd32[2];
@@ -68,7 +68,7 @@ struct fsl_qspi_regs {
 	u32 sfa2ad;
 	u32 sfb1ad;
 	u32 sfb2ad;
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 	u32 dlpr;
 	u32 rsvd7[27];
 #else
@@ -102,7 +102,7 @@ struct fsl_qspi_regs {
 #define QSPI_MCR_CLR_RXF_MASK		(1 << QSPI_MCR_CLR_RXF_SHIFT)
 #define QSPI_MCR_CLR_TXF_SHIFT		11
 #define QSPI_MCR_CLR_TXF_MASK		(1 << QSPI_MCR_CLR_TXF_SHIFT)
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 #define QSPI_MCR_DLPEN_SHIFT		12
 #define QSPI_MCR_DLPEN_MASK		(1 << QSPI_MCR_DLPEN_SHIFT)
 #endif
@@ -114,7 +114,7 @@ struct fsl_qspi_regs {
 #define QSPI_MCR_SWRSTHD_MASK		(1 << QSPI_MCR_SWRSTHD_SHIFT)
 #define QSPI_MCR_SWRSTSD_SHIFT		0
 #define QSPI_MCR_SWRSTSD_MASK		(1 << QSPI_MCR_SWRSTSD_SHIFT)
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 #define QSPI_MCR_ISD2FA_SHIFT		16
 #define QSPI_MCR_ISD2FA_EN		(1 << QSPI_MCR_ISD2FA_SHIFT)
 #define QSPI_MCR_ISD3FA_SHIFT		17
@@ -130,7 +130,7 @@ struct fsl_qspi_regs {
 #define QSPI_MCR_DQS_EXTERNAL		(0x3 << QSPI_MCR_DQS_FA_SEL_SHIFT)
 #define QSPI_MCR_DQS_MASK		(0x3 << QSPI_MCR_DQS_FA_SEL_SHIFT)
 
-#ifndef CONFIG_NXP_S32_CC
+#ifndef CONFIG_NXP_S32CC
 #define QSPI_SMPR_HSENA_SHIFT		0
 #define QSPI_SMPR_HSENA_MASK		(1 << QSPI_SMPR_HSENA_SHIFT)
 #endif
@@ -138,7 +138,7 @@ struct fsl_qspi_regs {
 #define QSPI_SMPR_FSPHS_MASK		(1 << QSPI_SMPR_FSPHS_SHIFT)
 #define QSPI_SMPR_FSDLY_SHIFT		6
 #define QSPI_SMPR_FSDLY_MASK		(1 << QSPI_SMPR_FSDLY_SHIFT)
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 #define QSPI_SMPR_DLLFSMPFA_SHIFT	24
 #define QSPI_SMPR_DLLFSMPFA_NTH(N)	((N) << QSPI_SMPR_DLLFSMPFA_SHIFT)
 #define QSPI_SMPR_DLLFSMPFB_SHIFT	28
@@ -199,7 +199,7 @@ struct fsl_qspi_regs {
 
 #define QSPI_DLPR_RESET_VALUE		0xaa553443
 
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 #define QSPI_DLLSR_SLVA_LOCK_SHIFT	14
 #define QSPI_DLLSR_SLVA_LOCK_MASK	(1 << QSPI_DLLSR_SLVA_LOCK_SHIFT)
 #define QSPI_DLLSR_DLLA_LOCK_SHIFT	15
@@ -214,7 +214,7 @@ struct fsl_qspi_regs {
 #define QSPI_BFGENCR_PAR_EN_SHIFT	16
 #define QSPI_BFGENCR_PAR_EN_MASK	(1 << QSPI_BFGENCR_PAR_EN_SHIFT)
 
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 #define QSPI_RBSR_RDBFL_SHIFT		0
 #define QSPI_RBSR_RDBFL_MASK		(0xff << QSPI_RBSR_RDBFL_SHIFT)
 #else
@@ -236,7 +236,7 @@ struct fsl_qspi_regs {
 #define QSPI_TBSR_TRCTR(TBSR)		((TBSR) >> QSPI_TBSR_TRCTR_SHIFT)
 #define QSPI_TBSR_TRBFL(TBSR)		((TBSR) & 0xFF)
 
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 #define QSPI_FR_RBDF_SHIFT		16
 #define QSPI_FR_RBDF_MASK		(1 << QSPI_FR_RBDF_SHIFT)
 #define QSPI_FR_ALL_FLAGS_MASK		(0xffffffff)
@@ -320,7 +320,7 @@ struct fsl_qspi_priv {
 #define QSPI_FLAG_REGMAP_ENDIAN_BIG	BIT(0)
 #define QSPI_FLAG_PREV_READ_MEM		BIT(1)
 
-#ifdef CONFIG_NXP_S32_CC
+#ifdef CONFIG_NXP_S32CC
 struct qspi_op {
 	const struct spi_mem_op *op;
 	u8 *cfg;
