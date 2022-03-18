@@ -2,8 +2,8 @@
 /*
  * Copyright 2022 NXP
  */
-#ifndef __S32_CC_H__
-#define __S32_CC_H__
+#ifndef __S32CC_H__
+#define __S32CC_H__
 
 #include <linux/sizes.h>
 

@@ -1285,7 +1285,7 @@ ifeq ($(CONFIG_ARCH_ROCKCHIP)_$(CONFIG_SPL_FRAMEWORK),y_)
 INPUTS-y += u-boot.img
 endif
 
-ifeq ($(CONFIG_NXP_S32_CC),y)
+ifeq ($(CONFIG_NXP_S32CC),y)
 INPUTS-y += u-boot-s32.cfgout
 endif
 
@@ -1534,7 +1534,7 @@ endif
 %.vyb: %.imx
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
-ifeq ($(CONFIG_NXP_S32_CC),y)
+ifeq ($(CONFIG_NXP_S32CC),y)
 %.cfgout: FORCE
 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
 endif
