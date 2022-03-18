@@ -918,7 +918,7 @@ config ARCH_MX5
 
 config ARCH_S32G2
 	bool "NXP S32G2 platform"
-	select NXP_S32_CC
+	select NXP_S32CC
 
 config ARCH_NEXELL
 	bool "Nexell S5P4418/S5P6818 SoC"
