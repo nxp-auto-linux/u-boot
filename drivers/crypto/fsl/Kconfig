@@ -54,7 +54,7 @@ config HSE_SECBOOT
 
 config HSE_FW_FILE
 	string "HSE Firmware file"
-	default "s32gen1_hse_fw.bin"
+	default "s32cc_hse_fw.bin"
 	depends on HSE_SECBOOT
 	help
 		File to be used as firmware for NXP HSE
