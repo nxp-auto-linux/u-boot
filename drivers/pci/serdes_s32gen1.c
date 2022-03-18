@@ -461,6 +461,11 @@ enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id)
 	if (hwconfig_subarg_cmp(pcie_name, "mode", "ep&sgmii"))
 		devtype = PCIE_EP | SGMII;
 
+	if (devtype != SERDES_INVALID &&
+	    (hwconfig_subarg_cmp(pcie_name, "skip", "true") ||
+	    hwconfig_subarg_cmp(pcie_name, "skip", "1")))
+		devtype |= SERDES_SKIP;
+
 	return devtype;
 }
 
@@ -534,8 +539,12 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 	enum serdes_dev_type mod;
 	enum serdes_xpcs_mode xpcs_mode;
 
-	/* Mode 3 */
 	mod = s32_serdes_get_mode_from_hwconfig(id);
+
+	/* Skip the 'skip' flag */
+	mod &= ~(uint32_t)(SERDES_SKIP);
+
+	/* Mode 3 */
 	if (mod == SGMII)
 		return SERDES_MODE_SGMII_SGMII;
 
@@ -659,16 +668,24 @@ static int s32_serdes_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	ret = enable_serdes_clocks(dev);
-	if (ret) {
-		dev_err(dev, "Failed to enable SERDES clocks\n");
-		return ret;
-	}
-
 	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
 	if (pcie->devtype == SERDES_INVALID) {
 		printf("Not configuring SerDes%d,", pcie->id);
 		printf(" no RC/EP/SGMII configuration selected\n");
+		return ret;
+	}
+
+	if (pcie->devtype & SERDES_SKIP) {
+		printf("Skipping configuration for SerDes%d,", pcie->id);
+
+		/* Skip the 'skip' flag for other settings */
+		pcie->devtype &= ~(uint32_t)(SERDES_SKIP);
+		return ret;
+	}
+
+	ret = enable_serdes_clocks(dev);
+	if (ret) {
+		dev_err(dev, "Failed to enable SERDES clocks\n");
 		return ret;
 	}
 
