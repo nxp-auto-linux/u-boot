@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2021 NXP */
+/* Copyright 2021,2022 NXP */
 
 #ifndef SERDES_HWCONFIG_H
 #define SERDES_HWCONFIG_H
@@ -35,6 +35,7 @@ enum serdes_dev_type {
 	/* TODO: If both PCIe/SGMII bifurcation modes are used, we may
 	 * need to use 2 SGMII modes - SGMII0 and SGMII1
 	 */
+	SERDES_SKIP = 0x20
 };
 
 /* New enum */
