@@ -370,7 +370,7 @@
 	};
 
 	a53_gpr {
-		compatible = "fsl,s32gen1-a53-gpr";
+		compatible = "nxp,s32cc-a53-gpr";
 		reg = <0x0 0x4007C400 0x0 0x100>;
 		status = "okay";
 	};

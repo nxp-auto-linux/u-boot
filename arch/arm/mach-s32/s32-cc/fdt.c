@@ -10,12 +10,12 @@
 #include <hwconfig.h>
 #include <malloc.h>
 #include <misc.h>
-#include <s32gen1_a53_gpr.h>
 #include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
 #include <dm/uclass.h>
 #include <linux/ctype.h>
 #include <linux/libfdt.h>
 #include <linux/sizes.h>
+#include <s32-cc/a53_gpr.h>
 #include <s32-cc/siul2_nvram.h>
 #include <dt-bindings/phy/phy.h>
 
@@ -90,16 +90,16 @@ static bool is_lockstep_enabled(void)
 	int ret;
 	u32 lockstep_enabled = 0;
 	const char *dev_name = "a53_gpr";
-	struct udevice *s32gen1_a53_gpr = NULL;
+	struct udevice *s32cc_a53_gpr = NULL;
 
 	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name,
-					&s32gen1_a53_gpr);
+					&s32cc_a53_gpr);
 	if (ret) {
 		printf("%s: No A53 GPR (err = %d)\n", __func__, ret);
 		return false;
 	}
 
-	ret = misc_read(s32gen1_a53_gpr, S32GEN1_A53_GPR_LOCKSTEP_EN,
+	ret = misc_read(s32cc_a53_gpr, S32CC_A53_GPR_LOCKSTEP_EN,
 			&lockstep_enabled, sizeof(lockstep_enabled));
 	if (ret != sizeof(lockstep_enabled)) {
 		printf("%s: Failed to read if Lockstep Enabled (err = %d)\n",
@@ -110,22 +110,23 @@ static bool is_lockstep_enabled(void)
 	return !!lockstep_enabled;
 }
 
-static void ft_fixup_cpu(void *blob)
+static int ft_fixup_cpu(void *blob)
 {
-	int off, addr_cells = 0;
+	int ret, off, addr_cells = 0;
 	int off_prev = -1;
 	u32 max_cores_per_cluster = 0;
 	u32 cpu_mask = 0;
 	u64 core_mpidr, core_id;
 	fdt32_t *reg;
 
-	if (get_cores_info(&max_cores_per_cluster, &cpu_mask))
-		return;
+	ret = get_cores_info(&max_cores_per_cluster, &cpu_mask);
+	if (ret)
+		return ret;
 
 	off = fdt_path_offset(blob, "/cpus");
 	if (off < 0) {
 		puts("couldn't find /cpus node\n");
-		return;
+		return -ENODEV;
 	}
 
 	fdt_support_default_count_cells(blob, off, &addr_cells, NULL);
@@ -158,9 +159,11 @@ static void ft_fixup_cpu(void *blob)
 		off = fdt_node_offset_by_prop_value(blob, off_prev,
 						    "device_type", "cpu", 4);
 	}
+
+	return 0;
 }
 
-static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
+static int ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 {
 	int off, ret;
 	const char *status;
@@ -171,7 +174,7 @@ static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 	if (off < 0) {
 		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
 		       exp_compatible, fdt_strerror(off));
-		return;
+		return -ENODEV;
 	}
 
 	/* Check "status" property */
@@ -179,22 +182,29 @@ static void ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 	if (!status) {
 		printf("%s: Node \"%s\" does not have \"status\" set",
 		       __func__, exp_compatible);
-		return;
+		return -EINVAL;
 	}
+
+	if (!strncmp("disabled", status, 8))
+		return 0;
 
 	/* Get node offset in Linux DT */
 	off = fdt_node_offset_by_compatible(new_blob, -1, exp_compatible);
 	if (off < 0) {
 		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
 		       exp_compatible, fdt_strerror(off));
-		return;
+		return -ENODEV;
 	}
 
 	/* Copy the status from the U-Boot DT */
 	ret = fdt_setprop_string(new_blob, off, "status", status);
-	if (ret)
+	if (ret) {
 		printf("WARNING: Could not fix up the Linux DT, err=%s\n",
 		       fdt_strerror(ret));
+		return ret;
+	}
+
+	return 0;
 }
 
 static void apply_memory_fixups(void *blob, bd_t *bd)
@@ -707,9 +717,19 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 {
 	ft_fixup_cpu(blob);
 	ft_fixup_memory(blob, bd);
-	ft_fixup_ddr_polling(gd->fdt_blob, blob);
 	ft_fixup_atf(gd->fdt_blob, blob);
 #ifdef CONFIG_PCIE_S32GEN1
 	ft_fixup_serdes(blob);
 #endif
+}
+
+int ft_system_setup(void *blob, bd_t *bd)
+{
+	int ret;
+
+	ret = ft_fixup_cpu(blob);
+	if (ret)
+		return ret;
+
+	return ft_fixup_ddr_polling(gd->fdt_blob, blob);
 }
