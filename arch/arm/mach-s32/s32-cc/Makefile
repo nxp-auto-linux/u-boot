@@ -6,6 +6,7 @@
 
 obj-y += scmi_reset_agent.o
 obj-y += soc.o
+obj-$(CONFIG_OF_LIBFDT)	+= fdt.o
 
 ifdef CONFIG_SPI_FLASH_MACRONIX
 QSPI_MEMORY = MX25UW51245G
