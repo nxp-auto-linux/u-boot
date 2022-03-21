@@ -3,13 +3,12 @@
  * Copyright 2022 NXP
  */
 
-#include <asm/armv8/cpu.h>
 #include <common.h>
 #include <cpu.h>
 #include <dm.h>
-#include <dm/uclass.h>
 #include <misc.h>
-#include <s32gen1_siul2_nvram.h>
+#include <dm/uclass.h>
+#include <s32-cc/siul2_nvram.h>
 
 struct cpu_s32gen1_platdata {
 	struct udevice *siul20_nvmem;
@@ -23,7 +22,7 @@ static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
 	struct cpu_s32gen1_platdata *plat = dev_get_platdata(dev);
 	int ret;
 
-	ret = misc_read(plat->siul20_nvmem, S32GEN1_SOC_LETTER, &letter,
+	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_LETTER, &letter,
 			sizeof(letter));
 	if (ret != sizeof(letter)) {
 		printf("%s: Failed to read SoC's letter (err = %d)\n",
@@ -31,7 +30,7 @@ static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
 		return -EINVAL;
 	}
 
-	ret = misc_read(plat->siul20_nvmem, S32GEN1_SOC_PART_NO, &part_number,
+	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_PART_NO, &part_number,
 			sizeof(part_number));
 	if (ret != sizeof(part_number)) {
 		printf("%s: Failed to read SoC's part number (err = %d)\n",
@@ -39,7 +38,7 @@ static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
 		return -EINVAL;
 	}
 
-	ret = misc_read(plat->siul20_nvmem, S32GEN1_SOC_MAJOR, &major,
+	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_MAJOR, &major,
 			sizeof(major));
 	if (ret != sizeof(major)) {
 		printf("%s: Failed to read SoC's major (err = %d)\n",
@@ -47,7 +46,7 @@ static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
 		return -EINVAL;
 	}
 
-	ret = misc_read(plat->siul20_nvmem, S32GEN1_SOC_MINOR, &minor,
+	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_MINOR, &minor,
 			sizeof(minor));
 	if (ret != sizeof(minor)) {
 		printf("%s: Failed to read SoC's minor (err = %d)\n",
@@ -56,7 +55,7 @@ static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
 	}
 
 	/* It might be unavailable */
-	ret = misc_read(plat->siul21_nvmem, S32GEN1_SOC_SUBMINOR, &subminor,
+	ret = misc_read(plat->siul21_nvmem, S32CC_SOC_SUBMINOR, &subminor,
 			sizeof(subminor));
 	if (ret == sizeof(subminor))
 		has_subminor = true;

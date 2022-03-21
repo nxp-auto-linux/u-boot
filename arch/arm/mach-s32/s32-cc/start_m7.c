@@ -3,12 +3,12 @@
  * Copyright 2022 NXP
  */
 
-#include <asm/io.h>
-#include <command.h>
 #include <common.h>
-#include <dm/uclass.h>
+#include <command.h>
 #include <misc.h>
-#include <s32gen1_siul2_nvram.h>
+#include <asm/io.h>
+#include <dm/uclass.h>
+#include <s32-cc/siul2_nvram.h>
 
 #define S32_SRAM_6M	(6 * SZ_1M)
 #define S32_SRAM_8M	(8 * SZ_1M)
@@ -75,12 +75,12 @@ static u32 get_sram_size(void)
 	if (ret)
 		goto nvmem_err;
 
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_LETTER, &letter,
+	ret = misc_read(siul20_nvmem, S32CC_SOC_LETTER, &letter,
 			sizeof(letter));
 	if (ret != sizeof(letter))
 		goto nvmem_err;
 
-	ret = misc_read(siul20_nvmem, S32GEN1_SOC_PART_NO, &part_number,
+	ret = misc_read(siul20_nvmem, S32CC_SOC_PART_NO, &part_number,
 			sizeof(part_number));
 	if (ret != sizeof(part_number))
 		goto nvmem_err;

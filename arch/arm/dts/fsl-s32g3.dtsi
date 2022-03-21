@@ -66,5 +66,5 @@
 };
 
 &siul2_1_nvram {
-	compatible = "fsl,s32g3-siul2_1-nvram";
+	compatible = "nxp,s32g3-siul2_1-nvram";
 };

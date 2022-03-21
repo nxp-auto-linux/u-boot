@@ -11,12 +11,12 @@
 #include <malloc.h>
 #include <misc.h>
 #include <pci.h>
-#include <s32gen1_siul2_nvram.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <dm/device-internal.h>
 #include <dm/uclass.h>
 #include <linux/sizes.h>
+#include <s32-cc/siul2_nvram.h>
 
 /* CFG1 is used in linux when finding devices on the bus.
  * It is actually the upper half of the config space
@@ -832,7 +832,7 @@ static int s32_pcie_get_dev_id_variant(struct udevice *dev)
 		return -ENODEV;
 	}
 
-	ret = misc_read(siul2_nvmem, S32GEN1_OVERWRITE_PCIE_DEV_ID,
+	ret = misc_read(siul2_nvmem, S32CC_OVERWRITE_PCIE_DEV_ID,
 			&variant_bits, sizeof(variant_bits));
 	if (ret != sizeof(variant_bits)) {
 		printf("%s: Failed to read PCIe device ID (err = %d)\n",
@@ -935,7 +935,7 @@ static int s32_pcie_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = misc_read(siul21_nvmem, S32GEN1_SERDES_PRESENCE,
+	ret = misc_read(siul21_nvmem, S32CC_SERDES_PRESENCE,
 			&soc_serdes_presence,
 			sizeof(soc_serdes_presence));
 	if (ret != sizeof(soc_serdes_presence)) {

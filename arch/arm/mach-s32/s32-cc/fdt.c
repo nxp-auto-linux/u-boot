@@ -5,20 +5,19 @@
  */
 
 #include <common.h>
-#include <linux/libfdt.h>
-#include <malloc.h>
 #include <fdt_support.h>
 #include <fdtdec.h>
-#include <asm/io.h>
-#include <linux/sizes.h>
 #include <hwconfig.h>
-#include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
-#include <dt-bindings/phy/phy.h>
-#include <linux/ctype.h>
-#include <dm/uclass.h>
+#include <malloc.h>
 #include <misc.h>
 #include <s32gen1_a53_gpr.h>
-#include <s32gen1_siul2_nvram.h>
+#include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
+#include <dm/uclass.h>
+#include <linux/ctype.h>
+#include <linux/libfdt.h>
+#include <linux/sizes.h>
+#include <s32-cc/siul2_nvram.h>
+#include <dt-bindings/phy/phy.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -62,7 +61,7 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 		return ret;
 	}
 
-	ret = misc_read(siul2_nvmem, S32GEN1_MAX_A53_CORES_PER_CLUSTER,
+	ret = misc_read(siul2_nvmem, S32CC_MAX_A53_CORES_PER_CLUSTER,
 			max_cores_per_cluster, sizeof(*max_cores_per_cluster));
 	if (ret != sizeof(*max_cores_per_cluster)) {
 		printf("%s: Failed to read SoC's Part Number (err = %d)\n",
@@ -75,7 +74,7 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 		return -EINVAL;
 	}
 
-	ret = misc_read(siul2_nvmem, S32GEN1_A53_CORES_MASK,
+	ret = misc_read(siul2_nvmem, S32CC_A53_CORES_MASK,
 			cpu_mask, sizeof(*cpu_mask));
 	if (ret != sizeof(*cpu_mask)) {
 		printf("%s: Failed to read SoC's Part Number (err = %d)\n",
