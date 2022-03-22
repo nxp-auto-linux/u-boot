@@ -2,15 +2,15 @@
 /*
  * Copyright 2022 NXP
  */
-#include "s32gen1_siul2_nvram.h"
+#include <log.h>
+#include <misc.h>
 #include <asm/io.h>
 #include <dm/device.h>
 #include <dm/fdtaddr.h>
 #include <linux/bitops.h>
 #include <linux/errno.h>
 #include <linux/kernel.h>
-#include <log.h>
-#include <misc.h>
+#include "s32gen1_siul2_nvram.h"
 
 #define MIDR1_OFF	0x4
 #define MIDR2_OFF	0x8
@@ -205,6 +205,36 @@ static u32 adjust_s32g_derivative_cores(u32 value,
 	return 0;
 }
 
+static u32 adjust_pcie_dev_id(u32 value,
+			      struct siul2_nvram *nvram)
+{
+	/* Mapping between G3 variant ID and the PCIe Device ID,
+	 * as described in the "S32G3 Reference Manual rev1.0,
+	 * chapter SerDes Subsystem, section "Device and revision IDs",
+	 * where: index = last 2 digits of the variant
+	 *        value = last hex digit of the PCIe Device ID"
+	 */
+	static const u32 s32g3_variants[] = {
+		[78] = 0x6,
+		[79] = 0x4,
+		[98] = 0x2,
+		[99] = 0x0,
+	};
+
+	if (value / 10 == 45)
+		return 0x4002;
+
+	if (value / 100 == 2)
+		return 0;
+
+	value %= 100;
+
+	if (value < ARRAY_SIZE(s32g3_variants))
+		return s32g3_variants[value];
+
+	return 0;
+}
+
 static const struct siul_mapping siul20_mappings[] = {
 	{
 		.nvram_off = S32GEN1_SOC_MAJOR,
@@ -238,6 +268,13 @@ static const struct siul_mapping siul20_mappings[] = {
 		.mask = CORE_FREQ_MASK,
 		.shift = CORE_FREQ_SHIFT,
 		.adjust_value = adjust_freq,
+	},
+	{
+		.nvram_off = S32GEN1_OVERWRITE_PCIE_DEV_ID,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_pcie_dev_id,
 	},
 };
 

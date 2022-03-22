@@ -5,8 +5,8 @@
  * Copyright 2019-2022 NXP
  */
 
-#include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/clock/s32gen1-scmi-clock.h>
+#include <dt-bindings/interrupt-controller/irq.h>
 
 / {
 	compatible = "fsl,s32gen1", "arm,vexpress";
@@ -212,6 +212,7 @@
 		device_id = <0>;
 		num-lanes = <2>; /* supports max 2 lanes */
 		link-speed = <3>; /* supports Gen3 speed */
+		nvmem-cells = <&siul2_0_nvram>;
 
 		bus-range = <0x0 0xff>;
 		ranges =

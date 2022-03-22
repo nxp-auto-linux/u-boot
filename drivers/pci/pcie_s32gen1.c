@@ -43,7 +43,6 @@
 
 #define PCI_MAX_BUS_NUM	256
 
-#define PCI_OVERWRITE_DEVICE_ID	1
 #define PCI_DEVICE_ID_S32GEN1	0x4002
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -813,6 +812,37 @@ static u32 s32_get_pcie_width(struct s32_pcie *pcie)
 		PCIE_NUM_OF_LANES_LSB) & PCIE_NUM_OF_LANES_MASK;
 }
 
+static int s32_pcie_get_dev_id_variant(struct udevice *dev)
+{
+	struct udevice *siul2_nvmem;
+	struct ofnode_phandle_args phandle_args;
+	u32 variant_bits = 0;
+	int ret;
+
+	if (dev_read_phandle_with_args(dev, "nvmem-cells", NULL,
+				       0, 0, &phandle_args)) {
+		printf("%s: soc_revision backing device not specified\n",
+		       dev->name);
+		return -ENOENT;
+	}
+
+	if (uclass_get_device_by_ofnode(UCLASS_MISC, phandle_args.node,
+					&siul2_nvmem)) {
+		printf("%s: could not get backing device\n", dev->name);
+		return -ENODEV;
+	}
+
+	ret = misc_read(siul2_nvmem, S32GEN1_OVERWRITE_PCIE_DEV_ID,
+			&variant_bits, sizeof(variant_bits));
+	if (ret != sizeof(variant_bits)) {
+		printf("%s: Failed to read PCIe device ID (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
+	return variant_bits;
+}
+
 static int s32_pcie_probe_rc(struct s32_pcie *pcie)
 {
 	u32 speed, width;
@@ -892,8 +922,8 @@ static int s32_pcie_probe(struct udevice *dev)
 	struct uclass *uc = dev->uclass;
 	int ret = 0;
 	bool ltssm_en = false;
-	ulong dev_data = dev_get_driver_data(dev);
 	u32 soc_serdes_presence;
+	u32 variant_bits, pcie_dev_id;
 	struct udevice *siul21_nvmem = NULL;
 
 	pcie->enabled = false;
@@ -942,7 +972,9 @@ static int s32_pcie_probe(struct udevice *dev)
 
 	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
 
-	if (dev_data & PCI_OVERWRITE_DEVICE_ID) {
+	variant_bits = s32_pcie_get_dev_id_variant(dev);
+	s32_pcie_enable_dbi_rw(pcie->dbi);
+	if (variant_bits == PCI_DEVICE_ID_S32GEN1) {
 		/* As per S32R45 Reference Manual rev 3 Draft D,
 		 * the device ID for the SoC has to be 0x4002.
 		 * Rev 2 sets it to 0x4003, and we need to fix it.
@@ -951,14 +983,20 @@ static int s32_pcie_probe(struct udevice *dev)
 		 * revision (2 registers) is bigger than just
 		 * applying the fix.
 		 */
-		s32_pcie_enable_dbi_rw(pcie->dbi);
 		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
 			PCI_DEVICE_ID_S32GEN1, PCI_VENDOR_ID_FREESCALE);
 		W32(pcie->dbi + PCI_VENDOR_ID,
-			(PCI_DEVICE_ID_S32GEN1 << 16) |
+		    (PCI_DEVICE_ID_S32GEN1 << 16) |
 				PCI_VENDOR_ID_FREESCALE);
-		s32_pcie_disable_dbi_rw(pcie->dbi);
+	} else {
+		pcie_dev_id = in_le16(pcie->dbi + PCI_DEVICE_ID);
+		pcie_dev_id |= variant_bits;
+		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		       pcie_dev_id, PCI_VENDOR_ID_FREESCALE);
+		W32(pcie->dbi + PCI_VENDOR_ID,
+		    (pcie_dev_id << 16) | PCI_VENDOR_ID_FREESCALE);
 	}
+	s32_pcie_disable_dbi_rw(pcie->dbi);
 
 	if (pcie->ep_mode)
 		return s32_pcie_probe_ep(pcie, uc);
@@ -1058,8 +1096,6 @@ static const struct dm_pci_ops s32_pcie_ops = {
 
 static const struct udevice_id s32_pcie_ids[] = {
 	{ .compatible = "fsl,s32gen1-pcie" },
-	{ .compatible = "fsl,s32r45-pcie",
-	  .data = PCI_OVERWRITE_DEVICE_ID },
 	{ }
 };
 

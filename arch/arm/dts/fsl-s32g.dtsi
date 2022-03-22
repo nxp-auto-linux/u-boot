@@ -66,6 +66,7 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		serdes-handle = <&serdes1>;
+		nvmem-cells = <&siul2_0_nvram>;
 		device_id = <1>;
 		num-lanes = <1>; /* supports max 1 pcie lane */
 		link-speed = <3>; /* supports Gen3 speed */
@@ -150,7 +151,7 @@
 			status = "okay";
 		};
 
-		siul2_0_nvram {
+		siul2_0_nvram: siul2_0_nvram {
 			compatible = "fsl,s32g-siul2_0-nvram";
 			status = "okay";
 			u-boot,dm-pre-reloc;
