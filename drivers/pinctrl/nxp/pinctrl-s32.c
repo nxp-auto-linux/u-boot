@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
-#include <common.h>
 #include <asm/io.h>
+#include <common.h>
 #include <dm.h>
 #include <dm/pinctrl.h>
 
@@ -137,7 +137,7 @@ static int s32_pinctrl_probe(struct udevice *dev)
 }
 
 static const struct udevice_id s32_pinctrl_ids[] = {
-	{ .compatible = "fsl,s32-gen1-siul2-pinctrl" },
+	{ .compatible = "nxp,s32cc-siul2-pinctrl" },
 	{ /* sentinel */ }
 };
 
