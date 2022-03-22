@@ -133,7 +133,7 @@
 		u-boot,dm-pre-reloc;
 
 		pinctrl0: siul2-pinctrl0 {
-			compatible = "fsl,s32-gen1-siul2-pinctrl";
+			compatible = "nxp,s32cc-siul2-pinctrl";
 			#pinctrl-cells = <2>;
 			/* MSCR range */
 			pins = <&pinctrl0 0 101>,
@@ -164,7 +164,7 @@
 		u-boot,dm-pre-reloc;
 
 		pinctrl1: siul2-pinctrl1 {
-			compatible = "fsl,s32-gen1-siul2-pinctrl";
+			compatible = "nxp,s32cc-siul2-pinctrl";
 			#pinctrl-cells = <2>;
 			/* MSCR range */
 			pins = <&pinctrl1 112 190>,
