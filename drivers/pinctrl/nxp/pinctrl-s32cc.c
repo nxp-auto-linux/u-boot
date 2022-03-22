@@ -3,9 +3,9 @@
  * Copyright 2021-2022 NXP
  */
 
-#include <asm/io.h>
 #include <common.h>
 #include <dm.h>
+#include <asm/io.h>
 #include <dm/pinctrl.h>
 
 #define MSCR_OFF	0x0240
