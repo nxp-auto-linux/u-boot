@@ -127,6 +127,14 @@ config PINCTRL_IMXRT
 	  only parses the 'fsl,pins' property and configure related
 	  registers.
 
+config PINCTRL_S32CC
+	bool "S32CC pinctrl driver"
+	depends on PINCTRL_FULL
+	help
+	  Say Y here to enable the pinctrl driver for S32 Common Chassis platforms.
+	  This driver is the pinctrl driver for SIUL2 that is available on the
+	  following SoCs: S32G2XX, S32G3XX, S32R45.
+
 config PINCTRL_VYBRID
 	bool "Vybrid (vf610) pinctrl driver"
 	depends on ARCH_VF610 && PINCTRL_FULL
