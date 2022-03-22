@@ -18,6 +18,9 @@ config NXP_S32CC
 	select FSL_LINFLEXUART
 	select MACH_S32
 	select OF_CONTROL
+	select PINCTRL
+	select PINCTRL_FULL
+	select PINCTRL_S32CC
 	select SCMI_FIRMWARE
 	select SYSRESET
 	select SYSRESET_PSCI
