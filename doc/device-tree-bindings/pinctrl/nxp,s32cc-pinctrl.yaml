@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+
+title: NXP S32 Common Chassis SIUL2 iomux controller
+
+maintainers:
+  - Radu Pirea <radu-nicolae.pirea@nxp.com>
+
+description: |
+  Core driver for the S32 Common Chassis pin controller.
+
+properties:
+  compatible:
+    const:
+      - nxp,s32cc-siul2-pinctrl
+
+  pins:
+    description: |
+      Two integers array, represents a group of pins mux and config
+      setting. The format is fsl,pins = <PIN_FUNC_ID CONFIG>
+      PIN_FUNC_ID - id of MSCR to be modified
+      CONFIG - configuration to be written in the MSCR/IMCR register
+
+      Even though IMCR register should be used as input register, it can be
+      set and addressed in the same way as MSCR, only instead of passing the
+      IMCR index, IMCR_IDX + 512 is passed.
+
+required:
+  - compatible
+  - pins
+
+additionalProperties: false
+
+...
