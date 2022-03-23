@@ -9,7 +9,7 @@ ccflags-y += -I./board/nxp/s32-cc/include/
 ccflags-y += -I./drivers/net/s32/
 
 obj-$(CONFIG_NXP_S32CC)		+= scmi_reset_agent.o
-obj-y				+= cpu.o
+obj-y				+= soc.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
