@@ -4,7 +4,9 @@
  */
 #include <common.h>
 #include <fdtdec.h>
+#include <image.h>
 #include <asm/u-boot.h>
+#include <s32-cc/scmi_reset_agent.h>
 
 int board_init(void)
 {
@@ -31,4 +33,13 @@ void *board_fdt_blob_setup(int *err)
 		*err = -EFAULT;
 
 	return dtb;
+}
+
+void board_prep_linux(bootm_headers_t *images)
+{
+	int ret;
+
+	ret = scmi_reset_agent();
+	if (ret)
+		pr_err("Failed to reset SCMI agent's settings\n");
 }
