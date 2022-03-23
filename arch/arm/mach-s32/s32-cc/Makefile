@@ -4,7 +4,8 @@
 # SPDX-License-Identifier:      GPL-2.0+
 #
 
-obj-y := soc.o
+obj-y += scmi_reset_agent.o
+obj-y += soc.o
 
 ifdef CONFIG_SPI_FLASH_MACRONIX
 QSPI_MEMORY = MX25UW51245G
