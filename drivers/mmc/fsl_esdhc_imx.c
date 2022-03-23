@@ -677,7 +677,7 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 	priv->clock = clock;
 }
 
-static struct esdhc_soc_data usdhc_s32gen1_data;
+static struct esdhc_soc_data usdhc_s32cc_data;
 
 #ifdef MMC_SUPPORTS_TUNING
 static int esdhc_change_pinstate(struct udevice *dev)
@@ -854,8 +854,7 @@ static int esdhc_set_voltage(struct mmc *mmc)
 	}
 }
 
-static int fsl_s32gen1_esdhc_execute_tuning(struct udevice *dev,
-					    uint32_t opcode)
+static int fsl_s32cc_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 {
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
 	struct fsl_esdhc *regs = priv->esdhc_regs;
@@ -946,8 +945,8 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 	struct esdhc_soc_data *soc_data =
 		(struct esdhc_soc_data *)dev_get_driver_data(dev);
 
-	if (soc_data == &usdhc_s32gen1_data)
-		return fsl_s32gen1_esdhc_execute_tuning(dev, opcode);
+	if (soc_data == &usdhc_s32cc_data)
+		return fsl_s32cc_esdhc_execute_tuning(dev, opcode);
 
 	/* clock tuning is not needed for upto 52MHz */
 	if (mmc->clock <= 52000000)
@@ -1521,7 +1520,7 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	else
 		priv->bus_width = 1;
 
-	if (data == &usdhc_s32gen1_data)
+	if (data == &usdhc_s32cc_data)
 		if (dev_read_bool(dev, "no-1-8-v"))
 			priv->flags &= ~(ESDHC_FLAG_HS200 |
 					 ESDHC_FLAG_HS400 |
@@ -1604,7 +1603,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	init_clk_usdhc(dev->seq);
 
 #if CONFIG_IS_ENABLED(CLK)
-	priv->sdhc_clk = 400000000;
 	/* Assigned clock already set clock */
 	ret = clk_get_by_name(dev, "per", &priv->per_clk);
 	if (ret) {
@@ -1729,7 +1727,7 @@ static struct esdhc_soc_data usdhc_imx8qm_data = {
 		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
 };
 
-static struct esdhc_soc_data usdhc_s32gen1_data = {
+static struct esdhc_soc_data usdhc_s32cc_data = {
 	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_STD_TUNING |
 		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
 		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
@@ -1748,8 +1746,8 @@ static const struct udevice_id fsl_esdhc_ids[] = {
 	{ .compatible = "fsl,imx8mn-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
 	{ .compatible = "fsl,imx8mq-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
 	{ .compatible = "fsl,imxrt-usdhc", },
-	{ .compatible = "fsl,s32gen1-usdhc",
-	  .data = (ulong)&usdhc_s32gen1_data,},
+	{ .compatible = "fsl,s32cc-usdhc",
+	  .data = (ulong)&usdhc_s32cc_data,},
 	{ .compatible = "fsl,esdhc", },
 	{ /* sentinel */ }
 };
