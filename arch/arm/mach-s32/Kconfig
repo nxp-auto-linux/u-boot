@@ -17,7 +17,10 @@ config NXP_S32CC
 	select CLK_SCMI
 	select DM_GPIO
 	select FSL_LINFLEXUART
+	select FSL_USDHC
 	select MACH_S32
+	select MMC_HS400_ES_SUPPORT
+	select MMC_HS400_SUPPORT
 	select OF_CONTROL
 	select PINCTRL
 	select PINCTRL_FULL
