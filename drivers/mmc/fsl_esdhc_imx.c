@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019, 2021 NXP
+ * Copyright 2019, 2021-2022 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
@@ -92,6 +92,7 @@ struct fsl_esdhc {
 	uint    mmcboot;
 	uint    vendorspec2;
 	uint    tuning_ctrl;	/* on i.MX6/7/8/RT */
+#ifndef CONFIG_NXP_S32CC
 	char	reserved5[44];
 	uint    hostver;	/* Host controller version register */
 	char    reserved6[4];	/* reserved */
@@ -106,6 +107,7 @@ struct fsl_esdhc {
 	uint    sddirctl;	/* SD direction control register */
 	char    reserved11[712];/* reserved */
 	uint    scr;		/* eSDHC control register */
+#endif
 };
 
 struct fsl_esdhc_plat {
@@ -1349,7 +1351,9 @@ void fdt_fixup_esdhc(void *blob, struct bd_info *bd)
 #endif
 
 #if CONFIG_IS_ENABLED(DM_MMC)
+#if CONFIG_IS_ENABLED(MACH_IMX)
 #include <asm/arch/clock.h>
+#endif
 __weak void init_clk_usdhc(u32 index)
 {
 }
@@ -1628,6 +1632,12 @@ static struct esdhc_soc_data usdhc_imx8qm_data = {
 		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
 };
 
+static struct esdhc_soc_data usdhc_s32cc_data = {
+	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_STD_TUNING |
+		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
+		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
+};
+
 static const struct udevice_id fsl_esdhc_ids[] = {
 	{ .compatible = "fsl,imx51-esdhc", },
 	{ .compatible = "fsl,imx53-esdhc", },
@@ -1641,6 +1651,7 @@ static const struct udevice_id fsl_esdhc_ids[] = {
 	{ .compatible = "fsl,imx8mm-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
 	{ .compatible = "fsl,imx8mn-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
 	{ .compatible = "fsl,imx8mq-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
+	{ .compatible = "fsl,s32cc-usdhc", .data = (ulong)&usdhc_s32cc_data,},
 	{ .compatible = "fsl,imxrt-usdhc", },
 	{ .compatible = "fsl,esdhc", },
 	{ /* sentinel */ }
