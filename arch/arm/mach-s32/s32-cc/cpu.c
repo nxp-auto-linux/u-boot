@@ -125,33 +125,3 @@ int arch_cpu_init(void)
 	return 0;
 }
 
-phys_size_t __weak get_effective_memsize(void)
-{
-	unsigned long size;
-	int nodeoff = -1, ret;
-	struct fdt_resource res = {.start = 0, .end = 0};
-
-	/*
-	 * Restrict U-Boot area to the first bank of the DDR memory.
-	 * Note: gd->bd isn't initialized yet
-	 */
-	size = PHYS_SDRAM_1_SIZE;
-
-	/* Get first DDR bank size from DT 'memory' node */
-	while ((nodeoff = fdt_node_offset_by_prop_value(gd->fdt_blob, nodeoff,
-							"device_type",
-							"memory", 7)) >= 0) {
-		ret = fdt_get_resource(gd->fdt_blob, nodeoff, "reg", 0, &res);
-		if (ret) {
-			pr_err("Unable to get 'reg' values of memory node\n");
-			return ret;
-		}
-		if (res.start == PHYS_SDRAM_1) {
-			size = res.end - res.start + 1;
-			break;
-		}
-	}
-
-	return size;
-}
-
