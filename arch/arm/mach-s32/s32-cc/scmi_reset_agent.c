@@ -1,12 +1,11 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2020 NXP
+ * Copyright 2020,2022 NXP
  */
 #include <common.h>
 #include <scmi.h>
-#include <asm/types.h>
 #include <dm/uclass.h>
-#include "scmi_reset_agent.h"
+#include <s32-cc/scmi_reset_agent.h>
 
 #define SCMI_BASE_RESET_AGENT_CONFIG	0xB
 
@@ -16,22 +15,29 @@
  * BASE_RESET_AGENT_CONFIGURATION
  */
 struct scmi_base_reset_agent_in {
-       uint32_t agent_id;
-       uint32_t flags;
+	u32 agent_id;
+	u32 flags;
 };
 
 struct scmi_base_reset_agent_out {
-       int32_t status;
+	s32 status;
 };
 
 static struct udevice *get_scmi_dev(void)
 {
 	struct udevice *dev;
+	ofnode node;
 	int ret;
 
-	ret = uclass_get_device_by_name(UCLASS_FIRMWARE, "scmi", &dev);
+	node = ofnode_by_compatible(ofnode_null(), "arm,scmi-smc");
+	if (!ofnode_valid(node)) {
+		pr_err("Failed to get 'arm,scmi-smc' node\n");
+		return NULL;
+	}
+
+	ret = uclass_get_device_by_ofnode(UCLASS_FIRMWARE, node, &dev);
 	if (ret) {
-		pr_err("Failed to get 'scmi' device\n");
+		pr_err("Failed to get SCMI device\n");
 		return NULL;
 	}
 
@@ -58,7 +64,7 @@ int scmi_reset_agent(void)
 
 	dev = get_scmi_dev();
 	if (!dev)
-		return -EIO;
+		return -ENODEV;
 
 	rc = scmi_send_and_process_msg(dev, &scmi_msg);
 	if (rc)

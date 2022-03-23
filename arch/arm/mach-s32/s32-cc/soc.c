@@ -7,12 +7,12 @@
 #include <common.h>
 #include <cpu_func.h>
 #include <debug_uart.h>
+#include <asm-generic/sections.h>
 #include <asm/io.h>
+#include <asm/sections.h>
 #include <asm/system.h>
 #include <asm/armv8/mmu.h>
 #include <linux/sizes.h>
-#include <asm-generic/sections.h>
-#include <asm-generic/sections.h>
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL

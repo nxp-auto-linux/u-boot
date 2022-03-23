@@ -7,8 +7,8 @@
 #include <fdt_support.h>
 #include <fdtdec.h>
 #include <miiphy.h>
-#include <scmi_reset_agent.h>
 #include <linux/libfdt.h>
+#include <s32-cc/scmi_reset_agent.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
