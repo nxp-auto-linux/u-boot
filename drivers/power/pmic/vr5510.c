@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020, 2022 NXP
  */
 
 #include <common.h>
@@ -169,7 +169,7 @@ static struct dm_pmic_ops vr5510_ops = {
 };
 
 static const struct udevice_id vr5510_ids[] = {
-	{.compatible = "fsl,vr5510"},
+	{.compatible = "nxp,vr5510"},
 	{}
 };
 

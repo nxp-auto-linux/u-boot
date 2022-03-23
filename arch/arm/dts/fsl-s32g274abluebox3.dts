@@ -129,13 +129,13 @@
 	status = "okay";
 
 	vr5510 {
-		compatible = "fsl,vr5510";
+		compatible = "nxp,vr5510";
 		reg = <0x20>;
 		status = "okay";
 	};
 
 	vr5510_fsu {
-		compatible = "fsl,vr5510";
+		compatible = "nxp,vr5510";
 		reg = <0x21>;
 		status = "okay";
 	};
