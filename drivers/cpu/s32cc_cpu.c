@@ -10,16 +10,16 @@
 #include <dm/uclass.h>
 #include <s32-cc/siul2_nvram.h>
 
-struct cpu_s32gen1_platdata {
+struct cpu_s32cc_plat {
 	struct udevice *siul20_nvmem;
 	struct udevice *siul21_nvmem;
 };
 
-static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
+static int cpu_s32cc_get_desc(struct udevice *dev, char *buf, int size)
 {
 	bool has_subminor = false;
 	u32 letter, part_number, major, minor, subminor;
-	struct cpu_s32gen1_platdata *plat = dev_get_platdata(dev);
+	struct cpu_s32cc_plat *plat = dev_get_platdata(dev);
 	int ret;
 
 	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_LETTER, &letter,
@@ -69,40 +69,40 @@ static int cpu_s32gen1_get_desc(struct udevice *dev, char *buf, int size)
 	return 0;
 }
 
-static int cpu_s32gen1_get_info(struct udevice *dev, struct cpu_info *info)
+static int cpu_s32cc_get_info(struct udevice *dev, struct cpu_info *info)
 {
 	info->features = BIT(CPU_FEAT_L1_CACHE) | BIT(CPU_FEAT_MMU);
 
 	return 0;
 }
 
-static int cpu_s32gen1_get_count(struct udevice *dev)
+static int cpu_s32cc_get_count(struct udevice *dev)
 {
 	/* One CPU per instance */
 	return 1;
 }
 
-static int cpu_s32gen1_get_vendor(struct udevice *dev,  char *buf, int size)
+static int cpu_s32cc_get_vendor(struct udevice *dev,  char *buf, int size)
 {
 	snprintf(buf, size, "NXP");
 	return 0;
 }
 
-static const struct cpu_ops cpu_s32gen1_ops = {
-	.get_desc	= cpu_s32gen1_get_desc,
-	.get_info	= cpu_s32gen1_get_info,
-	.get_count	= cpu_s32gen1_get_count,
-	.get_vendor	= cpu_s32gen1_get_vendor,
+static const struct cpu_ops cpu_s32cc_ops = {
+	.get_desc	= cpu_s32cc_get_desc,
+	.get_info	= cpu_s32cc_get_info,
+	.get_count	= cpu_s32cc_get_count,
+	.get_vendor	= cpu_s32cc_get_vendor,
 };
 
-static const struct udevice_id cpu_s32gen1_ids[] = {
+static const struct udevice_id cpu_s32cc_ids[] = {
 	{ .compatible = "arm,cortex-a53" },
 	{ }
 };
 
-static int s32gen1_cpu_probe(struct udevice *dev)
+static int s32cc_cpu_probe(struct udevice *dev)
 {
-	struct cpu_s32gen1_platdata *plat = dev_get_platdata(dev);
+	struct cpu_s32cc_plat *plat = dev_get_platdata(dev);
 	struct udevice *siul20_nvmem, *siul21_nvmem;
 	int ret;
 
@@ -126,12 +126,12 @@ static int s32gen1_cpu_probe(struct udevice *dev)
 	return 0;
 }
 
-U_BOOT_DRIVER(cpu_s32gen1_drv) = {
-	.name		= "s32gen1_cpu",
+U_BOOT_DRIVER(cpu_s32cc_drv) = {
+	.name		= "s32cc_cpu",
 	.id		= UCLASS_CPU,
-	.of_match	= cpu_s32gen1_ids,
-	.ops		= &cpu_s32gen1_ops,
-	.probe		= s32gen1_cpu_probe,
-	.platdata_auto_alloc_size = sizeof(struct cpu_s32gen1_platdata),
+	.of_match	= cpu_s32cc_ids,
+	.ops		= &cpu_s32cc_ops,
+	.probe		= s32cc_cpu_probe,
+	.platdata_auto_alloc_size = sizeof(struct cpu_s32cc_plat),
 	.flags		= DM_FLAG_PRE_RELOC,
 };
