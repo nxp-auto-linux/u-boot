@@ -177,12 +177,12 @@ config STM32_TIMER
 	  Select this to enable support for the timer found on
 	  STM32 devices.
 
-config S32_TIMER
-	bool "S32 PIT timer support"
+config NXP_S32CC_PIT_TIMER
+	bool "NXP S32CC PIT timer support"
 	depends on TIMER
 	help
 	  Select this to enable Periodic Interrupt Timer (PIT)
-	  for NXP S32.
+	  for NXP S32CC.
 
 config X86_TSC_TIMER
 	bool "x86 Time-Stamp Counter (TSC) timer support"

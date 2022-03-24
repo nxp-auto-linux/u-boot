@@ -31,9 +31,9 @@ config NXP_S32CC
 	imply FSL_QSPI
 	imply MISC
 	imply MP
+	imply NXP_S32CC_PIT_TIMER
 	imply PCI
 	imply PCIE_S32GEN1
-	imply S32_TIMER
 	imply SPI
 	imply SYS_I2C_MXC
 	imply TIMER

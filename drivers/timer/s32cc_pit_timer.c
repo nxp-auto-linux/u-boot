@@ -6,7 +6,6 @@
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
-#include <fdtdec.h>
 #include <timer.h>
 #include <asm/io.h>
 
@@ -25,11 +24,11 @@
 /* Timer start value for count down */
 #define TSV	0xFFFFFFFF
 
-struct s32_timer_priv {
-	fdt_addr_t base;
+struct s32cc_pit_priv {
+	void __iomem *base;
 };
 
-static u64 s32_time_get_lifetime_counter(struct s32_timer_priv *priv)
+static u64 s32cc_pit_get_lifetime_counter(struct s32cc_pit_priv *priv)
 {
 	u64 ltmr64h, ltmr64l;
 	u64 cntr;
@@ -42,10 +41,15 @@ static u64 s32_time_get_lifetime_counter(struct s32_timer_priv *priv)
 	return cntr;
 }
 
-static int s32_timer_get_count(struct udevice *dev, u64 *count)
+static int s32cc_pit_get_count(struct udevice *dev, u64 *count)
 {
-	struct s32_timer_priv *priv = dev_get_priv(dev);
-	u64 cntr = s32_time_get_lifetime_counter(priv);
+	struct s32cc_pit_priv *priv = dev_get_priv(dev);
+	u64 cntr;
+
+	if (!priv)
+		return -EINVAL;
+
+	cntr = s32cc_pit_get_lifetime_counter(priv);
 
 	*count = ~0ull - cntr;
 
@@ -71,10 +75,13 @@ ulong timer_get_boot_us(void)
 	return us;
 }
 
-static int s32_timer_probe(struct udevice *dev)
+static int s32cc_pit_probe(struct udevice *dev)
 {
-	struct s32_timer_priv *priv = dev_get_priv(dev);
+	struct s32cc_pit_priv *priv = dev_get_priv(dev);
 	u32 tmp;
+
+	if (!priv)
+		return -EINVAL;
 
 	/* Load timer0 and timer1 start value */
 	writel(TSV, priv->base + PIT_LDVAL(0));
@@ -94,32 +101,35 @@ static int s32_timer_probe(struct udevice *dev)
 	return 0;
 }
 
-static int s32_timer_ofdata_to_platdata(struct udevice *dev)
+static int s32cc_pit_ofdata_to_platdata(struct udevice *dev)
 {
-	struct s32_timer_priv *priv = dev_get_priv(dev);
+	struct s32cc_pit_priv *priv = dev_get_priv(dev);
 
-	priv->base = devfdt_get_addr(dev);
-	if (priv->base == (fdt_addr_t)FDT_ADDR_T_NONE)
+	if (!priv)
+		return -EINVAL;
+
+	priv->base = dev_read_addr_ptr(dev);
+	if (!priv->base)
 		return -EINVAL;
 
 	return 0;
 }
 
-static const struct timer_ops s32_timer_ops = {
-	.get_count = s32_timer_get_count,
+static const struct timer_ops s32cc_pit_ops = {
+	.get_count = s32cc_pit_get_count,
 };
 
-static const struct udevice_id s32_timer_ids[] = {
+static const struct udevice_id s32cc_pit_ids[] = {
 	{ .compatible = "fsl,s32gen1-timer" },
 	{}
 };
 
-U_BOOT_DRIVER(s32_timer) = {
-	.name	= "s32_timer",
+U_BOOT_DRIVER(s32cc_pit_timer) = {
+	.name	= "s32cc_pit_timer",
 	.id	= UCLASS_TIMER,
-	.of_match = s32_timer_ids,
-	.probe	= s32_timer_probe,
-	.ofdata_to_platdata = s32_timer_ofdata_to_platdata,
-	.priv_auto_alloc_size = sizeof(struct s32_timer_priv),
-	.ops	= &s32_timer_ops,
+	.of_match = s32cc_pit_ids,
+	.probe	= s32cc_pit_probe,
+	.ofdata_to_platdata = s32cc_pit_ofdata_to_platdata,
+	.priv_auto_alloc_size = sizeof(struct s32cc_pit_priv),
+	.ops	= &s32cc_pit_ops,
 };
