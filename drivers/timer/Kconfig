@@ -273,6 +273,12 @@ config TEGRA_TIMER
 	help
 	  Select this to enable support for the timer found on
 	  Tegra devices.
+config NXP_S32CC_PIT_TIMER
+	bool "NXP S32CC PIT timer support"
+	depends on TIMER
+	help
+	  Select this to enable Periodic Interrupt Timer (PIT)
+	  for NXP S32CC.
 
 config X86_TSC_TIMER
 	bool "x86 Time-Stamp Counter (TSC) timer support"
