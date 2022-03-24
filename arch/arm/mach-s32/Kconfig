@@ -14,7 +14,9 @@ config NXP_S32CC
 	bool
 	imply FSL_DSPI
 	imply MISC
+	imply NXP_S32CC_PIT_TIMER
 	imply SPI
+	imply TIMER
 	select BINMAN
 	select CLK
 	select CLK_SCMI
