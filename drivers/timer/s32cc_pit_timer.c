@@ -120,7 +120,7 @@ static const struct timer_ops s32cc_pit_ops = {
 };
 
 static const struct udevice_id s32cc_pit_ids[] = {
-	{ .compatible = "fsl,s32gen1-timer" },
+	{ .compatible = "nxp,s32cc-pit-timer" },
 	{}
 };
 
