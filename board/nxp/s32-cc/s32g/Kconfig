@@ -2,6 +2,7 @@ config NXP_S32GRDB_BOARD
 	bool
 	default n
 	imply DM_PMIC
+	imply DM_PMIC_FS5600
 	imply DM_PMIC_PF5020
 	imply DM_PMIC_VR5510
 	select DM_REGULATOR

@@ -43,5 +43,6 @@ obj-$(CONFIG_POWER_TPS65910) += pmic_tps65910.o
 obj-$(CONFIG_POWER_HI6553) += pmic_hi6553.o
 obj-$(CONFIG_POWER_MC34VR500) += pmic_mc34vr500.o
 obj-$(CONFIG_PMIC_TPS65941) += tps65941.o
+obj-$(CONFIG_DM_PMIC_FS5600) += fs5600.o
 obj-$(CONFIG_DM_PMIC_PF5020) += pf5020.o
 obj-$(CONFIG_DM_PMIC_VR5510) += vr5510.o
