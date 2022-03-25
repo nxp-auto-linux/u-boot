@@ -234,7 +234,7 @@ config EXYNOS_SPI
 
 config FSL_DSPI
 	bool "Freescale DSPI driver"
-	depends on FSL_LAYERSCAPE || ARCH_VF610 || ARCH_LS1021A || ARCH_LS1028A
+	depends on FSL_LAYERSCAPE || ARCH_VF610 || ARCH_LS1021A || ARCH_LS1028A || NXP_S32CC
 	help
 	  Enable the Freescale DSPI driver. This driver can be used to
 	  access the SPI NOR flash and SPI Data flash on platforms embedding
