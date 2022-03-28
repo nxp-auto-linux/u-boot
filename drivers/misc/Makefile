@@ -54,6 +54,7 @@ obj-$(CONFIG_$(SPL_)MXC_OCOTP) += mxc_ocotp.o
 obj-$(CONFIG_MXS_OCOTP) += mxs_ocotp.o
 obj-$(CONFIG_NUVOTON_NCT6102D) += nuvoton_nct6102d.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_a53_gpr.o
+obj-$(CONFIG_NXP_S32CC) += s32cc_ocotp.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_siul2_nvram.o
 obj-$(CONFIG_P2SB) += p2sb-uclass.o
 obj-$(CONFIG_PCA9551_LED) += pca9551_led.o
