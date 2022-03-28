@@ -3,8 +3,8 @@
  * Copyright 2022 NXP
  */
 #include <common.h>
-#include <asm/u-boot.h>
 #include <fdtdec.h>
+#include <asm/u-boot.h>
 
 int board_init(void)
 {
