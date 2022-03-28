@@ -8,16 +8,16 @@
 #include <common.h>
 #include <command.h>
 #include <phy.h>
-#include <asm/arch/clock.h>
 #include <asm/io.h>
+#include <asm/arch/clock.h>
 
-#include <asm/arch/s32-cc/serdes_regs.h>
-#include <asm/arch/s32-cc/serdes_xpcs_regs.h>
-#include <linux/string.h>
 #include <clk.h>
 #include <s32gen1_clk_utils.h>
+#include <asm/arch/s32-cc/serdes_regs.h>
+#include <asm/arch/s32-cc/serdes_xpcs_regs.h>
 #include <dm/device_compat.h>
 #include <dm/pinctrl.h>
+#include <linux/string.h>
 
 #include "pfeng.h"
 
@@ -144,6 +144,7 @@ int pfeng_map_emac_to_serdes_xpcs(int emac, int *serdes, int *xpcs)
 	int emac_to_serdes[] = {1, 1, 0};
 	int emac_to_pcs[] = {0, 1, 1};
 	enum serdes_xpcs_mode_gen2 mode;
+	bool check;
 
 	if (emac >= ARRAY_SIZE(emac_intf)) {
 		pr_err("invalid emac index %d\n", emac);
@@ -161,9 +162,12 @@ int pfeng_map_emac_to_serdes_xpcs(int emac, int *serdes, int *xpcs)
 		pr_err("PCS for emac %d was disabled\n", emac);
 		return -ENXIO;
 	}
-
-	if (!((emac == 0 && mode == SGMII_XPCS_2G5_OP) ||
-	      mode == SGMII_XPCS_1G_OP))
+#if defined(CONFIG_ARCH_S32G2)
+	check = (emac == 0 && mode == SGMII_XPCS_2G5_OP);
+#else
+	check = (mode == SGMII_XPCS_2G5_OP);
+#endif
+	if (!(check || mode == SGMII_XPCS_1G_OP))
 		return -ENXIO;
 
 	*serdes = emac_to_serdes[emac];
