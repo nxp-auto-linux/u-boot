@@ -3,15 +3,12 @@
  * Copyright 2017-2022 NXP
  */
 #include <common.h>
-#include <asm/io.h>
-#include <asm/arch/clock.h>
-#include <fdt_support.h>
-#include <linux/libfdt.h>
-#include <miiphy.h>
-#include <fdtdec.h>
-
 #include <board_common.h>
+#include <fdt_support.h>
+#include <fdtdec.h>
+#include <miiphy.h>
 #include <scmi_reset_agent.h>
+#include <linux/libfdt.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

@@ -6,14 +6,13 @@
 
 #include <common.h>
 #include <cpu_func.h>
-#include <asm/armv8/mmu.h>
+#include <debug_uart.h>
 #include <asm/io.h>
 #include <asm/system.h>
-#include <asm-generic/sections.h>
-#include "scmi_reset_agent.h"
-#include <asm-generic/sections.h>
+#include <asm/armv8/mmu.h>
 #include <linux/sizes.h>
-#include <debug_uart.h>
+#include <asm-generic/sections.h>
+#include <asm-generic/sections.h>
 
 #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
 #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
