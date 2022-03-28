@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+
 /* Copyright 2019-2022 NXP */
-
 #include <ctype.h>
 #include <image.h>
 #include <imagetool.h>
 #include <inttypes.h>
 #include <s32cc_image_params.h>
 #include <stddef.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #define UNSPECIFIED			-1
 
