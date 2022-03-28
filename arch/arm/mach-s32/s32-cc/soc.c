@@ -3,10 +3,10 @@
  * Copyright 2022 NXP
  */
 #include <common.h>
-#include <asm/armv8/mmu.h>
+#include <debug_uart.h>
 #include <asm/global_data.h>
 #include <asm/sections.h>
-#include <debug_uart.h>
+#include <asm/armv8/mmu.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
