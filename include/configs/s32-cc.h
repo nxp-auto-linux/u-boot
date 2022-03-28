@@ -61,4 +61,8 @@
 		"fi; " \
 	"fi"
 
+#ifdef CONFIG_SYS_I2C_MXC
+#define I2C_QUIRK_REG
+#endif
+
 #endif

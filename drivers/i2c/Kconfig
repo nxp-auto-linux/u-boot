@@ -323,7 +323,7 @@ config SYS_I2C_MICROCHIP
 
 config SYS_I2C_MXC
 	bool "NXP MXC I2C driver"
-	depends on ARCH_LS1021A || FSL_LSCH2 || FSL_LSCH3 || MACH_IMX
+	depends on ARCH_LS1021A || FSL_LSCH2 || FSL_LSCH3 || MACH_IMX || NXP_S32CC
 	help
 	  Add support for the NXP I2C driver. This supports up to four bus
 	  channels and operating on standard mode up to 100 kbits/s and fast

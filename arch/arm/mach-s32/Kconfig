@@ -12,10 +12,12 @@ config SYS_VENDOR
 
 config NXP_S32CC
 	bool
+	imply DM_I2C
 	imply FSL_DSPI
 	imply MISC
 	imply NXP_S32CC_PIT_TIMER
 	imply SPI
+	imply SYS_I2C_MXC
 	imply TIMER
 	select BINMAN
 	select CLK
