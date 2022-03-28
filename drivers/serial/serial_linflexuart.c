@@ -3,14 +3,13 @@
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
  * Copyright 2017, 2019, 2021-2022 NXP
  */
-
-#include <asm/io.h>
-#include <clk.h>
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <errno.h>
-#include <linux/compiler.h>
 #include <serial.h>
+#include <asm/io.h>
+#include <linux/compiler.h>
 
 #define LINCR1_INIT			BIT(0)
 #define LINCR1_MME			BIT(4)
