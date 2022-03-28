@@ -165,6 +165,10 @@
 		clock-names = "ipg", "ahb", "per";
 		clock-frequency = <0>;	/* updated dynamically if 0 */
 		bus-width = <8>;
+		/* The property name is misleading. Actually means DDR52 is
+		 * supported at both 1.8V and 3.3V
+		 */
+		mmc-ddr-1_8v;
 		no-1-8-v;
 		status = "disabled";
 	};
