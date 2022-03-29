@@ -318,7 +318,7 @@ static int s32_gpio_probe(struct udevice *dev)
 }
 
 static const struct udevice_id s32_gpio_ids[] = {
-	{ .compatible = "fsl,s32-gen1-siul2-gpio"},
+	{ .compatible = "nxp,s32cc-siul2-gpio"},
 	{ /* sentinel */ }
 };
 

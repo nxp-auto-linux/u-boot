@@ -143,7 +143,7 @@
 		};
 
 		gpio0: siul2-gpio0 {
-			compatible = "fsl,s32-gen1-siul2-gpio";
+			compatible = "nxp,s32cc-siul2-gpio";
 			#gpio-cells = <2>;
 			gpio-controller;
 			gpio-ranges = <&pinctrl0 0 0 102>;
@@ -174,7 +174,7 @@
 		};
 
 		gpio1: siul2-gpio1 {
-			compatible = "fsl,s32-gen1-siul2-gpio";
+			compatible = "nxp,s32cc-siul2-gpio";
 			#gpio-cells = <2>;
 			gpio-controller;
 			gpio-ranges = <&pinctrl1 0 112 11>,
