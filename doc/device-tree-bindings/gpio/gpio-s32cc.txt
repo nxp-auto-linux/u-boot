@@ -1,7 +1,7 @@
-* NXP S32 SIUL2 GPIO controller
+* NXP S32CC SIUL2 GPIO controller
 
 Required properties:
-- compatible : "fsl,s32-gen1-siul2-gpio"
+- compatible : "nxp,s32cc-siul2-gpio"
 - #gpio-cells : Should be 2 (pin number and his properties)
 - gpio-controller : Marks the device node as a GPIO controller
 - gpio-ranges: See gpio.txt
@@ -17,7 +17,7 @@ siul2_1@44010000 {
 	};
 
 	gpio1: siul2-gpio1 {
-		compatible = "fsl,s32-gen1-siul2-gpio";
+		compatible = "nxp,s32cc-siul2-gpio";
 		#gpio-cells = <2>;
 		gpio-controller;
 		gpio-ranges = <&pinctrl1 0 112 11>,
