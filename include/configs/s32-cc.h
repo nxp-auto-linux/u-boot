@@ -15,14 +15,18 @@
 #include <linux/sizes.h>
 #include <generated/autoconf.h>
 
-#define PHYS_SDRAM_1       0x80000000
+#define PHYS_SDRAM_1			0x80000000UL
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-#define PHYS_SDRAM_1_SIZE       0x40000000
+#define PHYS_SDRAM_1_SIZE		(SZ_1G)
 #else
-#define PHYS_SDRAM_1_SIZE       0x80000000
-#define PHYS_SDRAM_2       0x880000000
-#define PHYS_SDRAM_2_SIZE       0x80000000
+#define PHYS_SDRAM_1_SIZE		(SZ_2G)
+#define PHYS_SDRAM_2			0x880000000UL
+#define PHYS_SDRAM_2_SIZE		(SZ_2G)
 #endif
+
+#define CONFIG_SYS_INIT_SP_OFFSET	(SZ_16K)
+#define CONFIG_SYS_INIT_SP_ADDR \
+	(CONFIG_SYS_DATA_BASE + CONFIG_SYS_INIT_SP_OFFSET)
 
 #ifdef CONFIG_CMD_IRQ
 #define CONFIG_GICSUPPORT
@@ -31,7 +35,7 @@
 
 /* memory mapped external flash */
 #define CONFIG_SYS_FLASH_BASE		0x0UL
-#define CONFIG_SYS_FLASH_SIZE		0x20000000
+#define CONFIG_SYS_FLASH_SIZE		(SZ_512M)
 
 #define QSPI_BASE_ADDR		        0x40134000UL
 
@@ -52,7 +56,7 @@
 #define RAMDISK_NAME		"rootfs.uimg"
 
 /* Increase image size */
-#define CONFIG_SYS_BOOTM_LEN    SZ_64M
+#define CONFIG_SYS_BOOTM_LEN    (SZ_64M)
 
 /* Flat device tree definitions */
 #define FDT_ADDR		0x83E00000
@@ -124,7 +128,7 @@
 #endif
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + SZ_2M)
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -401,20 +405,12 @@
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1
 
-#define CONFIG_SYS_INIT_SP_OFFSET	(16 * 1024)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_DATA_BASE + CONFIG_SYS_INIT_SP_OFFSET)
-
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define MMC_PART_FAT			1
 #define MMC_PART_EXT			2
 #define CONFIG_MMC_PART			MMC_PART_FAT
 
-#ifdef CONFIG_NXP_S32CC
-#define FLASH_SECTOR_SIZE               (64 * 1024) /* 64 KB */
-#else
-#define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */
-#endif
+#define FLASH_SECTOR_SIZE		(SZ_64K)
 
 #ifdef CONFIG_SYS_I2C_MXC
 #define I2C_QUIRK_REG
@@ -436,14 +432,14 @@
 #ifdef CONFIG_ARCH_S32G3
 #define S32_SRAM_SIZE		(20 * SZ_1M)
 #else
-#define S32_SRAM_SIZE		(8 * SZ_1M)
+#define S32_SRAM_SIZE		(SZ_8M)
 #endif
 
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 #define CONFIG_SYS_FSL_QSPI_AHB
 
 #undef FSL_QSPI_FLASH_SIZE
-#define FSL_QSPI_FLASH_SIZE            SZ_64M
+#define FSL_QSPI_FLASH_SIZE            (SZ_64M)
 #endif
 
 #endif
