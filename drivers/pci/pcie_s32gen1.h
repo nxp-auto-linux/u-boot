@@ -6,8 +6,8 @@
 
 #ifndef PCIE_S32GEN1_H
 #define PCIE_S32GEN1_H
-#include <pci.h>
 #include <dm.h>
+#include <pci.h>
 #include <asm/io.h>
 
 #include "serdes_s32gen1.h"
@@ -152,7 +152,6 @@ struct s32_pcie {
 	int id;
 	bool enabled;
 	bool ep_mode;
-	bool no_check_serdes;
 	enum serdes_link_width linkwidth;
 	enum pcie_link_speed linkspeed;
 	int atu_out_num;

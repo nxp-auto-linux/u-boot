@@ -5,18 +5,18 @@
  */
 
 #include <common.h>
-#include <pci.h>
-#include <asm/io.h>
-#include <errno.h>
-#include <malloc.h>
 #include <dm.h>
-#include <asm/arch/clock.h>
-#include <linux/sizes.h>
-#include <dm/device-internal.h>
+#include <errno.h>
 #include <hwconfig.h>
-#include <dm/uclass.h>
+#include <malloc.h>
 #include <misc.h>
+#include <pci.h>
 #include <s32gen1_siul2_nvram.h>
+#include <asm/io.h>
+#include <asm/arch/clock.h>
+#include <dm/device-internal.h>
+#include <dm/uclass.h>
+#include <linux/sizes.h>
 
 /* CFG1 is used in linux when finding devices on the bus.
  * It is actually the upper half of the config space
@@ -756,9 +756,6 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	/* get supported width (X1/X2) from device tree */
 	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
 
-	if (fdt_getprop(fdt, node, "no-check-serdes", NULL))
-		pcie->no_check_serdes = true;
-
 	return ret;
 }
 
@@ -900,7 +897,6 @@ static int s32_pcie_probe(struct udevice *dev)
 	struct udevice *siul21_nvmem = NULL;
 
 	pcie->enabled = false;
-	pcie->no_check_serdes = false;
 
 	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_1_nvram",
 					&siul21_nvmem);

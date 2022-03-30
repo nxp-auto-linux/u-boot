@@ -11,11 +11,3 @@
 / {
 	model = "NXP S32G3XXX-EVB";
 };
-
-&pcie0 {
-	no-check-serdes;
-};
-
-&pcie1 {
-	no-check-serdes;
-};
