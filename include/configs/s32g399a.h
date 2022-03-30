@@ -10,7 +10,7 @@
 #ifndef __S32G399A_H
 #define __S32G399A_H
 
-#include <configs/s32-gen1.h>
+#include <configs/s32-cc.h>
 
 #if defined(CONFIG_TARGET_S32G3XXAEVB)
 #define FDT_FILE			"fsl-s32g3xxa-evb.dtb"

@@ -10,7 +10,7 @@
 #ifndef __S32G274A_H
 #define __S32G274A_H
 
-#include <configs/s32-gen1.h>
+#include <configs/s32-cc.h>
 
 #if defined(CONFIG_TARGET_S32G2XXAEVB)
 #define FDT_FILE "fsl-s32g2xxa-evb.dtb"

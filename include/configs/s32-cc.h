@@ -6,11 +6,11 @@
  */
 
 /*
- * Configuration settings for the Freescale/NXP S32-GEN1.
+ * Configuration settings for the NXP S32 CC SoC.
  */
 
-#ifndef __NXP_S32CC_H
-#define __NXP_S32CC_H
+#ifndef __S32CC_H__
+#define __S32CC_H__
 
 #include <linux/sizes.h>
 #include <generated/autoconf.h>

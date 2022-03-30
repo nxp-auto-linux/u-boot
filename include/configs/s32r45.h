@@ -10,7 +10,7 @@
 #ifndef __S32R45_H
 #define __S32R45_H
 
-#include <configs/s32-gen1.h>
+#include <configs/s32-cc.h>
 
 #if defined(CONFIG_TARGET_S32R45EVB)
 #define FDT_FILE "fsl-s32r45-evb.dtb"
