@@ -26,6 +26,9 @@ config S32CC_CONFIG_FILE
 	string
 	default "arch/arm/mach-s32/s32-cc/s32cc.cfg"
 
+config LMB_MAX_REGIONS
+	default 16
+
 endif
 
 source "arch/arm/mach-s32/s32g2/Kconfig"
