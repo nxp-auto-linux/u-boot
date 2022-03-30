@@ -239,12 +239,12 @@ config ROCKCHIP_GPIO
 	  The GPIOs for a device are defined in the device tree with one node
 	  for each bank.
 
-config S32_GPIO
-	bool "S32 GPIO Driver"
+config S32CC_GPIO
+	bool "S32CC GPIO Driver"
 	depends on DM_GPIO
 	help
 	  GPIO driver for SIUL2.
-	  SIUL2 is found in S32G2XX and S32R45 SoCs.
+	  SIUL2 is found in S32GXXX and S32R45 SoCs.
 
 config SANDBOX_GPIO
 	bool "Enable sandbox GPIO driver"
