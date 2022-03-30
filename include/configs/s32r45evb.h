@@ -7,4 +7,6 @@
 
 #include <configs/s32r45.h>
 
+#define FDT_FILE "fsl-s32r45-evb.dtb"
+
 #endif
