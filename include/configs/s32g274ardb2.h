@@ -7,4 +7,6 @@
 
 #include <configs/s32g2.h>
 
+#define FDT_FILE "fsl-s32g274a-rdb2.dtb"
+
 #endif
