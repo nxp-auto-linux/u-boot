@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2022 NXP
- * S32Gen1 SAR-ADC driver
+ * S32CC SAR-ADC driver
  */
 
 #include <common.h>
@@ -10,6 +10,7 @@
 #include <dm.h>
 #include <errno.h>
 #include <asm/io.h>
+#include <linux/iopoll.h>
 
 #define SARADC_MCR	0x0
 #define SARADC_MSR	0x4
@@ -20,7 +21,7 @@
 
 #define SARADC_MCR_PWDN			BIT(0)
 #define SARADC_MCR_ADCLKSE		BIT(8)
-#define SARADC_MCR_TSAMP_MASK	(BIT(10) | BIT(9))
+#define SARADC_MCR_TSAMP_MASK	GENMASK(10, 9)
 #define SARADC_MCR_AVGEN		BIT(13)
 #define SARADC_MCR_CALSTART		BIT(14)
 #define SARADC_MCR_NSTART		BIT(24)
@@ -38,9 +39,9 @@
 #define SARADC_PCDR_VALID		BIT(19)
 #define SARADC_PCDR_CDATA(x)	((x) & 0xfff)
 
-#define SARADC_NSEC_PER_SEC	1000000000
-#define RDB_CHECK_REV_CH	5
-#define SARADC_TIMEOUT_VALUE 0x100000
+#define SARADC_NSEC_PER_SEC		1000000000
+#define SARADC_TIMEOUT_VALUE	100000 /* us */
+#define RDB_CHECK_REV_CH		5
 
 struct s32_saradc_data {
 	int num_bits;
@@ -75,7 +76,8 @@ static void s32_saradc_powerup(ulong base)
 	writel(tmp, base + SARADC_MCR);
 }
 
-static int s32_saradc_calibration(ulong base)
+static int s32_saradc_calibration(ulong base,
+				  struct adc_uclass_platdata *pdata)
 {
 	u32 tmp;
 
@@ -93,9 +95,10 @@ static int s32_saradc_calibration(ulong base)
 	tmp |= SARADC_MCR_CALSTART;
 	writel(tmp, base + SARADC_MCR);
 
-	do {
-		tmp = readl(base + SARADC_MSR);
-	} while (tmp & SARADC_MSR_CALBUSY);
+	if (readx_poll_timeout(readl, base + SARADC_MSR, tmp,
+			       !(tmp & SARADC_MSR_CALBUSY),
+			       pdata->data_timeout_us))
+		return -EINVAL;
 
 	if (tmp & SARADC_MSR_CALFAIL)
 		return -EINVAL;
@@ -186,6 +189,7 @@ static int s32_adc_stop(struct udevice *dev)
 static int s32_saradc_probe(struct udevice *dev)
 {
 	struct s32_saradc_priv *priv = dev_get_priv(dev);
+	struct adc_uclass_platdata *uc_pdata = dev_get_uclass_platdata(dev);
 	struct clk clk;
 	u32 tmp;
 	int ret;
@@ -203,7 +207,7 @@ static int s32_saradc_probe(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	ret = s32_saradc_calibration(priv->base);
+	ret = s32_saradc_calibration(priv->base, uc_pdata);
 	s32_saradc_powerdown(priv->base);
 	if (ret) {
 		printf("SARADC calibration failed\n");
@@ -220,7 +224,7 @@ static int s32_saradc_probe(struct udevice *dev)
 	return 0;
 }
 
-static int s32_saradc_ofdata_to_platdata(struct udevice *dev)
+static int s32_saradc_ofdata_to_plat(struct udevice *dev)
 {
 	struct adc_uclass_platdata *uc_pdata = dev_get_uclass_platdata(dev);
 	struct s32_saradc_priv *priv = dev_get_priv(dev);
@@ -234,10 +238,10 @@ static int s32_saradc_ofdata_to_platdata(struct udevice *dev)
 
 	priv->data = (struct s32_saradc_data *)dev_get_driver_data(dev);
 
-	uc_pdata->data_mask = (1 << priv->data->num_bits) - 1;
+	uc_pdata->data_mask = GENMASK(priv->data->num_bits - 1, 0);
 	uc_pdata->data_format = ADC_DATA_FORMAT_BIN;
 	uc_pdata->data_timeout_us = SARADC_TIMEOUT_VALUE;
-	uc_pdata->channel_mask = (1 << priv->data->num_channels) - 1;
+	uc_pdata->channel_mask = GENMASK(priv->data->num_channels - 1, 0);
 
 	return 0;
 }
@@ -249,8 +253,7 @@ static const struct adc_ops s32_saradc_ops = {
 };
 
 static const struct udevice_id s32_saradc_ids[] = {
-	{ .compatible = "fsl,s32gen1-adc",
-	  .data = (ulong)&saradc_data },
+	{ .compatible = "nxp,s32cc-adc", .data = (ulong)&saradc_data },
 	{ }
 };
 
@@ -260,6 +263,6 @@ U_BOOT_DRIVER(s32_saradc) = {
 	.of_match = s32_saradc_ids,
 	.ops = &s32_saradc_ops,
 	.probe = s32_saradc_probe,
-	.ofdata_to_platdata = s32_saradc_ofdata_to_platdata,
+	.ofdata_to_platdata = s32_saradc_ofdata_to_plat,
 	.priv_auto_alloc_size = sizeof(struct s32_saradc_priv),
 };

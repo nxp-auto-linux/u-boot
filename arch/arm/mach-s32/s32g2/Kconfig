@@ -14,21 +14,17 @@ config TARGET_S32G274ARDB2
 	imply PHY_ATHEROS
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
-	select ADC
 	select NXP_S32GRDB_BOARD
-	select S32_SARADC
 	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G2XXAEVB
 	bool "Support S32G274AEVB board"
-	imply ADC
 	imply DM_USB
 	imply I2C_EEPROM
 	imply PHY
 	imply PHY_AQUANTIA
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
-	imply S32_SARADC
 	imply SAF1508BET_USB_PHY
 	imply SJA1105
 	imply USB
@@ -43,7 +39,7 @@ config TARGET_S32G274ABLUEBOX3
 	imply I2C_EEPROM
 	imply PHY
 	imply PHYLIB
-	imply S32_SARADC
+	imply SARADC_S32CC
 	select SPI_FLASH_STMICRO
 
 config TARGET_S32G274AEMU

@@ -2,10 +2,15 @@ config NXP_S32GRDB_BOARD
 	bool
 	default n
 	imply NVME
+	select ADC
+	select BOARD_LATE_INIT
+	select SARADC_S32CC
 
 config NXP_S32GEVB_BOARD
 	bool
 	default n
+	imply ADC
+	imply SARADC_S32CC
 
 config S32GEN1_HWCONFIG
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GRDB_BOARD

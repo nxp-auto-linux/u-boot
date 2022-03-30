@@ -2,13 +2,13 @@
 /*
  * Copyright 2018-2022 NXP
  */
-#include <board_common.h>
 #include <common.h>
-#include <dm/uclass.h>
 #include <adc.h>
+#include <env.h>
+#include <dm/uclass.h>
 
-#define SARADC0_DEV	"saradc0"
-#define SARADC0_CH5	5
+#define SARADC0_DEV			"saradc0"
+#define SARADC0_CH5			5
 #define SARADC0_TOLERANCE	200
 
 static const struct {
@@ -52,7 +52,8 @@ static int find_rdb_rev(uint32_t adc_value)
 		    adc_value <= rdb_revisions[i].upper)
 			return i;
 	}
-	return -1;
+
+	return -EINVAL;
 }
 
 int board_late_init(void)

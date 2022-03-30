@@ -48,10 +48,10 @@ config SARADC_ROCKCHIP
 	  - 1O or 12 bits resolution
 	  - Up to 1MSPS of sample rate
 
-config S32_SARADC
-	bool "Enable NXP S32 SARADC driver"
+config SARADC_S32CC
+	bool "Enable NXP S32CC SARADC driver"
 	help
-	  This enables driver for NXP S32 SARADC
+	  This enables driver for NXP S32CC SARADC
 	  It provides:
 	  - 8 analog input channels
 	  - 12-bit resolution
