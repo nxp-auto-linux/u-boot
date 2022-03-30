@@ -13,7 +13,7 @@
 #include <configs/s32-gen1.h>
 
 #if defined(CONFIG_TARGET_S32R45EVB)
-#define FDT_FILE fsl-s32r45-evb.dtb
+#define FDT_FILE "fsl-s32r45-evb.dtb"
 #endif
 
 #endif

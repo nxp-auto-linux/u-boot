@@ -13,7 +13,7 @@
 #include <configs/s32-gen1.h>
 
 #if defined(CONFIG_TARGET_S32G3XXAEVB)
-#define FDT_FILE			fsl-s32g3xxa-evb.dtb
+#define FDT_FILE			"fsl-s32g3xxa-evb.dtb"
 
 #if defined(CONFIG_USB)
 #define CONFIG_USB_EHCI_MX6
@@ -21,7 +21,7 @@
 #endif
 
 #elif defined(CONFIG_TARGET_S32G399ARDB3)
-#define FDT_FILE			'fsl-s32g399a-rdb3.dtb'
+#define FDT_FILE			"fsl-s32g399a-rdb3.dtb"
 
 #endif
 
