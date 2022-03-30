@@ -55,7 +55,7 @@
 /* Increase image size */
 #define CONFIG_SYS_BOOTM_LEN    (SZ_64M)
 
-#define S32_LOAD_FLASH_IMAGES_CMD\
+#define S32CC_LOAD_FLASH_IMAGES_CMD\
 	"sf probe 6:0;"\
 	"sf read ${loadaddr} ${kernel_flashaddr} ${kernel_maxsize};"\
 	"sf read ${fdt_addr} ${fdt_flashaddr} ${fdt_maxsize};"\
@@ -132,8 +132,8 @@
 
 #endif
 
-#ifndef S32_DEFAULT_IP
-#define S32_DEFAULT_IP "10.0.0.100\0"
+#ifndef S32CC_DEFAULT_IP
+#define S32CC_DEFAULT_IP "10.0.0.100\0"
 #endif
 
 /*
@@ -230,7 +230,7 @@
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"ipaddr=" S32_DEFAULT_IP \
+	"ipaddr=" S32CC_DEFAULT_IP \
 	"serverip=10.0.0.1\0" \
 	"netmask=255.255.255.0\0" \
 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
@@ -340,7 +340,7 @@
 				__stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
-		S32_LOAD_FLASH_IMAGES_CMD\
+		S32CC_LOAD_FLASH_IMAGES_CMD\
 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
 		"${fdt_addr};\0" \
 	XEN_EXTRA_ENV_SETTINGS \
@@ -412,12 +412,12 @@
 
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/u-boot.lds"
 
-#define S32_SRAM_BASE		0x34000000
+#define S32CC_SRAM_BASE		0x34000000
 
 #ifdef CONFIG_ARCH_S32G3
-#define S32_SRAM_SIZE		(20 * SZ_1M)
+#define S32CC_SRAM_SIZE		(20 * SZ_1M)
 #else
-#define S32_SRAM_SIZE		(SZ_8M)
+#define S32CC_SRAM_SIZE		(SZ_8M)
 #endif
 
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)

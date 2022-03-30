@@ -136,7 +136,7 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return CMD_RET_FAILURE;
 	}
 
-	if (addr < S32_SRAM_BASE || addr >= S32_SRAM_BASE + sram_size) {
+	if (addr < S32CC_SRAM_BASE || addr >= S32CC_SRAM_BASE + sram_size) {
 		printf("ERROR: Address 0x%08lX is not in internal SRAM ...\n",
 		       addr);
 		return CMD_RET_USAGE;

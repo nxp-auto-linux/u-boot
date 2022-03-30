@@ -47,8 +47,8 @@ static struct mm_region s32_mem_map[] = {
 	},
 #endif
 	{
-		S32_SRAM_BASE, S32_SRAM_BASE,
-		S32_SRAM_SIZE,
+		S32CC_SRAM_BASE, S32CC_SRAM_BASE,
+		S32CC_SRAM_SIZE,
 		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
 	},
 	{
