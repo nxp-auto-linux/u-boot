@@ -5,6 +5,13 @@
 #ifndef __S32G3XXAEVB_H__
 #define __S32G3XXAEVB_H__
 
-#include <configs/s32g399a.h>
+#include <configs/s32g3.h>
+
+#define FDT_FILE			"fsl-s32g3xxa-evb.dtb"
+
+#if defined(CONFIG_USB)
+#define CONFIG_USB_EHCI_MX6
+#define CONFIG_MXC_USB_PORTSC		PORT_PTS_ULPI
+#endif
 
 #endif

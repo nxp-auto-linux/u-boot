@@ -5,6 +5,6 @@
 #ifndef __S32G399AEMU_H__
 #define __S32G399AEMU_H__
 
-#include <configs/s32g399a.h>
+#include <configs/s32g3.h>
 
 #endif

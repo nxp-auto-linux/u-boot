@@ -5,6 +5,8 @@
 #ifndef __S32G399ARDB3_H__
 #define __S32G399ARDB3_H__
 
-#include <configs/s32g399a.h>
+#include <configs/s32g3.h>
+
+#define FDT_FILE			"fsl-s32g399a-rdb3.dtb"
 
 #endif
