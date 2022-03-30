@@ -13,9 +13,11 @@ config TARGET_S32G274ARDB2
 	  This board is based on S32G274A SoC. It is equipped with
 	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports, PCIe slot,
 	  USB, serial port, 18 CAN ports, I2C and DSPI.
+	select NXP_S32GRDB_BOARD
 
 endchoice
 
+source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g274ardb2/Kconfig"
 
 endif
