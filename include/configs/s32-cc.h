@@ -52,17 +52,8 @@
 #define CONFIG_ARMV8_SWITCH_TO_EL1
 #endif
 
-/* Ramdisk name */
-#define RAMDISK_NAME		"rootfs.uimg"
-
 /* Increase image size */
 #define CONFIG_SYS_BOOTM_LEN    (SZ_64M)
-
-/* Flat device tree definitions */
-#define FDT_ADDR		0x83E00000
-
-/* Ramdisk load address */
-#define RAMDISK_ADDR		0x84000000
 
 #define S32_LOAD_FLASH_IMAGES_CMD\
 	"sf probe 6:0;"\
@@ -138,9 +129,6 @@
 #define CONFIG_HWCONFIG
 
 #ifdef CONFIG_CMD_BOOTI
-
-#define IMAGE_NAME	"Image"
-#define BOOT_MTD	"booti"
 
 #endif
 
@@ -241,9 +229,6 @@
 #define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
-/* Leave room for TF-A & OPTEE */
-#define INITRD_HIGH 0xFE1FFFFF
-
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"ipaddr=" S32_DEFAULT_IP \
 	"serverip=10.0.0.1\0" \
@@ -262,15 +247,15 @@
 		"run loadtftpimage; " NFSRAMFS_TFTP_CMD "run loadtftpfdt;"\
 		"${boot_mtd} ${loadaddr} " NFSRAMFS_ADDR " ${fdt_addr};\0" \
 	"script=boot.scr\0" \
-	"boot_mtd=" BOOT_MTD "\0" \
-	"image=" IMAGE_NAME "\0" \
-	"ramdisk=" RAMDISK_NAME "\0"\
+	"boot_mtd=booti\0" \
+	"image=Image\0" \
+	"ramdisk=rootfs.uimg\0"\
 	"console=ttyLF0\0" \
 	"fdt_high=0xa0000000\0" \
-	"initrd_high=" __stringify(INITRD_HIGH) "\0" \
-	"fdt_file="  __stringify(FDT_FILE) "\0" \
-	"fdt_addr=" __stringify(FDT_ADDR) "\0" \
-	"ramdisk_addr=" __stringify(RAMDISK_ADDR) "\0" \
+	"initrd_high=0xFE1FFFFF\0" \
+	"fdt_file=" FDT_FILE "\0" \
+	"fdt_addr=0x83E00000\0" \
+	"ramdisk_addr=0x84000000\0" \
 	"boot_fdt=try\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=" __stringify(CONFIG_MMC_PART) "\0" \
