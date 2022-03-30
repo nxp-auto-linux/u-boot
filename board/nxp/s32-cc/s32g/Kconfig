@@ -1,0 +1,5 @@
+config NXP_S32GRDB_BOARD
+	bool
+	default n
+	select DM_REGULATOR
+	select SARADC_S32CC
