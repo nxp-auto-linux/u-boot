@@ -5,6 +5,6 @@
 #ifndef __S32G274ABLUEBOX3_H__
 #define __S32G274ABLUEBOX3_H__
 
-#include <configs/s32g274a.h>
+#include <configs/s32g2.h>
 
 #endif

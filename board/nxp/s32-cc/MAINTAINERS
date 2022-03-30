@@ -9,13 +9,13 @@ S32G274A-EVB BOARD
 M:	-
 S:	Maintained
 F:	configs/s32g274aevb_defconfig
-F:	include/configs/s32g274a.h
+F:	include/configs/s32g2xxaevb.h
 
 S32G274A-RDB BOARD
 M:	-
 S:	Maintained
 F:	configs/s32g274ardb_defconfig
-F:	include/configs/s32g274a.h
+F:	include/configs/s32g274ardb2.h
 
 S32R45 BOARD
 M:	-

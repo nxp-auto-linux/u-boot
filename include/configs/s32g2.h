@@ -2,13 +2,8 @@
 /*
  * Copyright 2017-2022 NXP
  */
-
-/*
- * Configuration settings for all the Freescale S32G274A boards.
- */
-
-#ifndef __S32G274A_H
-#define __S32G274A_H
+#ifndef __S32G2_H__
+#define __S32G2_H__
 
 #include <configs/s32-cc.h>
 
