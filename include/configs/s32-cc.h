@@ -95,26 +95,6 @@
 #  error "FDT and Ramdisk would overlap in flash memory"
 #endif
 
-/* Generic Timer Definitions */
-#if defined(CONFIG_SYS_ARCH_TIMER)
-/* COUNTER_FREQUENCY value will be used at startup but will be replaced
- * if an older chip version is determined at runtime.
- */
-#  ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-#    define COUNTER_FREQUENCY		(1000) /* 1KHz */
-#  elif defined(CONFIG_NXP_S32CC)
-/* FXOSC_CLK; this will be further divided by "GPR00[26:24] + 1"
- * Note: CONFIG_TARGET_S32G2XXAEVB is a per-board configuration, as the value of
- * FXOSC_CLK itself is board-specific.
- */
-#    define COUNTER_FREQUENCY		(40 * 1000 * 1000)
-#  endif
-#elif defined(CONFIG_SYS_PIT_TIMER)
-#  define COUNTER_FREQUENCY		(133056128) /* 133MHz */
-#else
-#  error "Unknown System Timer"
-#endif
-
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + SZ_2M)
 
