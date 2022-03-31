@@ -312,15 +312,6 @@
 	EXTRA_BOOTCOMMAND \
 	BOOTCOMMAND
 
-/* Miscellaneous configurable options */
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
-#define CONFIG_SYS_PROMPT		"=> "
-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					 sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_MAXARGS		16	/* max number of command args */
-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
-
 /* Limit mtest to first DDR bank if no arguments are given */
 #define CONFIG_SYS_MEMTEST_START	(PHYS_SDRAM_1)
 #define CONFIG_SYS_MEMTEST_END		(PHYS_SDRAM_1 + \
