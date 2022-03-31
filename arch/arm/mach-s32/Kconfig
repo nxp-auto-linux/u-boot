@@ -19,9 +19,11 @@ config NXP_S32CC
 	select CLK
 	select CLK_SCMI
 	select CPU
+	select DISTRO_DEFAULTS
 	select DM_GPIO
 	select FSL_LINFLEXUART
 	select FSL_USDHC
+	select HUSH_PARSER
 	select MACH_S32
 	select MMC_HS400_ES_SUPPORT
 	select MMC_HS400_SUPPORT
