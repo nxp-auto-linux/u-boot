@@ -7,11 +7,18 @@
 
 #include <configs/s32g2.h>
 
-#define FDT_FILE "fsl-s32g2xxa-evb.dtb"
+#define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+#define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+#define FDT_FILE			"fsl-s32g2xxa-evb.dtb"
+
+#ifdef CONFIG_FSL_PFENG
+#  define PFENG_MODE "enable,none,rgmii,rgmii"
+#  define PFENG_EMAC "1"
+#endif
 
 #if defined(CONFIG_USB)
-#define CONFIG_USB_EHCI_MX6
-#define CONFIG_MXC_USB_PORTSC        PORT_PTS_ULPI
+#  define CONFIG_MXC_USB_PORTSC		PORT_PTS_ULPI
+#  define CONFIG_USB_EHCI_MX6
 #endif
 
 #endif

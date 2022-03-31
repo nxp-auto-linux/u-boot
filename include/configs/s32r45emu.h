@@ -7,4 +7,6 @@
 
 #include <configs/s32r45.h>
 
+#define EXTRA_BOOT_ARGS		""
+
 #endif

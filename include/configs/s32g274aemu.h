@@ -7,4 +7,8 @@
 
 #include <configs/s32g2.h>
 
+#define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+#define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+#define FDT_FILE			""
+
 #endif

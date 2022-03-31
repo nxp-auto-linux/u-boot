@@ -7,6 +7,13 @@
 
 #include <configs/s32g3.h>
 
+#define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+#define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
 #define FDT_FILE			"fsl-s32g399a-rdb3.dtb"
+
+#ifdef CONFIG_FSL_PFENG
+#  define PFENG_MODE			"enable,sgmii,none,rgmii"
+#  define PFENG_EMAC			"0"
+#endif
 
 #endif

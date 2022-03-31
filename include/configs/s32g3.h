@@ -5,6 +5,8 @@
 #ifndef __S32G3_H__
 #define __S32G3_H__
 
-#include <configs/s32-cc.h>
+#include <configs/s32g.h>
+
+#define S32CC_SRAM_SIZE			(20 * SZ_1M)
 
 #endif
