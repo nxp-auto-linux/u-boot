@@ -485,7 +485,9 @@ static int fsl_dspi_child_pre_probe(struct udevice *dev)
 
 	priv->ctar_val[slave_plat->cs] = DSPI_CTAR_DEFAULT_VALUE |
 					 DSPI_CTAR_PCSSCK(pcssck) |
-					 DSPI_CTAR_PASC(pasc);
+					 DSPI_CTAR_CSSCK(cssck) |
+					 DSPI_CTAR_PASC(pasc) |
+					 DSPI_CTAR_ASC(asc);
 
 	debug("DSPI pre_probe slave device on CS %u, max_hz %u, mode 0x%x.\n",
 	      slave_plat->cs, slave_plat->max_hz, slave_plat->mode);
