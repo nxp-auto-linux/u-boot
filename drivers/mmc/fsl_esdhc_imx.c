@@ -1335,13 +1335,6 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 	cfg->host_caps |= MMC_MODE_DDR_52MHz;
 #endif
 
-	if (priv->flags & ESDHC_FLAG_HS200)
-		cfg->host_caps |= MMC_MODE_HS200;
-	if (priv->flags & ESDHC_FLAG_HS400)
-		cfg->host_caps |= MMC_MODE_HS400;
-	if (priv->flags & ESDHC_FLAG_HS400_ES)
-		cfg->host_caps |= MMC_MODE_HS400_ES;
-
 	if (priv->bus_width > 0) {
 		if (priv->bus_width < 8)
 			cfg->host_caps &= ~MMC_MODE_8BIT;
