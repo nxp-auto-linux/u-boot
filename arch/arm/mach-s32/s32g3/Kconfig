@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if ARCH_S32G3
+
+choice
+	prompt "S32G3 board select"
+	default TARGET_S32G3XXAEVB
+
+config TARGET_S32G3XXAEVB
+	bool "Support S32G3-EVB board"
+	help
+	  This board is based on S32G3 family of SoCs. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+	  I2C and DSPI.
+
+endchoice
+
+source "board/nxp/s32g3xxaevb/Kconfig"
+
+endif
