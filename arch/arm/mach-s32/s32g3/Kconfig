@@ -34,6 +34,7 @@ config TARGET_S32G3XXAEVB
 	imply SJA1105
 	imply USB
 	imply USB_EHCI_HCD
+	select MISC_INIT_R if SJA1105
 	select NXP_S32GEVB_BOARD
 	select SPI_FLASH_MACRONIX
 
