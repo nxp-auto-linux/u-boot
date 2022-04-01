@@ -32,3 +32,4 @@ config LMB_MAX_REGIONS
 endif
 
 source "arch/arm/mach-s32/s32g2/Kconfig"
+source "arch/arm/mach-s32/s32g3/Kconfig"
