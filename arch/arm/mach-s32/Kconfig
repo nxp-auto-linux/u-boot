@@ -29,9 +29,7 @@ config NXP_S32CC
 	imply FSL_DSPI
 	imply FSL_PFENG
 	imply FSL_QSPI
-	imply FSL_USDHC
 	imply MISC
-	imply MMC_HS400_ES_SUPPORT
 	imply MP
 	imply PCI
 	imply PCIE_S32GEN1
@@ -49,7 +47,9 @@ config NXP_S32CC
 	select DM_MMC
 	select DM_SERIAL
 	select FSL_LINFLEXUART
+	select FSL_USDHC
 	select MACH_S32
+	select MMC_HS400_ES_SUPPORT
 	select MMC_HS400_SUPPORT
 	select OF_CONTROL
 	select OF_SEPARATE
