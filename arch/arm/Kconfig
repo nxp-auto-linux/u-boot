@@ -924,6 +924,10 @@ config ARCH_S32G3
 	bool "NXP S32G3 platform"
 	select NXP_S32CC
 
+config ARCH_S32R45
+	bool "NXP S32R45 platform"
+	select NXP_S32CC
+
 config ARCH_NEXELL
 	bool "Nexell S5P4418/S5P6818 SoC"
 	select ENABLE_ARM_SOC_BOOT0_HOOK

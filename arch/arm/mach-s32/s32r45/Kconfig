@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if ARCH_S32R45
+
+choice
+	prompt "S32R45 board select"
+	default TARGET_S32R45EVB
+
+config TARGET_S32R45EVB
+	bool "Support S32R45EVB board"
+	help
+	  This board is based on S32R45 SoC. Is is equipped with
+	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
+	  I2C and DSPI.
+
+endchoice
+
+source "board/nxp/s32r45evb/Kconfig"
+
+endif
