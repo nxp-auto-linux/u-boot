@@ -303,6 +303,7 @@
 		clock-names = "qspi_en", "qspi";
 		clocks = <&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>,
 			 <&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>;
+		spi-max-frequency = <200000000>;
 		num-cs = <2>;
 		status = "disabled";
 	};
