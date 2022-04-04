@@ -340,7 +340,8 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 	uint len = bitlen >> 3;
 
 	if (priv->charbit == 16) {
-		len >>= 1;
+		/* half the number of transfers */
+		len /= 2;
 		spi_wr16 = (u16 *)dout;
 		spi_rd16 = (u16 *)din;
 	} else {
