@@ -82,7 +82,7 @@ enum fsl_qspi_devtype {
 	FSL_QUADSPI_IMX6SX,
 	FSL_QUADSPI_IMX6UL_7D,
 	FSL_QUADSPI_IMX7ULP,
-	FSL_QUADSPI_S32GEN1,
+	FSL_QUADSPI_S32CC,
 };
 
 struct fsl_qspi_devtype_data {
@@ -150,8 +150,8 @@ static const struct fsl_qspi_devtype_data imx7ulp_data = {
 	.driver_data = 0,
 };
 
-static const struct fsl_qspi_devtype_data s32gen1_data = {
-	.devtype = FSL_QUADSPI_S32GEN1,
+static const struct fsl_qspi_devtype_data s32cc_data = {
+	.devtype = FSL_QUADSPI_S32CC,
 	.rxfifo = 128,
 	.txfifo = 256,
 	.ahb_buf_size = 1024,
@@ -1012,7 +1012,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 
 #if defined(CONFIG_NXP_S32CC) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
 	defined(CONFIG_SPI_FLASH_STMICRO))
-	s32gen1_reset_bootrom_settings(priv);
+	s32cc_reset_bootrom_settings(priv);
 #endif
 
 #if defined(CONFIG_NXP_S32CC)
@@ -1121,7 +1121,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 #ifndef CONFIG_NXP_S32CC
 	qspi_set_lut(priv);
 #else
-	s32gen1_enable_spi(priv, true);
+	s32cc_enable_spi(priv, true);
 #endif
 
 #ifdef CONFIG_SYS_FSL_QSPI_AHB
@@ -1258,7 +1258,7 @@ static const struct dm_spi_ops fsl_qspi_ops = {
 	.set_speed	= fsl_qspi_set_speed,
 	.set_mode	= fsl_qspi_set_mode,
 #ifdef CONFIG_NXP_S32CC
-	.mem_ops	= &s32gen1_mem_ops,
+	.mem_ops	= &s32cc_mem_ops,
 #endif
 };
 
@@ -1268,7 +1268,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "fsl,imx6ul-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7d-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7ulp-qspi", .data = (ulong)&imx7ulp_data },
-	{ .compatible = "fsl,s32gen1-qspi", .data = (ulong)&s32gen1_data },
+	{ .compatible = "fsl,s32cc-qspi", .data = (ulong)&s32cc_data },
 	{ }
 };
 

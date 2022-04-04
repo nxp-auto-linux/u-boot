@@ -88,7 +88,7 @@ static void disable_qspi_mmu_entry(void)
 	size_t i;
 
 	offset = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
-					       "fsl,s32gen1-qspi");
+					       "fsl,s32cc-qspi");
 	if (offset > 0) {
 		if (fdtdec_get_is_enabled(gd->fdt_blob, offset))
 			return;

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 #include "fsl_qspi.h"
@@ -107,7 +107,7 @@ int macronix_mem_enable_ddr(struct fsl_qspi_priv *priv)
 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 		;
 
-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
 		return -1;
 
 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
@@ -115,28 +115,28 @@ int macronix_mem_enable_ddr(struct fsl_qspi_priv *priv)
 	/* Enable the module */
 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
 
-	if (s32gen1_mem_exec_read_op(priv, &rdcr2_sdr_op, rdcr2_cfg))
+	if (s32cc_mem_exec_read_op(priv, &rdcr2_sdr_op, rdcr2_cfg))
 		return -1;
 
 	cfg2_reg &= ~QSPI_CFG2_OPI_MASK;
 	cfg2_reg |= QSPI_CFG2_DTR_OPI_ENABLED;
 
 	/* Enable write */
-	if (s32gen1_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
+	if (s32cc_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
 		return -1;
 
 	/* Wait write enabled */
 	while (!(status & FLASH_STATUS_WEL)) {
-		if (s32gen1_mem_exec_read_op(priv, &rdsr_sdr_op, rdsr_cfg))
+		if (s32cc_mem_exec_read_op(priv, &rdsr_sdr_op, rdsr_cfg))
 			return -1;
 	}
 
-	if (s32gen1_mem_exec_write_op(priv, &wrcr2_sdr_op, wrcr2_cfg))
+	if (s32cc_mem_exec_write_op(priv, &wrcr2_sdr_op, wrcr2_cfg))
 		return -1;
 
 	qspi_write32(priv->flags, &regs->mcr, mcr2);
 
-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
+	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
 	udelay(400);
 
 	return 0;

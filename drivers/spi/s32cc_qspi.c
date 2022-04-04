@@ -46,8 +46,8 @@ static void dump_op(const struct spi_mem_op *op)
 }
 #endif
 
-static int s32gen1_adjust_op_size(struct spi_slave *slave,
-				  struct spi_mem_op *op)
+static int s32cc_adjust_op_size(struct spi_slave *slave,
+				struct spi_mem_op *op)
 {
 	return 0;
 }
@@ -67,8 +67,8 @@ static u32 clear_fifos(struct fsl_qspi_priv *priv)
 	return mcr_reg;
 }
 
-int s32gen1_mem_exec_write_op(struct fsl_qspi_priv *priv,
-			      const struct spi_mem_op *op, u8 lut_cfg)
+int s32cc_mem_exec_write_op(struct fsl_qspi_priv *priv,
+			    const struct spi_mem_op *op, u8 lut_cfg)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg, i, words = 0;
@@ -127,8 +127,8 @@ int s32gen1_mem_exec_write_op(struct fsl_qspi_priv *priv,
 	return 0;
 }
 
-int s32gen1_mem_exec_read_op(struct fsl_qspi_priv *priv,
-			     const struct spi_mem_op *op, u8 lut_cfg)
+int s32cc_mem_exec_read_op(struct fsl_qspi_priv *priv,
+			   const struct spi_mem_op *op, u8 lut_cfg)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr_reg, rbsr_reg, data, size = 0;
@@ -396,7 +396,7 @@ static bool add_op_to_lutdb(struct fsl_qspi_priv *priv,
 	return true;
 }
 
-u32 *s32gen1_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index)
+u32 *s32cc_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index)
 {
 	return &regs->lut[index * LUTS_PER_CONFIG];
 }
@@ -410,7 +410,7 @@ static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
 	iter = &lut_configs[opcode].conf[0];
 	iterb = iter;
 
-	lutaddr = s32gen1_get_lut_seq_start(regs, index);
+	lutaddr = s32cc_get_lut_seq_start(regs, index);
 
 	/* Unlock the LUT */
 	qspi_write32(priv->flags, &regs->lutkey, LUT_KEY_VALUE);
@@ -457,8 +457,8 @@ static bool enable_op(struct fsl_qspi_priv *priv, const struct spi_mem_op *op)
 	return true;
 }
 
-bool s32gen1_enable_operators(struct fsl_qspi_priv *priv, struct qspi_op *ops,
-			      size_t n_ops)
+bool s32cc_enable_operators(struct fsl_qspi_priv *priv, struct qspi_op *ops,
+			    size_t n_ops)
 
 {
 	bool res;
@@ -485,7 +485,7 @@ bool s32gen1_enable_operators(struct fsl_qspi_priv *priv, struct qspi_op *ops,
 	return true;
 }
 
-void s32gen1_disable_operators(struct qspi_op *ops, size_t n_ops)
+void s32cc_disable_operators(struct qspi_op *ops, size_t n_ops)
 {
 	size_t i;
 	const struct spi_mem_op *op;
@@ -637,7 +637,7 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 
 #if defined(CONFIG_SPI_FLASH_MACRONIX) || \
 	defined(CONFIG_SPI_FLASH_STMICRO)
-	if (s32gen1_mem_enable_ddr(priv, &ddr_config)) {
+	if (s32cc_mem_enable_ddr(priv, &ddr_config)) {
 		printf("Error: Failed to enable OPI DDR mode\n");
 		return -1;
 	}
@@ -697,7 +697,7 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 	return 0;
 }
 
-int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
+int s32cc_enable_spi(struct fsl_qspi_priv *priv, bool force)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 mcr;
@@ -708,7 +708,7 @@ int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
 #if defined(CONFIG_SPI_FLASH_MACRONIX) || \
 	defined(CONFIG_SPI_FLASH_STMICRO)
 	if (priv->ddr_mode) {
-		if (s32gen1_mem_reset(priv))
+		if (s32cc_mem_reset(priv))
 			return -1;
 	}
 #endif
@@ -756,8 +756,8 @@ int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
 	return 0;
 }
 
-static inline void s32gen1_qspi_print_read_speed(const struct spi_mem_op *op,
-						 unsigned long us_before)
+static inline void s32cc_qspi_print_read_speed(const struct spi_mem_op *op,
+					       unsigned long us_before)
 {
 #ifdef DEBUG
 	unsigned long us_after, us;
@@ -774,7 +774,7 @@ static inline void s32gen1_qspi_print_read_speed(const struct spi_mem_op *op,
 #endif
 }
 
-static inline unsigned long s32gen1_get_initial_ts(void)
+static inline unsigned long s32cc_get_initial_ts(void)
 {
 #ifdef DEBUG
 	return timer_get_boot_us();
@@ -799,10 +799,10 @@ static int qspi_read_mem(struct fsl_qspi_priv *priv,
 	invalidate_dcache_range(op->addr.val, op->addr.val + op->data.nbytes);
 
 	/* Read out the data directly from the AHB buffer. */
-	us_before = s32gen1_get_initial_ts();
+	us_before = s32cc_get_initial_ts();
 	memcpy_fromio(op->data.buf.in, (void *)(uintptr_t)op->addr.val,
 		      op->data.nbytes);
-	s32gen1_qspi_print_read_speed(op, us_before);
+	s32cc_qspi_print_read_speed(op, us_before);
 
 	qspi_write32(priv->flags, &regs->mcr, mcr_reg);
 	return 0;
@@ -834,7 +834,7 @@ static void qspi_invalidate_ahb(struct fsl_qspi_priv *priv)
 	qspi_write32(priv->flags, &regs->mcr, mcr);
 }
 
-static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
+static int s32cc_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 {
 	struct fsl_qspi_priv *priv;
 	struct udevice *bus;
@@ -860,7 +860,7 @@ static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	/* Register and memory write */
 	if (op->data.dir == SPI_MEM_DATA_OUT) {
 		priv->flags &= ~QSPI_FLAG_PREV_READ_MEM;
-		return s32gen1_mem_exec_write_op(priv, op, lut_cfg);
+		return s32cc_mem_exec_write_op(priv, op, lut_cfg);
 	}
 
 	/* Memory operation */
@@ -879,7 +879,7 @@ static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 		 * after any DTR-OPI read operation.
 		 */
 #if defined(CONFIG_TARGET_S32R45EVB)
-		s32gen1_enable_spi(priv, true);
+		s32cc_enable_spi(priv, true);
 #endif
 		return ret;
 	}
@@ -887,11 +887,11 @@ static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	priv->flags &= ~QSPI_FLAG_PREV_READ_MEM;
 
 	/* Read Register */
-	return s32gen1_mem_exec_read_op(priv, op, lut_cfg);
+	return s32cc_mem_exec_read_op(priv, op, lut_cfg);
 }
 
-static bool s32gen1_supports_op(struct spi_slave *slave,
-				const struct spi_mem_op *op)
+static bool s32cc_supports_op(struct spi_slave *slave,
+			      const struct spi_mem_op *op)
 {
 	struct udevice *bus;
 	struct fsl_qspi_priv *priv;
@@ -905,15 +905,15 @@ static bool s32gen1_supports_op(struct spi_slave *slave,
 		if (enable_ddr(priv))
 			return -1;
 	} else {
-		if (s32gen1_enable_spi(priv, false))
+		if (s32cc_enable_spi(priv, false))
 			return -1;
 	}
 
 	return enable_op(priv, op);
 }
 
-struct spi_controller_mem_ops s32gen1_mem_ops = {
-	.adjust_op_size = s32gen1_adjust_op_size,
-	.supports_op = s32gen1_supports_op,
-	.exec_op = s32gen1_exec_op,
+struct spi_controller_mem_ops s32cc_mem_ops = {
+	.adjust_op_size = s32cc_adjust_op_size,
+	.supports_op = s32cc_supports_op,
+	.exec_op = s32cc_exec_op,
 };

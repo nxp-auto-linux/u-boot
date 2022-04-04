@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 #include "fsl_qspi.h"
@@ -32,7 +32,7 @@ SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_RDID, 1),
 	   SPI_MEM_OP_NO_DUMMY,
 	   SPI_MEM_OP_DATA_IN(SPI_NOR_MAX_ID_LEN, NULL, 1));
 
-int s32gen1_mem_reset(struct fsl_qspi_priv *priv)
+int s32cc_mem_reset(struct fsl_qspi_priv *priv)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u8 rsten_cfg, rst_cfg;
@@ -55,23 +55,23 @@ int s32gen1_mem_reset(struct fsl_qspi_priv *priv)
 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
 
-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
 		return -1;
 
-	if (s32gen1_mem_exec_write_op(priv, &rsten_ddr_op, rsten_cfg))
+	if (s32cc_mem_exec_write_op(priv, &rsten_ddr_op, rsten_cfg))
 		return -1;
 
-	if (s32gen1_mem_exec_write_op(priv, &rst_ddr_op, rst_cfg))
+	if (s32cc_mem_exec_write_op(priv, &rst_ddr_op, rst_cfg))
 		return -1;
 
 	/* Reset recovery time after a read operation */
 	udelay(40);
-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
+	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
 
 	return 0;
 }
 
-void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *priv)
+void s32cc_reset_bootrom_settings(struct fsl_qspi_priv *priv)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 bfgencr, lutid;
@@ -84,7 +84,7 @@ void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *priv)
 	bfgencr = qspi_read32(priv->flags, &regs->bfgencr);
 	lutid = (bfgencr & QSPI_BFGENCR_SEQID_MASK) >> QSPI_BFGENCR_SEQID_SHIFT;
 
-	lutaddr = s32gen1_get_lut_seq_start(regs, lutid);
+	lutaddr = s32cc_get_lut_seq_start(regs, lutid);
 	lut = qspi_read32(priv->flags, lutaddr);
 
 	/* Not configured */
@@ -99,11 +99,11 @@ void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *priv)
 	else
 		priv->ddr_mode = false;
 
-	s32gen1_mem_reset(priv);
+	s32cc_mem_reset(priv);
 }
 
-int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *priv,
-			   struct qspi_config *ddr_config)
+int s32cc_mem_enable_ddr(struct fsl_qspi_priv *priv,
+			 struct qspi_config *ddr_config)
 {
 		struct fsl_qspi_regs *regs = priv->regs;
 	u8 id[SPI_NOR_MAX_ID_LEN];
@@ -125,7 +125,7 @@ int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *priv,
 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 		;
 
-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
 		return -1;
 
 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
@@ -133,10 +133,10 @@ int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *priv,
 	/* Enable the module */
 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
 
-	if (s32gen1_mem_exec_read_op(priv, &read_id_op, read_id_cfg))
+	if (s32cc_mem_exec_read_op(priv, &read_id_op, read_id_cfg))
 		return -1;
 
-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
+	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
 
 	for (i = 0; i < SPI_NOR_MIN_ID_LEN; i++) {
 		byte = (SPI_NOR_MIN_ID_LEN - 1) - i;

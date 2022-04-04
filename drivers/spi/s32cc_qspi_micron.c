@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  */
 
 #include "fsl_qspi.h"
@@ -92,7 +92,7 @@ int micron_mem_enable_ddr(struct fsl_qspi_priv *priv)
 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 		;
 
-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
 		return -1;
 
 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
@@ -101,24 +101,24 @@ int micron_mem_enable_ddr(struct fsl_qspi_priv *priv)
 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
 
 	/* Enable write */
-	if (s32gen1_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
+	if (s32cc_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
 		return -1;
 
-	if (s32gen1_mem_exec_write_op(priv, &micron_set_dummy,
-				      micron_set_dummy_cfg))
+	if (s32cc_mem_exec_write_op(priv, &micron_set_dummy,
+				    micron_set_dummy_cfg))
 		return -1;
 
 	/* Enable write */
-	if (s32gen1_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
+	if (s32cc_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
 		return -1;
 
-	if (s32gen1_mem_exec_write_op(priv, &micron_io_mode,
-				      micron_io_mode_cfg))
+	if (s32cc_mem_exec_write_op(priv, &micron_io_mode,
+				    micron_io_mode_cfg))
 		return -1;
 
 	qspi_write32(priv->flags, &regs->mcr, mcr2);
 
-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
+	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
 	udelay(400);
 
 	return 0;
