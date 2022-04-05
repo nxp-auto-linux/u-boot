@@ -167,7 +167,7 @@ static int ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 {
 	int off, ret;
 	const char *status;
-	const char *exp_compatible = "fsl,s32gen1-ddr";
+	const char *exp_compatible = "nxp,s32cc-ddr";
 
 	/* Get node offset in U-Boot DT */
 	off = fdt_node_offset_by_compatible(old_blob, -1, exp_compatible);
