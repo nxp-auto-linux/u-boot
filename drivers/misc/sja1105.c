@@ -18,8 +18,9 @@
 #   define CONFIG_DEFAULT_SPI_BUS	0
 #endif
 
-#define SJA_DSPI_MODE	(SPI_CPHA | SPI_FMSZ_16)
+#define SJA_DSPI_MODE	SPI_CPHA
 #define SJA_DSPI_HZ	4000000
+#define SJA_DSPI_FMSZ	16
 
 #define sja_debug(fmt, ...) \
 	debug("[SJA1105]%s:%d " fmt, __func__, __LINE__, ##__VA_ARGS__)
@@ -113,7 +114,7 @@ static struct spi_slave *get_spi_slave(struct sja_parms *sjap)
 	 */
 	slave->max_hz = SJA_DSPI_HZ;
 	slave->mode = SJA_DSPI_MODE;
-	slave->wordlen = SPI_DEFAULT_WORDLEN;
+	slave->wordlen = SJA_DSPI_FMSZ;
 	return slave;
 }
 
