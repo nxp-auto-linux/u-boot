@@ -209,7 +209,7 @@ static void fsl_dspi_cfg_cs_active_state(struct fsl_dspi_priv *priv,
 }
 
 static int fsl_dspi_cfg_ctar_mode(struct fsl_dspi_priv *priv,
-		uint cs, uint mode)
+		uint cs, uint mode, unsigned int wordlen)
 {
 	uint bus_setup;
 
@@ -225,6 +225,8 @@ static int fsl_dspi_cfg_ctar_mode(struct fsl_dspi_priv *priv,
 		bus_setup |= DSPI_CTAR_CPHA;
 	if (mode & SPI_LSB_FIRST)
 		bus_setup |= DSPI_CTAR_LSBFE;
+	if (wordlen == 16)
+		bus_setup |= DSPI_CTAR_TRSZ(15);
 
 	dspi_write32(priv->flags, &priv->regs->ctar[0], bus_setup);
 
@@ -580,6 +582,7 @@ static int fsl_dspi_claim_bus(struct udevice *dev)
 	struct udevice *bus = dev->parent;
 	struct dm_spi_slave_plat *slave_plat =
 		dev_get_parent_plat(dev);
+	struct spi_slave *slave = dev_get_parent_priv(dev);
 
 	priv = dev_get_priv(bus);
 
@@ -587,7 +590,7 @@ static int fsl_dspi_claim_bus(struct udevice *dev)
 	cpu_dspi_claim_bus(dev_seq(bus), slave_plat->cs);
 
 	/* configure transfer mode */
-	fsl_dspi_cfg_ctar_mode(priv, slave_plat->cs, priv->mode);
+	fsl_dspi_cfg_ctar_mode(priv, slave_plat->cs, priv->mode, slave->wordlen);
 
 	/* configure active state of CSX */
 	fsl_dspi_cfg_cs_active_state(priv, slave_plat->cs,
