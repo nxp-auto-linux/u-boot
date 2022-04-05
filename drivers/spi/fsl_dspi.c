@@ -245,7 +245,7 @@ static void fsl_dspi_cfg_cs_active_state(struct fsl_dspi_priv *priv,
 }
 
 static int fsl_dspi_cfg_ctar_mode(struct fsl_dspi_priv *priv,
-		uint cs, uint mode)
+		uint cs, uint mode, unsigned int wordlen)
 {
 	uint bus_setup;
 	char pcssck = 0, cssck = 0;
@@ -263,6 +263,8 @@ static int fsl_dspi_cfg_ctar_mode(struct fsl_dspi_priv *priv,
 		bus_setup |= DSPI_CTAR_CPHA;
 	if (mode & SPI_LSB_FIRST)
 		bus_setup |= DSPI_CTAR_LSBFE;
+	if (wordlen == 16)
+		bus_setup |= DSPI_CTAR_TRSZ(15);
 
 	ns_delay_scale(&pcssck, &cssck, CONFIG_DSPI_CS_SCK_DELAY,
 		       priv->bus_clk);
@@ -587,7 +589,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	fsl_dspi_cfg_speed(&dspi->priv, max_hz);
 
 	/* configure transfer mode */
-	fsl_dspi_cfg_ctar_mode(&dspi->priv, cs, mode);
+	fsl_dspi_cfg_ctar_mode(&dspi->priv, cs, mode, dspi->slave->wordlen);
 
 	/* configure active state of CSX */
 	fsl_dspi_cfg_cs_active_state(&dspi->priv, cs, mode);
@@ -703,6 +705,7 @@ static int fsl_dspi_claim_bus(struct udevice *dev)
 	struct udevice *bus = dev->parent;
 	struct dm_spi_slave_platdata *slave_plat =
 		dev_get_parent_platdata(dev);
+	struct spi_slave *slave = dev_get_parent_priv(dev);
 
 	priv = dev_get_priv(bus);
 
@@ -710,7 +713,8 @@ static int fsl_dspi_claim_bus(struct udevice *dev)
 	cpu_dspi_claim_bus(bus->seq, slave_plat->cs);
 
 	/* configure transfer mode */
-	fsl_dspi_cfg_ctar_mode(priv, slave_plat->cs, priv->mode);
+	fsl_dspi_cfg_ctar_mode(priv, slave_plat->cs, priv->mode,
+			       slave->wordlen);
 
 	/* configure active state of CSX */
 	fsl_dspi_cfg_cs_active_state(priv, slave_plat->cs,
