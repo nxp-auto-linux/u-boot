@@ -9,8 +9,8 @@
 #define SERDES_XPCS_REGS_H
 
 #include <common.h>
-#include "linux/types.h"
 #include "linux/errno.h"
+#include "linux/types.h"
 
 #define EXIT_FAILURE 1
 

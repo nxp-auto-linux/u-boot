@@ -20,6 +20,38 @@
 #define XPCS_BASE(xpcs) (((xpcs) == 0)  ? (SERDES_XPCS_0_ADDR2) : \
 					  (SERDES_XPCS_1_ADDR2))
 
+static struct {
+	u32 start;
+	u32 end;
+} regs[] = {
+	{0x1F0000, 0x1F0006},
+	{0x1F000F, 0x1F000F},
+	{0x1F0708, 0x1F070F},
+	{0x1F0710, 0x1F0710},
+	{0x1F0710, 0x1F0710},
+	{0x1F8000, 0x1F8003},
+	{0x1F8005, 0x1F8005},
+	{0x1F800A, 0x1F800A},
+	{0x1F8010, 0x1F8012},
+	{0x1F8015, 0x1F8015},
+	{0x1F8018, 0x1F8018},
+	{0x1F8020, 0x1F8020},
+	{0x1F8030, 0x1F8037},
+	{0x1F803C, 0x1F803C},
+	{0x1F8040, 0x1F8040},
+	{0x1F8050, 0x1F8058},
+	{0x1F805C, 0x1F805E},
+	{0x1F8060, 0x1F8060},
+	{0x1F8064, 0x1F8064},
+	{0x1F806B, 0x1F806B},
+	{0x1F8070, 0x1F8078},
+	{0x1F8091, 0x1F8092},
+	{0x1F8096, 0x1F8096},
+	{0x1F8098, 0x1F8099},
+	{0x1F80A0, 0x1F80A2},
+	{0x1F80E1, 0x1F80E1},
+};
+
 static u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
 {
 	u32 ofsleft = (reg >> 8) & 0xffffU;
@@ -70,6 +102,22 @@ static void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
 
 #define PCSBCLRSET(serdes_base, pcs, reg, clr_mask, mask) \
 	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, clr_mask, mask)
+
+void serdes_pcs_dump_reg(void *base, u32 xpcs)
+{
+	u32 regidx;
+
+	for (regidx = 0; regidx < ARRAY_SIZE(regs); regidx++) {
+		u32 regcurr = regs[regidx].start;
+		u32 regend = regs[regidx].end;
+
+		do {
+			printf("0x%08x => 0x%04x\n",
+			       regcurr, PCSR16(base, xpcs, regcurr));
+			regcurr++;
+		} while (regcurr <= regend);
+	}
+}
 
 static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
 				u16 val, u16 us, u16 cnt)

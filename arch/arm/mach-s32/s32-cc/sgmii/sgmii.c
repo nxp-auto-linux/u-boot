@@ -330,7 +330,10 @@ enum xpcs_cmd {
 	S32_XPCS_TRANSIT_TO_2500M,
 	S32_XPCS_AN_AUTO_SW_ENABLE,
 	S32_XPCS_AN_ENABLE,
-	S32_XPCS_AN_DISABLE
+	S32_XPCS_AN_DISABLE,
+	S32_XPCS_LO_ENABLE,
+	S32_XPCS_LO_DISABLE,
+	S32_XPCS_DUMP,
 };
 
 static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
@@ -377,6 +380,13 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
 			cmd = S32_XPCS_AN_ENABLE;
 		else if (!strcmp(argv[4], "disable"))
 			cmd = S32_XPCS_AN_DISABLE;
+	} else if (!strcmp(argv[3], "lo")) {
+		if (!strcmp(argv[4], "enable"))
+			cmd = S32_XPCS_LO_ENABLE;
+		else if (!strcmp(argv[4], "disable"))
+			cmd = S32_XPCS_LO_DISABLE;
+	} else if (!strcmp(argv[3], "dump")) {
+		cmd = S32_XPCS_DUMP;
 	} else {
 		return CMD_RET_USAGE;
 	}
@@ -406,6 +416,14 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
 		serdes_pcs_an_auto_sw_disable(VPTR(serdes->base), pcs_id);
 		serdes_pcs_an_disable(VPTR(serdes->base), pcs_id);
 		break;
+	case S32_XPCS_LO_ENABLE:
+		serdes_pma_loopback_enable(VPTR(serdes->base), pcs_id);
+		break;
+	case S32_XPCS_LO_DISABLE:
+		serdes_pma_loopback_disable(VPTR(serdes->base), pcs_id);
+		break;
+	case S32_XPCS_DUMP:
+		serdes_pcs_dump_reg(VPTR(serdes->base), pcs_id);
 	default:
 		return CMD_RET_USAGE;
 	}
@@ -418,7 +436,9 @@ U_BOOT_CMD(xpcs, 6, 0, do_xpcs_cmd,
 	   "xpcs <serdes> <xpcs> transit <1000M|2500M> - change serdes mode\n"
 	   "xpcs <serdes> <xpcs> ss <10M|100M|1000M|2500M> - change speed and serdes mode when required\n"
 	   "xpcs <serdes> <xpcs> an <enable|disable> - auto-negotiation control\n"
-	   "xpcs <serdes> <xpcs> an_auto <enable|disable> - auto-negotiation control with automatic speed change"
+	   "xpcs <serdes> <xpcs> an_auto <enable|disable> - auto-negotiation control with automatic speed change\n"
+	   "xpcs <serdes> <xpcs> lo <enable|disable> - PMA loopback enable/disable\n"
+	   "xpcs <serdes> <xpcs> dump - dump XPCS indirect registers\n"
 );
 
 /* Provide UCLASS DRV so SerDes driver can bind to it*/
