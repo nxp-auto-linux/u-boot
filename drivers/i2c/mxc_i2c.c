@@ -942,6 +942,8 @@ static int mxc_i2c_probe(struct udevice *bus)
 		}
 	}
 
+	pinctrl_select_state(bus, "default");
+
 	/*
 	 * Pinmux settings are in board file now, until pinmux is supported,
 	 * we can set pinmux here in probe function.
