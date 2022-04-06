@@ -140,8 +140,6 @@ static u16 i2c_clk_div[50][2] = {
 #define CONFIG_SYS_MXC_I2C5_SLAVE 0
 #endif
 
-int enable_i2c_clk(unsigned char enable, unsigned int i2c_num);
-
 /*
  * Calculate and set proper clock divider
  */
@@ -700,8 +698,7 @@ static int bus_i2c_write(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
 
 static struct mxc_i2c_bus mxc_i2c_buses[] = {
 #if defined(CONFIG_LS1021A) || defined(CONFIG_VF610) || \
-	defined(CONFIG_FSL_LAYERSCAPE) || \
-	defined(CONFIG_NXP_S32CC)
+	defined(CONFIG_FSL_LAYERSCAPE)
 	{ 0, I2C1_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 1, I2C2_BASE_ADDR, I2C_QUIRK_FLAG },
 	{ 2, I2C3_BASE_ADDR, I2C_QUIRK_FLAG },
@@ -888,14 +885,6 @@ static int mxc_i2c_set_bus_speed(struct udevice *bus, unsigned int speed)
 	struct mxc_i2c_bus *i2c_bus = dev_get_priv(bus);
 
 	return bus_i2c_set_bus_speed(i2c_bus, speed);
-}
-
-__attribute__((weak))
-int gpio_request_by_name_nodev(ofnode node, const char *list_name, int index,
-			       struct gpio_desc *desc, int flags)
-{
-	// To be overridden
-	return -1;
 }
 
 static int mxc_i2c_probe(struct udevice *bus)
