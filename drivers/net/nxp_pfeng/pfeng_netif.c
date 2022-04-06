@@ -2,7 +2,7 @@
 /*
  * NXP S32G PFE Ethernet port (netif) driver
  *
- * Copyright 2023-2025 NXP
+ * Copyright 2023-2026 NXP
  */
 
 #define LOG_CATEGORY UCLASS_ETH
@@ -510,13 +510,7 @@ static int netif_dt_parse_phy(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	ret = phy_get_interface_by_name(cfg->phy_mode);
-	if ((ret == -1) || ret >= PHY_INTERFACE_MODE_COUNT) {
-		dev_err(dev, "Invalid PHY interface '%s'\n", cfg->phy_mode);
-		return -EINVAL;
-	}
-
-	cfg->phy_interface = (phy_interface_t)ret;
+	cfg->phy_interface = dev_read_phy_mode(dev);
 	pfeng_cfg->emac_int_mode[cfg->phyif] = phy_intf_to_pfe_emac(cfg->phy_interface);
 
 	return 0;

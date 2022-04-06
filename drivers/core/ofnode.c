@@ -1257,3 +1257,26 @@ int ofnode_delete(ofnode *nodep)
 
 	return 0;
 }
+
+phy_interface_t ofnode_read_phy_mode(ofnode node)
+{
+	const char *mode;
+	int i;
+
+	assert(ofnode_valid(node));
+
+	mode = ofnode_read_string(node, "phy-mode");
+	if (!mode)
+		mode = ofnode_read_string(node, "phy-connection-type");
+
+	if (!mode)
+		return PHY_INTERFACE_MODE_NONE;
+
+	for (i = 0; i < PHY_INTERFACE_MODE_COUNT; i++)
+		if (!strcmp(mode, phy_interface_strings[i]))
+			return i;
+
+	debug("%s: Invalid PHY interface '%s'\n", __func__, mode);
+
+	return PHY_INTERFACE_MODE_NONE;
+}
