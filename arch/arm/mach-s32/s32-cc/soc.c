@@ -1,21 +1,16 @@
-// SPDX-License-Identifier:     GPL-2.0+
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
  * Copyright 2017-2022 NXP
  */
 
 #include <common.h>
-#include <cpu_func.h>
 #include <debug_uart.h>
-#include <asm-generic/sections.h>
-#include <asm/io.h>
+#include <asm/global_data.h>
 #include <asm/sections.h>
-#include <asm/system.h>
 #include <asm/armv8/mmu.h>
-#include <linux/sizes.h>
 
-#define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
-#define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
+DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 #define PERIPH_BASE      0x40000000
@@ -29,10 +24,7 @@
 #endif
 #endif
 
-DECLARE_GLOBAL_DATA_PTR;
-
 #ifndef CONFIG_SYS_DCACHE_OFF
-
 static struct mm_region s32_mem_map[] = {
 	{
 		PHYS_SDRAM_1, PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE,
@@ -103,7 +95,7 @@ static void disable_qspi_mmu_entry(void)
 		}
 	}
 }
-#else
+#else /* CONFIG_SYS_DCACHE_OFF */
 static void disable_qspi_mmu_entry(void)
 {
 }

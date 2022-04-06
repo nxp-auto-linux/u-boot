@@ -15,6 +15,10 @@
 #include <linux/sizes.h>
 #include <generated/autoconf.h>
 
+/* memory mapped external flash */
+#define CONFIG_SYS_FLASH_BASE		0x0UL
+#define CONFIG_SYS_FLASH_SIZE		(SZ_512M)
+
 #define PHYS_SDRAM_1			0x80000000UL
 #ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
 #define PHYS_SDRAM_1_SIZE		(SZ_1G)
@@ -42,12 +46,6 @@
 #  define CONFIG_GICSUPPORT
 #  define CONFIG_USE_IRQ
 #endif
-
-/* memory mapped external flash */
-#define CONFIG_SYS_FLASH_BASE		0x0UL
-#define CONFIG_SYS_FLASH_SIZE		(SZ_512M)
-
-#define QSPI_BASE_ADDR			0x40134000UL
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
@@ -302,8 +300,6 @@
 #define CONFIG_SYS_HZ			1000
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1
-
-#define FLASH_SECTOR_SIZE		(SZ_64K)
 
 #ifdef CONFIG_SYS_I2C_MXC
 #  define I2C_QUIRK_REG
