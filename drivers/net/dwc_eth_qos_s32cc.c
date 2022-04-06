@@ -168,7 +168,7 @@ static int eqos_start_resets_s32cc(struct udevice *dev)
 	debug("%s(dev=%p):\n", __func__, dev);
 
 	interface = eqos->config->interface(dev);
-	if (interface == PHY_INTERFACE_MODE_NONE) {
+	if (interface == PHY_INTERFACE_MODE_NA) {
 		pr_err("Invalid PHY interface\n");
 		return -EINVAL;
 	}
