@@ -17,7 +17,10 @@
 #include <dm/device_compat.h>
 #include <linux/sizes.h>
 
+#include "serdes_regs.h"
 #include "serdes_s32gen1.h"
+#include "serdes_xpcs_regs.h"
+#include "sgmii.h"
 
 #define PCIE_DEFAULT_INTERNAL_CLK	CLK_INT
 #define PCIE_DEFAULT_INTERNAL_CLK_FMHZ	CLK_100MHZ
@@ -313,6 +316,84 @@ static void s32_serdes_phy_init(struct s32_serdes *pcie)
 				 0x13, 0xff);
 }
 
+static void s32_serdes_xpcs1_pma_config(struct s32_serdes *pcie)
+{
+	/* Configure TX_VBOOST_LVL and TX_TERM_CTRL */
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MISC_CTRL_2,
+	      EXT_TX_VBOOST_LVL(0x3) | EXT_TX_TERM_CTRL(0x4),
+	      EXT_TX_VBOOST_LVL(0x7) | EXT_TX_TERM_CTRL(0x7));
+	/* Enable phy external control */
+	BSET32(UPTR(pcie->dbi) + SS_PHY_EXT_CTRL_SEL, EXT_PHY_CTRL_SEL);
+	/* Configure ref range, disable PLLB/ref div2 */
+	RMW32(UPTR(pcie->dbi) + SS_PHY_REF_CLK_CTRL,
+	      EXT_REF_RANGE(0x3),
+	      REF_CLK_DIV2_EN | REF_CLK_MPLLB_DIV2_EN | EXT_REF_RANGE(0x7));
+	/* Configure multiplier */
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MPLLB_CTRL_2,
+	      MPLLB_MULTIPLIER(0x27U) | EXT_MPLLB_FRACN_CTRL(0x414),
+	      MPLLB_MULTIPLIER(0xffU) | EXT_MPLLB_FRACN_CTRL(0x7ff) |
+	      1 << 24U | 1 << 28U);
+
+	BCLR32(UPTR(pcie->dbi) + SS_PHY_MPLLB_CTRL, 1 << 1);
+
+	/* Configure tx lane division, disable word clock div2*/
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MPLLB_CTRL_3,
+	      EXT_MPLLB_TX_CLK_DIV(0x5),
+	      EXT_MPLLB_WORD_DIV2_EN | EXT_MPLLB_TX_CLK_DIV(0x7));
+
+	/* Configure configure bandwidth for filtering and div10*/
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MPLLB_CTRL_1,
+	      EXT_MPLLB_BANDWIDTH(0x5f) | EXT_MPLLB_DIV10_CLK_EN,
+	      EXT_MPLLB_BANDWIDTH(0xffff) | EXT_MPLLB_DIV_CLK_EN |
+	      EXT_MPLLB_DIV8_CLK_EN | EXT_MPLLB_DIV_MULTIPLIER(0xff));
+
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MPLLA_CTRL_1,
+	      EXT_MPLLA_BANDWIDTH(0xc5), EXT_MPLLA_BANDWIDTH(0xffff));
+
+	/* Configure VCO */
+	RMW32(UPTR(pcie->dbi) + SS_PHY_XPCS1_RX_OVRD_CTRL,
+	      XPCS1_RX_VCO_LD_VAL(0x540U) | XPCS1_RX_REF_LD_VAL(0x2bU),
+	      XPCS1_RX_VCO_LD_VAL(0x1fffU) | XPCS1_RX_REF_LD_VAL(0x3fU));
+
+	/* Boundary scan control */
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_BS_CTRL,
+	      EXT_BS_RX_LEVEL(0xb) | EXT_BS_RX_BIGSWING,
+	      EXT_BS_RX_LEVEL(0x1f) | EXT_BS_TX_LOWSWING);
+
+	/* Rx loss threshold */
+	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MISC_CTRL_1,
+	      EXT_RX_LOS_THRESHOLD(0x3U) | EXT_RX_VREF_CTRL(0x11U),
+	      EXT_RX_LOS_THRESHOLD(0x3fU) | EXT_RX_VREF_CTRL(0x1fU));
+}
+
+static void s32_serdes_start_mode5(struct s32_serdes *pcie,
+				   enum serdes_xpcs_mode_gen2 xpcs[2])
+{
+	char pcie_name[10];
+
+	sprintf(pcie_name, "pcie%d", pcie->id);
+	if (!hwconfig_subarg_cmp(pcie_name, "demo", "mode5"))
+		return;
+
+	if (!(hwconfig_subarg_cmp(pcie_name, "clock", "ext") &&
+	      hwconfig_subarg_cmp(pcie_name, "fmhz", "100") &&
+	      hwconfig_subarg_cmp(pcie_name, "xpcs_mode", "1"))) {
+		pr_err("serdes: invalid mode5 demo configuration\n");
+		return;
+	}
+
+	printf("Enabling serdes mode5\n");
+	/* Initialize PMA */
+	serdes_pma_mode5((void *)UPTR(pcie->dbi), 1);
+	/* Initialize PHY */
+	s32_serdes_xpcs1_pma_config(pcie);
+	/* Initialize PCS */
+	serdes_pcs_mode5((void *)UPTR(pcie->dbi), 1);
+	/* mode5 representation */
+	xpcs[0] = SGMII_XPCS_PCIE;
+	xpcs[1] = SGMII_XPCS_2G5_OP;
+}
+
 static bool s32_serdes_init(struct s32_serdes *pcie)
 {
 	/* Fall back to mode compatible with PCIe */
@@ -420,7 +501,8 @@ __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
 			     enum serdes_mode ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     enum serdes_clock clktype,
-			     enum serdes_clock_fmhz fmhz)
+			     enum serdes_clock_fmhz fmhz,
+			     enum serdes_xpcs_mode_gen2 xpcs[2])
 {
 	/* Configure SereDes XPCS for PFE/GMAC*/
 	printf("PCIe%d disabled\n", id);
@@ -789,11 +871,17 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	if (IS_SERDES_SGMII(pcie->devtype) &&
 	    pcie->xpcs_mode != SGMII_INAVALID) {
+		enum serdes_xpcs_mode_gen2 xpcs[2] = {SGMII_XPCS_PCIE};
+
+		/* Check, if mode5 demo is requested */
+		s32_serdes_start_mode5(pcie, xpcs);
+
 		ret = s32_eth_xpcs_init(pcie->dbi, pcie->id,
 					pcie->ss_mode,
 					pcie->xpcs_mode,
 					pcie->clktype,
-					pcie->fmhz);
+					pcie->fmhz,
+					xpcs);
 		if (ret) {
 			printf("Error during configuration of SGMII on");
 			printf(" PCIe%d\n", pcie->id);

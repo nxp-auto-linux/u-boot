@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  * The SerDes module source file.
  */
@@ -8,15 +8,19 @@
 #include <serdes_regs.h>
 #include <serdes_xpcs_regs.h>
 #include <stdio.h>
-#include <linux/delay.h>
-#include <linux/printk.h>
-#include <linux/ethtool.h>
 #include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/ethtool.h>
+#include <linux/printk.h>
 
+#include <serdes_s32gen1_io.h>
+#include <sgmii.h>
+
+#define VPTR(a)		((void *)(uintptr_t)(a))
 #define XPCS_BASE(xpcs) (((xpcs) == 0)  ? (SERDES_XPCS_0_ADDR2) : \
 					  (SERDES_XPCS_1_ADDR2))
 
-u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
+static u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
 {
 	u32 ofsleft = (reg >> 8) & 0xffffU;
 	u32 ofsright = (reg & 0xffU);
@@ -26,7 +30,7 @@ u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
 	return readl(base + pcs_off + 4 * ofsright) & 0xffffU;
 }
 
-void serdes_xpcs_write_gen2(void *base, u32 xpcs, u32 reg, u16 val)
+static void serdes_xpcs_write_gen2(void *base, u32 xpcs, u32 reg, u16 val)
 {
 	u32 ofsleft = (reg >> 8) & 0xffffU;
 	u32 ofsright = (reg & 0xffU);
@@ -36,8 +40,8 @@ void serdes_xpcs_write_gen2(void *base, u32 xpcs, u32 reg, u16 val)
 	writel(val, base + pcs_off + 4 * ofsright);
 }
 
-void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
-			       u16 clr_mask, u16 mask)
+static void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
+				      u16 clr_mask, u16 mask)
 {
 	u16 tmp_rd =  0;
 
@@ -59,13 +63,13 @@ void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
 })
 
 #define PCSBCLR(serdes_base, pcs, reg, mask) \
-	serdes_xpcs_clr_setb_gen2(serdes_base, pcs, reg, mask, 0)
+	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, mask, 0)
 
 #define PCSBSET(serdes_base, pcs, reg, mask) \
-	serdes_xpcs_clr_setb_gen2(serdes_base, pcs, reg, 0, mask)
+	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, 0, mask)
 
 #define PCSBCLRSET(serdes_base, pcs, reg, clr_mask, mask) \
-	serdes_xpcs_clr_setb_gen2(serdes_base, pcs, reg, clr_mask, mask)
+	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, clr_mask, mask)
 
 static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
 				u16 val, u16 us, u16 cnt)
@@ -79,6 +83,13 @@ static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
 	}
 
 	return ((tmp > 0)) ? (0) : (-ETIMEDOUT);
+}
+
+static void serdes_pma_high_freq_recovery(void *base, u32 xpcs)
+{
+	/* PCS signal protection, PLL railout recovery */
+	PCSBSET(base, xpcs, VR_MII_DBG_CTRL, SUPPRESS_LOS_DET | RX_DT_EN_CTL);
+	PCSBSET(base, xpcs, VR_MII_Gen5_12G_16G_MISC_CTRL0, PLL_CTRL);
 }
 
 void serdes_pcs_loopback_enable(void *base, u32 xpcs)
@@ -283,6 +294,11 @@ void serdes_pma_loopback_disable(void *base, u32 xpcs)
 	PCSBCLR(base, xpcs, SR_MII_CTRL, LBE);
 }
 
+static void serdes_pma_configure_tx_eq_post(void *base, u32 xpcs)
+{
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_EQ_CTRL1, 1u << 6U);
+}
+
 static void serdes_pma_configure_tx_ctr(void *base, u32 xpcs)
 {
 	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_EQ_CTRL0,
@@ -463,7 +479,7 @@ static void serdes_pma_mpllb_stop_cal(void *base, u32 xpcs)
 	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0, MPPLB_CAL_DISABLE);
 }
 
-void serdes_pma_select_plla_ref(void *base, u32 xpcs)
+static void serdes_pma_select_plla_ref(void *base, u32 xpcs)
 {
 	/* Select PLLA */
 	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
@@ -471,7 +487,7 @@ void serdes_pma_select_plla_ref(void *base, u32 xpcs)
 	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
 }
 
-void serdes_pma_select_pllb_ref(void *base, u32 xpcs)
+static void serdes_pma_select_pllb_ref(void *base, u32 xpcs)
 {
 	/* Select PLLB */
 	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
@@ -479,7 +495,7 @@ void serdes_pma_select_pllb_ref(void *base, u32 xpcs)
 	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
 }
 
-int serdes_bifurcation_pll_transit(void *base, u32 xpcs, bool plla)
+static int serdes_bifurcation_pll_transit(void *base, u32 xpcs, bool plla)
 {
 	int ret = 0;
 
@@ -531,7 +547,7 @@ int serdes_bifurcation_pll_transit(void *base, u32 xpcs, bool plla)
 }
 
 /* Transit to PLLB */
-int serdes_bifurcation_pll_transit_to_3125Mhz(void *base, u32 xpcs,
+int serdes_bifurcation_pll_transit_to_3125mhz(void *base, u32 xpcs,
 					      enum serdes_clock_fmhz fmhz)
 {
 	/* Switch PCS logic to 2.5G */
@@ -545,7 +561,7 @@ int serdes_bifurcation_pll_transit_to_3125Mhz(void *base, u32 xpcs,
 }
 
 /* Transit to PLLA */
-int serdes_bifurcation_pll_transit_to_1250Mhz(void *base, u32 xpcs,
+int serdes_bifurcation_pll_transit_to_1250mhz(void *base, u32 xpcs,
 					      enum serdes_clock_fmhz fmhz)
 {
 	/* Switch PCS logic to 1G */
@@ -556,6 +572,54 @@ int serdes_bifurcation_pll_transit_to_1250Mhz(void *base, u32 xpcs,
 
 	/* Do the transit PLLA */
 	return serdes_bifurcation_pll_transit(base, xpcs, true);
+}
+
+void serdes_pma_mode5(void *base, u32 xpcs)
+{
+	if (serdes_pcs_wait_for_power_good(base, xpcs))
+		pr_err("XPCS%d power-up failed\n", xpcs);
+	/* Configure equlaization */
+	serdes_pma_configure_tx_eq_post(base, xpcs);
+	/* Configure transmit eq and termination */
+	serdes_pma_configure_tx_ctr(base, xpcs);
+	/* Reconfigure PCS to 2.5Gbps */
+	serdes_pcs_set_2500M_mode(base, xpcs);
+	/* Enable receiver recover */
+	serdes_pma_high_freq_recovery(base, xpcs);
+}
+
+void serdes_pcs_mode5(void *base, u32 xpcs)
+{
+	/* Enable volatge boost */
+	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, VBOOST_EN_0);
+
+	/* TX rate baud  */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
+		   0x7,
+		   0x0U);
+
+	/* Rx rate baud/2 */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
+		   0x3U,
+		   0x1U);
+
+	/* Set low-frequency operating band */
+	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL,
+		   CDR_SSC_EN_0, VCO_LOW_FREQ_0);
+
+	/* Reconfigure PHY */
+	serdes_bifurcation_pll_transit(base, xpcs, false);
+
+	/* Now do cold reset */
+	/* Issue PCIe cold reset to restart PHY and
+	 * commit new parameters to PHY
+	 */
+	BSET32(UPTR(base) + SS_RST_CTRL, COLD_RST);
+	udelay(1000U);
+	BCLR32(UPTR(base) + SS_RST_CTRL, COLD_RST);
+
+	/* Wait for vendor specific reset */
+	serdes_pcs_wait_for_vreset(base, xpcs);
 }
 
 void serdes_pcs_pma_init_gen2(void *base, enum serdes_clock_fmhz fmhz,

@@ -4,25 +4,27 @@
  *
  * The SerDes config code
  */
+
 #include <common.h>
+#include <dm.h>
+#include <log.h>
 #include <stdio.h>
 #include <linux/delay.h>
 #include <linux/errno.h>
 #include <linux/ethtool.h>
-#include <asm/io.h>
-#include <stdlib.h>
 #include <linux/printk.h>
-#include <log.h>
-#include <dm.h>
 
 #include <serdes_regs.h>
 #include <serdes_xpcs_regs.h>
+#include <sgmii.h>
 
 #define S32G_SERDES_0_BASE			0x40400000U
 #define S32G_SERDES_1_BASE			0x44100000U
 #define S32G_SERDES_BASE_LEN			0x100000
 #define S32G_SERDES_COUNT			2
 #define S32G_SERDES_XPCS_COUNT			2
+
+#define VPTR(a)		((void *)(uintptr_t)(a))
 
 /*
  *
@@ -77,7 +79,7 @@ int s32_sgmii_wait_link(int serdes_id, int xpcs)
 
 
 	debug("Waiting for link (SerDes%d XPCS%i)...\n", serdes_id, xpcs);
-	ret = serdes_pma_wait_link(serdes->base, xpcs, 1U);
+	ret = serdes_pma_wait_link(VPTR(serdes->base), xpcs, 1U);
 
 	if (ret)
 		printf("SerDes%d XPCS%i link timed-out\n", serdes_id, xpcs);
@@ -134,18 +136,18 @@ static void s32_serdes_issue_reset(struct s32_xpcs_cfg *serdes)
 {
 	switch (serdes->ss_mode) {
 	case SERDES_MODE_PCIE_SGMII0:
-		serdes_pcs_issue_vreset(serdes->base, 0);
+		serdes_pcs_issue_vreset(VPTR(serdes->base), 0);
 		break;
 	case SERDES_MODE_PCIE_SGMII1:
-		serdes_pcs_issue_vreset(serdes->base, 1);
+		serdes_pcs_issue_vreset(VPTR(serdes->base), 1);
 		break;
 	case SERDES_MODE_SGMII_SGMII:
-		serdes_pcs_issue_vreset(serdes->base, 1);
-		serdes_pcs_issue_vreset(serdes->base, 0);
+		serdes_pcs_issue_vreset(VPTR(serdes->base), 1);
+		serdes_pcs_issue_vreset(VPTR(serdes->base), 0);
 		break;
 	case SERDES_MODE_SGMII_SGMII_ALT:
-		serdes_pcs_issue_vreset(serdes->base, 0);
-		serdes_pcs_issue_vreset(serdes->base, 1);
+		serdes_pcs_issue_vreset(VPTR(serdes->base), 0);
+		serdes_pcs_issue_vreset(VPTR(serdes->base), 1);
 		break;
 	default:
 		break;
@@ -182,29 +184,30 @@ static void s32_serdes_init_flags(struct s32_xpcs_cfg *serdes,
 
 static void s32_serdes_post_init(struct s32_xpcs_cfg *serdes, u32 xpcs)
 {
-	if (serdes_pcs_wait_for_vreset(serdes->base, xpcs))
+	if (serdes_pcs_wait_for_vreset(VPTR(serdes->base), xpcs))
 		pr_err("XPCS%d pre power-up soft reset failed\n", xpcs);
 
-	if (serdes_pcs_wait_for_power_good(serdes->base, xpcs))
+	if (serdes_pcs_wait_for_power_good(VPTR(serdes->base), xpcs))
 		pr_err("XPCS%d power-up failed\n", xpcs);
 
-	serdes_pma_issue_rx_reset(serdes->base, xpcs);
+	serdes_pma_issue_rx_reset(VPTR(serdes->base), xpcs);
 
 	/* Disable automatic MII width change */
-	serdes_pcs_mii_bus_control_disable(serdes->base, xpcs);
+	serdes_pcs_mii_bus_control_disable(VPTR(serdes->base), xpcs);
 	/* Disable AN */
-	serdes_pcs_an_disable(serdes->base, xpcs);
+	serdes_pcs_an_disable(VPTR(serdes->base), xpcs);
 	/* Full duplex */
-	serdes_pcs_set_fd(serdes->base, xpcs);
+	serdes_pcs_set_fd(VPTR(serdes->base), xpcs);
 	/* Speed select */
-	serdes_pcs_speed_select(serdes->base, xpcs, 1);
+	serdes_pcs_speed_select(VPTR(serdes->base), xpcs, 1);
 }
 
 int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 		      enum serdes_mode ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      enum serdes_clock clktype,
-		      enum serdes_clock_fmhz fmhz)
+		      enum serdes_clock_fmhz fmhz,
+		      enum serdes_xpcs_mode_gen2 xpcs[2])
 {
 	struct s32_xpcs_cfg *serdes = s32_get_serdes_priv(platform_serdes_id);
 	int ret = 0;
@@ -223,8 +226,18 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 	serdes->fmhz = fmhz;
 
 	if (serdes->ss_mode == SERDES_MODE_PCIE_SGMII0 ||
-	    serdes->ss_mode == SERDES_MODE_PCIE_SGMII1)
+	    serdes->ss_mode == SERDES_MODE_PCIE_SGMII1) {
 		shared = true;
+
+		/* Mode 5 demo */
+		if (xpcs[0] == SGMII_XPCS_PCIE &&
+		    xpcs[1] == SGMII_XPCS_2G5_OP) {
+			serdes->mode[0] = xpcs[0];
+			serdes->mode[1] = xpcs[1];
+			init_flags = XPCS1_OWNED;
+			goto mode5;
+		}
+	}
 
 	/* Note: this is temporary until upper layers are reworked */
 	switch (xpcs_mode) {
@@ -258,7 +271,8 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 	if (serdes->mode[0] != SGMII_XPCS_PCIE) {
 		/* Bypass power up in case of pcie combo or internal clock*/
 		if (serdes->clktype != CLK_INT && shared != true) {
-			ret = serdes_pcs_wait_for_power_good(serdes->base, 0);
+			ret = serdes_pcs_wait_for_power_good(VPTR(serdes->base),
+							     0);
 			if (!ret)
 				pr_info("XPCS0 power-up good success\n");
 			else
@@ -272,7 +286,8 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 	if (serdes->mode[1] != SGMII_XPCS_PCIE) {
 		/* Bypass power up in case of pcie combo or internal clock*/
 		if (serdes->clktype != CLK_INT && shared != true) {
-			ret = serdes_pcs_wait_for_power_good(serdes->base, 1);
+			ret = serdes_pcs_wait_for_power_good(VPTR(serdes->base),
+							     1);
 			if (!ret)
 				pr_info("XPCS1 power-up good success\n");
 			else
@@ -290,7 +305,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 	if (serdes->clktype == CLK_INT)
 		init_flags |= PHY_CLK_INT;
 
-	serdes_pcs_pma_init_gen2(serdes->base, fmhz,  init_flags);
+	serdes_pcs_pma_init_gen2(VPTR(serdes->base), fmhz,  init_flags);
 
 	/* Issue ss mode dependent reset */
 	s32_serdes_issue_reset(serdes);
@@ -299,10 +314,9 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
 	if (((init_flags & (XPCS0_OWNED)) != 0))
 		s32_serdes_post_init(serdes, 0);
 
+mode5:
 	if (((init_flags & (XPCS1_OWNED)) != 0))
 		s32_serdes_post_init(serdes, 1);
-
-	debug("SerDes Init Done.\n");
 
 	serdes->xpcs_mode = xpcs_mode;
 	serdes->is_init = true;
@@ -369,26 +383,28 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
 
 	switch (cmd) {
 	case S32_XPCS_TRANSIT_TO_1000M:
-		serdes_bifurcation_pll_transit_to_1250Mhz(serdes->base,
+		serdes_bifurcation_pll_transit_to_1250mhz(VPTR(serdes->base),
 							  pcs_id, serdes->fmhz);
 		if (cmd_ss != 0)
-			serdes_pcs_speed_select(serdes->base, pcs_id, cmd_ss);
+			serdes_pcs_speed_select(VPTR(serdes->base),
+						pcs_id, cmd_ss);
 		break;
 	case S32_XPCS_TRANSIT_TO_2500M:
-		serdes_bifurcation_pll_transit_to_3125Mhz(serdes->base,
+		serdes_bifurcation_pll_transit_to_3125mhz(VPTR(serdes->base),
 							  pcs_id, serdes->fmhz);
-		serdes_pcs_speed_select(serdes->base, pcs_id, 1);
+		serdes_pcs_speed_select(VPTR(serdes->base), pcs_id, 1);
 		break;
 	case S32_XPCS_AN_AUTO_SW_ENABLE:
-		serdes_pcs_an_auto_sw_enable(serdes->base, pcs_id);
+		serdes_pcs_an_auto_sw_enable(VPTR(serdes->base), pcs_id);
 		/*fall through*/
 	case S32_XPCS_AN_ENABLE:
-		serdes_pcs_an_set_link_timer(serdes->base, pcs_id, 0x2faf);
-		serdes_pcs_an_enable(serdes->base, pcs_id);
+		serdes_pcs_an_set_link_timer(VPTR(serdes->base), pcs_id,
+					     0x2faf);
+		serdes_pcs_an_enable(VPTR(serdes->base), pcs_id);
 		break;
 	case S32_XPCS_AN_DISABLE:
-		serdes_pcs_an_auto_sw_disable(serdes->base, pcs_id);
-		serdes_pcs_an_disable(serdes->base, pcs_id);
+		serdes_pcs_an_auto_sw_disable(VPTR(serdes->base), pcs_id);
+		serdes_pcs_an_disable(VPTR(serdes->base), pcs_id);
 		break;
 	default:
 		return CMD_RET_USAGE;

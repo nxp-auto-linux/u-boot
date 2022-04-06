@@ -13,6 +13,7 @@
 
 #include "serdes_regs.h"
 #include "serdes_s32gen1_io.h"
+#include "sgmii.h"
 #include "ss_pcie_regs.h"
 
 #define PCIE_LINK_UP_COUNT 100
@@ -38,10 +39,6 @@
 
 #define CLKEN_MASK	0x1
 #define CLKEN_OFF	23
-
-#define RST_CTRL		0x3010
-#define WARM_RST		0x2
-#define COLD_RST		0x1
 
 /* RGM peripheral reset registers */
 #define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
@@ -93,11 +90,5 @@ bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		enum serdes_link_width linkwidth);
 void show_pcie_devices(void);
 int initr_pci(void);
-
-int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
-		      enum serdes_mode ss_mode,
-		      enum serdes_xpcs_mode xpcs_mode,
-		      enum serdes_clock clktype,
-		      enum serdes_clock_fmhz fmhz);
 
 #endif /* PCIE_S32GEN1_H */

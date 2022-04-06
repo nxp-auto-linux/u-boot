@@ -128,6 +128,8 @@
 /* RESET CONTROL Register */
 #define SS_RST_CTRL				(SERDES_SS_BASE + 0x3010U)
 
+/* Field definitions for SS_RST_CTRL */
+#define COLD_RST				BIT(1)
 
 /* Field definitions for PHY_GEN_CTRL */
 
@@ -164,6 +166,19 @@
 
 #define MPLLA_STATE_BIT        (31)
 #define MPLLA_STATE            BIT(MPLLA_STATE_BIT)
+
+/* Field definitions for PHY_EXT_MPLLB EXT control Registers */
+
+#define EXT_MPLLB_FRACN_CTRL(x)			(((x) & 0x7ffU) << 12)
+#define EXT_MPLLB_WORD_DIV2_EN			BIT(31)
+#define EXT_MPLLB_TX_CLK_DIV(x)			(((x) & 0x7U) << 28)
+#define EXT_MPLLB_BANDWIDTH(x)			(((x) & 0xffffU) << 0)
+#define EXT_MPLLB_DIV_MULTIPLIER(x)		(((x) & 0xffU) << 24)
+#define EXT_MPLLB_DIV10_CLK_EN			BIT(16)
+#define EXT_MPLLB_DIV8_CLK_EN			BIT(18)
+#define EXT_MPLLB_DIV_CLK_EN			BIT(19)
+
+#define EXT_MPLLA_BANDWIDTH(x)			(((x) & 0xffffU) << 0)
 
 /* Field definitions for PCIE_PHY_MPLLB_CTRL */
 
@@ -230,6 +245,35 @@
 #define PHY_REG_DATA_FIELD_MASK      (0x0000FFFF)
 #define PHY_REG_DATA_FIELD           ((PHY_REG_DATA_FIELD_MASK) << \
 		(PHY_REG_DATA_FIELD_LSB))
+
+/* Field definitions for SS_PHY_EXT_MISC_CTRL_2 */
+
+#define EXT_TX_VBOOST_LVL(x)	(((x) & 0x7U) << 16)
+#define EXT_TX_TERM_CTRL(x)		(((x) & 0x7U) << 24)
+
+/* Field definitions for SS_PHY_EXT_CTRL_SEL */
+
+#define EXT_PHY_CTRL_SEL BIT(0)
+
+/* Field definitions for SS_PHY_REF_CLK_CTRL */
+
+#define REF_CLK_DIV2_EN		BIT(2)
+#define REF_CLK_MPLLB_DIV2_EN	BIT(1)
+#define REF_CLK_DIV2_EN		BIT(2)
+#define EXT_REF_RANGE(x)	(((x) & 0x7U) << 3)
+
+/* Field definitions for XPCS external control */
+#define XPCS1_RX_VCO_LD_VAL(x)(((x) & 0x1fffU) << 16)
+#define XPCS1_RX_REF_LD_VAL(x)(((x) & 0x3fU) << 8)
+
+/* Field definitions for SS_PHY_EXT_BS_CTRL */
+#define EXT_BS_RX_LEVEL(x)(((x) & 0x1fU) << 0)
+#define EXT_BS_RX_BIGSWING BIT(5)
+#define EXT_BS_TX_LOWSWING BIT(6)
+
+/* Field definitions for SS_PHY_EXT_MISC_CTRL_1 */
+#define EXT_RX_LOS_THRESHOLD(x) (((x) & 0x3fU) << 1)
+#define EXT_RX_VREF_CTRL(x) (((x) & 0x1fU) << 24)
 
 /* PHY registers */
 

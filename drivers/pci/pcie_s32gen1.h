@@ -127,12 +127,6 @@
 #define CLKEN_MASK	0x1
 #define CLKEN_OFF	23
 
-/* RESET CONTROL Register (RST_CTRL) */
-
-#define RST_CTRL		0x3010
-#define WARM_RST		0x2
-#define COLD_RST		0x1
-
 enum pcie_link_speed {
 	GEN1 = 0x1,
 	GEN2 = 0x2,

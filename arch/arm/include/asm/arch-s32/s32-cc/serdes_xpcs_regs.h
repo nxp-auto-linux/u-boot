@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  * The SerDes module header file.
  */
@@ -34,6 +34,7 @@
 #define VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL 0x1f8035U
 #define VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL 0x1F8055U
 #define VR_MII_GEN5_12G_16G_TX_EQ_CTRL0		0x1F8036U
+#define VR_MII_GEN5_12G_16G_TX_EQ_CTRL1		0x1F8037U
 #define VR_MII_CONSUMER_10G_TX_TERM_CTRL	0x1F803CU
 #define VR_MII_GEN5_12G_16G_RX_GENCTRL1		0x1F8051U
 #define VR_MII_GEN5_12G_16G_TX_GENCTRL1		0x1F8031U
@@ -52,6 +53,7 @@
 #define VR_MII_GEN5_12G_16G_TX_RATE_CTRL	0x1f8034U
 #define VR_MII_GEN5_12G_16G_RX_RATE_CTRL	0x1f8054U
 #define VR_MII_GEN5_12G_16G_CDR_CTRL		0x1f8056U
+#define VR_MII_Gen5_12G_16G_MISC_CTRL0		0x1F8090U
 #define VR_MII_GEN5_12G_16G_VCO_CAL_LD0		0x1f8092U
 #define VR_MII_GEN5_12G_16G_REF_CLK_CTRL	0x1f8091U
 #define SR_MII_CTRL				0x1f0000U
@@ -64,12 +66,15 @@
 
 /* VR_MII_Gen5_12G_16G_TX_GENCTRL1 */
 #define TX_CLK_RDY_0				BIT(12)
+#define VBOOST_EN_0				BIT(4)
 
 /* VR_MII_Gen5_12G_16G_TX_GENCTRL2 */
 #define TX_REQ_0				BIT(0)
+#define TX0_WIDTH(x)				(((x) & 0x3) << 8)
 
 /* VR_MII_Gen5_12G_16G_RX_GENCTRL2 */
 #define RX_REQ_0				BIT(0)
+#define RX0_WIDTH(x)				(((x) & 0x3) << 8)
 
 /* VR_MII_Gen5_12G_16G_RX_POWER_STATE_CTRL */
 #define RX_DISABLE_0				BIT(8)
@@ -79,6 +84,7 @@
 
 /* VR_MII_Gen5_12G_16G_RX_CDR_CTRL */
 #define VCO_LOW_FREQ_0				BIT(8)
+#define CDR_SSC_EN_0				BIT(4)
 
 #define PCS_MODE_1000_BASE_X			0U
 #define PCS_MODE_SGMII				2U
@@ -138,6 +144,11 @@
 #define CL37_ANSGM_STS_LINK			BIT(4)
 #define CL37_ANSGM_STS_FD			BIT(1)
 
+/* VR_MII_Gen5_12G_16G_MISC_CTRL0 */
+#define PLL_CTRL				BIT(15)
+#define SUPPRESS_LOS_DET			BIT(4)
+#define RX_DT_EN_CTL				BIT(6)
+
 #define PLLA_CAL_EN		BIT(0)
 #define PLLA_CAL_DIS		BIT(1)
 
@@ -168,10 +179,11 @@ int serdes_pcs_reset_seqence(void *serdes_base, u32 xpcs0_base, u32 xpcs1_base);
 int serdes_pcs_wait_for_power_good(void *base, u32 xpcs);
 
 /* Bifurcation PMA control */
-int serdes_bifurcation_pll_transit_to_3125Mhz(void *base, u32 xpcs,
+int serdes_bifurcation_pll_transit_to_3125mhz(void *base, u32 xpcs,
 					      enum serdes_clock_fmhz fmhz);
-int serdes_bifurcation_pll_transit_to_1250Mhz(void *base, u32 xpcs,
+int serdes_bifurcation_pll_transit_to_1250mhz(void *base, u32 xpcs,
 					      enum serdes_clock_fmhz fmhz);
+void serdes_testing_stage1(void *base, u32 xpcs);
 
 /* PMA control */
 void serdes_pma_lane_disable(void *base, u32 xpcs);
@@ -197,6 +209,8 @@ void serdes_pcs_set_fd(void *base, u32 xpcs);
 void serdes_pcs_set_hd(void *base, u32 xpcs);
 void serdes_pcs_loopback_enable(void *base, u32 xpcs);
 void serdes_pcs_loopback_disable(void *base, u32 xpcs);
+
+void serdes_pcs_dump_reg(void *base, u32 xpcs);
 
 enum serdes_xpcs_mode_gen2 s32_get_xpcs_mode(int serd, int xpcs);
 int s32_sgmii_wait_link(int serdes, int xpcs);

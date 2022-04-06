@@ -50,6 +50,7 @@ do { \
 	debug_wr("done\n"); \
 } while (0)
 
+/* BCLR32 - SPARSE compliant version of `clrbits_le32`, with debug support. */
 #define BCLR32(address, mask_clear) \
 do { \
 	uintptr_t bclr_address = (address); \
@@ -61,6 +62,7 @@ do { \
 	debug_wr("done\n"); \
 } while (0)
 
+/* BSET32 - SPARSE compliant version of `setbits_le32`, with debug support. */
 #define BSET32(address, mask_set) \
 do { \
 	uintptr_t bset_address = (address); \
@@ -72,6 +74,9 @@ do { \
 	debug_wr("done\n"); \
 } while (0)
 
+/* RMW32 - SPARSE compliant version of `clrsetbits_le32`, with debug support.
+ * Please pay attention to the arguments order.
+ */
 #define RMW32(address, mask_set, mask_clear) \
 do { \
 	uintptr_t rmw_address = (address); \
