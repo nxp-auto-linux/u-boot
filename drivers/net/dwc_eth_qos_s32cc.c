@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2023-2025 NXP
+ * Copyright 2023-2026 NXP
  */
 
 #include <common.h>
@@ -487,21 +487,6 @@ static int eqos_remove_resources_s32cc(struct udevice *dev)
 	return 0;
 }
 
-static phy_interface_t eqos_get_interface_s32cc(struct udevice *dev)
-{
-	const char *phy_mode;
-	phy_interface_t interface = PHY_INTERFACE_MODE_NONE;
-
-	debug("%s(dev=%p):\n", __func__, dev);
-
-	phy_mode = dev_read_prop(dev, "phy-mode", NULL);
-	if (phy_mode)
-		interface = phy_get_interface_by_name(phy_mode);
-
-	debug("%s: OK\n", __func__);
-	return interface;
-}
-
 static struct eqos_ops eqos_s32cc_ops = {
 	.eqos_inval_desc = eqos_inval_desc_generic,
 	.eqos_flush_desc = eqos_flush_desc_generic,
@@ -529,7 +514,7 @@ const struct eqos_config eqos_s32r47_config = {
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
 	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
 	.axi_bus_width = EQOS_AXI_WIDTH_64,
-	.interface = eqos_get_interface_s32cc,
+	.interface = dev_read_phy_mode,
 	.ops = &eqos_s32cc_ops,
 	.quirks = S32CC_DWC_QUIRK_SKIP_PHY_INTF_SELECT,
 };
@@ -543,7 +528,7 @@ const struct eqos_config eqos_s32cc_config = {
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
 	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
 	.axi_bus_width = EQOS_AXI_WIDTH_64,
-	.interface = eqos_get_interface_s32cc,
+	.interface = dev_read_phy_mode,
 	.ops = &eqos_s32cc_ops,
 	.quirks = 0,
 };

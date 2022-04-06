@@ -450,20 +450,19 @@ DM_TEST(dm_test_ofnode_string_err, UT_TESTF_LIVE_TREE);
 
 static int dm_test_ofnode_add_subnode(struct unit_test_state *uts)
 {
-	ofnode node, check, subnode;
-	char buf[128];
+	ofnode eth_node, phy_node;
+	phy_interface_t mode;
+	u32 reg;
 
 	/* temporarily disable this test due to a failure fixed later */
 	if (!of_live_active())
 		return 0;
 
-	node = ofnode_path("/lcd");
-	ut_assert(ofnode_valid(node));
-	ut_assertok(ofnode_add_subnode(node, "edmund", &subnode));
-	check = ofnode_path("/lcd/edmund");
-	ut_asserteq(subnode.of_offset, check.of_offset);
-	ut_assertok(ofnode_get_path(subnode, buf, sizeof(buf)));
-	ut_asserteq_str("/lcd/edmund", buf);
+	mode = ofnode_read_phy_mode(eth_node);
+	ut_assert(mode == PHY_INTERFACE_MODE_2500BASEX);
+
+	phy_node = ofnode_get_phy_node(eth_node);
+	ut_assert(ofnode_valid(phy_node));
 
 	if (of_live_active()) {
 		struct device_node *child;
