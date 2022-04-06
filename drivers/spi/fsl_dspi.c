@@ -153,20 +153,27 @@ static ulong fsl_dspi_get_clk_freq(struct udevice *bus)
 	struct clk clk;
 	const char *clk_name = "dspi";
 	int ret;
+	ulong clk_rate;
 
 	ret = clk_get_by_name(bus, clk_name, &clk);
 	if (ret) {
 		printf("Failed to get %s clock: %d\n", clk_name, ret);
-		return ret;
+		return 0;
 	}
 
 	ret = clk_enable(&clk);
 	if (ret) {
 		printf("Failed to enable %s clock: %d\n", clk_name, ret);
-		return ret;
+		return 0;
 	}
 
-	return clk_get_rate(&clk);
+	clk_rate = clk_get_rate(&clk);
+	if (IS_ERR_VALUE(clk_rate)) {
+		printf("Failed to get rate for %s clock\n", clk_name);
+		return 0;
+	}
+
+	return clk_rate;
 }
 
 static void fsl_dspi_init_mcr(struct fsl_dspi_priv *priv, uint cfg_val)
