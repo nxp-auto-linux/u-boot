@@ -670,11 +670,21 @@ static int bus_i2c_write(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
 	return ret;
 }
 
-#define I2C1_BASE_ADDR		(0x401E4000)
-#define I2C2_BASE_ADDR		(0x401E8000)
-#define I2C3_BASE_ADDR		(0x401EC000)
-#define I2C4_BASE_ADDR		(0x402D8000)
-#define I2C5_BASE_ADDR		(0x402DC000)
+#if !defined(I2C2_BASE_ADDR)
+#define I2C2_BASE_ADDR	0
+#endif
+
+#if !defined(I2C3_BASE_ADDR)
+#define I2C3_BASE_ADDR	0
+#endif
+
+#if !defined(I2C4_BASE_ADDR)
+#define I2C4_BASE_ADDR	0
+#endif
+
+#if !defined(I2C5_BASE_ADDR)
+#define I2C5_BASE_ADDR 0
+#endif
 
 #if !defined(I2C6_BASE_ADDR)
 #define I2C6_BASE_ADDR 0
