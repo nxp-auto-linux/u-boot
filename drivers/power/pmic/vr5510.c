@@ -4,12 +4,10 @@
  */
 
 #include <common.h>
-#include <fdtdec.h>
-#include <errno.h>
 #include <dm.h>
+#include <errno.h>
 #include <i2c.h>
 #include <power/pmic.h>
-#include <power/regulator.h>
 #include <u-boot/crc.h>
 
 #define VR5510_ADDR_SIZE	2
@@ -91,7 +89,7 @@ static void set_reg_addr(struct read_msg *m, u8 addr)
 static int vr5510_read(struct udevice *dev, uint reg, u8 *buff, int len)
 {
 	unsigned int crc;
-	struct read_msg msg;
+	struct read_msg msg = {0};
 	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
 
 	if (!valid_register(dev, reg)) {
@@ -126,7 +124,7 @@ static int vr5510_read(struct udevice *dev, uint reg, u8 *buff, int len)
 
 static int vr5510_write(struct udevice *dev, uint reg, const u8 *buff, int len)
 {
-	struct read_msg msg;
+	struct read_msg msg = {0};
 	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
 
 	if (!valid_register(dev, reg)) {
