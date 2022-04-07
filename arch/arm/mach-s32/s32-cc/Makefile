@@ -4,6 +4,7 @@
 # SPDX-License-Identifier:      GPL-2.0+
 #
 
+obj-y += scmi_clk_dump.o
 obj-y += scmi_reset_agent.o
 obj-y += soc.o
 obj-$(CONFIG_OF_LIBFDT)	+= fdt.o
