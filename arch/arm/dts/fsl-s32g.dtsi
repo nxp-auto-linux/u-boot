@@ -384,5 +384,5 @@
 };
 
 &ocotp {
-	compatible = "fsl,s32g-ocotp";
+	compatible = "nxp,s32g-ocotp";
 };
