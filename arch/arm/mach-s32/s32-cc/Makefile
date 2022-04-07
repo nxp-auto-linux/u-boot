@@ -8,6 +8,7 @@ ccflags-y += -I./board/nxp/common/
 ccflags-y += -I./board/nxp/s32-cc/include/
 ccflags-y += -I./drivers/net/s32/
 
+obj-y				+= scmi_clk_dump.o
 obj-y				+= scmi_reset_agent.o
 obj-y				+= soc.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
