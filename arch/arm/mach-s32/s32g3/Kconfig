@@ -22,6 +22,10 @@ config TARGET_S32G399ARDB3
 
 config TARGET_S32G3XXAEVB
 	bool "Support S32G3-EVB board"
+	help
+	  This board is based on S32G3 family of SoCs. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+	  I2C and DSPI.
 	imply ADC
 	imply DM_USB
 	imply I2C_EEPROM

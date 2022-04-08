@@ -9,6 +9,11 @@ choice
 
 config TARGET_S32G274ARDB2
 	bool "Support S32G274ARDB2 board"
+	help
+	  This board is based on S32G274A SoC. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports,
+	  M.2 and PCIe x1 expansion slots, USB, serial port,
+	  18 CAN ports, I2C and DSPI.
 	imply DM_PMIC_FS5600
 	imply DM_PMIC_PF5020
 	imply PHY_ATHEROS
@@ -35,6 +40,11 @@ config TARGET_S32G2XXAEVB
 
 config TARGET_S32G274ABLUEBOX3
 	bool "Support S32G274A BlueBox3 board"
+	help
+	  This board is a dual SoC board with S32G2 and LX2,
+	  where these two SoCs are connected together via PCIe.
+	  Also, this board has rich networking features, such as:
+	  PFE, DPAA2 and three sja1110 switches.
 	imply ADC
 	imply I2C_EEPROM
 	imply PHY

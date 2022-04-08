@@ -9,6 +9,10 @@ choice
 
 config TARGET_S32R45EVB
 	bool "Support S32R45EVB board"
+	help
+	  This board is based on S32R45 SoC. Is is equipped with
+	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
+	  I2C and DSPI.
 	imply ADC
 	imply I2C_EEPROM
 	imply PHY_AQUANTIA
