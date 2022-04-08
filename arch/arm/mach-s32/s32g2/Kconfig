@@ -24,6 +24,10 @@ config TARGET_S32G274ARDB2
 
 config TARGET_S32G2XXAEVB
 	bool "Support S32G274AEVB board"
+	help
+	  This board is based on S32G2 family of SoCs. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+	  I2C and DSPI.
 	imply DM_USB
 	imply I2C_EEPROM
 	imply PHY
