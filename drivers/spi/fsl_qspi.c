@@ -26,6 +26,7 @@
 #include <common.h>
 #include <dm.h>
 #include <dm/device_compat.h>
+#include <inttypes.h>
 #include <log.h>
 #include <spi.h>
 #include <spi-mem.h>
@@ -38,6 +39,7 @@
 #include <linux/iopoll.h>
 #include <linux/sizes.h>
 #include <linux/err.h>
+#include <linux/mtd/spi-nor.h>
 #include <asm/io.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -52,10 +54,16 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /* Registers used by the driver */
 #define QUADSPI_MCR			0x00
+#define QUADSPI_MCR_DQS_EXTERNAL	(0x3 << 24)
 #define QUADSPI_MCR_RESERVED_MASK	GENMASK(19, 16)
+#define QUADSPI_MCR_ISD3FB		BIT(19)
+#define QUADSPI_MCR_ISD2FB		BIT(18)
+#define QUADSPI_MCR_ISD3FA		BIT(17)
+#define QUADSPI_MCR_ISD2FA		BIT(16)
 #define QUADSPI_MCR_MDIS_MASK		BIT(14)
 #define QUADSPI_MCR_CLR_TXF_MASK	BIT(11)
 #define QUADSPI_MCR_CLR_RXF_MASK	BIT(10)
+#define QUADSPI_MCR_DQS_EN		BIT(6)
 #define QUADSPI_MCR_DDR_EN_MASK		BIT(7)
 #define QUADSPI_MCR_END_CFG_MASK	GENMASK(3, 2)
 #define QUADSPI_MCR_SWRSTHD_MASK	BIT(1)
@@ -65,12 +73,16 @@ DECLARE_GLOBAL_DATA_PTR;
 #define QUADSPI_IPCR_SEQID(x)		((x) << 24)
 #define QUADSPI_FLSHCR			0x0c
 #define QUADSPI_FLSHCR_TCSS_MASK	GENMASK(3, 0)
+#define QUADSPI_FLSHCR_TCSS(N)		((N) << 0)
 #define QUADSPI_FLSHCR_TCSH_MASK	GENMASK(11, 8)
+#define QUADSPI_FLSHCR_TCHS(N)		((N) << 8)
 #define QUADSPI_FLSHCR_TDH_MASK		GENMASK(17, 16)
+#define QUADSPI_FLSHCR_TDH(N)		((N) << 16)
 
 #define QUADSPI_BUF3CR			0x1c
 #define QUADSPI_BUF3CR_ALLMST_MASK	BIT(31)
-#define QUADSPI_BUF3CR_ADATSZ(x)	((x) << 8)
+#define QUADSPI_BUF3CR_ADATSZ_SHIFT	8
+#define QUADSPI_BUF3CR_ADATSZ(x)	((x) << QUADSPI_BUF3CR_ADATSZ_SHIFT)
 #define QUADSPI_BUF3CR_ADATSZ_MASK	GENMASK(15, 8)
 
 #define QUADSPI_BFGENCR			0x20
@@ -79,9 +91,33 @@ DECLARE_GLOBAL_DATA_PTR;
 #define QUADSPI_BUF0IND			0x30
 #define QUADSPI_BUF1IND			0x34
 #define QUADSPI_BUF2IND			0x38
+
+#define QUADSPI_DLLCRA			0x60
+#define QUADSPI_DLLCR_MASK		0x7FFFFFF0UL
+#define QUADSPI_DLLCR_DLLEN_EN		BIT(31)
+#define QUADSPI_DLLCR_FREQEN_EN		BIT(30)
+#define QUADSPI_DLLCR_DLL_REFCNTR_N(N)	((N) << 24)
+#define QUADSPI_DLLCR_DLLRES_N(N)	((N) << 20)
+#define QUADSPI_DLLCR_SLV_DLY_OFFSET_N(N)	((N) << 12)
+#define QUADSPI_DLLCR_SLV_DLY_COARSE_N(N)	((N) << 8)
+#define QUADSPI_DLLCR_SLV_AUTO_UPDT_SHIFT	3
+#define QUADSPI_DLLCR_SLV_AUTO_UPDT_EN	BIT(QUADSPI_DLLCR_SLV_AUTO_UPDT_SHIFT)
+#define QUADSPI_DLLCR_SLV_EN_SHIFT	2
+#define QUADSPI_DLLCR_SLV_EN		BIT(QUADSPI_DLLCR_SLV_EN_SHIFT)
+#define QUADSPI_DLLCR_SLV_BYPASS_SHIFT	1
+#define QUADSPI_DLLCR_SLV_BYPASS_EN	BIT(QUADSPI_DLLCR_SLV_BYPASS_SHIFT)
+#define QUADSPI_DLLCR_SLV_UPD_EN	BIT(0)
+
 #define QUADSPI_SFAR			0x100
 
+#define QUADSPI_SFACR			0x104
+#define QUADSPI_SFACR_BSWAP		BIT(17)
+
 #define QUADSPI_SMPR			0x108
+#define QUADSPI_SMPR_DLLFSMPFB_MASK	GENMASK(30, 28)
+#define QUADSPI_SMPR_DLLFSMPFB_NTH(N)	((N) << 28)
+#define QUADSPI_SMPR_DLLFSMPFA_MASK	GENMASK(26, 24)
+#define QUADSPI_SMPR_DLLFSMPFA_NTH(N)	((N) << 24)
 #define QUADSPI_SMPR_DDRSMP_MASK	GENMASK(18, 16)
 #define QUADSPI_SMPR_FSDLY_MASK		BIT(6)
 #define QUADSPI_SMPR_FSPHS_MASK		BIT(5)
@@ -91,9 +127,14 @@ DECLARE_GLOBAL_DATA_PTR;
 #define QUADSPI_RBCT_WMRK_MASK		GENMASK(4, 0)
 #define QUADSPI_RBCT_RXBRD_USEIPS	BIT(8)
 
+#define QUADSPI_DLLSR			0x12c
+#define QUADSPI_DLLSR_SLVA_LOCK		BIT(14)
+#define QUADSPI_DLLSR_DLLA_LOCK		BIT(15)
+
 #define QUADSPI_TBDR			0x154
 
 #define QUADSPI_SR			0x15c
+#define QUADSPI_SR_BUSY			BIT(0)
 #define QUADSPI_SR_IP_ACC_MASK		BIT(1)
 #define QUADSPI_SR_AHB_ACC_MASK		BIT(2)
 
@@ -113,6 +154,19 @@ DECLARE_GLOBAL_DATA_PTR;
 #define QUADSPI_SFB2AD			0x18c
 #define QUADSPI_RBDR(x)			(0x200 + ((x) * 4))
 
+#define QUADSPI_DLCR			0x130
+#define QUADSPI_DLCR_RESERVED_MASK	((0xff << 0) | (0xff << 16))
+#define QUADSPI_DLCR_DLP_SEL_FB(N)	((N) << 30)
+#define QUADSPI_DLCR_DLP_SEL_FA(N)	((N) << 14)
+
+#define QUADSPI_TBSR			0x150
+#define QUADSPI_TBSR_TRCTR(TBSR)	((TBSR) >> 16)
+#define QUADSPI_TBSR_TRBFL(TBSR)	((TBSR) & 0xFF)
+#define QUADSPI_TBSR_TRBFL_MASK		0xFFU
+
+#define QUADSPI_DLPR			0x190
+#define QUADSPI_DLPR_RESET_VALUE	0xaa553443
+
 #define QUADSPI_LUTKEY			0x300
 #define QUADSPI_LUTKEY_VALUE		0x5AF05AF0
 
@@ -121,13 +175,22 @@ DECLARE_GLOBAL_DATA_PTR;
 #define QUADSPI_LCKER_UNLOCK		BIT(1)
 
 #define QUADSPI_LUT_BASE		0x310
-#define QUADSPI_LUT_OFFSET		(SEQID_LUT * 4 * 4)
+
+#ifdef CONFIG_NXP_S32CC
+#define LUTS_PER_CONFIG			5
+#else
+#define LUTS_PER_CONFIG			4
+#endif
+
+#define QUADSPI_LUT_OFFSET		(SEQID_LUT * 4 * LUTS_PER_CONFIG)
 #define QUADSPI_LUT_REG(idx) \
 	(QUADSPI_LUT_BASE + QUADSPI_LUT_OFFSET + (idx) * 4)
 
-#define QUADSPI_AHB_LUT_OFFSET		(SEQID_LUT_AHB * 4 * 4)
+#define QUADSPI_AHB_LUT_OFFSET		(SEQID_LUT_AHB * 4 * LUTS_PER_CONFIG)
 #define QUADSPI_AHB_LUT_REG(idx) \
 	(QUADSPI_LUT_BASE + QUADSPI_AHB_LUT_OFFSET + (idx) * 4)
+
+#define LUT_SIZE_BITS		16
 
 /* Instruction set for the LUT register */
 #define LUT_STOP		0
@@ -147,6 +210,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define LUT_FSL_READ_DDR	14
 #define LUT_FSL_WRITE_DDR	15
 #define LUT_DATA_LEARN		16
+#define LUT_CMD_DDR		17
 
 /*
  * The PAD definitions for LUT register.
@@ -166,7 +230,7 @@ DECLARE_GLOBAL_DATA_PTR;
  *  ---------------------------------------------------
  */
 #define LUT_DEF(idx, ins, pad, opr)					\
-	((((ins) << 10) | ((pad) << 8) | (opr)) << (((idx) % 2) * 16))
+	((((ins) << 10) | ((pad) << 8) | ((opr) & 0xFFU)) << (((idx) % 2) * 16))
 
 /* Controller needs driver to swap endianness */
 #define QUADSPI_QUIRK_SWAP_ENDIAN	BIT(0)
@@ -200,6 +264,26 @@ DECLARE_GLOBAL_DATA_PTR;
  * Controller only has Two CS on flash A, no flash B port
  */
 #define QUADSPI_QUIRK_SINGLE_BUS		BIT(6)
+
+/*
+ * Controller has Delay Locked Loop logic
+ */
+#define QUADSPI_QUIRK_HAS_DLL			BIT(7)
+
+/*
+ * Has octal support
+ */
+#define QUADSPI_QUIRK_OCTAL_SUPPORT		BIT(8)
+
+/*
+ * Allow to read the entire AHB space at once
+ */
+#define QUADSPI_QUIRK_READ_ENTIRE_AHB		BIT(9)
+
+/*
+ * Selects delay chain for low frequency of operation
+ */
+#define QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN	BIT(10)
 
 struct fsl_qspi_devtype_data {
 	unsigned int rxfifo;
@@ -268,6 +352,66 @@ static const struct fsl_qspi_devtype_data ls2080a_data = {
 	.little_endian = true,
 };
 
+static const struct fsl_qspi_devtype_data s32g_data = {
+	.rxfifo = SZ_128,
+	.txfifo = SZ_256,
+	.ahb_buf_size = SZ_1K,
+	.quirks = QUADSPI_QUIRK_USE_TDH_SETTING | QUADSPI_QUIRK_HAS_DLL |
+	    QUADSPI_QUIRK_OCTAL_SUPPORT | QUADSPI_QUIRK_READ_ENTIRE_AHB,
+	.little_endian = true,
+};
+
+static const struct fsl_qspi_devtype_data s32r45_data = {
+	.rxfifo = SZ_128,
+	.txfifo = SZ_256,
+	.ahb_buf_size = SZ_1K,
+	.quirks = QUADSPI_QUIRK_USE_TDH_SETTING | QUADSPI_QUIRK_HAS_DLL |
+	    QUADSPI_QUIRK_OCTAL_SUPPORT | QUADSPI_QUIRK_READ_ENTIRE_AHB |
+	    QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN,
+	.little_endian = true,
+};
+
+struct qspi_config {
+	u32 mcr;
+	u32 flshcr;
+	u32 dllcr;
+	u32 sfacr;
+	u32 smpr;
+	u32 dlcr;
+	u32 flash1_size;
+	u32 flash2_size;
+	u32 dlpr;
+};
+
+static const struct qspi_config octal_ddr_conf = {
+	.mcr = QUADSPI_MCR_END_CFG_MASK |
+	    QUADSPI_MCR_DQS_EN |
+	    QUADSPI_MCR_DDR_EN_MASK |
+	    QUADSPI_MCR_ISD2FA |
+	    QUADSPI_MCR_ISD3FA |
+	    QUADSPI_MCR_ISD2FB |
+	    QUADSPI_MCR_ISD3FB |
+	    QUADSPI_MCR_DQS_EXTERNAL,
+	.flshcr = QUADSPI_FLSHCR_TCSS(3) |
+	    QUADSPI_FLSHCR_TCHS(3) |
+	    QUADSPI_FLSHCR_TDH(1),
+	.dllcr = QUADSPI_DLLCR_SLV_EN |
+	    QUADSPI_DLLCR_SLV_AUTO_UPDT_EN |
+	    QUADSPI_DLLCR_DLLRES_N(8) |
+	    QUADSPI_DLLCR_DLL_REFCNTR_N(2) |
+	    QUADSPI_DLLCR_FREQEN_EN |
+	    QUADSPI_DLLCR_DLLEN_EN,
+	.sfacr = QUADSPI_SFACR_BSWAP,
+	.smpr = QUADSPI_SMPR_DLLFSMPFA_NTH(4) |
+		QUADSPI_SMPR_DLLFSMPFB_NTH(4),
+	.dlcr = QUADSPI_DLCR_RESERVED_MASK |
+	    QUADSPI_DLCR_DLP_SEL_FA(1) |
+	    QUADSPI_DLCR_DLP_SEL_FB(1),
+	.flash1_size = 0x20000000,
+	.flash2_size = 0x20000000,
+	.dlpr = QUADSPI_DLPR_RESET_VALUE,
+};
+
 struct fsl_qspi {
 	struct udevice *dev;
 	void __iomem *iobase;
@@ -276,6 +420,7 @@ struct fsl_qspi {
 	u32 memmap_size;
 	const struct fsl_qspi_devtype_data *devtype_data;
 	int selected;
+	enum spi_nor_protocol proto;
 };
 
 static inline int needs_swap_endian(struct fsl_qspi *q)
@@ -311,6 +456,26 @@ static inline int needs_tdh_setting(struct fsl_qspi *q)
 static inline int needs_single_bus(struct fsl_qspi *q)
 {
 	return q->devtype_data->quirks & QUADSPI_QUIRK_SINGLE_BUS;
+}
+
+static inline int has_dll(struct fsl_qspi *q)
+{
+	return q->devtype_data->quirks & QUADSPI_QUIRK_HAS_DLL;
+}
+
+static inline int has_octal_support(struct fsl_qspi *q)
+{
+	return q->devtype_data->quirks & QUADSPI_QUIRK_OCTAL_SUPPORT;
+}
+
+static inline int can_read_entire_ahb(struct fsl_qspi *q)
+{
+	return q->devtype_data->quirks & QUADSPI_QUIRK_READ_ENTIRE_AHB;
+}
+
+static inline int low_freq_chain(struct fsl_qspi *q)
+{
+	return q->devtype_data->quirks & QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN;
 }
 
 /*
@@ -352,6 +517,9 @@ static int fsl_qspi_check_buswidth(struct fsl_qspi *q, u8 width)
 	case 2:
 	case 4:
 		return 0;
+	case 8:
+		if (has_octal_support(q))
+			return 0;
 	}
 
 	return -ENOTSUPP;
@@ -395,29 +563,56 @@ static bool fsl_qspi_supports_op(struct spi_slave *slave,
 	if (op->data.dir == SPI_MEM_DATA_IN &&
 	    (op->data.nbytes > q->devtype_data->ahb_buf_size ||
 	     (op->data.nbytes > q->devtype_data->rxfifo - 4 &&
-	      !IS_ALIGNED(op->data.nbytes, 8))))
-		return false;
+	      !IS_ALIGNED(op->data.nbytes, 8)))) {
+		if (!can_read_entire_ahb(q) &&
+		    op->data.nbytes > q->devtype_data->ahb_buf_size)
+			return false;
+	}
 
 	if (op->data.dir == SPI_MEM_DATA_OUT &&
 	    op->data.nbytes > q->devtype_data->txfifo)
 		return false;
 
-	return spi_mem_default_supports_op(slave, op);
+	if (op->cmd.dtr && op->addr.dtr && op->dummy.dtr && op->data.dtr)
+		ret = spi_mem_dtr_supports_op(slave, op);
+	else
+		ret = spi_mem_default_supports_op(slave, op);
+
+	return ret;
 }
 
 static void fsl_qspi_prepare_lut(struct fsl_qspi *q,
 				 const struct spi_mem_op *op)
 {
+	u8 lut_cmd, lut_addr, lut_data, data_size;
 	void __iomem *base = q->iobase;
 	u32 lutval[4] = {};
 	int lutidx = 1, i;
 
-	lutval[0] |= LUT_DEF(0, LUT_CMD, LUT_PAD(op->cmd.buswidth),
+	if (op->cmd.dtr)
+		lut_cmd = LUT_CMD_DDR;
+	else
+		lut_cmd = LUT_CMD;
+
+	lutval[0] |= LUT_DEF(0, lut_cmd, LUT_PAD(op->cmd.buswidth),
 			     op->cmd.opcode);
+
+	if (op->cmd.buswidth == 8) {
+		lutval[lutidx / 2] <<= LUT_SIZE_BITS;
+		lutval[lutidx / 2] |= LUT_DEF(0, lut_cmd,
+					      LUT_PAD(op->cmd.buswidth),
+					      op->cmd.opcode >> 8);
+		lutidx++;
+	}
+
+	if (op->addr.dtr)
+		lut_addr = LUT_ADDR_DDR;
+	else
+		lut_addr = LUT_ADDR;
 
 	if (IS_ENABLED(CONFIG_FSL_QSPI_AHB_FULL_MAP)) {
 		if (op->addr.nbytes) {
-			lutval[lutidx / 2] |= LUT_DEF(lutidx, LUT_ADDR,
+			lutval[lutidx / 2] |= LUT_DEF(lutidx, lut_addr,
 						      LUT_PAD(op->addr.buswidth),
 						      (op->addr.nbytes == 4) ? 0x20 : 0x18);
 			lutidx++;
@@ -447,11 +642,32 @@ static void fsl_qspi_prepare_lut(struct fsl_qspi *q,
 	}
 
 	if (op->data.nbytes) {
+		if (op->data.dir == SPI_MEM_DATA_IN) {
+			if (op->addr.dtr)
+				lut_data = LUT_FSL_READ_DDR;
+			else
+				lut_data = LUT_FSL_READ;
+		} else {
+			if (op->addr.dtr)
+				lut_data = LUT_FSL_WRITE_DDR;
+			else
+				lut_data = LUT_FSL_WRITE;
+		}
+
+		/* HW limitation for memory write operation */
+		if (op->data.dir == SPI_MEM_DATA_OUT && op->data.dtr) {
+			data_size = 0;
+		} else {
+			if (op->data.nbytes > q->devtype_data->rxfifo)
+				data_size = q->devtype_data->rxfifo;
+			else
+				data_size = op->data.nbytes;
+		}
+
 		lutval[lutidx / 2] |= LUT_DEF(lutidx,
-					      op->data.dir == SPI_MEM_DATA_IN ?
-					      LUT_FSL_READ : LUT_FSL_WRITE,
+					      lut_data,
 					      LUT_PAD(op->data.buswidth),
-					      0);
+					      data_size);
 		lutidx++;
 	}
 
@@ -490,20 +706,27 @@ static void fsl_qspi_prepare_lut(struct fsl_qspi *q,
  */
 static void fsl_qspi_invalidate(struct fsl_qspi *q)
 {
-	u32 reg;
+	u32 mcr;
+	u32 reset_mask = QUADSPI_MCR_SWRSTHD_MASK | QUADSPI_MCR_SWRSTSD_MASK;
 
-	reg = qspi_readl(q, q->iobase + QUADSPI_MCR);
-	reg |= QUADSPI_MCR_SWRSTHD_MASK | QUADSPI_MCR_SWRSTSD_MASK;
-	qspi_writel(q, reg, q->iobase + QUADSPI_MCR);
+	mcr = qspi_readl(q, q->iobase + QUADSPI_MCR);
 
-	/*
-	 * The minimum delay : 1 AHB + 2 SFCK clocks.
-	 * Delay 1 us is enough.
-	 */
-	udelay(1);
+	mcr &= ~QUADSPI_MCR_MDIS_MASK;
+	qspi_writel(q, mcr, q->iobase + QUADSPI_MCR);
 
-	reg &= ~(QUADSPI_MCR_SWRSTHD_MASK | QUADSPI_MCR_SWRSTSD_MASK);
-	qspi_writel(q, reg, q->iobase + QUADSPI_MCR);
+	mcr = qspi_readl(q, q->iobase + QUADSPI_MCR);
+	mcr |= reset_mask;
+	qspi_writel(q, mcr, q->iobase + QUADSPI_MCR);
+
+	mcr = qspi_readl(q, q->iobase + QUADSPI_MCR) | QUADSPI_MCR_MDIS_MASK;
+	qspi_writel(q, mcr, q->iobase + QUADSPI_MCR);
+
+	mcr &= ~(reset_mask);
+	qspi_writel(q, mcr, q->iobase + QUADSPI_MCR);
+
+	mcr = qspi_readl(q, q->iobase + QUADSPI_MCR);
+	mcr &= ~QUADSPI_MCR_MDIS_MASK;
+	qspi_writel(q, mcr, q->iobase + QUADSPI_MCR);
 }
 
 static void fsl_qspi_select_mem(struct fsl_qspi *q, struct spi_slave *slave)
@@ -539,17 +762,31 @@ static void fsl_qspi_read_ahb(struct fsl_qspi *q, const struct spi_mem_op *op)
 			ahb_read_addr += op->addr.val;
 	}
 
+	invalidate_dcache_range((unsigned long)ahb_read_addr,
+				(unsigned long)ahb_read_addr + op->data.nbytes);
+
 	memcpy_fromio(op->data.buf.in,
 		      ahb_read_addr + q->selected * fsl_qspi_memsize_per_cs(q),
 		      op->data.nbytes);
 }
 
-static void fsl_qspi_fill_txfifo(struct fsl_qspi *q,
-				 const struct spi_mem_op *op)
+static int fsl_qspi_default_setup(struct fsl_qspi *q);
+static int fsl_qspi_readl_poll_tout(struct fsl_qspi *q, void __iomem *base,
+				    u32 mask, u32 delay_us, u32 timeout_us);
+
+static int fsl_qspi_fill_txfifo(struct fsl_qspi *q,
+				const struct spi_mem_op *op)
 {
 	void __iomem *base = q->iobase;
-	int i;
+	int i, err;
 	u32 val;
+
+	/* TX buffer is empty */
+	err = fsl_qspi_readl_poll_tout(q, base + QUADSPI_TBSR,
+				       QUADSPI_TBSR_TRBFL_MASK,
+				       10, 1000);
+	if (err)
+		return err;
 
 	for (i = 0; i < ALIGN_DOWN(op->data.nbytes, 4); i += 4) {
 		memcpy(&val, op->data.buf.out + i, 4);
@@ -567,6 +804,8 @@ static void fsl_qspi_fill_txfifo(struct fsl_qspi *q,
 		for (i = op->data.nbytes; i < 16; i += 4)
 			qspi_writel(q, 0, base + QUADSPI_TBDR);
 	}
+
+	return 0;
 }
 
 static void fsl_qspi_read_rxfifo(struct fsl_qspi *q,
@@ -605,6 +844,7 @@ static int fsl_qspi_do_op(struct fsl_qspi *q, const struct spi_mem_op *op)
 {
 	void __iomem *base = q->iobase;
 	int err = 0;
+	u32 tbsr, trctr, trbfl, words;
 
 	/*
 	 * Always start the sequence at the same index since we update
@@ -614,10 +854,24 @@ static int fsl_qspi_do_op(struct fsl_qspi *q, const struct spi_mem_op *op)
 	qspi_writel(q, op->data.nbytes | QUADSPI_IPCR_SEQID(SEQID_LUT),
 		    base + QUADSPI_IPCR);
 
+	if (op->data.nbytes && op->data.dir == SPI_MEM_DATA_OUT) {
+		words = op->data.nbytes / 4;
+		if (op->data.nbytes % 4)
+			words++;
+
+		/* Wait until all bytes are transmitted */
+		do {
+			tbsr = qspi_readl(q, base + QUADSPI_TBSR);
+			trctr = QUADSPI_TBSR_TRCTR(tbsr);
+			trbfl = QUADSPI_TBSR_TRBFL(tbsr);
+		} while ((trctr != words) || trbfl);
+	}
+
 	/* wait for the controller being ready */
 	err = fsl_qspi_readl_poll_tout(q, base + QUADSPI_SR,
 				       (QUADSPI_SR_IP_ACC_MASK |
-					QUADSPI_SR_AHB_ACC_MASK),
+					QUADSPI_SR_AHB_ACC_MASK |
+					QUADSPI_SR_BUSY),
 					10, 1000);
 
 	if (!err && op->data.nbytes && op->data.dir == SPI_MEM_DATA_IN)
@@ -625,6 +879,236 @@ static int fsl_qspi_do_op(struct fsl_qspi *q, const struct spi_mem_op *op)
 
 	return err;
 }
+
+static void dllcra_bypass(struct fsl_qspi *q, u32 dllmask)
+{
+	void __iomem *base = q->iobase;
+	u32 dllcra;
+
+	dllmask &= QUADSPI_DLLCR_MASK;
+
+	dllcra = QUADSPI_DLLCR_SLV_EN | QUADSPI_DLLCR_SLV_BYPASS_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= dllmask;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= QUADSPI_DLLCR_SLV_BYPASS_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= QUADSPI_DLLCR_SLV_UPD_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	while (!(qspi_readl(q, base + QUADSPI_DLLSR) &
+		 QUADSPI_DLLSR_DLLA_LOCK))
+		;
+
+	dllcra &= ~QUADSPI_DLLCR_SLV_UPD_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+}
+
+static void dllcra_manual(struct fsl_qspi *q, u32 dllmask)
+{
+	void __iomem *base = q->iobase;
+	u32 dllcra;
+
+	dllmask &= QUADSPI_DLLCR_MASK;
+
+	dllcra = QUADSPI_DLLCR_SLV_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= dllmask;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= QUADSPI_DLLCR_DLLEN_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	while (!(qspi_readl(q, base + QUADSPI_DLLSR) &
+		 QUADSPI_DLLSR_DLLA_LOCK))
+		;
+
+	dllcra &= ~QUADSPI_DLLCR_SLV_AUTO_UPDT_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra &= ~QUADSPI_DLLCR_SLV_BYPASS_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra = qspi_readl(q, base + QUADSPI_DLLCRA);
+	dllcra |= QUADSPI_DLLCR_SLV_UPD_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	while (!(qspi_readl(q, base + QUADSPI_DLLSR) &
+		 QUADSPI_DLLSR_SLVA_LOCK))
+		;
+}
+
+static void dllcra_auto(struct fsl_qspi *q, u32 dllmask)
+{
+	void __iomem *base = q->iobase;
+	u32 dllcra;
+
+	dllmask &= QUADSPI_DLLCR_MASK;
+
+	dllcra = QUADSPI_DLLCR_SLV_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= dllmask;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= QUADSPI_DLLCR_SLV_AUTO_UPDT_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= QUADSPI_DLLCR_DLLEN_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	while (!(qspi_readl(q, base + QUADSPI_DLLSR) &
+		 QUADSPI_DLLSR_DLLA_LOCK))
+		;
+
+	dllcra = qspi_readl(q, base + QUADSPI_DLLCRA);
+	dllcra &= ~QUADSPI_DLLCR_SLV_BYPASS_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+
+	dllcra |= QUADSPI_DLLCR_SLV_UPD_EN;
+	qspi_writel(q, dllcra, base + QUADSPI_DLLCRA);
+	while (!(qspi_readl(q, base + QUADSPI_DLLSR) &
+		 QUADSPI_DLLSR_SLVA_LOCK))
+		;
+}
+
+static int program_dllcra(struct fsl_qspi *q, u32 dllcra)
+{
+	u32 bypass = (dllcra >> QUADSPI_DLLCR_SLV_BYPASS_SHIFT) & BIT(0);
+	u32 slven = (dllcra >> QUADSPI_DLLCR_SLV_EN_SHIFT) & BIT(0);
+	u32 autoupd = (dllcra >> QUADSPI_DLLCR_SLV_AUTO_UPDT_SHIFT) & BIT(0);
+
+	/* Bypass mode */
+	if (slven && bypass && !autoupd) {
+		dllcra_bypass(q, dllcra);
+		return 0;
+	}
+
+	/* Manual mode */
+	if (slven && !bypass && !autoupd) {
+		dllcra_manual(q, dllcra);
+		return 0;
+	}
+
+	/* Auto update mode */
+	if (slven && !bypass && autoupd) {
+		dllcra_auto(q, dllcra);
+		return 0;
+	}
+
+	printf("Error: Failed to detect a correct mode for dllcr: 0x%"
+	       PRIx32 "\n", dllcra);
+
+	return -1;
+}
+
+static int enable_octal_ddr(struct fsl_qspi *q)
+{
+	void __iomem *base = q->iobase;
+	u32 mcr, dllcr;
+	int ret;
+
+	if (q->proto == SNOR_PROTO_8_8_8_DTR)
+		return 0;
+
+	while (qspi_readl(q, base + QUADSPI_SR) & QUADSPI_SR_BUSY)
+		;
+
+	/* Disable the module */
+	mcr = qspi_readl(q, base + QUADSPI_MCR);
+	mcr |= QUADSPI_MCR_MDIS_MASK;
+	qspi_writel(q, mcr, base + QUADSPI_MCR);
+
+	mcr |= octal_ddr_conf.mcr;
+	qspi_writel(q, mcr, base + QUADSPI_MCR);
+
+	qspi_writel(q, octal_ddr_conf.flshcr, base + QUADSPI_FLSHCR);
+	qspi_writel(q, octal_ddr_conf.sfacr, base + QUADSPI_SFACR);
+	qspi_writel(q, octal_ddr_conf.smpr, base + QUADSPI_SMPR);
+	qspi_writel(q, octal_ddr_conf.dlcr, base + QUADSPI_DLCR);
+
+	qspi_writel(q, octal_ddr_conf.dlpr, base + QUADSPI_DLPR);
+
+	/* Init AHB interface - 1024 bytes */
+	qspi_writel(q, QUADSPI_BUF3CR_ALLMST_MASK |
+		    (q->devtype_data->rxfifo << QUADSPI_BUF3CR_ADATSZ_SHIFT),
+		    base + QUADSPI_BUF3CR);
+
+	qspi_writel(q, octal_ddr_conf.flash1_size, base + QUADSPI_SFA1AD);
+	qspi_writel(q, octal_ddr_conf.flash2_size, base + QUADSPI_SFA2AD);
+	qspi_writel(q, octal_ddr_conf.flash1_size, base + QUADSPI_SFB1AD);
+	qspi_writel(q, octal_ddr_conf.flash2_size, base + QUADSPI_SFB2AD);
+
+	/* Enable the module */
+	mcr = qspi_readl(q, base + QUADSPI_MCR);
+	mcr &= ~QUADSPI_MCR_MDIS_MASK;
+	qspi_writel(q, mcr, base + QUADSPI_MCR);
+
+	dllcr = octal_ddr_conf.dllcr;
+	if (low_freq_chain(q))
+		dllcr &= ~QUADSPI_DLLCR_FREQEN_EN;
+
+	ret = program_dllcra(q, dllcr);
+	if (ret) {
+		printf("Error: Failed to apply dllcra settings\n");
+		return ret;
+	}
+
+	q->proto = SNOR_PROTO_8_8_8_DTR;
+
+	return 0;
+}
+
+static bool is_octal_dtr_op(const struct spi_mem_op *op)
+{
+	/* Command */
+	if (op->cmd.buswidth == 8 && op->cmd.dtr &&
+	    op->data.dir == SPI_MEM_NO_DATA)
+		return true;
+
+	if (op->cmd.buswidth == 8 && op->cmd.dtr &&
+	    op->addr.buswidth == 8 && op->addr.dtr &&
+	    op->dummy.buswidth == 8 && op->dummy.dtr)
+		return true;
+
+	return false;
+}
+
+static bool is_spi_op(const struct spi_mem_op *op)
+{
+	if (op->cmd.buswidth == 1 && !op->cmd.dtr)
+		return true;
+
+	if (op->cmd.buswidth == 1 && !op->cmd.dtr &&
+	    op->addr.buswidth == 1 && !op->addr.dtr &&
+	    op->dummy.buswidth == 1 && !op->dummy.dtr)
+		return true;
+
+	return false;
+}
+
+#ifdef DEBUG
+static void dump_op(const struct spi_mem_op *op)
+{
+	printf("\tcmd.opcode = 0x%" PRIx8 "\n", op->cmd.opcode);
+	printf("\tcmd.buswidth = 0x%" PRIx8 "\n", op->cmd.buswidth);
+	printf("\tcmd.dtr = 0x%" PRIx8 "\n", op->cmd.dtr);
+	printf("\taddr.nbytes = 0x%" PRIx8 "\n", op->addr.nbytes);
+	printf("\taddr.buswidth = 0x%" PRIx8 "\n", op->addr.buswidth);
+	printf("\taddr.val = 0x%" PRIx64 "\n", op->addr.val);
+	printf("\taddr.dtr = 0x%" PRIx8 "\n", op->addr.dtr);
+	printf("\tdummy.nbytes = 0x%" PRIx8 "\n", op->dummy.nbytes);
+	printf("\tdummy.buswidth = 0x%" PRIx8 "\n", op->dummy.buswidth);
+	printf("\tdata.nbytes = 0x%x\n", op->data.nbytes);
+	printf("\tdata.dir = %s\n", op->data.dir == SPI_MEM_DATA_OUT ?
+	       "OUT" : "IN");
+	printf("\tdata.dtr = 0x%" PRIx8 "\n", op->data.dtr);
+}
+#endif
 
 static int fsl_qspi_exec_op(struct spi_slave *slave,
 			    const struct spi_mem_op *op)
@@ -636,7 +1120,8 @@ static int fsl_qspi_exec_op(struct spi_slave *slave,
 
 	/* wait for the controller being ready */
 	fsl_qspi_readl_poll_tout(q, base + QUADSPI_SR, (QUADSPI_SR_IP_ACC_MASK |
-				 QUADSPI_SR_AHB_ACC_MASK), 10, 1000);
+				 QUADSPI_SR_AHB_ACC_MASK | QUADSPI_SR_BUSY),
+				 10, 1000);
 
 	fsl_qspi_select_mem(q, slave);
 
@@ -659,7 +1144,16 @@ static int fsl_qspi_exec_op(struct spi_slave *slave,
 	qspi_writel(q, QUADSPI_SPTRCLR_BFPTRC | QUADSPI_SPTRCLR_IPPTRC,
 		    base + QUADSPI_SPTRCLR);
 
+#ifdef DEBUG
+	dump_op(op);
+#endif
 	fsl_qspi_prepare_lut(q, op);
+
+	if (is_octal_dtr_op(op))
+		enable_octal_ddr(q);
+
+	if (is_spi_op(op))
+		fsl_qspi_default_setup(q);
 
 	/*
 	 * If we have large chunks of data, we read them through the AHB bus
@@ -668,15 +1162,18 @@ static int fsl_qspi_exec_op(struct spi_slave *slave,
 	 */
 	if (op->data.nbytes > (q->devtype_data->rxfifo - 4) &&
 	    op->data.dir == SPI_MEM_DATA_IN) {
+		qspi_writel(q, QUADSPI_RBCT_WMRK_MASK |
+			    0, base + QUADSPI_RBCT);
 		fsl_qspi_read_ahb(q, op);
 	} else {
 		qspi_writel(q, QUADSPI_RBCT_WMRK_MASK |
 			    QUADSPI_RBCT_RXBRD_USEIPS, base + QUADSPI_RBCT);
 
 		if (op->data.nbytes && op->data.dir == SPI_MEM_DATA_OUT)
-			fsl_qspi_fill_txfifo(q, op);
+			err = fsl_qspi_fill_txfifo(q, op);
 
-		err = fsl_qspi_do_op(q, op);
+		if (!err)
+			err = fsl_qspi_do_op(q, op);
 	}
 
 	/* Invalidate the data in the AHB buffer. */
@@ -694,10 +1191,12 @@ static int fsl_qspi_adjust_op_size(struct spi_slave *slave,
 		if (op->data.nbytes > q->devtype_data->txfifo)
 			op->data.nbytes = q->devtype_data->txfifo;
 	} else {
-		if (op->data.nbytes > q->devtype_data->ahb_buf_size)
-			op->data.nbytes = q->devtype_data->ahb_buf_size;
-		else if (op->data.nbytes > (q->devtype_data->rxfifo - 4))
+		if (op->data.nbytes > q->devtype_data->ahb_buf_size) {
+			if (!can_read_entire_ahb(q))
+				op->data.nbytes = q->devtype_data->ahb_buf_size;
+		} else if (op->data.nbytes > (q->devtype_data->rxfifo - 4)) {
 			op->data.nbytes = ALIGN_DOWN(op->data.nbytes, 8);
+		}
 	}
 
 	return 0;
@@ -707,6 +1206,10 @@ static int fsl_qspi_default_setup(struct fsl_qspi *q)
 {
 	void __iomem *base = q->iobase;
 	u32 reg, addr_offset = 0, memsize_cs;
+	int ret = 0;
+
+	if (q->proto == SNOR_PROTO_1_1_1)
+		return 0;
 
 	/* Reset the module */
 	qspi_writel(q, QUADSPI_MCR_SWRSTSD_MASK | QUADSPI_MCR_SWRSTHD_MASK,
@@ -728,10 +1231,18 @@ static int fsl_qspi_default_setup(struct fsl_qspi *q)
 			    base + QUADSPI_FLSHCR);
 
 	reg = qspi_readl(q, base + QUADSPI_SMPR);
-	qspi_writel(q, reg & ~(QUADSPI_SMPR_FSDLY_MASK
-			| QUADSPI_SMPR_FSPHS_MASK
-			| QUADSPI_SMPR_HSENA_MASK
-			| QUADSPI_SMPR_DDRSMP_MASK), base + QUADSPI_SMPR);
+	reg &= ~(QUADSPI_SMPR_FSDLY_MASK
+		 | QUADSPI_SMPR_FSPHS_MASK
+		 | QUADSPI_SMPR_HSENA_MASK
+		 | QUADSPI_SMPR_DDRSMP_MASK);
+
+	if (has_dll(q)) {
+		reg &= ~(QUADSPI_SMPR_DLLFSMPFA_MASK |
+			 QUADSPI_SMPR_DLLFSMPFB_MASK);
+		reg |= QUADSPI_SMPR_FSPHS_MASK;
+	}
+
+	qspi_writel(q, reg, base + QUADSPI_SMPR);
 
 	/* We only use the buffer3 for AHB read */
 	qspi_writel(q, 0, base + QUADSPI_BUF0IND);
@@ -775,9 +1286,22 @@ static int fsl_qspi_default_setup(struct fsl_qspi *q)
 	q->selected = -1;
 
 	/* Enable the module */
-	qspi_writel(q, QUADSPI_MCR_RESERVED_MASK | QUADSPI_MCR_END_CFG_MASK,
-		    base + QUADSPI_MCR);
-	return 0;
+	reg = QUADSPI_MCR_RESERVED_MASK | QUADSPI_MCR_END_CFG_MASK;
+	if (has_dll(q)) {
+		reg |= QUADSPI_MCR_DQS_EN;
+		qspi_writel(q, 0, base + QUADSPI_SFACR);
+	}
+
+	qspi_writel(q, reg, base + QUADSPI_MCR);
+
+	if (has_dll(q))
+		ret = program_dllcra(q, QUADSPI_DLLCR_SLV_BYPASS_EN |
+				     QUADSPI_DLLCR_SLV_EN);
+
+	if (!ret)
+		q->proto = SNOR_PROTO_1_1_1;
+
+	return ret;
 }
 
 static const struct spi_controller_mem_ops fsl_qspi_mem_ops = {
@@ -818,7 +1342,7 @@ static int fsl_qspi_probe(struct udevice *bus)
 
 	q->ahb_addr = map_physmem(res.start, res.end - res.start, MAP_NOCACHE);
 	q->memmap_phy = res.start;
-	q->memmap_size = res.end - res.start;
+	q->memmap_size = res.end - res.start + 1;
 
 	dm_bus->max_hz = fdtdec_get_int(blob, node, "spi-max-frequency",
 					66000000);
@@ -872,6 +1396,8 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "fsl,ls1021a-qspi", .data = (ulong)&ls1021a_data, },
 	{ .compatible = "fsl,ls1088a-qspi", .data = (ulong)&ls2080a_data, },
 	{ .compatible = "fsl,ls2080a-qspi", .data = (ulong)&ls2080a_data, },
+	{ .compatible = "nxp,s32g-qspi", .data = (ulong)&s32g_data },
+	{ .compatible = "nxp,s32r45-qspi", .data = (ulong)&s32r45_data },
 	{ }
 };
 
