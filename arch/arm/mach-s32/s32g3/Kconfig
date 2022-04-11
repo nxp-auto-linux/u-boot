@@ -16,7 +16,6 @@ config TARGET_S32G399ARDB3
 	select ADC
 	select NXP_S32GRDB_BOARD
 	select SARADC_S32CC
-	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G3XXAEVB
 	bool "Support S32G3-EVB board"
@@ -38,7 +37,6 @@ config TARGET_S32G3XXAEVB
 	imply USB_EHCI_HCD
 	select MISC_INIT_R if SJA1105
 	select NXP_S32GEVB_BOARD
-	select SPI_FLASH_MACRONIX
 
 config TARGET_S32G399AEMU
 	bool "Support S32G399A ZeBu"
