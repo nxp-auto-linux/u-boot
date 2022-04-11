@@ -124,6 +124,37 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
+config ENV_OFFSET
+	default 0x1e0000
+
+if SD_BOOT
+config ENV_SIZE
+	default 0x2000
+
+config ENV_IS_IN_MMC
+	default y
+endif
+
+if QSPI_BOOT
+config ENV_SIZE
+	default 0x10000
+
+config ENV_IS_IN_SPI_FLASH
+	default y
+
+config USE_ENV_SPI_CS
+	default y
+
+config USE_ENV_SPI_BUS
+	default y
+
+config ENV_SPI_BUS
+	default 6
+
+config ENV_SPI_CS
+	default 0
+endif
+
 endif
 
 source "arch/arm/mach-s32/s32g2/Kconfig"

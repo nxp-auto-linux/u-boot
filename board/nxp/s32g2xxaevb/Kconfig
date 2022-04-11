@@ -12,4 +12,7 @@ config SYS_BOARD
 config NR_DRAM_BANKS
 	default 2
 
+config ENV_SECT_SIZE
+	default 0x10000 if QSPI_BOOT
+
 endif
