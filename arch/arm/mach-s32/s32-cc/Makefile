@@ -28,7 +28,7 @@ hostprogs-y += s32cc_qspiparams
 always := $(hostprogs-y)
 
 quiet_cmd_cpp_cfg = CFGS    $@
-      cmd_cpp_cfg = $(CPP) $(cpp_flags) -x c -o $@ $<
+      cmd_cpp_cfg = $(CPP) $(cpp_flags) -D__ASSEMBLY__ -x c -o $@ $<
 
 S32CC_CONFIG_FILE = $(CONFIG_S32CC_CONFIG_FILE:"%"=%)
 
