@@ -32,6 +32,12 @@ config LMB_MAX_REGIONS
 config ENV_OFFSET
 	default 0x1e0000
 
+config SF_DEFAULT_BUS
+	default 6
+
+config SF_DEFAULT_CS
+	default 0
+
 if SD_BOOT
 config ENV_IS_IN_MMC
 	default y
@@ -39,6 +45,15 @@ config ENV_IS_IN_MMC
 config ENV_SIZE
 	default 0x2000
 endif
+
+if QSPI_BOOT
+config ENV_IS_IN_SPI_FLASH
+	default y
+
+config ENV_SIZE
+	default 0x10000
+endif
+
 endif
 
 source "arch/arm/mach-s32/s32g2/Kconfig"
