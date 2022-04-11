@@ -29,6 +29,16 @@ config S32CC_CONFIG_FILE
 config LMB_MAX_REGIONS
 	default 16
 
+config ENV_OFFSET
+	default 0x1e0000
+
+if SD_BOOT
+config ENV_IS_IN_MMC
+	default y
+
+config ENV_SIZE
+	default 0x2000
+endif
 endif
 
 source "arch/arm/mach-s32/s32g2/Kconfig"
