@@ -8,6 +8,10 @@
 #include <linux/sizes.h>
 #include <generated/autoconf.h>
 
+/* memory mapped external flash */
+#define CONFIG_SYS_FLASH_BASE		0x0UL
+#define CONFIG_SYS_FLASH_SIZE		(SZ_512M)
+
 #define PHYS_SDRAM_1			0x80000000UL
 #define PHYS_SDRAM_1_SIZE		(SZ_2G)
 #define PHYS_SDRAM_2			0x880000000UL
