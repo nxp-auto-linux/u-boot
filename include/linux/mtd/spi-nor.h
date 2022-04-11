@@ -71,6 +71,8 @@
 #define SPINOR_OP_WREAR		0xc5	/* Write Extended Address Register */
 #define SPINOR_OP_SRSTEN	0x66	/* Software Reset Enable */
 #define SPINOR_OP_SRST		0x99	/* Software Reset */
+#define SPINOR_OP_RDCR2		0x71	/* Read CFG Reg2 */
+#define SPINOR_OP_WRCR2		0x72	/* Write CFG Reg2 (JESD216D.01)*/
 
 /* 4-byte address opcodes - used on Spansion and some Macronix flashes. */
 #define SPINOR_OP_READ_4B	0x13	/* Read data bytes (low frequency) */
@@ -169,6 +171,10 @@
 
 /* Configuration Register bits. */
 #define CR_QUAD_EN_SPAN		BIT(1)	/* Spansion Quad I/O */
+
+/* Configuration Register 2 bits. */
+#define CR2_STR_OPI_EN		BIT(0)	/* Octal STR */
+#define CR2_DTR_OPI_EN		BIT(1)	/* Octal DTR */
 
 /* Status Register 2 bits. */
 #define SR2_QUAD_EN_BIT7	BIT(7)

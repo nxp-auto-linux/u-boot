@@ -180,6 +180,14 @@ config SPI_FLASH_MT35XU
 	 because the fixup hooks for this flash add extra size overhead. Boards
 	 that don't use the flash can disable this to save space.
 
+config SPI_FLASH_MX25UW51245G
+	bool "Macronix MX25UW51245G chip support"
+	depends on SPI_FLASH_MACRONIX
+	help
+	 Add support for the Macronix MX25UW51245G chip. This is a separate config
+	 because the fixup hooks for this flash add extra size overhead. Boards
+	 that don't use the flash can disable this to save space.
+
 config SPI_FLASH_SST
 	bool "SST SPI flash support"
 	help

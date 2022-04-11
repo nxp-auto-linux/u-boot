@@ -363,8 +363,10 @@ static ssize_t spi_nor_read_data(struct spi_nor *nor, loff_t from, size_t len,
 
 	/* convert the dummy cycles to the number of bytes */
 	op.dummy.nbytes = (nor->read_dummy * op.dummy.buswidth) / 8;
+#ifndef CONFIG_SPI_FLASH_MX25UW51245G
 	if (spi_nor_protocol_is_dtr(nor->read_proto))
 		op.dummy.nbytes *= 2;
+#endif
 
 	while (remaining) {
 		op.data.nbytes = remaining < UINT_MAX ? remaining : UINT_MAX;
@@ -3574,6 +3576,110 @@ static struct spi_nor_fixups mt35xu512aba_fixups = {
 };
 #endif /* CONFIG_SPI_FLASH_MT35XU */
 
+#ifdef CONFIG_SPI_FLASH_MX25UW51245G
+static int spi_nor_macronix_octal_dtr_enable(struct spi_nor *nor)
+{
+	struct spi_mem_op op;
+	u8 buf = 0xff;
+	u8 addr_width = 4;
+	int ret;
+
+	op = (struct spi_mem_op)
+		SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_RDCR2, 1),
+			   SPI_MEM_OP_ADDR(addr_width, 0x0, 1),
+			   SPI_MEM_OP_NO_DUMMY,
+			   SPI_MEM_OP_DATA_IN(1, &buf, 1));
+
+	ret = spi_mem_exec_op(nor->spi, &op);
+	if (ret) {
+		dev_err(nor->dev, "Failed to read CR2\n");
+		return ret;
+	}
+
+	ret = write_enable(nor);
+	if (ret) {
+		dev_err(nor->dev, "Failed to enable write\n");
+		return ret;
+	}
+
+	ret = spi_nor_wait_till_ready(nor);
+	if (ret)
+		return ret;
+
+	buf &= ~CR2_STR_OPI_EN;
+	buf |= CR2_DTR_OPI_EN;
+
+	op = (struct spi_mem_op)
+		SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_WRCR2, 1),
+			   SPI_MEM_OP_ADDR(addr_width, 0x0, 1),
+			   SPI_MEM_OP_NO_DUMMY,
+			   SPI_MEM_OP_DATA_OUT(1, &buf, 1));
+	ret = spi_mem_exec_op(nor->spi, &op);
+	if (ret) {
+		dev_err(nor->dev, "Failed to enable octal DTR mode\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static void mx25uw51245g_default_init(struct spi_nor *nor)
+{
+	nor->octal_dtr_enable = spi_nor_macronix_octal_dtr_enable;
+}
+
+static int
+mx25uw51245g_post_bfpt_fixup(struct spi_nor *nor,
+			     const struct sfdp_parameter_header *bfpt_header,
+			     const struct sfdp_bfpt *bfpt,
+			     struct spi_nor_flash_parameter *params)
+{
+	/* erase size in case it is set to 4K from BFPT */
+	nor->erase_opcode = SPINOR_OP_SE_4B;
+	nor->mtd.erasesize = nor->info->sector_size;
+
+	params->hwcaps.mask |= SNOR_HWCAPS_PP_8_8_8_DTR;
+
+	spi_nor_set_pp_settings(&params->page_programs[SNOR_CMD_PP_8_8_8_DTR],
+				SPINOR_OP_PP_4B, SNOR_PROTO_8_8_8_DTR);
+
+	return 0;
+}
+
+static void mx25uw51245g_post_sfdp_fixup(struct spi_nor *nor,
+					 struct spi_nor_flash_parameter *params)
+{
+	/* Identify (free) samples with empty SFDP table */
+	if (nor->cmd_ext_type != SPI_NOR_EXT_NONE)
+		return;
+
+	nor->cmd_ext_type = SPI_NOR_EXT_INVERT;
+
+	/* erase size in case it is set to 4K from BFPT */
+	nor->erase_opcode = SPINOR_OP_SE_4B;
+	nor->mtd.erasesize = nor->info->sector_size;
+
+	params->hwcaps.mask |= SNOR_HWCAPS_PP_8_8_8_DTR;
+
+	spi_nor_set_pp_settings(&params->page_programs[SNOR_CMD_PP_8_8_8_DTR],
+				SPINOR_OP_PP_4B, SNOR_PROTO_8_8_8_DTR);
+
+	spi_nor_set_read_settings(&params->reads[SNOR_CMD_READ_8_8_8_DTR],
+				  0, 20, SPINOR_OP_READ_1_4_4_DTR_4B,
+				  SNOR_PROTO_8_8_8_DTR);
+
+	params->rdsr_addr_nbytes = 4;
+	params->rdsr_dummy = 4;
+}
+
+static struct spi_nor_fixups mx25uw51245g_fixups = {
+	.default_init = mx25uw51245g_default_init,
+	.post_bfpt = mx25uw51245g_post_bfpt_fixup,
+	.post_sfdp = mx25uw51245g_post_sfdp_fixup,
+};
+
+#endif /* CONFIG_SPI_FLASH_MX25UW51245G */
+
 /** spi_nor_octal_dtr_enable() - enable Octal DTR I/O if needed
  * @nor:                 pointer to a 'struct spi_nor'
  *
@@ -3667,7 +3773,11 @@ static int spi_nor_soft_reset(struct spi_nor *nor)
 	enum spi_nor_cmd_ext ext;
 
 	ext = nor->cmd_ext_type;
+#ifdef CONFIG_SPI_FLASH_MX25UW51245G
+	nor->cmd_ext_type = SPI_NOR_EXT_INVERT;
+#else
 	nor->cmd_ext_type = SPI_NOR_EXT_REPEAT;
+#endif
 
 	op = (struct spi_mem_op)SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_SRSTEN, 0),
 			SPI_MEM_OP_NO_DUMMY,
@@ -3743,6 +3853,11 @@ void spi_nor_set_fixups(struct spi_nor *nor)
 #ifdef CONFIG_SPI_FLASH_MT35XU
 	if (!strcmp(nor->info->name, "mt35xu512aba"))
 		nor->fixups = &mt35xu512aba_fixups;
+#endif
+
+#ifdef CONFIG_SPI_FLASH_MX25UW51245G
+	if (!strcmp(nor->info->name, "mx25uw51245g"))
+		nor->fixups = &mx25uw51245g_fixups;
 #endif
 }
 
