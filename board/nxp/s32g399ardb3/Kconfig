@@ -9,6 +9,9 @@ config SYS_CONFIG_NAME
 config SYS_BOARD
 	default "s32g399ardb3"
 
+config DEFAULT_DEVICE_TREE
+	default "fsl-s32g399ardb3"
+
 config NR_DRAM_BANKS
 	default 2
 
