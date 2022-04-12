@@ -1,6 +1,8 @@
 config NXP_S32GRDB_BOARD
 	bool
 	default n
+	imply DM_PMIC
+	imply DM_PMIC_VR5510
 	imply NVME
 	select ADC
 	select BOARD_LATE_INIT
@@ -10,6 +12,8 @@ config NXP_S32GEVB_BOARD
 	bool
 	default n
 	imply ADC
+	imply DM_PMIC
+	imply DM_PMIC_VR5510
 	imply SARADC_S32CC
 
 config S32GEN1_HWCONFIG

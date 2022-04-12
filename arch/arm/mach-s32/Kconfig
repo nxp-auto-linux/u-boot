@@ -20,8 +20,6 @@ config NXP_S32CC
 	imply DM_ETH
 	imply DM_I2C
 	imply DM_PCI
-	imply DM_PMIC
-	imply DM_PMIC_VR5510
 	imply DM_SPI
 	imply DM_SPI_FLASH
 	imply DWC_ETH_QOS_DEVICES
