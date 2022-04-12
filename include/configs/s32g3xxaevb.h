@@ -8,4 +8,10 @@
 #include <configs/s32g3.h>
 
 #define FDT_FILE			"s32g3xxa-evb.dtb"
+
+#if defined(CONFIG_USB)
+#	define CONFIG_MXC_USB_PORTSC	PORT_PTS_ULPI
+#	define CONFIG_USB_EHCI_MX6
+#endif
+
 #endif

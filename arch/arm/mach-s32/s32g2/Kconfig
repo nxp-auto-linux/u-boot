@@ -21,6 +21,11 @@ config TARGET_S32G2XXAEVB
 	  This board is based on S32G2 family of SoCs. It is equipped with
 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
 	  I2C and DSPI.
+	imply DM_USB
+	imply SAF1508BET_USB_PHY
+	imply USB
+	imply USB_EHCI_HCD
+	imply USB_ULPI
 	select NXP_S32GEVB_BOARD
 
 

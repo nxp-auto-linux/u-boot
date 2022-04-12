@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
  * Copyright (C) 2010 Freescale Semiconductor, Inc.
+ * Copyright 2020-2022 NXP
  */
 
 #include <clk.h>
@@ -14,8 +15,12 @@
 #include <linux/delay.h>
 #include <usb/ehci-ci.h>
 #include <asm/io.h>
+#if defined(CONFIG_MACH_IMX)
 #include <asm/arch/imx-regs.h>
+#endif
+#if !defined(CONFIG_NXP_S32GEVB_BOARD)
 #include <asm/arch/clock.h>
+#endif
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/mach-imx/sys_proto.h>
 #include <dm.h>
@@ -191,15 +196,19 @@ static void usb_internal_phy_clock_gate(void __iomem *phy_reg, int on)
 	phy_reg += on ? USBPHY_CTRL_CLR : USBPHY_CTRL_SET;
 	writel(USBPHY_CTRL_CLKGATE, phy_reg);
 }
+#endif
 
+#if defined(CONFIG_MX6) || defined(CONFIG_NXP_S32GEVB_BOARD)
 /* Return 0 : host node, <>0 : device mode */
 static int usb_phy_enable(struct usb_ehci *ehci, void __iomem *phy_reg)
 {
-	void __iomem *phy_ctrl;
-	void __iomem *usb_cmd;
 	int ret;
+	void __iomem *usb_cmd;
+#if !defined(CONFIG_NXP_S32GEVB_BOARD)
+	void __iomem *phy_ctrl;
 
 	phy_ctrl = (void __iomem *)(phy_reg + USBPHY_CTRL);
+#endif
 	usb_cmd = (void __iomem *)&ehci->usbcmd;
 
 	/* Stop then Reset */
@@ -213,24 +222,28 @@ static int usb_phy_enable(struct usb_ehci *ehci, void __iomem *phy_reg)
 	if (ret)
 		return ret;
 
-	/* Reset USBPHY module */
-	setbits_le32(phy_ctrl, USBPHY_CTRL_SFTRST);
-	udelay(10);
+	if (!IS_ENABLED(CONFIG_NXP_S32GEVB_BOARD)) {
+		/* Reset USBPHY module */
+		setbits_le32(phy_ctrl, USBPHY_CTRL_SFTRST);
+		udelay(10);
 
-	/* Remove CLKGATE and SFTRST */
-	clrbits_le32(phy_ctrl, USBPHY_CTRL_CLKGATE | USBPHY_CTRL_SFTRST);
-	udelay(10);
+		/* Remove CLKGATE and SFTRST */
+		clrbits_le32(phy_ctrl, USBPHY_CTRL_CLKGATE | USBPHY_CTRL_SFTRST);
+		udelay(10);
 
-	/* Power up the PHY */
-	writel(0, phy_reg + USBPHY_PWD);
-	/* enable FS/LS device */
-	setbits_le32(phy_ctrl, USBPHY_CTRL_ENUTMILEVEL2 |
-			USBPHY_CTRL_ENUTMILEVEL3);
+		/* Power up the PHY */
+		writel(0, phy_reg + USBPHY_PWD);
+		/* enable FS/LS device */
+		setbits_le32(phy_ctrl, USBPHY_CTRL_ENUTMILEVEL2 |
+				USBPHY_CTRL_ENUTMILEVEL3);
+	}
 
 	return 0;
 }
 #endif
+#endif
 
+#if !defined(CONFIG_NXP_S32CC)
 int usb_phy_mode(int port)
 {
 	void __iomem *phy_reg;
@@ -269,6 +282,7 @@ int usb_phy_mode(int port)
 /* Should be done in the MXS PHY driver */
 static void usb_oc_config(struct usbnc_regs *usbnc, int index)
 {
+#if !defined(CONFIG_NXP_S32GEVB_BOARD)
 	void __iomem *ctrl = (void __iomem *)(&usbnc->ctrl[index]);
 
 	setbits_le32(ctrl, UCTRL_OVER_CUR_POL);
@@ -281,6 +295,7 @@ static void usb_oc_config(struct usbnc_regs *usbnc, int index)
 #else
 	clrbits_le32(ctrl, UCTRL_PWR_POL);
 #endif
+#endif /* CONFIG_NXP_S32GEVB_BOARD */
 }
 #endif
 
@@ -367,32 +382,35 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 		}
 	}
 
-	enable_usboh3_clk(1);
-	mdelay(1);
+	if (!IS_ENABLED(CONFIG_NXP_S32GEVB_BOARD)) {
+		enable_usboh3_clk(1);
+		mdelay(1);
 
-	/* Do board specific initialization */
-	ret = board_ehci_hcd_init(index);
-	if (ret) {
-		enable_usboh3_clk(0);
-		return ret;
-	}
+		/* Do board specific initialization */
+		ret = board_ehci_hcd_init(index);
+		if (ret) {
+			enable_usboh3_clk(0);
+			return ret;
+		}
 
 #if defined(CONFIG_MX6) || defined(CONFIG_IMXRT)
-	usb_power_config_mx6(anatop, index);
+		usb_power_config_mx6(anatop, index);
 #elif defined (CONFIG_MX7)
-	usb_power_config_mx7(usbnc);
+		usb_power_config_mx7(usbnc);
 #elif defined (CONFIG_MX7ULP)
-	usb_power_config_mx7ulp(usbphy);
+		usb_power_config_mx7ulp(usbphy);
 #endif
+	}
 
 	usb_oc_config(usbnc, index);
 
-#if defined(CONFIG_MX6) || defined(CONFIG_MX7ULP) || defined(CONFIG_IMXRT)
-	if (index < ARRAY_SIZE(phy_bases)) {
-		usb_internal_phy_clock_gate((void __iomem *)phy_bases[index], 1);
-		usb_phy_enable(ehci, (void __iomem *)phy_bases[index]);
+	if (IS_ENABLED(CONFIG_MX6) || IS_ENABLED(CONFIG_MX7ULP) ||
+	    IS_ENABLED(CONFIG_IMXRT) || IS_ENABLED(CONFIG_NXP_S32GEVB_BOARD)) {
+		if (index < ARRAY_SIZE(phy_bases)) {
+			usb_internal_phy_clock_gate((void __iomem *)phy_bases[index], 1);
+			usb_phy_enable(ehci, (void __iomem *)phy_bases[index]);
+		}
 	}
-#endif
 
 	type = board_usb_phy_mode(index);
 
@@ -507,6 +525,7 @@ static const struct ehci_ops mx6_ehci_ops = {
 
 static int ehci_usb_phy_mode(struct udevice *dev)
 {
+#if !defined(CONFIG_NXP_S32GEVB_BOARD)
 	struct usb_plat *plat = dev_get_plat(dev);
 	void *__iomem addr = dev_read_addr_ptr(dev);
 	void *__iomem phy_ctrl, *__iomem phy_status;
@@ -549,6 +568,7 @@ static int ehci_usb_phy_mode(struct udevice *dev)
 	} else {
 		return -EINVAL;
 	}
+#endif
 
 	return 0;
 }
@@ -703,9 +723,11 @@ static int ehci_usb_probe(struct udevice *dev)
 	usb_phy_enable(ehci, priv->phy_addr);
 #endif
 #else
-	ret = generic_setup_phy(dev, &priv->phy, 0, PHY_MODE_USB_HOST, 0);
-	if (ret)
-		goto err_regulator;
+	if (!IS_ENABLED(CONFIG_NXP_S32GEVB_BOARD)) {
+		ret = generic_setup_phy(dev, &priv->phy, 0, PHY_MODE_USB_HOST, 0);
+		if (ret)
+			goto err_regulator;
+	}
 #endif
 
 	if (priv->init_type == USB_INIT_HOST) {
