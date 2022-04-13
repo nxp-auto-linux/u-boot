@@ -319,8 +319,8 @@ config DM_PMIC_PF5020
 	for NXP PMIC PF5020. The driver implements read/write operations.
 
 config DM_PMIC_FS5600
-	bool "Enable Driver Model for PMIC FS5600"
+	bool "Enable Driver Model for NXP PMIC FS5600"
 	depends on DM_PMIC
 	help
 	This config enables implementation of driver-model pmic uclass features
-	for PMIC FS5600. The driver implements read/write operations.
+	for NXP PMIC FS5600. The driver implements read/write operations.
