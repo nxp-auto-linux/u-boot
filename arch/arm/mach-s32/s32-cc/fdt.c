@@ -715,7 +715,6 @@ static void ft_fixup_serdes(void *blob)
 
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
-	ft_fixup_cpu(blob);
 	ft_fixup_memory(blob, bd);
 	ft_fixup_atf(gd->fdt_blob, blob);
 #ifdef CONFIG_PCIE_S32GEN1
