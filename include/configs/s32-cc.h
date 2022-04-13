@@ -75,17 +75,11 @@
 #define FDT_FLASH_ADDR			(CONFIG_SYS_FLASH_BASE + 0xff0000UL)
 #define RAMDISK_FLASH_ADDR		(CONFIG_SYS_FLASH_BASE + 0x10f0000UL)
 
-#if defined(CONFIG_ENV_IS_IN_FLASH) || defined(CONFIG_ENV_IS_IN_SPI_FLASH)
-#  if defined(CONFIG_ENV_OFFSET)
-#    define ENV_FLASH_ADDR	(CONFIG_SYS_FLASH_BASE + CONFIG_ENV_OFFSET)
-#  else
-#    define ENV_FLASH_ADDR	(CONFIG_ENV_ADDR)
-#  endif
-#  if (ENV_FLASH_ADDR + CONFIG_ENV_SIZE > KERNEL_FLASH_ADDR)
+#if defined(CONFIG_ENV_IS_IN_SPI_FLASH)
+#  if (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE > KERNEL_FLASH_ADDR)
 #    error "Environment and Kernel would overlap in flash memory"
 #  endif
 #endif
-
 #if (KERNEL_FLASH_ADDR + KERNEL_FLASH_MAXSIZE > FDT_FLASH_ADDR)
 #  error "Kernel and FDT would overlap in flash memory"
 #endif
