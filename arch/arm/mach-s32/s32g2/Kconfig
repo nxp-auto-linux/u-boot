@@ -15,7 +15,6 @@ config TARGET_S32G274ARDB2
 	  M.2 and PCIe x1 expansion slots, USB, serial port,
 	  18 CAN ports, I2C and DSPI.
 	imply DM_PMIC_FS5600
-	imply DM_PMIC_PF5020
 	imply PHY_ATHEROS
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
