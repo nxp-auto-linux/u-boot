@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <env.h>
 #include <fdt_support.h>
 #include <misc.h>
 #include <asm/global_data.h>
@@ -14,6 +15,8 @@
 #include <s32-cc/siul2_nvram.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+#define S32_DDR_LIMIT_VAR "ddr_limitX"
 
 static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
 {
@@ -182,13 +185,147 @@ static int ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 	return 0;
 }
 
+static int apply_memory_fixups(void *blob, struct bd_info *bd)
+{
+	u64 start[CONFIG_NR_DRAM_BANKS];
+	u64 size[CONFIG_NR_DRAM_BANKS];
+	int ret, bank, banks = 0;
+
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (!bd->bi_dram[bank].start && !bd->bi_dram[bank].size)
+			continue;
+
+		start[banks] = bd->bi_dram[bank].start;
+		size[banks] = bd->bi_dram[bank].size;
+		banks++;
+	}
+
+	ret = fdt_fixup_memory_banks(blob, start, size, banks);
+	if (ret)
+		pr_err("s32-fdt: Failed to set memory banks\n");
+
+	return ret;
+}
+
+static void apply_ddr_limits(struct bd_info *bd)
+{
+	u64 start, end, limit;
+	static const size_t var_len = sizeof(S32_DDR_LIMIT_VAR);
+	static const size_t digit_pos = var_len - 2;
+	char ddr_limit[var_len];
+	char *var_val;
+	int bank;
+
+	memcpy(ddr_limit, S32_DDR_LIMIT_VAR, var_len);
+
+	ddr_limit[digit_pos] = '0';
+	while ((var_val = env_get(ddr_limit))) {
+		limit = simple_strtoull(var_val, NULL, 16);
+
+		for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+			start = bd->bi_dram[bank].start;
+			end = start + bd->bi_dram[bank].size;
+
+			if (limit >= start && limit < end)
+				bd->bi_dram[bank].size = limit - start;
+		}
+
+		if (ddr_limit[digit_pos] >= '9')
+			break;
+
+		ddr_limit[digit_pos]++;
+	};
+}
+
+static int ft_fixup_memory(void *blob, struct bd_info *bd)
+{
+	apply_ddr_limits(bd);
+
+	return apply_memory_fixups(blob, bd);
+}
+
+static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
+{
+	int ret, off;
+	struct fdt_memory carveout;
+	struct fdt_resource reg;
+
+	/* Check FDT Headers */
+	if (fdt_check_header(old_blob)) {
+		pr_err("Invalid FDT Header for U-Boot DT Blob\n");
+		return -EINVAL;
+	}
+
+	if (fdt_check_header(new_blob)) {
+		pr_err("Invalid FDT Header for Linux DT Blob\n");
+		return -EINVAL;
+	}
+
+	/* Get atf reserved-memory node offset */
+	off = fdt_path_offset(old_blob, "/reserved-memory/atf");
+	if (off < 0) {
+		pr_err("Couldn't find 'atf' reserved-memory node\n");
+		return off;
+	}
+
+	/* Get value of 'reg' prop */
+	ret = fdt_get_resource(old_blob, off, "reg", 0, &reg);
+	if (ret) {
+		pr_err("Unable to get value of 'reg' prop of 'atf' node\n");
+		return ret;
+	}
+
+	carveout.start = reg.start;
+	carveout.end = reg.end;
+
+	/* Increase Linux DT size before adding new node */
+	ret = fdt_increase_size(new_blob, 512);
+	if (ret < 0) {
+		pr_err("Could not increase size of Linux DT: %s\n",
+		       fdt_strerror(ret));
+		return ret;
+	}
+
+	/* Add 'atf' node to Linux DT */
+	ret = fdtdec_add_reserved_memory(new_blob, "atf", &carveout,
+					 NULL, 0, NULL,
+					 FDTDEC_RESERVED_MEMORY_NO_MAP);
+	if (ret < 0) {
+		pr_err("Unable to add 'atf' node to Linux DT\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int ft_fixup_atf(const void *old_blob, void *new_blob)
+{
+	int ret = add_atf_reserved_memory(old_blob, new_blob);
+
+	if (ret)
+		pr_err("Copying 'atf' node from U-Boot DT to Linux DT failed!\n");
+
+	return ret;
+}
+
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
 
 	ret = ft_fixup_cpu(blob);
 	if (ret)
-		return ret;
+		goto exit;
 
-	return ft_fixup_ddr_polling(gd->fdt_blob, blob);
+	ret = ft_fixup_ddr_polling(gd->fdt_blob, blob);
+	if (ret)
+		goto exit;
+
+	ret = ft_fixup_memory(blob, bd);
+	if (ret)
+		goto exit;
+
+	ret = ft_fixup_atf(gd->fdt_blob, blob);
+
+exit:
+	return ret;
 }
