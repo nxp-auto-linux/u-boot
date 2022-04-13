@@ -207,7 +207,7 @@ static int ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
 	return 0;
 }
 
-static void apply_memory_fixups(void *blob, bd_t *bd)
+static int apply_memory_fixups(void *blob, bd_t *bd)
 {
 	u64 start[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
@@ -225,6 +225,8 @@ static void apply_memory_fixups(void *blob, bd_t *bd)
 	ret = fdt_fixup_memory_banks(blob, start, size, banks);
 	if (ret)
 		pr_err("s32-fdt: Failed to set memory banks\n");
+
+	return ret;
 }
 
 static void apply_ddr_limits(bd_t *bd)
@@ -257,11 +259,11 @@ static void apply_ddr_limits(bd_t *bd)
 	};
 }
 
-static void ft_fixup_memory(void *blob, bd_t *bd)
+static int ft_fixup_memory(void *blob, bd_t *bd)
 {
 	apply_ddr_limits(bd);
 
-	apply_memory_fixups(blob, bd);
+	return apply_memory_fixups(blob, bd);
 }
 
 static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
@@ -316,10 +318,14 @@ static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
 	return 0;
 }
 
-static void ft_fixup_atf(const void *old_blob, void *new_blob)
+static int ft_fixup_atf(const void *old_blob, void *new_blob)
 {
-	if (add_atf_reserved_memory(old_blob, new_blob))
+	int ret = add_atf_reserved_memory(old_blob, new_blob);
+
+	if (ret)
 		pr_err("Copying 'atf' node from U-Boot DT to Linux DT failed!\n");
+
+	return ret;
 }
 
 #ifdef CONFIG_PCIE_S32GEN1
@@ -715,8 +721,6 @@ static void ft_fixup_serdes(void *blob)
 
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
-	ft_fixup_memory(blob, bd);
-	ft_fixup_atf(gd->fdt_blob, blob);
 #ifdef CONFIG_PCIE_S32GEN1
 	ft_fixup_serdes(blob);
 #endif
@@ -728,7 +732,18 @@ int ft_system_setup(void *blob, bd_t *bd)
 
 	ret = ft_fixup_cpu(blob);
 	if (ret)
-		return ret;
+		goto exit;
 
-	return ft_fixup_ddr_polling(gd->fdt_blob, blob);
+	ret = ft_fixup_ddr_polling(gd->fdt_blob, blob);
+	if (ret)
+		goto exit;
+
+	ret = ft_fixup_memory(blob, bd);
+	if (ret)
+		goto exit;
+
+	ret = ft_fixup_atf(gd->fdt_blob, blob);
+
+exit:
+	return ret;
 }
