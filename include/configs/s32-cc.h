@@ -28,11 +28,20 @@
 #define PHYS_SDRAM_2_SIZE		(SZ_2G)
 #endif
 
-/* DDR images layout */
-#define S32CC_FDT_ADDR			0x83E00000
-#define S32CC_RAMDISK_ADDR		0x84000000
-#define S32CC_FDT_HIGH_ADDR		0xa0000000
-#define S32CC_INITRD_HIGH_ADDR		0xfe1fffff
+/**
+ * DDR images layout
+ *
+ * Name		Size	Address
+ *
+ * Image	20M	CONFIG_SYS_LOAD_ADDR
+ * Linux DTB	64K	CONFIG_SYS_LOAD_ADDR + 20M
+ * Ramdisk	-	CONFIG_SYS_LOAD_ADDR + 20M + 64K
+ */
+#define S32CC_FDT_ADDR			0x81400000
+#define S32CC_RAMDISK_ADDR		0x81410000
+/* Disable Ramdisk & FDT relocation*/
+#define S32CC_INITRD_HIGH_ADDR		0xffffffffffffffff
+#define S32CC_FDT_HIGH_ADDR		0xffffffffffffffff
 
 #define CONFIG_SYS_INIT_SP_OFFSET	(SZ_16K)
 #define CONFIG_SYS_INIT_SP_ADDR \
@@ -59,21 +68,29 @@
 /* Increase image size */
 #define CONFIG_SYS_BOOTM_LEN		(SZ_64M)
 
-
-/* Note: The *_FLASH_ADDR and *_FLASH_MAXSIZE macros are used
+/**
+ * Note: The *_FLASH_ADDR and *_FLASH_MAXSIZE macros are used
  * with the 'setexpr' command. Therefore ensure none of them expand
  * into operations with more than two operands and avoid unnecessary
  * parantheses. Also these should be kept in sync with
  * 'conf/machine/include/s32*flashmap.inc'.
+ *
+ * QSPI flash map:
+ *
+ * Name		Size			Offset
+ * FIP		~1.9M			0x0
+ * QSPI env	64K(CONFIG_ENV_SIZE)	0x01e0000(CONFIG_ENV_OFFSET)
+ * Image	14M			0x0e00000
+ * Linux DTB	1M			0x0ff0000
+ * Ramdisk	32M			0x10f0000
  */
-#define KERNEL_FLASH_MAXSIZE		0xe00000
-#define FDT_FLASH_MAXSIZE		0x100000
+#define KERNEL_FLASH_MAXSIZE		0x0e00000
+#define FDT_FLASH_MAXSIZE		0x0100000
 #define RAMDISK_FLASH_MAXSIZE		0x2000000
-#define FIP_FLASH_ADDR			CONFIG_SYS_FLASH_BASE
-
-#define KERNEL_FLASH_ADDR		(CONFIG_SYS_FLASH_BASE + 0x1f0000UL)
-#define FDT_FLASH_ADDR			(CONFIG_SYS_FLASH_BASE + 0xff0000UL)
-#define RAMDISK_FLASH_ADDR		(CONFIG_SYS_FLASH_BASE + 0x10f0000UL)
+#define FIP_FLASH_ADDR			0x0000000
+#define KERNEL_FLASH_ADDR		0x01f0000
+#define FDT_FLASH_ADDR			0x0ff0000
+#define RAMDISK_FLASH_ADDR		0x10f0000
 
 #if defined(CONFIG_ENV_IS_IN_SPI_FLASH)
 #  if (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE > KERNEL_FLASH_ADDR)
@@ -158,12 +175,12 @@
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0" \
 	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
 		" root=/dev/ram rw earlycon " EXTRA_BOOT_ARGS ";"\
-		"setexpr fip_flashaddr " __stringify(FIP_FLASH_ADDR) ";" \
-		"setexpr kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
+		"setenv fip_flashaddr " __stringify(FIP_FLASH_ADDR) ";" \
+		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
-		"setexpr fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
+		"setenv fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
 		"setenv fdt_maxsize " __stringify(FDT_FLASH_MAXSIZE) ";" \
-		"setexpr ramdisk_flashaddr " \
+		"setenv ramdisk_flashaddr " \
 				__stringify(RAMDISK_FLASH_ADDR) ";" \
 		"setenv ramdisk_maxsize " \
 				__stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
