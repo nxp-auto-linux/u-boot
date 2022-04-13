@@ -11,3 +11,7 @@
 / {
 	model = "NXP S32G3XXX-EVB";
 };
+
+&usdhc0 {
+	no-1-8-v;
+};

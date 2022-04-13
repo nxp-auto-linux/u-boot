@@ -169,7 +169,6 @@
 		 * supported at both 1.8V and 3.3V
 		 */
 		mmc-ddr-1_8v;
-		no-1-8-v;
 		status = "disabled";
 	};
 

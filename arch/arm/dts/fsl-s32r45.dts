@@ -189,6 +189,7 @@
 &usdhc0 {
 	pinctrl-0 = <&pinctrl0_sd0>;
 	pinctrl-names = "default";
+	no-1-8-v;
 	status = "okay";
 };
 

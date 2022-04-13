@@ -10,3 +10,7 @@
 / {
 	model = "NXP S32G274A-RDB2";
 };
+
+&usdhc0 {
+	no-1-8-v;
+};

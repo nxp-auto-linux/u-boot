@@ -11,3 +11,7 @@
 	model = "NXP S32G2XXX-EVB";
 	compatible = "nxp,s32cc", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 };
+
+&usdhc0 {
+	no-1-8-v;
+};
