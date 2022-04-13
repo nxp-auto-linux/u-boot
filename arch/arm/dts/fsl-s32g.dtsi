@@ -205,6 +205,7 @@
 };
 
 &qspi {
+	compatible = "nxp,s32g-qspi", "nxp,s32cc-qspi";
 	status = "okay";
 
 	mx25uw51245g@0 {

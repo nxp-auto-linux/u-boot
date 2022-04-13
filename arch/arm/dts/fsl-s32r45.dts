@@ -170,6 +170,7 @@
 };
 
 &qspi {
+	compatible = "nxp,s32r45-qspi", "nxp,s32cc-qspi";
 	pinctrl-0 = <&pinctrl0_qspi>;
 	pinctrl-names = "default";
 	status = "okay";

@@ -1268,7 +1268,8 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "fsl,imx6ul-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7d-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7ulp-qspi", .data = (ulong)&imx7ulp_data },
-	{ .compatible = "fsl,s32cc-qspi", .data = (ulong)&s32cc_data },
+	{ .compatible = "nxp,s32g-qspi", .data = (ulong)&s32cc_data },
+	{ .compatible = "nxp,s32r45-qspi", .data = (ulong)&s32cc_data },
 	{ }
 };
 
