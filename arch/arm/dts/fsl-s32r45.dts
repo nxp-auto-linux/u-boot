@@ -117,7 +117,7 @@
 	};
 
 	gmac1: ethernet@44010000 {
-		compatible = "fsl,s32cc-dwmac";
+		compatible = "nxp,s32cc-dwmac";
 		clocks = <&clks S32R45_SCMI_CLK_GMAC1_TS>,
 				<&clks S32R45_SCMI_CLK_GMAC1_RX_SGMII>,
 				<&clks S32R45_SCMI_CLK_GMAC1_TX_SGMII>,

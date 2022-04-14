@@ -210,7 +210,7 @@ void ft_enet_fixup(void *fdt)
 		int idx = -1;
 
 		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff,
-							"fsl,s32cc-dwmac");
+							"nxp,s32cc-dwmac");
 		if (nodeoff < 0)
 			return;
 

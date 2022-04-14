@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  */
 
 #ifndef DWC_ETH_QOS_DM_H
@@ -55,7 +55,7 @@ static const struct udevice_id eqos_ids[] = {
 #endif /* CONFIG_DWC_ETH_QOS_STM32 */
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 	{
-		.compatible = "fsl,s32cc-dwmac",
+		.compatible = "nxp,s32cc-dwmac",
 		.data = (ulong)&eqos_s32cc_config
 	},
 #endif /* CONFIG_DWC_ETH_QOS_S32CC */
