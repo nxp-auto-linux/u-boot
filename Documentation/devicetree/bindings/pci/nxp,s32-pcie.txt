@@ -1,12 +1,12 @@
-* NXP S32 PCIe interface *
+* NXP S32 CC PCIe interface *
 
 This PCIe host controller is based on the Synopsys DesignWare PCIe IP
 and thus inherits all the common properties defined in designware-pcie.txt.
 
 Required properties:
 - compatible:
-	- "fsl,s32gen1-pcie", for S32Gen1 SoCs (generic)
-	- "fsl,s32r45-pcie", for S32R45 SoCs in particular
+	- "nxp,s32cc-pcie", for S32Gen1 SoCs (generic)
+	- "nxp,s32r45-pcie", for S32R45 SoCs in particular
 - reg: base address and length of the PCIe controller
 - device_type: must be "pci";
 
@@ -22,7 +22,7 @@ Optional:
 Example:
 
 	pcie0: pcie@40400000 {
-		compatible = "fsl,s32gen1-pcie";
+		compatible = "nxp,s32cc-pcie";
 		reg =
 			<0x00 0x40400000 0x0 0x80000   /* dbi registers */
 			/* configuration space, 4KB each for cfg0 and cfg1
