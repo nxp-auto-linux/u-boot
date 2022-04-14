@@ -358,9 +358,9 @@ static int set_pcie_mode(void *blob, int nodeoff, int id)
 
 	pcie_mode = s32_serdes_get_mode_from_hwconfig(id);
 	if (pcie_mode & PCIE_EP)
-		compatible = "fsl,s32gen1-pcie-ep";
+		compatible = "nxp,s32cc-pcie-ep";
 	else
-		compatible = "fsl,s32gen1-pcie";
+		compatible = "nxp,s32cc-pcie";
 
 	ret = fdt_setprop(blob, nodeoff, "compatible", compatible,
 			  strlen(compatible) + 1);

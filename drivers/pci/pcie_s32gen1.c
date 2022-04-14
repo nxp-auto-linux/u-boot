@@ -1095,7 +1095,7 @@ static const struct dm_pci_ops s32_pcie_ops = {
 };
 
 static const struct udevice_id s32_pcie_ids[] = {
-	{ .compatible = "fsl,s32gen1-pcie" },
+	{ .compatible = "nxp,s32cc-pcie" },
 	{ }
 };
 
