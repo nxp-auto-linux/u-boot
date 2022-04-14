@@ -13,7 +13,7 @@
 #include "fsl-s32-gen1.dtsi"
 / {
 	model = "NXP S32GXXX";
-	compatible = "fsl,s32g", "nxp,s32cc", "arm,vexpress,v2p-aarch64",
+	compatible = "nxp,s32g", "nxp,s32cc", "arm,vexpress,v2p-aarch64",
 				"arm,vexpress";
 
 	aliases {
