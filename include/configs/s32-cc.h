@@ -17,6 +17,8 @@
 #define PHYS_SDRAM_2			0x880000000UL
 #define PHYS_SDRAM_2_SIZE		(SZ_2G)
 
+#define S32CC_SRAM_BASE			0x34000000
+
 /**
  * DDR images layout
  *
