@@ -8,6 +8,7 @@ obj-y += nvmem.o
 obj-y += scmi_clk_dump.o
 obj-y += scmi_reset_agent.o
 obj-y += soc.o
+obj-y += start_m7.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)	+= fdt.o
 

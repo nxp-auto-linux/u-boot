@@ -8,4 +8,6 @@
 
 #include <configs/s32-cc.h>
 
+#define S32CC_SRAM_SIZE			(20 * SZ_1M)
+
 #endif
