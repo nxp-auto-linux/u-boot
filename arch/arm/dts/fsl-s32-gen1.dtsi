@@ -9,7 +9,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 
 / {
-	compatible = "fsl,s32gen1", "arm,vexpress";
+	compatible = "nxp,s32cc", "arm,vexpress";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;

@@ -9,5 +9,5 @@
 
 / {
 	model = "NXP S32G2XXX-EVB";
-	compatible = "fsl,s32gen1", "arm,vexpress,v2p-aarch64", "arm,vexpress";
+	compatible = "nxp,s32cc", "arm,vexpress,v2p-aarch64", "arm,vexpress";
 };
