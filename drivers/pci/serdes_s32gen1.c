@@ -832,7 +832,7 @@ int initr_pci(void)
 }
 
 static const struct udevice_id s32_serdes_ids[] = {
-	{ .compatible = "fsl,s32gen1-serdes" },
+	{ .compatible = "nxp,s32cc-serdes" },
 	{ }
 };
 

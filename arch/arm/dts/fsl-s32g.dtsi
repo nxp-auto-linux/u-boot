@@ -40,7 +40,7 @@
 	};
 
 	serdes1: serdes@44180000 {
-		compatible = "fsl,s32gen1-serdes";
+		compatible = "nxp,s32cc-serdes";
 		reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
 		       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
 		reg-names = "dbi", "ss";
