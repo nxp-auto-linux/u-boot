@@ -7,6 +7,7 @@
 obj-y += scmi_clk_dump.o
 obj-y += scmi_reset_agent.o
 obj-y += soc.o
+obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)	+= fdt.o
 
 ifdef CONFIG_SPI_FLASH_MACRONIX
