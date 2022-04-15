@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-#include "fsl-s32g.dtsi"
+#include "s32g.dtsi"
 / {
 	model = "NXP S32G2XX";
 	compatible = "nxp,s32g274-simu", "nxp,s32g274", "nxp,s32cc",

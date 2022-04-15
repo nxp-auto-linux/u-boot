@@ -10,7 +10,7 @@ config SYS_BOARD
 	default "s32g2xxaevb"
 
 config DEFAULT_DEVICE_TREE
-	default "fsl-s32g274aevb"
+	default "s32g274aevb"
 
 config NR_DRAM_BANKS
 	default 2

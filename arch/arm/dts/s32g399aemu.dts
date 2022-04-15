@@ -4,11 +4,18 @@
  */
 
 /dts-v1/;
-#include <dt-bindings/pinctrl/s32g-pinctrl.h>
-#include "fsl-s32g274a.dtsi"
+#include "s32g.dtsi"
+#include "s32g3.dtsi"
 
+/delete-node/ &mem1;
+/delete-node/ &mem2;
 / {
-	model = "ZeBu model for NXP S32G274A";
+	model = "ZeBu model for NXP S32G399A";
+
+	mem1: memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x40000000>;
+	};
 
 	chosen {
 		stdout-path = "serial1:115200n8";

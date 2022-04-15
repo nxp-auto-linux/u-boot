@@ -4,8 +4,8 @@
  */
 
 /dts-v1/;
-#include "fsl-s32g274a.dtsi"
-#include "fsl-s32gxxxaevb.dtsi"
+#include "s32g274a.dtsi"
+#include "s32gxxxaevb.dtsi"
 
 / {
 	model = "NXP S32G2XXX-EVB";

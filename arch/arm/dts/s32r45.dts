@@ -12,7 +12,7 @@
 #include <dt-bindings/pinctrl/s32r45-pinctrl.h>
 
 /dts-v1/;
-#include "fsl-s32-gen1.dtsi"
+#include "s32-gen1.dtsi"
 / {
 	model = "NXP S32R458-EVB";
 	compatible = "nxp,s32r45", "arm,vexpress,v2p-aarch64", "arm,vexpress";
