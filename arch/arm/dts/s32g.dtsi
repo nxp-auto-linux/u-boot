@@ -10,7 +10,7 @@
 #include <dt-bindings/clock/s32g-scmi-clock.h>
 #include <dt-bindings/pinctrl/s32g-pinctrl.h>
 
-#include "s32-gen1.dtsi"
+#include "s32-cc.dtsi"
 / {
 	model = "NXP S32GXXX";
 	compatible = "nxp,s32g", "nxp,s32cc", "arm,vexpress,v2p-aarch64",

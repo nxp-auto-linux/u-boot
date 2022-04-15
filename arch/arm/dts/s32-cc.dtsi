@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Device Tree Include file for Freescale S32Gen1 family SoC.
+ * Device Tree Include file for NXP S32CC family SoCs.
  *
  * Copyright 2019-2022 NXP
  */
