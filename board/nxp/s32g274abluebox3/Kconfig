@@ -21,4 +21,10 @@ config S32GEN1_HWCONFIG
 config ENV_SECT_SIZE
 	default 0x1000 if QSPI_BOOT
 
+config SYS_EEPROM_PAGE_WRITE_DELAY_MS
+	default 10
+
+config SYS_EEPROM_SIZE
+	default 128
+
 endif

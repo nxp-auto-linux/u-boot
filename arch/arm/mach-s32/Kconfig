@@ -25,7 +25,6 @@ config NXP_S32CC
 	imply DWC_ETH_QOS_DEVICES
 	imply DWC_ETH_QOS_S32CC
 	imply FSL_DSPI
-	imply FSL_PFENG
 	imply FSL_QSPI
 	imply MISC
 	imply MP

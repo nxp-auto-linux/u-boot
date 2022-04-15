@@ -9,10 +9,8 @@ choice
 
 config TARGET_S32G399ARDB3
 	bool "Support S32G399ARDB3 board"
+	imply CMD_EEPROM
 	imply I2C_EEPROM
-	imply PHY_ATHEROS
-	imply PHY_MICREL
-	imply PHY_MICREL_KSZ90X1
 	select ADC
 	select NXP_S32GRDB_BOARD
 	select SARADC_S32CC
@@ -23,19 +21,6 @@ config TARGET_S32G3XXAEVB
 	  This board is based on S32G3 family of SoCs. It is equipped with
 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
 	  I2C and DSPI.
-	imply ADC
-	imply DM_USB
-	imply I2C_EEPROM
-	imply PHY
-	imply PHY_AQUANTIA
-	imply PHY_MICREL
-	imply PHY_MICREL_KSZ90X1
-	imply SARADC_S32CC
-	imply SAF1508BET_USB_PHY
-	imply SJA1105
-	imply USB
-	imply USB_EHCI_HCD
-	select MISC_INIT_R if SJA1105
 	select NXP_S32GEVB_BOARD
 
 config TARGET_S32G399AEMU
@@ -43,6 +28,9 @@ config TARGET_S32G399AEMU
 	select TARGET_TYPE_S32GEN1_EMULATOR
 
 endchoice
+
+config FSL_PFENG
+	default y if !TARGET_TYPE_S32GEN1_EMULATOR
 
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g399ardb3/Kconfig"

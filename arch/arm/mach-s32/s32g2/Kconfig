@@ -14,9 +14,6 @@ config TARGET_S32G274ARDB2
 	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports,
 	  M.2 and PCIe x1 expansion slots, USB, serial port,
 	  18 CAN ports, I2C and DSPI.
-	imply PHY_ATHEROS
-	imply PHY_MICREL
-	imply PHY_MICREL_KSZ90X1
 	select NXP_S32GRDB_BOARD
 
 config TARGET_S32G2XXAEVB
@@ -25,17 +22,6 @@ config TARGET_S32G2XXAEVB
 	  This board is based on S32G2 family of SoCs. It is equipped with
 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
 	  I2C and DSPI.
-	imply DM_USB
-	imply I2C_EEPROM
-	imply PHY
-	imply PHY_AQUANTIA
-	imply PHY_MICREL
-	imply PHY_MICREL_KSZ90X1
-	imply SAF1508BET_USB_PHY
-	imply SJA1105
-	imply USB
-	imply USB_EHCI_HCD
-	select MISC_INIT_R if SJA1105
 	select NXP_S32GEVB_BOARD
 
 config TARGET_S32G274ABLUEBOX3
@@ -46,9 +32,14 @@ config TARGET_S32G274ABLUEBOX3
 	  Also, this board has rich networking features, such as:
 	  PFE, DPAA2 and three sja1110 switches.
 	imply ADC
+	imply CMD_EEPROM
 	imply I2C_EEPROM
+	imply LAST_STAGE_INIT
+	imply NXP_S32CC_BOARD_COMMON
 	imply PHY
 	imply PHYLIB
+	imply PHY_GIGE
+	imply RGMII
 	imply SARADC_S32CC
 	select SPI_FLASH_STMICRO
 
@@ -57,6 +48,9 @@ config TARGET_S32G274AEMU
 	select TARGET_TYPE_S32GEN1_EMULATOR
 
 endchoice
+
+config FSL_PFENG
+	default y if !TARGET_TYPE_S32GEN1_EMULATOR
 
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g274ardb2/Kconfig"

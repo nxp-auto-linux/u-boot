@@ -127,17 +127,32 @@ config XEN_SUPPORT
 config ENV_OFFSET
 	default 0x1e0000
 
-if SD_BOOT
-config ENV_SIZE
-	default 0x2000
+config SF_DEFAULT_BUS
+	default 6
 
+config SF_DEFAULT_CS
+	default 0
+
+config SPI_FLASH_BAR
+	default n
+
+config EFI_LOADER
+	default n
+
+config DM_DEVICE_REMOVE
+	default n
+
+if SD_BOOT
 config ENV_IS_IN_MMC
 	default y
+
+config ENV_SIZE
+	default 0x2000
 endif
 
 if QSPI_BOOT
-config ENV_SIZE
-	default 0x10000
+config USE_ENV_SPI_BUS
+	default y
 
 config ENV_IS_IN_SPI_FLASH
 	default y
@@ -145,14 +160,14 @@ config ENV_IS_IN_SPI_FLASH
 config USE_ENV_SPI_CS
 	default y
 
-config USE_ENV_SPI_BUS
-	default y
-
 config ENV_SPI_BUS
 	default 6
 
 config ENV_SPI_CS
 	default 0
+
+config ENV_SIZE
+	default 0x10000
 endif
 
 endif
@@ -160,3 +175,4 @@ endif
 source "arch/arm/mach-s32/s32g2/Kconfig"
 source "arch/arm/mach-s32/s32g3/Kconfig"
 source "arch/arm/mach-s32/s32r45/Kconfig"
+source "board/nxp/s32-cc/Kconfig"

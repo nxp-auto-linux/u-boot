@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if NXP_S32CC
+
+config NXP_S32CC_BOARD_COMMON
+	bool
+	default n
+	imply CMD_ADC
+	imply CMD_CACHE
+	imply CMD_CLK
+	imply CMD_CPU
+	imply CMD_DM
+	imply CMD_FUSE
+	imply CMD_GPIO
+	imply CMD_I2C
+	imply CMD_MD5SUM
+	imply CMD_MEMTEST
+	imply CMD_MMC
+	imply CMD_PCI
+	imply CMD_SMC
+	imply CMD_SPI
+	imply CMD_TIMER
+	imply FIT
+	imply MD5SUM_VERIFY
+	imply NET_RANDOM_ETHADDR
+	imply PHY_FIXED
+	imply USE_BOOTARGS
+
+if NXP_S32CC_BOARD_COMMON
+
+config BOOTARGS
+	default "root=/dev/ram rw earlycon loglevel=7"
+
+if QSPI_BOOT
+config ENV_SECT_SIZE
+	default 0x10000
+endif
+endif
+
+endif

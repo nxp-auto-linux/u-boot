@@ -5,14 +5,11 @@ CONFIG_TARGET_S32R45EMU=y
 # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
 CONFIG_FIT=y
 CONFIG_USE_BOOTARGS=y
-CONFIG_BOOTARGS="root=/dev/ram rw earlycon loglevel=7"
 CONFIG_CMD_MEMTEST=y
-# CONFIG_DM_DEVICE_REMOVE is not set
 # CONFIG_DM_SEQ_ALIAS is not set
 # CONFIG_DM_I2C is not set
 # CONFIG_SYS_I2C_MXC is not set
 # CONFIG_DM_ETH is not set
 # CONFIG_PCI is not set
-# CONFIG_DM_PMIC is not set
 # CONFIG_DM_SPI is not set
 # CONFIG_FSL_QSPI is not set

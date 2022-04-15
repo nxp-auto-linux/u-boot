@@ -1,11 +1,19 @@
 config NXP_S32GRDB_BOARD
 	bool
 	default n
+	imply CMD_E1000
+	imply CMD_PMIC
 	imply DM_PMIC
 	imply DM_PMIC_FS5600
 	imply DM_PMIC_PF5020
 	imply DM_PMIC_VR5510
+	imply E1000
 	imply NVME
+	imply NXP_S32CC_BOARD_COMMON
+	imply PHY_ATHEROS
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply RGMII
 	select ADC
 	select BOARD_LATE_INIT
 	select SARADC_S32CC
@@ -15,9 +23,27 @@ config NXP_S32GEVB_BOARD
 	bool
 	default n
 	imply ADC
+	imply CMD_E1000
+	imply CMD_EEPROM
+	imply CMD_PMIC
 	imply DM_PMIC
 	imply DM_PMIC_VR5510
+	imply DM_USB
+	imply E1000
+	imply I2C_EEPROM
+	imply NXP_S32CC_BOARD_COMMON
+	imply PHY
+	imply PHY_AQUANTIA
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply RGMII
+	imply SAF1508BET_USB_PHY
 	imply SARADC_S32CC
+	imply SJA1105
+	imply USB
+	imply USB_EHCI_HCD
+	imply USB_ULPI
+	select MISC_INIT_R if SJA1105
 	select SPI_FLASH_MACRONIX
 
 config S32GEN1_HWCONFIG

@@ -12,4 +12,7 @@ config SYS_BOARD
 config NR_DRAM_BANKS
 	default 2
 
+config BOOTARGS
+	default "root=/dev/ram rw earlycon loglevel=7"
+
 endif

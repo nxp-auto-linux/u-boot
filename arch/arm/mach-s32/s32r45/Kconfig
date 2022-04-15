@@ -14,7 +14,11 @@ config TARGET_S32R45EVB
 	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
 	  I2C and DSPI.
 	imply ADC
+	imply CMD_E1000
+	imply CMD_EEPROM
+	imply E1000
 	imply I2C_EEPROM
+	imply NXP_S32CC_BOARD_COMMON
 	imply PHY_AQUANTIA
 	imply SARADC_S32CC
 	select SPI_FLASH_MACRONIX
