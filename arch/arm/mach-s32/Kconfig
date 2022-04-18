@@ -15,6 +15,7 @@ config NXP_S32CC
 	imply DM_I2C
 	imply FSL_DSPI
 	imply MISC
+	imply MP
 	imply NXP_S32CC_PIT_TIMER
 	imply SPI
 	imply SYS_I2C_MXC
