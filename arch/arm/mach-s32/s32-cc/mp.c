@@ -1,13 +1,13 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
- * (C) Copyright 2017-2022 NXP
+ * Copyright 2017-2022 NXP
  */
 
 #include <common.h>
+#include <malloc.h>
 #include <dm/uclass.h>
 #include <linux/psci.h>
-#include <malloc.h>
 
 #define CLUSTER_SHIFT	8U
 #define CLUSTER_MASK	GENMASK(11, CLUSTER_SHIFT)
@@ -30,7 +30,7 @@ static int get_next_cpu(int off)
 
 static struct cpu_desc *get_cpu(unsigned int cpu_id)
 {
-	/* S32GEN1 SoCs have 2 clusters */
+	/* S32CC SoCs have 2 clusters */
 	u32 cluster_cores = n_cpus / 2;
 	u32 i, cluster;
 
@@ -84,7 +84,7 @@ static int add_cpu(u32 psci_id)
 static int initialize_cpus_data(void)
 {
 	static bool initialized;
-	int off, ret, addr_cells;
+	int off, ret = -1, addr_cells = 0;
 	fdt32_t *reg;
 	u64 core_id;
 
