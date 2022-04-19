@@ -13,6 +13,9 @@ config TARGET_S32R45EVB
 	  This board is based on S32R45 SoC. Is is equipped with
 	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
 	  I2C and DSPI.
+	imply ADC
+	imply NXP_S32CC_BOARD_COMMON
+	imply SARADC_S32CC
 	select SPI_FLASH_MACRONIX
 	select SPI_FLASH_MX25UW51245G
 	select SPI_FLASH_SOFT_RESET
