@@ -389,8 +389,9 @@ dtb-$(CONFIG_FSL_LSCH2) += fsl-ls1043a-qds-duart.dtb \
 	fsl-ls1012a-frwy.dtb
 
 dtb-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.dtb
-dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g274aevb.dtb
+dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g2xxaevb.dtb
 dtb-$(CONFIG_TARGET_S32G3XXAEVB) += s32g3xxaevb.dtb
+dtb-$(CONFIG_TARGET_S32G3XXAEVB3) += s32g3xxaevb3.dtb
 dtb-$(CONFIG_TARGET_S32G274AEMU) += s32g274aemu.dtb
 dtb-$(CONFIG_TARGET_S32G399AEMU) += s32g399aemu.dtb
 dtb-$(CONFIG_TARGET_S32G274ARDB2) += s32g274ardb2.dtb

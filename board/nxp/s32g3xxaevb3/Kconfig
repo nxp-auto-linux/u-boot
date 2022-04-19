@@ -1,16 +1,16 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright 2022 NXP
 
-if TARGET_S32G2XXAEVB
+if TARGET_S32G3XXAEVB3
 
 config SYS_CONFIG_NAME
-	default "s32g2xxaevb"
+	default "s32g3xxaevb3"
 
 config SYS_BOARD
-	default "s32g2xxaevb"
+	default "s32g3xxaevb3"
 
 config DEFAULT_DEVICE_TREE
-	default "s32g2xxaevb"
+	default "s32g3xxaevb3"
 
 config NR_DRAM_BANKS
 	default 2

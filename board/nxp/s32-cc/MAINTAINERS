@@ -8,7 +8,7 @@ F:	arch/arm/include/asm/arch-s32
 S32G274A-EVB BOARD
 M:	-
 S:	Maintained
-F:	configs/s32g274aevb_defconfig
+F:	configs/s32g2xxaevb_defconfig
 F:	include/configs/s32g2xxaevb.h
 
 S32G274A-RDB BOARD

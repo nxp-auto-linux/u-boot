@@ -363,8 +363,7 @@ static int check_sgmii_cfg(int gmac_no)
 	int xpcs = 0;
 	enum serdes_xpcs_mode_gen2 mode, desired_mode1, desired_mode2;
 
-#if defined(CONFIG_TARGET_S32G2XXAEVB) || \
-	defined(CONFIG_TARGET_S32G3XXAEVB) || \
+#if defined(CONFIG_NXP_S32GEVB_BOARD) || \
 	defined(CONFIG_NXP_S32GRDB_BOARD)  || \
 	defined(CONFIG_TARGET_S32G399AEMU)
 

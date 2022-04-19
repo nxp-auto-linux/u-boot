@@ -38,7 +38,7 @@
  *	-MAC1 1G to the sja1110 switch/PCIeX1 on lane 0
  *		pcie1:mode=rc&sgmii,clock=int,fmhz=100,xpcs_mode=1
  *
- * Board s32g274aevb:
+ * Board s32g2xxaevb:
  *	-Default - MAC0 1G to Aqauntia (CPU board)
  *		pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0 or
  *		pcie1:mode=sgmii,clock=ext,fmhz=100,xpcs_mode=0 or
