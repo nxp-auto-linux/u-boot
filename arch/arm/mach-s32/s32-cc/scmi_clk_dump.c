@@ -129,7 +129,7 @@ int soc_clk_dump(void)
 		return num_clocks;
 	}
 
-	printf(" Rate               Enabled      Name\n");
+	printf(" Rate               Used         Name\n");
 	printf("-------------------------------------------\n");
 
 	for (i = 0; i < num_clocks; ++i) {
