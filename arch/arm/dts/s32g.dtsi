@@ -13,8 +13,6 @@
 #include "s32-cc.dtsi"
 / {
 	model = "NXP S32GXXX";
-	compatible = "nxp,s32g", "nxp,s32cc", "arm,vexpress,v2p-aarch64",
-				"arm,vexpress";
 
 	aliases {
 		pcie1 = &pcie1;

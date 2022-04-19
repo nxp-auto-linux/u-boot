@@ -11,8 +11,7 @@
 #include "s32g.dtsi"
 / {
 	model = "NXP S32G2XX";
-	compatible = "nxp,s32g274-simu", "nxp,s32g274", "nxp,s32cc",
-				 "arm,vexpress,v2p-aarch64", "arm,vexpress";
+	compatible = "nxp,s32g2";
 
 	memory@80000000 {
 		device_type = "memory";

@@ -11,8 +11,7 @@
 /delete-node/ &gic;
 / {
 	model = "NXP S32G3XX";
-	compatible = "nxp,s32g399", "nxp,s32cc",
-			"arm,vexpress,v2p-aarch64", "arm,vexpress";
+	compatible = "nxp,s32g3";
 
 	mem1: memory@80000000 {
 		device_type = "memory";

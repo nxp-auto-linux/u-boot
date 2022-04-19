@@ -4,7 +4,6 @@
  */
 /dts-v1/;
 / {
-	compatible = "nxp,s32cc";
 	signature {
 		key-boot_key {
 			required = "conf";
