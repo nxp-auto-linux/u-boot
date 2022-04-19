@@ -22,8 +22,8 @@
 #include <phy.h>
 #include <reset.h>
 #include <wait_bit.h>
-#include <asm/arch/clock.h>
 #include <asm/io.h>
+#include <asm/arch/clock.h>
 
 #include "board_common.h"
 #include "serdes_regs.h"
@@ -31,10 +31,10 @@
 
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 
-#include "dwc_eth_qos.h"
 #include <s32gen1_clk_utils.h>
 #include <s32gen1_gmac_utils.h>
 #include <dm/device.h>
+#include "dwc_eth_qos.h"
 
 /* S32 SRC register for phyif selection */
 #define PHY_INTF_SEL_SGMII	0x01
@@ -204,7 +204,6 @@ static bool s32ccgmac_set_interface(struct udevice *dev, phy_interface_t mode)
 		return false;
 
 	setup_iomux_enet_gmac(dev, mode);
-	setup_clocks_enet_gmac(mode, dev);
 	s32cc->mac_intf = mode;
 
 	return true;
