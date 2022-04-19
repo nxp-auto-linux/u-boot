@@ -2,8 +2,8 @@
 /*
  * Copyright 2022 NXP
  */
-#ifndef __S32G3XXAEVB_H__
-#define __S32G3XXAEVB_H__
+#ifndef __S32G3XXAEVB3_H__
+#define __S32G3XXAEVB3_H__
 
 #include <configs/s32g3.h>
 
