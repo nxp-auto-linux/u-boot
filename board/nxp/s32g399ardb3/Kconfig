@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2022 NXP
+
+if TARGET_S32G399ARDB3
+
+config SYS_CONFIG_NAME
+	default "s32g399ardb3"
+
+config SYS_BOARD
+	default "s32g399ardb3"
+
+config NR_DRAM_BANKS
+	default 2
+
+config ENV_SECT_SIZE
+	default 0x10000 if QSPI_BOOT
+
+config SYS_EEPROM_PAGE_WRITE_DELAY_MS
+	default 10
+
+config SYS_EEPROM_SIZE
+	default 128
+
+endif

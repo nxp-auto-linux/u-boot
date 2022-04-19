@@ -5,7 +5,17 @@ if ARCH_S32G3
 
 choice
 	prompt "S32G3 board select"
-	default TARGET_S32G3XXAEVB3
+	default TARGET_S32G399ARDB3
+
+config TARGET_S32G399ARDB3
+	bool "Support S32G399ARDB3 board"
+	help
+	  This board is based on S32G399A SoC. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports, PCIe slot,
+	  serial port, 18 CAN ports, I2C and DSPI.
+	imply CMD_EEPROM
+	imply I2C_EEPROM
+	select NXP_S32GRDB_BOARD
 
 config TARGET_S32G3XXAEVB
 	bool "Support S32G3-EVB board"
@@ -26,6 +36,7 @@ config TARGET_S32G3XXAEVB3
 endchoice
 
 source "board/nxp/s32-cc/s32g/Kconfig"
+source "board/nxp/s32g399ardb3/Kconfig"
 source "board/nxp/s32g3xxaevb/Kconfig"
 source "board/nxp/s32g3xxaevb3/Kconfig"
 
