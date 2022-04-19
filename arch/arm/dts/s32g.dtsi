@@ -154,7 +154,6 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 
-			compatible = "nxp,s32g-siul2_0-nvram";
 			status = "okay";
 			u-boot,dm-pre-reloc;
 
