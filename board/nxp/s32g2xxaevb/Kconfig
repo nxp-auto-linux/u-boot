@@ -15,4 +15,10 @@ config NR_DRAM_BANKS
 config ENV_SECT_SIZE
 	default 0x10000 if QSPI_BOOT
 
+config SYS_EEPROM_PAGE_WRITE_DELAY_MS
+	default 10
+
+config SYS_EEPROM_SIZE
+	default 128
+
 endif

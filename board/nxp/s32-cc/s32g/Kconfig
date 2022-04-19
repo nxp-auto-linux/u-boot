@@ -19,9 +19,11 @@ config NXP_S32GEVB_BOARD
 	bool
 	default n
 	imply ADC
+	imply CMD_EEPROM
 	imply CMD_PMIC
 	imply DM_PMIC
 	imply DM_PMIC_VR5510
+	imply I2C_EEPROM
 	imply NXP_S32CC_BOARD_COMMON
 	imply SARADC_S32CC
 	select SPI_FLASH_MACRONIX
