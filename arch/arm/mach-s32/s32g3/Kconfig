@@ -11,9 +11,7 @@ config TARGET_S32G399ARDB3
 	bool "Support S32G399ARDB3 board"
 	imply CMD_EEPROM
 	imply I2C_EEPROM
-	select ADC
 	select NXP_S32GRDB_BOARD
-	select SARADC_S32CC
 
 config TARGET_S32G3XXAEVB
 	bool "Support S32G3-EVB board"
