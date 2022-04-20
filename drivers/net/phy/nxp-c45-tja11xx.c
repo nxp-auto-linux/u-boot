@@ -2,7 +2,7 @@
 /*
  * NXP C45 PHY driver
  *
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  * Author: Radu Pirea <radu-nicolae.pirea@oss.nxp.com>
  */
 #include <common.h>
@@ -19,6 +19,9 @@
 #define DEVICE_CONTROL_RESET		BIT(15)
 #define DEVICE_CONTROL_CONFIG_GLOBAL_EN	BIT(14)
 #define DEVICE_CONTROL_CONFIG_ALL_EN	BIT(13)
+
+#define VEND1_ALWAYS_ACCESSIBLE		0x801F
+#define ALWAYS_ACCESSIBLE_FUSA_PASS	BIT(4)
 
 #define VEND1_PORT_CONTROL		0x8040
 #define PORT_CONTROL_EN			BIT(14)
@@ -58,6 +61,7 @@
 #define MAX_ID_PS			2260U
 #define DEFAULT_ID_PS			2000U
 
+#define FUSA_DELAY_MS			10
 #define RESET_DELAY_MS			25
 #define CONF_EN_DELAY_US		450
 
@@ -79,8 +83,19 @@ static int nxp_c45_soft_reset(struct phy_device *phydev)
 		ret = phy_read_mmd(phydev, MDIO_MMD_VEND1,
 				   VEND1_DEVICE_CONTROL);
 		if (!(ret & DEVICE_CONTROL_RESET))
-			return 0;
+			break;
 		mdelay(RESET_DELAY_MS);
+	} while (tries--);
+
+	tries = 10;
+	do {
+		ret = phy_read_mmd(phydev, MDIO_MMD_VEND1,
+				   VEND1_ALWAYS_ACCESSIBLE);
+		if (!(ret & ALWAYS_ACCESSIBLE_FUSA_PASS))
+			return phy_write_mmd(phydev, MDIO_MMD_VEND1,
+				   VEND1_ALWAYS_ACCESSIBLE,
+				   ALWAYS_ACCESSIBLE_FUSA_PASS);
+		mdelay(FUSA_DELAY_MS);
 	} while (tries--);
 
 	return -EIO;
