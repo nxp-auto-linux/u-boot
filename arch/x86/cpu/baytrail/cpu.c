@@ -55,7 +55,7 @@ int arch_cpu_init_dm(void)
 	for (i = 0; i < 2; i++) {
 		ret = dm_pci_bus_find_bdf(PCI_BDF(0, 0x1e, 3 + i), &dev);
 		if (!ret) {
-			base = dm_pci_map_bar(dev, PCI_BASE_ADDRESS_0,
+			base = dm_pci_map_bar(dev, PCI_BASE_ADDRESS_0, 0, 0,
 					      PCI_REGION_MEM);
 			hsuart_clock_set(base);
 		}
