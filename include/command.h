@@ -231,8 +231,8 @@ enum command_ret_t {
  *			number of ticks the command took to complete.
  * Return: 0 if the command succeeded, 1 if it failed
  */
-int cmd_process(int flag, int argc, char *const argv[], int *repeatable,
-		unsigned long *ticks);
+enum command_ret_t cmd_process(int flag, int argc, char *const argv[],
+			       int *repeatable, unsigned long *ticks);
 
 void fixup_cmdtable(struct cmd_tbl *cmdtp, int size);
 

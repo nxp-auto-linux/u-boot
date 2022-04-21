@@ -1588,7 +1588,7 @@ static void *dm_pci_map_ea_bar(struct udevice *dev, int bar, size_t offset,
 }
 
 void *dm_pci_map_bar(struct udevice *dev, int bar, size_t offset, size_t len,
-		     unsigned long flags)
+		     unsigned long mask, unsigned long flags)
 {
 	struct pci_child_plat *pdata = dev_get_parent_plat(dev);
 	struct udevice *udev = dev;
@@ -1628,8 +1628,7 @@ void *dm_pci_map_bar(struct udevice *dev, int bar, size_t offset, size_t len,
 	 * a PCI range, but a better check would be to probe for the size of
 	 * the bar and prevent overflow more locally.
 	 */
-	return dm_pci_bus_to_virt(udev, pci_bus_addr + offset, flags, len,
-				  MAP_NOCACHE);
+	return dm_pci_bus_to_virt(udev, pci_bus_addr + offset, len, mask, flags);
 }
 
 static int _dm_pci_find_next_capability(struct udevice *dev, u8 pos, int cap)
