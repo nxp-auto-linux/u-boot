@@ -18,7 +18,7 @@
 	};
 
 	chosen {
-		stdout-path = "serial1:115200n8";
+		stdout-path = "serial1:7812500n8";
 	};
 };
 

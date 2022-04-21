@@ -34,10 +34,6 @@
 #define LINFLEXD_UARTCR_ROSE		BIT(23)
 #define LINFLEX_LDIV_MULTIPLIER		(16)
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-#define LIN_CLK			133000	// LIN_CLK in Hz
-#endif
-
 DECLARE_GLOBAL_DATA_PTR;
 
 struct linflex_fsl {
@@ -92,9 +88,6 @@ static void _linflex_exit_init(struct linflex_fsl *base)
 
 static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
 {
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	return 1;
-#endif
 	u32 mul = LINFLEX_LDIV_MULTIPLIER;
 	u32 cr;
 
@@ -109,11 +102,7 @@ static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
 static void _linflex_serial_setbrg(struct linflex_fsl *base, ulong rate,
 				   int baudrate)
 {
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	u32 clk = LIN_CLK;
-#else
 	u32 clk = rate;
-#endif
 	u32 ibr, fbr, divisr, dividr;
 
 	if (!baudrate)
@@ -164,11 +153,6 @@ static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 
 	/* set UART bit to allow writing other bits */
 	__raw_writel(UARTCR_UART, &base->uartcr);
-
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	/* Set preset timeout register value. Otherwise, print is very slow. */
-	__raw_writel(0xf, &base->uartpto);
-#endif
 
 	/* 8 bit data, no parity, Tx and Rx enabled, UART mode */
 	__raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0

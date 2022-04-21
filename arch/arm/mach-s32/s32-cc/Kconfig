@@ -124,6 +124,11 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
+if TARGET_TYPE_S32GEN1_EMULATOR
+config BAUDRATE
+	default 7812500
+endif
+
 config ENV_OFFSET
 	default 0x1e0000
 
