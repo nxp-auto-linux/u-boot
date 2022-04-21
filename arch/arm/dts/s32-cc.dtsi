@@ -48,6 +48,11 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x0 0x0>;
+
+			nvmem-cells = <&soc_letter>, <&part_no>,
+			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
+			nvmem-cell-names = "soc_letter", "part_no",
+			    "soc_major", "soc_minor", "soc_subminor";
 			u-boot,dm-pre-reloc;
 		};
 

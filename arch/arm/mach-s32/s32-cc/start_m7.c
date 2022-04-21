@@ -8,7 +8,8 @@
 #include <misc.h>
 #include <asm/io.h>
 #include <dm/uclass.h>
-#include <s32-cc/siul2_nvram.h>
+#include <s32-cc/nvmem.h>
+#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 #define S32_SRAM_6M	(6 * SZ_1M)
 #define S32_SRAM_8M	(8 * SZ_1M)
@@ -69,20 +70,31 @@ static u32 get_sram_size(void)
 	const char *dev_name = "siul2_0_nvram";
 	struct udevice *siul20_nvmem = NULL;
 	u32 letter = 0, part_number = 0;
+	struct nvmem_cell cell;
 
 	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name,
 					&siul20_nvmem);
 	if (ret)
 		goto nvmem_err;
 
-	ret = misc_read(siul20_nvmem, S32CC_SOC_LETTER, &letter,
-			sizeof(letter));
-	if (ret != sizeof(letter))
+	ret = nvmem_cell_get_by_offset(siul20_nvmem,
+				       S32CC_SOC_LETTER,
+				       &cell);
+	if (ret)
 		goto nvmem_err;
 
-	ret = misc_read(siul20_nvmem, S32CC_SOC_PART_NO, &part_number,
-			sizeof(part_number));
-	if (ret != sizeof(part_number))
+	ret = nvmem_cell_read(&cell, &letter, sizeof(letter));
+	if (ret)
+		goto nvmem_err;
+
+	ret = nvmem_cell_get_by_offset(siul20_nvmem,
+				       S32CC_SOC_PART_NO,
+				       &cell);
+	if (ret)
+		goto nvmem_err;
+
+	ret = nvmem_cell_read(&cell, &part_number, sizeof(part_number));
+	if (ret)
 		goto nvmem_err;
 
 	if ((char)letter == 'G') {

@@ -16,7 +16,8 @@
 #include <dm/device-internal.h>
 #include <dm/uclass.h>
 #include <linux/sizes.h>
-#include <s32-cc/siul2_nvram.h>
+#include <s32-cc/nvmem.h>
+#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 /* CFG1 is used in linux when finding devices on the bus.
  * It is actually the upper half of the config space
@@ -817,6 +818,7 @@ static int s32_pcie_get_dev_id_variant(struct udevice *dev)
 	struct udevice *siul2_nvmem;
 	struct ofnode_phandle_args phandle_args;
 	u32 variant_bits = 0;
+	struct nvmem_cell cell;
 	int ret;
 
 	if (dev_read_phandle_with_args(dev, "nvmem-cells", NULL,
@@ -832,9 +834,15 @@ static int s32_pcie_get_dev_id_variant(struct udevice *dev)
 		return -ENODEV;
 	}
 
-	ret = misc_read(siul2_nvmem, S32CC_OVERWRITE_PCIE_DEV_ID,
-			&variant_bits, sizeof(variant_bits));
-	if (ret != sizeof(variant_bits)) {
+	ret = nvmem_cell_get_by_offset(siul2_nvmem, S32CC_OVERWRITE_PCIE_DEV_ID,
+				       &cell);
+	if (ret) {
+		printf("Failed to get PCIE ID NVMEM cell\n");
+		return -ENODEV;
+	}
+
+	ret = nvmem_cell_read(&cell, &variant_bits, sizeof(variant_bits));
+	if (ret) {
 		printf("%s: Failed to read PCIe device ID (err = %d)\n",
 		       __func__, ret);
 		return -EINVAL;
@@ -925,6 +933,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	u32 soc_serdes_presence;
 	u32 variant_bits, pcie_dev_id;
 	struct udevice *siul21_nvmem = NULL;
+	struct nvmem_cell cell;
 
 	pcie->enabled = false;
 
@@ -935,10 +944,16 @@ static int s32_pcie_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = misc_read(siul21_nvmem, S32CC_SERDES_PRESENCE,
-			&soc_serdes_presence,
-			sizeof(soc_serdes_presence));
-	if (ret != sizeof(soc_serdes_presence)) {
+	ret = nvmem_cell_get_by_offset(siul21_nvmem, S32CC_SERDES_PRESENCE,
+				       &cell);
+	if (ret) {
+		printf("Failed to get SerDes presence NVMEM cell\n");
+		return -ENODEV;
+	}
+
+	ret = nvmem_cell_read(&cell, &soc_serdes_presence,
+			      sizeof(soc_serdes_presence));
+	if (ret) {
 		printf("%s: Failed to read SoC's SerDes capability (err = %d)\n",
 		       __func__, ret);
 		return -EINVAL;

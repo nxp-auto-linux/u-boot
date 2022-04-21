@@ -10,7 +10,7 @@
 #include <linux/bitops.h>
 #include <linux/errno.h>
 #include <linux/kernel.h>
-#include <s32-cc/siul2_nvram.h>
+#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 #define MIDR1_OFF	0x4
 #define MIDR2_OFF	0x8

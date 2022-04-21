@@ -9,6 +9,7 @@
  */
 #include <dt-bindings/clock/s32r45-scmi-clock.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/pinctrl/s32r45-pinctrl.h>
 
 /dts-v1/;
@@ -65,9 +66,54 @@
 		};
 
 		siul2_0_nvram: siul2_0_nvram {
+			#address-cells = <1>;
+			#size-cells = <1>;
+
 			compatible = "nxp,s32r-siul2_0-nvram";
 			status = "okay";
 			u-boot,dm-pre-reloc;
+
+			soc_letter: soc_letter@0 {
+				reg = <S32CC_SOC_LETTER S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			part_no: part_no@4 {
+				reg = <S32CC_SOC_PART_NO S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			soc_major: soc_major@8 {
+				reg = <S32CC_SOC_MAJOR S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			soc_minor: soc_minor@c {
+				reg = <S32CC_SOC_MINOR S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			core_max_freq: core_max_freq@10 {
+				reg = <S32CC_MAX_CORE_FREQ S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			max_cpus_per_cluster: max_cpus_per_cluster@14 {
+				reg = <S32CC_MAX_A53_CORES_PER_CLUSTER
+				    S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			a53_cores_mask: a53_cores_mask@18 {
+				reg = <S32CC_A53_CORES_MASK S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
+			pcie_dev_id: pcie_dev_id@1c {
+				reg = <S32CC_OVERWRITE_PCIE_DEV_ID
+				    S32CC_CELL_SIZE>;
+			};
+
 		};
 	};
 
@@ -96,9 +142,26 @@
 		};
 
 		siul2_1_nvram {
+			#address-cells = <1>;
+			#size-cells = <1>;
+
 			compatible = "nxp,s32r-siul2_1-nvram";
 			status = "okay";
 			u-boot,dm-pre-reloc;
+
+			serdes_presence: serdes_presence@100 {
+				reg = <S32CC_SERDES_PRESENCE S32CC_CELL_SIZE>;
+			};
+
+			lax_presence: lax_presence@104 {
+				reg = <S32CC_LAX_PRESENCE S32CC_CELL_SIZE>;
+			};
+
+			soc_subminor: soc_subminor@108 {
+				reg = <S32CC_SOC_SUBMINOR S32CC_CELL_SIZE>;
+				u-boot,dm-pre-reloc;
+			};
+
 		};
 	};
 
