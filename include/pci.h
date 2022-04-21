@@ -1469,10 +1469,13 @@ pci_addr_t dm_pci_phys_to_bus(struct udevice *dev, phys_addr_t addr,
  *
  * @dev:	Device to check
  * @bar:	Bar register offset (PCI_BASE_ADDRESS_...)
+ * @offset:     Offset from the base to map
+ * @len:        Length to map
  * @flags:	Flags for the region type (PCI_REGION_...)
  * @return: pointer to the virtual address to use or 0 on error
  */
-void *dm_pci_map_bar(struct udevice *dev, int bar, int flags);
+void *dm_pci_map_bar(struct udevice *dev, int bar, size_t offset, size_t len,
+		     unsigned long flags);
 
 /**
  * dm_pci_find_next_capability() - find a capability starting from an offset
