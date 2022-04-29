@@ -7,11 +7,11 @@
  */
 #include <common.h>
 #include <dm.h>
+#include <phy.h>
 #include <dm/devres.h>
 #include <linux/delay.h>
 #include <linux/math64.h>
 #include <linux/mdio.h>
-#include <phy.h>
 
 #define PHY_ID_TJA_1103			0x001BB010
 
