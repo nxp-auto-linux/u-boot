@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: (GPL-2.0 or BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/nvmem/nxp,s32cc-cmu.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: NXP S32CC CMU driver
+
+maintainers:
+  - Radu Pirea <radu-nicolae.pirea@nxp.com>
+
+description: |
+  This driver provides a way to measure the clock frequencies of the various
+  clock sources inside the SoC using the  FC(frequency check) and the
+  FM(frequency meter) HW blocks.
+
+properties:
+  compatible:
+    description: |-
+      const: nxp,s32g2-cmu
+      const: nxp,s32g3-cmu
+      const: nxp,s32r45-cmu
+
+  reg:
+    description:
+      Address and Size of the CMU register map.
+    maxItems: 1
+
+  clocks:
+    description:
+      Two phandles to the clock of CMU module and the clock of CMU registers.
+    minItems: 2
+    maxItems: 2
+
+required:
+  - compatible
+  - reg
+  - clocks
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    cmu: cmu@4005C000 {
+      compatible = "nxp,s32g2-cmu";
+      reg = <0x0 0x4005C000 0x0 0x1000>;
+      clocks = <&clks S32GEN1_SCMI_CLK_CMU_MODULE>,
+               <&clks S32GEN1_SCMI_CLK_CMU_REG>;
+    };
