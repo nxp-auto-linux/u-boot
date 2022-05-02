@@ -11,6 +11,7 @@
 #include <misc.h>
 #include <asm/io.h>
 #include <linux/delay.h>
+#include <linux/math64.h>
 
 #include "s32cc_cmu.h"
 
@@ -38,7 +39,9 @@
 #define CMU_FM_SR_FMTO			BIT(1)
 #define CMU_FM_SR_FMC			BIT(0)
 
-#define MAX_PERIPH_FREQ			((double)2000)
+#define MAX_PERIPH_FREQ			(2000000000ULL)
+#define KHZ_10				(10000ULL)
+#define MHZ_1				(1000000ULL)
 
 #define MAX_DEPTH 20
 
@@ -55,19 +58,19 @@ struct s32cc_cmu {
 };
 
 struct cmu_params {
-	u16 ref_cnt;
+	u64 ref_cnt;
 	u32 href;
 	u32 lref;
 	u32 udelay;
 };
 
 struct cmu_fm_params {
-	u16 ref_cnt;
+	u64 ref_cnt;
 };
 
 struct freq_interval {
-	double min;
-	double max;
+	u64 min;
+	u64 max;
 };
 
 enum fc_result {
@@ -89,43 +92,43 @@ static struct cmu s32g2_cmu_blocks[] = {
 
 	FXOSC_PERIPH_CMU_FM(1, FIRC, FIRC_FREQ),
 	FXOSC_PERIPH_CMU_FM(2, SIRC, SIRC_FREQ),
-	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40),
-	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40),
+	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40000000),
+	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40000000),
 
-	FIRC_PERIPH_CMU_FC(5, XBAR_DIV3, 133.33),
-	FIRC_PERIPH_CMU_FC(6, XBAR_M7_0, 400),
+	FIRC_PERIPH_CMU_FC(5, XBAR_DIV3, 133333333),
+	FIRC_PERIPH_CMU_FC(6, XBAR_M7_0, 400000000),
 
-	FXOSC_PERIPH_CMU_FC(7, XBAR_DIV3, 133.33),
+	FXOSC_PERIPH_CMU_FC(7, XBAR_DIV3, 133333333),
 
-	FIRC_PERIPH_CMU_FC(8, XBAR_M7_1, 400),
-	FIRC_PERIPH_CMU_FC(9, XBAR_M7_2, 400),
-	FIRC_PERIPH_CMU_FC(10, PER, 80),
+	FIRC_PERIPH_CMU_FC(8, XBAR_M7_1, 400000000),
+	FIRC_PERIPH_CMU_FC(9, XBAR_M7_2, 400000000),
+	FIRC_PERIPH_CMU_FC(10, PER, 80000000),
 
-	FXOSC_PERIPH_CMU_FC_RANGE(11, SERDES_REF, 100, 125),
-	FXOSC_PERIPH_CMU_FC(12, FLEXRAY_PE, 40),
-	FXOSC_PERIPH_CMU_FC(13, CAN_PE, 80),
-	FXOSC_PERIPH_CMU_FC_RANGE(14, GMAC_0_TX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC_RANGE(15, GMAC_TS, 5, 200),
-	FXOSC_PERIPH_CMU_FC(16, LIN, 125),
-	FXOSC_PERIPH_CMU_FC(17, QSPI_1X, 200),
-	FXOSC_PERIPH_CMU_FC(18, SDHC, 400),
+	FXOSC_PERIPH_CMU_FC_RANGE(11, SERDES_REF, 100000000, 125000000),
+	FXOSC_PERIPH_CMU_FC(12, FLEXRAY_PE, 40000000),
+	FXOSC_PERIPH_CMU_FC(13, CAN_PE, 80000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(14, GMAC_0_TX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(15, GMAC_TS, 5000000, 200000000),
+	FXOSC_PERIPH_CMU_FC(16, LIN, 125000000),
+	FXOSC_PERIPH_CMU_FC(17, QSPI_1X, 200000000),
+	FXOSC_PERIPH_CMU_FC(18, SDHC, 400000000),
 
-	FIRC_PERIPH_CMU_FC(20, DDR, 666.66),
+	FIRC_PERIPH_CMU_FC(20, DDR, 666666666),
 
-	FXOSC_PERIPH_CMU_FC_RANGE(21, GMAC_0_RX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC(22, SPI, 100),
+	FXOSC_PERIPH_CMU_FC_RANGE(21, GMAC_0_RX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC(22, SPI, 100000000),
 
-	FXOSC_PERIPH_CMU_FC(27, A53_CORE, 1000),
+	FXOSC_PERIPH_CMU_FC(27, A53_CORE, 1000000000),
 
-	FIRC_PERIPH_CMU_FC(28, A53_CORE, 1000),
+	FIRC_PERIPH_CMU_FC(28, A53_CORE, 1000000000),
 
-	FXOSC_PERIPH_CMU_FC(39, PFE_SYS, 300),
-	FXOSC_PERIPH_CMU_FC_RANGE(46, PFE_MAC_0_TX, 2.5, 312.5),
-	FXOSC_PERIPH_CMU_FC_RANGE(47, PFE_MAC_0_RX, 2.5, 312.5),
-	FXOSC_PERIPH_CMU_FC_RANGE(48, PFE_MAC_1_TX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC_RANGE(49, PFE_MAC_1_RX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC_RANGE(50, PFE_MAC_2_TX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC_RANGE(51, PFE_MAC_2_RX, 2.5, 125),
+	FXOSC_PERIPH_CMU_FC(39, PFE_SYS, 300000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(46, PFE_MAC_0_TX, 2500000, 312500000),
+	FXOSC_PERIPH_CMU_FC_RANGE(47, PFE_MAC_0_RX, 2500000, 312500000),
+	FXOSC_PERIPH_CMU_FC_RANGE(48, PFE_MAC_1_TX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(49, PFE_MAC_1_RX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(50, PFE_MAC_2_TX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(51, PFE_MAC_2_RX, 2500000, 125000000),
 };
 
 static struct cmu s32g3_cmu_blocks[] = {
@@ -133,43 +136,43 @@ static struct cmu s32g3_cmu_blocks[] = {
 
 	FXOSC_PERIPH_CMU_FM(1, FIRC, FIRC_FREQ),
 	FXOSC_PERIPH_CMU_FM(2, SIRC, SIRC_FREQ),
-	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40),
-	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40),
+	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40000000),
+	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40000000),
 
-	FIRC_PERIPH_CMU_FC(5, XBAR_DIV3, 133),
-	FIRC_PERIPH_CMU_FC(6, XBAR_M7_0, 399.96),
+	FIRC_PERIPH_CMU_FC(5, XBAR_DIV3, 133333333),
+	FIRC_PERIPH_CMU_FC(6, XBAR_M7_0, 400000000),
 
-	FXOSC_PERIPH_CMU_FC(7, XBAR_DIV3, 133.32),
+	FXOSC_PERIPH_CMU_FC(7, XBAR_DIV3, 133333333),
 
-	FIRC_PERIPH_CMU_FC(8, XBAR_M7_1, 399.96),
-	FIRC_PERIPH_CMU_FC(9, XBAR_M7_2, 399.96),
-	FIRC_PERIPH_CMU_FC(24, XBAR_M7_3, 399.96),
-	FIRC_PERIPH_CMU_FC(10, PER, 80),
+	FIRC_PERIPH_CMU_FC(8, XBAR_M7_1, 400000000),
+	FIRC_PERIPH_CMU_FC(9, XBAR_M7_2, 400000000),
+	FIRC_PERIPH_CMU_FC(24, XBAR_M7_3, 400000000),
+	FIRC_PERIPH_CMU_FC(10, PER, 80000000),
 
-	FXOSC_PERIPH_CMU_FC_RANGE(11, SERDES_REF, 100, 125),
-	FXOSC_PERIPH_CMU_FC(12, FLEXRAY_PE, 40),
-	FXOSC_PERIPH_CMU_FC(13, CAN_PE, 80),
-	FXOSC_PERIPH_CMU_FC_RANGE(14, GMAC_0_TX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC_RANGE(15, GMAC_TS, 5, 200),
-	FXOSC_PERIPH_CMU_FC(16, LIN, 125),
-	FXOSC_PERIPH_CMU_FC(17, QSPI_1X, 200),
-	FXOSC_PERIPH_CMU_FC(18, SDHC, 400),
+	FXOSC_PERIPH_CMU_FC_RANGE(11, SERDES_REF, 100000000, 125000000),
+	FXOSC_PERIPH_CMU_FC(12, FLEXRAY_PE, 40000000),
+	FXOSC_PERIPH_CMU_FC(13, CAN_PE, 80000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(14, GMAC_0_TX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(15, GMAC_TS, 5000000, 200000000),
+	FXOSC_PERIPH_CMU_FC(16, LIN, 125000000),
+	FXOSC_PERIPH_CMU_FC(17, QSPI_1X, 200000000),
+	FXOSC_PERIPH_CMU_FC(18, SDHC, 400000000),
 
-	FIRC_PERIPH_CMU_FC(20, DDR, 800),
+	FIRC_PERIPH_CMU_FC(20, DDR, 800000000),
 
-	FXOSC_PERIPH_CMU_FC_RANGE(21, GMAC_0_RX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC(22, SPI, 100),
-	FXOSC_PERIPH_CMU_FC(27, A53_CORE, 1300),
+	FXOSC_PERIPH_CMU_FC_RANGE(21, GMAC_0_RX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC(22, SPI, 100000000),
+	FXOSC_PERIPH_CMU_FC(27, A53_CORE, 1300000000),
 
-	FIRC_PERIPH_CMU_FC(28, A53_CORE, 1300),
+	FIRC_PERIPH_CMU_FC(28, A53_CORE, 1300000000),
 
-	FXOSC_PERIPH_CMU_FC(39, PFE_SYS, 300),
-	FXOSC_PERIPH_CMU_FC_RANGE(46, PFE_MAC_0_TX, 2.5, 312.5),
-	FXOSC_PERIPH_CMU_FC_RANGE(47, PFE_MAC_0_RX, 2.5, 312.5),
-	FXOSC_PERIPH_CMU_FC_RANGE(48, PFE_MAC_1_TX, 2.5, 312.5),
-	FXOSC_PERIPH_CMU_FC_RANGE(49, PFE_MAC_1_RX, 2.5, 312.5),
-	FXOSC_PERIPH_CMU_FC_RANGE(50, PFE_MAC_2_TX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC_RANGE(51, PFE_MAC_2_RX, 2.5, 125),
+	FXOSC_PERIPH_CMU_FC(39, PFE_SYS, 300000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(46, PFE_MAC_0_TX, 2500000, 312500000),
+	FXOSC_PERIPH_CMU_FC_RANGE(47, PFE_MAC_0_RX, 2500000, 312500000),
+	FXOSC_PERIPH_CMU_FC_RANGE(48, PFE_MAC_1_TX, 2500000, 312500000),
+	FXOSC_PERIPH_CMU_FC_RANGE(49, PFE_MAC_1_RX, 2500000, 312500000),
+	FXOSC_PERIPH_CMU_FC_RANGE(50, PFE_MAC_2_TX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC_RANGE(51, PFE_MAC_2_RX, 2500000, 125000000),
 };
 
 static struct cmu s32r45_cmu_blocks[] = {
@@ -177,43 +180,43 @@ static struct cmu s32r45_cmu_blocks[] = {
 
 	FXOSC_PERIPH_CMU_FM(1, FIRC, FIRC_FREQ),
 	FXOSC_PERIPH_CMU_FM(2, SIRC, SIRC_FREQ),
-	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40),
-	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40),
+	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40000000),
+	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40000000),
 
-	FIRC_PERIPH_CMU_FC(5, XBAR_DIV3, 133.33),
-	FIRC_PERIPH_CMU_FC(6, XBAR_M7_0, 400),
+	FIRC_PERIPH_CMU_FC(5, XBAR_DIV3, 133333333),
+	FIRC_PERIPH_CMU_FC(6, XBAR_M7_0, 400000000),
 
-	FXOSC_PERIPH_CMU_FC(7, XBAR_DIV3, 133.33),
+	FXOSC_PERIPH_CMU_FC(7, XBAR_DIV3, 133333333),
 
-	FIRC_PERIPH_CMU_FC(8, XBAR_M7_1, 400),
-	FIRC_PERIPH_CMU_FC(9, XBAR_M7_2, 400),
-	FIRC_PERIPH_CMU_FC(10, PER, 80),
+	FIRC_PERIPH_CMU_FC(8, XBAR_M7_1, 400000000),
+	FIRC_PERIPH_CMU_FC(9, XBAR_M7_2, 400000000),
+	FIRC_PERIPH_CMU_FC(10, PER, 80000000),
 
-	FXOSC_PERIPH_CMU_FC_RANGE(11, SERDES_REF, 100, 125),
-	FXOSC_PERIPH_CMU_FC(12, FLEXRAY_PE, 40),
-	FXOSC_PERIPH_CMU_FC(13, CAN_PE, 80),
-	FXOSC_PERIPH_CMU_FC(14, GMAC_0_TX, 125),
-	FXOSC_PERIPH_CMU_FC(15, GMAC_TS, 200),
-	FXOSC_PERIPH_CMU_FC(16, LIN, 125),
-	FXOSC_PERIPH_CMU_FC(17, QSPI_1X, 133.33),
-	FXOSC_PERIPH_CMU_FC(18, SDHC, 400),
+	FXOSC_PERIPH_CMU_FC_RANGE(11, SERDES_REF, 100000000, 125000000),
+	FXOSC_PERIPH_CMU_FC(12, FLEXRAY_PE, 40000000),
+	FXOSC_PERIPH_CMU_FC(13, CAN_PE, 80000000),
+	FXOSC_PERIPH_CMU_FC(14, GMAC_0_TX, 125000000),
+	FXOSC_PERIPH_CMU_FC(15, GMAC_TS, 200000000),
+	FXOSC_PERIPH_CMU_FC(16, LIN, 125000000),
+	FXOSC_PERIPH_CMU_FC(17, QSPI_1X, 133333333),
+	FXOSC_PERIPH_CMU_FC(18, SDHC, 400000000),
 
-	FIRC_PERIPH_CMU_FC(20, DDR, 800),
+	FIRC_PERIPH_CMU_FC(20, DDR, 800000000),
 
-	FXOSC_PERIPH_CMU_FC_RANGE(21, GMAC_0_RX, 2.5, 125),
-	FXOSC_PERIPH_CMU_FC(22, SPI, 100),
-	FXOSC_PERIPH_CMU_FC(27, A53_CORE, 800),
+	FXOSC_PERIPH_CMU_FC_RANGE(21, GMAC_0_RX, 2500000, 125000000),
+	FXOSC_PERIPH_CMU_FC(22, SPI, 100000000),
+	FXOSC_PERIPH_CMU_FC(27, A53_CORE, 800000000),
 
-	FIRC_PERIPH_CMU_FC(28, A53_CORE, 800),
+	FIRC_PERIPH_CMU_FC(28, A53_CORE, 800000000),
 
-	FXOSC_PERIPH_CMU_FC(38, ACCEL3, 600),
-	FXOSC_PERIPH_CMU_FC(39, ACCEL4_0, 400),
-	FXOSC_PERIPH_CMU_FC(40, ACCEL4_0, 400),
-	FXOSC_PERIPH_CMU_FC(46, GMAC_1_TX, 125),
-	FXOSC_PERIPH_CMU_FC(51, GMAC_1_RX, 125),
-	FXOSC_PERIPH_CMU_FC(52, MIPICSI2_0, 400),
-	FXOSC_PERIPH_CMU_FC(53, MIPICSI2_0, 400),
-	FXOSC_PERIPH_CMU_FC(54, SERDES_REF, 125),
+	FXOSC_PERIPH_CMU_FC(38, ACCEL3, 600000000),
+	FXOSC_PERIPH_CMU_FC(39, ACCEL4_0, 400000000),
+	FXOSC_PERIPH_CMU_FC(40, ACCEL4_0, 400000000),
+	FXOSC_PERIPH_CMU_FC(46, GMAC_1_TX, 125000000),
+	FXOSC_PERIPH_CMU_FC(51, GMAC_1_RX, 125000000),
+	FXOSC_PERIPH_CMU_FC(52, MIPICSI2_0, 400000000),
+	FXOSC_PERIPH_CMU_FC(53, MIPICSI2_0, 400000000),
+	FXOSC_PERIPH_CMU_FC(54, SERDES_REF, 125000000),
 };
 
 static struct s32cc_cmu_data s32g2_cmu_data = {
@@ -231,55 +234,38 @@ static struct s32cc_cmu_data s32r45_cmu_data = {
 	.n_blocks   = ARRAY_SIZE(s32r45_cmu_blocks),
 };
 
-static double get_min_freq(double clk, double variation)
+static u64 get_min_freq(u64 clk, u64 variation)
 {
-	return clk * ((double)1 - variation / 100);
+	return clk - div_u64(clk, 1000) * variation;
 }
 
-static double get_max_freq(double clk, double variation)
+static u64 get_max_freq(u64 clk, u64 variation)
 {
-	return clk * ((double)1 + variation / 100);
+	return clk + div_u64(clk, 1000) * variation;
 }
 
-static u16 u16_ceiling(double val)
+static int calc_cmu_ref_cnt(u64 ref_clk, u64 mon_clk,
+			    u64 *ref_cnt)
 {
-	u16 floor = (u16)val;
+	u64 max_iter, d_cnt;
+	u32 remainder;
 
-	if (val - (double)floor == (double)0)
-		return floor;
+	d_cnt = div_u64_rem(ref_clk, mon_clk, &remainder);
+	if (remainder > 0)
+		d_cnt++;
 
-	return floor + 1;
-}
-
-static u32 u32_round(double val)
-{
-	u32 floor = (u32)val;
-
-	if (val - (double)floor < (double)0.5)
-		return floor;
-
-	return floor + 1;
-}
-
-static int calc_cmu_ref_cnt(double ref_clk, double mon_clk,
-			    u16 *ref_cnt)
-{
-	double d_cnt;
-	u16 max_iter;
-
-	d_cnt = ref_clk / mon_clk;
 	if ((u32)(d_cnt) > CMU_FC_RCCR_REF_CNT_MAX) {
 		pr_err("REF_CNT (0x%" PRIx32 ") > max value\n", (u32)(d_cnt));
 		return -EINVAL;
 	}
 
-	*ref_cnt = u16_ceiling(d_cnt);
+	*ref_cnt = d_cnt;
 	/* Maximum accuracy */
-	max_iter = CMU_FC_RCCR_REF_CNT_MAX / *ref_cnt;
+	max_iter = div_u64(CMU_FC_RCCR_REF_CNT_MAX, *ref_cnt);
 	*ref_cnt *= max_iter;
 
 	/* Overflow */
-	if ((double)*ref_cnt < d_cnt) {
+	if ((u64)*ref_cnt < d_cnt) {
 		pr_err("REF_CNT overflow\n");
 		return -EINVAL;
 	}
@@ -287,49 +273,53 @@ static int calc_cmu_ref_cnt(double ref_clk, double mon_clk,
 	return 0;
 }
 
-static int get_fm_params(double ref_clk, double mon_clk,
+static int get_fm_params(u64 ref_clk, u64 mon_clk,
 			 struct cmu_fm_params *conf)
 {
 	return calc_cmu_ref_cnt(ref_clk, mon_clk, &conf->ref_cnt);
 }
 
-static int get_fc_params(double ref_clk, double mon_clk,
-			 double ref_var, double mon_var,
+static int get_fc_params(u64 ref_clk, u64 mon_clk,
+			 u64 ref_var, u64 mon_var,
 			 struct cmu_params *conf)
 {
-	double min_ref = get_min_freq(ref_clk, ref_var);
-	double max_ref = get_max_freq(ref_clk, ref_var);
-	double min_mon = get_min_freq(mon_clk, mon_var);
-	double max_mon = get_max_freq(mon_clk, mon_var);
-	double href, lref;
+	u64 min_ref = get_min_freq(ref_clk, ref_var);
+	u64 max_ref = get_max_freq(ref_clk, ref_var);
+	u64 min_mon = get_min_freq(mon_clk, mon_var);
+	u64 max_mon = get_max_freq(mon_clk, mon_var);
+	u64 href, lref;
+	u32 remainder;
 	int ret;
 
 	ret = calc_cmu_ref_cnt(ref_clk, mon_clk, &conf->ref_cnt);
 	if (ret)
 		return ret;
 
-	conf->udelay = u32_round((double)conf->ref_cnt / ref_clk);
+	conf->udelay = div_u64_rem(conf->ref_cnt * MHZ_1, ref_clk,
+				   &remainder);
+	if (remainder >= div_u64(ref_clk, 2))
+		conf->udelay++;
 
-	href = (max_mon / min_ref) * (double)conf->ref_cnt;
+	href = div_u64(conf->ref_cnt * max_mon, min_ref);
 	if ((u64)(href) > CMU_FC_TCR_FREF_MAX) {
 		pr_err("HREF (0x%" PRIx64 ") > max value\n", (u64)(href));
 		return -EINVAL;
 	}
 
-	conf->href = u32_round(href);
+	conf->href = href;
 	/* Overflow */
 	if ((u64)conf->href < (u64)href) {
 		pr_err("HREF overflow\n");
 		return -EINVAL;
 	}
 
-	lref = (min_mon / max_ref) * (double)conf->ref_cnt;
+	lref = div_u64(conf->ref_cnt * min_mon, max_ref);
 	if ((u64)(lref) > CMU_FC_TCR_FREF_MAX) {
 		pr_err("LREF (0x%" PRIx64 ") > max value\n", (u64)(lref));
 		return -EINVAL;
 	}
 
-	conf->lref = u32_round(lref);
+	conf->lref = lref;
 	/* Overflow */
 	if ((u64)conf->href < (u64)href) {
 		pr_err("LREF overflow\n");
@@ -372,16 +362,16 @@ static int _get_fc_mon_freq(struct cmu *s32cc_cmu, uintptr_t addr,
 {
 	struct cmu_params params;
 	enum fc_result res;
-	double mon_freq;
+	u64 mon_freq;
 	int ret;
 
 	if (depth == 0)
 		return 0;
 
-	mon_freq = (freq_int->min + freq_int->max) / 2;
+	mon_freq = div_u64(freq_int->min + freq_int->max, 2);
 
 	/* Assume 0 if the frequency is lower than 10KHz */
-	if (mon_freq < 0.01)
+	if (mon_freq < KHZ_10)
 		return 0;
 
 	ret = get_fc_params(s32cc_cmu->ref_freq, mon_freq,
@@ -418,7 +408,7 @@ static int get_fc_mon_freq(struct cmu *s32cc_cmu, uintptr_t addr,
 	return _get_fc_mon_freq(s32cc_cmu, addr, freq_int, MAX_DEPTH);
 }
 
-static double get_max_exp_freq(struct cmu *s32cc_cmu)
+static u64 get_max_exp_freq(struct cmu *s32cc_cmu)
 {
 	if (s32cc_cmu->has_exp_range)
 		return s32cc_cmu->exp_range.max;
@@ -427,7 +417,7 @@ static double get_max_exp_freq(struct cmu *s32cc_cmu)
 }
 
 static int get_fm_mon_freq(struct cmu *s32cc_cmu, uintptr_t addr,
-			   double *mon_freq)
+			   u64 *mon_freq)
 {
 	struct cmu_fm_params cmu_fm;
 	u32 met_cnt, sr;
@@ -467,7 +457,7 @@ static int get_fm_mon_freq(struct cmu *s32cc_cmu, uintptr_t addr,
 
 	met_cnt = CMU_FM_SR_MET_CNT(sr);
 
-	*mon_freq = (double)met_cnt * s32cc_cmu->ref_freq / cmu_fm.ref_cnt;
+	*mon_freq = met_cnt * div_u64(s32cc_cmu->ref_freq, cmu_fm.ref_cnt);
 
 	return 0;
 }
@@ -480,7 +470,7 @@ static int s32cc_cmu_read(struct udevice *dev, int offset,
 	struct cmu_result *result = buf;
 	struct freq_interval freq_int;
 	struct cmu *s32cc_cmu;
-	double mon_freq = 0;
+	u64 mon_freq = 0;
 	uintptr_t addr;
 
 	debug("%s(dev=%p)\n", __func__, dev);
@@ -502,9 +492,9 @@ static int s32cc_cmu_read(struct udevice *dev, int offset,
 		freq_int.max = mon_freq;
 	}
 
-	strncpy(result->mon_clk_name, s32cc_cmu->mon_name,
+	strlcpy(result->mon_clk_name, s32cc_cmu->mon_name,
 		sizeof(result->mon_clk_name));
-	strncpy(result->ref_clk_name, s32cc_cmu->ref_name,
+	strlcpy(result->ref_clk_name, s32cc_cmu->ref_name,
 		sizeof(result->ref_clk_name));
 
 	result->id = s32cc_cmu->offset >> 5;
@@ -567,86 +557,55 @@ U_BOOT_DRIVER(s32_cmu) = {
 	.of_match	= s32cc_cmu_ids,
 	.probe		= s32cc_cmu_probe,
 	.ops		= &s32cc_cmu_ops,
-	.priv_auto_alloc_size = sizeof(struct s32cc_cmu),
+	.priv_auto_alloc_size	= sizeof(struct s32cc_cmu),
 };
 
-static u32 u32_get_digits(u32 val)
+static void print_u64_mhz(u64 val, int space)
 {
-	u32 digits = 0;
+	u32 dec_part = 0;
+	u32 int_part = 0;
+	u32 digit = 0;
+	char buff[20];
+	u32 mul = 1;
+	int i;
 
-	if (!val)
-		return 1;
+	val /= 1000;
 
-	while (val) {
-		digits++;
+	for (i = 0; i < 3; i++) {
+		digit = val % 10;
 		val /= 10;
+		dec_part += mul * digit;
+		mul *= 10;
 	}
 
-	return digits;
-}
+	digit = 0;
+	mul = 1;
+	do {
+		digit = val % 10;
+		val /= 10;
+		int_part += mul * digit;
+		mul *= 10;
+	} while (val);
 
-static u32 get_ndigits(double val, u32 precision)
-{
-	u32 val32 = (u32)val;
-	u32 digits = 0;
-
-	digits = u32_get_digits(val32);
-
-	/* Dot */
-	digits++;
-
-	/* Fractional part */
-	precision /= 10;
-	while (precision) {
-		digits++;
-		precision /= 10;
+	space -= 8;
+	if (space >= 0 && space < sizeof(buff)) {
+		memset(buff, ' ', space);
+		buff[space] = '\0';
+	} else {
+		buff[0] = '\0';
 	}
 
-	return digits;
+	printf("%s%4u.%03u", buff, int_part, dec_part);
 }
 
-static void print_double(double val, u32 space, u32 precision)
+static void print_freq_interval(struct freq_interval *freq_int)
 {
-	u32 val32 = (u32)val;
-	size_t ndigits;
-	size_t i;
-	u32 frac;
-
-	frac = (u32)((val - (double)val32) * (double)precision);
-
-	ndigits = get_ndigits(val, precision);
-	if (space > ndigits) {
-		for (i = 0; i < space - ndigits; i++)
-			printf(" ");
-	}
-
-	if (precision == 1000)
-		printf("%" PRIu32 ".%03" PRIu32, val32, frac);
-	else if (precision == 100)
-		printf("%" PRIu32 ".%02" PRIu32, val32, frac);
-	else
-		printf("%" PRIu32 ".%01" PRIu32, val32, frac);
-}
-
-static void print_measured_freq(struct cmu_result *result)
-{
-	if (result->measured.min != result->measured.max) {
-		print_double(result->measured.min, 8, 1000);
+	if (freq_int->min != freq_int->max) {
+		print_u64_mhz(freq_int->min, 8);
 		printf(" - ");
-		print_double(result->measured.max, 8, 1000);
+		print_u64_mhz(freq_int->max, 8);
 	} else {
-		print_double(result->measured.min, 19, 1000);
-	}
-}
-
-static void print_expected_freq(struct cmu_result *result)
-{
-	if (result->expected.min != result->expected.max) {
-		print_double(result->expected.min, 5, 10);
-		puts(" - ");
-		print_double(result->expected.max, 5, 10);
-	} else {
-		print_double(result->expected.min, 12, 1);
+		print_u64_mhz(freq_int->min, 19);
 	}
 }
 
@@ -663,20 +622,20 @@ static int do_verifclk(cmd_tbl_t *cmdtp, int flag, int argc,
 	if (ret)
 		return ret;
 
-	puts(" CMU       | Monitored    | Reference | Expected      |");
+	puts(" CMU | Monitored    | Reference | Expected            |");
 	puts(" Verified\n");
-	puts(" ID        | clock        | clock     | range (MHz)   |");
+	puts(" ID  | clock        | clock     | range (MHz)         |");
 	puts(" range (MHz)\n");
-	puts("-----------|--------------|-----------|---------------|");
+	puts("-----|--------------|-----------|---------------------|");
 	puts("--------------------\n");
 
 	while (misc_read(cmu, i++, &result, sizeof(result)) > 0) {
-		printf("%11d|", result.id);
+		printf("%5d|", result.id);
 		printf(" %12s | ", result.mon_clk_name);
 		printf("%9s | ", result.ref_clk_name);
-		print_expected_freq(&result);
+		print_freq_interval(&result.expected);
 		puts(" | ");
-		print_measured_freq(&result);
+		print_freq_interval(&result.measured);
 		putc('\n');
 	}
 

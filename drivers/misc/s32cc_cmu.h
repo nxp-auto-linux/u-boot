@@ -8,13 +8,13 @@
 
 #include <linux/stringify.h>
 
-#define FIRC_VARIATION			6.0f
-#define FXOSC_VARIATION			0.5f
-#define PERIPH_VARIATION		0.5f
+#define FIRC_VARIATION			(60ULL)	// 6.0%
+#define FXOSC_VARIATION			(5ULL)	// 0.5%
+#define PERIPH_VARIATION		(5ULL)	// 0.5%
 
-#define FIRC_FREQ			((double)48)
-#define FXOSC_FREQ			((double)40)
-#define SIRC_FREQ			((double)0.032)
+#define FIRC_FREQ			(48000000ULL)
+#define FXOSC_FREQ			(40000000ULL)
+#define SIRC_FREQ			(32000ULL)
 
 #define CMU(ID, REF_CLK, MON_CLK, REF_FRQ, EXP_FRQ, REF_VAR, MON_VAR, FC) \
 {\
@@ -113,17 +113,17 @@ struct cmu {
 	enum cmu_fc_clk mon_clk;
 	const char *ref_name;
 	const char *mon_name;
-	double ref_freq;
+	u64 ref_freq;
 	bool has_exp_range;
 	union {
-		double exp_freq;
+		u64 exp_freq;
 		struct {
-			double min;
-			double max;
+			u64 min;
+			u64 max;
 		} exp_range;
 	};
-	double ref_var;
-	double mon_var;
+	u64 ref_var;
+	u64 mon_var;
 	bool fc;
 };
 #endif
