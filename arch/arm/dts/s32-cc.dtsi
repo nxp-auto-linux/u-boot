@@ -131,7 +131,7 @@
 
 	uart0:serial@401C8000 {
 		device_type = "serial";
-		compatible = "nxp,s32-cc-linflexuart";
+		compatible = "nxp,s32cc-linflexuart";
 		reg = <0x0 0x401C8000 0x0 0x3000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
 		clock-names = "lin";
@@ -141,7 +141,7 @@
 
 	uart1:serial@401CC000 {
 		device_type = "serial";
-		compatible = "nxp,s32-cc-linflexuart";
+		compatible = "nxp,s32cc-linflexuart";
 		reg = <0x0 0x401CC000 0x0 0x3000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
 		clock-names = "lin";
@@ -151,7 +151,7 @@
 
 	uart2:serial@402BC000 {
 		device_type = "serial";
-		compatible = "nxp,s32-cc-linflexuart";
+		compatible = "nxp,s32cc-linflexuart";
 		reg = <0x0 0x402BC000 0x0 0x3000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
 		clock-names = "lin";
