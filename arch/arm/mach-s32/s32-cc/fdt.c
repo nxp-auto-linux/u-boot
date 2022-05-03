@@ -183,50 +183,6 @@ static int ft_fixup_cpu(void *blob)
 	return 0;
 }
 
-static int ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
-{
-	int off, ret;
-	const char *status;
-	const char *exp_compatible = "nxp,s32cc-ddr";
-
-	/* Get node offset in U-Boot DT */
-	off = fdt_node_offset_by_compatible(old_blob, -1, exp_compatible);
-	if (off < 0) {
-		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
-		       exp_compatible, fdt_strerror(off));
-		return -ENODEV;
-	}
-
-	/* Check "status" property */
-	status = fdt_getprop(old_blob, off, "status", NULL);
-	if (!status) {
-		printf("%s: Node \"%s\" does not have \"status\" set",
-		       __func__, exp_compatible);
-		return -EINVAL;
-	}
-
-	if (!strncmp("disabled", status, 8))
-		return 0;
-
-	/* Get node offset in Linux DT */
-	off = fdt_node_offset_by_compatible(new_blob, -1, exp_compatible);
-	if (off < 0) {
-		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
-		       exp_compatible, fdt_strerror(off));
-		return -ENODEV;
-	}
-
-	/* Copy the status from the U-Boot DT */
-	ret = fdt_setprop_string(new_blob, off, "status", status);
-	if (ret) {
-		printf("WARNING: Could not fix up the Linux DT, err=%s\n",
-		       fdt_strerror(ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 static int apply_memory_fixups(void *blob, bd_t *bd)
 {
 	u64 start[CONFIG_NR_DRAM_BANKS];
@@ -751,10 +707,6 @@ int ft_system_setup(void *blob, bd_t *bd)
 	int ret;
 
 	ret = ft_fixup_cpu(blob);
-	if (ret)
-		goto exit;
-
-	ret = ft_fixup_ddr_polling(gd->fdt_blob, blob);
 	if (ret)
 		goto exit;
 
