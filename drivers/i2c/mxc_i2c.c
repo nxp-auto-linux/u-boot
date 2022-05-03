@@ -1048,6 +1048,7 @@ static const struct dm_i2c_ops mxc_i2c_ops = {
 static const struct udevice_id mxc_i2c_ids[] = {
 	{ .compatible = "fsl,imx21-i2c", },
 	{ .compatible = "fsl,vf610-i2c", .data = I2C_QUIRK_FLAG, },
+	{ .compatible = "nxp,s32cc-i2c", .data = I2C_QUIRK_FLAG, },
 	{}
 };
 
