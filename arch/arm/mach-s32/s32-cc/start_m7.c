@@ -16,8 +16,8 @@
 #define S32_SRAM_15M	(15 * SZ_1M)
 #define S32_SRAM_20M	(20 * SZ_1M)
 
-#define MC_ME_BASE_ADDR			0x40088000
-#define MC_RGM_BASE_ADDR		0x40078000
+#define MC_ME_BASE_ADDR			(0x40088000)
+#define MC_RGM_BASE_ADDR		(0x40078000)
 
 #define RGM_PRST(MC_RGM, per)		((uintptr_t)(MC_RGM) + 0x40 + \
 					 ((per) * 0x8))
@@ -44,10 +44,10 @@
 #define MC_ME_PRTN_N_CORE_M(n, m)      \
 	MC_ME_PRTN_PART(n, m)
 
-#define MC_ME_PRTN_N_PCONF_OFF	0x0
-#define MC_ME_PRTN_N_PUPD_OFF	0x4
-#define MC_ME_PRTN_N_STAT_OFF	0x8
-#define MC_ME_PRTN_N_ADDR_OFF	0xC
+#define MC_ME_PRTN_N_PCONF_OFF	(0x0)
+#define MC_ME_PRTN_N_PUPD_OFF	(0x4)
+#define MC_ME_PRTN_N_STAT_OFF	(0x8)
+#define MC_ME_PRTN_N_ADDR_OFF	(0xC)
 
 #define MC_ME_PRTN_N_CORE_M_PCONF(n, m)	(MC_ME_PRTN_N_CORE_M(n, m))
 #define MC_ME_PRTN_N_CORE_M_PUPD(n, m)	(MC_ME_PRTN_N_CORE_M(n, m) +\

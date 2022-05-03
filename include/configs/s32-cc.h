@@ -24,6 +24,8 @@
 #define PHYS_SDRAM_2			0x880000000UL
 #define PHYS_SDRAM_2_SIZE		(SZ_2G)
 
+#define S32CC_SRAM_BASE			0x34000000
+
 /**
  * DDR images layout
  *
@@ -317,8 +319,6 @@
 #define CONFIG_SYS_PCI_64BIT
 
 #define CONFIG_SYS_LDSCRIPT		"arch/arm/cpu/armv8/u-boot.lds"
-
-#define S32CC_SRAM_BASE			0x34000000
 
 #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
 #  define CONFIG_SYS_FSL_QSPI_AHB
