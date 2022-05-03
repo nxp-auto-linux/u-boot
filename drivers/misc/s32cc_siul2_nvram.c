@@ -94,6 +94,16 @@ static u32 adjust_major(u32 value, struct siul2_nvram *nvram)
 	return value + 1;
 }
 
+static u32 adjust_minor(u32 value, struct siul2_nvram *nvram)
+{
+	u32 minor = value & MINOR_MASK;
+
+	if ((value & MAJOR_MASK) && minor)
+		minor--;
+
+	return minor;
+}
+
 static u32 adjust_freq(u32 value, struct siul2_nvram *nvram)
 {
 	static const u32 freqs[] = {
@@ -289,6 +299,16 @@ static const struct siul_mapping s32r_siul20_mappings[] = {
 	},
 };
 
+static const struct siul_mapping s32g2_siul20_mappings[] = {
+	{
+		.nvram_off = S32CC_SOC_MINOR,
+		.siul2_off = MIDR1_OFF,
+		.mask = MAJOR_MASK | MINOR_MASK,
+		.shift = MINOR_SHIFT,
+		.adjust_value = adjust_minor,
+	},
+};
+
 static const struct siul_mapping s32g2_siul21_mappings[] = {
 	{
 		.nvram_off = S32CC_SOC_SUBMINOR,
@@ -320,10 +340,22 @@ static const struct siul_plat s32r_siul20_plat = {
 	.next = &siul20_plat,
 };
 
+static const struct siul_plat s32g2_siul20_plat = {
+	.mappings = &s32g2_siul20_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32g2_siul20_mappings),
+	.next = &s32g_siul20_plat,
+};
+
 static const struct siul_plat s32g2_siul21_plat = {
 	.mappings = &s32g2_siul21_mappings[0],
 	.n_mappings = ARRAY_SIZE(s32g2_siul21_mappings),
 	.next = &siul21_plat,
+};
+
+static const struct siul_plat s32g3_siul20_plat = {
+	.mappings = &s32g_siul20_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32g_siul20_mappings),
+	.next = &s32g_siul20_plat,
 };
 
 static int siul2_nvram_read(struct udevice *dev, int offset,
@@ -372,8 +404,12 @@ static const struct misc_ops siul2_nvram_ops = {
 
 static const struct udevice_id siul2_nvram_ids[] = {
 	{
-		.compatible = "nxp,s32g-siul2_0-nvram",
-		.data = (ulong)&s32g_siul20_plat,
+		.compatible = "nxp,s32g2-siul2_0-nvram",
+		.data = (ulong)&s32g2_siul20_plat,
+	},
+	{
+		.compatible = "nxp,s32g3-siul2_0-nvram",
+		.data = (ulong)&s32g3_siul20_plat,
 	},
 	{
 		.compatible = "nxp,s32r-siul2_0-nvram",
