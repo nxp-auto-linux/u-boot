@@ -237,7 +237,7 @@
 	dspi0: dspi0@401D4000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "fsl,vf610-dspi";
+		compatible = "nxp,s32cc-dspi";
 		reg = <0x0 0x401d4000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
@@ -250,7 +250,7 @@
 	dspi1: dspi1@401D8000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "fsl,vf610-dspi";
+		compatible = "nxp,s32cc-dspi";
 		reg = <0x0 0x401d8000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
@@ -263,7 +263,7 @@
 	dspi2: dspi2@401DC000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "fsl,vf610-dspi";
+		compatible = "nxp,s32cc-dspi";
 		reg = <0x0 0x401dc000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
@@ -276,7 +276,7 @@
 	dspi3: dspi3@402C8000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "fsl,vf610-dspi";
+		compatible = "nxp,s32cc-dspi";
 		reg = <0x0 0x402c8000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
@@ -289,7 +289,7 @@
 	dspi4: dspi4@402CC000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "fsl,vf610-dspi";
+		compatible = "nxp,s32cc-dspi";
 		reg = <0x0 0x402cc000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
@@ -302,7 +302,7 @@
 	dspi5: dspi5@402D0000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "fsl,vf610-dspi";
+		compatible = "nxp,s32cc-dspi";
 		reg = <0x0 0x402d0000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";

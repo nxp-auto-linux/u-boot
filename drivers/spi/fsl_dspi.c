@@ -843,6 +843,7 @@ static const struct dm_spi_ops fsl_dspi_ops = {
 
 static const struct udevice_id fsl_dspi_ids[] = {
 	{ .compatible = "fsl,vf610-dspi" },
+	{ .compatible = "nxp,s32cc-dspi" },
 	{ }
 };
 
