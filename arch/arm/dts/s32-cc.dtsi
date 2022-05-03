@@ -341,7 +341,7 @@
 	};
 
 	i2c0: i2c@401E4000 {
-		compatible = "fsl,vf610-i2c";
+		compatible = "nxp,s32cc-i2c";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x401E4000 0x0 0x10000>;
@@ -350,7 +350,7 @@
 	};
 
 	i2c1: i2c@401E8000 {
-		compatible = "fsl,vf610-i2c";
+		compatible = "nxp,s32cc-i2c";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x401E8000 0x0 0x10000>;
@@ -359,7 +359,7 @@
 	};
 
 	i2c2: i2c@401EC000 {
-		compatible = "fsl,vf610-i2c";
+		compatible = "nxp,s32cc-i2c";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x401EC000 0x0 0x10000>;
@@ -368,7 +368,7 @@
 	};
 
 	i2c3: i2c@402D8000 {
-		compatible = "fsl,vf610-i2c";
+		compatible = "nxp,s32cc-i2c";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x402D8000 0x0 0x10000>;
@@ -377,7 +377,7 @@
 	};
 
 	i2c4: i2c@402DC000 {
-		compatible = "fsl,vf610-i2c";
+		compatible = "nxp,s32cc-i2c";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		reg = <0x0 0x402DC000 0x0 0x10000>;
