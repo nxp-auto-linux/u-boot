@@ -20,13 +20,9 @@
 #define CONFIG_SYS_FLASH_SIZE		(SZ_512M)
 
 #define PHYS_SDRAM_1			0x80000000UL
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-#define PHYS_SDRAM_1_SIZE		(SZ_1G)
-#else
 #define PHYS_SDRAM_1_SIZE		(SZ_2G)
 #define PHYS_SDRAM_2			0x880000000UL
 #define PHYS_SDRAM_2_SIZE		(SZ_2G)
-#endif
 
 /**
  * DDR images layout
