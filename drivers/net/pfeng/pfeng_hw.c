@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL 2.0
 /*
  *  Copyright (c) 2020 Imagination Technologies Limited
- *  Copyright 2018-2021 NXP
+ *  Copyright 2018-2022 NXP
  */
 
 /**
@@ -596,6 +596,7 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 
 	if (lc_found) {
 		memcpy(((u8 *)fw + shdr[ii].sh_offset), &lcv, sizeof(lcv));
+		*memmap = NULL;
 	} else {
 		for (ii = 0; ii < ehdr->e_shnum; ++ii) {
 			if (!strcmp(".pfe_pe_mmap", &names[shdr[ii].sh_name])) {
@@ -654,7 +655,7 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
 	return 0;
 }
 
-int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
+static int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
 {
 	if (ntohl(pfe_pe_mmap->size) != sizeof(struct pfe_ct_pe_mmap)) {
 		pr_err("Structure length mismatch: found %u required %u\n",
@@ -1492,7 +1493,13 @@ pfeng_hw_init_class(struct pfe_platform *platform)
 			pr_err("Error during upload of CLASS firmware\n");
 			return -EIO;
 		}
-		pfeng_hw_pe_check_mmap(platform->memmap);
+
+		if (platform->memmap) {
+			ret = pfeng_hw_pe_check_mmap(platform->memmap);
+			if (ret)
+				return ret;
+		}
+
 	} else {
 		pr_err("Only ELF format is supported\n");
 		return -ENODEV;
@@ -1769,6 +1776,9 @@ static int pfeng_hw_init_ifaces(struct pfe_platform *platform)
 	s32 ii, pe;
 	int ret = 0;
 	u32 dmem_base, heap_base;
+
+	if (!platform->memmap)
+		return 0; /* init done by firmware */
 
 	if ((platform->hif_chnl + PFE_PHY_IF_ID_HIF0) < PFE_PHY_IF_ID_HIF0 ||
 	    (platform->hif_chnl + PFE_PHY_IF_ID_HIF0) > PFE_PHY_IF_ID_MAX) {
