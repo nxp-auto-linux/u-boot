@@ -12,7 +12,8 @@
 #include <dm/uclass.h>
 #include <linux/libfdt.h>
 #include <s32-cc/a53_gpr.h>
-#include <s32-cc/siul2_nvram.h>
+#include <s32-cc/nvmem.h>
+#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -31,6 +32,7 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 	int ret;
 	const char *dev_name = "siul2_0_nvram";
 	struct udevice *siul2_nvmem = NULL;
+	struct nvmem_cell cell;
 
 	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name,
 					&siul2_nvmem);
@@ -39,25 +41,43 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 		return ret;
 	}
 
-	ret = misc_read(siul2_nvmem, S32CC_MAX_A53_CORES_PER_CLUSTER,
-			max_cores_per_cluster, sizeof(*max_cores_per_cluster));
-	if (ret != sizeof(*max_cores_per_cluster)) {
-		printf("%s: Failed to read SoC's Part Number (err = %d)\n",
+	ret = nvmem_cell_get_by_offset(siul2_nvmem,
+				       S32CC_MAX_A53_CORES_PER_CLUSTER,
+				       &cell);
+	if (ret) {
+		printf("%s: Failed to get A53 cores per cluster cell (err = %d)\n",
 		       __func__, ret);
-		return ret;
+		return -ENODEV;
 	}
+
+	ret = nvmem_cell_read(&cell, max_cores_per_cluster,
+			      sizeof(*max_cores_per_cluster));
+	if (ret) {
+		printf("%s: Failed to read A53 cores per cluster cell (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
+	}
+
 	if (!(*max_cores_per_cluster)) {
 		printf("%s: Number of max cores per cluster cannot be 0\n",
 		       __func__);
 		return -EINVAL;
 	}
 
-	ret = misc_read(siul2_nvmem, S32CC_A53_CORES_MASK,
-			cpu_mask, sizeof(*cpu_mask));
-	if (ret != sizeof(*cpu_mask)) {
-		printf("%s: Failed to read SoC's Part Number (err = %d)\n",
+	ret = nvmem_cell_get_by_offset(siul2_nvmem,
+				       S32CC_A53_CORES_MASK,
+				       &cell);
+	if (ret) {
+		printf("%s: Failed to get A53 cores mask cell (err = %d)\n",
 		       __func__, ret);
-		return ret;
+		return -ENODEV;
+	}
+
+	ret = nvmem_cell_read(&cell, cpu_mask, sizeof(*cpu_mask));
+	if (ret) {
+		printf("%s: Failed to read A53 cores mask cell (err = %d)\n",
+		       __func__, ret);
+		return -EINVAL;
 	}
 
 	return 0;
