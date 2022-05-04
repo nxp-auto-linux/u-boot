@@ -236,7 +236,9 @@
 		reg = <0x0 0x401d4000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
+		// For U-Boot 2020.04 only
 		num-cs = <8>;
+		spi-num-chipselects = <8>;
 		status = "disabled";
 	};
 
@@ -247,7 +249,9 @@
 		reg = <0x0 0x401d8000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
+		// For U-Boot 2020.04 only
 		num-cs = <5>;
+		spi-num-chipselects = <5>;
 		status = "disabled";
 	};
 
@@ -258,7 +262,9 @@
 		reg = <0x0 0x401dc000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
+		// For U-Boot 2020.04 only
 		num-cs = <5>;
+		spi-num-chipselects = <5>;
 		status = "disabled";
 	};
 
@@ -269,7 +275,9 @@
 		reg = <0x0 0x402c8000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
+		// For U-Boot 2020.04 only
 		num-cs = <5>;
+		spi-num-chipselects = <5>;
 		status = "disabled";
 	};
 
@@ -280,7 +288,9 @@
 		reg = <0x0 0x402cc000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
+		// For U-Boot 2020.04 only
 		num-cs = <5>;
+		spi-num-chipselects = <5>;
 		status = "disabled";
 	};
 
@@ -291,7 +301,9 @@
 		reg = <0x0 0x402d0000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 		clock-names = "dspi";
+		// For U-Boot 2020.04 only
 		num-cs = <5>;
+		spi-num-chipselects = <5>;
 		status = "disabled";
 	};
 
@@ -305,7 +317,9 @@
 		clocks = <&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>,
 			 <&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>;
 		spi-max-frequency = <200000000>;
+		// For U-Boot 2020.04 only
 		num-cs = <2>;
+		spi-num-chipselects = <2>;
 		status = "disabled";
 	};
 
