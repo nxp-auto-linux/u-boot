@@ -7,64 +7,36 @@
 #include <cpu.h>
 #include <dm.h>
 #include <misc.h>
+#include <asm/system.h>
 #include <dm/uclass.h>
-#include <s32-cc/siul2_nvram.h>
+#include <s32-cc/nvmem.h>
 
 struct cpu_s32cc_plat {
-	struct udevice *siul20_nvmem;
-	struct udevice *siul21_nvmem;
+	u32 letter;
+	u32 part_number;
+	u32 major;
+	u32 minor;
+	u32 subminor;
+	bool has_subminor;
+	u32 mpidr;
+};
+
+struct soc_nvmem_cell {
+	const char *name;
+	u32 *data;
 };
 
 static int cpu_s32cc_get_desc(const struct udevice *dev, char *buf, int size)
 {
-	bool has_subminor = false;
-	u32 letter, part_number, major, minor, subminor;
 	struct cpu_s32cc_plat *plat = dev_get_plat(dev);
 	int ret;
 
-	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_LETTER, &letter,
-			sizeof(letter));
-	if (ret != sizeof(letter)) {
-		printf("%s: Failed to read SoC's letter (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_PART_NO, &part_number,
-			sizeof(part_number));
-	if (ret != sizeof(part_number)) {
-		printf("%s: Failed to read SoC's part number (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_MAJOR, &major,
-			sizeof(major));
-	if (ret != sizeof(major)) {
-		printf("%s: Failed to read SoC's major (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	ret = misc_read(plat->siul20_nvmem, S32CC_SOC_MINOR, &minor,
-			sizeof(minor));
-	if (ret != sizeof(minor)) {
-		printf("%s: Failed to read SoC's minor (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	/* It might be unavailable */
-	ret = misc_read(plat->siul21_nvmem, S32CC_SOC_SUBMINOR, &subminor,
-			sizeof(subminor));
-	if (ret == sizeof(subminor))
-		has_subminor = true;
-
 	ret = snprintf(buf, size, "NXP S32%c%uA rev. %u.%u",
-		       (char)letter, part_number, major, minor);
+		       (char)plat->letter, plat->part_number, plat->major,
+		       plat->minor);
 
-	if (has_subminor)
-		snprintf(buf + ret, size - ret, ".%u", subminor);
+	if (plat->has_subminor)
+		snprintf(buf + ret, size - ret, ".%u", plat->subminor);
 
 	return 0;
 }
@@ -88,11 +60,22 @@ static int cpu_s32cc_get_vendor(const struct udevice *dev,  char *buf, int size)
 	return 0;
 }
 
+static int cpu_s32cc_is_current(struct udevice *dev)
+{
+	struct cpu_s32cc_plat *plat = dev_get_plat(dev);
+
+	if (plat->mpidr == (read_mpidr() & 0xffff))
+		return 1;
+
+	return 0;
+}
+
 static const struct cpu_ops cpu_s32cc_ops = {
 	.get_desc	= cpu_s32cc_get_desc,
 	.get_info	= cpu_s32cc_get_info,
 	.get_count	= cpu_s32cc_get_count,
 	.get_vendor	= cpu_s32cc_get_vendor,
+	.is_current	= cpu_s32cc_is_current,
 };
 
 static const struct udevice_id cpu_s32cc_ids[] = {
@@ -100,28 +83,66 @@ static const struct udevice_id cpu_s32cc_ids[] = {
 	{ }
 };
 
+static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
+{
+	struct nvmem_cell c;
+	int ret;
+
+	ret = nvmem_cell_get(dev, cell->name, &c);
+	if (ret) {
+		printf("Failed to get '%s' cell\n", cell->name);
+		return ret;
+	}
+
+	ret = nvmem_cell_read(&c, cell->data, sizeof(*cell->data));
+	if (ret) {
+		printf("%s: Failed to read cell '%s' (err = %d)\n",
+		       __func__, cell->name, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 static int s32cc_cpu_probe(struct udevice *dev)
 {
 	struct cpu_s32cc_plat *plat = dev_get_plat(dev);
-	struct udevice *siul20_nvmem, *siul21_nvmem;
+	struct nvmem_cell cell;
+	struct soc_nvmem_cell cells[] = {
+		{ .name = "soc_letter", .data = &plat->letter },
+		{ .name = "part_no", .data = &plat->part_number },
+		{ .name = "soc_major", .data = &plat->major },
+		{ .name = "soc_minor", .data = &plat->minor },
+	};
+	const char *subminor = "soc_subminor";
 	int ret;
+	size_t i;
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_0_nvram",
-					&siul20_nvmem);
+	if (!plat)
+		return -EINVAL;
+
+	for (i = 0u; i < ARRAY_SIZE(cells); i++) {
+		ret = read_soc_nvmem_cell(dev, &cells[i]);
+		if (ret)
+			return ret;
+	}
+
+	ret = nvmem_cell_get(dev, subminor, &cell);
 	if (ret) {
-		printf("%s: No SIUL20 NVMEM (err = %d)\n", __func__, ret);
+		printf("Failed to get '%s' cell", subminor);
 		return ret;
 	}
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_1_nvram",
-					&siul21_nvmem);
-	if (ret) {
-		printf("%s: No SIUL21 NVMEM (err = %d)\n", __func__, ret);
-		return ret;
-	}
+	ret = nvmem_cell_read(&cell, &plat->subminor,
+			      sizeof(plat->subminor));
+	if (ret)
+		plat->has_subminor = false;
 
-	plat->siul20_nvmem = siul20_nvmem;
-	plat->siul21_nvmem = siul21_nvmem;
+	plat->mpidr = dev_read_addr(dev);
+	if (plat->mpidr == FDT_ADDR_T_NONE) {
+		printf("Failed to get CPU reg property\n");
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -135,4 +156,3 @@ U_BOOT_DRIVER(cpu_s32cc_drv) = {
 	.plat_auto	= sizeof(struct cpu_s32cc_plat),
 	.flags		= DM_FLAG_PRE_RELOC,
 };
-
