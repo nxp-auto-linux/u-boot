@@ -6,7 +6,7 @@
 /dts-v1/;
 #include "s32g.dtsi"
 #include "s32g3.dtsi"
-#include "s32gxxxaevb.dtsi"
+#include "s32gxxxa-evb.dtsi"
 
 / {
 	model = "NXP S32G3XXX-EVB";
