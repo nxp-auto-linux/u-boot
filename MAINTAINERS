@@ -752,6 +752,13 @@ S:	Maintained
 T:	git https://gitlab.denx.de/u-boot/custodians/u-boot-nios.git
 F:	arch/nios2/
 
+NVMEM
+M:	Sean Anderson <seanga2@gmail.com>
+S:	Maintained
+F:	doc/api/nvmem.rst
+F:	drivers/misc/nvmem.c
+F:	include/nvmem.h
+
 NXP C45 TJA11XX PHY DRIVER
 M:	Radu Pirea <radu-nicolae.pirea@oss.nxp.com>
 S:	Maintained
