@@ -456,11 +456,7 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	 * Note: This is way more than 8 cycles, but 1ms seems to
 	 * resolve timing issues with some cards
 	 */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	udelay(1);
-#else
 	udelay(1000);
-#endif
 
 	/* Set up for a data transfer if we have one */
 	if (data) {
@@ -520,11 +516,7 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 
 		printf("Run CMD11 1.8V switch\n");
 		/* Sleep for 5 ms - max time for card to switch to 1.8V */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(5);
-#else
 		udelay(5000);
-#endif
 	}
 
 	/* Workaround for ESDHC errata ENGcm03648 */
@@ -662,11 +654,7 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 
 	esdhc_clrsetbits32(&regs->sysctl, SYSCTL_CLOCK_MASK, clk);
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	udelay(10);
-#else
 	udelay(10000);
-#endif
 
 #ifdef CONFIG_FSL_USDHC
 	esdhc_setbits32(&regs->vendorspec, VENDORSPEC_PEREN | VENDORSPEC_CKEN);
@@ -739,11 +727,7 @@ static void esdhc_set_strobe_dll(struct mmc *mmc)
 			 ESDHC_STROBE_DLL_CTRL_SLV_DLY_TARGET_SHIFT);
 		writel(val, &regs->strobe_dllctrl);
 		/* wait 1us to make sure strobe dll status register stable */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(1);
-#else
 		mdelay(1);
-#endif
 		val = readl(&regs->strobe_dllstat);
 		if (!(val & ESDHC_STROBE_DLL_STS_REF_LOCK))
 			pr_warn("HS400 strobe DLL status REF not lock!\n");
@@ -818,11 +802,7 @@ static int esdhc_set_voltage(struct mmc *mmc)
 				return -EIO;
 			}
 			/* Wait for 5ms */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-			udelay(5);
-#else
 			mdelay(5);
-#endif
 		}
 #endif
 
@@ -1007,21 +987,13 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 			 * response to any command when the card still out
 			 * put the tuning data.
 			 */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-			udelay(1);
-#else
 			mdelay(1);
-#endif
 			ret = 0;
 			break;
 		}
 
 		/* Add 1ms delay for SD and eMMC */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(1);
-#else
 		mdelay(1);
-#endif
 	}
 
 	writel(irqstaten, &regs->irqstaten);
@@ -1191,11 +1163,7 @@ static int esdhc_getcd_common(struct fsl_esdhc_priv *priv)
 #endif
 
 	while (!(esdhc_read32(&regs->prsstat) & PRSSTAT_CINS) && --timeout)
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(1);
-#else
 		udelay(1000);
-#endif
 
 	return timeout > 0;
 }

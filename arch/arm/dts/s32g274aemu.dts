@@ -45,3 +45,13 @@
 &usdhc0 {
 	status = "okay";
 };
+
+&pit0 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/**
+	 * Artificially reduce the frequency to 1/10 of the real rate
+	 * to increase responsiveness
+	 */
+	clock-frequency = <133333>;
+};

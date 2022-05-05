@@ -275,11 +275,7 @@ static int abortboot_single_key(int bootdelay)
 					menukey = key;
 				break;
 			}
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-			udelay(10);
-#else
 			udelay(10000);
-#endif
 		} while (!abort && get_timer(ts) < 1000);
 
 		printf("\b\b\b%2d ", bootdelay);

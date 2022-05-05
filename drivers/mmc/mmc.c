@@ -253,11 +253,7 @@ int mmc_poll_for_busy(struct mmc *mmc, int timeout_ms)
 		if (timeout_ms-- <= 0)
 			break;
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(1);
-#else
 		udelay(1000);
-#endif
 	}
 
 	if (timeout_ms <= 0) {
@@ -476,11 +472,7 @@ static int mmc_go_idle(struct mmc *mmc)
 	struct mmc_cmd cmd;
 	int err;
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	udelay(1);
-#else
 	udelay(1000);
-#endif
 
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
@@ -491,11 +483,7 @@ static int mmc_go_idle(struct mmc *mmc)
 	if (err)
 		return err;
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	udelay(2);
-#else
 	udelay(2000);
-#endif
 
 	return 0;
 }
@@ -545,11 +533,7 @@ static int mmc_switch_voltage(struct mmc *mmc, int signal_voltage)
 		return err;
 
 	/* Keep clock gated for at least 10 ms, though spec only says 5 ms */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	udelay(10);
-#else
 	mdelay(10);
-#endif
 	mmc_set_clock(mmc, mmc->clock, MMC_CLK_ENABLE);
 
 	/*
@@ -558,11 +542,7 @@ static int mmc_switch_voltage(struct mmc *mmc, int signal_voltage)
 	 */
 	err = mmc_wait_dat0(mmc, 1, 1000);
 	if (err == -ENOSYS)
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(1);
-#else
 		udelay(1000);
-#endif
 	else if (err)
 		return -ETIMEDOUT;
 
@@ -616,11 +596,7 @@ static int sd_send_op_cond(struct mmc *mmc, bool uhs_en)
 		if (timeout-- <= 0)
 			return -EOPNOTSUPP;
 
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-		udelay(1);
-#else
 		udelay(1000);
-#endif
 	}
 
 	if (mmc->version != SD_VERSION_2)
@@ -2764,11 +2740,7 @@ static int mmc_power_cycle(struct mmc *mmc)
 	 * SD spec recommends at least 1ms of delay. Let's wait for 2ms
 	 * to be on the safer side.
 	 */
-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
-	udelay(2);
-#else
 	udelay(2000);
-#endif
 	return mmc_power_on(mmc);
 }
 
