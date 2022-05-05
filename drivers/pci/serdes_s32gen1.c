@@ -5,17 +5,17 @@
  */
 
 #include <common.h>
+#include <clk.h>
+#include <dm.h>
+#include <errno.h>
+#include <hwconfig.h>
+#include <malloc.h>
 #include <pci.h>
 #include <asm/io.h>
-#include <errno.h>
-#include <malloc.h>
-#include <dm.h>
 #include <asm/arch/clock.h>
-#include <linux/sizes.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
-#include <hwconfig.h>
-#include <clk.h>
+#include <linux/sizes.h>
 
 #include "serdes_s32gen1.h"
 
@@ -28,6 +28,7 @@
 #define SERDES_SGMII_MODE_STR "SGMII"
 #define SERDES_SGMII_MODE_NONE_STR "None"
 #define SERDES_MODE_SIZE 64
+#define SERDES_NAME_SIZE 32
 
 #define SERDES_CLK_MODE(clk_type) \
 			((clk_type == CLK_INT) ? "internal" : "external")
@@ -36,9 +37,9 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-LIST_HEAD(s32_serdes_list);
+static LIST_HEAD(s32_serdes_list);
 
-char xpcs_str[][64] = {	"[INVALID XPCS CFG]",
+static char xpcs_str[][64] = {	"[INVALID XPCS CFG]",
 			"[XPCS0 1G, XPCS1 OFF(PCIex1)]",
 			"[XPCS0 OFF(PCIex1), XPCS1 1G]",
 			"[XPCS0 1G, XPCS1 1G]",
@@ -84,17 +85,17 @@ int s32_serdes_get_mode_str(enum serdes_dev_type mode,
 	return start - buf;
 }
 
-static int wait_read32(void *address, uint32_t expect_data,
-		uint32_t mask, int read_attempts)
+static int wait_read32(void __iomem *address, u32 expected,
+		       u32 mask, int read_attempts)
 {
-	uint32_t tmp;
+	__maybe_unused u32 tmp;
 
-	while ((tmp = (in_le32(address) & (mask))) != (expect_data)) {
+	while ((tmp = (s32_dbi_readl(UPTR(address)) & (mask))) != (expected)) {
 		udelay(DELAY_QUANTUM); read_attempts--;
 		if (read_attempts < 0) {
-			debug_wr("WARNING: timeout read 0x%x from 0x%llx,",
-				tmp, (uint64_t)(address));
-			debug_wr(" expected 0x%x\n", expect_data);
+			debug_wr("WARNING: timeout read 0x%x from 0x%lx,",
+				 tmp, UPTR(address));
+			debug_wr(" expected 0x%x\n", expected);
 			return -ETIMEDOUT;
 		}
 	}
@@ -106,17 +107,12 @@ bool s32_pcie_wait_link_up(void __iomem *dbi)
 {
 	int count = PCIE_LINK_UP_COUNT;
 
-	return (wait_read32((void *)(dbi + SS_PE0_LINK_DBG_2),
-			SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK, count) == 0);
+	return (wait_read32((void __iomem *)(UPTR(dbi) + SS_PE0_LINK_DBG_2),
+			    SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK,
+			    count) == 0);
 }
 
-enum serdes_mode s32_serdes_get_mode_from_target(void *dbi, int id)
-{
-	return ((in_le32(dbi + SS_SS_RW_REG_0)) & SUBSYS_MODE_MASK) >>
-		SUBSYS_MODE_LSB;
-}
-
-int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
+int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode)
 {
 	enum serdes_dev_type devtype = s32_serdes_get_mode_from_hwconfig(id);
 
@@ -144,7 +140,7 @@ int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
 	default: return -EINVAL;
 	}
 
-	BSET32(dbi + SS_SS_RW_REG_0, BUILD_MASK_VALUE(SUBSYS_MODE, mode));
+	BSET32(UPTR(dbi) + SS_SS_RW_REG_0, BUILD_MASK_VALUE(SUBSYS_MODE, mode));
 
 	/* small delay for stabilizing the signals */
 	udelay(100);
@@ -154,12 +150,12 @@ int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode)
 
 void s32_serdes_disable_ltssm(void __iomem *dbi)
 {
-	BCLR32(dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
+	BCLR32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
 void s32_serdes_enable_ltssm(void __iomem *dbi)
 {
-	BSET32(dbi + SS_PE0_GEN_CTRL_3, LTSSM_EN);
+	BSET32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
 /**
@@ -205,7 +201,8 @@ int rgm_issue_reset(u32 pid)
 
 	BSET32(prst, regval);
 
-	return wait_read32((void *)pstat, regval, regval, PCIE_RESET_COUNT);
+	return wait_read32((void __iomem *)(pstat), regval, regval,
+		PCIE_RESET_COUNT);
 }
 
 /**
@@ -224,10 +221,11 @@ int rgm_release_reset(u32 pid)
 
 	BCLR32(prst, regval);
 
-	return wait_read32((void *)pstat, 0, regval, PCIE_RESET_COUNT);
+	return wait_read32((void __iomem *)(pstat), 0, regval,
+		PCIE_RESET_COUNT);
 }
 
-int s32_deassert_serdes_reset(struct s32_serdes *pcie)
+static int s32_deassert_serdes_reset(struct s32_serdes *pcie)
 {
 	debug("%s: SerDes%d\n", __func__, pcie->id);
 
@@ -248,7 +246,7 @@ int s32_deassert_serdes_reset(struct s32_serdes *pcie)
 	return 0;
 }
 
-bool s32_assert_serdes_reset(struct s32_serdes *pcie)
+static bool s32_assert_serdes_reset(struct s32_serdes *pcie)
 {
 	debug("%s: SerDes%d\n", __func__, pcie->id);
 
@@ -274,26 +272,26 @@ bool s32_assert_serdes_reset(struct s32_serdes *pcie)
  * @param[in]	addr	Indirect PHY address (16bit).
  * @param[in]	wdata	Indirect PHY data to be written (16 bit).
  */
-void s32_serdes_phy_reg_write(struct s32_serdes *pcie, u16 addr, u16 wdata,
-			      u16 wmask)
+static void s32_serdes_phy_reg_write(struct s32_serdes *pcie, u16 addr,
+				     u16 wdata, u16 wmask)
 {
 	u32 temp_data = wdata & wmask;
 
-	W32(pcie->dbi + SS_PHY_REG_ADDR,
+	W32(UPTR(pcie->dbi) + SS_PHY_REG_ADDR,
 	    BUILD_MASK_VALUE(PHY_REG_ADDR_FIELD, addr) | PHY_REG_EN);
 	udelay(100);
 	if (wmask == 0xFFFF)
-		W32(pcie->dbi + SS_PHY_REG_DATA, temp_data);
+		W32(UPTR(pcie->dbi) + SS_PHY_REG_DATA, temp_data);
 	else
-		RMW32(pcie->dbi + SS_PHY_REG_DATA, temp_data, wmask);
+		RMW32(UPTR(pcie->dbi) + SS_PHY_REG_DATA, temp_data, wmask);
 
 	udelay(100);
 }
 
-void s32_serdes_phy_init(struct s32_serdes *pcie)
+static void s32_serdes_phy_init(struct s32_serdes *pcie)
 {
 	/* Select the CR parallel interface */
-	BSET32(pcie->dbi + SS_SS_RW_REG_0, PHY0_CR_PARA_SEL);
+	BSET32(UPTR(pcie->dbi) + SS_SS_RW_REG_0, PHY0_CR_PARA_SEL);
 
 	/* Address erratum TKT0527889:
 	 * PCIe Gen3 Receiver Long Channel Stressed Voltage Test Failing
@@ -315,7 +313,7 @@ void s32_serdes_phy_init(struct s32_serdes *pcie)
 				 0x13, 0xff);
 }
 
-bool s32_serdes_init(struct s32_serdes *pcie)
+static bool s32_serdes_init(struct s32_serdes *pcie)
 {
 	/* Fall back to mode compatible with PCIe */
 	pcie->ss_mode = SERDES_MODE_PCIE_SGMII0;
@@ -352,7 +350,7 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 	} else if (!IS_SERDES_PCIE(pcie->devtype) &&
 		    IS_SERDES_SGMII(pcie->devtype)) {
 		/*	Set pipeP_pclk */
-		W32(pcie->dbi + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
+		W32(UPTR(pcie->dbi) + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
 		pcie->ss_mode = SERDES_MODE_SGMII_SGMII;
 	}
 
@@ -362,14 +360,14 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 	/* Set the clock for the Serdes module */
 	if (pcie->clktype == CLK_INT) {
 		debug("Set internal clock\n");
-		BCLR32(pcie->dbi + SS_PHY_GEN_CTRL,
+		BCLR32(UPTR(pcie->dbi) + SS_PHY_GEN_CTRL,
 		       PHY_GEN_CTRL_REF_USE_PAD);
-		BSET32(pcie->dbi + SS_SS_RW_REG_0, 1 << 23);
+		BSET32(UPTR(pcie->dbi) + SS_SS_RW_REG_0, 1 << 23);
 	} else {
 		debug("Set external clock\n");
-		BSET32(pcie->dbi + SS_PHY_GEN_CTRL,
+		BSET32(UPTR(pcie->dbi) + SS_PHY_GEN_CTRL,
 		       PHY_GEN_CTRL_REF_USE_PAD);
-		BCLR32(pcie->dbi + SS_SS_RW_REG_0, 1 << 23);
+		BCLR32(UPTR(pcie->dbi) + SS_SS_RW_REG_0, 1 << 23);
 	}
 
 	/* Deassert SerDes reset */
@@ -377,7 +375,7 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 
 	/* Enable PHY's SRIS mode in PCIe mode*/
 	if (pcie->phy_mode == SRIS)
-		BSET32(pcie->dbi + SS_PHY_GEN_CTRL,
+		BSET32(UPTR(pcie->dbi) + SS_PHY_GEN_CTRL,
 		       PHY_GEN_CTRL_RX_SRIS_MODE_MASK);
 
 	if (IS_SERDES_PCIE(pcie->devtype)) {
@@ -386,17 +384,18 @@ bool s32_serdes_init(struct s32_serdes *pcie)
 		 * either MPLLA is 1 (for Gen1 and 2) or
 		 * MPLLB is 1 (for Gen3)
 		 */
-		if (wait_read32((void *)(pcie->dbi + SS_PHY_MPLLA_CTRL),
-			MPLL_STATE,
-			MPLL_STATE,
-			PCIE_MPLL_LOCK_COUNT)) {
+		if (wait_read32((void __iomem *)
+				(UPTR(pcie->dbi) + SS_PHY_MPLLA_CTRL),
+				MPLL_STATE,
+				MPLL_STATE,
+				PCIE_MPLL_LOCK_COUNT)) {
 			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
 				pcie->id);
 			return false;
 		}
 
 		/* Set PHY register access to CR interface */
-		BSET32(pcie->dbi + SS_SS_RW_REG_0, 0x200);
+		BSET32(UPTR(pcie->dbi) + SS_SS_RW_REG_0, 0x200);
 		s32_serdes_phy_init(pcie);
 	}
 
@@ -444,7 +443,7 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 				     const char *subarg,
 				     size_t *subarg_len)
 {
-	char serdes_name[10];
+	char serdes_name[SERDES_NAME_SIZE];
 	char *subarg_str = NULL;
 
 	if (!subarg || !subarg_len)
@@ -454,7 +453,7 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 	 * The SerDes mode is set by using option `serdesx`, where
 	 * `x` is the ID.
 	 */
-	sprintf(serdes_name, "serdes%d", id);
+	snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%d", id);
 	debug("%s: testing hwconfig for '%s'\n", __func__,
 	      serdes_name);
 
@@ -521,6 +520,9 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id)
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "xpcs_mode",
 		&subarg_len);
 
+	if (!option_str || !subarg_len)
+		return xpcs_mode;
+
 	if (!strncmp(option_str, "0", subarg_len))
 		xpcs_mode = SGMII_XPCS0;
 	else if (!strncmp(option_str, "1", subarg_len))
@@ -540,6 +542,9 @@ enum serdes_clock s32_serdes_get_clock_from_hwconfig(int id)
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "clock",
 		&subarg_len);
 
+	if (!option_str || !subarg_len)
+		return clk;
+
 	if (!strncmp(option_str, "ext", subarg_len))
 		clk = CLK_EXT;
 	else if (!strncmp(option_str, "int", subarg_len))
@@ -555,6 +560,9 @@ enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "fmhz",
 		&subarg_len);
 
+	if (!option_str || !subarg_len)
+		return clk;
+
 	if (!strncmp(option_str, "100", subarg_len))
 		clk = CLK_100MHZ;
 	else if (!strncmp(option_str, "125", subarg_len))
@@ -569,6 +577,9 @@ enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "phy_mode",
 		&subarg_len);
+
+	if (!option_str || !subarg_len)
+		return phy_mode;
 
 	if (!strncmp(option_str, "crss", subarg_len))
 		phy_mode = CRSS;
@@ -610,7 +621,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 	return SERDES_MODE_INVAL;
 }
 
-const char *s32_serdes_get_pcie_phy_mode(struct s32_serdes *pcie)
+static const char *s32_serdes_get_pcie_phy_mode(struct s32_serdes *pcie)
 {
 	if (pcie->phy_mode == CRSS)
 		return "CRSS";
@@ -657,12 +668,13 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 		return ret;
 	}
 
-	pcie->dbi = map_physmem(pcie->dbi_res.start,
-				fdt_resource_size(&pcie->dbi_res),
-				MAP_NOCACHE);
+	pcie->dbi = (void __iomem *)
+		map_physmem((phys_addr_t)(pcie->dbi_res.start),
+			    fdt_resource_size(&pcie->dbi_res),
+			    MAP_NOCACHE);
 
 	debug("%s: dbi: 0x%p (0x%p)\n", __func__, (void *)pcie->dbi_res.start,
-			pcie->dbi);
+	      pcie->dbi);
 
 	pcie->id = fdtdec_get_int(fdt, node, "device_id", -1);
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2016-2021 NXP
+ * Copyright 2016-2022 NXP
  */
 
 #ifndef S32GEN1_SS_PCIE_REGS_H
@@ -10,17 +10,13 @@
 #define BUILD_BIT_VALUE(field, x) (((x) & (1)) << field##_BIT)
 #define BUILD_MASK_VALUE(field, x) (((x) & (field##_MASK)) << field##_LSB)
 
-#define PCIE_CTRL_BASEADDRESS(dbi_base) ((uint64_t)(dbi_base))
-
 /* Status and Command Register. */
 
-#define PCIE_CTRL_TYPE1_STATUS_COMMAND_REG(dbi_base) \
-		(PCIE_CTRL_BASEADDRESS(dbi_base) + 0x4)
+#define PCIE_CTRL_TYPE1_STATUS_COMMAND_REG		0x4U
 
 /* Class Code and Revision ID Register. */
 
-#define PCIE_CTRL_TYPE1_CLASS_CODE_REV_ID_REG(dbi_base) \
-		(PCIE_CTRL_BASEADDRESS(dbi_base) + 0x8)
+#define PCIE_CTRL_TYPE1_CLASS_CODE_REV_ID_REG		0x8U
 
 /* Field definitions for TYPE1_STATUS_COMMAND_REG */
 
@@ -44,30 +40,28 @@
 
 /* Instance PCIE_SPCIE_CAP_HEADER */
 
-#define PCIE_SPCIE_CAP_HEADER_BASEADDRESS(dbi_base) \
-	(PCIE_CTRL_BASEADDRESS(dbi_base) + 0x148)
+#define PCIE_SPCIE_CAP_HEADER_BASEADDRESS		0x148U
 
 /* Lane Equalization Control Register for lanes 1 and 0. */
 
-#define PCIE_SPCIE_CAP_SPCIE_CAP_0CH_REG(dbi_base) \
-	(PCIE_SPCIE_CAP_HEADER_BASEADDRESS(dbi_base) + 0xC)
+#define PCIE_SPCIE_CAP_SPCIE_CAP_0CH_REG		0xCU
 
 /* Instance PCIE_CAP */
 
-#define PCIE_CAP_BASEADDRESS(dbi_base) ((uint64_t)(dbi_base) + 0x0070)
+#define PCIE_CAP_BASEADDRESS		0x0070U
 
 /* Device Control and Status Register. */
 
-#define PCIE_CAP_DEVICE_CONTROL_DEVICE_STATUS(dbi_base) \
-	(PCIE_CAP_BASEADDRESS(dbi_base) + 0x8)
+#define PCIE_CAP_DEVICE_CONTROL_DEVICE_STATUS \
+	(PCIE_CAP_BASEADDRESS + 0x8U)
 
 /* Link Capabilities Register */
-#define PCIE_CAP_LINK_CAP(dbi_base)	(PCIE_CAP_BASEADDRESS(dbi_base) + 0xC)
+#define PCIE_CAP_LINK_CAP	(PCIE_CAP_BASEADDRESS + 0xCU)
 
 /* Link Control 2 and Status 2 Register. */
 
-#define PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG(dbi_base) \
-	(PCIE_CAP_BASEADDRESS(dbi_base) + 0x30)
+#define PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG \
+	(PCIE_CAP_BASEADDRESS + 0x30U)
 
 /* Field definitions for DEVICE_CONTROL_DEVICE_STATUS */
 
@@ -116,97 +110,94 @@
 
 /* Symbol Timer Register and Filter Mask 1 Register (SYMBOL_TIMER_FILTER_1) */
 
-#define PCIE_SYMBOL_TIMER_FILTER_1(dbi_base) \
-	(PCIE_CTRL_BASEADDRESS(dbi_base) + 0x71c)
+#define PCIE_SYMBOL_TIMER_FILTER_1		(0x71cU)
 
 /* Instance PCIE_BAR (Shadow Mask Registers) */
 
-#define PCIE_DBI_BAR_OFFSET	0x20000
-#define PCIE_BAR_BASEADDRESS(dbi_base) \
-	((uint64_t)(dbi_base) + PCIE_DBI_BAR_OFFSET)
+#define PCIE_DBI_BAR_OFFSET		0x20000U
+#define PCIE_BAR_BASEADDRESS		(PCIE_DBI_BAR_OFFSET)
 
-#define PCIE_BAR0_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x10)
-#define PCIE_BAR1_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x14)
-#define PCIE_BAR2_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x18)
-#define PCIE_BAR3_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x1C)
-#define PCIE_BAR4_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x20)
-#define PCIE_BAR5_MASK(dbi_base) (PCIE_BAR_BASEADDRESS(dbi_base) + 0x24)
+#define PCIE_BAR0_MASK		(PCIE_BAR_BASEADDRESS + 0x10U)
+#define PCIE_BAR1_MASK		(PCIE_BAR_BASEADDRESS + 0x14U)
+#define PCIE_BAR2_MASK		(PCIE_BAR_BASEADDRESS + 0x18U)
+#define PCIE_BAR3_MASK		(PCIE_BAR_BASEADDRESS + 0x1CU)
+#define PCIE_BAR4_MASK		(PCIE_BAR_BASEADDRESS + 0x20U)
+#define PCIE_BAR5_MASK		(PCIE_BAR_BASEADDRESS + 0x24U)
 
 /* Instance PCIE_IATU */
 
-#define PCIE_DBI_IATU_OFFSET	0x60000
-#define PCIE_IATU_BASEADDRESS(dbi_base) \
-	((uint64_t)(dbi_base) + PCIE_DBI_IATU_OFFSET)
+#define PCIE_DBI_IATU_OFFSET	0x60000U
+#define PCIE_IATU_BASEADDRESS		(PCIE_DBI_IATU_OFFSET)
 
 /* iATU Region Control 1 Register. */
 
-#define PCIE_IATU_REGION_CTRL_1_OUTBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x0)
+#define PCIE_IATU_REGION_CTRL_1_OUTBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x0U)
 
 /* iATU Region Control 2 Register. */
 
-#define PCIE_IATU_REGION_CTRL_2_OUTBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x4)
+#define PCIE_IATU_REGION_CTRL_2_OUTBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x4U)
 
 /* iATU Lower Base Address Register. */
 
-#define PCIE_IATU_LWR_BASE_ADDR_OUTBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x8)
+#define PCIE_IATU_LWR_BASE_ADDR_OUTBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x8U)
 
 /* iATU Upper Base Address Register. */
 
-#define PCIE_IATU_UPPER_BASE_ADDR_OUTBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0xC)
+#define PCIE_IATU_UPPER_BASE_ADDR_OUTBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0xCU)
 
 /* iATU Limit Address Register. */
 
-#define PCIE_IATU_LIMIT_ADDR_OUTBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x10)
+#define PCIE_IATU_LIMIT_ADDR_OUTBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x10U)
 
 /* iATU Lower Target Address Register. */
 
-#define PCIE_IATU_LWR_TARGET_ADDR_OUTBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x14)
+#define PCIE_IATU_LWR_TARGET_ADDR_OUTBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x14U)
 
 /* iATU Upper Target Address Register. */
 
-#define PCIE_IATU_UPPER_TARGET_ADDR_OUTBOUND_0(dbi_base) \
-		(PCIE_IATU_BASEADDRESS(dbi_base) + 0x18)
+#define PCIE_IATU_UPPER_TARGET_ADDR_OUTBOUND_0 \
+		(PCIE_IATU_BASEADDRESS + 0x18U)
 
 /* iATU Region Control 1 Register. */
 
-#define PCIE_IATU_REGION_CTRL_1_INBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x100)
+#define PCIE_IATU_REGION_CTRL_1_INBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x100U)
 
 /* iATU Region Control 2 Register. */
 
-#define PCIE_IATU_REGION_CTRL_2_INBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x104)
+#define PCIE_IATU_REGION_CTRL_2_INBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x104U)
 
 /* iATU Lower Base Address Register. */
 
-#define PCIE_IATU_LWR_BASE_ADDR_INBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x108)
+#define PCIE_IATU_LWR_BASE_ADDR_INBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x108U)
 
 /* iATU Upper Base Address Register. */
 
-#define PCIE_IATU_UPPER_BASE_ADDR_INBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x10C)
+#define PCIE_IATU_UPPER_BASE_ADDR_INBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x10CU)
 
 /* iATU Limit Address Register. */
 
-#define PCIE_IATU_LIMIT_ADDR_INBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x110)
+#define PCIE_IATU_LIMIT_ADDR_INBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x110U)
 
 /* iATU Lower Target Address Register. */
 
-#define PCIE_IATU_LWR_TARGET_ADDR_INBOUND_0(dbi_base) \
-	(PCIE_IATU_BASEADDRESS(dbi_base) + 0x114)
+#define PCIE_IATU_LWR_TARGET_ADDR_INBOUND_0 \
+	(PCIE_IATU_BASEADDRESS + 0x114U)
 
 /* iATU Upper Target Address Register. */
 
-#define PCIE_IATU_UPPER_TARGET_ADDR_INBOUND_0(dbi_base) \
-		(PCIE_IATU_BASEADDRESS(dbi_base) + 0x118)
+#define PCIE_IATU_UPPER_TARGET_ADDR_INBOUND_0 \
+		(PCIE_IATU_BASEADDRESS + 0x118U)
 
 
 /* Field definitions for IATU_REGION_CTRL_2_OUTBOUND_0 */
@@ -229,48 +220,47 @@
 
 /* Instance PCIE_PORT_LOGIC */
 
-#define PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) \
-	(PCIE_CTRL_BASEADDRESS(dbi_base) + 0x0700)
+#define PCIE_PORT_LOGIC_BASEADDRESS		(0x0700U)
 
 /* Port Force Link Register. */
 
-#define PCIE_PORT_LOGIC_PORT_FORCE(dbi_base) \
-	(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x8)
+#define PCIE_PORT_LOGIC_PORT_FORCE \
+	(PCIE_PORT_LOGIC_BASEADDRESS + 0x8U)
 
 /* Port Link Control Register. */
 
-#define PCIE_PORT_LOGIC_PORT_LINK_CTRL(dbi_base) \
-	(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x10)
+#define PCIE_PORT_LOGIC_PORT_LINK_CTRL \
+	(PCIE_PORT_LOGIC_BASEADDRESS + 0x10U)
 
 /* Timer Control and Max Function Number Register. */
 
-#define PCIE_PORT_LOGIC_TIMER_CTRL_MAX_FUNC_NUM(dbi_base) \
-		(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x18)
+#define PCIE_PORT_LOGIC_TIMER_CTRL_MAX_FUNC_NUM \
+		(PCIE_PORT_LOGIC_BASEADDRESS + 0x18U)
 
 /* Link Width and Speed Change Control Register. */
 
-#define PCIE_PORT_LOGIC_GEN2_CTRL(dbi_base) \
-		(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x10C)
+#define PCIE_PORT_LOGIC_GEN2_CTRL \
+		(PCIE_PORT_LOGIC_BASEADDRESS + 0x10CU)
 
 /* Gen3 Control Register. */
 
-#define PCIE_PORT_LOGIC_GEN3_RELATED(dbi_base) \
-	(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x190)
+#define PCIE_PORT_LOGIC_GEN3_RELATED \
+	(PCIE_PORT_LOGIC_BASEADDRESS + 0x190U)
 
 /* Gen3 EQ Control Register. */
 
-#define PCIE_PORT_LOGIC_GEN3_EQ_CONTROL(dbi_base) \
-		(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x1A8)
+#define PCIE_PORT_LOGIC_GEN3_EQ_CONTROL \
+		(PCIE_PORT_LOGIC_BASEADDRESS + 0x1A8U)
 
 /* DBI Read-Only Write Enable Register. */
 
-#define PCIE_PORT_LOGIC_MISC_CONTROL_1(dbi_base) \
-		(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x1BC)
+#define PCIE_PORT_LOGIC_MISC_CONTROL_1 \
+		(PCIE_PORT_LOGIC_BASEADDRESS + 0x1BCU)
 
 /* ACE Cache Coherency Control Register 3 */
 
-#define PCIE_PORT_LOGIC_COHERENCY_CONTROL_3(dbi_base) \
-		(PCIE_PORT_LOGIC_BASEADDRESS(dbi_base) + 0x1E8)
+#define PCIE_PORT_LOGIC_COHERENCY_CONTROL_3 \
+		(PCIE_PORT_LOGIC_BASEADDRESS + 0x1E8U)
 
 /* Field definitions for PORT_FORCE */
 

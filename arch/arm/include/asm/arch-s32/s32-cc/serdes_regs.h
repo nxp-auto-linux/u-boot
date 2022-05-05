@@ -9,8 +9,8 @@
 #define SERDES_REGS_H
 
 #include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
-#include "linux/types.h"
 #include "linux/errno.h"
+#include "linux/types.h"
 
 /* use a mask to fix DEVICE_TYPE for EP */
 #define SERDES_MODE(mode) (mode & 0xe)
@@ -235,12 +235,6 @@
 
 #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
-
-int s32_serdes_set_mode(void *dbi, int id, enum serdes_mode mode);
-enum serdes_mode s32_get_serdes_mode_from_target(void *dbi, int id);
-
-int rgm_issue_reset(u32 pid);
-int rgm_release_reset(u32 pid);
 
 #endif
 

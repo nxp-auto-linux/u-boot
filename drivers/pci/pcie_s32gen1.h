@@ -56,19 +56,19 @@
  */
 
 /* Upper half of the LINK_CTRL_STATUS register, accessible by half-word reads */
-#define PCIE_LINK_STATUS(dbi_base)	((uint64_t)(dbi_base) + 0x82)
+#define PCIE_LINK_STATUS			(0x82)
 #define PCIE_LINK_SPEED_MASK		0xf
 #define PCIE_LINK_SPEED_OFF			0
 #define PCIE_LINK_WIDTH_MASK		0x3f0
 #define PCIE_LINK_WIDTH_OFF			4
 
 /* Debug Register 0 (PL_DEBUG0_OFF) */
-#define PCIE_PL_DEBUG0(dbi_base)	((uint64_t)(dbi_base) + 0x728)
+#define PCIE_PL_DEBUG0		(0x728)
 #define LTSSM_STATE_MASK	0x3f
 #define LTSSM_STATE_OFF		0
 
 /* Debug Register 1 (PL_DEBUG1_OFF) */
-#define PCIE_PL_DEBUG1(dbi_base)	((uint64_t)(dbi_base) + 0x72C)
+#define PCIE_PL_DEBUG1		(0x72C)
 
 #define PCIE_ATU_NR_REGIONS			6
 

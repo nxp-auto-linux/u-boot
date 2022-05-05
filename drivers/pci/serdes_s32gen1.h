@@ -7,13 +7,13 @@
 #ifndef SERDES_S32GEN1_H
 #define SERDES_S32GEN1_H
 
-#include <pci.h>
 #include <dm.h>
+#include <pci.h>
 #include <asm/io.h>
 
 #include "serdes_regs.h"
-#include "ss_pcie_regs.h"
 #include "serdes_s32gen1_io.h"
+#include "ss_pcie_regs.h"
 
 #define PCIE_LINK_UP_COUNT 100
 #define PCIE_MPLL_LOCK_COUNT 10
@@ -44,7 +44,6 @@
 #define COLD_RST		0x1
 
 /* RGM peripheral reset registers */
-#define UPTR(PTR)			((uintptr_t)(PTR))
 #define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
 					((per) * 0x8))
 #define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
@@ -79,6 +78,12 @@ struct s32_serdes {
 	enum serdes_link_width linkwidth;
 };
 
+int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode);
+enum serdes_mode s32_get_serdes_mode_from_target(void __iomem *dbi, int id);
+
+int rgm_issue_reset(u32 pid);
+int rgm_release_reset(u32 pid);
+
 void s32_serdes_disable_ltssm(void __iomem *dbi);
 void s32_serdes_enable_ltssm(void __iomem *dbi);
 bool s32_pcie_wait_link_up(void __iomem *dbi);
@@ -86,6 +91,8 @@ bool s32_pcie_set_link_width(void __iomem *dbi,
 		int id, enum serdes_link_width linkwidth);
 bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		enum serdes_link_width linkwidth);
+void show_pcie_devices(void);
+int initr_pci(void);
 
 int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
 		      enum serdes_mode ss_mode,
