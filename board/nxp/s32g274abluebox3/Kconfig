@@ -10,7 +10,7 @@ config SYS_BOARD
 	default "s32g274abluebox3"
 
 config DEFAULT_DEVICE_TREE
-	default "s32g274abluebox3"
+	default "s32g274a-bluebox3"
 
 config NR_DRAM_BANKS
 	default 2

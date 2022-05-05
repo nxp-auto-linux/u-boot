@@ -10,7 +10,7 @@ config SYS_BOARD
 	default "s32g3xxaevb"
 
 config DEFAULT_DEVICE_TREE
-	default "s32g3xxaevb"
+	default "s32g3xxa-evb"
 
 config NR_DRAM_BANKS
 	default 2

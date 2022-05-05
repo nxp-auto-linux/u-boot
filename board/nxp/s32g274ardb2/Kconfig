@@ -10,7 +10,7 @@ config SYS_BOARD
 	default "s32g274ardb2"
 
 config DEFAULT_DEVICE_TREE
-	default "s32g274ardb2"
+	default "s32g274a-rdb2"
 
 config NR_DRAM_BANKS
 	default 2

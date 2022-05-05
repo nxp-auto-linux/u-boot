@@ -10,7 +10,7 @@ config SYS_BOARD
 	default "s32r45evb"
 
 config DEFAULT_DEVICE_TREE
-	default "s32r45"
+	default "s32r45-evb"
 
 config NR_DRAM_BANKS
 	default 2
