@@ -14,19 +14,15 @@
  */
 
 #include <common.h>
-#include <asm/io.h>
-#include <elf.h>
-#include <phy.h>
 #include <cpu_func.h>
-
+#include <elf.h>
 #include <linux/delay.h>
-#include <linux/mdio.h>
 #include <linux/ethtool.h>
-
-#include "pfeng_hw.h"
-#include "pfe_platform_cfg.h"
+#include <linux/mdio.h>
 
 #include "pfe_cbus.h"
+#include "pfe_platform_cfg.h"
+#include "pfeng_hw.h"
 
 #define WSP_VERSION			(0)
 #define WSP_VERSION_SILICON_G2		0x00050300
