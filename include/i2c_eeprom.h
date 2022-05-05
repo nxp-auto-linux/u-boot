@@ -47,7 +47,8 @@ int i2c_eeprom_read(struct udevice *dev, int offset, uint8_t *buf, int size);
  *
  * @return 0 on success, -ve on failure
  */
-int i2c_eeprom_write(struct udevice *dev, int offset, uint8_t *buf, int size);
+int i2c_eeprom_write(struct udevice *dev, int offset, const uint8_t *buf,
+		     int size);
 
 /*
  * i2c_eeprom_size() - get size of I2C EEPROM chip
