@@ -13,7 +13,7 @@
 #include <dt-bindings/pinctrl/s32r45-pinctrl.h>
 
 /dts-v1/;
-#include "s32-cc.dtsi"
+#include "s32cc.dtsi"
 / {
 	model = "NXP S32R458-EVB";
 	compatible = "nxp,s32r45";

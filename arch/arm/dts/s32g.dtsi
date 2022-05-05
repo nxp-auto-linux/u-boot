@@ -11,7 +11,7 @@
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/pinctrl/s32g-pinctrl.h>
 
-#include "s32-cc.dtsi"
+#include "s32cc.dtsi"
 / {
 	model = "NXP S32GXXX";
 
