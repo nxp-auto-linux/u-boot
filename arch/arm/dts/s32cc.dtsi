@@ -14,6 +14,8 @@
 	#size-cells = <2>;
 
 	aliases {
+		adc0 = &adc0;
+		adc1 = &adc1;
 		i2c0 = &i2c0;
 		i2c1 = &i2c1;
 		i2c2 = &i2c2;
@@ -396,7 +398,7 @@
 		status = "okay";
 	};
 
-	saradc0: saradc0 {
+	adc0: saradc@401f8000 {
 		compatible = "nxp,s32cc-adc";
 		reg = <0x0 0x401f8000 0x0 0x1000>;
 		interrupts = <0 70 IRQ_TYPE_LEVEL_HIGH>;
@@ -405,7 +407,7 @@
 		status = "okay";
 	};
 
-	saradc1: saradc1 {
+	adc1: saradc@402e8000 {
 		compatible = "nxp,s32cc-adc";
 		reg = <0x0 0x402e8000 0x0 0x1000>;
 		interrupts = <0 71 IRQ_TYPE_LEVEL_HIGH>;

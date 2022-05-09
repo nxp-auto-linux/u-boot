@@ -7,7 +7,6 @@
 #include <env.h>
 #include <dm/uclass.h>
 
-#define SARADC0_DEV			"saradc0"
 #define SARADC0_CH5			5
 #define SARADC0_TOLERANCE	200
 
@@ -63,8 +62,7 @@ int board_late_init(void)
 	struct udevice *saradc0;
 	int ret;
 
-	ret = uclass_get_device_by_name(UCLASS_ADC, SARADC0_DEV,
-					&saradc0);
+	ret = uclass_get_device_by_seq(UCLASS_ADC, 0, &saradc0);
 	if (ret) {
 		printf("%s: No SARADC0 (err = %d)\n", __func__, ret);
 		return ret;
