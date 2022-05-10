@@ -13,6 +13,11 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	chosen {
+		stdout-path = "serial0:115200n8";
+		tick-timer = &pit0;
+	};
+
 	aliases {
 		adc0 = &adc0;
 		adc1 = &adc1;
@@ -36,15 +41,49 @@
 		serial1 = &uart1;
 	};
 
-	chosen {
-		stdout-path = "serial0:115200n8";
-		tick-timer = &pit0;
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		scmi_shbuf: shm@d0000000 {
+			compatible = "arm,scmi-shmem";
+			reg = <0x0 0xd0000000 0x0 0x400000>;    /* 4 MB */
+			no-map;
+		};
+
+#ifdef CONFIG_HSE_SECBOOT
+		hse_reserved: shm@84000000 {
+			reg = <0x0 0x84000000 0x0 0x80000>;	/* 512k */
+			no-map;
+		};
+#endif
 	};
 
-	cmu: cmu@4005c000 {
-		reg = <0x0 0x4005c000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_CMU_MODULE>,
-			 <&clks S32GEN1_SCMI_CLK_CMU_REG>;
+	firmware {
+		u-boot,dm-pre-reloc;
+
+		scmi: scmi {
+			u-boot,dm-pre-reloc;
+			compatible = "arm,scmi-smc";
+			shmem = <&scmi_shbuf>;
+			arm,smc-id = <0xc20000fe>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			clks: protocol@14 {
+				u-boot,dm-pre-reloc;
+
+				reg = <0x14>;
+				#clock-cells = <1>;
+			};
+		};
+
+		psci {
+			compatible = "arm,psci-1.0";
+			method = "smc";
+		};
 	};
 
 	cpus: cpus {
@@ -55,7 +94,7 @@
 		cpu0: cpu@0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
-			reg = <0x0 0x0>;
+			reg = <0x0>;
 
 			nvmem-cells = <&soc_letter>, <&part_no>,
 			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
@@ -67,67 +106,19 @@
 		cpu1: cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
-			reg = <0x0 0x1>;
+			reg = <0x1>;
 		};
 
 		cpu2: cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
-			reg = <0x0 0x100>;
+			reg = <0x100>;
 		};
 
 		cpu3: cpu@101 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
-			reg = <0x0 0x101>;
-		};
-	};
-
-	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		scmi_shbuf: shm@d0000000 {
-			compatible = "arm,scmi-shmem";
-			reg = <0x0 0xd0000000 0x0 0x001000>;
-			no-map;
-		};
-
-#ifdef CONFIG_HSE_SECBOOT
-		hse_reserved: hse_reserved@0x84000000 {
-			no-map;
-			reg = <0 0x84000000 0 0x40000>; /* 256K */
-		};
-#endif
-	};
-
-	firmware {
-		u-boot,dm-pre-reloc;
-
-		scmi {
-			u-boot,dm-pre-reloc;
-			compatible = "arm,scmi-smc";
-			arm,smc-id = <0xc20000fe>;
-			shmem = <&scmi_shbuf>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			status = "okay";
-
-			clks: protocol@14 {
-				u-boot,dm-pre-reloc;
-				#address-cells = <2>;
-				#size-cells = <2>;
-
-				reg = <0x14>;
-				#clock-cells = <1>;
-			};
-		};
-
-		psci {
-			compatible = "arm,psci-1.0";
-			method = "smc";
+			reg = <0x101>;
 		};
 	};
 
@@ -396,6 +387,12 @@
 		compatible = "nxp,s32cc-a53-gpr";
 		reg = <0x0 0x4007C400 0x0 0x100>;
 		status = "okay";
+	};
+
+	cmu: cmu@4005c000 {
+		reg = <0x0 0x4005c000 0x0 0x1000>;
+		clocks = <&clks S32GEN1_SCMI_CLK_CMU_MODULE>,
+			 <&clks S32GEN1_SCMI_CLK_CMU_REG>;
 	};
 
 	adc0: saradc@401f8000 {
