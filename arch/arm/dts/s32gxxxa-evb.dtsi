@@ -33,13 +33,13 @@
 	status = "okay";
 };
 
-&dspi1 {
+&spi1 {
 	pinctrl-0 = <&pinctrl0_dspi1 &pinctrl1_dspi1>;
 	pinctrl-names = "default";
 	status = "okay";
 };
 
-&dspi5 {
+&spi5 {
 	pinctrl-0 = <&pinctrl0_dspi5 &pinctrl1_dspi5>;
 	pinctrl-names = "default";
 	status = "okay";

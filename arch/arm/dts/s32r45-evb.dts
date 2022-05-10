@@ -504,25 +504,25 @@
 	};
 };
 
-&dspi1 {
+&spi1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl0_dspi1>, <&pinctrl1_dspi1>;
 	status = "okay";
 };
 
-&dspi2 {
+&spi2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl0_dspi2>, <&pinctrl1_dspi2>;
 	status = "okay";
 };
 
-&dspi3 {
+&spi3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl0_dspi3>, <&pinctrl1_dspi3>;
 	status = "okay";
 };
 
-&dspi5 {
+&spi5 {
 	pinctrl-names = "default";
 	pinctrl-0 =  <&pinctrl1_dspi5>;
 	status = "okay";

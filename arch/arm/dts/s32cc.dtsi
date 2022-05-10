@@ -27,12 +27,12 @@
 		i2c2 = &i2c2;
 		i2c3 = &i2c3;
 		i2c4 = &i2c4;
-		spi0 = &dspi0;
-		spi1 = &dspi1;
-		spi2 = &dspi2;
-		spi3 = &dspi3;
-		spi4 = &dspi4;
-		spi5 = &dspi5;
+		spi0 = &spi0;
+		spi1 = &spi1;
+		spi2 = &spi2;
+		spi3 = &spi3;
+		spi4 = &spi4;
+		spi5 = &spi5;
 		spi6 = &qspi;
 		serdes0 = &serdes0;
 		pcie0 = &pcie0;
@@ -193,6 +193,45 @@
 			clock-frequency = <0>;	/* updated dynamically if 0 */
 		};
 
+		spi0: spi@401d4000 {
+			compatible = "nxp,s32cc-dspi";
+			reg = <0x0 0x401d4000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+			clock-names = "dspi";
+			spi-num-chipselects = <8>;
+			// For U-Boot 2020.04 only
+			num-cs = <8>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi1: spi@401d8000 {
+			compatible = "nxp,s32cc-dspi";
+			reg = <0x0 0x401d8000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+			clock-names = "dspi";
+			spi-num-chipselects = <5>;
+			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			// For U-Boot 2020.04 only
+			status = "disabled";
+		};
+
+		spi2: spi@401dc000 {
+			compatible = "nxp,s32cc-dspi";
+			reg = <0x0 0x401dc000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+			clock-names = "dspi";
+			spi-num-chipselects = <5>;
+			// For U-Boot 2020.04 only
+			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
 		pit1: pit@40288000 {
 			compatible = "nxp,s32cc-pit";
 			reg = <0x0 0x40288000 0x0 0x3000>;
@@ -211,6 +250,45 @@
 			clock-names = "lin", "ipg";
 			device_type = "serial";
 			clock-frequency = <0>;	/* updated dynamically if 0 */
+		};
+
+		spi3: spi@402c8000 {
+			compatible = "nxp,s32cc-dspi";
+			reg = <0x0 0x402c8000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+			clock-names = "dspi";
+			spi-num-chipselects = <5>;
+			// For U-Boot 2020.04 only
+			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi4: spi@402cc000 {
+			compatible = "nxp,s32cc-dspi";
+			reg = <0x0 0x402cc000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+			clock-names = "dspi";
+			spi-num-chipselects = <5>;
+			// For U-Boot 2020.04 only
+			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi5: spi@402d0000 {
+			compatible = "nxp,s32cc-dspi";
+			reg = <0x0 0x402d0000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+			clock-names = "dspi";
+			spi-num-chipselects = <5>;
+			// For U-Boot 2020.04 only
+			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
 		};
 	};
 
@@ -286,84 +364,6 @@
 			 * and alignment
 			 */
 			 0x82000000 0x0 0x00000000 0x58 0x00000000 0x7 0xfffe0000>;
-		status = "disabled";
-	};
-
-	dspi0: dspi0@401D4000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,s32cc-dspi";
-		reg = <0x0 0x401d4000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
-		clock-names = "dspi";
-		// For U-Boot 2020.04 only
-		num-cs = <8>;
-		spi-num-chipselects = <8>;
-		status = "disabled";
-	};
-
-	dspi1: dspi1@401D8000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,s32cc-dspi";
-		reg = <0x0 0x401d8000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
-		clock-names = "dspi";
-		// For U-Boot 2020.04 only
-		num-cs = <5>;
-		spi-num-chipselects = <5>;
-		status = "disabled";
-	};
-
-	dspi2: dspi2@401DC000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,s32cc-dspi";
-		reg = <0x0 0x401dc000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
-		clock-names = "dspi";
-		// For U-Boot 2020.04 only
-		num-cs = <5>;
-		spi-num-chipselects = <5>;
-		status = "disabled";
-	};
-
-	dspi3: dspi3@402C8000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,s32cc-dspi";
-		reg = <0x0 0x402c8000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
-		clock-names = "dspi";
-		// For U-Boot 2020.04 only
-		num-cs = <5>;
-		spi-num-chipselects = <5>;
-		status = "disabled";
-	};
-
-	dspi4: dspi4@402CC000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,s32cc-dspi";
-		reg = <0x0 0x402cc000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
-		clock-names = "dspi";
-		// For U-Boot 2020.04 only
-		num-cs = <5>;
-		spi-num-chipselects = <5>;
-		status = "disabled";
-	};
-
-	dspi5: dspi5@402D0000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "nxp,s32cc-dspi";
-		reg = <0x0 0x402d0000 0x0 0x1000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
-		clock-names = "dspi";
-		// For U-Boot 2020.04 only
-		num-cs = <5>;
-		spi-num-chipselects = <5>;
 		status = "disabled";
 	};
 

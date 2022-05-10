@@ -12,13 +12,13 @@
 	model = "NXP S32G274A BlueBox3";
 };
 
-&dspi0 {
+&spi0 {
 	pinctrl-0 = <&pinctrl0_dspi0 &pinctrl1_dspi0>;
 	pinctrl-names = "default";
 	status = "okay";
 };
 
-&dspi1 {
+&spi1 {
 	pinctrl-0 = <&pinctrl0_dspi1 &pinctrl1_dspi1>;
 	pinctrl-names = "default";
 	status = "okay";
