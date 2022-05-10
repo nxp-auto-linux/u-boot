@@ -122,6 +122,23 @@
 		};
 	};
 
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges = <0x0 0x0 0x0 0x0 0x0 0x20000000>,
+			 <0x0 0x22C00000 0x0 0x22C00000 0x0 0x4000>,
+			 <0x0 0x40000000 0x0 0x40000000 0x0 0x14000000>,
+			 <0x48 0x0 0x48 0x0 0x8 0x0>,
+			 <0x58 0x0 0x58 0x0 0x8 0x0>;
+
+		a53_gpr@4007c400 {
+			compatible = "nxp,s32cc-a53-gpr";
+			reg = <0x0 0x4007c400 0x0 0x100>;
+			status = "okay";
+		};
+	};
+
 	uart0:serial@401C8000 {
 		device_type = "serial";
 		compatible = "nxp,s32cc-linflexuart";
@@ -383,18 +400,12 @@
 		status = "okay";
 	};
 
-	a53_gpr@4007c400 {
-		compatible = "nxp,s32cc-a53-gpr";
-		reg = <0x0 0x4007c400 0x0 0x100>;
-		status = "okay";
-	};
 
 	cmu: cmu@4005c000 {
 		reg = <0x0 0x4005c000 0x0 0x1000>;
 		clocks = <&clks S32GEN1_SCMI_CLK_CMU_MODULE>,
 			 <&clks S32GEN1_SCMI_CLK_CMU_REG>;
 	};
-
 	adc0: saradc@401f8000 {
 		compatible = "nxp,s32cc-adc";
 		reg = <0x0 0x401f8000 0x0 0x1000>;
