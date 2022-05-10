@@ -171,6 +171,28 @@
 			status = "okay";
 		};
 
+		uart0: serial@401c8000 {
+			compatible = "nxp,s32cc-linflexuart";
+			reg = <0x0 0x401c8000 0x0 0x3000>;
+			interrupts = <GIC_SPI 82 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>,
+				 <&clks S32GEN1_SCMI_CLK_LINFLEX_XBAR>;
+			clock-names = "lin", "ipg";
+			device_type = "serial";
+			clock-frequency = <0>;	/* updated dynamically if 0 */
+		};
+
+		uart1: serial@401cc000 {
+			compatible = "nxp,s32cc-linflexuart";
+			reg = <0x0 0x401cc000 0x0 0x3000>;
+			interrupts = <GIC_SPI 83 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>,
+				 <&clks S32GEN1_SCMI_CLK_LINFLEX_XBAR>;
+			clock-names = "lin", "ipg";
+			device_type = "serial";
+			clock-frequency = <0>;	/* updated dynamically if 0 */
+		};
+
 		pit1: pit@40288000 {
 			compatible = "nxp,s32cc-pit";
 			reg = <0x0 0x40288000 0x0 0x3000>;
@@ -179,36 +201,17 @@
 			clock-names = "pit";
 			status = "okay";
 		};
-	};
 
-	uart0:serial@401C8000 {
-		device_type = "serial";
-		compatible = "nxp,s32cc-linflexuart";
-		reg = <0x0 0x401C8000 0x0 0x3000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
-		clock-names = "lin";
-		interrupts = <0 82 1>;
-		clock-frequency = <0>;	/* updated dynamically if 0 */
-	};
-
-	uart1:serial@401CC000 {
-		device_type = "serial";
-		compatible = "nxp,s32cc-linflexuart";
-		reg = <0x0 0x401CC000 0x0 0x3000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
-		clock-names = "lin";
-		interrupts = <0 83 1>;
-		clock-frequency = <0>;	/* updated dynamically if 0 */
-	};
-
-	uart2:serial@402BC000 {
-		device_type = "serial";
-		compatible = "nxp,s32cc-linflexuart";
-		reg = <0x0 0x402BC000 0x0 0x3000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
-		clock-names = "lin";
-		interrupts = <0 84 1>;
-		clock-frequency = <0>;	/* updated dynamically if 0 */
+		uart2: serial@402bc000 {
+			compatible = "nxp,s32cc-linflexuart";
+			reg = <0x0 0x402bc000 0x0 0x3000>;
+			interrupts = <GIC_SPI 84 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>,
+				 <&clks S32GEN1_SCMI_CLK_LINFLEX_XBAR>;
+			clock-names = "lin", "ipg";
+			device_type = "serial";
+			clock-frequency = <0>;	/* updated dynamically if 0 */
+		};
 	};
 
 	usdhc0: usdhc@402F0000{
