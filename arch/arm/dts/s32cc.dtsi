@@ -358,23 +358,23 @@
 			clock-names = "adc";
 			status = "okay";
 		};
-	};
 
-	usdhc0: usdhc@402F0000{
-		compatible = "nxp,s32cc-usdhc";
-		reg = <0x0 0x402F0000 0x0 0x1000>;
-		interrupts = <0 36 4>;
-		clocks = <&clks S32GEN1_SCMI_CLK_USDHC_MODULE>,
-			<&clks S32GEN1_SCMI_CLK_USDHC_AHB>,
-			<&clks S32GEN1_SCMI_CLK_USDHC_CORE>;
-		clock-names = "ipg", "ahb", "per";
-		clock-frequency = <0>;	/* updated dynamically if 0 */
-		bus-width = <8>;
-		/* The property name is misleading. Actually means DDR52 is
-		 * supported at both 1.8V and 3.3V
-		 */
-		mmc-ddr-1_8v;
-		status = "disabled";
+		usdhc0: usdhc@402f0000 {
+			compatible = "nxp,s32cc-usdhc";
+			reg = <0x0 0x402f0000 0x0 0x1000>;
+			interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clks S32GEN1_SCMI_CLK_USDHC_MODULE>,
+				 <&clks S32GEN1_SCMI_CLK_USDHC_AHB>,
+				 <&clks S32GEN1_SCMI_CLK_USDHC_CORE>;
+			clock-names = "ipg", "ahb", "per";
+			bus-width = <8>;
+			clock-frequency = <0>;	/* updated dynamically if 0 */
+			/* The property name is misleading. Actually means DDR52 is
+			 * supported at both 1.8V and 3.3V
+			 */
+			mmc-ddr-1_8v;
+			status = "disabled";
+		};
 	};
 
 	gic: interrupt-controller@50800000 {
