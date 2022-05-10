@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright 2022 NXP
+ */
+
+/dts-v1/;
+#include "s32r45.dtsi"
+
+/delete-node/ &mem2;
+/ {
+	model = "ZeBu model for NXP S32R45";
+
+	chosen {
+		stdout-path = "serial1:7812500n8";
+	};
+};
