@@ -232,6 +232,36 @@
 			status = "disabled";
 		};
 
+		i2c0: i2c@401e4000 {
+			compatible = "nxp,s32cc-i2c";
+			reg = <0x0 0x401e4000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
+			clock-names = "ipg";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c1: i2c@401e8000 {
+			compatible = "nxp,s32cc-i2c";
+			reg = <0x0 0x401e8000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
+			clock-names = "ipg";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c2: i2c@401ec000 {
+			compatible = "nxp,s32cc-i2c";
+			reg = <0x0 0x401ec000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
+			clock-names = "ipg";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
 		pit1: pit@40288000 {
 			compatible = "nxp,s32cc-pit";
 			reg = <0x0 0x40288000 0x0 0x3000>;
@@ -286,6 +316,26 @@
 			spi-num-chipselects = <5>;
 			// For U-Boot 2020.04 only
 			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c3: i2c@402d8000 {
+			compatible = "nxp,s32cc-i2c";
+			reg = <0x0 0x402d8000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
+			clock-names = "ipg";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c4: i2c@402dc000 {
+			compatible = "nxp,s32cc-i2c";
+			reg = <0x0 0x402dc000 0x0 0x1000>;
+			clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
+			clock-names = "ipg";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
@@ -377,51 +427,6 @@
 		gmac0_mdio: mdio0 {
 			compatible = "snps,dwmac-mdio";
 		};
-	};
-
-	i2c0: i2c@401E4000 {
-		compatible = "nxp,s32cc-i2c";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x401E4000 0x0 0x10000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
-		status = "disabled";
-	};
-
-	i2c1: i2c@401E8000 {
-		compatible = "nxp,s32cc-i2c";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x401E8000 0x0 0x10000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
-		status = "disabled";
-	};
-
-	i2c2: i2c@401EC000 {
-		compatible = "nxp,s32cc-i2c";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x401EC000 0x0 0x10000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
-		status = "disabled";
-	};
-
-	i2c3: i2c@402D8000 {
-		compatible = "nxp,s32cc-i2c";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x402D8000 0x0 0x10000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
-		status = "disabled";
-	};
-
-	i2c4: i2c@402DC000 {
-		compatible = "nxp,s32cc-i2c";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x402DC000 0x0 0x10000>;
-		clocks = <&clks S32GEN1_SCMI_CLK_I2C_REG>;
-		status = "disabled";
 	};
 
 	ocotp: ocotp@400A4000 {
