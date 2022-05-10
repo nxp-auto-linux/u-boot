@@ -85,13 +85,19 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 
 static bool is_lockstep_enabled(void)
 {
-	int ret;
+	int ret, off;
 	u32 lockstep_enabled = 0;
-	const char *dev_name = "a53_gpr";
 	struct udevice *s32cc_a53_gpr = NULL;
+	const char *a53_compat = "nxp,s32cc-a53-gpr";
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name,
-					&s32cc_a53_gpr);
+	off = fdt_node_offset_by_compatible(gd->fdt_blob, -1, a53_compat);
+	if (off < 0) {
+		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
+		       a53_compat, fdt_strerror(off));
+		return false;
+	}
+
+	ret = uclass_get_device_by_of_offset(UCLASS_MISC, off, &s32cc_a53_gpr);
 	if (ret) {
 		printf("%s: No A53 GPR (err = %d)\n", __func__, ret);
 		return false;
