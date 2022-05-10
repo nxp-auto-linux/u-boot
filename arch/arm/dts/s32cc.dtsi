@@ -380,6 +380,18 @@
 			mmc-ddr-1_8v;
 			status = "disabled";
 		};
+
+		gmac0: ethernet@4033c000 {
+			compatible = "nxp,s32cc-dwmac";
+			reg = <0x0 0x4033c000 0x0 0x2000>, /* gmac IP */
+			      <0x0 0x4007c004 0x0 0x4>;    /* S32 CTRL_STS reg */
+			tx-fifo-depth = <20480>;
+			rx-fifo-depth = <20480>;
+			status = "disabled";
+			gmac0_mdio: mdio0 {
+				compatible = "snps,dwmac-mdio";
+			};
+		};
 	};
 
 	gic: interrupt-controller@50800000 {
@@ -438,18 +450,6 @@
 			 */
 			 0x82000000 0x0 0x00000000 0x58 0x00000000 0x7 0xfffe0000>;
 		status = "disabled";
-	};
-
-	gmac0: ethernet@4033c000 {
-		compatible = "nxp,s32cc-dwmac";
-		reg = <0x0 0x4033c000 0x0 0x2000>, /* gmac IP */
-		      <0x0 0x4007C004 0x0 0x4>;    /* S32 CTRL_STS reg */
-		tx-fifo-depth = <20480>;
-		rx-fifo-depth = <20480>;
-		status = "disabled";
-		gmac0_mdio: mdio0 {
-			compatible = "snps,dwmac-mdio";
-		};
 	};
 
 	binman {
