@@ -438,6 +438,7 @@ static int adc_pre_probe(struct udevice *dev)
 UCLASS_DRIVER(adc) = {
 	.id	= UCLASS_ADC,
 	.name	= "adc",
+	.flags	= DM_UC_FLAG_SEQ_ALIAS,
 	.pre_probe =  adc_pre_probe,
 	.per_device_plat_auto	= ADC_UCLASS_PLATDATA_SIZE,
 };
