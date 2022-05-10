@@ -32,9 +32,128 @@
 		#size-cells = <2>;
 		ranges;
 
-		pfe_reserved: pfe_reserved@0x83400000 {
+		pfe_reserved: pfe_reserved@83400000 {
 			no-map;
 			reg = <0 0x83400000 0 0x8000>; /* 32K */
+		};
+	};
+
+	soc {
+		siul2_0: siul2_0@4009c000 {
+			compatible = "simple-mfd";
+			status = "okay";
+			reg = <0x0 0x4009c000 0x0 0x2000>;
+			u-boot,dm-pre-reloc;
+
+			pinctrl0: siul2-pinctrl0 {
+				compatible = "nxp,s32cc-siul2-pinctrl";
+				#pinctrl-cells = <2>;
+				/* MSCR range */
+				pins = <&pinctrl0 0 101>,
+				/* IMCR range */
+				<&pinctrl0 512 595>;
+				status = "okay";
+			};
+
+			gpio0: siul2-gpio0 {
+				compatible = "nxp,s32cc-siul2-gpio";
+				#gpio-cells = <2>;
+				gpio-controller;
+				gpio-ranges = <&pinctrl0 0 0 102>;
+				status = "okay";
+			};
+
+			siul2_0_nvram: siul2_0_nvram {
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				status = "okay";
+				u-boot,dm-pre-reloc;
+
+				soc_letter: soc_letter@0 {
+					reg = <S32CC_SOC_LETTER S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				part_no: part_no@4 {
+					reg = <S32CC_SOC_PART_NO S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				soc_major: soc_major@8 {
+					reg = <S32CC_SOC_MAJOR S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				soc_minor: soc_minor@c {
+					reg = <S32CC_SOC_MINOR S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				core_max_freq: core_max_freq@10 {
+					reg = <S32CC_MAX_CORE_FREQ S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				max_cpus_per_cluster: max_cpus_per_cluster@14 {
+					reg = <S32CC_MAX_A53_CORES_PER_CLUSTER
+					    S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				a53_cores_mask: a53_cores_mask@18 {
+					reg = <S32CC_A53_CORES_MASK S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+
+				pcie_dev_id: pcie_dev_id@1c {
+					reg = <S32CC_OVERWRITE_PCIE_DEV_ID
+					    S32CC_CELL_SIZE>;
+				};
+			};
+		};
+
+		siul2_1@44010000 {
+			compatible = "simple-mfd";
+			status = "okay";
+			reg = <0x0 0x44010000 0x0 0x2000>;
+			u-boot,dm-pre-reloc;
+
+			pinctrl1: siul2-pinctrl1 {
+				compatible = "nxp,s32cc-siul2-pinctrl";
+				#pinctrl-cells = <2>;
+				/* MSCR range */
+				pins = <&pinctrl1 112 190>,
+				/* IMCR range */
+				<&pinctrl1 631 1023>;
+				status = "okay";
+			};
+
+			gpio1: siul2-gpio1 {
+				compatible = "nxp,s32cc-siul2-gpio";
+				#gpio-cells = <2>;
+				gpio-controller;
+				gpio-ranges = <&pinctrl1 0 112 11>,
+					<&pinctrl1 11 144 47>;
+				status = "okay";
+			};
+
+			siul2_1_nvram: siul2_1_nvram {
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				status = "okay";
+				u-boot,dm-pre-reloc;
+
+				serdes_presence: serdes_presence@100 {
+					reg = <S32CC_SERDES_PRESENCE S32CC_CELL_SIZE>;
+				};
+
+				soc_subminor: soc_subminor@108 {
+					reg = <S32CC_SOC_SUBMINOR S32CC_CELL_SIZE>;
+					u-boot,dm-pre-reloc;
+				};
+			};
 		};
 	};
 
@@ -126,122 +245,6 @@
 		memory-region = <&pfe_reserved>;
 	};
 
-	siul2_0: siul2_0@4009C000 {
-		compatible = "simple-mfd";
-		status = "okay";
-		reg = <0x0 0x4009C000 0x0 0x2000>;
-		u-boot,dm-pre-reloc;
-
-		pinctrl0: siul2-pinctrl0 {
-			compatible = "nxp,s32cc-siul2-pinctrl";
-			#pinctrl-cells = <2>;
-			/* MSCR range */
-			pins = <&pinctrl0 0 101>,
-			/* IMCR range */
-			<&pinctrl0 512 595>;
-			status = "okay";
-		};
-
-		gpio0: siul2-gpio0 {
-			compatible = "nxp,s32cc-siul2-gpio";
-			#gpio-cells = <2>;
-			gpio-controller;
-			gpio-ranges = <&pinctrl0 0 0 102>;
-			status = "okay";
-		};
-
-		siul2_0_nvram: siul2_0_nvram {
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			status = "okay";
-			u-boot,dm-pre-reloc;
-
-			soc_letter: soc_letter@0 {
-				reg = <S32CC_SOC_LETTER S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			part_no: part_no@4 {
-				reg = <S32CC_SOC_PART_NO S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			soc_major: soc_major@8 {
-				reg = <S32CC_SOC_MAJOR S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			soc_minor: soc_minor@c {
-				reg = <S32CC_SOC_MINOR S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			core_max_freq: core_max_freq@10 {
-				reg = <S32CC_MAX_CORE_FREQ S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			max_cpus_per_cluster: max_cpus_per_cluster@14 {
-				reg = <S32CC_MAX_A53_CORES_PER_CLUSTER
-				    S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			a53_cores_mask: a53_cores_mask@18 {
-				reg = <S32CC_A53_CORES_MASK S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-
-			pcie_dev_id: pcie_dev_id@1c {
-				reg = <S32CC_OVERWRITE_PCIE_DEV_ID
-				    S32CC_CELL_SIZE>;
-			};
-		};
-	};
-
-	siul2_1@44010000 {
-		compatible = "simple-mfd";
-		status = "okay";
-		reg = <0x0 0x44010000 0x0 0x2000>;
-		u-boot,dm-pre-reloc;
-
-		pinctrl1: siul2-pinctrl1 {
-			compatible = "nxp,s32cc-siul2-pinctrl";
-			#pinctrl-cells = <2>;
-			/* MSCR range */
-			pins = <&pinctrl1 112 190>,
-			/* IMCR range */
-			<&pinctrl1 631 1023>;
-			status = "okay";
-		};
-
-		gpio1: siul2-gpio1 {
-			compatible = "nxp,s32cc-siul2-gpio";
-			#gpio-cells = <2>;
-			gpio-controller;
-			gpio-ranges = <&pinctrl1 0 112 11>,
-				<&pinctrl1 11 144 47>;
-			status = "okay";
-		};
-
-		siul2_1_nvram: siul2_1_nvram {
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			status = "okay";
-			u-boot,dm-pre-reloc;
-
-			serdes_presence: serdes_presence@100 {
-				reg = <S32CC_SERDES_PRESENCE S32CC_CELL_SIZE>;
-			};
-
-			soc_subminor: soc_subminor@108 {
-				reg = <S32CC_SOC_SUBMINOR S32CC_CELL_SIZE>;
-				u-boot,dm-pre-reloc;
-			};
-		};
-	};
 };
 
 &gmac0 {
