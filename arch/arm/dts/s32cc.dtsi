@@ -145,6 +145,11 @@
 			status = "okay";
 		};
 
+		ocotp: ocotp@400a4000 {
+			reg = <0x0 0x400a4000 0x0 0x400>;
+			status = "okay";
+		};
+
 		qspi: spi@40134000 {
 			compatible = "nxp,s32cc-qspi";
 			#address-cells = <1>;
@@ -445,11 +450,6 @@
 		gmac0_mdio: mdio0 {
 			compatible = "snps,dwmac-mdio";
 		};
-	};
-
-	ocotp: ocotp@400A4000 {
-		reg = <0x0 0x400A4000 0x0 0x400>;
-		status = "okay";
 	};
 
 	binman {
