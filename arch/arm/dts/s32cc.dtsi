@@ -410,12 +410,12 @@
 			nvmem-cells = <&siul2_0_nvram>;
 
 			ranges =
-				/* downstream I/O, 64KB and aligned naturally just before
-				 * the config space to minimize fragmentation
+				/* downstream I/O, 64KB and aligned naturally just
+				 * before the config space to minimize fragmentation
 				 */
 				<0x81000000 0x0 0x00000000 0x5f 0xfffe0000 0x0 0x00010000
-				/* non-prefetchable memory, with best case size
-				 * and alignment
+				/* non-prefetchable memory, with best case size and
+				 * alignment
 				 */
 				 0x82000000 0x0 0x00000000 0x58 0x00000000 0x7 0xfffe0000>;
 			num-lanes = <2>;
@@ -435,6 +435,49 @@
 			device_id = <0>;
 			num-lanes = <2>; /* supports max 2 lanes */
 			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+		};
+
+		pcie1: pcie@44100000 {
+			compatible = "nxp,s32cc-pcie";
+			reg = <0x00 0x44100000 0x0 0x00001000   /* dbi registers */
+				/* configuration space, 4KB each for cfg0 and cfg1
+				 * at the end of the outbound memory map
+				 */
+				0x4f 0xffffe000 0x0 0x00002000>;
+			reg-names = "dbi", "config";
+			#address-cells = <3>;
+			#size-cells = <2>;
+			device_type = "pci";
+			serdes-handle = <&serdes1>;
+			nvmem-cells = <&siul2_0_nvram>;
+			device_id = <1>;
+			ranges =
+				/* downstream I/O, 64KB and aligned naturally just
+				 * before the config space to minimize fragmentation
+				 */
+				<0x81000000 0x0 0x00000000 0x4f 0xfffe0000 0x0 0x00010000
+				/* non-prefetchable memory, with best case size and
+				 * alignment
+				 */
+				 0x82000000 0x0 0x00000000 0x48 0x00000000 0x7 0xfffe0000>;
+			num-lanes = <1>;
+			link-speed = <3>;
+			bus-range = <0x0 0xff>;
+			status = "okay";
+		};
+
+		serdes1: serdes@44180000 {
+			compatible = "nxp,s32cc-serdes";
+			reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
+			       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
+			reg-names = "dbi", "ss";
+			#address-cells = <3>;
+			#size-cells = <2>;
+			device_type = "pci-generic";
+			device_id = <1>;
+			num-lanes = <1>; /* supports 1 lane */
+			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+			status = "okay";
 		};
 
 		gic: interrupt-controller@50800000 {
