@@ -15,10 +15,6 @@
 / {
 	model = "NXP S32GXXX";
 
-	aliases {
-		pcie1 = &pcie1;
-	};
-
 	signature {
 		key-boot_key {
 			required = "conf";

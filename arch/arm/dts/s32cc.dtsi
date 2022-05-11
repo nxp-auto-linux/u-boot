@@ -36,6 +36,7 @@
 		spi6 = &qspi;
 		serdes0 = &serdes0;
 		pcie0 = &pcie0;
+		pcie1 = &pcie1;
 		mmc0 = &usdhc0;
 		clks = &clks;
 		serial0 = &uart0;
