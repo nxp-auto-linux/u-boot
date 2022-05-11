@@ -27,16 +27,22 @@
 #define S32CC_SRAM_BASE			0x34000000
 
 /**
+ *
+ * Before changing the device tree offset or size, please read
+ * https://docs.kernel.org/arm64/booting.html#setup-the-device-tree
+ *
  * DDR images layout
  *
- * Name		Size	Address
+ * Name				Size	Address
  *
- * Image	20M	CONFIG_SYS_LOAD_ADDR
- * Linux DTB	64K	CONFIG_SYS_LOAD_ADDR + 20M
- * Ramdisk	-	CONFIG_SYS_LOAD_ADDR + 20M + 64K
+ * Image			48M	CONFIG_SYS_LOAD_ADDR
+ * Linux DTB			2M	CONFIG_SYS_LOAD_ADDR + 48M
+ * Reserved memory regions	206	CONFIG_SYS_LOAD_ADDR + 50M
+ * Ramdisk			-	CONFIG_SYS_LOAD_ADDR + 256M
  */
-#define S32CC_FDT_ADDR			0x81400000
-#define S32CC_RAMDISK_ADDR		0x81410000
+#define S32CC_FDT_ADDR			0x83000000
+#define S32CC_RAMDISK_ADDR		0x90000000
+
 /* Disable Ramdisk & FDT relocation*/
 #define S32CC_INITRD_HIGH_ADDR		0xffffffffffffffff
 #define S32CC_FDT_HIGH_ADDR		0xffffffffffffffff
