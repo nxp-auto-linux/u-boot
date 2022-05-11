@@ -8,43 +8,49 @@
 #include <asm/io.h>
 #include <dm/pinctrl.h>
 
-#define MSCR_OFF	0x0240
+#include <malloc.h>
+
+#define S32_PAD(pin)	((pin) * 4)
+
+#define SIUL2_NXP_PINS "nxp,pins"
 
 struct s32_range {
+	void __iomem *base_addr;
 	u32 begin;
 	u32 end;
 };
 
-struct s32_pinctrl {
-	void __iomem *base_addr;
-	struct s32_range mscr;
-	struct s32_range imcr;
+struct s32_pin {
+	u32 pin;
+	u32 config;
+	struct list_head list;
 };
 
-static inline bool s32_is_mscr_pin(struct s32_pinctrl *ctlr, u32 pin)
-{
-	return pin >= ctlr->mscr.begin && pin <= ctlr->mscr.end;
-}
+struct s32_pinctrl {
+	struct s32_range *ranges;
+	int num_ranges;
+	struct list_head gpio_configs;
+};
 
-static inline bool s32_is_imcr_pin(struct s32_pinctrl *ctlr, u32 pin)
+static struct s32_range *s32_get_pin_range(struct s32_pinctrl *ctlr, u32 pin)
 {
-	return pin >= ctlr->imcr.begin && pin <= ctlr->imcr.end;
-}
+	int i;
+	struct s32_range *range = NULL;
 
-static inline bool s32_pin_is_valid(struct s32_pinctrl *ctlr, u32 pin)
-{
-	return s32_is_imcr_pin(ctlr, pin) || s32_is_mscr_pin(ctlr, pin);
-}
+	for (i = 0; i < ctlr->num_ranges; ++i) {
+		range = &ctlr->ranges[i];
+		if (pin >= range->begin && pin <= range->end)
+			return range;
+	}
 
-static inline void *s32_get_mscr(struct s32_pinctrl *ctlr, u32 pin)
-{
-	return (void *)(ctlr->base_addr + MSCR_OFF + pin * 4);
+	return NULL;
 }
 
 static int s32_set_state(struct udevice *dev, struct udevice *config)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
 	u32 pin, function;
+	struct s32_range *range = NULL;
 	int index = 0;
 	int sz;
 	int ret;
@@ -73,15 +79,16 @@ static int s32_set_state(struct udevice *dev, struct udevice *config)
 			return ret;
 		}
 
-		if (s32_pin_is_valid(priv, pin)) {
-			writel(function, s32_get_mscr(priv, pin));
+		range = s32_get_pin_range(priv, pin);
+		if (range) {
+			writel(function, range->base_addr + S32_PAD(pin));
 			pr_debug("%s function:reg 0x%x:0x%p\n", config->name,
-				 function, s32_get_mscr(priv, pin));
+				 function, range->base_addr + S32_PAD(pin));
 			continue;
 		}
 
-		pr_err("%s invalid pin found function:reg 0x%x:0x%p\n",
-		       config->name, function, s32_get_mscr(priv, pin));
+		pr_err("%s invalid pin found function:pin 0x%x:%d\n",
+		       config->name, function, pin);
 
 		return -EINVAL;
 	};
@@ -96,48 +103,58 @@ static const struct pinctrl_ops s32_pinctrl_ops = {
 static int s32_pinctrl_probe(struct udevice *dev)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	struct ofnode_phandle_args out_args;
-	int cnt, ret;
-
+	int ret, i, num_ranges;
+	const void *pins_prop;
 	fdt_addr_t addr;
+	u32 begin, end;
 
-	addr = dev_read_addr(dev->parent);
-	if (addr == FDT_ADDR_T_NONE)
+	pins_prop = dev_read_prop(dev, SIUL2_NXP_PINS, &num_ranges);
+	if (!pins_prop || (num_ranges % sizeof(u32) != 0)) {
+		pr_err("Error retrieving %s!\n", SIUL2_NXP_PINS);
 		return -EINVAL;
+	}
 
-	priv->base_addr = (void *)addr;
+	/* For each range we have a start and an end. */
+	num_ranges /= (sizeof(u32) * 2);
+	priv->num_ranges = num_ranges;
 
-	cnt = dev_count_phandle_with_args(dev, "pins", "#pinctrl-cells");
-	if (cnt < 0)
-		return cnt;
-	else if (cnt != 2)
-		return -EINVAL;
+	priv->ranges = malloc(num_ranges * sizeof(*priv->ranges));
+	if (!priv->ranges)
+		return -ENOMEM;
 
-	ret = dev_read_phandle_with_args(dev, "pins", "#pinctrl-cells", 0, 0,
-					 &out_args);
-	if (ret)
-		return ret;
-	if (out_args.args_count != 2)
-		return -EINVAL;
+	for (i = 0; i < num_ranges; ++i) {
+		addr = dev_read_addr_index(dev, i);
+		if (addr == FDT_ADDR_T_NONE) {
+			pr_err("Error retrieving reg: %d\n", i);
+			return -EINVAL;
+		}
 
-	priv->mscr.begin = out_args.args[0];
-	priv->mscr.end = out_args.args[1];
+		priv->ranges[i].base_addr = (__iomem void *)addr;
 
-	ret = dev_read_phandle_with_args(dev, "pins", "#pinctrl-cells", 0, 1,
-					 &out_args);
-	if (ret)
-		return ret;
-	if (out_args.args_count != 2)
-		return -EINVAL;
+		ret = dev_read_u32_index(dev, SIUL2_NXP_PINS, i * 2, &begin);
+		if (ret) {
+			pr_err("Error reading %s start: %d\n", SIUL2_NXP_PINS,
+			       ret);
+			return ret;
+		}
 
-	priv->imcr.begin = out_args.args[0];
-	priv->imcr.end = out_args.args[1];
+		ret = dev_read_u32_index(dev, SIUL2_NXP_PINS, i * 2 + 1, &end);
+		if (ret) {
+			pr_err("Error reading %s no. GPIOs: %d\n",
+			       SIUL2_NXP_PINS, ret);
+			return ret;
+		}
+
+		priv->ranges[i].begin = begin;
+		priv->ranges[i].end = end;
+	}
 
 	return 0;
 }
 
 static const struct udevice_id s32_pinctrl_ids[] = {
-	{ .compatible = "nxp,s32cc-siul2-pinctrl" },
+	{ .compatible = "nxp,s32g-siul2-pinctrl" },
+	{ .compatible = "nxp,s32r45-siul2-pinctrl" },
 	{ /* sentinel */ }
 };
 
