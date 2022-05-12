@@ -8,7 +8,7 @@
 
 /delete-node/ &mem2;
 / {
-	model = "ZeBu model for NXP S32R45";
+	model = "Emulator for NXP S32R45";
 
 	chosen {
 		stdout-path = "serial1:7812500n8";
