@@ -166,7 +166,7 @@
 		"fdt addr ${fdt_addr}; " \
 		"fdt rm /usdhc no-1-8-v; " \
 		"fdt resize; \0" \
-	"fdt_file=" FDT_FILE "\0" \
+	"fdt_file=" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" \
 	"fdt_high=" __stringify(S32CC_FDT_HIGH_ADDR) "\0" \
 	"fdt_override=;\0" \
 	"flashboot=echo Booting from flash...; " \

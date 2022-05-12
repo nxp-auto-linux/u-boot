@@ -9,7 +9,6 @@
 
 #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
 #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
-#define FDT_FILE			"fsl-s32g274a-bluebox3.dtb"
 
 #ifdef CONFIG_FSL_PFENG
 #  define PFENG_MODE			"enable,sgmii,none,none"
