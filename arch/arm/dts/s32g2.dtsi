@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+#include <dt-bindings/ddr-errata/s32-ddr-errata.h>
 #include "s32g.dtsi"
 / {
 	model = "NXP S32G2XX";
@@ -22,6 +23,14 @@
 		device_type = "memory";
 		reg = <0x8 0x80000000 0 0x80000000>;
 	};
+
+	reserved-memory {
+		ddr_errata_reserved: ddr@85000000 {
+			reg = <0x0 DDR_ERRATA_REGION_BASE
+				0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
+			no-map;
+		};
+	};
 };
 
 &cmu {
@@ -34,4 +43,9 @@
 
 &siul2_1_nvram {
 	compatible = "nxp,s32g2-siul2_1-nvram";
+};
+
+&ddr_errata {
+	memory-region = <&ddr_errata_reserved>;
+	status = "okay";
 };

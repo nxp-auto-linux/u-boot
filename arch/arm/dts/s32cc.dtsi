@@ -394,6 +394,12 @@
 			};
 		};
 
+		ddr_errata: ddr_errata@403C0000 {
+			compatible = "nxp,s32cc-ddr";
+			reg = <0x0 0x403C0000 0x0 0x100>;
+			status = "disabled";
+		};
+
 		pcie0: pcie@40400000 {
 			compatible = "nxp,s32cc-pcie";
 			reg = <0x00 0x40400000 0x0 0x00001000   /* dbi registers */
