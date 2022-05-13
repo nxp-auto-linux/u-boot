@@ -6,7 +6,6 @@
 /dts-v1/;
 #include "s32r45.dtsi"
 
-/delete-node/ &mem2;
 / {
 	model = "Emulator for NXP S32R45";
 
