@@ -199,7 +199,6 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>,
 				 <&clks S32GEN1_SCMI_CLK_LINFLEX_XBAR>;
 			clock-names = "lin", "ipg";
-			device_type = "serial";
 		};
 
 		uart1: serial@401cc000 {
@@ -209,7 +208,6 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>,
 				 <&clks S32GEN1_SCMI_CLK_LINFLEX_XBAR>;
 			clock-names = "lin", "ipg";
-			device_type = "serial";
 		};
 
 		spi0: spi@401d4000 {
@@ -306,7 +304,6 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>,
 				 <&clks S32GEN1_SCMI_CLK_LINFLEX_XBAR>;
 			clock-names = "lin", "ipg";
-			device_type = "serial";
 		};
 
 		spi3: spi@402c8000 {
