@@ -216,6 +216,10 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 			clock-names = "dspi";
 			spi-num-chipselects = <8>;
+			bus-num = <0>;
+			spi-fifo-size = <5>;
+			spi-cpol;
+			spi-cpha;
 			// For U-Boot 2020.04 only
 			num-cs = <8>;
 			#address-cells = <1>;
@@ -229,10 +233,14 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 			clock-names = "dspi";
 			spi-num-chipselects = <5>;
+			bus-num = <1>;
+			spi-fifo-size = <5>;
+			spi-cpol;
+			spi-cpha;
+			// For U-Boot 2020.04 only
 			num-cs = <5>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			// For U-Boot 2020.04 only
 			status = "disabled";
 		};
 
@@ -242,6 +250,10 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 			clock-names = "dspi";
 			spi-num-chipselects = <5>;
+			bus-num = <2>;
+			spi-fifo-size = <5>;
+			spi-cpol;
+			spi-cpha;
 			// For U-Boot 2020.04 only
 			num-cs = <5>;
 			#address-cells = <1>;
@@ -312,6 +324,10 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 			clock-names = "dspi";
 			spi-num-chipselects = <5>;
+			bus-num = <3>;
+			spi-fifo-size = <5>;
+			spi-cpol;
+			spi-cpha;
 			// For U-Boot 2020.04 only
 			num-cs = <5>;
 			#address-cells = <1>;
@@ -325,6 +341,10 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 			clock-names = "dspi";
 			spi-num-chipselects = <5>;
+			bus-num = <4>;
+			spi-fifo-size = <5>;
+			spi-cpol;
+			spi-cpha;
 			// For U-Boot 2020.04 only
 			num-cs = <5>;
 			#address-cells = <1>;
@@ -338,6 +358,10 @@
 			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
 			clock-names = "dspi";
 			spi-num-chipselects = <5>;
+			bus-num = <5>;
+			spi-fifo-size = <5>;
+			spi-cpol;
+			spi-cpha;
 			// For U-Boot 2020.04 only
 			num-cs = <5>;
 			#address-cells = <1>;
