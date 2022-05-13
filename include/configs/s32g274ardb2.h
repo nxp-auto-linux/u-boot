@@ -9,6 +9,5 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS	S32CC_ENV_SETTINGS
 #define EXTRA_BOOT_ARGS			""
-#define FDT_FILE			"fsl-s32g274a-rdb2.dtb"
 
 #endif

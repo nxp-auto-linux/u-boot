@@ -81,7 +81,7 @@
 	"boot_mtd=booti\0" \
 	"console=ttyLF0\0" \
 	"fdt_addr=" __stringify(S32CC_FDT_ADDR) "\0" \
-	"fdt_file=" FDT_FILE "\0" \
+	"fdt_file=" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" \
 	"fdt_high=" __stringify(S32CC_FDT_HIGH_ADDR) "\0" \
 	"fdt_override=;\0" \
 	"flashboot=echo Booting from flash...; " \
