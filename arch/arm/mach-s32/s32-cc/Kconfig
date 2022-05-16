@@ -3,6 +3,9 @@
 
 if NXP_S32CC
 
+config DEFAULT_DEVICE_TREE
+	default "s32cc"
+
 config SYS_TEXT_BASE
 	default 0xffaa0000
 
