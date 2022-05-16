@@ -310,7 +310,7 @@ static int eqos_stop_resets_s32cc(struct udevice *dev)
 
 static ulong eqos_get_tick_clk_rate_s32cc(struct udevice *dev)
 {
-	return s32gen1_get_dev_clk_rate("axi", dev);
+	return s32gen1_get_dev_clk_rate("stmmaceth", dev);
 }
 
 static int eqos_calibrate_pads_s32cc(struct udevice *dev)

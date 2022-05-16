@@ -3,28 +3,28 @@
  * Copyright 2019-2022 NXP
  */
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
-#include <asm/io.h>
+#include <fdt_support.h>
+#include <hwconfig.h>
+#include <malloc.h>
 #include <net.h>
+#include <phy.h>
+#include <s32gen1_clk_utils.h>
+#include <s32gen1_gmac_utils.h>
+#include <asm/io.h>
+#include <asm/types.h>
+#include <dm/device_compat.h>
+#include <dm/pinctrl.h>
 #ifndef CONFIG_DM_ETH
 #include <netdev.h>
 #endif
-#include <phy.h>
-#include <malloc.h>
-#include <asm/types.h>
 #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 #endif
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 #include <dm/platform_data/pfeng_dm_eth.h>
 #endif
-#include <fdt_support.h>
-#include <clk.h>
-#include <s32gen1_clk_utils.h>
-#include <s32gen1_gmac_utils.h>
-#include <dm/device_compat.h>
-#include <dm/pinctrl.h>
-#include <hwconfig.h>
 
 #if CONFIG_IS_ENABLED(FSL_PFENG)
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
@@ -299,7 +299,7 @@ static int get_gmac_clocks(u32 mode, const char **rx,
 			   const char **tx, const char **ts)
 {
 	if (ts)
-		*ts = "ts";
+		*ts = "ptp_ref";
 
 	switch (mode) {
 	case PHY_INTERFACE_MODE_SGMII:
