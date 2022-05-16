@@ -34,7 +34,7 @@ static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 
 	if (eth_env_get_enetaddr_by_index(name, idx, ea)) {
 		fdt_setprop(fdt, nodeoff, "local-mac-address", ea, ARP_HLEN);
-		printf("DT: %s%i set to %pM\n", name, idx, ea);
+		printf("   fixup: %s%i set to %pM\n", name, idx, ea);
 	}
 }
 #endif
@@ -81,7 +81,7 @@ static void ft_enet_pfe_fixup_phy(u32 idx, void *fdt, int nodeoff)
 
 	if (phy_nodeoff >= 0) {
 		fdt_setprop_u32(fdt, phy_nodeoff, "reg", phy_addr);
-		printf("DT: pfe%d: update phy addr to 0x%x\n", idx, phy_addr);
+		printf("   fixup: pfe%d: update phy addr to 0x%x\n", idx, phy_addr);
 	}
 }
 
@@ -96,6 +96,7 @@ static void ft_enet_pfe_fixup_fixed_link(u32 idx, void *fdt, int nodeoff)
 	if (fixedoff < 0)
 		return;
 
+#if defined(CONFIG_TARGET_S32G2XXAEVB) || defined(CONFIG_TARGET_S32G274ARDB2)
 	if ((hwconfig_subarg_cmp("pcie1", "mode", "sgmii") &&
 	    (hwconfig_subarg_cmp("pcie1", "xpcs_mode", "both") ||
 	    hwconfig_subarg_cmp("pcie1", "xpcs_mode", "0"))) ||
@@ -103,12 +104,13 @@ static void ft_enet_pfe_fixup_fixed_link(u32 idx, void *fdt, int nodeoff)
 	    hwconfig_subarg_cmp("pcie1", "mode", "rc&sgmii")) &&
 	    hwconfig_subarg_cmp("pcie1", "xpcs_mode", "0"))) {
 		fdt_setprop_u32(fdt, fixedoff, "speed", 1000);
-		printf("DT: pfe%d: Update fixed-link speed to 1000Mbps\n", idx);
+		printf("   fixup: pfe%d: Update fixed-link speed to 1000Mbps\n", idx);
 	}
+#endif
 }
 #endif
 
-static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
+static void ft_enet_pfe_fixup_netif(u32 idx, void *fdt)
 {
 	int nlen = 0, nodeoff = -1;
 	char *ifname;
@@ -118,47 +120,30 @@ static void ft_enet_pfe_emac_fixup(u32 idx, void *fdt)
 
 	while (1) {
 
-		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff, "fsl,pfeng-logif");
+		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff, "nxp,s32g-pfe-netif");
 		if (nodeoff < 0)
 			return;
 
-		ifname = (char *)fdt_getprop(fdt, nodeoff, "fsl,pfeng-if-name", &nlen);
+		ifname = (char *)fdt_getprop(fdt, nodeoff, "nxp,pfeng-if-name", &nlen);
 		if (!ifname || !nlen)
 			continue;
 
 		if (strncmp(reqname, ifname, strlen(reqname)))
 			continue;
 
-		if (pfeng_cfg_emac_get_interface(idx) == PHY_INTERFACE_MODE_NONE) {
-			printf("DT: Disabling PFE_EMAC_%i\n", idx);
-			fdt_status_disabled(fdt, nodeoff);
-		} else {
-			printf("DT: Enabling PFE_EMAC_%i\n", idx);
-			fdt_status_okay(fdt, nodeoff);
-
-			/* sync MAC HW addr to DT [local-mac-address] */
-			ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
+		/* sync MAC HW addr to DT [local-mac-address] */
+		ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
 
 #ifdef CONFIG_NXP_S32GRDB_BOARD
-			ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
+		ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
 
-			if (idx == 0)
-				ft_enet_pfe_fixup_fixed_link(idx, fdt, nodeoff);
+		if (idx == 0)
+			ft_enet_pfe_fixup_fixed_link(idx, fdt, nodeoff);
 #endif
-		}
+
 		/* We are done */
 		return;
 	}
-}
-
-static bool pfeng_drv_status_active(void)
-{
-	struct udevice *dev;
-
-	if (uclass_get_device_by_name(UCLASS_ETH, "eth_pfeng", &dev))
-		return false;
-
-	return dev->flags & DM_FLAG_ACTIVATED;
 }
 #endif
 
@@ -173,64 +158,14 @@ void ft_enet_fixup(void *fdt)
 
 	/* PFE */
 #if CONFIG_IS_ENABLED(FSL_PFENG)
-	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "fsl,s32g274a-pfeng");
+	nodeoff = fdt_node_offset_by_compatible(fdt, 0, "nxp,s32g-pfe");
 	if (nodeoff >= 0) {
-		if (!pfeng_drv_status_active()) {
-			/* Disable PFE in DT fully */
-			printf("DT: Disabling PFE\n");
-			fdt_status_disabled(fdt, nodeoff);
-		} else {
-			printf("DT: Enabling PFE\n");
-			fdt_status_okay(fdt, nodeoff);
-
-			/* Check for interfaces and manage accordingly */
-			ft_enet_pfe_emac_fixup(0, fdt);
-			ft_enet_pfe_emac_fixup(1, fdt);
-			ft_enet_pfe_emac_fixup(2, fdt);
-		}
+		/* Check for interfaces and manage accordingly */
+		ft_enet_pfe_fixup_netif(0, fdt);
+		ft_enet_pfe_fixup_netif(1, fdt);
+		ft_enet_pfe_fixup_netif(2, fdt);
 	}
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
-
-	/* GMAC */
-#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
-	bool gmac0_ena = true;
-
-#if CONFIG_IS_ENABLED(FSL_PFENG)
-	if (intf_is_xmii(s32ccgmac_cfg_get_interface(0)) &&
-	    intf_is_xmii(pfeng_cfg_emac_get_interface(1)) &&
-	    pfeng_drv_status_active())
-		gmac0_ena = false;
-#endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
-
-	nodeoff = 0;
-	bool seek = true;
-
-	while (seek) {
-		bool ena;
-		int idx = -1;
-
-		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff,
-							"nxp,s32cc-dwmac");
-		if (nodeoff < 0)
-			return;
-
-		if (fdtdec_get_alias_seq(fdt, "gmac", nodeoff, &idx)) {
-			/* No alias = single gmac */
-			seek = false;
-			idx = 0;
-		}
-
-		ena = (idx == 0) ? gmac0_ena : true;
-
-		if (s32ccgmac_cfg_get_mode(idx) == S32CCGMAC_MODE_DISABLE)
-			ena = false;
-
-		if (!ena) {
-			printf("DT: Disabling GMAC%d\n", idx);
-			fdt_status_disabled(fdt, nodeoff);
-		}
-	} /* while */
-#endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
 }
 
 /*
