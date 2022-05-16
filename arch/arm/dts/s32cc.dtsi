@@ -533,15 +533,5 @@
 			interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
 		};
 	};
-
-	binman {
-		filename = "u-boot-s32.bin";
-		u-boot-dtb {
-		};
-		u-boot-nodtb {
-			offset = <CONFIG_S32CC_MAX_DTB_SIZE>;
-		};
-	};
-
 };
 
