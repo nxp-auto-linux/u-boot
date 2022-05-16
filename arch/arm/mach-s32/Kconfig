@@ -20,7 +20,6 @@ config NXP_S32CC
 	imply SPI
 	imply SYS_I2C_MXC
 	imply TIMER
-	select BINMAN
 	select CLK
 	select CLK_SCMI
 	select CPU
