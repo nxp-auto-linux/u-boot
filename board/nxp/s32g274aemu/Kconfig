@@ -9,9 +9,6 @@ config SYS_CONFIG_NAME
 config SYS_BOARD
 	default "s32g274aemu"
 
-config DEFAULT_DEVICE_TREE
-	default "s32g274a-emu"
-
 config NR_DRAM_BANKS
 	default 2
 

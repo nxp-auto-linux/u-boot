@@ -388,16 +388,7 @@ dtb-$(CONFIG_FSL_LSCH2) += fsl-ls1043a-qds-duart.dtb \
 	fsl-ls1012a-frdm.dtb \
 	fsl-ls1012a-frwy.dtb
 
-dtb-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274a-bluebox3.dtb
-dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g2xxa-evb.dtb
-dtb-$(CONFIG_TARGET_S32G3XXAEVB) += s32g3xxa-evb.dtb
-dtb-$(CONFIG_TARGET_S32G3XXAEVB3) += s32g3xxa-evb3.dtb
-dtb-$(CONFIG_TARGET_S32G274AEMU) += s32g274a-emu.dtb
-dtb-$(CONFIG_TARGET_S32G399AEMU) += s32g399a-emu.dtb
-dtb-$(CONFIG_TARGET_S32G274ARDB2) += s32g274a-rdb2.dtb
-dtb-$(CONFIG_TARGET_S32G399ARDB3) += s32g399a-rdb3.dtb
-dtb-$(CONFIG_TARGET_S32R45EVB) += s32r45-evb.dtb
-dtb-$(CONFIG_TARGET_S32R45EMU) += s32r45-emu.dtb
+dtb-$(CONFIG_NXP_S32CC) += s32cc.dtb
 
 dtb-$(CONFIG_TARGET_DRAGONBOARD410C) += dragonboard410c.dtb
 dtb-$(CONFIG_TARGET_DRAGONBOARD820C) += dragonboard820c.dtb

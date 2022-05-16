@@ -9,6 +9,7 @@
 
 #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
 #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+#define FDT_FILE			"s32g3xxa-evb3.dtb"
 
 #ifdef CONFIG_FSL_PFENG
 #  define PFENG_MODE			"enable,sgmii,sgmii,rgmii"

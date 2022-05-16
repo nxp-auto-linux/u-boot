@@ -9,9 +9,6 @@ config SYS_CONFIG_NAME
 config SYS_BOARD
 	default "s32g2xxaevb"
 
-config DEFAULT_DEVICE_TREE
-	default "s32g2xxa-evb"
-
 config NR_DRAM_BANKS
 	default 2
 
