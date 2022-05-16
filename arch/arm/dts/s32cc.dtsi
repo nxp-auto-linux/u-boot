@@ -88,7 +88,7 @@
 		};
 	};
 
-	cpus: cpus {
+	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		u-boot,dm-pre-reloc;
