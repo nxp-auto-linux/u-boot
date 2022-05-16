@@ -12,8 +12,8 @@
 #define FDT_FILE			"s32g3xxa-evb.dtb"
 
 #ifdef CONFIG_FSL_PFENG
-#  define PFENG_MODE			"enable,none,rgmii,rgmii"
-#  define PFENG_EMAC			"1"
+#  define PFENG_MODE			"enable,sgmii,sgmii,rgmii"
+#  define PFENG_EMAC			"0"
 #endif
 
 #if defined(CONFIG_USB)

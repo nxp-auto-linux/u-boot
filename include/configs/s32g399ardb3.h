@@ -12,7 +12,7 @@
 #define FDT_FILE			"s32g399a-rdb3.dtb"
 
 #ifdef CONFIG_FSL_PFENG
-#  define PFENG_MODE			"enable,sgmii,none,rgmii"
+#  define PFENG_MODE			"enable,sgmii,sgmii,rgmii"
 #  define PFENG_EMAC			"0"
 #endif
 
