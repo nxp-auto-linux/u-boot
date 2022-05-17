@@ -926,10 +926,6 @@ ifeq ($(CONFIG_ARCH_ROCKCHIP)$(CONFIG_SPL),yy)
 ALL-y += u-boot-rockchip.bin
 endif
 
-ifeq ($(CONFIG_NXP_S32CC),y)
-ALL-y += u-boot-s32.cfgout
-endif
-
 LDFLAGS_u-boot += $(LDFLAGS_FINAL)
 
 # Avoid 'Not enough room for program headers' error on binutils 2.28 onwards.
