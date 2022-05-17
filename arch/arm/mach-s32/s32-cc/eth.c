@@ -135,7 +135,10 @@ static void ft_enet_pfe_fixup_netif(u32 idx, void *fdt)
 		ft_update_eth_addr_by_name("pfe", idx, fdt, nodeoff);
 
 #ifdef CONFIG_NXP_S32GRDB_BOARD
-		ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
+		/* SGMII PHY address fixup needed by RDB2 rev.D */
+		if (idx == 1 &&
+		    pfeng_cfg_emac_get_interface(idx) == PHY_INTERFACE_MODE_SGMII)
+			ft_enet_pfe_fixup_phy(idx, fdt, nodeoff);
 
 		if (idx == 0)
 			ft_enet_pfe_fixup_fixed_link(idx, fdt, nodeoff);
