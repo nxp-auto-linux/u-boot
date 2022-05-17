@@ -7,4 +7,5 @@
 
 #include <configs/s32g3.h>
 
+#define FDT_FILE			"s32g399a-rdb3.dtb"
 #endif
