@@ -927,7 +927,7 @@ ALL-y += u-boot-rockchip.bin
 endif
 
 ifeq ($(CONFIG_NXP_S32CC),y)
-ALL-y += u-boot-s32.bin u-boot-s32.cfgout
+ALL-y += u-boot-s32.cfgout
 endif
 
 LDFLAGS_u-boot += $(LDFLAGS_FINAL)
@@ -1177,9 +1177,6 @@ endif
 ifeq ($(CONFIG_NXP_S32CC),y)
 %.cfgout: FORCE
 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
-
-u-boot-s32.bin: u-boot.dtb u-boot-nodtb.bin
-	$(call if_changed,binman)
 endif
 
 quiet_cmd_copy = COPY    $@
