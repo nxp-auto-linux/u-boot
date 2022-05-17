@@ -6,6 +6,9 @@ if NXP_S32CC
 config DEFAULT_DEVICE_TREE
 	default "s32cc"
 
+config BUILD_TARGET
+	default "u-boot-s32.cfgout"
+
 config SYS_TEXT_BASE
 	default 0xffaa0000
 
