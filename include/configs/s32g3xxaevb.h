@@ -7,6 +7,8 @@
 
 #include <configs/s32g3.h>
 
+#define CONFIG_EXTRA_ENV_SETTINGS	S32CC_ENV_SETTINGS
+#define EXTRA_BOOT_ARGS			""
 #define FDT_FILE			"s32g3xxa-evb.dtb"
 
 #if defined(CONFIG_USB)
