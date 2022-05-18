@@ -289,6 +289,18 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
 
+	/*
+	 * Skip these fixups when reusing U-Boot dtb for Linux
+	 * as they don't make sense.
+	 *
+	 * This block should be removed once the bindings and the dtbs
+	 * used by Linux and U-Boot are fully compatible.
+	 */
+	if (IS_ENABLED(CONFIG_DISTRO_DEFAULTS)) {
+		printf("Skipping %s ...\n", __func__);
+		return 0;
+	}
+
 	ret = ft_fixup_cpu(blob);
 	if (ret)
 		goto exit;
