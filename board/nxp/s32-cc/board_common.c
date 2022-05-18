@@ -62,6 +62,18 @@ void *board_fdt_blob_setup(void)
 #if defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
 {
+	/*
+	 * Skip these fixups when reusing U-Boot dtb for Linux
+	 * as they don't make sense.
+	 *
+	 * This block should be removed once the bindings and the dtbs
+	 * used by Linux and U-Boot are fully compatible.
+	 */
+	if (IS_ENABLED(CONFIG_DISTRO_DEFAULTS)) {
+		printf("Skipping %s...\n", __func__);
+		return 0;
+	}
+
 	ft_cpu_setup(blob, bd);
 
 	if (IS_ENABLED(CONFIG_NETDEVICES))

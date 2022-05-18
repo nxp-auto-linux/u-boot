@@ -30,16 +30,21 @@
  *
  * Before changing the device tree offset or size, please read
  * https://docs.kernel.org/arm64/booting.html#setup-the-device-tree
+ * and doc/README.distro
  *
  * DDR images layout
  *
  * Name				Size	Address
  *
- * Image			48M	CONFIG_SYS_LOAD_ADDR
+ * Image			46M	CONFIG_SYS_LOAD_ADDR
+ * PXE				1M	CONFIG_SYS_LOAD_ADDR + 46M
+ * boot.scr			1M	CONFIG_SYS_LOAD_ADDR + 47M
  * Linux DTB			2M	CONFIG_SYS_LOAD_ADDR + 48M
  * Reserved memory regions	206	CONFIG_SYS_LOAD_ADDR + 50M
  * Ramdisk			-	CONFIG_SYS_LOAD_ADDR + 256M
  */
+#define S32CC_PXE_ADDR			0x82E00000
+#define S32CC_BOOT_SCR_ADDR		0x82F00000
 #define S32CC_FDT_ADDR			0x83000000
 #define S32CC_RAMDISK_ADDR		0x90000000
 
@@ -156,6 +161,7 @@
 #endif
 
 #define S32CC_ENV_SETTINGS \
+	BOOTENV \
 	"boot_fdt=try\0" \
 	"boot_mtd=booti\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
@@ -301,9 +307,44 @@
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND
 #endif
-#define CONFIG_BOOTCOMMAND \
+
+#if defined(CONFIG_DISTRO_DEFAULTS)
+#  define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, CONFIG_SYS_MMC_ENV_DEV)
+/*
+ * Variables required by doc/README.distro
+ */
+#  define DISTRO_VARS \
+	"setenv fdt_addr ${fdtcontroladdr};" \
+	"setenv ramdisk_addr_r " __stringify(S32CC_RAMDISK_ADDR) ";" \
+	"setenv kernel_addr_r ${loadaddr};" \
+	"setenv pxefile_addr_r " __stringify(S32CC_PXE_ADDR) ";" \
+	"setenv scriptaddr " __stringify(S32CC_BOOT_SCR_ADDR) ";"
+/*
+ * Remove pinmuxing properties as SIUL2 driver isn't upstreamed yet
+ */
+#  define DISTRO_FIXUPS \
+	"fdt addr ${fdtcontroladdr};" \
+	"fdt rm serial0 pinctrl-0;" \
+	"fdt rm serial0 pinctrl-names;" \
+	"fdt rm mmc0 pinctrl-0;" \
+	"fdt rm mmc0 pinctrl-1;" \
+	"fdt rm mmc0 pinctrl-2;" \
+	"fdt rm mmc0 pinctrl-names;" \
+	"fdt rm mmc0 mmc-ddr-1_8v;" \
+	"fdt rm mmc0 clock-frequency;"
+#  define CONFIG_BOOTCOMMAND \
+	EXTRA_BOOTCOMMAND \
+	DISTRO_VARS \
+	DISTRO_FIXUPS \
+	"run distro_bootcmd"
+#  include <config_distro_bootcmd.h>
+#else
+#  define BOOTENV
+#  define CONFIG_BOOTCOMMAND \
 	EXTRA_BOOTCOMMAND \
 	BOOTCOMMAND
+#endif
 
 /* Limit mtest to first DDR bank if no arguments are given */
 #define CONFIG_SYS_MEMTEST_START	(PHYS_SDRAM_1)

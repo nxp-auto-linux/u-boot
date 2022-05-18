@@ -149,9 +149,6 @@ config SF_DEFAULT_CS
 config SPI_FLASH_BAR
 	default n
 
-config EFI_LOADER
-	default n
-
 config DM_DEVICE_REMOVE
 	default n
 
