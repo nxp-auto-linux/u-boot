@@ -109,18 +109,33 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x1>;
+
+			nvmem-cells = <&soc_letter>, <&part_no>,
+			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
+			nvmem-cell-names = "soc_letter", "part_no",
+			    "soc_major", "soc_minor", "soc_subminor";
 		};
 
 		cpu2: cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x100>;
+
+			nvmem-cells = <&soc_letter>, <&part_no>,
+			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
+			nvmem-cell-names = "soc_letter", "part_no",
+			    "soc_major", "soc_minor", "soc_subminor";
 		};
 
 		cpu3: cpu@101 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x101>;
+
+			nvmem-cells = <&soc_letter>, <&part_no>,
+			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
+			nvmem-cell-names = "soc_letter", "part_no",
+			    "soc_major", "soc_minor", "soc_subminor";
 		};
 	};
 
