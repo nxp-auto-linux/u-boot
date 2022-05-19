@@ -504,7 +504,7 @@ enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id)
 
 	/* 'skip' option */
 	option_str = s32_serdes_get_hwconfig_subarg(id, "skip", &subarg_len);
-	if (devtype != SERDES_INVALID &&
+	if (option_str && devtype != SERDES_INVALID &&
 	    (!strncmp(option_str, "true", subarg_len) ||
 	    !strncmp(option_str, "1", subarg_len)))
 		devtype |= SERDES_SKIP;
