@@ -7,6 +7,8 @@
 #include <s32cc_image_params.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <linux/compiler_attributes.h>
+#include <linux/sizes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -105,6 +107,7 @@ struct application_boot_code {
 struct image_comp {
 	size_t offset;
 	size_t size;
+	size_t padding;
 	size_t alignment;
 	__u8 *data;
 };
@@ -142,6 +145,7 @@ struct image_config {
 		size_t fw_size;
 	} secboot;
 	bool flash_boot;
+	bool err051257;
 };
 
 struct line_parser {
@@ -234,6 +238,16 @@ static struct program_image image_layout = {
 	},
 };
 
+static inline bool apply_err051257_workaround(void)
+{
+	return iconfig.err051257 && iconfig.flash_boot;
+}
+
+static inline size_t get_padding(void)
+{
+	return apply_err051257_workaround() ? SZ_1K : 0;
+}
+
 static const uint32_t *get_dcd_data(size_t *size)
 {
 	if (iconfig.dcd.data) {
@@ -320,8 +334,8 @@ static int image_parts_comp(const void *p1, const void *p2)
 static bool is_in_overlap(struct image_comp *comp1,
 			  struct image_comp *comp2)
 {
-	size_t end1 = comp1->offset + comp1->size;
-	size_t end2 = comp2->offset + comp2->size;
+	size_t end1 = comp1->offset + comp1->size + comp1->padding;
+	size_t end2 = comp2->offset + comp2->size + comp2->padding;
 
 	if (end1 > comp2->offset && end2 > comp1->offset)
 		return true;
@@ -331,7 +345,7 @@ static bool is_in_overlap(struct image_comp *comp1,
 
 static void place_after(struct image_comp *first, struct image_comp *second)
 {
-	second->offset = first->offset + first->size;
+	second->offset = first->offset + first->size + first->padding;
 
 	/* Apply alignment constraints */
 	if (second->alignment != 0U)
@@ -391,6 +405,15 @@ static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
 
 		place_after(parts[aindex - 1], parts[aindex]);
 	}
+}
+
+static void set_padding(struct image_comp **parts, size_t n_parts)
+{
+	int i;
+
+	for (i = 0; i < n_parts; i++)
+		if (parts[i])
+			parts[i]->padding = get_padding();
 }
 
 static struct qspi_params *get_qspi_params(struct program_image *image)
@@ -614,6 +637,8 @@ static int s32g2xx_build_layout(struct program_image *program_image,
 
 	set_headers_size(program_image);
 	set_headers_alignment(program_image);
+
+	set_padding(parts, ARRAY_SIZE(parts));
 
 	/* Compute auto-offsets */
 	s32_compute_dyn_offsets(parts, ARRAY_SIZE(parts));
@@ -1118,6 +1143,13 @@ static int parse_data_file_cmd(char *line)
 	return 0;
 }
 
+static int parse_err051257(__always_unused char *line)
+{
+	iconfig.err051257 = true;
+
+	return 0;
+}
+
 static const struct line_parser parsers[] = {
 	{
 		.tag = "BOOT_FROM",
@@ -1138,6 +1170,10 @@ static const struct line_parser parsers[] = {
 	{
 		.tag = "DATA_FILE",
 		.parse = parse_data_file_cmd,
+	},
+	{
+		.tag = "ERR051257_WORKAROUND",
+		.parse = parse_err051257,
 	},
 };
 
