@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
+#include <dm/pinctrl.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/s32-gen1-pinctrl.h>
 
@@ -15,196 +16,173 @@
 #define GPDO_BASE	0x1300
 #define GPDI_BASE	0x1500
 
-#define SIUL2_MAX_VALID_RANGES		4
+#define SIUL2_NUM		2
+#define SIUL2_PAD_NAME_LEN	7
+#define SIUL2_GPIO_16_PAD_SIZE	16
+
+#define SIUL2_PGPDO(N)		(((N) ^ 1) * 2)
 
 struct gpio_range {
-	u16 gpio_offset;
-	u16 pinctrl_offset;
+	u16 start_gpio;
 	u16 cnt;
 };
 
-struct s32cc_gpio {
-	void __iomem *base_addr;
-	struct gpio_range valid_ranges[SIUL2_MAX_VALID_RANGES];
-	u8 valid_ranges_cnt;
+struct siul2_info {
+	void __iomem *opads;
+	void __iomem *ipads;
+	struct gpio_range range;
 };
 
-static inline void *s32cc_get_in_reg(struct s32cc_gpio *priv,
-				     unsigned int pinctrl_offset)
+struct s32cc_gpio {
+	struct siul2_info siul2[SIUL2_NUM];
+	struct udevice *pinctrl;
+};
+
+static u16 siul2_pin2mask(int pin)
 {
-	uintptr_t addr;
-
-	addr = (uintptr_t)(priv->base_addr + GPDI_BASE + pinctrl_offset) ^ 3;
-
-	return (void *)addr;
+	/**
+	 * From Reference manual :
+	 * PGPDOx[PPDOy] = GPDO(x × 16) + (15 - y)[PDO_(x × 16) + (15 - y)]
+	 */
+	return BIT(15 - pin % SIUL2_GPIO_16_PAD_SIZE);
 }
 
-static inline void *s32cc_get_out_reg(struct s32cc_gpio *priv,
-				      unsigned int pinctrl_offset)
+static unsigned int siul2_pin2pad(int pin)
 {
-	uintptr_t addr;
-
-	addr = (uintptr_t)(priv->base_addr + GPDO_BASE + pinctrl_offset) ^ 3;
-
-	return (void *)addr;
+	return pin / SIUL2_GPIO_16_PAD_SIZE;
 }
 
-static inline void *s32cc_get_mscr_reg(struct s32cc_gpio *priv,
-				       unsigned int pinctrl_offset)
+static inline u32 siul2_get_pad_offset(unsigned int pad)
 {
-	uintptr_t addr;
-
-	addr = (uintptr_t)priv->base_addr + MSCR_OFF + pinctrl_offset * 4;
-
-	return (void *)addr;
+	return SIUL2_PGPDO(pad);
 }
 
-static int s32cc_get_pinctrl_offset(struct s32cc_gpio *priv,
-				    unsigned int offset,
-				    unsigned int *gpio_id)
+static void __iomem *siul2_get_pad_base_addr(struct udevice *dev,
+					     unsigned int gpio,
+					     bool input)
 {
-	struct gpio_range *range;
-	u16 range_begin;
-	u16 range_end;
+	struct s32cc_gpio *priv;
 	int i;
+	u32 start_gpio, cnt;
 
-	for (i = 0; i < priv->valid_ranges_cnt; i++) {
-		range = &priv->valid_ranges[i];
-		range_begin = range->pinctrl_offset;
-		range_end = range_begin + range->cnt;
-		*gpio_id = offset - range->gpio_offset + range_begin;
-		if (*gpio_id >= range_begin && *gpio_id < range_end)
-			return 0;
+	priv = dev_get_priv(dev);
+
+	for (i = 0; i < ARRAY_SIZE(priv->siul2); ++i) {
+		start_gpio = priv->siul2[i].range.start_gpio;
+		cnt = priv->siul2[i].range.cnt;
+
+		if (gpio < start_gpio || gpio - start_gpio >= cnt)
+			continue;
+
+		return input ? priv->siul2[i].ipads : priv->siul2[i].opads;
 	}
 
-	return -EINVAL;
+	return NULL;
 }
 
-static int s32cc_gpio_direction_input(struct udevice *dev, unsigned int offset)
+static int s32cc_gpio_get_function(struct udevice *dev, unsigned int gpio)
 {
 	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	u32 mscr;
-	int ret;
 
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
-	if (ret)
-		return ret;
-
-	mscr = readl(s32cc_get_mscr_reg(priv, pinctrl_offset));
-	mscr &= ~SIUL2_MSCR_S32_G1_OBE;
-	mscr |= SIUL2_MSCR_S32_G1_IBE;
-	writel(mscr, s32cc_get_mscr_reg(priv, pinctrl_offset));
-
-	return 0;
+	return pinctrl_get_gpio_mux(priv->pinctrl, 0, gpio);
 }
 
-static int s32cc_gpio_set_value(struct udevice *dev, unsigned int offset,
+static int s32cc_gpio_set_value(struct udevice *dev, unsigned int gpio,
 				int value)
 {
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	int ret;
+	int reg_offset;
+	void __iomem *addr;
+	u32 pad;
+	u16 mask, val;
 
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
-	if (ret)
-		return ret;
+	if (value != 0 && value != 1)
+		return -EINVAL;
 
-	writeb(value, s32cc_get_out_reg(priv, pinctrl_offset));
+	mask = siul2_pin2mask(gpio);
+	pad = siul2_pin2pad(gpio);
+	reg_offset = siul2_get_pad_offset(pad);
+
+	if (s32cc_gpio_get_function(dev, gpio) != GPIOF_OUTPUT)
+		return -EINVAL;
+
+	addr = siul2_get_pad_base_addr(dev, gpio, false);
+	if (!addr)
+		return -EINVAL;
+
+	val = readw(((uintptr_t)addr) + reg_offset);
+	if (value)
+		val |= mask;
+	else
+		val &= ~mask;
+	writew(val, ((uintptr_t)addr) + reg_offset);
 
 	return 0;
 }
 
-static int s32cc_gpio_direction_output(struct udevice *dev, unsigned int offset,
+static int s32cc_gpio_get_value(struct udevice *dev, unsigned int gpio)
+{
+	int reg_offset;
+	void __iomem *addr;
+	u32 pad;
+	u16 mask;
+	bool input = true;
+
+	mask = siul2_pin2mask(gpio);
+	pad = siul2_pin2pad(gpio);
+	reg_offset = siul2_get_pad_offset(pad);
+
+	if (s32cc_gpio_get_function(dev, gpio) == GPIOF_OUTPUT)
+		input = false;
+
+	addr = siul2_get_pad_base_addr(dev, gpio, input);
+	if (!addr)
+		return -EINVAL;
+
+	return !!(readw(((uintptr_t)addr) + reg_offset) & mask);
+}
+
+static int s32cc_gpio_direction_input(struct udevice *dev, unsigned int gpio)
+{
+	int ret = pinctrl_gpio_request(dev, gpio);
+	if (ret)
+		return ret;
+
+	ret = pinctrl_gpio_set_config(dev, gpio, PIN_CONFIG_INPUT_ENABLE, 1);
+	if (ret)
+		return ret;
+
+	return pinctrl_gpio_set_config(dev, gpio, PIN_CONFIG_OUTPUT_ENABLE, 0);
+}
+
+static int s32cc_gpio_direction_output(struct udevice *dev, unsigned int gpio,
 				       int value)
 {
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	u32 mscr;
-	int ret;
+	int ret = pinctrl_gpio_request(dev, gpio);
 
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
 	if (ret)
 		return ret;
 
-	mscr = readl(s32cc_get_mscr_reg(priv, pinctrl_offset));
-	mscr &= ~SIUL2_MSCR_S32_G1_IBE;
-	mscr |= SIUL2_MSCR_S32_G1_OBE;
-	writel(mscr, s32cc_get_mscr_reg(priv, pinctrl_offset));
-
-	return s32cc_gpio_set_value(dev, offset, value);
-}
-
-static int s32cc_gpio_get_function(struct udevice *dev, unsigned int offset)
-{
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	u32 mscr;
-	int ret;
-
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
+	ret = pinctrl_gpio_set_config(dev, gpio, PIN_CONFIG_OUTPUT_ENABLE, 1);
 	if (ret)
 		return ret;
 
-	mscr = readl(s32cc_get_mscr_reg(priv, pinctrl_offset));
-
-	/* First check if the pin is muxed as gpio. The input buffer and the
-	 * output buffer might be enabled at the same time.
-	 */
-	if (mscr & SIUL2_MSCR_S32_G1_SSS_MASK)
-		return GPIOF_FUNC;
-
-	if (mscr & SIUL2_MSCR_S32_G1_OBE)
-		return GPIOF_OUTPUT;
-
-	if (mscr & SIUL2_MSCR_S32_G1_IBE)
-		return GPIOF_INPUT;
-
-	return GPIOF_UNUSED;
-}
-
-static int s32cc_gpio_get_value(struct udevice *dev, unsigned int offset)
-{
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	int ret;
-
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
+	ret = pinctrl_gpio_set_config(dev, gpio, PIN_CONFIG_INPUT_ENABLE, 1);
 	if (ret)
 		return ret;
 
-	switch (s32cc_gpio_get_function(dev, offset)) {
-	case GPIOF_OUTPUT:
-		return readb(s32cc_get_out_reg(priv, pinctrl_offset));
-	default:
-		return readb(s32cc_get_in_reg(priv, pinctrl_offset));
-	}
+	return s32cc_gpio_set_value(dev, gpio, value);
 }
 
 static int s32cc_gpio_get_xlate(struct udevice *dev, struct gpio_desc *desc,
 				struct ofnode_phandle_args *args)
 {
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	struct gpio_range *range;
-	u16 range_begin;
-	u16 range_end;
-	int i;
-
 	if (args->args_count < 1)
 		return -EINVAL;
 
-	for (i = 0; i < priv->valid_ranges_cnt; i++) {
-		range = &priv->valid_ranges[i];
-		range_begin = range->pinctrl_offset;
-		range_end = range_begin + range->cnt;
-		if (args->args[0] >= range_begin && args->args[0] < range_end) {
-			desc->offset += args->args[0] - range_begin;
-			break;
-		}
-	}
-
-	if (!desc->offset)
+	if (!siul2_get_pad_base_addr(dev, args->args[0], false))
 		return -EINVAL;
+
+	desc->offset = args->args[0];
 
 	debug("%s offset %u arg %d\n", __func__, desc->offset, args->args[0]);
 
@@ -220,42 +198,12 @@ static int s32cc_gpio_get_xlate(struct udevice *dev, struct gpio_desc *desc,
 static int s32cc_gpio_set_open_drain(struct udevice *dev, unsigned int offset,
 				     int value)
 {
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	u32 mscr;
-	int ret;
-
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
-	if (ret)
-		return ret;
-
-	mscr = readl(s32cc_get_mscr_reg(priv, pinctrl_offset));
-
 	if (value)
-		mscr |= SIUL2_MSCR_S32_G1_ODE;
-	else
-		mscr &= ~SIUL2_MSCR_S32_G1_ODE;
+		return pinctrl_gpio_set_config(dev, offset,
+					       PIN_CONFIG_DRIVE_OPEN_DRAIN, 1);
 
-	writel(mscr, s32cc_get_mscr_reg(priv, pinctrl_offset));
-
-	return 0;
-}
-
-static int s32cc_gpio_get_open_drain(struct udevice *dev, unsigned int offset)
-{
-	struct s32cc_gpio *priv = dev_get_priv(dev);
-	unsigned int pinctrl_offset;
-	u32 mscr;
-	int ret;
-
-	ret = s32cc_get_pinctrl_offset(priv, offset, &pinctrl_offset);
-	if (ret)
-		return ret;
-
-	mscr = readl(s32cc_get_mscr_reg(priv, pinctrl_offset));
-	mscr &= SIUL2_MSCR_S32_G1_ODE;
-
-	return !!mscr;
+	return pinctrl_gpio_set_config(dev, offset, PIN_CONFIG_DRIVE_PUSH_PULL,
+				       1);
 }
 
 static const struct dm_gpio_ops s32cc_gpio_ops = {
@@ -263,7 +211,6 @@ static const struct dm_gpio_ops s32cc_gpio_ops = {
 	.direction_output = s32cc_gpio_direction_output,
 	.get_value = s32cc_gpio_get_value,
 	.set_value = s32cc_gpio_set_value,
-	.get_open_drain = s32cc_gpio_get_open_drain,
 	.set_open_drain = s32cc_gpio_set_open_drain,
 	.get_function = s32cc_gpio_get_function,
 	.xlate = s32cc_gpio_get_xlate,
@@ -278,42 +225,43 @@ static int s32cc_gpio_probe(struct udevice *dev)
 	int i = 0;
 	int ret;
 
-	addr = dev_read_addr(dev->parent);
-	if (addr == FDT_ADDR_T_NONE)
-		return -EINVAL;
-
-	priv->base_addr = (void __iomem *)addr;
-
 	uc_priv->bank_name = dev->name;
 	uc_priv->gpio_count = 0;
 
-	ret = dev_read_phandle_with_args(dev, "gpio-ranges", NULL, 3, i, &args);
-	if (ret < 0) {
-		pr_err("gpio-ranges: property missing or invalid\n");
-		return ret;
-	}
+	for (i = 0; i < ARRAY_SIZE(priv->siul2); ++i) {
+		char temp[SIUL2_PAD_NAME_LEN];
 
-	do  {
-		priv->valid_ranges[i].gpio_offset = args.args[0];
-		priv->valid_ranges[i].pinctrl_offset = args.args[1];
-		priv->valid_ranges[i].cnt = args.args[2];
-		uc_priv->gpio_count += args.args[2];
-		ret = dev_read_phandle_with_args(dev, "gpio-ranges", NULL, 3,
-						 ++i, &args);
-		if (ret == -EINVAL) {
-			pr_err("gpio-ranges: property invalid\n");
+		snprintf(temp, ARRAY_SIZE(temp), "opads%d", i);
+		addr = dev_read_addr_name(dev, temp);
+		if (addr == FDT_ADDR_T_NONE) {
+			pr_err("Error retrieving reg: %s\n", temp);
+			return -EINVAL;
+		}
+		priv->siul2[i].opads = (__iomem void *)addr;
+
+		snprintf(temp, ARRAY_SIZE(temp), "ipads%d", i);
+		addr = dev_read_addr_name(dev, temp);
+		if (addr == FDT_ADDR_T_NONE) {
+			pr_err("Error retrieving reg: %s\n", temp);
+			return -EINVAL;
+		}
+		priv->siul2[i].ipads = (__iomem void *)addr;
+
+		ret = dev_read_phandle_with_args(dev, "gpio-ranges", NULL, 3, i,
+						 &args);
+		if (ret < 0) {
+			pr_err("gpio-ranges: property missing or invalid\n");
 			return ret;
 		}
 
-		if (i >= SIUL2_MAX_VALID_RANGES) {
-			pr_err("Too many gpio ranges\n");
-			return -ENOMEM;
-		}
-	} while (ret != -ENOENT);
+		priv->siul2[i].range.start_gpio = args.args[0];
+		priv->siul2[i].range.cnt = args.args[2];
 
-	priv->valid_ranges_cnt = i;
+		if (uc_priv->gpio_count < args.args[0] + args.args[2])
+			uc_priv->gpio_count = args.args[0] + args.args[2];
+	}
 
-	return 0;
+	return uclass_first_device_err(UCLASS_PINCTRL, &priv->pinctrl);
 }
 
 static const struct udevice_id s32cc_gpio_ids[] = {
