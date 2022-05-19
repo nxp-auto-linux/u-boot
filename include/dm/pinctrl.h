@@ -606,6 +606,19 @@ int pinctrl_get_pin_name(struct udevice *dev, int selector, char *buf,
 			 int size);
 
 /**
+ * pinctrl_gpio_set_config() - change the pinconf of a single GPIO
+ * @dev: GPIO peripheral device
+ * @offset: the GPIO pin offset from the GPIO controller
+ * @param: the config to be changed
+ * @argument: an argument with special meaning depending on the
+ *	      config
+ *
+ * Return: 0 on success, or negative error code on failure
+ */
+int pinctrl_gpio_set_config(struct udevice *dev, unsigned offset,
+			    enum pin_config_param param, unsigned argument);
+
+/**
  * pinctrl_gpio_request() - Request a single pin to be used as GPIO
  * @dev:	GPIO peripheral device
  * @offset:	GPIO pin offset from the GPIO controller
