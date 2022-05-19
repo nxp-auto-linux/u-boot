@@ -215,6 +215,37 @@ pinctrl_gpio_get_pinctrl_and_offset(struct udevice *dev, unsigned offset,
 }
 
 /**
+ * pinctrl_gpio_set_config() - change the pinconf of a single GPIO
+ *
+ * @dev: GPIO peripheral device
+ * @offset: the GPIO pin offset from the GPIO controller
+ * @param: the config to be changed
+ * @argument: an argument with special meaning depending on the
+ *	      config
+ * @return: 0 on success, or negative error code on failure
+ */
+int pinctrl_gpio_set_config(struct udevice *dev, unsigned offset,
+			    enum pin_config_param param, unsigned argument)
+{
+	const struct pinctrl_ops *ops;
+	struct udevice *pctldev;
+	unsigned int pin_selector;
+	int ret;
+
+	ret = pinctrl_gpio_get_pinctrl_and_offset(dev, offset,
+						  &pctldev, &pin_selector);
+	if (ret)
+		return ret;
+
+	ops = pinctrl_get_ops(pctldev);
+	if (!ops || !ops->pinconf_set)
+		return -ENOTSUPP;
+
+	return ops->pinconf_set(pctldev, pin_selector, (unsigned)param,
+				argument);
+}
+
+/**
  * pinctrl_gpio_request() - request a single pin to be used as GPIO
  *
  * @dev: GPIO peripheral device
