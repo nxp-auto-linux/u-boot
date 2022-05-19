@@ -115,6 +115,17 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
+config ERR051257_WORKAROUND
+	bool "ERR051257 erratum workaround"
+	default y if QSPI_BOOT
+	help
+	  Enable workaround for ERR051257 erratum.
+	  The QSPI boot flow will hang if the QSPI memory will rise any ECC
+	  error interrupt. As a software solution for this issue, the pins
+	  QSPI_INTA_b and QSPI_INTB_b are configured as GPIO from DCD and the
+	  images(QSPI parameters for BootROM, DCD, HSE FW, etc) have an unused
+	  space of 1K between them.
+
 if TARGET_TYPE_S32GEN1_EMULATOR
 config BAUDRATE
 	default 7812500
