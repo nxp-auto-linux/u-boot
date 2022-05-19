@@ -9,6 +9,7 @@
 #include <malloc.h>
 #include <dm/uclass.h>
 #include <linux/psci.h>
+#include <s32-cc/fdt_wrapper.h>
 
 #define CLUSTER_SHIFT	8U
 #define CLUSTER_MASK	GENMASK(11, CLUSTER_SHIFT)
@@ -22,12 +23,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static struct cpu_desc *cpus;
 static u32 n_cpus;
-
-static int get_next_cpu(int off)
-{
-	return fdt_node_offset_by_prop_value(gd->fdt_blob, off,
-					     "device_type", "cpu", 4);
-}
 
 static struct cpu_desc *get_cpu(unsigned int cpu_id)
 {
@@ -92,11 +87,17 @@ static int initialize_cpus_data(void)
 	if (initialized)
 		return 0;
 
-	off = get_next_cpu(-1);
+	off = fdt_path_offset(gd->fdt_blob, "/cpus");
+	if (off < 0) {
+		printf("Couldn't find /cpus node\n");
+		return -EINVAL;
+	}
+
 	fdt_support_default_count_cells(gd->fdt_blob, off, &addr_cells, NULL);
+	off = get_next_cpu(gd->fdt_blob, off);
+
 	while (off != -FDT_ERR_NOTFOUND) {
 		reg = (fdt32_t *)fdt_getprop(gd->fdt_blob, off, "reg", 0);
-		off = get_next_cpu(off);
 		if (!reg) {
 			ret = -EINVAL;
 			break;
@@ -107,6 +108,8 @@ static int initialize_cpus_data(void)
 		ret = add_cpu(core_id);
 		if (ret)
 			break;
+
+		off = get_next_cpu(gd->fdt_blob, off);
 	}
 
 	if (ret) {
