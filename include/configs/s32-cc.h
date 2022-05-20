@@ -334,4 +334,5 @@
 #  define FSL_QSPI_FLASH_SIZE		(SZ_64M)
 #endif
 
+#define CONFIG_SYS_CBSIZE		(SZ_512)
 #endif
