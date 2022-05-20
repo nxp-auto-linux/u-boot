@@ -10,8 +10,8 @@
 #include <misc.h>
 #include <asm/global_data.h>
 #include <dm/uclass.h>
-#include <linux/libfdt.h>
 #include <s32-cc/a53_gpr.h>
+#include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/nvmem.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
@@ -117,7 +117,6 @@ static bool is_lockstep_enabled(void)
 static int ft_fixup_cpu(void *blob)
 {
 	int ret, off, addr_cells = 0;
-	int off_prev = -1;
 	u32 max_cores_per_cluster = 0;
 	u32 cpu_mask = 0;
 	u64 core_mpidr, core_id;
@@ -134,8 +133,7 @@ static int ft_fixup_cpu(void *blob)
 	}
 
 	fdt_support_default_count_cells(blob, off, &addr_cells, NULL);
-	off = fdt_node_offset_by_prop_value(blob, off_prev, "device_type",
-					    "cpu", 4);
+	off = get_next_cpu(blob, off);
 
 	if (is_lockstep_enabled()) {
 		/* Disable secondary cluster */
@@ -156,12 +154,9 @@ static int ft_fixup_cpu(void *blob)
 			 * cores on derivatives
 			 */
 			fdt_del_node(blob, off);
-			off = off_prev;
 		}
 
-		off_prev = off;
-		off = fdt_node_offset_by_prop_value(blob, off_prev,
-						    "device_type", "cpu", 4);
+		off = get_next_cpu(blob, off);
 	}
 
 	return 0;
