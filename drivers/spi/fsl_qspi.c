@@ -959,14 +959,15 @@ static int fsl_qspi_child_pre_probe(struct udevice *dev)
 
 static __maybe_unused ulong fsl_qspi_clk_get_rate(struct udevice *bus)
 {
+	struct fsl_qspi_priv *priv = dev_get_priv(bus);
+	struct clk clk_qspi_en;
 	int ret;
-	struct clk clk_qspi_en, clk_qspi;
 
 	ret = clk_get_by_name(bus, "qspi_en", &clk_qspi_en);
 	if (ret)
 		return ret;
 
-	ret = clk_get_by_name(bus, "qspi", &clk_qspi);
+	ret = clk_get_by_name(bus, "qspi", &priv->clk_qspi);
 	if (ret)
 		return ret;
 
@@ -974,13 +975,13 @@ static __maybe_unused ulong fsl_qspi_clk_get_rate(struct udevice *bus)
 	if (ret)
 		return ret;
 
-	ret = clk_enable(&clk_qspi);
+	ret = clk_enable(&priv->clk_qspi);
 	if (ret) {
 		clk_disable(&clk_qspi_en);
 		return ret;
 	}
 
-	return clk_get_rate(&clk_qspi);
+	return clk_get_rate(&priv->clk_qspi);
 }
 
 static int fsl_qspi_probe(struct udevice *bus)
@@ -1241,8 +1242,24 @@ static int fsl_qspi_release_bus(struct udevice *dev)
 
 static int fsl_qspi_set_speed(struct udevice *bus, uint speed)
 {
-	/* Nothing to do */
-	return 0;
+	struct fsl_qspi_priv *priv = dev_get_priv(bus);
+	int dev_speed;
+	int ret;
+
+	ret = clk_disable(&priv->clk_qspi);
+	if (ret)
+		return ret;
+
+	debug("%s: requested QSPI frequency %u\n", bus->name, speed);
+	dev_speed = clk_set_rate(&priv->clk_qspi, speed);
+	if (dev_speed < 0)
+		return dev_speed;
+
+	debug("%s: actual QSPI frequency %d\n", bus->name, dev_speed);
+	if (speed != dev_speed)
+		return -EIO;
+
+	return clk_enable(&priv->clk_qspi);
 }
 
 static int fsl_qspi_set_mode(struct udevice *bus, uint mode)

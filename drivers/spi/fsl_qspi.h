@@ -9,6 +9,7 @@
 #ifndef _FSL_QSPI_H_
 #define _FSL_QSPI_H_
 
+#include <clk.h>
 #include <linux/sizes.h>
 #include <linux/types.h>
 
@@ -313,6 +314,7 @@ struct fsl_qspi_priv {
 	u32 num_pads;
 	struct fsl_qspi_regs *regs;
 	struct fsl_qspi_devtype_data *devtype_data;
+	struct clk clk_qspi;
 	bool ddr_mode;
 };
 
