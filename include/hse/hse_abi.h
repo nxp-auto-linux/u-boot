@@ -10,8 +10,14 @@
 
 #include <common.h>
 #include <mmc.h>
+#include <uuid.h>
 
 #define BYTES_TO_BITS(x)	((x) * 8u)
+
+#define MODULUS_OFFSET  0x21u
+#define MODULUS_SIZE    0x100u
+#define EXPONENT_OFFSET 0x123u
+#define EXPONENT_SIZE   0x3u
 
 #define HSE_SRV_RSP_OK            0x55A5AA33ul
 #define HSE_SRV_RSP_VERIFY_FAILED 0x55A5A164ul
@@ -20,15 +26,11 @@
 #define HSE_SRV_RSP_NOT_ALLOWED   0xAA55A21Cul
 #define HSE_SRV_RSP_KEY_INVALID   0xA5AA52B4ul
 
-#define HSE_UBOOT_MAX_SIZE   0x100000u
 #define HSE_SYS_IMG_MAX_SIZE 0xC000u
-#define HSE_UBOOT_AUTH_LEN   0x100u
-#define HSE_SYS_IMG_SD       0x76000u
-#define HSE_AUTH_TAG_SD      0x82000u
+#define HSE_FIP_AUTH_LEN     0x100u
+#define HSE_AUTH_TAG_OFFSET  0x200u
 
-#define HSE_IVT_BLK        8
-#define HSE_UBOOT_SIGN_BLK 1040
-#define HSE_UBOOT_BIN_BLK  1057
+#define HSE_IVT_BLK      8
 
 #define HSE_EXT_FLASH_SD   2u
 #define HSE_EXT_FLASH_PAGE 512u
@@ -51,7 +53,10 @@
 
 #define HSE_APP_CORE3 3u /* A53_0 */
 
-#define HSE_PUBLISH_ALL_DATA_SETS BIT(1)
+#define HSE_PUBLISH_UPDATED_DATA_SET BIT(0)
+#define HSE_PUBLISH_ALL_DATA_SETS    BIT(1)
+
+#define HSE_SGT_OPTION_NONE 0u
 
 #define HSE_SMR_CFG_FLAG_SD_FLASH     0x2u
 #define HSE_SMR_CFG_FLAG_INSTALL_AUTH BIT(2)
@@ -78,8 +83,7 @@
 #define HSE_ALL_MU_MASK (HSE_MU0_MASK | HSE_MU1_MASK | \
 			 HSE_MU2_MASK | HSE_MU3_MASK)
 
-#define HSE_KF_USAGE_VERIFY        BIT(3)
-#define HSE_KF_USAGE_AUTHORIZATION BIT(7)
+#define HSE_KF_USAGE_VERIFY BIT(3)
 
 #define HSE_KEY_OWNER_ANY  0u
 #define HSE_KEY_OWNER_CUST 1u
@@ -108,6 +112,46 @@
 struct mmc *hse_init_mmc_device(int dev, bool force_init);
 int hse_mmc_read(void *addr, u32 blk, u32 cnt);
 int hse_mmc_write(void *addr, u32 blk, u32 cnt);
+
+/**
+ * struct fip_toc_header - FIP ToC header
+ * @name: fip name/signature, fixed
+ * @serial_number: fip serial number, fixed
+ * @flags: flags associated with the data
+ */
+struct fip_toc_header {
+	u32 name;
+	u32 serial_number;
+	u64 flags;
+};
+
+/**
+ * struct fip_toc_entry - FIP ToC entry
+ * @uuid: ToC entry unique ID
+ * @offset: offset of entry in FIP
+ * @size: size of entry
+ * @flags: flags associated with the data
+ */
+struct fip_toc_entry {
+	struct uuid uuid;
+	u64 offset;
+	u64 size;
+	u64 flags;
+};
+
+/**
+ * struct app_boot_hdr - app load, entry and size info
+ * @header: start of application image
+ * @ram_load: address at which to load app code
+ * @ram_entry: address at which to jump execution
+ * @code_len: length of subsequent code
+ */
+struct app_boot_hdr {
+	u32 header;
+	u32 ram_load;
+	u32 ram_entry;
+	u32 code_len;
+};
 
 /**
  * struct ivt - ivt held in flash
@@ -400,39 +444,40 @@ struct hse_srv_desc {
 /**
  * struct hse_private - hse required data, stored at start of ddr
  * @ivt: ivt stored for modifications required for secboot
+ * @app_boot_hdr: application load, entry and size data
  * @srv_desc: service descriptor
  * @key_info: key data for insertion into catalog
  * @cr_entry: core reset entry data
  * @smr_entry: secure memory region data
  * @mu_config: mu configuration data
- * @rsa2048_pub_modulus: public modulus of u-boot signature key
- * @rsa2048_pub_exponent: public exponent of u-boot signature key
- * @uboot_sign: copy of u-boot signature in ddr
- * @uboot_copy: copy of u-boot binary in ddr
+ * @rsa_pubkey: contents of public key file, in DER format
+ * @rsa_modulus: rsa public key modulus, extracted from file
+ * @rsa_exponent: rsa public key exponent, extracted from file
+ * @fip_sign: fip signature in ddr
  * @sys_img: hse-generated system image
- * @uboot_sign_len: u-boot signature length
  * @sys_img_len: system image length
+ * @publish_offset: offset at which to write the updated sys_img
  * @nvm_catalog: nvm key catalog
  * @ram_catalog: ram key catalog
  */
 struct hse_private {
 	struct ivt ivt;
+	struct app_boot_hdr app_boot_hdr;
 	struct hse_srv_desc srv_desc;
 	struct hse_key_info key_info;
 	struct hse_cr_entry cr_entry;
 	struct hse_smr_entry smr_entry;
 	struct hse_mu_config mu_config;
-	u8 rsa2048_pub_modulus[256];
-	u8 rsa2048_pub_exponent[3];
-	u8 reserved1;
-	u8 uboot_sign[HSE_UBOOT_AUTH_LEN];
-	u8 uboot_copy[HSE_UBOOT_MAX_SIZE];
+	u8 rsa_pubkey[512];
+	u8 rsa_modulus[256];
+	u8 rsa_exponent[3];
+	u8 reserved;
+	u8 fip_signature[256];
 	u8 sys_img[HSE_SYS_IMG_MAX_SIZE];
 	u32 sys_img_len;
+	u32 publish_offset;
 	struct hse_key_group_cfg_entry nvm_catalog[20];
 	struct hse_key_group_cfg_entry ram_catalog[11];
-	/* unused, but required by hse */
-	u32 publish_offset;
 };
 
 #endif /* HSE_ABI_H */
