@@ -20,7 +20,7 @@ config S32CC_MAX_DTB_SIZE
 	default 0x7000
 
 config SYS_MALLOC_F_LEN
-	default 0x2000
+	default 0x8000
 
 config S32CC_CONFIG_FILE
 	string
