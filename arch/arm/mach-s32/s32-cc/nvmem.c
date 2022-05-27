@@ -74,7 +74,8 @@ int nvmem_cell_get_by_index(struct udevice *dev, int index,
 		return ret;
 	}
 
-	cell_addr = ofnode_get_addr_size_index(args.node, 0, &cell_size);
+	cell_addr = ofnode_get_addr_size_index_notrans(args.node, 0,
+						       &cell_size);
 	if (cell_addr == FDT_ADDR_T_NONE)
 		return -ENOENT;
 
