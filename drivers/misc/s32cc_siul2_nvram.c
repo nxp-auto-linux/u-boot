@@ -471,7 +471,7 @@ static int siul2_nvram_set_plat(struct udevice *dev)
 {
 	struct siul2_nvram *nvram = dev_get_platdata(dev);
 
-	nvram->base = dev_read_addr_ptr(dev->parent);
+	nvram->base = (void __iomem *)dev_read_addr_ptr(dev);
 	if (!nvram->base)
 		return -EINVAL;
 
