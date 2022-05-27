@@ -5,19 +5,19 @@
  *
  * Freescale Quad Serial Peripheral Interface (QSPI) driver
  */
-#include <malloc.h>
-#include <spi.h>
 #include <clk.h>
-#include <asm/io.h>
-#include <linux/sizes.h>
-#include <linux/iopoll.h>
+#include <cpu_func.h>
 #include <dm.h>
 #include <errno.h>
-#include <watchdog.h>
-#include <wait_bit.h>
-#include "fsl_qspi.h"
-#include <cpu_func.h>
+#include <malloc.h>
 #include <spi-mem.h>
+#include <spi.h>
+#include <wait_bit.h>
+#include <watchdog.h>
+#include <asm/io.h>
+#include <linux/iopoll.h>
+#include <linux/sizes.h>
+#include "fsl_qspi.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
