@@ -143,4 +143,5 @@
 #  define I2C_QUIRK_REG
 #endif
 
+#define CONFIG_SYS_CBSIZE		(SZ_512)
 #endif
