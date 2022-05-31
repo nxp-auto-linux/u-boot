@@ -315,7 +315,10 @@
  * Variables required by doc/README.distro
  */
 #  define DISTRO_VARS \
-	"setenv fdt_addr ${fdtcontroladdr};" \
+	"fdt addr ${fdtcontroladdr};" \
+	"fdt header get fdt_size totalsize;" \
+	"cp.b ${fdtcontroladdr} ${fdt_addr} ${fdt_size};" \
+	"setenv fdt_addr_r ${fdt_addr};" \
 	"setenv ramdisk_addr_r " __stringify(S32CC_RAMDISK_ADDR) ";" \
 	"setenv kernel_addr_r ${loadaddr};" \
 	"setenv pxefile_addr_r " __stringify(S32CC_PXE_ADDR) ";" \
@@ -324,7 +327,7 @@
  * Remove pinmuxing properties as SIUL2 driver isn't upstreamed yet
  */
 #  define DISTRO_FIXUPS \
-	"fdt addr ${fdtcontroladdr};" \
+	"fdt addr ${fdt_addr_r};" \
 	"fdt rm serial0 pinctrl-0;" \
 	"fdt rm serial0 pinctrl-names;" \
 	"fdt rm mmc0 pinctrl-0;" \
