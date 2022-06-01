@@ -6,14 +6,13 @@
  */
 
 #include <common.h>
-#include <cpu_func.h>
 #include <command.h>
-#include <malloc.h>
-#include <log.h>
+#include <cpu_func.h>
 #include <errno.h>
 #include <fs.h>
-#include <hse/hse_mu.h>
+#include <malloc.h>
 #include <hse/hse_abi.h>
+#include <hse/hse_mu.h>
 
 #ifdef CONFIG_SD_BOOT
 DECLARE_GLOBAL_DATA_PTR;
@@ -52,6 +51,15 @@ DECLARE_GLOBAL_DATA_PTR;
 	HSE_KEY_TYPE_ECC_PUB, 1u, HSE_KEY256_BITS}, \
 {0u, 0u, 0u, 0u, 0u}
 
+#define APP_CODE_OFFSET 0x40
+
+#define UUID_BL2_CERT \
+	{ 0xea69e2d6, \
+	  0x635d, \
+	  0x11e4, \
+	  0x8d, 0x8c, \
+	 {0x9f, 0xba, 0xbe, 0x99, 0x56, 0xa5} }
+
 /* the nvm container used to format the hse key catalogs */
 static const struct hse_key_group_cfg_entry nvm_orig_cat[] = {
 	HSE_NVM_KEY_CATALOG_CFG
@@ -69,9 +77,13 @@ static inline int compare_uuids(const struct uuid *uuid1,
 	return memcmp(uuid1, uuid2, sizeof(struct uuid));
 }
 
-static u64 get_fip_bin_size(struct hse_private *priv)
+static u32 get_fip_start(struct hse_private *priv)
 {
-	static const struct uuid uuid_null = { 0 };
+	return priv->ivt.app_boot + APP_CODE_OFFSET;
+}
+
+static u64 get_fip_toc_offset(struct hse_private *priv, struct uuid *search)
+{
 	struct fip_toc_header *toc_header;
 	struct fip_toc_entry *toc_entry;
 	uintptr_t fip_hdr_start, fip_hdr_end;
@@ -84,12 +96,49 @@ static u64 get_fip_bin_size(struct hse_private *priv)
 	fip_hdr_end = fip_hdr_start + (uintptr_t)toc_entry->offset;
 
 	while ((uintptr_t)toc_entry < fip_hdr_end) {
-		if (!compare_uuids(&toc_entry->uuid, &uuid_null))
-			break;
+		if (!compare_uuids(&toc_entry->uuid, search))
+			return toc_entry->offset;
 		toc_entry++;
 	}
 
-	return toc_entry->offset;
+	return 0;
+}
+
+static u64 get_fip_size(struct hse_private *priv)
+{
+	struct uuid uuid_null = { 0 };
+
+	return get_fip_toc_offset(priv, &uuid_null);
+}
+
+static u64 get_fip_sign_offset(struct hse_private *priv)
+{
+	struct uuid uuid_bl2_cert = UUID_BL2_CERT;
+
+	return get_fip_toc_offset(priv, &uuid_bl2_cert);
+}
+
+static u32 get_fip_sign_mmc(struct hse_private *priv)
+{
+	u32 sign_offset;
+
+	sign_offset = (u32)get_fip_sign_offset(priv);
+	if (!sign_offset)
+		return 0;
+
+	return get_fip_start(priv) + sign_offset;
+}
+
+static uintptr_t get_fip_sign_sram(struct hse_private *priv)
+{
+	uintptr_t fip_hdr_start = (uintptr_t)priv->app_boot_hdr.ram_load;
+	uintptr_t sign_offset;
+
+	sign_offset = (uintptr_t)get_fip_sign_offset(priv);
+	if (!sign_offset)
+		return 0;
+
+	return fip_hdr_start + sign_offset;
 }
 
 int hse_format_key_store(struct hse_private *priv, u32 *recv_buf)
@@ -118,17 +167,17 @@ int hse_format_key_store(struct hse_private *priv, u32 *recv_buf)
 			   recv_buf);
 	if (ret) {
 		printf("ERROR: key catalog format failed!\n");
-		goto out;
+		return ret;
 	}
 
-out:
-	return ret;
+	return 0;
 }
+
 int hse_import_key(struct hse_private *priv, u32 *recv_buf)
 {
 	struct hse_key_info *key_info;
 	struct hse_import_key_srv *import_key_req;
-	int ret = 0;
+	int ret;
 
 	key_info = &(priv->key_info);
 	import_key_req = &(priv->srv_desc.import_key_req);
@@ -164,16 +213,15 @@ int hse_import_key(struct hse_private *priv, u32 *recv_buf)
 			    recv_buf);
 	if (ret) {
 		printf("ERROR: rsa public key import failed!\n");
-		goto out;
+		return ret;
 	}
 
-out:
-	return ret;
+	return 0;
 }
 
 int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
 {
-	int ret = 0;
+	int ret;
 
 	printf("\tGenerating Core Reset Entry...\n");
 	memset((void *)&priv->cr_entry, 0, sizeof(struct hse_cr_entry));
@@ -198,18 +246,18 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
 			    recv_buf);
 	if (ret) {
 		printf("ERROR: core reset entry install failed!\n");
-		goto out;
+		return ret;
 	}
 
-out:
-	return ret;
+	return 0;
 }
 
 int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 {
 	struct hse_smr_entry *smr_entry;
 	struct hse_smr_install_srv *smr_install_req;
-	int ret = 0;
+	u32 fip_size;
+	int ret;
 
 	smr_entry = &(priv->smr_entry);
 	smr_install_req = &(priv->srv_desc.smr_install_req);
@@ -219,26 +267,32 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 	memset((void *)&priv->srv_desc, 0, sizeof(struct hse_srv_desc));
 
 	/* need to recopy FIP to pass verification */
-	memset((void *)(uintptr_t)priv->app_boot_hdr.ram_load - 0x40, 0,
-	       priv->app_boot_hdr.code_len + 0x40);
-	hse_mmc_read((void *)(uintptr_t)priv->app_boot_hdr.ram_load - 0x40,
+	memset((void *)(uintptr_t)priv->app_boot_hdr.ram_load - APP_CODE_OFFSET, 0,
+	       priv->app_boot_hdr.code_len + APP_CODE_OFFSET);
+	hse_mmc_read((void *)(uintptr_t)priv->app_boot_hdr.ram_load - APP_CODE_OFFSET,
 		     priv->ivt.app_boot / 512,
 		     (priv->app_boot_hdr.code_len / 512) + 1);
+
+	fip_size = get_fip_size(priv);
+	if (!fip_size) {
+		printf("ERROR: invalid FIP size!\n");
+		return -ENOMEM;
+	}
 
 	/**
 	 * no address of actual code start, need to reference app bl header
 	 * fip start is at app_bl_header + 0x40
 	 */
-	smr_entry->smr_src = priv->ivt.app_boot + 0x40;
+	smr_entry->smr_src = priv->ivt.app_boot + APP_CODE_OFFSET;
 	smr_entry->smr_dst_addr = priv->app_boot_hdr.ram_load;
-	smr_entry->smr_size = get_fip_bin_size(priv);
+	smr_entry->smr_size = fip_size - HSE_FIP_AUTH_LEN;
 	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
 				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
 	smr_entry->check_period = 0;
 	smr_entry->key_handle = HSE_BOOT_KEY_HANDLE;
 	smr_entry->sign_sch.sign_scheme = HSE_SIGN_RSASSA_PKCS1_V15;
 	smr_entry->sign_sch.sch.hash_algo = HSE_HASH_ALGO_SHA_1;
-	smr_entry->auth_tag = HSE_AUTH_TAG_OFFSET;
+	smr_entry->auth_tag = get_fip_sign_mmc(priv);
 	smr_entry->decrypt_key_handle = HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED;
 	smr_entry->version_offset = 0;
 
@@ -247,7 +301,7 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 	smr_install_req->entry_index = 1u;
 	smr_install_req->smr_entry_addr = (uintptr_t)smr_entry;
 	smr_install_req->smr_data_addr = priv->app_boot_hdr.ram_load;
-	smr_install_req->smr_data_len = get_fip_bin_size(priv);
+	smr_install_req->smr_data_len = fip_size - HSE_FIP_AUTH_LEN;
 	smr_install_req->smr_auth_tag_addr = (uintptr_t)priv->fip_signature;
 	smr_install_req->smr_auth_tag_len = HSE_FIP_AUTH_LEN;
 
@@ -259,17 +313,16 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
 			    recv_buf);
 	if (ret) {
 		printf("ERROR: smr entry install failed!\n");
-		goto out;
+		return ret;
 	}
 
-out:
-	return ret;
+	return 0;
 }
 
 int hse_generate_sys_img(struct hse_private *priv, u32 *recv_buf)
 {
 	struct hse_publish_sys_img_srv *publish_sys_img_req;
-	int ret = 0;
+	int ret;
 
 	publish_sys_img_req = &(priv->srv_desc.publish_sys_img_req);
 
@@ -293,16 +346,15 @@ int hse_generate_sys_img(struct hse_private *priv, u32 *recv_buf)
 			    recv_buf);
 	if (ret) {
 		printf("ERROR: sys-img generation failed!\n");
-		goto out;
+		return ret;
 	}
 
-out:
-	return ret;
+	return 0;
 }
 
 int hse_write_sys_img(struct hse_private *priv, bool secure)
 {
-	int ret = 0;
+	int ret;
 	u32 sys_img_blk, sys_img_num_blks;
 
 	printf("\tPublishing SYS_IMG...\n");
@@ -316,8 +368,7 @@ int hse_write_sys_img(struct hse_private *priv, bool secure)
 	ret = hse_mmc_write(&priv->sys_img, sys_img_blk, sys_img_num_blks);
 	if (ret) {
 		printf("ERROR: sys-img publish failed!\n");
-		ret = CMD_RET_FAILURE;
-		goto out;
+		return ret;
 	}
 
 	/* external flash type, flash page size */
@@ -332,19 +383,16 @@ int hse_write_sys_img(struct hse_private *priv, bool secure)
 	ret = hse_mmc_write(&priv->ivt, HSE_IVT_BLK, 1);
 	if (ret) {
 		printf("ERROR: ivt write failed!\n");
-		ret = CMD_RET_FAILURE;
-		goto out;
+		return ret;
 	}
 
-	ret = CMD_RET_SUCCESS;
-out:
-	return ret;
+	return 0;
 }
 
 int hse_enable_mus(struct hse_private *priv, u32 *recv_buf)
 {
 	struct hse_getset_attr_srv *getset_attr_req;
-	int ret = 0;
+	int ret;
 
 	printf("\tEnabling MUs...\n");
 
@@ -380,12 +428,10 @@ int hse_enable_mus(struct hse_private *priv, u32 *recv_buf)
 			    recv_buf);
 	if (ret) {
 		printf("ERROR: enable MU failed!\n");
-		goto out;
+		return ret;
 	}
 
-	ret = CMD_RET_SUCCESS;
-out:
-	return ret;
+	return 0;
 }
 
 static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
@@ -399,13 +445,13 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 	u64 hse_resmem;
 	long long len_read;
 	int hse_nodeoffset, ret;
+	uintptr_t fip_sign_sram;
 
 	/* check if hse has been initialised */
 	hse_status_ret = hse_mu_check_status();
 	if (!(hse_status_ret & HSE_STATUS_INIT_OK)) {
 		printf("ERROR: HSE not initialised or missing firmware!\n");
-		ret = CMD_RET_FAILURE;
-		goto out;
+		return CMD_RET_FAILURE;
 	}
 
 	if (argc < 2 || !argv[1]) {
@@ -413,15 +459,13 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 		printf("\n");
 		printf("    <public_key_file>.der - rsa public key in DER format\n");
 		printf("                            in the FAT partition\n");
-		printf("\n");
-		ret = CMD_RET_FAILURE;
-		goto out;
+		return CMD_RET_FAILURE;
 	}
 	pubkey_file = argv[1];
 
 	/* find mem reserved for hse */
-	hse_nodeoffset = fdt_path_offset(gd->fdt_blob,
-					 "/reserved-memory/hse_reserved");
+	hse_nodeoffset = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
+						       "nxp,s32cc-hse-rmem");
 	if (hse_nodeoffset < 0) {
 		printf("ERROR: hse_reserved node not found!\n");
 		return hse_nodeoffset;
@@ -434,12 +478,13 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 	}
 
 	priv = (struct hse_private *)hse_resmem;
+	memset((void *)priv, 0, sizeof(struct hse_private));
 
 	/* read ivt block */
 	ret = hse_mmc_read((void *)&priv->ivt, HSE_IVT_BLK, 1);
 	if (ret) {
 		printf("ERROR: ivt read failed!\n");
-		goto out;
+		return ret;
 	}
 
 	/* read app boot code header */
@@ -447,28 +492,28 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 			   (priv->ivt.app_boot / 512), 1);
 	if (ret) {
 		printf("ERROR: app boot code header read failed!\n");
-		goto out;
+		return ret;
 	}
 
-	ret = hse_mmc_read((void *)priv->fip_signature, 1, 1);
-	if (ret) {
+	fip_sign_sram = get_fip_sign_sram(priv);
+	if (!fip_sign_sram) {
 		printf("ERROR: FIP signature read failed!\n");
-		goto out;
+		return -ENOMEM;
 	}
+	memcpy((void *)priv->fip_signature, (void *)fip_sign_sram, HSE_FIP_AUTH_LEN);
 
 	/* read public key file */
-	printf("\tReading public key file...\n");
 	snprintf(mmcdevpart, sizeof(mmcdevpart), "%s:%s",
 		 env_get("mmcdev"), env_get("mmcpart"));
 	ret = fs_set_blk_dev("mmc", mmcdevpart, FS_TYPE_FAT);
 	if (ret) {
 		printf("ERROR: could not set block device!\n");
-		goto out;
+		return ret;
 	}
-	fs_read(pubkey_file, (uintptr_t)priv->rsa_pubkey, 0, 0, &len_read);
-	if (ret) {
+	ret = fs_read(pubkey_file, (uintptr_t)priv->rsa_pubkey, 0, 0, &len_read);
+	if (ret < 0) {
 		printf("ERROR: could not read public key file!\n");
-		goto out;
+		return ret;
 	}
 
 	memcpy(priv->rsa_modulus,
@@ -480,7 +525,7 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 
 	ret = hse_enable_mus(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	/* check if sys_img already exists */
 	if (!(hse_status_ret & HSE_STATUS_PRIMARY_SYSIMG)) {
@@ -488,32 +533,30 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
 
 		ret = hse_format_key_store(priv, &hse_recv);
 		if (ret)
-			goto out;
+			return ret;
 	}
 
 	ret = hse_import_key(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	ret = hse_install_smr_entry(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	ret = hse_install_cr_entry(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	ret = hse_generate_sys_img(priv, &hse_recv);
 	if (ret) 
-		goto out;
+		return ret;
 
 	ret = hse_write_sys_img(priv, true);
 	if (ret) 
-		goto out;
+		return ret;
 
-	ret = CMD_RET_SUCCESS;
-out:
-	return ret;
+	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(hse_secboot_enable, 2, 0, do_hse_secboot_enable,
@@ -533,22 +576,20 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 	hse_status_ret = hse_mu_check_status();
 	if (!(hse_status_ret & HSE_STATUS_INIT_OK)) {
 		printf("ERROR: HSE not initialised or missing firmware!\n");
-		ret = CMD_RET_FAILURE;
-		goto out;
+		return CMD_RET_FAILURE;
 	}
 
 	/* check if sys_img already exists */
 	if (hse_status_ret & HSE_STATUS_PRIMARY_SYSIMG) {
 		printf("CHECK: SYS_IMG already loaded\n");
-		ret = CMD_RET_SUCCESS;
-		goto out;
+		return CMD_RET_SUCCESS;
 	}
 
 	/* find mem reserved for hse */
-	hse_nodeoffset = fdt_path_offset(gd->fdt_blob,
-					 "/reserved-memory/hse_reserved");
+	hse_nodeoffset = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
+						       "nxp,s32cc-hse-rmem");
 	if (hse_nodeoffset < 0) {
-		printf("ERROR: hse_reserved node not found!\n");
+		printf("ERROR: hse_reserved node not found! ERRNO: %d\n", hse_nodeoffset);
 		return hse_nodeoffset;
 	}
 
@@ -565,28 +606,26 @@ static int do_hse_keystore_format(cmd_tbl_t *cmdtp, int flag,
 	ret = hse_mmc_read((void *)&priv->ivt, HSE_IVT_BLK, 1);
 	if (ret) {
 		printf("ERROR: ivt read failed!\n");
-		goto out;
+		return ret;
 	}
 
 	ret = hse_enable_mus(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	ret = hse_format_key_store(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	ret = hse_generate_sys_img(priv, &hse_recv);
 	if (ret)
-		goto out;
+		return ret;
 
 	ret = hse_write_sys_img(priv, false);
 	if (ret)
-		goto out;
+		return ret;
 
-	ret = CMD_RET_SUCCESS;
-out:
-	return ret;
+	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(hse_keystore_format, 1, 0, do_hse_keystore_format,
