@@ -358,7 +358,7 @@ config DEBUG_UART_APBUART
 
 config DEBUG_UART_LINFLEXUART
 	bool "Linflex UART"
-	select FSL_LINFLEXUART
+	depends on FSL_LINFLEXUART
 	help
 	  Select this to enable debug UART for Linflex module found on NXP
 	  Automotive SoCs like S32G/S32R.
