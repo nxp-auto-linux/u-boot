@@ -143,6 +143,7 @@ static int ft_fixup_cpu(void *blob)
 	u32 cpu_mask = 0;
 	u64 core_mpidr, core_id;
 	fdt32_t *reg;
+	int off_prev;
 
 	ret = get_cores_info(&max_cores_per_cluster, &cpu_mask);
 	if (ret)
@@ -153,6 +154,7 @@ static int ft_fixup_cpu(void *blob)
 		puts("couldn't find /cpus node\n");
 		return -ENODEV;
 	}
+	off_prev = off;
 
 	fdt_support_default_count_cells(blob, off, &addr_cells, NULL);
 	off = get_next_cpu(blob, off);
@@ -176,8 +178,10 @@ static int ft_fixup_cpu(void *blob)
 			 * cores on derivatives
 			 */
 			fdt_del_node(blob, off);
+			off = off_prev;
 		}
 
+		off_prev = off;
 		off = get_next_cpu(blob, off);
 	}
 
