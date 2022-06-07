@@ -187,6 +187,7 @@
 		" root=/dev/ram rw earlycon " EXTRA_BOOT_ARGS ";"\
 		"setenv fip_flashaddr " __stringify(FIP_FLASH_ADDR) ";" \
 		"setenv kernel_flashaddr " __stringify(KERNEL_FLASH_ADDR) ";" \
+		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";" \
 		"setenv kernel_maxsize " __stringify(KERNEL_FLASH_MAXSIZE) ";" \
 		"setenv fdt_flashaddr " __stringify(FDT_FLASH_ADDR) ";" \
 		"setenv fdt_maxsize " __stringify(FDT_FLASH_MAXSIZE) ";" \
@@ -375,7 +376,7 @@
 #  ifdef FSL_QSPI_FLASH_SIZE
 #    undef FSL_QSPI_FLASH_SIZE
 #  endif
-#  define FSL_QSPI_FLASH_SIZE		(SZ_64M)
+#  define FSL_QSPI_FLASH_SIZE		SZ_64M
 #endif
 
 #define CONFIG_SYS_CBSIZE		(SZ_512)
