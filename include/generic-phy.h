@@ -136,6 +136,20 @@ struct phy_ops {
 	* Return: 0 if OK, or a negative error code
 	*/
 	int	(*configure)(struct phy *phy, void *params);
+
+	/**
+	 * set_mode - set mode of a PHY device
+	 *
+	 * @phy:	PHY port to be configured
+	 * @mode: PHY mode
+	 * @submode: PHY submode
+	 *
+	 * This function sets PHY's mode following power_on/off() after
+	 * being initialized.
+	 *
+	 * @return 0 if OK, or a negative error code
+	 */
+	int	(*set_mode)(struct phy *phy, int mode, int submode);
 };
 
 /**
@@ -206,6 +220,15 @@ int generic_phy_power_off(struct phy *phy);
  */
 int generic_phy_configure(struct phy *phy, void *params);
 
+/**
+ * generic_phy_set_mode_ext() - set mode and extended mode of a PHY device
+ *
+ * @phy:	PHY port to be configured
+ * @mode:	PHY mode
+ * @submode:	PHY submode
+ * @return 0 if OK, or a negative error code
+ */
+int generic_phy_set_mode_ext(struct phy *phy, int mode, int submode);
 
 /**
  * generic_phy_get_by_index() - Get a PHY device by integer index.
