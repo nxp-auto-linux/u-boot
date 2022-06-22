@@ -9,6 +9,7 @@
 #include <dm.h>
 #include <pci.h>
 #include <asm/io.h>
+#include <linux/ioport.h>
 
 #include "serdes_s32gen1.h"
 
@@ -136,8 +137,7 @@ enum pcie_link_speed {
 struct s32_pcie {
 	struct list_head list;
 	struct udevice *bus;
-	struct fdt_resource dbi_res;
-	struct fdt_resource cfg_res;
+	struct resource cfg_res;
 	void __iomem *dbi;
 	void __iomem *cfg0;
 #ifdef PCIE_USE_CFG1

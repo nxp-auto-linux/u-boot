@@ -15,6 +15,7 @@
 #include <asm/arch/clock.h>
 #include <dm/device-internal.h>
 #include <dm/uclass.h>
+#include <linux/io.h>
 #include <linux/sizes.h>
 #include <s32-cc/nvmem.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
@@ -47,8 +48,6 @@
 #define PCI_UPPER_ADDR_SHIFT 32
 
 #define PCI_DEVICE_ID_S32GEN1	0x4002
-
-DECLARE_GLOBAL_DATA_PTR;
 
 LIST_HEAD(s32_pcie_list);
 
@@ -230,9 +229,9 @@ static void s32_pcie_rc_setup_atu(struct s32_pcie *pcie)
 {
 	u64 cfg_start = pcie->cfg_res.start;
 #ifndef PCIE_USE_CFG1
-	u64 cfg_size = fdt_resource_size(&pcie->cfg_res);
+	u64 cfg_size = resource_size(&pcie->cfg_res);
 #else
-	u64 cfg_size = fdt_resource_size(&pcie->cfg_res) / 2;
+	u64 cfg_size = resource_size(&pcie->cfg_res) / 2;
 #endif
 	u64 limit = cfg_start + cfg_size;
 
@@ -710,57 +709,55 @@ static int s32_pcie_get_hw_mode_ep(struct s32_pcie *pcie)
 
 static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 {
-	const void *fdt = gd->fdt_blob;
 	struct udevice *dev = pcie->bus;
-	int node = dev_of_offset(dev);
+	struct resource res;
 	int ret = 0;
+	u32 val;
 
-	debug("%s: dt node: %d\n", __func__, node);
+	debug("%s: dt node: %s\n", __func__, dev_read_name(dev));
 
-	ret = dev_read_alias_seq(pcie->bus, &pcie->id);
-	if (ret) {
+	ret = dev_read_alias_seq(dev, &pcie->id);
+	if (ret < 0) {
 		printf("Failed to get PCIe device id\n");
 		return ret;
 	}
 
-	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
-				     "dbi", &pcie->dbi_res);
+	ret = dev_read_resource_byname(dev, "dbi", &res);
 	if (ret) {
 		printf("PCIe%d: resource \"dbi\" not found\n", pcie->id);
 		return ret;
 	}
 
-	pcie->dbi = (void __iomem *)
-		map_physmem((phys_addr_t)(pcie->dbi_res.start),
-			    fdt_resource_size(&pcie->dbi_res),
-			    MAP_NOCACHE);
+	pcie->dbi = devm_ioremap(dev, res.start, resource_size(&res));
+	if (!pcie->dbi) {
+		printf("PCIe%d: Failed to map 'dbi' resource\n", pcie->id);
+		return -ENOMEM;
+	}
 
-	debug("PCIe%d: %s: dbi: 0x%p (0x%p)\n", pcie->id,
-	      __func__, (void *)pcie->dbi_res.start, pcie->dbi);
-
-	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
-				     "config", &pcie->cfg_res);
+	ret = dev_read_resource_byname(dev, "config", &res);
 	if (ret) {
-		printf("PCIe%d: resource \"config\" not found\n", pcie->id);
+		printf("PCIe%d: resource \"dbi\" not found\n", pcie->id);
 		return ret;
 	}
 
-	pcie->cfg0 = (void __iomem *)
-		map_physmem((phys_addr_t)(pcie->cfg_res.start),
-			    fdt_resource_size(&pcie->cfg_res),
-			    MAP_NOCACHE);
+	pcie->cfg0 = devm_ioremap(dev, res.start, resource_size(&res));
+	if (!pcie->cfg0) {
+		printf("PCIe%d: Failed to map 'config' resource\n", pcie->id);
+		return -ENOMEM;
+	}
+
+	pcie->cfg_res = res;
+
 #ifdef PCIE_USE_CFG1
-	pcie->cfg1 = pcie->cfg0 + fdt_resource_size(&pcie->cfg_res) / 2;
+	pcie->cfg1 = pcie->cfg0 + resource_size(&pcie->cfg_res) / 2;
 #endif
 
-	debug("PCIe%d: %s: cfg: 0x%p (0x%p)\n", pcie->id,
-	      __func__, (void *)pcie->cfg_res.start,
-	      pcie->cfg0);
-
 	/* get supported speed (Gen1/Gen2/Gen3) from device tree */
-	pcie->linkspeed = fdtdec_get_int(fdt, node, "link-speed", GEN1);
+	val = dev_read_u32_default(dev, "link-speed", GEN1);
+	pcie->linkspeed = (enum pcie_link_speed)val;
 	/* get supported width (X1/X2) from device tree */
-	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
+	val = dev_read_u32_default(dev, "num-lanes", X1);
+	pcie->linkwidth = (enum serdes_link_width)val;
 
 	return ret;
 }
