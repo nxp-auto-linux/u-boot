@@ -836,39 +836,23 @@ static u32 s32_get_pcie_width(struct s32_pcie *pcie)
 		PCIE_NUM_OF_LANES_LSB) & PCIE_NUM_OF_LANES_MASK;
 }
 
-static int s32_pcie_get_dev_id_variant(struct udevice *dev)
+static u32 s32_pcie_get_dev_id_variant(struct udevice *dev)
 {
-	struct udevice *siul2_nvmem;
-	struct ofnode_phandle_args phandle_args;
-	u32 variant_bits = 0;
-	struct nvmem_cell cell;
+	struct nvmem_cell c;
 	int ret;
+	u32 variant_bits = 0;
 
-	if (dev_read_phandle_with_args(dev, "nvmem-cells", NULL,
-				       0, 0, &phandle_args)) {
-		printf("%s: soc_revision backing device not specified\n",
-		       dev->name);
-		return -ENOENT;
-	}
-
-	if (uclass_get_device_by_ofnode(UCLASS_MISC, phandle_args.node,
-					&siul2_nvmem)) {
-		printf("%s: could not get backing device\n", dev->name);
-		return -ENODEV;
-	}
-
-	ret = nvmem_cell_get_by_offset(siul2_nvmem, S32CC_OVERWRITE_PCIE_DEV_ID,
-				       &cell);
+	ret = nvmem_cell_get(dev, "pcie_variant", &c);
 	if (ret) {
-		printf("Failed to get PCIE ID NVMEM cell\n");
-		return -ENODEV;
+		printf("Failed to get 'pcie_variant' cell\n");
+		return ret;
 	}
 
-	ret = nvmem_cell_read(&cell, &variant_bits, sizeof(variant_bits));
+	ret = nvmem_cell_read(&c, &variant_bits, sizeof(variant_bits));
 	if (ret) {
-		printf("%s: Failed to read PCIe device ID (err = %d)\n",
+		printf("%s: Failed to read cell 'pcie_variant' (err = %d)\n",
 		       __func__, ret);
-		return -EINVAL;
+		return ret;
 	}
 
 	return variant_bits;
@@ -963,46 +947,50 @@ static int s32_pcie_probe_ep(struct s32_pcie *pcie, struct uclass *uc)
 	return 0;
 }
 
+static int s32gen1_check_serdes(struct udevice *dev)
+{
+	struct nvmem_cell c;
+	int ret;
+	u32 serdes_presence = 0;
+
+	ret = nvmem_cell_get(dev, "serdes_presence", &c);
+	if (ret) {
+		printf("Failed to get 'serdes_presence' cell\n");
+		return ret;
+	}
+
+	ret = nvmem_cell_read(&c, &serdes_presence, sizeof(serdes_presence));
+	if (ret) {
+		printf("%s: Failed to read cell 'serdes_presence' (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	if (!serdes_presence) {
+		printf("SerDes Subsystem not present, skipping PCIe config\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
 static int s32_pcie_probe(struct udevice *dev)
 {
 	struct s32_pcie *pcie = dev_get_priv(dev);
 	struct uclass *uc = dev->uclass;
 	int ret = 0;
 	bool ltssm_en = false;
-	u32 soc_serdes_presence;
-	u32 variant_bits, pcie_dev_id;
 	enum serdes_dev_type devtype;
-	struct udevice *siul21_nvmem = NULL;
-	struct nvmem_cell cell;
+	u32 variant_bits, pcie_dev_id;
+
+	if (!pcie)
+		return -EINVAL;
 
 	pcie->enabled = false;
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, "siul2_1_nvram",
-					&siul21_nvmem);
-	if (ret) {
-		printf("%s: No SIUL21 NVMEM (err = %d)\n", __func__, ret);
+	ret = s32gen1_check_serdes(dev);
+	if (ret)
 		return ret;
-	}
-
-	ret = nvmem_cell_get_by_offset(siul21_nvmem, S32CC_SERDES_PRESENCE,
-				       &cell);
-	if (ret) {
-		printf("Failed to get SerDes presence NVMEM cell\n");
-		return -ENODEV;
-	}
-
-	ret = nvmem_cell_read(&cell, &soc_serdes_presence,
-			      sizeof(soc_serdes_presence));
-	if (ret) {
-		printf("%s: Failed to read SoC's SerDes capability (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
-
-	if (!soc_serdes_presence) {
-		printf("SerDes Subsystem not present, skipping PCIe config\n");
-		return -ENODEV;
-	}
 
 	debug("%s: probing %s\n", __func__, dev->name);
 	if (!pcie) {
