@@ -266,6 +266,22 @@ int generic_phy_configure(struct phy *phy, void *params);
 int generic_phy_set_mode(struct phy *phy, enum phy_mode mode, int submode);
 
 /**
+ * generic_phy_set_mode_ext() - set mode of a PHY device (int variant)
+ *
+ * Downstream compatibility wrapper around generic_phy_set_mode().
+ *
+ * @phy:	PHY port to be configured
+ * @mode:	PHY mode (int, cast to enum phy_mode)
+ * @submode:	PHY submode
+ * Return: 0 if OK, or a negative error code
+ */
+static inline int generic_phy_set_mode_ext(struct phy *phy, int mode,
+					   int submode)
+{
+	return generic_phy_set_mode(phy, (enum phy_mode)mode, submode);
+}
+
+/**
  * generic_phy_set_speed() - set PHY device speed
  *
  * @phy:	PHY port to be configured
