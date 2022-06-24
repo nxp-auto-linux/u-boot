@@ -1114,7 +1114,8 @@ static const struct dm_pci_ops s32_pcie_ops = {
 };
 
 static const struct udevice_id s32_pcie_ids[] = {
-	{ .compatible = "nxp,s32cc-pcie" },
+	{ .compatible = "nxp,s32cc-pcie", .data = PCIE_RC },
+	{ .compatible = "nxp,s32cc-pcie-ep", .data = PCIE_EP },
 	{ }
 };
 
