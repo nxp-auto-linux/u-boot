@@ -717,7 +717,11 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 	debug("%s: dt node: %d\n", __func__, node);
 
-	pcie->id = fdtdec_get_int(fdt, node, "device_id", -1);
+	ret = dev_read_alias_seq(pcie->bus, &pcie->id);
+	if (ret) {
+		printf("Failed to get PCIe device id\n");
+		return ret;
+	}
 
 	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
 				     "dbi", &pcie->dbi_res);

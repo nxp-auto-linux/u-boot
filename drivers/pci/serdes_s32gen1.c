@@ -758,7 +758,12 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 	debug("%s: dbi: 0x%p (0x%p)\n", __func__, (void *)pcie->dbi_res.start,
 	      pcie->dbi);
 
-	pcie->id = fdtdec_get_int(fdt, node, "device_id", -1);
+	ret = fdtdec_get_alias_seq(gd->fdt_blob, "serdes",
+				   node, &pcie->id);
+	if (ret) {
+		printf("Failed to get SerDes device id\n");
+		return ret;
+	}
 
 	/* get supported width (X1/X2) from device tree */
 	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
