@@ -34,8 +34,6 @@
 #define LINFLEXD_UARTCR_ROSE		BIT(23)
 #define LINFLEX_LDIV_MULTIPLIER		(16)
 
-DECLARE_GLOBAL_DATA_PTR;
-
 struct linflex_fsl {
 	u32 lincr1;
 	u32 linier;
@@ -220,7 +218,7 @@ static int linflex_serial_probe(struct udevice *dev)
 	const char *clk_name = "lin";
 	int ret;
 
-	base_addr = devfdt_get_addr(dev);
+	base_addr = dev_read_addr(dev);
 	if (base_addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
