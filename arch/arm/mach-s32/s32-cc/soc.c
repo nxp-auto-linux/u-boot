@@ -7,6 +7,7 @@
 #include <asm/global_data.h>
 #include <asm/sections.h>
 #include <asm/armv8/mmu.h>
+#include <dm/ofnode.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -53,15 +54,12 @@ struct mm_region *mem_map = s32_mem_map;
 static void disable_qspi_mmu_entry(void)
 {
 	struct mm_region *region;
-	int offset;
+	ofnode node;
 	size_t i;
 
-	offset = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
-					       "nxp,s32cc-qspi");
-	if (offset > 0) {
-		if (fdtdec_get_is_enabled(gd->fdt_blob, offset))
-			return;
-	}
+	node = ofnode_by_compatible(ofnode_null(), "nxp,s32cc-qspi");
+	if (ofnode_valid(node) && ofnode_is_available(node))
+		return;
 
 	/* Skip AHB mapping by setting its size to 0 */
 	for (i = 0; i < ARRAY_SIZE(s32_mem_map); i++) {

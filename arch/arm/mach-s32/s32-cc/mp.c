@@ -19,8 +19,6 @@ struct cpu_desc {
 	bool on;
 };
 
-DECLARE_GLOBAL_DATA_PTR;
-
 static struct cpu_desc *cpus;
 static u32 n_cpus;
 
@@ -80,36 +78,33 @@ static int add_cpu(u32 psci_id)
 static int initialize_cpus_data(void)
 {
 	static bool initialized;
-	int off, ret = -1, addr_cells = 0;
-	fdt32_t *reg;
-	u64 core_id;
+	int ret = -1;
+	fdt_addr_t reg;
+	ofnode node;
 
 	if (initialized)
 		return 0;
 
-	off = fdt_path_offset(gd->fdt_blob, "/cpus");
-	if (off < 0) {
+	node = ofnode_path("/cpus");
+	if (!ofnode_valid(node)) {
 		printf("Couldn't find /cpus node\n");
 		return -EINVAL;
 	}
 
-	fdt_support_default_count_cells(gd->fdt_blob, off, &addr_cells, NULL);
-	off = get_next_cpu(gd->fdt_blob, off);
+	for (;;) {
+		node = ofnode_by_prop_value(node, "device_type", "cpu", 4);
+		if (!ofnode_valid(node))
+			break;
 
-	while (off != -FDT_ERR_NOTFOUND) {
-		reg = (fdt32_t *)fdt_getprop(gd->fdt_blob, off, "reg", 0);
-		if (!reg) {
+		reg = ofnode_get_addr_size_index_notrans(node, 0, NULL);
+		if (reg == FDT_ADDR_T_NONE) {
 			ret = -EINVAL;
 			break;
 		}
 
-		core_id = fdt_read_number(reg, addr_cells);
-
-		ret = add_cpu(core_id);
+		ret = add_cpu(reg);
 		if (ret)
 			break;
-
-		off = get_next_cpu(gd->fdt_blob, off);
 	}
 
 	if (ret) {
