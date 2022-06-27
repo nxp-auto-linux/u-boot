@@ -13,14 +13,13 @@
 #include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
 #include <dm/uclass.h>
 #include <linux/ctype.h>
+#include <linux/ioport.h>
 #include <linux/sizes.h>
 #include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/nvmem.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/phy/phy.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #define PCIE_ALIAS_FMT		"pcie%d"
 #define PCIE_ALIAS_SIZE		sizeof(PCIE_ALIAS_FMT)
@@ -107,19 +106,19 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 
 static bool is_lockstep_enabled(void)
 {
-	int ret, off;
+	int ret;
 	u32 lockstep_enabled = 0;
 	struct udevice *s32cc_a53_gpr = NULL;
 	const char *a53_compat = "nxp,s32cc-a53-gpr";
+	ofnode node;
 
-	off = fdt_node_offset_by_compatible(gd->fdt_blob, -1, a53_compat);
-	if (off < 0) {
-		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
-		       a53_compat, fdt_strerror(off));
+	node = ofnode_by_compatible(ofnode_null(), a53_compat);
+	if (!ofnode_valid(node)) {
+		printf("%s: Couldn't find \"%s\" node\n", __func__, a53_compat);
 		return false;
 	}
 
-	ret = uclass_get_device_by_of_offset(UCLASS_MISC, off, &s32cc_a53_gpr);
+	ret = uclass_get_device_by_ofnode(UCLASS_MISC, node, &s32cc_a53_gpr);
 	if (ret) {
 		printf("%s: No A53 GPR (err = %d)\n", __func__, ret);
 		return false;
@@ -247,17 +246,12 @@ static int ft_fixup_memory(void *blob, bd_t *bd)
 	return apply_memory_fixups(blob, bd);
 }
 
-static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
+static int add_atf_reserved_memory(void *new_blob)
 {
-	int ret, off;
+	int ret;
 	struct fdt_memory carveout;
-	struct fdt_resource reg;
-
-	/* Check FDT Headers */
-	if (fdt_check_header(old_blob)) {
-		pr_err("Invalid FDT Header for U-Boot DT Blob\n");
-		return -EINVAL;
-	}
+	struct resource reg;
+	ofnode node;
 
 	if (fdt_check_header(new_blob)) {
 		pr_err("Invalid FDT Header for Linux DT Blob\n");
@@ -265,14 +259,13 @@ static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
 	}
 
 	/* Get atf reserved-memory node offset */
-	off = fdt_path_offset(old_blob, "/reserved-memory/atf");
-	if (off < 0) {
+	node = ofnode_path("/reserved-memory/atf");
+	if (!ofnode_valid(node)) {
 		pr_err("Couldn't find 'atf' reserved-memory node\n");
-		return off;
+		return -EINVAL;
 	}
 
-	/* Get value of 'reg' prop */
-	ret = fdt_get_resource(old_blob, off, "reg", 0, &reg);
+	ret = ofnode_read_resource(node, 0, &reg);
 	if (ret) {
 		pr_err("Unable to get value of 'reg' prop of 'atf' node\n");
 		return ret;
@@ -299,9 +292,9 @@ static int add_atf_reserved_memory(const void *old_blob, void *new_blob)
 	return 0;
 }
 
-static int ft_fixup_atf(const void *old_blob, void *new_blob)
+static int ft_fixup_atf(void *new_blob)
 {
-	int ret = add_atf_reserved_memory(old_blob, new_blob);
+	int ret = add_atf_reserved_memory(new_blob);
 
 	if (ret)
 		pr_err("Copying 'atf' node from U-Boot DT to Linux DT failed!\n");
@@ -731,7 +724,7 @@ int ft_system_setup(void *blob, bd_t *bd)
 	if (ret)
 		goto exit;
 
-	ret = ft_fixup_atf(gd->fdt_blob, blob);
+	ret = ft_fixup_atf(blob);
 
 exit:
 	return ret;
