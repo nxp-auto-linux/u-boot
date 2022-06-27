@@ -272,7 +272,7 @@ static int s32cc_gpio_probe(struct udevice *dev)
 	int i = 0;
 	int ret;
 
-	addr = devfdt_get_addr(dev->parent);
+	addr = dev_read_addr(dev->parent);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
