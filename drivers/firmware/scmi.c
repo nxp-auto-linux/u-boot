@@ -93,17 +93,15 @@ struct scmi_smt_header {
 #define SMT_HEADER_MESSAGE_ID(id)	((id) & GENMASK(7, 0))
 
 struct scmi_shm_buf {
-	u8 *buf;
+	void __iomem *buf;
 	size_t size;
 };
 
 static int get_shm_buffer(struct udevice *dev, struct scmi_shm_buf *shm)
 {
-	int rc, len;
+	int rc;
 	struct ofnode_phandle_args args;
 	struct resource resource;
-	const fdt32_t *faddr;
-	phys_addr_t paddr;
 
 	rc = dev_read_phandle_with_args(dev, "shmem", NULL, 0, 0, &args);
 	if (rc)
@@ -113,20 +111,13 @@ static int get_shm_buffer(struct udevice *dev, struct scmi_shm_buf *shm)
 	if (rc)
 		return rc;
 
-	faddr = fdt_getprop(gd->fdt_blob, ofnode_to_offset(args.node),
-			    "reg", &len);
-	if (!faddr)
-		return len;
-
-	paddr = ofnode_translate_address(args.node, faddr);
-
 	shm->size = resource_size(&resource);
 	if (shm->size < sizeof(struct scmi_smt_header)) {
 		dev_err(dev, "Shared memory buffer too small\n");
 		return -EINVAL;
 	}
 
-	shm->buf = devm_ioremap(dev, paddr, shm->size);
+	shm->buf = devm_ioremap(dev, resource.start, shm->size);
 	if (!shm->buf)
 		return -ENOMEM;
 
