@@ -234,7 +234,7 @@ static int s32_saradc_ofdata_to_plat(struct udevice *dev)
 	if (!priv)
 		return -EINVAL;
 
-	priv->base = (ulong)devfdt_get_addr(dev);
+	priv->base = (ulong)dev_read_addr(dev);
 	if (priv->base == (ulong)FDT_ADDR_T_NONE)
 		return -EINVAL;
 
