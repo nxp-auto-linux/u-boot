@@ -101,7 +101,7 @@ static int s32_pinctrl_probe(struct udevice *dev)
 
 	fdt_addr_t addr;
 
-	addr = devfdt_get_addr(dev->parent);
+	addr = dev_read_addr(dev->parent);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
