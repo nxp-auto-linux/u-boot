@@ -18,6 +18,7 @@ config NXP_S32CC
 	imply CMD_FAT
 	imply CMD_MDIO
 	imply CMD_MII
+	imply CMD_MTD
 	imply CMD_PART
 	imply CMD_PING
 	imply DM_ETH
@@ -38,6 +39,7 @@ config NXP_S32CC
 	select CLK_SCMI
 	select CPU
 	select DM_GPIO
+	select DM_MTD
 	select DM_SPI
 	select DM_SPI_FLASH
 	select FSL_LINFLEXUART
@@ -49,6 +51,7 @@ config NXP_S32CC
 	select MACH_S32
 	select MMC_HS400_ES_SUPPORT
 	select MMC_HS400_SUPPORT
+	select MTD
 	select OF_BOARD
 	select OF_CONTROL
 	select OF_SYSTEM_SETUP
@@ -58,6 +61,7 @@ config NXP_S32CC
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
 	select SPI_FLASH
+	select SPI_FLASH_MTD
 	select SPI_FLASH_SFDP_SUPPORT
 	select SPI_MEM
 	select SYSRESET
