@@ -62,7 +62,6 @@ enum serdes_link_width {
 struct s32_serdes {
 	struct list_head list;
 	struct udevice *bus;
-	struct fdt_resource dbi_res;
 	void __iomem *dbi;
 	enum serdes_mode ss_mode;
 

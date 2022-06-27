@@ -15,6 +15,9 @@
 #include <asm/arch/clock.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
+#include <dm/of_access.h>
+#include <linux/io.h>
+#include <linux/ioport.h>
 #include <linux/sizes.h>
 
 #include "serdes_regs.h"
@@ -37,8 +40,6 @@
 			((clk_type == CLK_INT) ? "internal" : "external")
 #define SERDES_CLK_FMHZ(clk_type) \
 			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
-
-DECLARE_GLOBAL_DATA_PTR;
 
 static LIST_HEAD(s32_serdes_list);
 
@@ -734,41 +735,59 @@ static bool s32_serdes_is_xpcs_cfg_valid(struct s32_serdes *pcie)
 	return ret;
 }
 
+static int get_serdes_alias_id(struct udevice *dev, int *devnump)
+{
+	ofnode node = dev_ofnode(dev);
+	const char *uc_name = "serdes";
+	int ret;
+
+	if (ofnode_is_np(node)) {
+		ret = of_alias_get_id(ofnode_to_np(node), uc_name);
+		if (ret >= 0) {
+			*devnump = ret;
+			ret = 0;
+		}
+	} else {
+		ret = fdtdec_get_alias_seq(gd->fdt_blob, uc_name,
+					   ofnode_to_offset(node), devnump);
+	}
+
+	return ret;
+}
+
 static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 {
-	const void *fdt = gd->fdt_blob;
+	struct resource res;
 	struct udevice *dev = pcie->bus;
-	int node = dev_of_offset(dev);
 	int ret = 0;
+	u32 val;
 
-	debug("dt node: %d\n", node);
+	ret = get_serdes_alias_id(dev, &pcie->id);
+	if (ret < 0) {
+		printf("Failed to get SerDes device id\n");
+		return ret;
+	}
 
-	ret = fdt_get_named_resource(fdt, node, "reg", "reg-names",
-				     "dbi", &pcie->dbi_res);
+	ret = dev_read_resource_byname(dev, "dbi", &res);
 	if (ret) {
 		printf("s32-serdes: resource \"dbi\" not found\n");
 		return ret;
 	}
 
-	pcie->dbi = (void __iomem *)
-		map_physmem((phys_addr_t)(pcie->dbi_res.start),
-			    fdt_resource_size(&pcie->dbi_res),
-			    MAP_NOCACHE);
-
-	debug("%s: dbi: 0x%p (0x%p)\n", __func__, (void *)pcie->dbi_res.start,
-	      pcie->dbi);
-
-	ret = fdtdec_get_alias_seq(gd->fdt_blob, "serdes",
-				   node, &pcie->id);
-	if (ret) {
-		printf("Failed to get SerDes device id\n");
-		return ret;
+	pcie->dbi = devm_ioremap(dev, res.start, resource_size(&res));
+	if (!pcie->dbi) {
+		printf("PCIe%d: Failed to map 'dbi' resource\n", pcie->id);
+		return -ENOMEM;
 	}
 
-	/* get supported width (X1/X2) from device tree */
-	pcie->linkwidth = fdtdec_get_int(fdt, node, "num-lanes", X1);
+	debug("%s: dbi: 0x%lx (0x%p)\n", __func__, (uintptr_t)res.start,
+	      pcie->dbi);
 
-	return ret;
+	/* get supported width (X1/X2) from device tree */
+	val = dev_read_u32_default(dev, "num-lanes", X1);
+	pcie->linkwidth = (enum serdes_link_width)val;
+
+	return 0;
 }
 
 static int enable_serdes_clocks(struct udevice *dev)
