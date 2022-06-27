@@ -14,16 +14,15 @@ int nvmem_cell_get_by_offset(struct udevice *dev, int offset,
 			     struct nvmem_cell *cell)
 {
 	fdt_addr_t cell_addr, cell_size;
-	ofnode node;
+	ofnode subnode;
 	bool found = false;
 
 	if (!cell)
 		return -EINVAL;
 
-	for (node = dev_read_first_subnode(dev); ofnode_valid(node);
-	     node = dev_read_next_subnode(node)) {
-		cell_addr = ofnode_get_addr_size_index(node, 0,
-						       &cell_size);
+	ofnode_for_each_subnode(subnode, dev_ofnode(dev)) {
+		cell_addr = ofnode_get_addr_size_index_notrans(subnode, 0,
+							       &cell_size);
 		if (cell_addr == FDT_ADDR_T_NONE)
 			continue;
 
@@ -61,7 +60,7 @@ int nvmem_cell_get_by_index(struct udevice *dev, int index,
 	ret = dev_read_phandle_with_args(dev, "nvmem-cells", NULL,
 					 0, index, &args);
 	if (ret) {
-		debug("%s: fdtdec_parse_phandle_with_args failed: err=%d\n",
+		debug("%s: dev_read_phandle_with_args failed: err=%d\n",
 		      __func__, ret);
 		return ret;
 	}
@@ -70,7 +69,7 @@ int nvmem_cell_get_by_index(struct udevice *dev, int index,
 	ret = uclass_get_device_by_ofnode(UCLASS_MISC, parent_ofnode,
 					  &cell->dev);
 	if (ret) {
-		debug("%s: uclass_get_device_by_of_offset failed: err=%d\n",
+		debug("%s: uclass_get_device_by_ofnode failed: err=%d\n",
 		      __func__, ret);
 		return ret;
 	}
@@ -92,7 +91,7 @@ int nvmem_cell_get(struct udevice *dev, const char *name,
 
 	index = dev_read_stringlist_search(dev, "nvmem-cell-names", name);
 	if (index < 0) {
-		pr_err("fdt_stringlist_search() failed: %d\n", index);
+		pr_err("dev_read_stringlist_search() failed: %d\n", index);
 		return index;
 	}
 
