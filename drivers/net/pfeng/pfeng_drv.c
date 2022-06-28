@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  */
 
 #include <common.h>
-#include <malloc.h>
-#include <fs.h>
+#include <clk.h>
 #include <dm.h>
-#include <phy.h>
+#include <elf.h>
+#include <fs.h>
+#include <hwconfig.h>
+#include <malloc.h>
 #include <miiphy.h>
 #include <net.h>
-#include <elf.h>
-#include <hwconfig.h>
+#include <phy.h>
 #include <spi_flash.h>
-#include <clk.h>
-#include <cpu_func.h>
+#include <linux/ioport.h>
 
 #include "pfeng.h"
 
-#include <dm/platform_data/pfeng_dm_eth.h>
 #include <dm/device_compat.h>
+#include <dm/platform_data/pfeng_dm_eth.h>
 
 static struct pfeng_priv *pfeng_drv_priv = NULL;
 /* firmware */
@@ -544,38 +544,49 @@ struct pfeng_config pfeng_s32g274a_config = {
 static int pfeng_ofdata_to_platdata(struct udevice *dev)
 {
 	int ret;
-	char node_name[100];
-	struct fdt_memory carveout;
-	int node = dev_of_offset(dev);
+	struct resource res;
+	ofnode mem_node, node = dev_ofnode(dev);
 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
+	u32 phandle;
 
 	if (!pdata) {
 		dev_err(dev, "no platform data");
 		return -ENOMEM;
 	}
 
-	pdata->eth.iobase = devfdt_get_addr(dev);
+	if (!priv) {
+		dev_err(dev, "Invalid PFE driver data\n");
+		return -ENOMEM;
+	}
+
+	pdata->eth.iobase = dev_read_addr(dev);
 	if (pdata->eth.iobase == FDT_ADDR_T_NONE) {
-		dev_err(dev, "devfdt_get_addr() failed");
+		dev_err(dev, "dev_read_addr() failed");
 		return -ENODEV;
 	}
 
-	ret = fdt_get_path(gd->fdt_blob, node, &node_name[0],
-			   sizeof(node_name));
+	ret = dev_read_u32(dev, "memory-region", &phandle);
 	if (ret) {
-		dev_err(dev, "PFE: Couldn't get path to reserved memory");
-		return -EINVAL;
-	}
-	ret = fdtdec_get_carveout(gd->fdt_blob, &node_name[0],
-				  "memory-region", 0, &carveout);
-	if (ret) {
-		dev_err(dev, "PFE: Couldn't get reserved memory regs");
-		return -EINVAL;
+		dev_err(dev, "PFE: Couldn't read 'memory-region' phandle\n");
+		return -ENODEV;
 	}
 
-	priv->pfe_cfg.bmu_addr = carveout.start;
-	priv->pfe_cfg.bmu_addr_size = carveout.end - carveout.start + 1;
+	mem_node = ofnode_get_by_phandle(phandle);
+	if (!ofnode_valid(mem_node)) {
+		dev_err(dev, "PFE: Couldn't find the node linked to 'memory-region'\n");
+		return -ENODEV;
+	}
+
+	ret = ofnode_read_resource(mem_node, 0, &res);
+	if (ret) {
+		dev_err(dev, "PFE: Failed to read region from node: %s\n",
+			ofnode_get_name(node));
+		return -ENODEV;
+	}
+
+	priv->pfe_cfg.bmu_addr = res.start;
+	priv->pfe_cfg.bmu_addr_size = res.end - res.start + 1;
 
 	pdata->config = (void *)dev_get_driver_data(dev);
 
