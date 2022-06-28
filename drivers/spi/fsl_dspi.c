@@ -18,7 +18,6 @@
 #include <spi.h>
 #include <malloc.h>
 #include <asm/io.h>
-#include <fdtdec.h>
 #ifndef CONFIG_M68K
 #include <asm/arch/clock.h>
 #endif
@@ -769,24 +768,22 @@ static int fsl_dspi_ofdata_to_platdata(struct udevice *bus)
 {
 	fdt_addr_t addr;
 	struct fsl_dspi_platdata *plat = bus->platdata;
-	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(bus);
 
-	if (fdtdec_get_bool(blob, node, "big-endian"))
+	if (dev_read_bool(bus, "big-endian"))
 		plat->flags |= DSPI_FLAG_REGMAP_ENDIAN_BIG;
 
 	plat->num_chipselect =
-		fdtdec_get_int(blob, node, "num-cs", FSL_DSPI_MAX_CHIPSELECT);
+		dev_read_u32_default(bus, "num-cs", FSL_DSPI_MAX_CHIPSELECT);
 
-	addr = devfdt_get_addr(bus);
+	addr = dev_read_addr(bus);
 	if (addr == FDT_ADDR_T_NONE) {
 		debug("DSPI: Can't get base address or size\n");
 		return -ENOMEM;
 	}
 	plat->regs_addr = addr;
 
-	plat->speed_hz = fdtdec_get_int(blob,
-			node, "spi-max-frequency", FSL_DSPI_DEFAULT_SCK_FREQ);
+	plat->speed_hz = dev_read_u32_default(bus, "spi-max-frequency",
+					      FSL_DSPI_DEFAULT_SCK_FREQ);
 
 	debug("DSPI: regs=%pa, max-frequency=%d, endianess=%s, num-cs=%d\n",
 	      &plat->regs_addr, plat->speed_hz,
