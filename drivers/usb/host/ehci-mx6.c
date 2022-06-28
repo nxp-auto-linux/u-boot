@@ -600,7 +600,7 @@ static int ehci_usb_bind(struct udevice *dev)
 static int ehci_usb_probe(struct udevice *dev)
 {
 	struct usb_platdata *plat = dev_get_platdata(dev);
-	struct usb_ehci *ehci = (struct usb_ehci *)devfdt_get_addr(dev);
+	struct usb_ehci *ehci = (struct usb_ehci *)dev_read_addr(dev);
 	struct ehci_mx6_priv_data *priv = dev_get_priv(dev);
 	enum usb_init_type type = plat->init_type;
 	struct ehci_hccr *hccr;
