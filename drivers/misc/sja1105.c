@@ -3,13 +3,13 @@
  * Copyright 2017-2018, 2020-2023 NXP
  */
 
-#include "sja1105_ll.h"
 #include <common.h>
+#include <spi.h>
 #include <dm/device.h>
 #include <dm/uclass.h>
 #include <linux/errno.h>
 #include <linux/kernel.h>
-#include <spi.h>
+#include "sja1105_ll.h"
 
 #define MAX_ARRAY_SIZE 30
 #define SJA1105_VAL_DEVICEID_1_1	0xAE00030EUL
@@ -941,18 +941,19 @@ static int get_sja1105_device(struct udevice **dev, struct sja_parms *sjap)
 {
 	struct udevice *parent;
 	size_t i;
-	int off, ret;
+	int ret;
+	ofnode node;
 
 	for (i = 0; i < ARRAY_SIZE(sja1105_ids); i++) {
 		if (!sja1105_ids[i].compatible)
 			continue;
 
-		off = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
-						    sja1105_ids[i].compatible);
-		if (off == -FDT_ERR_NOTFOUND)
+		node = ofnode_by_compatible(ofnode_null(),
+					    sja1105_ids[i].compatible);
+		if (!ofnode_valid(node))
 			continue;
 
-		ret = uclass_get_device_by_of_offset(UCLASS_MISC, off, dev);
+		ret = uclass_get_device_by_ofnode(UCLASS_MISC, node, dev);
 		if (ret)
 			continue;
 
