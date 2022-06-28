@@ -19,8 +19,6 @@
 #include <linux/sizes.h>
 #include "fsl_qspi.h"
 
-DECLARE_GLOBAL_DATA_PTR;
-
 #define OFFSET_BITS_MASK	((FSL_QSPI_FLASH_SIZE  > SZ_16M) ? \
 					GENMASK(27, 0) :  GENMASK(23, 0))
 
@@ -1137,30 +1135,29 @@ static int fsl_qspi_probe(struct udevice *bus)
 
 static int fsl_qspi_ofdata_to_platdata(struct udevice *bus)
 {
-	struct fdt_resource res_regs, res_mem;
+	fdt_addr_t reg_base = 0U, mem_base = 0U;
+	fdt_addr_t mem_size = 0U;
 	struct fsl_qspi_platdata *plat = bus->platdata;
-	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(bus);
-	int ret, flash_num = 0, subnode;
+	int ret, flash_num = 0;
+	ofnode subnode;
 
-	if (fdtdec_get_bool(blob, node, "big-endian"))
+	if (dev_read_bool(bus, "big-endian"))
 		plat->flags |= QSPI_FLAG_REGMAP_ENDIAN_BIG;
 
-	ret = fdt_get_named_resource(blob, node, "reg", "reg-names",
-				     "QuadSPI", &res_regs);
-	if (ret) {
-		debug("Error: can't get regs base addresses(ret = %d)!\n", ret);
+	reg_base = dev_read_addr_name(bus, "QuadSPI");
+	if (reg_base == FDT_ADDR_T_NONE) {
+		debug("Error: can't get regs base addresses!\n");
 		return -ENOMEM;
 	}
-	ret = fdt_get_named_resource(blob, node, "reg", "reg-names",
-				     "QuadSPI-memory", &res_mem);
-	if (ret) {
+
+	mem_base = dev_read_addr_size_name(bus, "QuadSPI-memory", &mem_size);
+	if (mem_base == FDT_ADDR_T_NONE) {
 		debug("Error: can't get AMBA base addresses(ret = %d)!\n", ret);
 		return -ENOMEM;
 	}
 
 	/* Count flash numbers */
-	fdt_for_each_subnode(subnode, blob, node)
+	dev_for_each_subnode(subnode, bus)
 		++flash_num;
 
 	if (flash_num == 0) {
@@ -1168,14 +1165,13 @@ static int fsl_qspi_ofdata_to_platdata(struct udevice *bus)
 		return -ENODEV;
 	}
 
-	plat->speed_hz = fdtdec_get_int(blob, node, "spi-max-frequency",
-					FSL_QSPI_DEFAULT_SCK_FREQ);
-	plat->num_chipselect = fdtdec_get_int(blob, node, "num-cs",
-					      FSL_QSPI_MAX_CHIPSELECT_NUM);
-
-	plat->reg_base = res_regs.start;
-	plat->amba_base = res_mem.start;
-	plat->amba_total_size = res_mem.end - res_mem.start + 1;
+	plat->speed_hz = dev_read_u32_default(bus, "spi-max-frequency",
+					      FSL_QSPI_DEFAULT_SCK_FREQ);
+	plat->num_chipselect = dev_read_u32_default(bus, "num-cs",
+						    FSL_QSPI_MAX_CHIPSELECT_NUM);
+	plat->reg_base = reg_base;
+	plat->amba_base = mem_base;
+	plat->amba_total_size = mem_size;
 	plat->flash_num = flash_num;
 
 	debug("%s: regs=<0x%llx> <0x%llx, 0x%llx>, max-frequency=%d, endianess=%s\n",
