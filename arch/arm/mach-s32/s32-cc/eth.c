@@ -296,11 +296,8 @@ static ulong gmac_calc_link_speed(u32 speed)
 }
 
 static int get_gmac_clocks(u32 mode, const char **rx,
-			   const char **tx, const char **ts)
+			   const char **tx)
 {
-	if (ts)
-		*ts = "ptp_ref";
-
 	switch (mode) {
 	case PHY_INTERFACE_MODE_SGMII:
 		if (rx)
@@ -328,7 +325,7 @@ int set_tx_clk_enet_gmac(struct udevice *gmac_dev, u32 speed)
 	const char *tx;
 	ulong freq = gmac_calc_link_speed(speed);
 	u32 mode = eqos_get_interface_s32cc(gmac_dev);
-	int ret = get_gmac_clocks(mode, NULL, &tx, NULL);
+	int ret = get_gmac_clocks(mode, NULL, &tx);
 
 	if (ret) {
 		dev_err(gmac_dev, "Invalid GMAC interface: %s\n",
@@ -349,10 +346,10 @@ int set_tx_clk_enet_gmac(struct udevice *gmac_dev, u32 speed)
 
 void setup_clocks_enet_gmac(int intf, struct udevice *gmac_dev)
 {
-	const char *rx, *tx, *ts;
+	const char *rx, *tx;
 	int ret;
 
-	ret = get_gmac_clocks(intf, &rx, &tx, &ts);
+	ret = get_gmac_clocks(intf, &rx, &tx);
 	/* Do nothing for the interfaces that are not supported */
 	if (ret)
 		return;
@@ -367,10 +364,6 @@ void setup_clocks_enet_gmac(int intf, struct udevice *gmac_dev)
 	ret = s32gen1_enable_dev_clk(tx, gmac_dev);
 	if (ret)
 		dev_err(gmac_dev, "Failed to enable %s clock\n", tx);
-
-	ret = s32gen1_enable_dev_clk(ts, gmac_dev);
-	if (ret)
-		dev_err(gmac_dev, "Failed to enable %s clock\n", ts);
 }
 
 #endif /* CONFIG_DWC_ETH_QOS_S32CC */
