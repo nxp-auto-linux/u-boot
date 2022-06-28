@@ -24,7 +24,6 @@
 #include <power/regulator.h>
 #include <malloc.h>
 #include <fsl_esdhc_imx.h>
-#include <fdt_support.h>
 #include <asm/io.h>
 #include <dm.h>
 #include <asm-generic/gpio.h>
@@ -1470,8 +1469,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct fsl_esdhc_plat *plat = dev_get_platdata(dev);
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
-	const void *fdt = gd->fdt_blob;
-	int node = dev_of_offset(dev);
 	struct esdhc_soc_data *data =
 		(struct esdhc_soc_data *)dev_get_driver_data(dev);
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
@@ -1502,13 +1499,13 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	else
 		priv->bus_width = 1;
 
-	val = fdtdec_get_int(fdt, node, "fsl,tuning-step", 1);
+	val = dev_read_u32_default(dev, "fsl,tuning-step", 1);
 	priv->tuning_step = val;
-	val = fdtdec_get_int(fdt, node, "fsl,tuning-start-tap",
-			     ESDHC_TUNING_START_TAP_DEFAULT);
+	val = dev_read_u32_default(dev, "fsl,tuning-start-tap",
+				   ESDHC_TUNING_START_TAP_DEFAULT);
 	priv->tuning_start_tap = val;
-	val = fdtdec_get_int(fdt, node, "fsl,strobe-dll-delay-target",
-			     ESDHC_STROBE_DLL_CTRL_SLV_DLY_TARGET_DEFAULT);
+	val = dev_read_u32_default(dev, "fsl,strobe-dll-delay-target",
+				   ESDHC_STROBE_DLL_CTRL_SLV_DLY_TARGET_DEFAULT);
 	priv->strobe_dll_delay_target = val;
 
 	if (dev_read_bool(dev, "broken-cd"))
