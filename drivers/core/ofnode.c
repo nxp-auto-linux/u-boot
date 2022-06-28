@@ -987,3 +987,24 @@ int ofnode_set_enabled(ofnode node, bool value)
 	else
 		return ofnode_write_string(node, "status", "disabled");
 }
+
+ofnode ofnode_get_phy_node(ofnode node)
+{
+	/* DT node properties that reference a PHY node */
+	static const char * const phy_handle_str[] = {
+		"phy-handle", "phy", "phy-device",
+	};
+	struct ofnode_phandle_args args = {
+		.node = ofnode_null()
+	};
+	int i;
+
+	assert(ofnode_valid(node));
+
+	for (i = 0; i < ARRAY_SIZE(phy_handle_str); i++)
+		if (!ofnode_parse_phandle_with_args(node, phy_handle_str[i],
+						    NULL, 0, 0, &args))
+			break;
+
+	return args.node;
+}
