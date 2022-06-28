@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  *
  * Portions based on U-Boot's rtl8169.c.
  */
@@ -38,8 +38,8 @@
 #if CONFIG_IS_ENABLED(DM_GPIO)
 #include <asm/gpio.h>
 #endif
-#include <asm/io.h>
 #include <env.h>
+#include <asm/io.h>
 
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 
@@ -1026,23 +1026,27 @@ static int eqos_ofdata_to_platdata(struct udevice *dev)
 	struct eqos_pdata *pdata = dev_get_platdata(dev);
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	const char *phy_mode;
-	int node = dev_of_offset(dev);
-	int offset = 0;
+	ofnode subnode, phynode;
 
 	if (!pdata) {
 		pr_err("no platform data");
 		return -ENOMEM;
 	}
 
-	pdata->eth.iobase = devfdt_get_addr(dev);
+	if (!eqos) {
+		pr_err("invalid DWC driver data\n");
+		return -ENOMEM;
+	}
+
+	pdata->eth.iobase = dev_read_addr(dev);
 	if (pdata->eth.iobase == FDT_ADDR_T_NONE) {
-		pr_err("devfdt_get_addr() failed");
+		pr_err("dev_read_addr() failed");
 		return -ENODEV;
 	}
 
 	/* DT: parse phy-mode */
 	pdata->eth.phy_interface = -1;
-	phy_mode = fdt_getprop(gd->fdt_blob, node, "phy-mode", NULL);
+	phy_mode = dev_read_string(dev, "phy-mode");
 	if (phy_mode)
 		pdata->eth.phy_interface = phy_get_interface_by_name(phy_mode);
 	if (pdata->eth.phy_interface == -1) {
@@ -1051,21 +1055,20 @@ static int eqos_ofdata_to_platdata(struct udevice *dev)
 	}
 
 	/* DT: check for fixed-link subnode */
-	offset = fdt_subnode_offset(gd->fdt_blob, node, "fixed-link");
-	if (offset != -FDT_ERR_NOTFOUND) {
+	subnode = dev_read_subnode(dev, "fixed-link");
+	if (ofnode_valid(subnode)) {
 		printf("EQOS phy: %s fixed-link\n", phy_mode);
 	} else {
 		/* DT: parse phy-handle */
-		offset = fdtdec_lookup_phandle(gd->fdt_blob, node,
-					       "phy-handle");
-		if (offset > 0) {
-			eqos->phy_addr = fdtdec_get_int(gd->fdt_blob, offset,
-							"reg", -1);
+		phynode = ofnode_get_phy_node(dev_ofnode(dev));
+		if (ofnode_valid(phynode)) {
+			eqos->phy_addr = ofnode_read_u32_default(phynode, "reg",
+								 -1);
 			/* DT: parse max-speed */
-			pdata->eth.max_speed = fdtdec_get_uint(gd->fdt_blob,
-							       offset,
-							       "max-speed",
-							       SPEED_1000);
+			pdata->eth.max_speed =
+			    ofnode_read_u32_default(phynode,
+						    "max-speed",
+						    SPEED_1000);
 			printf("EQOS phy: %s @ %d\n", phy_mode, eqos->phy_addr);
 		}
 	}
@@ -1073,13 +1076,12 @@ static int eqos_ofdata_to_platdata(struct udevice *dev)
 	pdata->config = (void *)dev_get_driver_data(dev);
 
 	/* DT: allow rewrite platform specific t/rx-fifo-depth */
-	pdata->config->tx_fifo_size = fdtdec_get_uint(gd->fdt_blob, node,
-						      "tx-fifo-depth",
-						      pdata->config->tx_fifo_size);
-	pdata->config->rx_fifo_size = fdtdec_get_uint(gd->fdt_blob, node,
-						      "rx-fifo-depth",
-						      pdata->config->rx_fifo_size);
-
+	pdata->config->tx_fifo_size =
+	    dev_read_u32_default(dev, "tx-fifo-depth",
+				 pdata->config->tx_fifo_size);
+	pdata->config->rx_fifo_size =
+	    dev_read_u32_default(dev, "rx-fifo-depth",
+				 pdata->config->rx_fifo_size);
 	return 0;
 }
 #endif /* OF_CONTROL */
