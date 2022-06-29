@@ -962,43 +962,6 @@ static int s32_serdes_probe(struct udevice *dev)
 	return ret;
 }
 
-__weak void show_pcie_devices(void)
-{
-}
-
-/* pci_init - called before the probe function */
-int initr_pci(void)
-{
-	struct udevice *bus;
-
-	debug("%s\n", __func__);
-
-	/*
-	 * Enumerate all known UCLASS_PCI_GENERIC devices. This will
-	 * also probe them, so the SerDes devices will be enumerated too.
-	 * TODO: Enumerate first the EPs, so that loopback between
-	 * the two PCIe interfaces will also work if PCIe1 is EP.
-	 */
-	for (uclass_first_device(UCLASS_PCI_GENERIC, &bus);
-	     bus;
-	     uclass_next_device(&bus)) {
-		;
-	}
-
-	/*
-	 * Enumerate all known PCIe controller devices. Enumeration has
-	 * the side-effect of probing them, so PCIe devices will be
-	 * enumerated too.
-	 * This is inspired from commands `pci` and `dm tree`.
-	 */
-	pci_init();
-
-	/* now show the devices */
-	show_pcie_devices();
-
-	return 0;
-}
-
 static const struct udevice_id s32_serdes_ids[] = {
 	{ .compatible = "nxp,s32cc-serdes" },
 	{ }

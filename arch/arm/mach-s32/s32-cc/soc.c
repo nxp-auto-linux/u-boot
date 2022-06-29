@@ -9,6 +9,7 @@
 #include <asm/sections.h>
 #include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
+#include <dm/uclass.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -113,3 +114,42 @@ int arch_cpu_init(void)
 	return 0;
 }
 
+static void serdes_init(void)
+{
+	struct udevice *bus;
+
+	/*
+	 * Enumerate all known UCLASS_PCI_GENERIC devices. This will
+	 * also probe them, so the SerDes devices will be enumerated too.
+	 * TODO: Enumerate first the EPs, so that loopback between
+	 * the two PCIe interfaces will also work if PCIe1 is EP.
+	 */
+	for (uclass_first_device(UCLASS_PCI_GENERIC, &bus);
+	     bus;
+	     uclass_next_device(&bus)) {
+		;
+	}
+}
+
+__weak void show_pcie_devices(void)
+{
+}
+
+int initr_pci(void)
+{
+	debug("%s\n", __func__);
+
+	serdes_init();
+	/*
+	 * Enumerate all known PCIe controller devices. Enumeration has
+	 * the side-effect of probing them, so PCIe devices will be
+	 * enumerated too.
+	 * This is inspired from commands `pci` and `dm tree`.
+	 */
+	pci_init();
+
+	/* now show the devices */
+	show_pcie_devices();
+
+	return 0;
+}
