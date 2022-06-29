@@ -10,7 +10,6 @@
 #include <hwconfig.h>
 #include <malloc.h>
 #include <misc.h>
-#include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
 #include <dm/uclass.h>
 #include <linux/ctype.h>
 #include <linux/ioport.h>
@@ -18,6 +17,7 @@
 #include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/nvmem.h>
+#include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 

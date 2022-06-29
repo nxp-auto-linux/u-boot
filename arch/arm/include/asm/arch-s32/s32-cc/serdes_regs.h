@@ -8,9 +8,9 @@
 #ifndef SERDES_REGS_H
 #define SERDES_REGS_H
 
-#include <asm/arch-s32/s32-cc/serdes_hwconfig.h>
-#include "linux/errno.h"
-#include "linux/types.h"
+#include <linux/errno.h>
+#include <linux/types.h>
+#include <s32-cc/serdes_hwconfig.h>
 
 /* use a mask to fix DEVICE_TYPE for EP */
 #define SERDES_MODE(mode) (mode & 0xe)
