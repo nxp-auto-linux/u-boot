@@ -28,7 +28,7 @@ enum serdes_phy_mode {
 };
 
 enum serdes_dev_type {
-	SERDES_INVALID = -1,
+	SERDES_INVALID = 0,
 	PCIE_EP = 0x1, /* EP mode is 0x0, use 0x1 to allow us to use masks */
 	PCIE_RC = 0x4,
 	SGMII = 0x10, /* outside range of PE0_GEN_CTRL_1:DEVICE_TYPE */
