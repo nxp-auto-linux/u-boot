@@ -98,11 +98,9 @@
 	"fdt_override=;\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
-		"sf probe 6:0;"\
-		"sf read ${loadaddr} ${kernel_flashaddr} ${kernel_maxsize};"\
-		"sf read ${fdt_addr} ${fdt_flashaddr} ${fdt_maxsize};"\
-		"sf read ${ramdisk_addr} ${ramdisk_flashaddr} "\
-		" ${ramdisk_maxsize};" \
+		"mtd read Kernel ${loadaddr};"\
+		"mtd read DTB ${fdt_addr};"\
+		"mtd read Rootfs ${ramdisk_addr};"\
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0" \
 	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
 		" root=/dev/ram rw earlycon " EXTRA_BOOT_ARGS ";"\
