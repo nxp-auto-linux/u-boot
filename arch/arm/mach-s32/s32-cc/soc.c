@@ -10,6 +10,8 @@
 #include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
 #include <dm/uclass.h>
+#include <s32-cc/pcie.h>
+#include <s32-cc/serdes_hwconfig.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -116,7 +118,7 @@ int arch_cpu_init(void)
 
 static void serdes_init(void)
 {
-	struct udevice *bus;
+	struct udevice *bus = NULL;
 
 	/*
 	 * Enumerate all known UCLASS_PCI_GENERIC devices. This will
@@ -137,7 +139,17 @@ __weak void show_pcie_devices(void)
 
 int initr_pci(void)
 {
+	int ret;
+
 	debug("%s\n", __func__);
+
+	if (IS_ENABLED(CONFIG_OF_LIVE)) {
+		ret = apply_dm_hwconfig_fixups();
+		if (ret) {
+			pr_err("Failed to apply HWCONFIG fixups\n");
+			return ret;
+		}
+	}
 
 	serdes_init();
 	/*
@@ -146,6 +158,7 @@ int initr_pci(void)
 	 * enumerated too.
 	 * This is inspired from commands `pci` and `dm tree`.
 	 */
+
 	pci_init();
 
 	/* now show the devices */

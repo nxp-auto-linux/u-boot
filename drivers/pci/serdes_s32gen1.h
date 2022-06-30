@@ -87,7 +87,5 @@ bool s32_pcie_set_link_width(void __iomem *dbi,
 		int id, enum serdes_link_width linkwidth);
 bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		enum serdes_link_width linkwidth);
-void show_pcie_devices(void);
-int initr_pci(void);
 
 #endif /* PCIE_S32GEN1_H */

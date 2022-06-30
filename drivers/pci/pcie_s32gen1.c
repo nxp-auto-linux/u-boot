@@ -18,6 +18,7 @@
 #include <linux/io.h>
 #include <linux/sizes.h>
 #include <s32-cc/nvmem.h>
+#include <s32-cc/pcie.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 /* CFG1 is used in linux when finding devices on the bus.

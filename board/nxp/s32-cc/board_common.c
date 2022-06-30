@@ -74,8 +74,6 @@ int ft_board_setup(void *blob, bd_t *bd)
 		return 0;
 	}
 
-	ft_cpu_setup(blob, bd);
-
 	if (IS_ENABLED(CONFIG_NETDEVICES))
 		ft_enet_fixup(blob);
 

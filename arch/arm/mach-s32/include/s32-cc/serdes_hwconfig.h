@@ -120,5 +120,7 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
 enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
 enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
 bool is_pcie_enabled_in_hwconfig(int id);
+int apply_dm_hwconfig_fixups(void);
+int apply_fdt_hwconfig_fixups(void *blob);
 
 #endif

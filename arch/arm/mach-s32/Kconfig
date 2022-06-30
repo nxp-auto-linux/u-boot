@@ -51,6 +51,7 @@ config NXP_S32CC
 	select CLK
 	select CLK_SCMI
 	select CPU
+	select DM_DEVICE_REMOVE
 	select DM_GPIO
 	select DM_MMC
 	select DM_MTD
@@ -63,6 +64,7 @@ config NXP_S32CC
 	select MMC_HS400_SUPPORT
 	select MTD
 	select OF_CONTROL
+	select OF_LIVE
 	select OF_SEPARATE
 	select OF_SYSTEM_SETUP
 	select PINCTRL
