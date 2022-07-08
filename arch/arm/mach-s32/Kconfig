@@ -22,15 +22,16 @@ config NXP_S32CC
 	imply CMD_PART
 	imply CMD_PING
 	imply DM_ETH
-	imply DM_ETH
 	imply DM_I2C
 	imply DOS_PARTITION
+	imply DWC_ETH_QOS_S32CC
 	imply EFI_LOADER
 	imply EFI_LOADER_BOUNCE_BUFFER
 	imply FSL_DSPI
 	imply FS_FAT
 	imply MISC
 	imply MP
+	imply NET_RANDOM_ETHADDR
 	imply NXP_S32CC_PIT_TIMER
 	imply SPI
 	imply SYS_I2C_MXC
@@ -42,11 +43,11 @@ config NXP_S32CC
 	select DM_MTD
 	select DM_SPI
 	select DM_SPI_FLASH
+	select DWC_ETH_QOS
 	select FSL_LINFLEXUART
 	select FSL_QSPI
 	select FSL_QSPI_AHB_FULL_MAP
 	select FSL_USDHC
-	select HUSH_PARSER
 	select HUSH_PARSER
 	select MACH_S32
 	select MMC_HS400_ES_SUPPORT
