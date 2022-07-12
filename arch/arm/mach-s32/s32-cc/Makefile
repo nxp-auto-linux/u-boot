@@ -12,6 +12,7 @@ obj-y				+= hwconfig_fixups.o
 obj-y				+= nvmem.o
 obj-y				+= scmi_clk_dump.o
 obj-y				+= scmi_reset_agent.o
+obj-y				+= serdes_hwconfig.o
 obj-y				+= soc.o
 obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
 obj-$(CONFIG_MP)		+= mp.o
