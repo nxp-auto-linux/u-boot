@@ -32,8 +32,6 @@
 #define SERDES_CLK_FMHZ(clk_type) \
 			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
 
-static LIST_HEAD(s32_serdes_list);
-
 int wait_read32(void __iomem *address, u32 expected,
 		u32 mask, int read_attempts)
 {
@@ -440,8 +438,6 @@ static int s32_serdes_probe(struct udevice *dev)
 	}
 
 	pcie->bus = dev;
-
-	list_add(&pcie->list, &s32_serdes_list);
 
 	ret = s32_serdes_get_config_from_device_tree(pcie);
 	if (ret)
