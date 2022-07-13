@@ -96,7 +96,7 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 
 	subarg_str = (char *)hwconfig_subarg(serdes_name, subarg, subarg_len);
 
-	if (!subarg_str || !subarg_len) {
+	if (!subarg_str || !*subarg_len) {
 		/* Backwards compatibility:
 		 * Initially the SerDes mode was set by using option `pciex`.
 		 */
@@ -106,7 +106,7 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 		subarg_str = (char *)hwconfig_subarg(serdes_name, subarg,
 			subarg_len);
 
-		if (!subarg_str || !subarg_len) {
+		if (!subarg_str || !*subarg_len) {
 			debug("'serdes%d' option '%s' not found in hwconfig\n",
 			      id, subarg);
 			return NULL;
