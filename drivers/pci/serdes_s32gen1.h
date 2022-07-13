@@ -40,20 +40,6 @@
 #define CLKEN_MASK	0x1
 #define CLKEN_OFF	23
 
-/* RGM peripheral reset registers */
-#define RGM_PRST(MC_RGM, per)		(UPTR(MC_RGM) + 0x40 + \
-					((per) * 0x8))
-#define RGM_PSTAT(rgm, per)		(UPTR(rgm) + 0x140 + \
-					 ((per) * 0x8))
-#define RGM_PERIPH_RST(num)		BIT(num)
-
-#define PRST_PCIE_0_SERDES		4
-#define PRST_PCIE_0_FUNC		5
-#define PRST_PCIE_1_SERDES		16
-#define PRST_PCIE_1_FUNC		17
-
-#define MC_RGM_BASE_ADDR		(0x40078000)
-
 enum serdes_link_width {
 	X1 = 0x1,
 	X2 = 0x2
@@ -63,6 +49,7 @@ struct s32_serdes {
 	struct list_head list;
 	struct udevice *bus;
 	void __iomem *dbi;
+	struct reset_ctl *pcie_rst, *serdes_rst;
 	enum serdes_mode ss_mode;
 
 	int id;
@@ -76,9 +63,6 @@ struct s32_serdes {
 
 int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode);
 enum serdes_mode s32_get_serdes_mode_from_target(void __iomem *dbi, int id);
-
-int rgm_issue_reset(u32 pid);
-int rgm_release_reset(u32 pid);
 
 void s32_serdes_disable_ltssm(void __iomem *dbi);
 void s32_serdes_enable_ltssm(void __iomem *dbi);

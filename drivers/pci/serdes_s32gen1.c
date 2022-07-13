@@ -11,6 +11,7 @@
 #include <hwconfig.h>
 #include <malloc.h>
 #include <pci.h>
+#include <reset.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <dm/device-internal.h>
@@ -106,111 +107,42 @@ void s32_serdes_enable_ltssm(void __iomem *dbi)
 	BSET32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
-/**
- * @brief	SERDES Peripheral reset.
- * See Reference Manual for peripheral indices used below.
- */
-static int rgm_get_regs(u32 id, phys_addr_t *prst, phys_addr_t *pstat)
+static int s32_serdes_assert_reset(struct s32_serdes *serdes)
 {
-	if (id <= 17U) {
-		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 0);
-		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 0);
-	} else if ((id >= 64U) && (id <= 68U)) {
-		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 1);
-		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 1);
-	} else if ((id >= 128U) && (id <= 130)) {
-		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 2);
-		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 2);
-	} else if ((id >= 192U) && (id <= 194U)) {
-		*prst = RGM_PRST(MC_RGM_BASE_ADDR, 3);
-		*pstat = RGM_PSTAT(MC_RGM_BASE_ADDR, 3);
-	} else {
-		printf("error: Reset of unknown peripheral");
-		printf(" or domain requested (%d)\n", id);
-		return -EINVAL;
+	__maybe_unused struct udevice *dev = serdes->bus;
+	int ret;
+
+	ret = reset_assert(serdes->pcie_rst);
+	if (ret) {
+		dev_err(dev, "Failed to assert SerDes reset: %d\n", ret);
+		return ret;
+	}
+
+	ret = reset_assert(serdes->serdes_rst);
+	if (ret) {
+		dev_err(dev, "Failed to assert SerDes reset: %d\n", ret);
+		return ret;
 	}
 
 	return 0;
 }
 
-/**
- * @brief	Issue peripheral/domain reset
- * @param[in]	pid Peripheral/domain index. See RM.
- */
-int rgm_issue_reset(u32 pid)
+static int s32_serdes_deassert_reset(struct s32_serdes *serdes)
 {
-	phys_addr_t prst, pstat;
-	u32 regval = RGM_PERIPH_RST(pid % 32);
-	int retval;
+	__maybe_unused struct udevice *dev = serdes->bus;
+	int ret;
 
-	retval = rgm_get_regs(pid, &prst, &pstat);
-	if (retval)
-		return retval;
+	ret = reset_deassert(serdes->pcie_rst);
+	if (ret) {
+		dev_err(dev, "Failed to deassert SerDes reset: %d\n", ret);
+		return ret;
+	}
 
-	BSET32(prst, regval);
-
-	return wait_read32((void __iomem *)(pstat), regval, regval,
-		PCIE_RESET_COUNT);
-}
-
-/**
- * @brief	Release peripheral/domain reset
- * @param[in]	pid Peripheral/domain index. See RM.
- */
-int rgm_release_reset(u32 pid)
-{
-	phys_addr_t prst, pstat;
-	u32 regval = RGM_PERIPH_RST(pid % 32);
-	int retval;
-
-	retval = rgm_get_regs(pid, &prst, &pstat);
-	if (retval)
-		return retval;
-
-	BCLR32(prst, regval);
-
-	return wait_read32((void __iomem *)(pstat), 0, regval,
-		PCIE_RESET_COUNT);
-}
-
-static int s32_deassert_serdes_reset(struct s32_serdes *pcie)
-{
-	debug("%s: SerDes%d\n", __func__, pcie->id);
-
-	/* Deassert SerDes reset */
-	if (pcie->id == 0)
-		if (rgm_release_reset(PRST_PCIE_0_SERDES) ||
-				rgm_release_reset(PRST_PCIE_0_FUNC)) {
-			printf("PCIe%d reset failed\n", pcie->id);
-			return -ENODEV;
-		}
-	if (pcie->id == 1)
-		if (rgm_release_reset(PRST_PCIE_1_SERDES) ||
-				rgm_release_reset(PRST_PCIE_1_FUNC)) {
-			printf("PCIe%d reset failed\n", pcie->id);
-			return -ENODEV;
-		}
-
-	return 0;
-}
-
-static bool s32_assert_serdes_reset(struct s32_serdes *pcie)
-{
-	debug("%s: SerDes%d\n", __func__, pcie->id);
-
-	/* Assert SerDes reset */
-	if (pcie->id == 0)
-		if (rgm_issue_reset(PRST_PCIE_0_SERDES) ||
-		    rgm_issue_reset(PRST_PCIE_0_FUNC)) {
-			printf("PCIe%d reset failed\n", pcie->id);
-			return -ENODEV;
-		}
-	if (pcie->id == 1)
-		if (rgm_issue_reset(PRST_PCIE_1_FUNC) ||
-		    rgm_issue_reset(PRST_PCIE_1_SERDES)) {
-			printf("PCIe%d reset failed\n", pcie->id);
-			return -ENODEV;
-		}
+	ret = reset_deassert(serdes->serdes_rst);
+	if (ret) {
+		dev_err(dev, "Failed to deassert SerDes reset: %d\n", ret);
+		return ret;
+	}
 
 	return 0;
 }
@@ -341,6 +273,8 @@ static void s32_serdes_start_mode5(struct s32_serdes *pcie,
 
 static bool s32_serdes_init(struct s32_serdes *pcie)
 {
+	int ret;
+
 	pcie->ss_mode = s32_serdes_get_op_mode_from_hwconfig(pcie->id);
 	if (pcie->ss_mode == SERDES_MODE_INVAL) {
 		printf("ERROR: Invalid opmode config on PCIe%d\n",  pcie->id);
@@ -348,7 +282,9 @@ static bool s32_serdes_init(struct s32_serdes *pcie)
 	}
 
 	/* Reset the Serdes module */
-	s32_assert_serdes_reset(pcie);
+	ret = s32_serdes_assert_reset(pcie);
+	if (ret)
+		return false;
 
 	if (pcie->ss_mode == SERDES_MODE_SGMII_SGMII) {
 		/*	Set pipeP_pclk */
@@ -372,7 +308,9 @@ static bool s32_serdes_init(struct s32_serdes *pcie)
 	}
 
 	/* Deassert SerDes reset */
-	s32_deassert_serdes_reset(pcie);
+	ret = s32_serdes_deassert_reset(pcie);
+	if (ret)
+		return false;
 
 	/* Enable PHY's SRIS mode in PCIe mode*/
 	if (pcie->phy_mode == SRIS)
@@ -483,6 +421,18 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 	if (!pcie->dbi) {
 		printf("PCIe%d: Failed to map 'dbi' resource\n", pcie->id);
 		return -ENOMEM;
+	}
+
+	pcie->pcie_rst = devm_reset_control_get(dev, "pcie");
+	if (IS_ERR(pcie->pcie_rst)) {
+		dev_err(dev, "Failed to get 'pcie' reset control\n");
+		return PTR_ERR(pcie->pcie_rst);
+	}
+
+	pcie->serdes_rst = devm_reset_control_get(dev, "serdes");
+	if (IS_ERR(pcie->serdes_rst)) {
+		dev_err(dev, "Failed to get 'serdes' reset control\n");
+		return PTR_ERR(pcie->serdes_rst);
 	}
 
 	debug("%s: dbi: 0x%lx (0x%p)\n", __func__, (uintptr_t)res.start,
