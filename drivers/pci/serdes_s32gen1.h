@@ -58,18 +58,9 @@ struct s32_serdes {
 	enum serdes_clock clktype;
 	enum serdes_clock_fmhz fmhz;
 	enum serdes_phy_mode phy_mode;
-	enum serdes_link_width linkwidth;
 };
 
-int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode);
-enum serdes_mode s32_get_serdes_mode_from_target(void __iomem *dbi, int id);
-
-void s32_serdes_disable_ltssm(void __iomem *dbi);
-void s32_serdes_enable_ltssm(void __iomem *dbi);
-bool s32_pcie_wait_link_up(void __iomem *dbi);
-bool s32_pcie_set_link_width(void __iomem *dbi,
-		int id, enum serdes_link_width linkwidth);
-bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
-		enum serdes_link_width linkwidth);
+int wait_read32(void __iomem *address, u32 expected,
+		u32 mask, int read_attempts);
 
 #endif /* PCIE_S32GEN1_H */

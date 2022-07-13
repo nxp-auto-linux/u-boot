@@ -561,8 +561,8 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	return ret;
 }
 
-bool s32_pcie_set_link_width(void __iomem *dbi,
-		int id, enum serdes_link_width linkwidth)
+static bool s32_pcie_set_link_width(void __iomem *dbi, int id,
+				    enum serdes_link_width linkwidth)
 {
 	s32_pcie_enable_dbi_rw(dbi);
 
@@ -596,8 +596,8 @@ static int s32_pcie_check_phy_mode(int id, const char *mode)
 	return hwconfig_subarg_cmp(pcie_name, "phy_mode", mode);
 }
 
-bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
-		enum serdes_link_width linkwidth)
+static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
+			  enum serdes_link_width linkwidth)
 {
 	debug("PCIe%d: Configure %s\n", id, PCIE_EP_RC_MODE(!rc_mode));
 
@@ -807,6 +807,16 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 		debug("PCIe%d: current X%d Gen%d\n", pcie->id, *width, *speed);
 }
 
+static void s32_pcie_disable_ltssm(void __iomem *dbi)
+{
+	BCLR32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
+}
+
+static void s32_pcie_enable_ltssm(void __iomem *dbi)
+{
+	BSET32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
+}
+
 static bool is_s32gen1_pcie_ltssm_enabled(struct s32_pcie *pcie)
 {
 	return (s32_dbi_readl(UPTR(pcie->dbi) + SS_PE0_GEN_CTRL_3) & LTSSM_EN);
@@ -856,6 +866,15 @@ static int s32_pcie_get_dev_id_variant(struct udevice *dev)
 	return variant_bits;
 }
 
+static bool s32_pcie_wait_link_up(void __iomem *dbi)
+{
+	int count = PCIE_LINK_UP_COUNT;
+
+	return (wait_read32((void __iomem *)(UPTR(dbi) + SS_PE0_LINK_DBG_2),
+			    SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK,
+			    count) == 0);
+}
+
 static int s32_pcie_probe_rc(struct s32_pcie *pcie)
 {
 	u32 speed, width;
@@ -895,10 +914,11 @@ static int s32_pcie_probe_ep(struct s32_pcie *pcie, struct uclass *uc)
 	if (width > pcie->linkwidth) {
 		/* Supported value in dtb is smaller */
 		/* Set new link width */
-		s32_serdes_disable_ltssm(pcie->dbi);
-		s32_pcie_set_link_width(pcie->dbi, pcie->id, pcie->linkwidth);
+		s32_pcie_disable_ltssm(pcie->dbi);
+		if (!s32_pcie_set_link_width(pcie->dbi, pcie->id, pcie->linkwidth))
+			return -EIO;
 
-		s32_serdes_enable_ltssm(pcie->dbi);
+		s32_pcie_enable_ltssm(pcie->dbi);
 	}
 
 	/* apply other custom settings (bars, iATU etc.) */
@@ -937,6 +957,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	bool ltssm_en = false;
 	u32 soc_serdes_presence;
 	u32 variant_bits, pcie_dev_id;
+	enum serdes_dev_type devtype;
 	struct udevice *siul21_nvmem = NULL;
 	struct nvmem_cell cell;
 
@@ -982,6 +1003,45 @@ static int s32_pcie_probe(struct udevice *dev)
 	ret = s32_pcie_get_config_from_device_tree(pcie);
 	if (ret)
 		return ret;
+
+	devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
+	if (IS_SERDES_PCIE(devtype)) {
+		if (IS_SERDES_SGMII(devtype))
+			pcie->linkwidth = X1;
+
+		if (!s32_pcie_init(pcie->dbi, pcie->id, devtype & PCIE_RC,
+				   pcie->linkwidth))
+			return ret;
+
+		s32_pcie_enable_ltssm(pcie->dbi);
+	}
+
+	/*
+	 * it makes sense to link up only as RC, as the EP
+	 * may boot earlier
+	 */
+	if (devtype & PCIE_RC) {
+		if (s32_pcie_wait_link_up(pcie->dbi)) {
+			debug("SerDes%d: link is up (X%d)\n", pcie->id,
+			      pcie->linkwidth);
+		} else {
+			if (pcie->linkwidth > X1) {
+				/* Attempt to link at X1 */
+				pcie->linkwidth = X1;
+				s32_pcie_disable_ltssm(pcie->dbi);
+
+				if (!s32_pcie_set_link_width(pcie->dbi,
+							     pcie->id,
+							     pcie->linkwidth))
+					return ret;
+
+				s32_pcie_enable_ltssm(pcie->dbi);
+				if (s32_pcie_wait_link_up(pcie->dbi))
+					debug("SerDes%d: link is up (X%d)\n",
+					      pcie->id, pcie->linkwidth);
+			}
+		}
+	}
 
 	ltssm_en = is_s32gen1_pcie_ltssm_enabled(pcie);
 	if (!ltssm_en) {

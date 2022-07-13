@@ -34,8 +34,8 @@
 
 static LIST_HEAD(s32_serdes_list);
 
-static int wait_read32(void __iomem *address, u32 expected,
-		       u32 mask, int read_attempts)
+int wait_read32(void __iomem *address, u32 expected,
+		u32 mask, int read_attempts)
 {
 	__maybe_unused u32 tmp;
 
@@ -52,16 +52,7 @@ static int wait_read32(void __iomem *address, u32 expected,
 	return 0;
 }
 
-bool s32_pcie_wait_link_up(void __iomem *dbi)
-{
-	int count = PCIE_LINK_UP_COUNT;
-
-	return (wait_read32((void __iomem *)(UPTR(dbi) + SS_PE0_LINK_DBG_2),
-			    SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK,
-			    count) == 0);
-}
-
-int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode)
+static int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode)
 {
 	enum serdes_dev_type devtype = s32_serdes_get_mode_from_hwconfig(id);
 
@@ -95,16 +86,6 @@ int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode)
 	udelay(100);
 
 	return 0;
-}
-
-void s32_serdes_disable_ltssm(void __iomem *dbi)
-{
-	BCLR32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
-}
-
-void s32_serdes_enable_ltssm(void __iomem *dbi)
-{
-	BSET32(UPTR(dbi) + SS_PE0_GEN_CTRL_3, LTSSM_EN);
 }
 
 static int s32_serdes_assert_reset(struct s32_serdes *serdes)
@@ -341,20 +322,6 @@ static bool s32_serdes_init(struct s32_serdes *pcie)
 	return true;
 }
 
-__weak bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
-		enum serdes_link_width linkwidth)
-{
-	printf("PCIe%d disabled\n", id);
-	return false;
-}
-
-__weak bool s32_pcie_set_link_width(void __iomem *dbi,
-		int id, enum serdes_link_width linkwidth)
-{
-	printf("PCIe%d disabled\n", id);
-	return false;
-}
-
 __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
 			     enum serdes_mode ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
@@ -403,7 +370,6 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 	struct resource res;
 	struct udevice *dev = pcie->bus;
 	int ret = 0;
-	u32 val;
 
 	ret = get_serdes_alias_id(dev, &pcie->id);
 	if (ret < 0) {
@@ -437,10 +403,6 @@ static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
 
 	debug("%s: dbi: 0x%lx (0x%p)\n", __func__, (uintptr_t)res.start,
 	      pcie->dbi);
-
-	/* get supported width (X1/X2) from device tree */
-	val = dev_read_u32_default(dev, "num-lanes", X1);
-	pcie->linkwidth = (enum serdes_link_width)val;
 
 	return 0;
 }
@@ -538,12 +500,6 @@ static int s32_serdes_probe(struct udevice *dev)
 	s32_serdes_get_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
 	printf("Configuring PCIe%d as %s\n", pcie->id, mode);
 
-
-	/* Keep ltssm_enable =0 to disable link  training for programming
-	 * the DBI.
-	 */
-	s32_serdes_disable_ltssm(pcie->dbi);
-
 	/* Apply the base SerDes/PHY settings */
 	if (!s32_serdes_init(pcie))
 		return ret;
@@ -567,52 +523,8 @@ static int s32_serdes_probe(struct udevice *dev)
 		}
 	}
 
-	if (IS_SERDES_PCIE(pcie->devtype)) {
-		char mode[SERDES_MODE_SIZE];
-
-		/* Update the max link depending on other factors */
-		/* Use by default the width from the serdes node
-		 * in the device tree
-		 */
-		s32_serdes_get_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
-		debug("SerDes%d: Configure as %s\n", pcie->id, mode);
-		if (IS_SERDES_SGMII(pcie->devtype))
-			pcie->linkwidth = X1;
-
-		if (!s32_pcie_init(pcie->dbi, pcie->id,
-					pcie->devtype & PCIE_RC,
-					pcie->linkwidth))
-			return ret;
-
-		s32_serdes_enable_ltssm(pcie->dbi);
-	}
-
-	/*
-	 * it makes sense to link up only as RC, as the EP
-	 * may boot earlier
-	 */
-	if (pcie->devtype & PCIE_RC) {
-		if (s32_pcie_wait_link_up(pcie->dbi)) {
-			debug("SerDes%d: link is up (X%d)\n", pcie->id,
-					pcie->linkwidth);
-		} else {
-			if (pcie->linkwidth > X1) {
-				/* Attempt to link at X1 */
-				pcie->linkwidth = X1;
-				s32_serdes_disable_ltssm(pcie->dbi);
-
-				if (!s32_pcie_set_link_width(pcie->dbi,
-						pcie->id,
-						pcie->linkwidth))
-					return ret;
-
-				s32_serdes_enable_ltssm(pcie->dbi);
-				if (s32_pcie_wait_link_up(pcie->dbi))
-					debug("SerDes%d: link is up (X%d)\n",
-						pcie->id, pcie->linkwidth);
-			}
-		}
-	}
+	s32_serdes_get_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
+	debug("SerDes%d: Configure as %s\n", pcie->id, mode);
 
 	return ret;
 }
