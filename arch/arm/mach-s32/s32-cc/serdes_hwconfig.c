@@ -220,13 +220,22 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 	return SERDES_MODE_INVAL;
 }
 
-bool s32_serdes_is_xpcs_cfg_valid(int id, enum serdes_clock_fmhz freq)
+bool s32_serdes_is_cfg_valid(int id)
 {
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
+	enum serdes_clock_fmhz freq;
+	enum serdes_mode mode;
 
+	freq = s32_serdes_get_clock_fmhz_from_hwconfig(id);
 	devtype = s32_serdes_get_mode_from_hwconfig(id);
 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
+	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+
+	if (devtype == SERDES_INVALID) {
+		printf("Invalid SerDes%d configuration\n", id);
+		return false;
+	}
 
 	if (IS_SERDES_PCIE(devtype) && freq == CLK_125MHZ) {
 		printf("Invalid \"hwconfig\": In PCIe/SGMII combo");
@@ -235,9 +244,40 @@ bool s32_serdes_is_xpcs_cfg_valid(int id, enum serdes_clock_fmhz freq)
 		return false;
 	}
 
-	if (xpcs_mode == SGMII_INAVALID) {
+	if (IS_SERDES_SGMII(devtype) && xpcs_mode == SGMII_INAVALID) {
 		printf("Invalid \"hwconfig\": \"xpcs_mode\" is missing\n");
 		/* SGMII configuration fail */
+		return false;
+	}
+
+	/* validate that required 'mode' does not interfere
+	 * with 'hwconfig'
+	 */
+	switch (mode & ~(uint32_t)(SERDES_SKIP)) {
+	case SERDES_MODE_PCIE_PCIE:
+		/* only PCIE, no SGMII for this mode */
+		if (!IS_SERDES_PCIE(devtype) || IS_SERDES_SGMII(devtype)) {
+			printf("SGMII isn't allowed when using PCIe mode\n");
+			return false;
+		}
+		break;
+	/* Will have to figure out how to handle SERDES_MODE_SGMII_PCIE
+	 * and SERDES_MODE_PCIE_SGMII, since lane assignment may differ.
+	 */
+	case SERDES_MODE_PCIE_SGMII0:
+	case SERDES_MODE_PCIE_SGMII1:
+		if (!IS_SERDES_PCIE(devtype) || !IS_SERDES_SGMII(devtype)) {
+			printf("The SerDes mode is incompletely described\n");
+			return false;
+		}
+		break;
+	case SERDES_MODE_SGMII_SGMII:
+		if (IS_SERDES_PCIE(devtype) || !IS_SERDES_SGMII(devtype)) {
+			printf("The SerDes mode is incompletely described\n");
+			return false;
+		}
+		break;
+	default:
 		return false;
 	}
 

@@ -4,6 +4,7 @@
  */
 #include <common.h>
 #include <malloc.h>
+#include <asm/arch-s32/s32-cc/serdes_regs.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>
@@ -676,6 +677,27 @@ static int set_serdes_mode(struct dts_node *root, int id)
 	return ret;
 }
 
+static void disable_serdes_pcie_nodes(struct dts_node *root, u32 id)
+{
+	size_t i;
+	int ret;
+	struct dts_node node;
+	static const char * const fmts[] = {SERDES_ALIAS_FMT, PCIE_ALIAS_FMT};
+
+	for (i = 0; i < ARRAY_SIZE(fmts); i++) {
+		ret = node_by_alias(root, &node, fmts[i], id);
+		if (ret) {
+			pr_err("Failed to get '%s%u' alias\n", fmts[i], id);
+			continue;
+		}
+
+		ret = disable_node(&node);
+		if (ret) {
+			pr_err("Failed to disable %s%u\n", fmts[i], id);
+		}
+	}
+}
+
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
 	int ret;
@@ -686,10 +708,16 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 	};
 
 	for (id = 0; id <= 1; id++) {
+		if (!s32_serdes_is_cfg_valid(id)) {
+			disable_serdes_pcie_nodes(&root, id);
+			pr_err("SerDes%d configuration will be ignored as it's invalid\n",
+			       id);
+			continue;
+		}
+
 		ret = prepare_pcie_node(&root, id);
 		if (ret) {
 			pr_err("Failed to PCIe ofnode%d\n", id);
-			return ret;
 		}
 
 		ret = set_serdes_clk(&root, id);

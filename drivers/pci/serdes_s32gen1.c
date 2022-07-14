@@ -49,34 +49,8 @@ int wait_read32(void __iomem *address, u32 expected,
 	return 0;
 }
 
-static int s32_serdes_set_mode(void __iomem *dbi, int id, enum serdes_mode mode)
+static int s32_serdes_set_mode(void __iomem *dbi, enum serdes_mode mode)
 {
-	enum serdes_dev_type devtype = s32_serdes_get_mode_from_hwconfig(id);
-
-	/* validate that required 'mode' does not interfere
-	 * with 'hwconfig'
-	 */
-	switch (mode) {
-	case SERDES_MODE_PCIE_PCIE:
-		/* only PCIE, no SGMII for this mode */
-		if (!IS_SERDES_PCIE(devtype) || IS_SERDES_SGMII(devtype))
-			return -EINVAL;
-		break;
-	/* Will have to figure out how to handle SERDES_MODE_SGMII_PCIE
-	 * and SERDES_MODE_PCIE_SGMII, since lane assignment may differ.
-	 */
-	case SERDES_MODE_PCIE_SGMII0:
-	case SERDES_MODE_PCIE_SGMII1:
-		if (!IS_SERDES_PCIE(devtype) || !IS_SERDES_SGMII(devtype))
-			return -EINVAL;
-		break;
-	case SERDES_MODE_SGMII_SGMII:
-		if (IS_SERDES_PCIE(devtype) || !IS_SERDES_SGMII(devtype))
-			return -EINVAL;
-		break;
-	default: return -EINVAL;
-	}
-
 	BSET32(UPTR(dbi) + SS_SS_RW_REG_0, BUILD_MASK_VALUE(SUBSYS_MODE, mode));
 
 	/* small delay for stabilizing the signals */
@@ -269,7 +243,7 @@ static bool s32_serdes_init(struct s32_serdes *pcie)
 		W32(UPTR(pcie->dbi) + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
 	}
 
-	if (s32_serdes_set_mode(pcie->dbi, pcie->id, pcie->ss_mode))
+	if (s32_serdes_set_mode(pcie->dbi, pcie->ss_mode))
 		return false;
 
 	/* Set the clock for the Serdes module */
@@ -442,11 +416,6 @@ static int s32_serdes_probe(struct udevice *dev)
 		return ret;
 
 	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
-	if (pcie->devtype == SERDES_INVALID) {
-		printf("Not configuring SerDes%d,", pcie->id);
-		printf(" no RC/EP/SGMII configuration selected\n");
-		return ret;
-	}
 
 	if (pcie->devtype & SERDES_SKIP) {
 		printf("Skipping configuration for SerDes%d,", pcie->id);
@@ -469,17 +438,13 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	pcie->phy_mode = s32_serdes_get_phy_mode_from_hwconfig(pcie->id);
 
-	if (pcie->clktype == CLK_INT)
+	if (pcie->clktype == CLK_INT) {
 		if (pcie->phy_mode == CRSS || pcie->phy_mode == SRIS) {
 			printf("CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
 			       pcie->id);
 			return -EINVAL;
 		}
-
-	/* In case of sgmii mode check xpcs configuration */
-	if (IS_SERDES_SGMII(pcie->devtype) &&
-	    !s32_serdes_is_xpcs_cfg_valid(pcie->id, pcie->fmhz))
-		pcie->xpcs_mode = SGMII_INAVALID;
+	}
 
 	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(pcie);
 	printf("Using %s clock for PCIe%d, %s\n",
