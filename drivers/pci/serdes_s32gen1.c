@@ -410,22 +410,13 @@ static int s32_serdes_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
-
-	if (pcie->devtype & SERDES_SKIP) {
-		printf("Skipping configuration for SerDes%d,", pcie->id);
-
-		/* Skip the 'skip' flag for other settings */
-		pcie->devtype &= ~(uint32_t)(SERDES_SKIP);
-		return ret;
-	}
-
 	ret = enable_serdes_clocks(dev);
 	if (ret) {
 		dev_err(dev, "Failed to enable SERDES clocks\n");
 		return ret;
 	}
 
+	pcie->devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
 	pcie->clktype = s32_serdes_get_clock_from_hwconfig(pcie->id);
 	/* Get XPCS configuration */
 	pcie->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(pcie->id);

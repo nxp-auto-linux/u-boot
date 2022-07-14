@@ -492,6 +492,66 @@ static int set_serdes_lines(struct dts_node *node, int id)
 	return 0;
 }
 
+static int skip_dts_node(struct dts_node *root, const char *alias_fmt, u32 id)
+{
+	int ret;
+	struct dts_node node;
+
+	ret = node_by_alias(root, &node, alias_fmt, id);
+	if (ret) {
+		pr_err("Failed to get 'pcie%u' alias\n", id);
+		return ret;
+	}
+
+	/**
+	 * Nothing to be performed on Linux device tree as skip option has
+	 * effect on U-Boot drivers only
+	 */
+	if (root->fdt)
+		return 0;
+
+	ret = disable_node(&node);
+	if (ret) {
+		pr_err("Failed to disable %s%u\n", alias_fmt, id);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
+{
+	int ret;
+	enum serdes_dev_type mode;
+	struct dts_node serdes;
+
+	ret = node_by_alias(root, &serdes, SERDES_ALIAS_FMT, id);
+	if (ret) {
+		pr_err("Failed to get 'serdes%u' alias\n", id);
+		return ret;
+	}
+
+	mode = s32_serdes_get_mode_from_hwconfig(id);
+
+	if (!(mode & SERDES_SKIP)) {
+		*skip = false;
+		return 0;
+	}
+
+	printf("Skipping configuration for SerDes%d.\n", id);
+	*skip = true;
+
+	ret = skip_dts_node(root, PCIE_ALIAS_FMT, id);
+	if (ret)
+		return ret;
+
+	ret = skip_dts_node(root, SERDES_ALIAS_FMT, id);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 static int prepare_pcie_node(struct dts_node *root, int id)
 {
 	int ret;
@@ -700,6 +760,7 @@ static void disable_serdes_pcie_nodes(struct dts_node *root, u32 id)
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
+	bool skip;
 	int ret;
 	unsigned int id;
 	struct dts_node root = {
@@ -714,6 +775,10 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 			       id);
 			continue;
 		}
+
+		ret = skip_dts_nodes_config(&root, id, &skip);
+		if (skip || ret)
+			continue;
 
 		ret = prepare_pcie_node(&root, id);
 		if (ret) {
