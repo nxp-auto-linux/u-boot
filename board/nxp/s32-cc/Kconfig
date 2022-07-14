@@ -21,6 +21,7 @@ config NXP_S32CC_BOARD_COMMON
 	imply CMD_SPI
 	imply CMD_TIME
 	imply CMD_TIMER
+	imply DM_REGULATOR
 	imply MD5SUM_VERIFY
 	imply USE_BOOTARGS
 
