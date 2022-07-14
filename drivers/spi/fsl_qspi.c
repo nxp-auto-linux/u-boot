@@ -7,7 +7,7 @@
  * Copyright (C) 2018 Bootlin
  * Copyright (C) 2018 exceet electronics GmbH
  * Copyright (C) 2018 Kontron Electronics GmbH
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020,2022 NXP
  *
  * This driver is a ported version of Linux Freescale QSPI driver taken from
  * v5.5-rc1 tag having following information.
@@ -41,8 +41,6 @@
 #include <linux/err.h>
 #include <linux/mtd/spi-nor.h>
 #include <asm/io.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * The driver only uses one single LUT entry, that is updated on
@@ -1314,9 +1312,8 @@ static int fsl_qspi_probe(struct udevice *bus)
 {
 	struct dm_spi_bus *dm_bus = dev_get_uclass_priv(bus);
 	struct fsl_qspi *q = dev_get_priv(bus);
-	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(bus);
-	struct fdt_resource res;
+	fdt_addr_t mem_base = 0U;
+	fdt_addr_t mem_size = 0U;
 	int ret;
 
 	q->dev = bus;
@@ -1324,28 +1321,26 @@ static int fsl_qspi_probe(struct udevice *bus)
 			   dev_get_driver_data(bus);
 
 	/* find the resources */
-	ret = fdt_get_named_resource(blob, node, "reg", "reg-names", "QuadSPI",
-				     &res);
-	if (ret) {
+	mem_base = dev_read_addr_size_name(bus, "QuadSPI", &mem_size);
+	if (mem_base == FDT_ADDR_T_NONE) {
 		dev_err(bus, "Can't get regs base addresses(ret = %d)!\n", ret);
 		return -ENOMEM;
 	}
 
-	q->iobase = map_physmem(res.start, res.end - res.start, MAP_NOCACHE);
+	q->iobase = devm_ioremap(dev, mem_base, mem_size);
 
-	ret = fdt_get_named_resource(blob, node, "reg", "reg-names",
-				     "QuadSPI-memory", &res);
-	if (ret) {
+	mem_base = dev_read_addr_size_name(bus, "QuadSPI-memory", &mem_size);
+	if (mem_base == FDT_ADDR_T_NONE) {
 		dev_err(bus, "Can't get AMBA base addresses(ret = %d)!\n", ret);
 		return -ENOMEM;
 	}
 
-	q->ahb_addr = map_physmem(res.start, res.end - res.start, MAP_NOCACHE);
-	q->memmap_phy = res.start;
-	q->memmap_size = res.end - res.start + 1;
+	q->ahb_addr = devm_ioremap(dev, mem_base, mem_size);
+	q->memmap_phy = mem_base;
+	q->memmap_size = mem_size;
 
-	dm_bus->max_hz = fdtdec_get_int(blob, node, "spi-max-frequency",
-					66000000);
+	dm_bus->max_hz = dev_read_u32_default(bus, "spi-max-frequency",
+					      66000000);
 
 	fsl_qspi_default_setup(q);
 
