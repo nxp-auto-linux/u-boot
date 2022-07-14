@@ -599,7 +599,7 @@ static int s32_pcie_check_phy_mode(int id, const char *mode)
 static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 			  enum serdes_link_width linkwidth)
 {
-	debug("PCIe%d: Configure %s\n", id, PCIE_EP_RC_MODE(!rc_mode));
+	printf("Configuring PCIe%d as %s\n", id, PCIE_EP_RC_MODE(!rc_mode));
 
 	/* Set device type */
 	if (rc_mode)

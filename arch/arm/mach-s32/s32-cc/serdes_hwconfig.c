@@ -17,53 +17,6 @@
 #define SERDES_SGMII_MODE_NONE_STR "None"
 #define SERDES_NAME_SIZE 32
 
-static const char xpcs_str[][64] = {
-	"[INVALID XPCS CFG]",
-	"[XPCS0 1G, XPCS1 OFF(PCIex1)]",
-	"[XPCS0 OFF(PCIex1), XPCS1 1G]",
-	"[XPCS0 1G, XPCS1 1G]",
-	"[XPCS0 2.5G, XPCS1 OFF]",
-};
-
-static inline
-const char *s32_serdes_get_xpcs_str(enum serdes_xpcs_mode mode)
-{
-	if (mode > SGMII_INAVALID && mode <= SGMII_XPCS_LAST)
-		return xpcs_str[mode];
-
-	return xpcs_str[SGMII_INAVALID];
-}
-
-int s32_serdes_get_mode_str(enum serdes_dev_type mode,
-			    enum serdes_xpcs_mode xpcs_mode,
-			    char *buf)
-{
-	char *start = buf;
-
-	if (mode & PCIE_RC)
-		start += sprintf(start, SERDES_RC_MODE_STR);
-	if (mode & PCIE_EP)
-		start += sprintf(start, SERDES_EP_MODE_STR);
-	if (mode & SGMII) {
-		if (xpcs_mode == SGMII_XPCS0 || xpcs_mode == SGMII_XPCS1) {
-			if (start != buf)
-				start += sprintf(start, "(x1)&");
-			start += sprintf(start, SERDES_SGMII_MODE_STR);
-		} else if (xpcs_mode != SGMII_INAVALID) {
-			start += sprintf(start, SERDES_SGMII_MODE_STR "(x2)");
-		}
-
-		start += sprintf(start, " %s",
-				s32_serdes_get_xpcs_str(xpcs_mode));
-	} else if (start != buf) {
-		start += sprintf(start, "(x2)");
-	} else {
-		start += sprintf(start, "Not configured");
-	}
-
-	return start - buf;
-}
-
 bool is_pcie_enabled_in_hwconfig(int id)
 {
 	enum serdes_dev_type pcie_mode;

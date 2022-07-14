@@ -119,10 +119,8 @@ enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id);
 enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
 enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
 enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
-bool s32_serdes_is_xpcs_cfg_valid(int id, enum serdes_clock_fmhz freq);
-int s32_serdes_get_mode_str(enum serdes_dev_type mode,
-			    enum serdes_xpcs_mode xpcs_mode,
-			    char *buf);
+bool s32_serdes_is_cfg_valid(int id);
+bool s32_serdes_has_mode5_enabled(int id);
 bool is_pcie_enabled_in_hwconfig(int id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);

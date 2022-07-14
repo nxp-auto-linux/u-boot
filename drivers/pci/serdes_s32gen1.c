@@ -26,7 +26,6 @@
 #include "serdes_xpcs_regs.h"
 #include "sgmii.h"
 
-#define SERDES_MODE_SIZE 64
 #define SERDES_CLK_MODE(clk_type) \
 			((clk_type == CLK_INT) ? "internal" : "external")
 #define SERDES_CLK_FMHZ(clk_type) \
@@ -427,7 +426,6 @@ static int enable_serdes_clocks(struct udevice *dev)
 static int s32_serdes_probe(struct udevice *dev)
 {
 	struct s32_serdes *pcie = dev_get_priv(dev);
-	char mode[SERDES_MODE_SIZE];
 	const char *pcie_phy_mode;
 	int ret = 0;
 
@@ -493,9 +491,6 @@ static int s32_serdes_probe(struct udevice *dev)
 		       SERDES_CLK_FMHZ(pcie->fmhz),
 		       pcie->id);
 
-	s32_serdes_get_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
-	printf("Configuring PCIe%d as %s\n", pcie->id, mode);
-
 	/* Apply the base SerDes/PHY settings */
 	if (!s32_serdes_init(pcie))
 		return ret;
@@ -518,9 +513,6 @@ static int s32_serdes_probe(struct udevice *dev)
 			printf(" PCIe%d\n", pcie->id);
 		}
 	}
-
-	s32_serdes_get_mode_str(pcie->devtype, pcie->xpcs_mode, mode);
-	debug("SerDes%d: Configure as %s\n", pcie->id, mode);
 
 	return ret;
 }
