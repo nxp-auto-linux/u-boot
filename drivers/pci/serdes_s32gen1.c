@@ -238,11 +238,6 @@ static bool s32_serdes_init(struct s32_serdes *pcie)
 	if (ret)
 		return false;
 
-	if (pcie->ss_mode == SERDES_MODE_SGMII_SGMII) {
-		/*	Set pipeP_pclk */
-		W32(UPTR(pcie->dbi) + SS_PHY_GEN_CTRL, EXT_PCLK_REQ);
-	}
-
 	if (s32_serdes_set_mode(pcie->dbi, pcie->ss_mode))
 		return false;
 

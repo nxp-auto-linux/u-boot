@@ -142,8 +142,6 @@
 #define PHY_GEN_CTRL_RX_SRIS_MODE_BIT	(9)
 #define PHY_GEN_CTRL_RX_SRIS_MODE_MASK	BIT(PHY_GEN_CTRL_RX_SRIS_MODE_BIT)
 
-#define EXT_PCLK_REQ				(1U << 0)
-
 /* Field definitions for PHY_EXT_MPLLA/B Registers */
 
 #define MPLLA_DIV8_CLK_EN			(1U << 8)
