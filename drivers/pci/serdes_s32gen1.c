@@ -23,13 +23,32 @@
 
 #include "serdes_regs.h"
 #include "serdes_s32gen1.h"
+#include "serdes_s32gen1_io.h"
 #include "serdes_xpcs_regs.h"
 #include "sgmii.h"
+#include "ss_pcie_regs.h"
+
+#define PCIE_MPLL_LOCK_COUNT 10
+#define DELAY_QUANTUM 1000
 
 #define SERDES_CLK_MODE(clk_type) \
 			((clk_type == CLK_INT) ? "internal" : "external")
 #define SERDES_CLK_FMHZ(clk_type) \
 			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
+
+struct serdes {
+	struct udevice *bus;
+	void __iomem *dbi;
+	struct reset_ctl *pcie_rst, *serdes_rst;
+	enum serdes_mode ss_mode;
+
+	int id;
+	enum serdes_dev_type devtype;
+	enum serdes_xpcs_mode xpcs_mode;
+	enum serdes_clock clktype;
+	enum serdes_clock_fmhz fmhz;
+	enum serdes_phy_mode phy_mode;
+};
 
 int wait_read32(void __iomem *address, u32 expected,
 		u32 mask, int read_attempts)
@@ -59,7 +78,7 @@ static int s32_serdes_set_mode(void __iomem *dbi, enum serdes_mode mode)
 	return 0;
 }
 
-static int s32_serdes_assert_reset(struct s32_serdes *serdes)
+static int s32_serdes_assert_reset(struct serdes *serdes)
 {
 	__maybe_unused struct udevice *dev = serdes->bus;
 	int ret;
@@ -79,7 +98,7 @@ static int s32_serdes_assert_reset(struct s32_serdes *serdes)
 	return 0;
 }
 
-static int s32_serdes_deassert_reset(struct s32_serdes *serdes)
+static int s32_serdes_deassert_reset(struct serdes *serdes)
 {
 	__maybe_unused struct udevice *dev = serdes->bus;
 	int ret;
@@ -104,7 +123,7 @@ static int s32_serdes_deassert_reset(struct s32_serdes *serdes)
  * @param[in]	addr	Indirect PHY address (16bit).
  * @param[in]	wdata	Indirect PHY data to be written (16 bit).
  */
-static void s32_serdes_phy_reg_write(struct s32_serdes *pcie, u16 addr,
+static void s32_serdes_phy_reg_write(struct serdes *pcie, u16 addr,
 				     u16 wdata, u16 wmask)
 {
 	u32 temp_data = wdata & wmask;
@@ -120,7 +139,7 @@ static void s32_serdes_phy_reg_write(struct s32_serdes *pcie, u16 addr,
 	udelay(100);
 }
 
-static void s32_serdes_phy_init(struct s32_serdes *pcie)
+static void s32_serdes_phy_init(struct serdes *pcie)
 {
 	/* Select the CR parallel interface */
 	BSET32(UPTR(pcie->dbi) + SS_SS_RW_REG_0, PHY0_CR_PARA_SEL);
@@ -145,7 +164,7 @@ static void s32_serdes_phy_init(struct s32_serdes *pcie)
 				 0x13, 0xff);
 }
 
-static void s32_serdes_xpcs1_pma_config(struct s32_serdes *pcie)
+static void s32_serdes_xpcs1_pma_config(struct serdes *pcie)
 {
 	/* Configure TX_VBOOST_LVL and TX_TERM_CTRL */
 	RMW32(UPTR(pcie->dbi) + SS_PHY_EXT_MISC_CTRL_2,
@@ -195,7 +214,7 @@ static void s32_serdes_xpcs1_pma_config(struct s32_serdes *pcie)
 	      EXT_RX_LOS_THRESHOLD(0x3fU) | EXT_RX_VREF_CTRL(0x1fU));
 }
 
-static void s32_serdes_start_mode5(struct s32_serdes *pcie,
+static void s32_serdes_start_mode5(struct serdes *pcie,
 				   enum serdes_xpcs_mode_gen2 xpcs[2])
 {
 	if (!s32_serdes_has_mode5_enabled(pcie->id))
@@ -213,7 +232,7 @@ static void s32_serdes_start_mode5(struct s32_serdes *pcie,
 	xpcs[1] = SGMII_XPCS_2G5_OP;
 }
 
-static bool s32_serdes_init(struct s32_serdes *pcie)
+static bool s32_serdes_init(struct serdes *pcie)
 {
 	int ret;
 
@@ -290,7 +309,7 @@ __weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
 	return -ENODEV;
 }
 
-static const char *s32_serdes_get_pcie_phy_mode(struct s32_serdes *pcie)
+static const char *s32_serdes_get_pcie_phy_mode(struct serdes *pcie)
 {
 	if (pcie->phy_mode == CRSS)
 		return "CRSS";
@@ -321,7 +340,7 @@ static int get_serdes_alias_id(struct udevice *dev, int *devnump)
 	return ret;
 }
 
-static int s32_serdes_get_config_from_device_tree(struct s32_serdes *pcie)
+static int ss_dt_init(struct serdes *pcie)
 {
 	struct resource res;
 	struct udevice *dev = pcie->bus;
@@ -384,7 +403,7 @@ static int enable_serdes_clocks(struct udevice *dev)
 
 static int s32_serdes_probe(struct udevice *dev)
 {
-	struct s32_serdes *pcie = dev_get_priv(dev);
+	struct serdes *pcie = dev_get_priv(dev);
 	const char *pcie_phy_mode;
 	int ret = 0;
 
@@ -396,7 +415,7 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	pcie->bus = dev;
 
-	ret = s32_serdes_get_config_from_device_tree(pcie);
+	ret = ss_dt_init(pcie);
 	if (ret)
 		return ret;
 
@@ -460,5 +479,5 @@ U_BOOT_DRIVER(serdes_s32gen1) = {
 	.id = UCLASS_PCI_GENERIC,
 	.of_match = s32_serdes_ids,
 	.probe	= s32_serdes_probe,
-	.priv_auto_alloc_size = sizeof(struct s32_serdes),
+	.priv_auto_alloc_size = sizeof(struct serdes),
 };

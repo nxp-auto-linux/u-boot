@@ -121,10 +121,9 @@
 #define CRS_EN					0x2
 /* LTSSM Enable. Active high. Set it low to hold the LTSSM in Detect state. */
 #define LTSSM_EN				0x1
-
+#define LTSSM_STATE_L0		0x11 /* L0 state */
 
 /* Register SS_RW_REG_0 */
-
 #define CLKEN_MASK	0x1
 #define CLKEN_OFF	23
 
@@ -132,6 +131,11 @@ enum pcie_link_speed {
 	GEN1 = 0x1,
 	GEN2 = 0x2,
 	GEN3 = 0x3
+};
+
+enum pcie_link_width {
+	X1 = 0x1,
+	X2 = 0x2
 };
 
 struct s32_pcie {
@@ -146,7 +150,7 @@ struct s32_pcie {
 	int id;
 	bool enabled;
 	bool ep_mode;
-	enum serdes_link_width linkwidth;
+	enum pcie_link_width linkwidth;
 	enum pcie_link_speed linkspeed;
 	int atu_out_num;
 	int atu_in_num;

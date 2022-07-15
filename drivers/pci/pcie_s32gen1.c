@@ -13,13 +13,18 @@
 #include <pci.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
+#include <asm/arch/s32-cc/serdes_regs.h>
 #include <dm/device-internal.h>
 #include <dm/uclass.h>
 #include <linux/io.h>
 #include <linux/sizes.h>
 #include <s32-cc/nvmem.h>
 #include <s32-cc/pcie.h>
+#include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
+
+#include "serdes_s32gen1_io.h"
+#include "ss_pcie_regs.h"
 
 /* CFG1 is used in linux when finding devices on the bus.
  * It is actually the upper half of the config space
@@ -49,6 +54,8 @@
 #define PCI_UPPER_ADDR_SHIFT 32
 
 #define PCI_DEVICE_ID_S32GEN1	0x4002
+
+#define PCIE_LINK_UP_COUNT 100
 
 LIST_HEAD(s32_pcie_list);
 
@@ -562,7 +569,7 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 }
 
 static bool s32_pcie_set_link_width(void __iomem *dbi, int id,
-				    enum serdes_link_width linkwidth)
+				    enum pcie_link_width linkwidth)
 {
 	s32_pcie_enable_dbi_rw(dbi);
 
@@ -597,7 +604,7 @@ static int s32_pcie_check_phy_mode(int id, const char *mode)
 }
 
 static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
-			  enum serdes_link_width linkwidth)
+			  enum pcie_link_width linkwidth)
 {
 	printf("Configuring PCIe%d as %s\n", id, PCIE_EP_RC_MODE(!rc_mode));
 
@@ -758,7 +765,7 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	pcie->linkspeed = (enum pcie_link_speed)val;
 	/* get supported width (X1/X2) from device tree */
 	val = dev_read_u32_default(dev, "num-lanes", X1);
-	pcie->linkwidth = (enum serdes_link_width)val;
+	pcie->linkwidth = (enum pcie_link_width)val;
 
 	return ret;
 }
