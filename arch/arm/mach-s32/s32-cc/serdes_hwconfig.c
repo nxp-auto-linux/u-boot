@@ -15,6 +15,8 @@
 #define SERDES_EP_MODE_STR "EndPoint"
 #define SERDES_SGMII_MODE_STR "SGMII"
 #define SERDES_SGMII_MODE_NONE_STR "None"
+#define MODE5_TOKEN "mode5"
+
 #define SERDES_NAME_SIZE 32
 
 bool is_pcie_enabled_in_hwconfig(int id)
@@ -220,13 +222,32 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 	return SERDES_MODE_INVAL;
 }
 
+bool s32_serdes_has_mode5_enabled(int id)
+{
+	size_t demo_len = 0;
+	char *demo;
+
+	demo = s32_serdes_get_hwconfig_subarg(id, "demo", &demo_len);
+
+	if (!demo || !demo_len)
+		return false;
+
+	if (strncmp(demo, MODE5_TOKEN, sizeof(MODE5_TOKEN) - 1))
+		return false;
+
+	return true;
+}
+
 bool s32_serdes_is_cfg_valid(int id)
 {
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_clock_fmhz freq;
 	enum serdes_mode mode;
+	enum serdes_clock clktype;
+	bool mode5;
 
+	clktype = s32_serdes_get_clock_from_hwconfig(id);
 	freq = s32_serdes_get_clock_fmhz_from_hwconfig(id);
 	devtype = s32_serdes_get_mode_from_hwconfig(id);
 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
@@ -279,6 +300,16 @@ bool s32_serdes_is_cfg_valid(int id)
 		break;
 	default:
 		return false;
+	}
+
+	mode5 = s32_serdes_has_mode5_enabled(id);
+	if (mode5) {
+		if (!(clktype == CLK_EXT && freq == CLK_100MHZ &&
+		      xpcs_mode == SGMII_XPCS1)) {
+			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
+			       id);
+			return false;
+		}
 	}
 
 	return true;

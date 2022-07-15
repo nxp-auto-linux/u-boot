@@ -198,20 +198,10 @@ static void s32_serdes_xpcs1_pma_config(struct s32_serdes *pcie)
 static void s32_serdes_start_mode5(struct s32_serdes *pcie,
 				   enum serdes_xpcs_mode_gen2 xpcs[2])
 {
-	char pcie_name[10];
-
-	sprintf(pcie_name, "pcie%d", pcie->id);
-	if (!hwconfig_subarg_cmp(pcie_name, "demo", "mode5"))
+	if (!s32_serdes_has_mode5_enabled(pcie->id))
 		return;
 
-	if (!(hwconfig_subarg_cmp(pcie_name, "clock", "ext") &&
-	      hwconfig_subarg_cmp(pcie_name, "fmhz", "100") &&
-	      hwconfig_subarg_cmp(pcie_name, "xpcs_mode", "1"))) {
-		pr_err("serdes: invalid mode5 demo configuration\n");
-		return;
-	}
-
-	printf("Enabling serdes mode5\n");
+	printf("SerDes%d: Enabling serdes mode5\n", pcie->id);
 	/* Initialize PMA */
 	serdes_pma_mode5((void *)UPTR(pcie->dbi), 1);
 	/* Initialize PHY */
