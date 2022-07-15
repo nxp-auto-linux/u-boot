@@ -245,6 +245,7 @@ bool s32_serdes_is_cfg_valid(int id)
 	enum serdes_clock_fmhz freq;
 	enum serdes_mode mode;
 	enum serdes_clock clktype;
+	enum serdes_phy_mode phy_mode;
 	bool mode5;
 
 	clktype = s32_serdes_get_clock_from_hwconfig(id);
@@ -252,6 +253,7 @@ bool s32_serdes_is_cfg_valid(int id)
 	devtype = s32_serdes_get_mode_from_hwconfig(id);
 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
 	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
 
 	if (devtype == SERDES_INVALID) {
 		printf("Invalid SerDes%d configuration\n", id);
@@ -308,6 +310,14 @@ bool s32_serdes_is_cfg_valid(int id)
 		      xpcs_mode == SGMII_XPCS1)) {
 			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
 			       id);
+			return false;
+		}
+	}
+
+	if (clktype == CLK_INT) {
+		if (phy_mode == CRSS || phy_mode == SRIS) {
+			printf("SerDes%d: CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
+			       id, id);
 			return false;
 		}
 	}

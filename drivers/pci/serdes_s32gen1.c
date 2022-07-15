@@ -414,14 +414,6 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	pcie->phy_mode = s32_serdes_get_phy_mode_from_hwconfig(pcie->id);
 
-	if (pcie->clktype == CLK_INT) {
-		if (pcie->phy_mode == CRSS || pcie->phy_mode == SRIS) {
-			printf("CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
-			       pcie->id);
-			return -EINVAL;
-		}
-	}
-
 	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(pcie);
 	printf("Using %s clock for PCIe%d, %s\n",
 	       SERDES_CLK_MODE(pcie->clktype),

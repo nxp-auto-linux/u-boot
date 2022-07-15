@@ -781,9 +781,8 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 			continue;
 
 		ret = prepare_pcie_node(&root, id);
-		if (ret) {
-			pr_err("Failed to PCIe ofnode%d\n", id);
-		}
+		if (ret)
+			pr_warn("Failed to prepare PCIe node%d\n", id);
 
 		ret = set_serdes_clk(&root, id);
 		if (ret)
