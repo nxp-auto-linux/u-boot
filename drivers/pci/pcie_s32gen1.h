@@ -11,8 +11,6 @@
 #include <asm/io.h>
 #include <linux/ioport.h>
 
-#include "serdes_s32gen1.h"
-
 #define SERDES_LINKUP_MASK	(SMLH_LINK_UP | RDLH_LINK_UP | \
 		SMLH_LTSSM_STATE)
 #define SERDES_LINKUP_EXPECT	(SMLH_LINK_UP | RDLH_LINK_UP | \

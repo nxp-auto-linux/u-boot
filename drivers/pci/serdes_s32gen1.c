@@ -18,11 +18,11 @@
 #include <dm/device_compat.h>
 #include <dm/of_access.h>
 #include <linux/io.h>
+#include <linux/iopoll.h>
 #include <linux/ioport.h>
 #include <linux/sizes.h>
 
 #include "serdes_regs.h"
-#include "serdes_s32gen1.h"
 #include "serdes_s32gen1_io.h"
 #include "serdes_xpcs_regs.h"
 #include "sgmii.h"
@@ -50,19 +50,20 @@ struct serdes {
 	enum serdes_phy_mode phy_mode;
 };
 
-int wait_read32(void __iomem *address, u32 expected,
-		u32 mask, int read_attempts)
+static int wait_read32(void __iomem *address, u32 expected,
+		       u32 mask, int read_attempts)
 {
-	__maybe_unused u32 tmp;
+	unsigned long maxtime = read_attempts * DELAY_QUANTUM;
+	int ret;
+	u32 val;
 
-	while ((tmp = (s32_dbi_readl(UPTR(address)) & (mask))) != (expected)) {
-		udelay(DELAY_QUANTUM); read_attempts--;
-		if (read_attempts < 0) {
-			debug_wr("WARNING: timeout read 0x%x from 0x%lx,",
-				 tmp, UPTR(address));
-			debug_wr(" expected 0x%x\n", expected);
-			return -ETIMEDOUT;
-		}
+	ret = readl_poll_timeout(UPTR(address), val, (val & mask) != expected,
+				 maxtime);
+	if (ret) {
+		debug_wr("WARNING: timeout read 0x%x from 0x%lx,",
+			 val, UPTR(address));
+		debug_wr(" expected 0x%x\n", expected);
+		return -ETIMEDOUT;
 	}
 
 	return 0;

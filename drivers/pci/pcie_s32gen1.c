@@ -17,7 +17,9 @@
 #include <dm/device-internal.h>
 #include <dm/uclass.h>
 #include <linux/io.h>
+#include <linux/iopoll.h>
 #include <linux/sizes.h>
+#include <linux/time.h>
 #include <s32-cc/nvmem.h>
 #include <s32-cc/pcie.h>
 #include <s32-cc/serdes_hwconfig.h>
@@ -54,8 +56,7 @@
 #define PCI_UPPER_ADDR_SHIFT 32
 
 #define PCI_DEVICE_ID_S32GEN1	0x4002
-
-#define PCIE_LINK_UP_COUNT 100
+#define LINK_UP_TIMEOUT		(50 * USEC_PER_MSEC)
 
 LIST_HEAD(s32_pcie_list);
 
@@ -875,11 +876,17 @@ static int s32_pcie_get_dev_id_variant(struct udevice *dev)
 
 static bool s32_pcie_wait_link_up(void __iomem *dbi)
 {
-	int count = PCIE_LINK_UP_COUNT;
+	uintptr_t addr = UPTR(dbi) + SS_PE0_LINK_DBG_2;
+	int ret;
+	u32 val;
 
-	return (wait_read32((void __iomem *)(UPTR(dbi) + SS_PE0_LINK_DBG_2),
-			    SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK,
-			    count) == 0);
+	ret = readl_poll_timeout(addr, val,
+				 (val & SERDES_LINKUP_MASK) == SERDES_LINKUP_EXPECT,
+				 LINK_UP_TIMEOUT);
+	if (ret)
+		return false;
+
+	return true;
 }
 
 static int s32_pcie_probe_rc(struct s32_pcie *pcie)
