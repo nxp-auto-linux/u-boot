@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright 2022 NXP
  */
 #ifndef __ASM_ARCH_MXC_MXC_I2C_H__
 #define __ASM_ARCH_MXC_MXC_I2C_H__
@@ -9,6 +10,8 @@
 #if CONFIG_IS_ENABLED(CLK)
 #include <clk.h>
 #endif
+
+struct mxc_driver_data;
 
 struct i2c_pin_ctrl {
 	iomux_v3_cfg_t i2c_mode;
@@ -47,7 +50,7 @@ struct mxc_i2c_bus {
 	 */
 	int index;
 	ulong base;
-	ulong driver_data;
+	const struct mxc_driver_data *driver_data;
 	int speed;
 	struct i2c_pads_info *pads_info;
 #if CONFIG_IS_ENABLED(CLK)
