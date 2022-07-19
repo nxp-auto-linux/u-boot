@@ -118,6 +118,29 @@ static const u16 i2c_imx_clk_div[][2] = {
 	{ 3072,	0x1E }, { 3840,	0x1F }
 };
 
+static const u16 i2c_s32cc_clk_div[][2] = {
+	{ 34,    0x00 }, { 36,    0x01 }, { 38,    0x02 }, { 40,    0x03 },
+	{ 42,    0x04 }, { 44,    0x05 }, { 46,    0x06 }, { 48,    0x09 },
+	{ 52,    0x0A }, { 54,    0x07 }, { 56,    0x0B }, { 60,    0x0C },
+	{ 64,    0x0D }, { 68,    0x40 }, { 72,    0x0E }, { 76,    0x42 },
+	{ 80,    0x12 }, { 84,    0x0F }, { 88,    0x13 }, { 96,    0x14 },
+	{ 104,   0x15 }, { 108,   0x47 }, { 112,   0x19 }, { 120,   0x16 },
+	{ 128,   0x1A }, { 136,   0x80 }, { 144,   0x17 }, { 152,   0x82 },
+	{ 160,   0x1C }, { 168,   0x84 }, { 176,   0x1D }, { 192,   0x21 },
+	{ 208,   0x1E }, { 216,   0x87 }, { 224,   0x22 }, { 240,   0x56 },
+	{ 256,   0x1F }, { 288,   0x24 }, { 320,   0x25 }, { 336,   0x8F },
+	{ 352,   0x93 }, { 356,   0x5D }, { 358,   0x98 }, { 384,   0x26 },
+	{ 416,   0x56 }, { 448,   0x2A }, { 480,   0x27 }, { 512,   0x2B },
+	{ 576,   0x2C }, { 640,   0x2D }, { 704,   0x9D }, { 768,   0x2E },
+	{ 832,   0x9D }, { 896,   0x32 }, { 960,   0x2F }, { 1024,  0x33 },
+	{ 1152,  0x34 }, { 1280,  0x35 }, { 1536,  0x36 }, { 1792,  0x3A },
+	{ 1920,  0x37 }, { 2048,  0x3B }, { 2304,  0x74 }, { 2560,  0x3D },
+	{ 3072,  0x3E }, { 3584,  0x7A }, { 3840,  0x3F }, { 4096,  0x7B },
+	{ 4608,  0x7C }, { 5120,  0x7D }, { 6144,  0x7E }, { 7168,  0xBA },
+	{ 7680,  0x7F }, { 8192,  0xBB }, { 9216,  0xBC }, { 10240, 0xBD },
+	{ 12288, 0xBE }, { 15360, 0xBF },
+};
+
 static const struct mxc_driver_data imx_driver_data = {
 	.clk_div_size = ARRAY_SIZE(i2c_imx_clk_div),
 	.clk_div = i2c_imx_clk_div,
@@ -131,8 +154,8 @@ static const struct mxc_driver_data vf610_driver_data = {
 
 static const struct mxc_driver_data s32cc_driver_data = {
 	.flags = I2C_QUIRK_FLAG,
-	.clk_div = i2c_vf610_clk_div,
-	.clk_div_size = ARRAY_SIZE(i2c_vf610_clk_div),
+	.clk_div = i2c_s32cc_clk_div,
+	.clk_div_size = ARRAY_SIZE(i2c_s32cc_clk_div),
 };
 
 /*
