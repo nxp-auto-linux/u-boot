@@ -19,30 +19,8 @@
 
 #define SERDES_SS_BASE				0x80000
 
-/*
- * SS Registers
- */
-
-/* PHY General Control */
-#define SS_PHY_GEN_CTRL				(SERDES_SS_BASE + 0x0U)
-
-#define SS_PHY_LPBK_CTRL			(SERDES_SS_BASE + 0x4U)
-#define SS_PHY_SRAM_CSR				(SERDES_SS_BASE + 0x8U)
-
-/* PHY MPLLA Control */
-#define SS_PHY_MPLLA_CTRL			(SERDES_SS_BASE + 0x10U)
-/* PHY MPLLB Control */
-#define SS_PHY_MPLLB_CTRL			(SERDES_SS_BASE + 0x14U)
-
-#define SS_PHY_EXT_CTRL_SEL			(SERDES_SS_BASE + 0x18U)
-#define SS_PHY_EXT_BS_CTRL			(SERDES_SS_BASE + 0x1cU)
-#define SS_PHY_REF_CLK_CTRL			(SERDES_SS_BASE + 0x20U)
-#define SS_PHY_EXT_MPLLA_CTRL_1			(SERDES_SS_BASE + 0x30U)
 #define SS_PHY_EXT_MPLLA_CTRL_2			(SERDES_SS_BASE + 0x34U)
 #define SS_PHY_EXT_MPLLA_CTRL_3			(SERDES_SS_BASE + 0x38U)
-#define SS_PHY_EXT_MPLLB_CTRL_1			(SERDES_SS_BASE + 0x40U)
-#define SS_PHY_EXT_MPLLB_CTRL_2			(SERDES_SS_BASE + 0x44U)
-#define SS_PHY_EXT_MPLLB_CTRL_3			(SERDES_SS_BASE + 0x48U)
 #define SS_PHY_EXT_RX_EQ_CTRL_1A		(SERDES_SS_BASE + 0x50U)
 #define SS_PHY_EXT_RX_EQ_CTRL_1B		(SERDES_SS_BASE + 0x54U)
 #define SS_PHY_EXT_RX_EQ_CTRL_1C		(SERDES_SS_BASE + 0x58U)
@@ -58,13 +36,10 @@
 #define SS_PHY_EXT_CALI_CTRL_2			(SERDES_SS_BASE + 0x94U)
 #define SS_PHY_EXT_CALI_CTRL_3			(SERDES_SS_BASE + 0x98U)
 #define SS_PHY_EXT_CALI_CTRL_4			(SERDES_SS_BASE + 0x9cU)
-#define SS_PHY_EXT_MISC_CTRL_1			(SERDES_SS_BASE + 0xa0U)
-#define SS_PHY_EXT_MISC_CTRL_2			(SERDES_SS_BASE + 0xa4U)
 #define SS_PHY_EXT_TX_EQ_CTRL_1			(SERDES_SS_BASE + 0xb0U)
 #define SS_PHY_EXT_TX_EQ_CTRL_2			(SERDES_SS_BASE + 0xb4U)
 #define SS_PHY_EXT_TX_EQ_CTRL_3			(SERDES_SS_BASE + 0xb8U)
 #define SS_PHY_XPCS0_RX_OVRD_CTRL		(SERDES_SS_BASE + 0xc0U)
-#define SS_PHY_XPCS1_RX_OVRD_CTRL		(SERDES_SS_BASE + 0xd0U)
 
 /* Subsystem Read Only Registers 0-3 */
 #define SS_SS_RO_REG_0				(SERDES_SS_BASE + 0xe0U)
@@ -73,7 +48,6 @@
 #define SS_SS_RO_REG_3				(SERDES_SS_BASE + 0xecU)
 
 /* Subsystem Read Write Registers 0-5 */
-#define SS_SS_RW_REG_0				(SERDES_SS_BASE + 0xf0U)
 #define SS_SS_RW_REG_1				(SERDES_SS_BASE + 0xf4U)
 #define SS_SS_RW_REG_2				(SERDES_SS_BASE + 0xf8U)
 #define SS_SS_RW_REG_3				(SERDES_SS_BASE + 0xfcU)
@@ -121,26 +95,11 @@
 #define SS_PE0_FSM_TRACK_2			(SERDES_SS_BASE + 0x10f4U)
 #define SS_APB_BRIDGE_TO_CTRL			(SERDES_SS_BASE + 0x3000U)
 
-/* PHY Register Address Register */
-#define SS_PHY_REG_ADDR				(SERDES_SS_BASE + 0x3008U)
-/* PHY Register Data Register */
-#define SS_PHY_REG_DATA				(SERDES_SS_BASE + 0x300cU)
 /* RESET CONTROL Register */
 #define SS_RST_CTRL				(SERDES_SS_BASE + 0x3010U)
 
 /* Field definitions for SS_RST_CTRL */
 #define COLD_RST				BIT(1)
-
-/* Field definitions for PHY_GEN_CTRL */
-
-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_BIT	(16)
-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN		BIT(REF_REPEAT_CLK_EN_BIT)
-
-#define PHY_GEN_CTRL_REF_USE_PAD_BIT	(17)
-#define PHY_GEN_CTRL_REF_USE_PAD	BIT(PHY_GEN_CTRL_REF_USE_PAD_BIT)
-
-#define PHY_GEN_CTRL_RX_SRIS_MODE_BIT	(9)
-#define PHY_GEN_CTRL_RX_SRIS_MODE_MASK	BIT(PHY_GEN_CTRL_RX_SRIS_MODE_BIT)
 
 /* Field definitions for PHY_EXT_MPLLA/B Registers */
 
@@ -159,45 +118,16 @@
 #define MPLLB_CTRL2_MPLLB_DIV_CLK_EN		(1U << 10)
 #define MPLLB_TX_CLK_DIV(n)		(((n) & 0x7U) << 11)
 
-#define MPLL_STATE_BIT         (30)
-#define MPLL_STATE             BIT(MPLL_STATE_BIT)
-
 #define MPLLA_STATE_BIT        (31)
 #define MPLLA_STATE            BIT(MPLLA_STATE_BIT)
-
-/* Field definitions for PHY_EXT_MPLLB EXT control Registers */
-
-#define EXT_MPLLB_FRACN_CTRL(x)			(((x) & 0x7ffU) << 12)
-#define EXT_MPLLB_WORD_DIV2_EN			BIT(31)
-#define EXT_MPLLB_TX_CLK_DIV(x)			(((x) & 0x7U) << 28)
-#define EXT_MPLLB_BANDWIDTH(x)			(((x) & 0xffffU) << 0)
-#define EXT_MPLLB_DIV_MULTIPLIER(x)		(((x) & 0xffU) << 24)
-#define EXT_MPLLB_DIV10_CLK_EN			BIT(16)
-#define EXT_MPLLB_DIV8_CLK_EN			BIT(18)
-#define EXT_MPLLB_DIV_CLK_EN			BIT(19)
-
-#define EXT_MPLLA_BANDWIDTH(x)			(((x) & 0xffffU) << 0)
 
 /* Field definitions for PCIE_PHY_MPLLB_CTRL */
 
 #define MPLLB_FORCE_EN_BIT      (0)
 #define MPLLB_FORCE_EN          BIT(MPLLB_FORCE_EN_BIT)
 
-#define MPLLB_SSC_EN_BIT       (1)
-#define MPLLB_SSC_EN           BIT(MPLLB_SSC_EN_BIT)
-
 #define MPLLB_STATE_BIT        (31)
 #define MPLLB_STATE            BIT(MPLLB_STATE_BIT)
-
-/* Field definitions for SS_RW_REG_0 */
-
-#define SUBSYS_MODE_LSB		(0)
-#define SUBSYS_MODE_MASK	(0x7)
-#define SUBSYS_MODE		((SUBSYS_MODE_MASK) << \
-		(SUBSYS_MODE_LSB))
-
-#define PHY0_CR_PARA_SEL_BIT		(9)
-#define PHY0_CR_PARA_SEL		BIT(PHY0_CR_PARA_SEL_BIT)
 
 /* Field definitions for PE0_GEN_CTRL_1 */
 
@@ -226,57 +156,6 @@
 #define RATE_LSB           (8)
 #define RATE_MASK          (0x00000003)
 #define RATE               ((RATE_MASK) << (RATE_LSB))
-
-/* Field definitions for PHY_REG_ADDR */
-
-#define PHY_REG_ADDR_FIELD_LSB       (0)
-#define PHY_REG_ADDR_FIELD_MASK      (0x0000FFFF)
-#define PHY_REG_ADDR_FIELD           ((PHY_REG_ADDR_FIELD_MASK) << \
-		(PHY_REG_ADDR_FIELD_LSB))
-
-#define PHY_REG_EN_BIT         (31)
-#define PHY_REG_EN             BIT(PHY_REG_EN_BIT)
-
-/* Field definitions for PHY_REG_DATA */
-
-#define PHY_REG_DATA_FIELD_LSB       (0)
-#define PHY_REG_DATA_FIELD_MASK      (0x0000FFFF)
-#define PHY_REG_DATA_FIELD           ((PHY_REG_DATA_FIELD_MASK) << \
-		(PHY_REG_DATA_FIELD_LSB))
-
-/* Field definitions for SS_PHY_EXT_MISC_CTRL_2 */
-
-#define EXT_TX_VBOOST_LVL(x)	(((x) & 0x7U) << 16)
-#define EXT_TX_TERM_CTRL(x)		(((x) & 0x7U) << 24)
-
-/* Field definitions for SS_PHY_EXT_CTRL_SEL */
-
-#define EXT_PHY_CTRL_SEL BIT(0)
-
-/* Field definitions for SS_PHY_REF_CLK_CTRL */
-
-#define REF_CLK_DIV2_EN		BIT(2)
-#define REF_CLK_MPLLB_DIV2_EN	BIT(1)
-#define REF_CLK_DIV2_EN		BIT(2)
-#define EXT_REF_RANGE(x)	(((x) & 0x7U) << 3)
-
-/* Field definitions for XPCS external control */
-#define XPCS1_RX_VCO_LD_VAL(x)(((x) & 0x1fffU) << 16)
-#define XPCS1_RX_REF_LD_VAL(x)(((x) & 0x3fU) << 8)
-
-/* Field definitions for SS_PHY_EXT_BS_CTRL */
-#define EXT_BS_RX_LEVEL(x)(((x) & 0x1fU) << 0)
-#define EXT_BS_RX_BIGSWING BIT(5)
-#define EXT_BS_TX_LOWSWING BIT(6)
-
-/* Field definitions for SS_PHY_EXT_MISC_CTRL_1 */
-#define EXT_RX_LOS_THRESHOLD(x) (((x) & 0x3fU) << 1)
-#define EXT_RX_VREF_CTRL(x) (((x) & 0x1fU) << 24)
-
-/* PHY registers */
-
-#define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
-#define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
 
 #endif
 

@@ -171,46 +171,47 @@
 #define PHY_CTRL_XPCS_OWNED	(PHY_CTRL_XPCS0_OWNED | PHY_CTRL_XPCS1_OWNED)
 
 /* Init */
-void serdes_pcs_pma_init_gen2(void *base, enum serdes_clock_fmhz fmhz,
+void serdes_pcs_pma_init_gen2(void __iomem *xpcs0, void __iomem *xpcs1,
+			      enum serdes_clock_fmhz fmhz,
 			      u32 init_flags);
-void serdes_pcs_issue_vreset(void *base, u32 xpcs);
-int serdes_pcs_wait_for_vreset(void *base, u32 xpcs);
+void serdes_pcs_issue_vreset(void __iomem *base);
+int serdes_pcs_wait_for_vreset(void __iomem *base);
 int serdes_pcs_reset_seqence(void *serdes_base, u32 xpcs0_base, u32 xpcs1_base);
-int serdes_pcs_wait_for_power_good(void *base, u32 xpcs);
+int serdes_pcs_wait_for_power_good(void __iomem *base);
 
 /* Bifurcation PMA control */
-int serdes_bifurcation_pll_transit_to_3125mhz(void *base, u32 xpcs,
+int serdes_bifurcation_pll_transit_to_3125mhz(void __iomem *base,
 					      enum serdes_clock_fmhz fmhz);
-int serdes_bifurcation_pll_transit_to_1250mhz(void *base, u32 xpcs,
+int serdes_bifurcation_pll_transit_to_1250mhz(void __iomem *base,
 					      enum serdes_clock_fmhz fmhz);
-void serdes_testing_stage1(void *base, u32 xpcs);
+void serdes_testing_stage1(void __iomem *base);
 
 /* PMA control */
-void serdes_pma_lane_disable(void *base, u32 xpcs);
-void serdes_pma_lane_enable(void *base, u32 xpcs);
-void serdes_pma_issue_rx_reset(void *base, u32 xpcs);
-void serdes_pma_loopback_enable(void *base, u32 xpcs);
-void serdes_pma_loopback_disable(void *base, u32 xpcs);
-int  serdes_pma_wait_link(void *base, u32 xpcs, u8 sec);
+void serdes_pma_lane_disable(void __iomem *base);
+void serdes_pma_lane_enable(void __iomem *base);
+void serdes_pma_issue_rx_reset(void __iomem *base);
+void serdes_pma_loopback_enable(void __iomem *base);
+void serdes_pma_loopback_disable(void __iomem *base);
+int  serdes_pma_wait_link(void __iomem *base, u8 sec);
 
 /* PCS control */
-int  serdes_pcs_speed_select(void *base, u32 xpcs, u32 div);
-void serdes_pcs_mii_bus_control_disable(void *base, u32 xpcs);
-void serdes_pcs_mii_bus_control_enable(void *base, u32 xpcs);
-void serdes_pcs_an_enable(void *base, u32 xpcs);
-void serdes_pcs_an_disable(void *base, u32 xpcs);
-void serdes_pcs_an_restart(void *base, u32 xpcs);
-void serdes_pcs_an_auto_sw_enable(void *base, u32 xpcs);
-void serdes_pcs_an_auto_sw_disable(void *base, u32 xpcs);
-void serdes_pcs_an_set_link_timer(void *base, u32 xpcs, u16 link_timer);
-int  serdes_pcs_an_decode(void *base, u32 xpcs, bool *link, bool *fduplex,
+int  serdes_pcs_speed_select(void __iomem *base, u32 div);
+void serdes_pcs_mii_bus_control_disable(void __iomem *base);
+void serdes_pcs_mii_bus_control_enable(void __iomem *base);
+void serdes_pcs_an_enable(void __iomem *base);
+void serdes_pcs_an_disable(void __iomem *base);
+void serdes_pcs_an_restart(void __iomem *base);
+void serdes_pcs_an_auto_sw_enable(void __iomem *base);
+void serdes_pcs_an_auto_sw_disable(void __iomem *base);
+void serdes_pcs_an_set_link_timer(void __iomem *base, u16 link_timer);
+int  serdes_pcs_an_decode(void __iomem *base, bool *link, bool *fduplex,
 			  u16 *speed);
-void serdes_pcs_set_fd(void *base, u32 xpcs);
-void serdes_pcs_set_hd(void *base, u32 xpcs);
-void serdes_pcs_loopback_enable(void *base, u32 xpcs);
-void serdes_pcs_loopback_disable(void *base, u32 xpcs);
+void serdes_pcs_set_fd(void __iomem *base);
+void serdes_pcs_set_hd(void __iomem *base);
+void serdes_pcs_loopback_enable(void __iomem *base);
+void serdes_pcs_loopback_disable(void __iomem *base);
 
-void serdes_pcs_dump_reg(void *base, u32 xpcs);
+void serdes_pcs_dump_reg(void __iomem *base);
 
 enum serdes_xpcs_mode_gen2 s32_get_xpcs_mode(int serd, int xpcs);
 int s32_sgmii_wait_link(int serdes, int xpcs);

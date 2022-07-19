@@ -14,11 +14,11 @@ enum serdes_clock;
 enum serdes_clock_fmhz;
 enum serdes_xpcs_mode_gen2;
 
-void serdes_pma_mode5(void *base, u32 xpcs);
-void serdes_pcs_mode5(void *base, u32 xpcs);
+void serdes_pma_mode5(void __iomem *base);
+void serdes_pcs_mode5(void __iomem *base);
 
-int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
-		      enum serdes_mode ss_mode,
+int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+		      int platform_serdes_id, enum serdes_mode ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      enum serdes_clock clktype,
 		      enum serdes_clock_fmhz fmhz,
