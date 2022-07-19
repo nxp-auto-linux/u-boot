@@ -5,13 +5,25 @@
 
 #include <common.h>
 #include <dm.h>
+#include <asm/gpio.h>
 #include <asm/io.h>
 #include <dm/device_compat.h>
 #include <dm/pinctrl.h>
 
+#include <linux/compat.h>
+#include <linux/list.h>
+
 #include <malloc.h>
 
 #define S32_PAD(pin)	((pin) * 4)
+
+#define SIUL2_MSCR_IBE	BIT(19)
+#define SIUL2_MSCR_OBE	BIT(21)
+#define SIUL2_MSCR_ODE	BIT(20)
+
+#define SIUL2_MSCR_SSS_MASK	0x7
+
+#define UPTR(a) ((uintptr_t)(a))
 
 #define SIUL2_NXP_PINS "nxp,pins"
 
@@ -82,7 +94,8 @@ static int s32_set_state(struct udevice *dev, struct udevice *config)
 
 		range = s32_get_pin_range(priv, pin);
 		if (range) {
-			writel(function, range->base_addr + S32_PAD(pin));
+			pin -= range->begin;
+			writel(function, UPTR(range->base_addr) + S32_PAD(pin));
 			pr_debug("%s function:reg 0x%x:0x%p\n", config->name,
 				 function, range->base_addr + S32_PAD(pin));
 			continue;
@@ -91,14 +104,163 @@ static int s32_set_state(struct udevice *dev, struct udevice *config)
 		pr_err("%s invalid pin found function:pin 0x%x:%d\n",
 		       config->name, function, pin);
 
-		return -EINVAL;
+		return -ENOENT;
 	};
 
 	return 0;
 }
 
+static int s32_pinmux_set(struct udevice *dev, unsigned int pin_selector,
+			  unsigned int func_selector)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	u32 mscr_value;
+
+	if (!range)
+		return -ENOENT;
+
+	pin_selector -= range->begin;
+	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(pin_selector));
+	mscr_value &= ~SIUL2_MSCR_SSS_MASK;
+	mscr_value |= (func_selector & SIUL2_MSCR_SSS_MASK);
+
+	writel(mscr_value, UPTR(range->base_addr) + S32_PAD(pin_selector));
+
+	return 0;
+}
+
+static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
+			   unsigned int param, unsigned int argument)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	enum pin_config_param cfg = (enum pin_config_param)param;
+	u32 mscr_value;
+
+	if (!range)
+		return -ENOENT;
+
+	pin_selector -= range->begin;
+	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(pin_selector));
+
+	switch (cfg) {
+	case PIN_CONFIG_OUTPUT_ENABLE:
+		mscr_value &= ~SIUL2_MSCR_OBE;
+		if (argument)
+			mscr_value |= SIUL2_MSCR_OBE;
+		break;
+	case PIN_CONFIG_INPUT_ENABLE:
+		mscr_value &= ~SIUL2_MSCR_IBE;
+		if (argument)
+			mscr_value |= SIUL2_MSCR_IBE;
+		break;
+	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
+		mscr_value |= SIUL2_MSCR_ODE;
+		break;
+	case PIN_CONFIG_DRIVE_PUSH_PULL:
+		mscr_value &= ~SIUL2_MSCR_ODE;
+		break;
+	default:
+		return -ENOSYS;
+	}
+
+	writel(mscr_value, UPTR(range->base_addr) + S32_PAD(pin_selector));
+
+	return 0;
+}
+
+static int s32_gpio_request_enable(struct udevice *dev, unsigned int pin_selector)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	u32 mscr_value;
+	struct s32_pin *pin;
+
+	if (!range)
+		return -ENOENT;
+
+	pin = malloc(sizeof(*pin));
+	if (!pin)
+		return -ENOMEM;
+
+	pin->pin = pin_selector;
+
+	pin_selector -= range->begin;
+	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(pin_selector));
+
+	pin->config = mscr_value;
+
+	mscr_value &= ~SIUL2_MSCR_SSS_MASK;
+
+	writel(mscr_value, UPTR(range->base_addr) + S32_PAD(pin_selector));
+
+	list_add(&pin->list, &priv->gpio_configs);
+
+	return 0;
+}
+
+static int s32_gpio_disable_free(struct udevice *dev, unsigned int pin_selector)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	struct list_head *pos, *temp;
+
+	if (!range)
+		return -ENOENT;
+
+	list_for_each_safe(pos, temp, &priv->gpio_configs) {
+		struct s32_pin *pin = list_entry(pos, struct s32_pin, list);
+
+		if (pin->pin == pin_selector) {
+			pin_selector -= range->begin;
+
+			writel(pin->config,
+			       UPTR(range->base_addr) + S32_PAD(pin_selector));
+
+			list_del(pos);
+			kfree(pin);
+			break;
+		}
+	}
+
+	return 0;
+}
+
+static int s32_get_gpio_mux(struct udevice *dev, __maybe_unused int banknum,
+			    int index)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+	struct s32_range *range = s32_get_pin_range(priv, index);
+	u32 mscr_value;
+	u32 sss_value;
+
+	if (!range)
+		return -ENOENT;
+
+	index -= range->begin;
+	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(index));
+
+	sss_value = mscr_value & SIUL2_MSCR_SSS_MASK;
+
+	if (sss_value != 0)
+		return GPIOF_FUNC;
+
+	if (mscr_value & SIUL2_MSCR_OBE)
+		return GPIOF_OUTPUT;
+	else if (mscr_value & SIUL2_MSCR_IBE)
+		return GPIOF_INPUT;
+
+	return GPIOF_UNKNOWN;
+}
+
 static const struct pinctrl_ops s32_pinctrl_ops = {
-	.set_state = s32_set_state,
+	.set_state		= s32_set_state,
+	.gpio_request_enable	= s32_gpio_request_enable,
+	.gpio_disable_free	= s32_gpio_disable_free,
+	.pinmux_set		= s32_pinmux_set,
+	.pinconf_set		= s32_pinconf_set,
+	.get_gpio_mux		= s32_get_gpio_mux,
 };
 
 static int s32_pinctrl_probe(struct udevice *dev)
@@ -151,6 +313,8 @@ static int s32_pinctrl_probe(struct udevice *dev)
 		priv->ranges[i].begin = begin;
 		priv->ranges[i].end = end;
 	}
+
+	INIT_LIST_HEAD(&priv->gpio_configs);
 
 	return 0;
 }
