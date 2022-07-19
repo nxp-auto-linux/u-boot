@@ -19,14 +19,14 @@
 #if defined(CONFIG_MACH_IMX)
 #include <asm/arch/imx-regs.h>
 #endif
-#include <dm/device_compat.h>
-#include <linux/errno.h>
-#include <asm/mach-imx/mxc_i2c.h>
-#include <asm/io.h>
+#include <dm.h>
 #include <i2c.h>
 #include <watchdog.h>
-#include <dm.h>
+#include <asm/io.h>
+#include <asm/mach-imx/mxc_i2c.h>
+#include <dm/device_compat.h>
 #include <dm/pinctrl.h>
+#include <linux/errno.h>
 
 #define I2C_QUIRK_FLAG		(1 << 0)
 
