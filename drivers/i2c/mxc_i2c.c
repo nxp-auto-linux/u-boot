@@ -4,14 +4,13 @@
  *
  * (c) 2007 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
  * (c) 2011 Marek Vasut <marek.vasut@gmail.com>
- * Copyright 2020 NXP
+ * Copyright 2020-2022 NXP
  *
  * Based on i2c-imx.c from linux kernel:
  *  Copyright (C) 2005 Torsten Koschorrek <koschorrek at synertronixx.de>
  *  Copyright (C) 2005 Matthias Blaschke <blaschke at synertronixx.de>
  *  Copyright (C) 2007 RightHand Technologies, Inc.
  *  Copyright (C) 2008 Darius Augulis <darius.augulis at teltonika.lt>
- *  Copyright 2020-2022 NXP
  *
  */
 
@@ -79,8 +78,13 @@ DECLARE_GLOBAL_DATA_PTR;
 #define I2SR_IIF_CLEAR	(0 << 1)
 #endif
 
-#ifdef I2C_QUIRK_REG
-static u16 i2c_clk_div[60][2] = {
+struct mxc_driver_data {
+	ulong flags;
+	const u16 (*clk_div)[2];
+	size_t clk_div_size;
+};
+
+static const u16 i2c_vf610_clk_div[][2] = {
 	{ 20,	0x00 }, { 22,	0x01 }, { 24,	0x02 }, { 26,	0x03 },
 	{ 28,	0x04 },	{ 30,	0x05 },	{ 32,	0x09 }, { 34,	0x06 },
 	{ 36,	0x0A }, { 40,	0x07 }, { 44,	0x0C }, { 48,	0x0D },
@@ -97,8 +101,8 @@ static u16 i2c_clk_div[60][2] = {
 	{ 2304,	0x3C },	{ 2560,	0x3D },	{ 3072,	0x3E }, { 3584,	0x7A },
 	{ 3840,	0x3F }, { 4096,	0x7B }, { 5120,	0x7D },	{ 6144,	0x7E },
 };
-#else
-static u16 i2c_clk_div[50][2] = {
+
+static const u16 i2c_imx_clk_div[][2] = {
 	{ 22,	0x20 }, { 24,	0x21 }, { 26,	0x22 }, { 28,	0x23 },
 	{ 30,	0x00 }, { 32,	0x24 }, { 36,	0x25 }, { 40,	0x26 },
 	{ 42,	0x03 }, { 44,	0x27 }, { 48,	0x28 }, { 52,	0x05 },
@@ -113,13 +117,31 @@ static u16 i2c_clk_div[50][2] = {
 	{ 1920,	0x1B }, { 2048,	0x3F }, { 2304,	0x1C }, { 2560,	0x1D },
 	{ 3072,	0x1E }, { 3840,	0x1F }
 };
-#endif
+
+static const struct mxc_driver_data imx_driver_data = {
+	.clk_div_size = ARRAY_SIZE(i2c_imx_clk_div),
+	.clk_div = i2c_imx_clk_div,
+};
+
+static const struct mxc_driver_data vf610_driver_data = {
+	.flags = I2C_QUIRK_FLAG,
+	.clk_div = i2c_vf610_clk_div,
+	.clk_div_size = ARRAY_SIZE(i2c_vf610_clk_div),
+};
+
+static const struct mxc_driver_data s32cc_driver_data = {
+	.flags = I2C_QUIRK_FLAG,
+	.clk_div = i2c_vf610_clk_div,
+	.clk_div_size = ARRAY_SIZE(i2c_vf610_clk_div),
+};
 
 /*
  * Calculate and set proper clock divider
  */
 static uint8_t i2c_imx_get_clk(struct mxc_i2c_bus *i2c_bus, unsigned int rate)
 {
+	size_t clk_div_size = i2c_bus->driver_data->clk_div_size;
+	const u16 (*i2c_clk_div)[2] = i2c_bus->driver_data->clk_div;
 	unsigned int i2c_clk_rate;
 	unsigned int div;
 	u8 clk_div;
@@ -143,8 +165,8 @@ static uint8_t i2c_imx_get_clk(struct mxc_i2c_bus *i2c_bus, unsigned int rate)
 	div = (i2c_clk_rate + rate - 1) / rate;
 	if (div < i2c_clk_div[0][0])
 		clk_div = 0;
-	else if (div > i2c_clk_div[ARRAY_SIZE(i2c_clk_div) - 1][0])
-		clk_div = ARRAY_SIZE(i2c_clk_div) - 1;
+	else if (div > i2c_clk_div[clk_div_size - 1][0])
+		clk_div = clk_div_size - 1;
 	else
 		for (clk_div = 0; i2c_clk_div[clk_div][0] < div; clk_div++)
 			;
@@ -159,9 +181,10 @@ static uint8_t i2c_imx_get_clk(struct mxc_i2c_bus *i2c_bus, unsigned int rate)
 static int bus_i2c_set_bus_speed(struct mxc_i2c_bus *i2c_bus, int speed)
 {
 	ulong base = i2c_bus->base;
-	bool quirk = i2c_bus->driver_data & I2C_QUIRK_FLAG ? true : false;
+	ulong flags = i2c_bus->driver_data->flags;
+	bool quirk = flags & I2C_QUIRK_FLAG ? true : false;
 	u8 clk_idx = i2c_imx_get_clk(i2c_bus, speed);
-	u8 idx = i2c_clk_div[clk_idx][1];
+	u8 idx = i2c_bus->driver_data->clk_div[clk_idx][1];
 	int reg_shift = quirk ? VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 
 	if (!base)
@@ -184,7 +207,8 @@ static int wait_for_sr_state(struct mxc_i2c_bus *i2c_bus, unsigned state)
 {
 	unsigned sr;
 	ulong elapsed;
-	bool quirk = i2c_bus->driver_data & I2C_QUIRK_FLAG ? true : false;
+	ulong flags = i2c_bus->driver_data->flags;
+	bool quirk = flags & I2C_QUIRK_FLAG ? true : false;
 	int reg_shift = quirk ? VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 	ulong base = i2c_bus->base;
 	ulong start_time = get_timer(0);
@@ -217,7 +241,7 @@ static int wait_for_sr_state(struct mxc_i2c_bus *i2c_bus, unsigned state)
 static int tx_byte(struct mxc_i2c_bus *i2c_bus, u8 byte)
 {
 	int ret;
-	int reg_shift = i2c_bus->driver_data & I2C_QUIRK_FLAG ?
+	int reg_shift = i2c_bus->driver_data->flags & I2C_QUIRK_FLAG ?
 			VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 	ulong base = i2c_bus->base;
 
@@ -247,7 +271,7 @@ void i2c_force_reset_slave(void)
 static void i2c_imx_stop(struct mxc_i2c_bus *i2c_bus)
 {
 	int ret;
-	int reg_shift = i2c_bus->driver_data & I2C_QUIRK_FLAG ?
+	int reg_shift = i2c_bus->driver_data->flags & I2C_QUIRK_FLAG ?
 			VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 	ulong base = i2c_bus->base;
 	unsigned int temp = readb(base + (I2CR << reg_shift));
@@ -268,7 +292,8 @@ static int i2c_init_transfer_(struct mxc_i2c_bus *i2c_bus, u8 chip,
 {
 	unsigned int temp;
 	int ret;
-	bool quirk = i2c_bus->driver_data & I2C_QUIRK_FLAG ? true : false;
+	ulong flags = i2c_bus->driver_data->flags;
+	bool quirk = flags & I2C_QUIRK_FLAG ? true : false;
 	ulong base = i2c_bus->base;
 	int reg_shift = quirk ? VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 
@@ -357,23 +382,23 @@ static int i2c_init_transfer_(struct mxc_i2c_bus *i2c_bus, u8 chip,
 static struct mxc_i2c_bus mxc_i2c_buses[] = {
 #if defined(CONFIG_ARCH_LS1021A) || defined(CONFIG_VF610) || \
 	defined(CONFIG_FSL_LAYERSCAPE)
-	{ 0, I2C1_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 1, I2C2_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 2, I2C3_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 3, I2C4_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 4, I2C5_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 5, I2C6_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 6, I2C7_BASE_ADDR, I2C_QUIRK_FLAG },
-	{ 7, I2C8_BASE_ADDR, I2C_QUIRK_FLAG },
+	{ 0, I2C1_BASE_ADDR, &vf610_driver_data, },
+	{ 1, I2C2_BASE_ADDR, &vf610_driver_data, },
+	{ 2, I2C3_BASE_ADDR, &vf610_driver_data, },
+	{ 3, I2C4_BASE_ADDR, &vf610_driver_data, },
+	{ 4, I2C5_BASE_ADDR, &vf610_driver_data, },
+	{ 5, I2C6_BASE_ADDR, &vf610_driver_data, },
+	{ 6, I2C7_BASE_ADDR, &vf610_driver_data, },
+	{ 7, I2C8_BASE_ADDR, &vf610_driver_data, },
 #else
-	{ 0, I2C1_BASE_ADDR, 0 },
-	{ 1, I2C2_BASE_ADDR, 0 },
-	{ 2, I2C3_BASE_ADDR, 0 },
-	{ 3, I2C4_BASE_ADDR, 0 },
-	{ 4, I2C5_BASE_ADDR, 0 },
-	{ 5, I2C6_BASE_ADDR, 0 },
-	{ 6, I2C7_BASE_ADDR, 0 },
-	{ 7, I2C8_BASE_ADDR, 0 },
+	{ 0, I2C1_BASE_ADDR, &imx_driver_data },
+	{ 1, I2C2_BASE_ADDR, &imx_driver_data },
+	{ 2, I2C3_BASE_ADDR, &imx_driver_data },
+	{ 3, I2C4_BASE_ADDR, &imx_driver_data },
+	{ 4, I2C5_BASE_ADDR, &imx_driver_data },
+	{ 5, I2C6_BASE_ADDR, &imx_driver_data },
+	{ 6, I2C7_BASE_ADDR, &imx_driver_data },
+	{ 7, I2C8_BASE_ADDR, &imx_driver_data },
 #endif
 };
 
@@ -476,7 +501,7 @@ exit:
 void i2c_early_init_f(void)
 {
 	ulong base = mxc_i2c_buses[I2C_EARLY_INIT_INDEX].base;
-	bool quirk = mxc_i2c_buses[I2C_EARLY_INIT_INDEX].driver_data
+	bool quirk = mxc_i2c_buses[I2C_EARLY_INIT_INDEX].driver_data->flags
 					& I2C_QUIRK_FLAG ? true : false;
 	int reg_shift = quirk ? VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 
@@ -494,7 +519,7 @@ static int i2c_init_transfer(struct mxc_i2c_bus *i2c_bus, u8 chip,
 {
 	int retry;
 	int ret;
-	int reg_shift = i2c_bus->driver_data & I2C_QUIRK_FLAG ?
+	int reg_shift = i2c_bus->driver_data->flags & I2C_QUIRK_FLAG ?
 			VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 
 	if (!i2c_bus->base)
@@ -556,7 +581,7 @@ static int i2c_read_data(struct mxc_i2c_bus *i2c_bus, uchar chip, uchar *buf,
 	int ret;
 	unsigned int temp;
 	int i;
-	int reg_shift = i2c_bus->driver_data & I2C_QUIRK_FLAG ?
+	int reg_shift = i2c_bus->driver_data->flags & I2C_QUIRK_FLAG ?
 			VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 	ulong base = i2c_bus->base;
 
@@ -657,7 +682,7 @@ static int bus_i2c_read(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
 {
 	int ret = 0;
 	u32 temp;
-	int reg_shift = i2c_bus->driver_data & I2C_QUIRK_FLAG ?
+	int reg_shift = i2c_bus->driver_data->flags & I2C_QUIRK_FLAG ?
 		VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 	ulong base = i2c_bus->base;
 
@@ -881,7 +906,8 @@ static int mxc_i2c_probe(struct udevice *bus)
 	fdt_addr_t addr;
 	int ret, ret2;
 
-	i2c_bus->driver_data = dev_get_driver_data(bus);
+	i2c_bus->driver_data = (struct mxc_driver_data *)
+				dev_get_driver_data(bus);
 
 	addr = dev_read_addr(bus);
 	if (addr == FDT_ADDR_T_NONE)
@@ -979,7 +1005,7 @@ static int mxc_i2c_xfer(struct udevice *bus, struct i2c_msg *msg, int nmsgs)
 	struct mxc_i2c_bus *i2c_bus = dev_get_priv(bus);
 	int ret = 0;
 	ulong base = i2c_bus->base;
-	int reg_shift = i2c_bus->driver_data & I2C_QUIRK_FLAG ?
+	int reg_shift = i2c_bus->driver_data->flags & I2C_QUIRK_FLAG ?
 		VF610_I2C_REGSHIFT : IMX_I2C_REGSHIFT;
 	int read_mode;
 
@@ -1046,9 +1072,9 @@ static const struct dm_i2c_ops mxc_i2c_ops = {
 };
 
 static const struct udevice_id mxc_i2c_ids[] = {
-	{ .compatible = "fsl,imx21-i2c", },
-	{ .compatible = "fsl,vf610-i2c", .data = I2C_QUIRK_FLAG, },
-	{ .compatible = "nxp,s32cc-i2c", .data = I2C_QUIRK_FLAG, },
+	{ .compatible = "fsl,imx21-i2c", .data = (ulong)&imx_driver_data},
+	{ .compatible = "fsl,vf610-i2c", .data = (ulong)&vf610_driver_data, },
+	{ .compatible = "nxp,s32cc-i2c", .data = (ulong)&s32cc_driver_data, },
 	{}
 };
 
