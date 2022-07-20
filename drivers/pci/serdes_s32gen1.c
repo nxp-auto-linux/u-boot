@@ -93,6 +93,10 @@ struct pcie_ctrl {
 struct serdes_ctrl {
 	struct reset_ctl *rst;
 	void __iomem *ss_base;
+	struct {
+		struct clk clk;
+		bool enabled;
+	} clks[5];
 };
 
 struct xpcs_ctrl {
@@ -103,7 +107,7 @@ struct serdes {
 	struct pcie_ctrl pcie;
 	struct serdes_ctrl ctrl;
 	struct xpcs_ctrl xpcs;
-	struct udevice *bus;
+	struct udevice *dev;
 	enum serdes_mode ss_mode;
 
 	int id;
@@ -112,6 +116,10 @@ struct serdes {
 	enum serdes_clock clktype;
 	enum serdes_clock_fmhz fmhz;
 	enum serdes_phy_mode phy_mode;
+};
+
+static const char * const serdes_clk_names[] = {
+	"axi", "aux", "apb", "ref", "ext"
 };
 
 static int wait_read32(void __iomem *address, u32 expected,
@@ -145,7 +153,7 @@ static int s32_serdes_set_mode(void __iomem *ss_base, enum serdes_mode mode)
 
 static int s32_serdes_assert_reset(struct serdes *serdes)
 {
-	__maybe_unused struct udevice *dev = serdes->bus;
+	__maybe_unused struct udevice *dev = serdes->dev;
 	int ret;
 
 	ret = reset_assert(serdes->pcie.rst);
@@ -165,7 +173,7 @@ static int s32_serdes_assert_reset(struct serdes *serdes)
 
 static int s32_serdes_deassert_reset(struct serdes *serdes)
 {
-	__maybe_unused struct udevice *dev = serdes->bus;
+	__maybe_unused struct udevice *dev = serdes->dev;
 	int ret;
 
 	ret = reset_deassert(serdes->pcie.rst);
@@ -412,6 +420,7 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
 	struct serdes_ctrl *ctrl = &serdes->ctrl;
 	struct resource res = {};
 	int ret = 0;
+	size_t i;
 
 	ret = get_serdes_alias_id(dev, &serdes->id);
 	if (ret < 0) {
@@ -437,8 +446,22 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
 		return PTR_ERR(serdes->ctrl.rst);
 	}
 
-	debug("%s: ss_base: 0x%lx (0x%p)\n", __func__, (uintptr_t)res.start,
-	      serdes->ctrl.ss_base);
+	for (i = 0; i < ARRAY_SIZE(serdes_clk_names); i++) {
+		ret = clk_get_by_name(dev, serdes_clk_names[i],
+				      &ctrl->clks[i].clk);
+		/* Only a subset of the clock may be available */
+		if (ret) {
+			ctrl->clks[i].enabled = false;
+			continue;
+		}
+
+		ret = clk_enable(&ctrl->clks[i].clk);
+		if (ret) {
+			dev_err(dev, "Failed to enable '%s' clock\n",
+				serdes_clk_names[i]);
+		}
+		ctrl->clks[i].enabled = true;
+	}
 
 	return 0;
 }
@@ -503,26 +526,24 @@ static int xpcs_dt_init(struct udevice *dev, struct serdes *serdes)
 	return 0;
 }
 
-static int enable_serdes_clocks(struct udevice *dev)
+static int disable_serdes_clocks(struct serdes *serdes)
 {
-	struct clk_bulk bulk;
 	int ret;
+	size_t i;
 
-	ret = clk_get_bulk(dev, &bulk);
-	if (ret == -ENOSYS)
-		return 0;
-	if (ret)
-		return ret;
+	for (i = 0; i < ARRAY_SIZE(serdes->ctrl.clks); i++) {
+		if (!serdes->ctrl.clks[i].enabled)
+			continue;
 
-	ret = clk_enable_bulk(&bulk);
-	if (ret) {
-		clk_release_bulk(&bulk);
-		return ret;
+		ret = clk_disable(&serdes->ctrl.clks[i].clk);
+		if (ret)
+			return ret;
 	}
+
 	return 0;
 }
 
-static int s32_serdes_probe(struct udevice *dev)
+static int serdes_probe(struct udevice *dev)
 {
 	struct serdes *serdes = dev_get_priv(dev);
 	const char *pcie_phy_mode;
@@ -534,7 +555,7 @@ static int s32_serdes_probe(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	serdes->bus = dev;
+	serdes->dev = dev;
 
 	ret = ss_dt_init(dev, serdes);
 	if (ret)
@@ -542,17 +563,11 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	ret = pcie_dt_init(dev, serdes);
 	if (ret)
-		return ret;
+		goto disable_clks;
 
 	ret = xpcs_dt_init(dev, serdes);
 	if (ret)
-		return ret;
-
-	ret = enable_serdes_clocks(dev);
-	if (ret) {
-		dev_err(dev, "Failed to enable SERDES clocks\n");
-		return ret;
-	}
+		goto disable_clks;
 
 	serdes->devtype = s32_serdes_get_mode_from_hwconfig(serdes->id);
 	serdes->clktype = s32_serdes_get_clock_from_hwconfig(serdes->id);
@@ -574,7 +589,7 @@ static int s32_serdes_probe(struct udevice *dev)
 
 	/* Apply the base SerDes/PHY settings */
 	if (!s32_serdes_init(serdes))
-		return ret;
+		goto disable_clks;
 
 	if (IS_SERDES_SGMII(serdes->devtype) &&
 	    serdes->xpcs_mode != SGMII_INAVALID) {
@@ -596,18 +611,22 @@ static int s32_serdes_probe(struct udevice *dev)
 		}
 	}
 
+disable_clks:
+	if (ret)
+		disable_serdes_clocks(serdes);
+
 	return ret;
 }
 
-static const struct udevice_id s32_serdes_ids[] = {
+static const struct udevice_id serdes_match[] = {
 	{ .compatible = "nxp,s32cc-serdes" },
-	{ }
+	{ /* sentinel */ }
 };
 
 U_BOOT_DRIVER(serdes_s32gen1) = {
 	.name = "serdes_s32gen1",
 	.id = UCLASS_PCI_GENERIC,
-	.of_match = s32_serdes_ids,
-	.probe	= s32_serdes_probe,
+	.of_match = serdes_match,
+	.probe	= serdes_probe,
 	.priv_auto_alloc_size = sizeof(struct serdes),
 };
