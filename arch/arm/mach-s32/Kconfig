@@ -63,6 +63,7 @@ config NXP_S32CC
 	select MMC_HS400_ES_SUPPORT
 	select MMC_HS400_SUPPORT
 	select MTD
+	select OF_BOARD_FIXUP
 	select OF_CONTROL
 	select OF_LIVE
 	select OF_SEPARATE

@@ -326,3 +326,8 @@ int ft_system_setup(void *blob, bd_t *bd)
 exit:
 	return ret;
 }
+
+int board_fix_fdt(void *rw_fdt_blob)
+{
+	return ft_fixup_cpu(rw_fdt_blob);
+}
