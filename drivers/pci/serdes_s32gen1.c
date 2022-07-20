@@ -33,7 +33,7 @@
 #define SERDES_CLK_MODE(EXT_CLK) \
 			((EXT_CLK) ? "external" : "internal")
 #define SERDES_CLK_FMHZ(clk_type) \
-			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
+			((clk_type == MHZ_100) ? "100Mhz" : "125Mhz")
 
 #define PCIE_PHY_GEN_CTRL	(0x0)
 #define  REF_USE_PAD_MASK	BIT(17)
@@ -86,6 +86,7 @@
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
 
 #define EXTERNAL_CLK_NAME	"ext"
+#define INTERNAL_CLK_NAME	"ref"
 
 struct pcie_ctrl {
 	struct reset_ctl *rst;
@@ -116,7 +117,6 @@ struct serdes {
 	int id;
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
-	enum serdes_clock_fmhz fmhz;
 	enum serdes_phy_mode phy_mode;
 };
 
@@ -135,6 +135,25 @@ static struct clk *get_serdes_clk(struct serdes *serdes, const char *name)
 	}
 
 	return NULL;
+}
+
+static int get_clk_rate(struct serdes *serdes, unsigned long *rate)
+{
+	__maybe_unused struct udevice *dev = serdes->dev;
+	struct clk *clk;
+
+	if (serdes->ctrl.ext_clk)
+		clk = get_serdes_clk(serdes, EXTERNAL_CLK_NAME);
+	else
+		clk = get_serdes_clk(serdes, INTERNAL_CLK_NAME);
+
+	if (!clk) {
+		dev_err(dev, "Failed to determine SerDes clock\n");
+		return -EINVAL;
+	}
+
+	*rate = clk_get_rate(clk);
+	return 0;
 }
 
 static int wait_read32(void __iomem *address, u32 expected,
@@ -391,7 +410,7 @@ __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 			     int id, enum serdes_mode ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     bool ext_clk,
-			     enum serdes_clock_fmhz fmhz,
+			     unsigned long fmhz,
 			     enum serdes_xpcs_mode_gen2 xpcs[2])
 {
 	/* Configure SereDes XPCS for PFE/GMAC*/
@@ -564,6 +583,7 @@ static int disable_serdes_clocks(struct serdes *serdes)
 static int serdes_probe(struct udevice *dev)
 {
 	struct serdes *serdes = dev_get_priv(dev);
+	unsigned long rate;
 	const char *pcie_phy_mode;
 	int ret = 0;
 
@@ -579,6 +599,10 @@ static int serdes_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
+	ret = get_clk_rate(serdes, &rate);
+	if (ret)
+		goto disable_clks;
+
 	ret = pcie_dt_init(dev, serdes);
 	if (ret)
 		goto disable_clks;
@@ -590,7 +614,6 @@ static int serdes_probe(struct udevice *dev)
 	serdes->devtype = s32_serdes_get_mode_from_hwconfig(serdes->id);
 	/* Get XPCS configuration */
 	serdes->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes->id);
-	serdes->fmhz = s32_serdes_get_clock_fmhz_from_hwconfig(serdes->id);
 
 	serdes->phy_mode = s32_serdes_get_phy_mode_from_hwconfig(serdes->id);
 
@@ -601,7 +624,7 @@ static int serdes_probe(struct udevice *dev)
 	if (IS_SERDES_SGMII(serdes->devtype) &&
 	    serdes->xpcs_mode != SGMII_INAVALID)
 		printf("Frequency %s configured for PCIe%d\n",
-		       SERDES_CLK_FMHZ(serdes->fmhz),
+		       SERDES_CLK_FMHZ(rate),
 		       serdes->id);
 
 	/* Apply the base SerDes/PHY settings */
@@ -620,7 +643,7 @@ static int serdes_probe(struct udevice *dev)
 					serdes->ss_mode,
 					serdes->xpcs_mode,
 					serdes->ctrl.ext_clk,
-					serdes->fmhz,
+					rate,
 					xpcs);
 		if (ret) {
 			printf("Error during configuration of SGMII on");

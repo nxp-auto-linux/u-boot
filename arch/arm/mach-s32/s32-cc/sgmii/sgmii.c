@@ -50,7 +50,7 @@ struct s32_xpcs_cfg {
 	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_xpcs_mode_gen2 mode[2];
 	enum serdes_mode ss_mode;
-	enum serdes_clock_fmhz fmhz;
+	unsigned long fmhz;
 	bool ext_clk;
 	bool is_init;
 };
@@ -215,7 +215,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 		      int platform_serdes_id, enum serdes_mode ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      bool ext_clk,
-		      enum serdes_clock_fmhz fmhz,
+		      unsigned long fmhz,
 		      enum serdes_xpcs_mode_gen2 xpcs[2])
 {
 	struct s32_xpcs_cfg *serdes = s32_get_serdes_priv(platform_serdes_id);

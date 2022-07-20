@@ -172,7 +172,7 @@
 
 /* Init */
 void serdes_pcs_pma_init_gen2(void __iomem *xpcs0, void __iomem *xpcs1,
-			      enum serdes_clock_fmhz fmhz,
+			      unsigned long fhmz,
 			      u32 init_flags);
 void serdes_pcs_issue_vreset(void __iomem *base);
 int serdes_pcs_wait_for_vreset(void __iomem *base);
@@ -181,9 +181,9 @@ int serdes_pcs_wait_for_power_good(void __iomem *base);
 
 /* Bifurcation PMA control */
 int serdes_bifurcation_pll_transit_to_3125mhz(void __iomem *base,
-					      enum serdes_clock_fmhz fmhz);
+					      unsigned long fhmz);
 int serdes_bifurcation_pll_transit_to_1250mhz(void __iomem *base,
-					      enum serdes_clock_fmhz fmhz);
+					      unsigned long fhmz);
 void serdes_testing_stage1(void __iomem *base);
 
 /* PMA control */

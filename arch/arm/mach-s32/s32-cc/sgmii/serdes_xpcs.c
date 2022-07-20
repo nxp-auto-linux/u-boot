@@ -354,11 +354,11 @@ static void serdes_pma_configure_tx_ctr(void __iomem *base)
 }
 
 static void serdes_pma_1250Mhz_prepare(void __iomem *base,
-				       enum serdes_clock_fmhz fmhz)
+				       unsigned long fmhz)
 {
 	u16 vco_cal_ld, vco_cal_ref;
 
-	if (fmhz == CLK_100MHZ) {
+	if (fmhz == MHZ_100) {
 		vco_cal_ld = 1350U;
 		vco_cal_ref = 27U;
 	} else {
@@ -391,11 +391,11 @@ static void serdes_pma_1250Mhz_prepare(void __iomem *base,
 
 /* Call only with 125mhz ref clk */
 static void serdes_pma_3125Mhz_prepare(void __iomem *base,
-				       enum serdes_clock_fmhz fmhz)
+				       unsigned long fmhz)
 {
 	u16 vco_cal_ld, vco_cal_ref;
 
-	if (fmhz == CLK_100MHZ) {
+	if (fmhz == MHZ_100) {
 		vco_cal_ld = 1344U;
 		vco_cal_ref = 43U;
 	} else {
@@ -427,9 +427,9 @@ static void serdes_pma_3125Mhz_prepare(void __iomem *base,
 }
 
 static void serdes_pma_mplla_start_cal(void __iomem *base,
-				       enum serdes_clock_fmhz fmhz)
+				       unsigned long fmhz)
 {
-	if (fmhz == CLK_100MHZ) {
+	if (fmhz == MHZ_100) {
 		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
 			   REF_RANGE(0x7U) | REF_CLK_DIV2 | REF_MPLLA_DIV2,
 			   REF_RANGE(0x3U) | REF_CLK_EN);
@@ -458,7 +458,7 @@ static void serdes_pma_mplla_start_cal(void __iomem *base,
 		   MPLLA_TX_CLK_DIV(0x7U),
 		   MPLLA_TX_CLK_DIV(1U) | MPLLA_DIV10_CLK_EN);
 
-	if (fmhz == CLK_100MHZ)
+	if (fmhz == MHZ_100)
 		PCSW16(base, VR_MII_GEN5_12G_MPLLA_CTRL3, 357U);
 	else
 		PCSW16(base, VR_MII_GEN5_12G_MPLLA_CTRL3, 43U);
@@ -468,9 +468,9 @@ static void serdes_pma_mplla_start_cal(void __iomem *base,
  * Note: Enable this only with 125Mhz ref !!
  */
 static void serdes_pma_mpllb_start_cal(void __iomem *base,
-				       enum serdes_clock_fmhz fmhz)
+				       unsigned long fmhz)
 {
-	if (fmhz == CLK_100MHZ) {
+	if (fmhz == MHZ_100) {
 		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
 			   REF_RANGE(0x7U) | REF_CLK_DIV2 | REF_MPLLB_DIV2,
 			   REF_RANGE(0x3U) | REF_CLK_EN);
@@ -499,7 +499,7 @@ static void serdes_pma_mpllb_start_cal(void __iomem *base,
 		   MPLLB_TX_CLK_DIV(0x7U),
 		   MPLLB_TX_CLK_DIV(0x5U) | MPLLB_DIV10_CLK_EN);
 
-	if (fmhz == CLK_100MHZ) {
+	if (fmhz == MHZ_100) {
 		/* Set fraction divider */
 		PCSBSET(base, VR_MII_GEN5_12G_MPLLB_CTRL1, 0x414U << 5U);
 
@@ -592,7 +592,7 @@ static int serdes_bifurcation_pll_transit(void __iomem *base, bool plla)
 
 /* Transit to PLLB */
 int serdes_bifurcation_pll_transit_to_3125mhz(void __iomem *base,
-					      enum serdes_clock_fmhz fmhz)
+					      unsigned long fmhz)
 {
 	/* Switch PCS logic to 2.5G */
 	serdes_pcs_set_2500M_mode(base);
@@ -606,7 +606,7 @@ int serdes_bifurcation_pll_transit_to_3125mhz(void __iomem *base,
 
 /* Transit to PLLA */
 int serdes_bifurcation_pll_transit_to_1250mhz(void __iomem *base,
-					      enum serdes_clock_fmhz fmhz)
+					      unsigned long fmhz)
 {
 	/* Switch PCS logic to 1G */
 	serdes_pcs_set_1000M_mode(base);
@@ -667,7 +667,7 @@ void serdes_pcs_mode5(void __iomem *base)
 }
 
 void serdes_pcs_pma_init_gen2(void __iomem *xpcs0, void __iomem *xpcs1,
-			      enum serdes_clock_fmhz fmhz,
+			      unsigned long fmhz,
 			      u32 init_flags)
 {
 	void __iomem *selected_xpcs = xpcs0;

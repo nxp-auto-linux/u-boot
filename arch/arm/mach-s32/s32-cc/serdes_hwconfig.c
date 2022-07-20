@@ -7,7 +7,6 @@
 #include <asm/arch/s32-cc/serdes_regs.h>
 #include <s32-cc/serdes_hwconfig.h>
 
-#define PCIE_DEFAULT_INTERNAL_CLK_FMHZ	CLK_100MHZ
 #define PCIE_DEFAULT_PHY_MODE		CRNS
 
 #define SERDES_RC_MODE_STR "RootComplex"
@@ -143,22 +142,21 @@ bool s32_serdes_is_external_clk_in_hwconfig(int id)
 	return false;
 }
 
-enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id)
+unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 {
-	enum serdes_clock_fmhz clk = PCIE_DEFAULT_INTERNAL_CLK_FMHZ;
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "fmhz",
 		&subarg_len);
 
 	if (!option_str || !subarg_len)
-		return clk;
+		return MHZ_100;
 
 	if (!strncmp(option_str, "100", subarg_len))
-		clk = CLK_100MHZ;
+		return MHZ_100;
 	else if (!strncmp(option_str, "125", subarg_len))
-		clk = CLK_125MHZ;
+		return MHZ_125;
 
-	return clk;
+	return MHZ_100;
 }
 
 enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
@@ -240,9 +238,9 @@ bool s32_serdes_is_cfg_valid(int id)
 {
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
-	enum serdes_clock_fmhz freq;
 	enum serdes_mode mode;
 	enum serdes_phy_mode phy_mode;
+	unsigned long freq;
 	bool mode5, ext_clk;
 
 	ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
@@ -257,7 +255,7 @@ bool s32_serdes_is_cfg_valid(int id)
 		return false;
 	}
 
-	if (IS_SERDES_PCIE(devtype) && freq == CLK_125MHZ) {
+	if (IS_SERDES_PCIE(devtype) && freq == MHZ_125) {
 		printf("Invalid \"hwconfig\": In PCIe/SGMII combo");
 		printf(" reference clock has to be 100Mhz\n");
 		/* SGMII configuration fail */
@@ -303,7 +301,7 @@ bool s32_serdes_is_cfg_valid(int id)
 
 	mode5 = s32_serdes_has_mode5_enabled(id);
 	if (mode5) {
-		if (!(ext_clk && freq == CLK_100MHZ &&
+		if (!(ext_clk && freq == MHZ_100 &&
 		      xpcs_mode == SGMII_XPCS1)) {
 			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
 			       id);

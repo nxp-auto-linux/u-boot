@@ -629,13 +629,13 @@ static int rename_ext_clk(struct dts_node *node, int prop_pos)
 
 static int get_ext_clk_phandle(struct dts_node *root, int id, uint32_t *phandle)
 {
-	enum serdes_clock_fmhz mhz;
+	unsigned long mhz;
 	char ext_clk_path[SERDES_EXT_PATH_SIZE];
 	int clk_mhz, ret;
 	struct dts_node node;
 
 	mhz = s32_serdes_get_clock_fmhz_from_hwconfig(id);
-	if (mhz == CLK_100MHZ)
+	if (mhz == MHZ_100)
 		clk_mhz = 100;
 	else
 		clk_mhz = 125;
