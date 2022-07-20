@@ -10,11 +10,6 @@
 #define   SERDES_EXT_CLK	"ext"
 #define   SERDES_INT_CLK	"int"
 
-enum serdes_clock {
-	CLK_EXT = 0,
-	CLK_INT
-};
-
 enum serdes_clock_fmhz {
 	CLK_100MHZ = 0,		/* Default */
 	CLK_125MHZ		/* For 2.5G mode */
@@ -114,7 +109,7 @@ enum serdes_mode {
 };
 
 enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
-enum serdes_clock s32_serdes_get_clock_from_hwconfig(int id);
+bool s32_serdes_is_external_clk_in_hwconfig(int i);
 enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id);
 enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
 enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);

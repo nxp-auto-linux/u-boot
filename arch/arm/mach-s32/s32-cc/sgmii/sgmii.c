@@ -50,8 +50,8 @@ struct s32_xpcs_cfg {
 	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_xpcs_mode_gen2 mode[2];
 	enum serdes_mode ss_mode;
-	enum serdes_clock clktype;
 	enum serdes_clock_fmhz fmhz;
+	bool ext_clk;
 	bool is_init;
 };
 
@@ -214,7 +214,7 @@ static void s32_serdes_post_init(struct s32_xpcs_cfg *serdes, u32 xpcs)
 int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 		      int platform_serdes_id, enum serdes_mode ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
-		      enum serdes_clock clktype,
+		      bool ext_clk,
 		      enum serdes_clock_fmhz fmhz,
 		      enum serdes_xpcs_mode_gen2 xpcs[2])
 {
@@ -231,7 +231,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 	serdes->xpcs0 = xpcs0;
 	serdes->xpcs1 = xpcs1;
 	serdes->xpcs_mode = SGMII_INAVALID;
-	serdes->clktype = clktype;
+	serdes->ext_clk = ext_clk;
 	serdes->ss_mode = ss_mode;
 	serdes->fmhz = fmhz;
 
@@ -280,7 +280,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 
 	if (serdes->mode[0] != SGMII_XPCS_PCIE) {
 		/* Bypass power up in case of pcie combo or internal clock*/
-		if (serdes->clktype != CLK_INT && shared != true) {
+		if (serdes->ext_clk && !shared) {
 			ret = serdes_pcs_wait_for_power_good(xpcs0);
 			if (!ret)
 				pr_info("XPCS0 power-up good success\n");
@@ -294,7 +294,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 
 	if (serdes->mode[1] != SGMII_XPCS_PCIE) {
 		/* Bypass power up in case of pcie combo or internal clock*/
-		if (serdes->clktype != CLK_INT && shared != true) {
+		if (serdes->ext_clk && !shared) {
 			ret = serdes_pcs_wait_for_power_good(xpcs1);
 			if (!ret)
 				pr_info("XPCS1 power-up good success\n");
@@ -310,7 +310,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 	if (!init_flags)
 		return 0;
 
-	if (serdes->clktype == CLK_INT)
+	if (!serdes->ext_clk)
 		init_flags |= PHY_CLK_INT;
 
 	serdes_pcs_pma_init_gen2(serdes->xpcs0, serdes->xpcs1, fmhz,

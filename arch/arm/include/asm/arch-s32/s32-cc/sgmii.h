@@ -10,7 +10,6 @@
 
 enum serdes_mode;
 enum serdes_xpcs_mode;
-enum serdes_clock;
 enum serdes_clock_fmhz;
 enum serdes_xpcs_mode_gen2;
 
@@ -20,7 +19,7 @@ void serdes_pcs_mode5(void __iomem *base);
 int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 		      int platform_serdes_id, enum serdes_mode ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
-		      enum serdes_clock clktype,
+		      bool ext_clk,
 		      enum serdes_clock_fmhz fmhz,
 		      enum serdes_xpcs_mode_gen2 xpcs[2]);
 

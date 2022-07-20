@@ -7,7 +7,6 @@
 #include <asm/arch/s32-cc/serdes_regs.h>
 #include <s32-cc/serdes_hwconfig.h>
 
-#define PCIE_DEFAULT_INTERNAL_CLK	CLK_INT
 #define PCIE_DEFAULT_INTERNAL_CLK_FMHZ	CLK_100MHZ
 #define PCIE_DEFAULT_PHY_MODE		CRNS
 
@@ -127,22 +126,21 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id)
 	return xpcs_mode;
 }
 
-enum serdes_clock s32_serdes_get_clock_from_hwconfig(int id)
+bool s32_serdes_is_external_clk_in_hwconfig(int id)
 {
-	enum serdes_clock clk = PCIE_DEFAULT_INTERNAL_CLK;
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "clock",
 		&subarg_len);
 
 	if (!option_str || !subarg_len)
-		return clk;
+		return false;
 
 	if (!strncmp(option_str, "ext", subarg_len))
-		clk = CLK_EXT;
+		return true;
 	else if (!strncmp(option_str, "int", subarg_len))
-		clk = CLK_INT;
+		return false;
 
-	return clk;
+	return false;
 }
 
 enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id)
@@ -244,11 +242,10 @@ bool s32_serdes_is_cfg_valid(int id)
 	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_clock_fmhz freq;
 	enum serdes_mode mode;
-	enum serdes_clock clktype;
 	enum serdes_phy_mode phy_mode;
-	bool mode5;
+	bool mode5, ext_clk;
 
-	clktype = s32_serdes_get_clock_from_hwconfig(id);
+	ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
 	freq = s32_serdes_get_clock_fmhz_from_hwconfig(id);
 	devtype = s32_serdes_get_mode_from_hwconfig(id);
 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
@@ -306,7 +303,7 @@ bool s32_serdes_is_cfg_valid(int id)
 
 	mode5 = s32_serdes_has_mode5_enabled(id);
 	if (mode5) {
-		if (!(clktype == CLK_EXT && freq == CLK_100MHZ &&
+		if (!(ext_clk && freq == CLK_100MHZ &&
 		      xpcs_mode == SGMII_XPCS1)) {
 			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
 			       id);
@@ -314,7 +311,7 @@ bool s32_serdes_is_cfg_valid(int id)
 		}
 	}
 
-	if (clktype == CLK_INT) {
+	if (!ext_clk) {
 		if (phy_mode == CRSS || phy_mode == SRIS) {
 			printf("SerDes%d: CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
 			       id, id);

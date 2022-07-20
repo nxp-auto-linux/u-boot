@@ -30,8 +30,8 @@
 #define PCIE_MPLL_LOCK_COUNT 10
 #define DELAY_QUANTUM 1000
 
-#define SERDES_CLK_MODE(clk_type) \
-			((clk_type == CLK_INT) ? "internal" : "external")
+#define SERDES_CLK_MODE(EXT_CLK) \
+			((EXT_CLK) ? "external" : "internal")
 #define SERDES_CLK_FMHZ(clk_type) \
 			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
 
@@ -85,6 +85,8 @@
 #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
 
+#define EXTERNAL_CLK_NAME	"ext"
+
 struct pcie_ctrl {
 	struct reset_ctl *rst;
 	void __iomem *phy_base;
@@ -97,6 +99,7 @@ struct serdes_ctrl {
 		struct clk clk;
 		bool enabled;
 	} clks[5];
+	bool ext_clk;
 };
 
 struct xpcs_ctrl {
@@ -113,7 +116,6 @@ struct serdes {
 	int id;
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
-	enum serdes_clock clktype;
 	enum serdes_clock_fmhz fmhz;
 	enum serdes_phy_mode phy_mode;
 };
@@ -121,6 +123,19 @@ struct serdes {
 static const char * const serdes_clk_names[] = {
 	"axi", "aux", "apb", "ref", "ext"
 };
+
+static struct clk *get_serdes_clk(struct serdes *serdes, const char *name)
+{
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(serdes->ctrl.clks); i++) {
+		if (!strcmp(serdes_clk_names[i], name) &&
+		    serdes->ctrl.clks[i].enabled)
+			return &serdes->ctrl.clks[i].clk;
+	}
+
+	return NULL;
+}
 
 static int wait_read32(void __iomem *address, u32 expected,
 		       u32 mask, unsigned long read_attempts)
@@ -326,7 +341,7 @@ static bool s32_serdes_init(struct serdes *serdes)
 		return false;
 
 	/* Set the clock for the Serdes module */
-	if (serdes->clktype == CLK_INT) {
+	if (!serdes->ctrl.ext_clk) {
 		debug("Set internal clock\n");
 		BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
 		       REF_USE_PAD_MASK);
@@ -375,7 +390,7 @@ static bool s32_serdes_init(struct serdes *serdes)
 __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 			     int id, enum serdes_mode ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
-			     enum serdes_clock clktype,
+			     bool ext_clk,
 			     enum serdes_clock_fmhz fmhz,
 			     enum serdes_xpcs_mode_gen2 xpcs[2])
 {
@@ -462,6 +477,9 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
 		}
 		ctrl->clks[i].enabled = true;
 	}
+
+	if (get_serdes_clk(serdes, EXTERNAL_CLK_NAME))
+		ctrl->ext_clk = true;
 
 	return 0;
 }
@@ -570,7 +588,6 @@ static int serdes_probe(struct udevice *dev)
 		goto disable_clks;
 
 	serdes->devtype = s32_serdes_get_mode_from_hwconfig(serdes->id);
-	serdes->clktype = s32_serdes_get_clock_from_hwconfig(serdes->id);
 	/* Get XPCS configuration */
 	serdes->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes->id);
 	serdes->fmhz = s32_serdes_get_clock_fmhz_from_hwconfig(serdes->id);
@@ -579,7 +596,7 @@ static int serdes_probe(struct udevice *dev)
 
 	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(serdes);
 	printf("Using %s clock for PCIe%d, %s\n",
-	       SERDES_CLK_MODE(serdes->clktype),
+	       SERDES_CLK_MODE(serdes->ctrl.ext_clk),
 	       serdes->id, pcie_phy_mode);
 	if (IS_SERDES_SGMII(serdes->devtype) &&
 	    serdes->xpcs_mode != SGMII_INAVALID)
@@ -602,7 +619,7 @@ static int serdes_probe(struct udevice *dev)
 					serdes->id,
 					serdes->ss_mode,
 					serdes->xpcs_mode,
-					serdes->clktype,
+					serdes->ctrl.ext_clk,
 					serdes->fmhz,
 					xpcs);
 		if (ret) {

@@ -691,7 +691,7 @@ static int add_ext_clk(struct dts_node *node, int id)
 
 static int set_serdes_clk(struct dts_node *root, int id)
 {
-	enum serdes_clock clk = s32_serdes_get_clock_from_hwconfig(id);
+	bool ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
 	int prop_pos, ret;
 	struct dts_node node;
 
@@ -703,10 +703,10 @@ static int set_serdes_clk(struct dts_node *root, int id)
 
 	prop_pos = node_stringlist_search(&node, "clock-names", SERDES_EXT_CLK);
 
-	if (clk == CLK_INT && prop_pos >= 0)
+	if (!ext_clk && prop_pos >= 0)
 		return rename_ext_clk(&node, prop_pos);
 
-	if (clk == CLK_EXT && prop_pos <= 0)
+	if (ext_clk && prop_pos <= 0)
 		return add_ext_clk(&node, id);
 
 	return 0;
