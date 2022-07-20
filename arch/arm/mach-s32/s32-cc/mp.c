@@ -22,25 +22,12 @@ struct cpu_desc {
 static struct cpu_desc *cpus;
 static u32 n_cpus;
 
-static struct cpu_desc *get_cpu(unsigned int cpu_id)
+static struct cpu_desc *get_cpu(const unsigned int cpu_id)
 {
-	/* S32CC SoCs have 2 clusters */
-	u32 cluster_cores = n_cpus / 2;
-	u32 i, cluster;
-
 	if (cpu_id >= n_cpus)
 		return NULL;
 
-	cluster = cpu_id / cluster_cores;
-	cpu_id %= cluster_cores;
-	cpu_id += (cluster << CLUSTER_SHIFT);
-
-	for (i = 0u; i < n_cpus; i++) {
-		if (cpus[i].psci_id == cpu_id)
-			return &cpus[i];
-	}
-
-	return NULL;
+	return &cpus[cpu_id];
 }
 
 static int add_cpu(u32 psci_id)
