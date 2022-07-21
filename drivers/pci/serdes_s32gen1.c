@@ -100,6 +100,7 @@ struct serdes_ctrl {
 		struct clk clk;
 		bool enabled;
 	} clks[5];
+	u32 ss_mode;
 	bool ext_clk;
 };
 
@@ -112,7 +113,6 @@ struct serdes {
 	struct serdes_ctrl ctrl;
 	struct xpcs_ctrl xpcs;
 	struct udevice *dev;
-	enum serdes_mode ss_mode;
 
 	int id;
 	enum serdes_dev_type devtype;
@@ -175,7 +175,7 @@ static int wait_read32(void __iomem *address, u32 expected,
 	return 0;
 }
 
-static int s32_serdes_set_mode(void __iomem *ss_base, enum serdes_mode mode)
+static int s32_serdes_set_mode(void __iomem *ss_base, u32 mode)
 {
 	BSET32(UPTR(ss_base) + SS_RW_REG_0, SUBMODE_MASK & mode);
 
@@ -345,14 +345,12 @@ static bool s32_serdes_init(struct serdes *serdes)
 {
 	int ret;
 
-	serdes->ss_mode = s32_serdes_get_op_mode_from_hwconfig(serdes->id);
-
 	/* Reset the Serdes module */
 	ret = s32_serdes_assert_reset(serdes);
 	if (ret)
 		return false;
 
-	if (s32_serdes_set_mode(serdes->ctrl.ss_base, serdes->ss_mode))
+	if (s32_serdes_set_mode(serdes->ctrl.ss_base, serdes->ctrl.ss_mode))
 		return false;
 
 	/* Set the clock for the Serdes module */
@@ -403,7 +401,7 @@ static bool s32_serdes_init(struct serdes *serdes)
 }
 
 __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
-			     int id, enum serdes_mode ss_mode,
+			     int id, u32 ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
 			     bool ext_clk,
 			     unsigned long fmhz,
@@ -458,7 +456,13 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
 		return ret;
 	}
 
-	ret = ofnode_read_resource_byname(node, "ss_pcie", &res);
+	ret = dev_read_u32(dev, "fsl,sys-mode", &ctrl->ss_mode);
+	if (ret) {
+		dev_err(dev, "Failed to get SerDes subsystem mode\n");
+		return -EINVAL;
+	}
+
+	ret = dev_read_resource_byname(dev, "ss_pcie", &res);
 	if (ret) {
 		dev_err(dev, "Missing 'ss_pcie' reg region.\n");
 		return -EIO;
@@ -636,7 +640,7 @@ static int serdes_probe(struct udevice *dev)
 
 		ret = s32_eth_xpcs_init(serdes->xpcs.base0, serdes->xpcs.base1,
 					serdes->id,
-					serdes->ss_mode,
+					serdes->ctrl.ss_mode,
 					serdes->xpcs_mode,
 					serdes->ctrl.ext_clk,
 					rate,

@@ -211,8 +211,26 @@ static void s32_serdes_post_init(struct s32_xpcs_cfg *serdes, u32 xpcs)
 	serdes_pcs_speed_select(xpcs_base, 1);
 }
 
+static enum serdes_mode u32_to_serdes_mode(u32 ss_mode)
+{
+	switch (ss_mode) {
+	case 0:
+		return SERDES_MODE_PCIE_PCIE;
+	case 1:
+		return SERDES_MODE_PCIE_SGMII0;
+	case 2:
+		return SERDES_MODE_PCIE_SGMII1;
+	case 3:
+		return SERDES_MODE_SGMII_SGMII;
+	case 4:
+		return SERDES_MODE_SGMII_SGMII_ALT;
+	default:
+		return SERDES_MODE_INVAL;
+	}
+}
+
 int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
-		      int platform_serdes_id, enum serdes_mode ss_mode,
+		      int platform_serdes_id, u32 ss_mode,
 		      enum serdes_xpcs_mode xpcs_mode,
 		      bool ext_clk,
 		      unsigned long fmhz,
@@ -232,7 +250,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 	serdes->xpcs1 = xpcs1;
 	serdes->xpcs_mode = SGMII_INAVALID;
 	serdes->ext_clk = ext_clk;
-	serdes->ss_mode = ss_mode;
+	serdes->ss_mode = u32_to_serdes_mode(ss_mode);
 	serdes->fmhz = fmhz;
 
 	if (serdes->ss_mode == SERDES_MODE_PCIE_SGMII0 ||
