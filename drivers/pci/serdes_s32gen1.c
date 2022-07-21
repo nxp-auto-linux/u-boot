@@ -21,14 +21,12 @@
 #include <linux/iopoll.h>
 #include <linux/ioport.h>
 #include <linux/sizes.h>
+#include <linux/time.h>
 
 #include "serdes_regs.h"
 #include "serdes_s32gen1_io.h"
 #include "sgmii.h"
 #include "ss_pcie_regs.h"
-
-#define PCIE_MPLL_LOCK_COUNT 10
-#define DELAY_QUANTUM 1000
 
 #define SERDES_CLK_MODE(EXT_CLK) \
 			((EXT_CLK) ? "external" : "internal")
@@ -39,6 +37,7 @@
 #define  REF_USE_PAD_MASK	BIT(17)
 #define  RX_SRIS_MODE_MASK	BIT(9)
 #define PCIE_PHY_MPLLA_CTRL	(0x10)
+#define  MPLLA_STATE_MASK	BIT(31)
 #define  MPLL_STATE_MASK	BIT(30)
 #define PCIE_PHY_MPLLB_CTRL	(0x14U)
 #define  MPLLB_SSC_EN_MASK	BIT(1)
@@ -76,6 +75,7 @@
 #define  XPCS1_RX_REF_LD_VAL(x)		(((x) & 0x3fU) << 8)
 #define SS_RW_REG_0		(0xf0)
 #define  SUBMODE_MASK		(0x7)
+#define  CLKEN_MASK		BIT(23)
 #define  PHY0_CR_PARA_SEL_MASK	BIT(9)
 
 #define PHY_REG_ADDR		(0x0)
@@ -85,12 +85,18 @@
 #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
 
+#define SERDES_LOCK_TIMEOUT_US	(10 * USEC_PER_MSEC)
+
 #define EXTERNAL_CLK_NAME	"ext"
 #define INTERNAL_CLK_NAME	"ref"
+
+#define SERDES_PCIE_FREQ	100000000
 
 struct pcie_ctrl {
 	struct reset_ctl *rst;
 	void __iomem *phy_base;
+	bool powered_on[2];
+	bool initialized_phy;
 };
 
 struct serdes_ctrl {
@@ -101,6 +107,7 @@ struct serdes_ctrl {
 		bool enabled;
 	} clks[5];
 	u32 ss_mode;
+	enum pcie_phy_mode phy_mode;
 	bool ext_clk;
 };
 
@@ -117,12 +124,20 @@ struct serdes {
 	int id;
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
-	enum pcie_phy_mode phy_mode;
 };
 
 static const char * const serdes_clk_names[] = {
 	"axi", "aux", "apb", "ref", "ext"
 };
+
+static void pcie_phy_write(struct serdes *serdes, u32 reg, u32 val)
+{
+	writel(PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
+	writel(reg | PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
+	udelay(100);
+	writel(val, UPTR(serdes->pcie.phy_base) + PHY_REG_DATA);
+	udelay(100);
+}
 
 static struct clk *get_serdes_clk(struct serdes *serdes, const char *name)
 {
@@ -156,31 +171,89 @@ static int get_clk_rate(struct serdes *serdes, unsigned long *rate)
 	return 0;
 }
 
-static int wait_read32(void __iomem *address, u32 expected,
-		       u32 mask, unsigned long read_attempts)
+static int check_pcie_clk(struct serdes *serdes)
 {
-	unsigned long maxtime = read_attempts * DELAY_QUANTUM;
+	__maybe_unused struct udevice *dev = serdes->dev;
+	unsigned long rate;
 	int ret;
-	u32 val;
 
-	ret = readl_poll_timeout(UPTR(address), val, (val & mask) != expected,
-				 maxtime);
-	if (ret) {
-		debug_wr("WARNING: timeout read 0x%x from 0x%lx,",
-			 val, UPTR(address));
-		debug_wr(" expected 0x%x\n", expected);
-		return -ETIMEDOUT;
+	ret = get_clk_rate(serdes, &rate);
+	if (ret)
+		return ret;
+
+	if (rate != SERDES_PCIE_FREQ) {
+		dev_err(dev, "PCIe PHY cannot operate at %lu HZ\n", rate);
+		return -EINVAL;
 	}
 
 	return 0;
 }
 
-static int s32_serdes_set_mode(void __iomem *ss_base, u32 mode)
+static int pci_phy_power_on_common(struct serdes *serdes)
 {
-	BSET32(UPTR(ss_base) + SS_RW_REG_0, SUBMODE_MASK & mode);
+	struct serdes_ctrl *sctrl = &serdes->ctrl;
+	struct pcie_ctrl *pcie = &serdes->pcie;
+	u32 ctrl, reg0, val, mask;
+	int ret;
 
-	/* small delay for stabilizing the signals */
-	udelay(100);
+	if (pcie->initialized_phy)
+		return 0;
+
+	ret = check_pcie_clk(serdes);
+	if (ret)
+		return ret;
+
+	ctrl = readl(UPTR(sctrl->ss_base) + PCIE_PHY_GEN_CTRL);
+
+	/* if PCIE PHY is in SRIS mode */
+	if (sctrl->phy_mode == SRIS)
+		ctrl |= RX_SRIS_MODE_MASK;
+
+	if (sctrl->ext_clk)
+		ctrl |= REF_USE_PAD_MASK;
+	else
+		ctrl &= ~REF_USE_PAD_MASK;
+
+	/* Monitor Serdes MPLL state */
+	writel(ctrl, UPTR(sctrl->ss_base) + PCIE_PHY_GEN_CTRL);
+
+	mask = MPLL_STATE_MASK;
+	ret = readl_poll_timeout(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLA_CTRL,
+				 val, (val & mask) == mask,
+				 SERDES_LOCK_TIMEOUT_US);
+	if (ret) {
+		dev_err(serdes->dev, "Failed to lock PCIe phy\n");
+		return -ETIMEDOUT;
+	}
+
+	/* Set PHY register access to CR interface */
+	reg0 = readl(UPTR(sctrl->ss_base) + SS_RW_REG_0);
+	reg0 |=  PHY0_CR_PARA_SEL_MASK;
+	writel(reg0, UPTR(sctrl->ss_base) + SS_RW_REG_0);
+
+	pcie->initialized_phy = true;
+	return 0;
+}
+
+static int pcie_phy_power_on(struct serdes *serdes, int id)
+{
+	struct pcie_ctrl *pcie = &serdes->pcie;
+	u32 iq_ovrd_in;
+	int ret;
+
+	ret = pci_phy_power_on_common(serdes);
+	if (ret)
+		return ret;
+
+	/* RX_EQ_DELTA_IQ_OVRD enable and override value for PCIe lanes */
+	if (!id)
+		iq_ovrd_in = RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN;
+	else
+		iq_ovrd_in = RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN;
+
+	pcie_phy_write(serdes, iq_ovrd_in, 0x3);
+	pcie_phy_write(serdes, iq_ovrd_in, 0x13);
+	pcie->powered_on[id] = true;
 
 	return 0;
 }
@@ -225,50 +298,39 @@ static int s32_serdes_deassert_reset(struct serdes *serdes)
 	return 0;
 }
 
-/**
- * @brief	Indirect write PHY register.
- * @param[in]	addr	Indirect PHY address (16bit).
- * @param[in]	wdata	Indirect PHY data to be written (16 bit).
- */
-static void s32_serdes_phy_reg_write(struct serdes *serdes, u16 addr,
-				     u16 wdata, u16 wmask)
+static int init_serdes(struct serdes *serdes)
 {
-	u32 temp_data = wdata & wmask;
+	struct serdes_ctrl *ctrl = &serdes->ctrl;
+	u32 reg0;
+	int ret;
 
-	writel(PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
-	writel(addr | PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
-	udelay(100);
-	if (wmask == 0xFFFF)
-		W32(UPTR(serdes->pcie.phy_base) + PHY_REG_DATA, temp_data);
+	ret = assert_reset(serdes);
+	if (ret)
+		return ret;
+
+	reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
+	reg0 &= ~SUBMODE_MASK;
+	reg0 |= ctrl->ss_mode;
+	writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
+
+	reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
+	if (ctrl->ext_clk)
+		reg0 &= ~CLKEN_MASK;
 	else
-		RMW32(UPTR(serdes->pcie.phy_base) + PHY_REG_DATA, temp_data, wmask);
+		reg0 |= CLKEN_MASK;
+
+	writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
 
 	udelay(100);
-}
 
-static void s32_serdes_phy_init(struct serdes *serdes)
-{
-	/* Select the CR parallel interface */
-	BSET32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, PHY0_CR_PARA_SEL_MASK);
+	ret = deassert_reset(serdes);
+	if (ret)
+		return ret;
 
-	/* Address erratum TKT0527889:
-	 * PCIe Gen3 Receiver Long Channel Stressed Voltage Test Failing
-	 */
-	/* RX_EQ_DELTA_IQ_OVRD enable and override value for PCIe0 lane 0 */
-	s32_serdes_phy_reg_write(serdes,
-				 RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
-				 0x03, 0xff);
-	s32_serdes_phy_reg_write(serdes,
-				 RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
-				 0x13, 0xff);
+	dev_info(serdes->dev, "Using mode %d for SerDes subsystem\n",
+		 ctrl->ss_mode);
 
-	/* RX_EQ_DELTA_IQ_OVRD enable and override value for PCIe0 lane 1 */
-	s32_serdes_phy_reg_write(serdes,
-				 RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
-				 0x03, 0xff);
-	s32_serdes_phy_reg_write(serdes,
-				 RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN,
-				 0x13, 0xff);
+	return 0;
 }
 
 static void s32_serdes_xpcs1_pma_config(struct serdes *serdes)
@@ -341,65 +403,6 @@ static void s32_serdes_start_mode5(struct serdes *serdes,
 	xpcs[1] = SGMII_XPCS_2G5_OP;
 }
 
-static bool s32_serdes_init(struct serdes *serdes)
-{
-	int ret;
-
-	/* Reset the Serdes module */
-	ret = s32_serdes_assert_reset(serdes);
-	if (ret)
-		return false;
-
-	if (s32_serdes_set_mode(serdes->ctrl.ss_base, serdes->ctrl.ss_mode))
-		return false;
-
-	/* Set the clock for the Serdes module */
-	if (!serdes->ctrl.ext_clk) {
-		debug("Set internal clock\n");
-		BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
-		       REF_USE_PAD_MASK);
-		BSET32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, 1 << 23);
-	} else {
-		debug("Set external clock\n");
-		BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
-		       REF_USE_PAD_MASK);
-		BCLR32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, 1 << 23);
-	}
-
-	/* Deassert SerDes reset */
-	ret = s32_serdes_deassert_reset(serdes);
-	if (ret)
-		return false;
-
-	/* Enable PHY's SRIS mode in PCIe mode*/
-	if (serdes->phy_mode == SRIS)
-		BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
-		       RX_SRIS_MODE_MASK);
-
-	if (IS_SERDES_PCIE(serdes->devtype)) {
-
-		/* Monitor Serdes MPLL state, which is 1 when
-		 * either MPLLA is 1 (for Gen1 and 2) or
-		 * MPLLB is 1 (for Gen3)
-		 */
-		if (wait_read32((void __iomem *)
-				(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLA_CTRL),
-				MPLL_STATE_MASK,
-				MPLL_STATE_MASK,
-				PCIE_MPLL_LOCK_COUNT)) {
-			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
-				serdes->id);
-			return false;
-		}
-
-		/* Set PHY register access to CR interface */
-		BSET32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, 0x200);
-		s32_serdes_phy_init(serdes);
-	}
-
-	return true;
-}
-
 __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 			     int id, u32 ss_mode,
 			     enum serdes_xpcs_mode xpcs_mode,
@@ -414,9 +417,9 @@ __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 
 static const char *s32_serdes_get_pcie_phy_mode(struct serdes *serdes)
 {
-	if (serdes->phy_mode == CRSS)
+	if (serdes->ctrl.phy_mode == CRSS)
 		return "CRSS";
-	else if (serdes->phy_mode == SRIS)
+	else if (serdes->ctrl.phy_mode == SRIS)
 		return "SRIS";
 
 	/* Default PCIE PHY mode */
@@ -615,7 +618,7 @@ static int serdes_probe(struct udevice *dev)
 	/* Get XPCS configuration */
 	serdes->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes->id);
 
-	serdes->phy_mode = s32_serdes_get_phy_mode_from_hwconfig(serdes->id);
+	serdes->ctrl.phy_mode = s32_serdes_get_phy_mode_from_hwconfig(serdes->id);
 
 	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(serdes);
 	printf("Using %s clock for PCIe%d, %s\n",
@@ -627,9 +630,24 @@ static int serdes_probe(struct udevice *dev)
 		       SERDES_CLK_FMHZ(rate),
 		       serdes->id);
 
-	/* Apply the base SerDes/PHY settings */
-	if (!s32_serdes_init(serdes))
+	ret = init_serdes(serdes);
+	if (ret)
 		goto disable_clks;
+
+	if (IS_SERDES_PCIE(serdes->devtype)) {
+		ret = pcie_phy_power_on(serdes, 0);
+		if (ret) {
+			dev_err(dev, "Failed to initialize PCIe line 0\n");
+			goto disable_clks;
+		}
+		if (serdes->ctrl.ss_mode == 0) {
+			ret = pcie_phy_power_on(serdes, 1);
+			if (ret) {
+				dev_err(dev, "Failed to initialize PCIe line 1\n");
+				goto disable_clks;
+			}
+		}
+	}
 
 	if (IS_SERDES_SGMII(serdes->devtype) &&
 	    serdes->xpcs_mode != SGMII_INAVALID) {
