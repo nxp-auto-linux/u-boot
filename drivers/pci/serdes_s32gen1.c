@@ -346,10 +346,6 @@ static bool s32_serdes_init(struct serdes *serdes)
 	int ret;
 
 	serdes->ss_mode = s32_serdes_get_op_mode_from_hwconfig(serdes->id);
-	if (serdes->ss_mode == SERDES_MODE_INVAL) {
-		printf("ERROR: Invalid opmode config on PCIe%d\n",  serdes->id);
-		return false;
-	}
 
 	/* Reset the Serdes module */
 	ret = s32_serdes_assert_reset(serdes);

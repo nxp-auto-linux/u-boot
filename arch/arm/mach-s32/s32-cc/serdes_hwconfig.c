@@ -250,6 +250,11 @@ bool s32_serdes_is_cfg_valid(int id)
 	mode = s32_serdes_get_op_mode_from_hwconfig(id);
 	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
 
+	if (mode == SERDES_MODE_INVAL) {
+		printf("Invalid opmode config on SerDes%d\n", id);
+		return false;
+	}
+
 	if (devtype == SERDES_INVALID) {
 		printf("Invalid SerDes%d configuration\n", id);
 		return false;
