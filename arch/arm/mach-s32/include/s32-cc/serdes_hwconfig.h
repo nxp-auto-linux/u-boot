@@ -4,6 +4,7 @@
 #ifndef SERDES_HWCONFIG_H
 #define SERDES_HWCONFIG_H
 
+#include <fsl-s32gen1-pcie-phy-submode.h>
 #include <linux/types.h>
 
 #define SERDES_CLK_SUBARG	"clock"
@@ -14,13 +15,6 @@
 #define MHZ			(1000 * KHZ)
 #define MHZ_100			(100 * MHZ)
 #define MHZ_125			(125 * MHZ)
-
-enum serdes_phy_mode {
-	PHY_MODE_INVALID = -1,
-	CRNS = 0, /* Common Reference Clock, No Spread Spectrum */
-	CRSS = 1, /* Common Reference Clock, Spread Spectrum */
-	SRIS = 2  /* Separate Reference Clock, Spread Spectrum */
-};
 
 enum serdes_dev_type {
 	SERDES_INVALID = 0,
@@ -113,7 +107,7 @@ bool s32_serdes_is_external_clk_in_hwconfig(int i);
 unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id);
 enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
 enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
-enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
+enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
 bool s32_serdes_is_cfg_valid(int id);
 bool s32_serdes_has_mode5_enabled(int id);
 bool is_pcie_enabled_in_hwconfig(int id);

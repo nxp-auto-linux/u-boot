@@ -365,10 +365,10 @@ static int set_pcie_phy_mode(struct dts_node *node, int id)
 {
 	int ret = 0;
 	const char *mode;
-	enum serdes_phy_mode phy_mode;
+	enum pcie_phy_mode phy_mode;
 
 	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
-	if (phy_mode == PHY_MODE_INVALID) {
+	if (phy_mode == PCIE_PHY_MODE_INVALID) {
 		pr_err("Invalid PCIe%d PHY mode", id);
 		return -EINVAL;
 	}

@@ -7,8 +7,6 @@
 #include <asm/arch/s32-cc/serdes_regs.h>
 #include <s32-cc/serdes_hwconfig.h>
 
-#define PCIE_DEFAULT_PHY_MODE		CRNS
-
 #define SERDES_RC_MODE_STR "RootComplex"
 #define SERDES_EP_MODE_STR "EndPoint"
 #define SERDES_SGMII_MODE_STR "SGMII"
@@ -159,9 +157,9 @@ unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 	return MHZ_100;
 }
 
-enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
+enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
 {
-	enum serdes_phy_mode phy_mode = PCIE_DEFAULT_PHY_MODE;
+	enum pcie_phy_mode phy_mode = CRNS;
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "phy_mode",
 		&subarg_len);
@@ -181,7 +179,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 {
 	enum serdes_dev_type mode;
 	enum serdes_xpcs_mode xpcs_mode;
-	enum serdes_phy_mode ss_mode;
+	enum pcie_phy_mode ss_mode;
 
 	mode = s32_serdes_get_mode_from_hwconfig(id);
 	ss_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
@@ -239,7 +237,7 @@ bool s32_serdes_is_cfg_valid(int id)
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
 	enum serdes_mode mode;
-	enum serdes_phy_mode phy_mode;
+	enum pcie_phy_mode phy_mode;
 	unsigned long freq;
 	bool mode5, ext_clk;
 

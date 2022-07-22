@@ -117,7 +117,7 @@ struct serdes {
 	int id;
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
-	enum serdes_phy_mode phy_mode;
+	enum pcie_phy_mode phy_mode;
 };
 
 static const char * const serdes_clk_names[] = {
