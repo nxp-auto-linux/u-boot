@@ -340,6 +340,7 @@ struct qspi_config {
 	u32 dlpr;
 };
 
+int is_s32g3_qspi(struct fsl_qspi_priv *q);
 void s32cc_reset_bootrom_settings(struct fsl_qspi_priv *q);
 void qspi_init_ahb_read(struct fsl_qspi_priv *priv);
 int s32cc_enable_spi(struct fsl_qspi_priv *q, bool force);

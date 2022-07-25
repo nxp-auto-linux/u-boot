@@ -2,12 +2,12 @@
 /*
  * Copyright 2020-2022 NXP
  */
-#include "fsl_qspi.h"
 #include <cpu_func.h>
+#include <inttypes.h>
+#include <spi-mem.h>
 #include <asm/io.h>
 #include <linux/mtd/spi-nor.h>
-#include <spi-mem.h>
-#include <inttypes.h>
+#include "fsl_qspi.h"
 
 #define LUT_INVALID_INDEX -1
 #define LUT_STOP_CMD 0x00
@@ -653,6 +653,10 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 
 	mcr |= ddr_config.mcr;
 	qspi_write32(priv->flags, &regs->mcr, mcr);
+
+	if (is_s32g3_qspi(priv))
+		ddr_config.smpr = QSPI_SMPR_DLLFSMPFA_NTH(3) |
+			QSPI_SMPR_DLLFSMPFB_NTH(3);
 
 	qspi_write32(priv->flags, &regs->flshcr, ddr_config.flshcr);
 	qspi_write32(priv->flags, &regs->sfacr, ddr_config.sfacr);

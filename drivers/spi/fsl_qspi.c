@@ -156,6 +156,14 @@ static const struct fsl_qspi_devtype_data s32cc_data = {
 	.driver_data = 0,
 };
 
+static const struct fsl_qspi_devtype_data s32g3_data = {
+	.devtype = FSL_QUADSPI_S32CC,
+	.rxfifo = 128,
+	.txfifo = 256,
+	.ahb_buf_size = 1024,
+	.driver_data = 0,
+};
+
 u32 qspi_read32(u32 flags, u32 *addr)
 {
 	return flags & QSPI_FLAG_REGMAP_ENDIAN_BIG ?
@@ -166,6 +174,11 @@ void qspi_write32(u32 flags, u32 *addr, u32 val)
 {
 	flags & QSPI_FLAG_REGMAP_ENDIAN_BIG ?
 		out_be32(addr, val) : out_le32(addr, val);
+}
+
+int is_s32g3_qspi(struct fsl_qspi_priv *priv)
+{
+	return priv->devtype_data == &s32g3_data;
 }
 
 static inline int is_controller_busy(const struct fsl_qspi_priv *priv)
@@ -1282,6 +1295,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "fsl,imx7d-qspi", .data = (ulong)&imx6ul_7d_data },
 	{ .compatible = "fsl,imx7ulp-qspi", .data = (ulong)&imx7ulp_data },
 	{ .compatible = "nxp,s32g-qspi", .data = (ulong)&s32cc_data },
+	{ .compatible = "nxp,s32g3-qspi", .data = (ulong)&s32g3_data },
 	{ .compatible = "nxp,s32r45-qspi", .data = (ulong)&s32cc_data },
 	{ }
 };
