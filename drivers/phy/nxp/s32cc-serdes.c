@@ -8,6 +8,7 @@
 #include <clk.h>
 #include <dm.h>
 #include <errno.h>
+#include <generic-phy.h>
 #include <hwconfig.h>
 #include <malloc.h>
 #include <pci.h>
@@ -121,8 +122,6 @@ struct serdes {
 	struct udevice *dev;
 
 	int id;
-	enum serdes_dev_type devtype;
-	enum serdes_xpcs_mode xpcs_mode;
 };
 
 static const char * const serdes_clk_names[] = {
@@ -257,7 +256,188 @@ static int pcie_phy_power_on(struct serdes *serdes, int id)
 	return 0;
 }
 
-static int s32_serdes_assert_reset(struct serdes *serdes)
+static void s32_serdes_xpcs1_pma_config(struct serdes *serdes)
+{
+	/* Configure TX_VBOOST_LVL and TX_TERM_CTRL */
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_2,
+	      EXT_TX_VBOOST_LVL(0x3) | EXT_TX_TERM_CTRL(0x4),
+	      EXT_TX_VBOOST_LVL(0x7) | EXT_TX_TERM_CTRL(0x7));
+	/* Enable phy external control */
+	BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_CTRL_SEL,
+	       EXT_PHY_CTRL_SEL);
+	/* Configure ref range, disable PLLB/ref div2 */
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_REF_CLK_CTRL,
+	      EXT_REF_RANGE(0x3),
+	      REF_CLK_DIV2_EN | REF_CLK_MPLLB_DIV2_EN | EXT_REF_RANGE(0x7));
+	/* Configure multiplier */
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_2,
+	      MPLLB_MULTIPLIER(0x27U) | EXT_MPLLB_FRACN_CTRL(0x414),
+	      MPLLB_MULTIPLIER(0xffU) | EXT_MPLLB_FRACN_CTRL(0x7ff) |
+	      1 << 24U | 1 << 28U);
+
+	BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLB_CTRL,
+	       MPLLB_SSC_EN_MASK);
+
+	/* Configure tx lane division, disable word clock div2*/
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_3,
+	      EXT_MPLLB_TX_CLK_DIV(0x5),
+	      EXT_MPLLB_WORD_DIV2_EN | EXT_MPLLB_TX_CLK_DIV(0x7));
+
+	/* Configure configure bandwidth for filtering and div10*/
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_1,
+	      EXT_MPLLB_BANDWIDTH(0x5f) | EXT_MPLLB_DIV10_CLK_EN,
+	      EXT_MPLLB_BANDWIDTH(0xffff) | EXT_MPLLB_DIV_CLK_EN |
+	      EXT_MPLLB_DIV8_CLK_EN | EXT_MPLLB_DIV_MULTIPLIER(0xff));
+
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLA_CTRL_1,
+	      EXT_MPLLA_BANDWIDTH(0xc5), EXT_MPLLA_BANDWIDTH(0xffff));
+
+	/* Configure VCO */
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_XPCS1_RX_OVRD_CTRL,
+	      XPCS1_RX_VCO_LD_VAL(0x540U) | XPCS1_RX_REF_LD_VAL(0x2bU),
+	      XPCS1_RX_VCO_LD_VAL(0x1fffU) | XPCS1_RX_REF_LD_VAL(0x3fU));
+
+	/* Boundary scan control */
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_BS_CTRL,
+	      EXT_BS_RX_LEVEL(0xb) | EXT_BS_RX_BIGSWING,
+	      EXT_BS_RX_LEVEL(0x1f) | EXT_BS_TX_LOWSWING);
+
+	/* Rx loss threshold */
+	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_1,
+	      EXT_RX_LOS_THRESHOLD(0x3U) | EXT_RX_VREF_CTRL(0x11U),
+	      EXT_RX_LOS_THRESHOLD(0x3fU) | EXT_RX_VREF_CTRL(0x1fU));
+}
+
+static void s32_serdes_start_mode5(struct serdes *serdes,
+				   enum serdes_xpcs_mode_gen2 xpcs[2])
+{
+	if (!s32_serdes_has_mode5_enabled(serdes->id))
+		return;
+
+	printf("SerDes%d: Enabling serdes mode5\n", serdes->id);
+	/* Initialize PMA */
+	serdes_pma_mode5(serdes->xpcs.base1);
+	/* Initialize PHY */
+	s32_serdes_xpcs1_pma_config(serdes);
+	/* Initialize PCS */
+	serdes_pcs_mode5(serdes->xpcs.base1);
+	/* mode5 representation */
+	xpcs[0] = SGMII_XPCS_PCIE;
+	xpcs[1] = SGMII_XPCS_2G5_OP;
+}
+
+static int xpcs_init_clks(struct serdes *serdes)
+{
+	/* Get XPCS configuration */
+	enum serdes_xpcs_mode xpcs_mode;
+	enum serdes_xpcs_mode_gen2 xpcs[2] = {SGMII_XPCS_PCIE};
+	unsigned long rate;
+	int ret;
+
+	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes->id);
+
+	/* Nothing to do if PCIE only */
+	if (!serdes->ctrl.ss_mode)
+		return 0;
+
+	/* Nothing to do if XPCS options are invalid */
+	if (xpcs_mode == SGMII_INAVALID)
+		return 0;
+
+	ret = get_clk_rate(serdes, &rate);
+	if (ret)
+		return -EINVAL;
+
+	/* Check, if mode5 demo is requested */
+	s32_serdes_start_mode5(serdes, xpcs);
+
+	ret = s32_eth_xpcs_init(serdes->xpcs.base0, serdes->xpcs.base1,
+				serdes->id,
+				serdes->ctrl.ss_mode,
+				xpcs_mode,
+				serdes->ctrl.ext_clk,
+				rate,
+				xpcs);
+	if (ret) {
+		printf("Error during configuration of SGMII on");
+		printf(" PCIe%d\n", serdes->id);
+	}
+
+	return ret;
+}
+
+static int serdes_phy_init(struct phy *p)
+{
+	/* Nothing to do for PCIE phys */
+	return 0;
+}
+
+static int serdes_phy_set_mode_ext(struct phy *p, int mode, int submode)
+{
+	struct serdes *serdes = dev_get_priv(p->dev);
+	int id = p->id;
+
+	if (!serdes)
+		return -EINVAL;
+
+	/* Check if same PCIE PHY mode is set on both lanes */
+	if (id == 1)
+		if (submode != serdes->ctrl.phy_mode)
+			return -EINVAL;
+
+	/* Do not configure SRIS or CRSS PHY MODE in conjunction
+	 * with any SGMII mode on the same SerDes subsystem
+	 */
+	if (submode == CRSS || submode == SRIS) {
+		if (serdes->ctrl.ss_mode != 0)
+			return -EINVAL;
+	}
+
+	/* CRSS or SRIS PCIE PHY mode cannot be used
+	 * with internal clock
+	 */
+	if (!serdes->ctrl.ext_clk)
+		if (submode == CRSS || submode == SRIS)
+			return -EINVAL;
+
+	serdes->ctrl.phy_mode = (enum pcie_phy_mode)submode;
+
+	return 0;
+}
+
+static int serdes_phy_power_on(struct phy *p)
+{
+	struct serdes *serdes = dev_get_priv(p->dev);
+	int ret;
+
+	if (!serdes)
+		return -EINVAL;
+
+	ret = pcie_phy_power_on(serdes, p->id);
+	if (ret)
+		return ret;
+
+	return ret;
+}
+
+static int serdes_phy_xlate(struct phy *phy, struct ofnode_phandle_args *args)
+{
+	if (args->args_count < 3)
+		return -EINVAL;
+
+	phy->id = args->args[2];
+
+	return 0;
+}
+
+static const struct phy_ops serdes_ops = {
+	.of_xlate	= serdes_phy_xlate,
+	.init		= serdes_phy_init,
+	.set_mode	= serdes_phy_set_mode_ext,
+	.power_on	= serdes_phy_power_on,
+};
+
+static int assert_reset(struct serdes *serdes)
 {
 	__maybe_unused struct udevice *dev = serdes->dev;
 	int ret;
@@ -329,77 +509,11 @@ static int init_serdes(struct serdes *serdes)
 	dev_info(serdes->dev, "Using mode %d for SerDes subsystem\n",
 		 ctrl->ss_mode);
 
-	return 0;
-}
+	ret = xpcs_init_clks(serdes);
+	if (ret)
+		dev_err(serdes->dev, "XPCS init failed\n");
 
-static void s32_serdes_xpcs1_pma_config(struct serdes *serdes)
-{
-	/* Configure TX_VBOOST_LVL and TX_TERM_CTRL */
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_2,
-	      EXT_TX_VBOOST_LVL(0x3) | EXT_TX_TERM_CTRL(0x4),
-	      EXT_TX_VBOOST_LVL(0x7) | EXT_TX_TERM_CTRL(0x7));
-	/* Enable phy external control */
-	BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_CTRL_SEL,
-	       EXT_PHY_CTRL_SEL);
-	/* Configure ref range, disable PLLB/ref div2 */
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_REF_CLK_CTRL,
-	      EXT_REF_RANGE(0x3),
-	      REF_CLK_DIV2_EN | REF_CLK_MPLLB_DIV2_EN | EXT_REF_RANGE(0x7));
-	/* Configure multiplier */
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_2,
-	      MPLLB_MULTIPLIER(0x27U) | EXT_MPLLB_FRACN_CTRL(0x414),
-	      MPLLB_MULTIPLIER(0xffU) | EXT_MPLLB_FRACN_CTRL(0x7ff) |
-	      1 << 24U | 1 << 28U);
-
-	BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLB_CTRL,
-	       MPLLB_SSC_EN_MASK);
-
-	/* Configure tx lane division, disable word clock div2*/
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_3,
-	      EXT_MPLLB_TX_CLK_DIV(0x5),
-	      EXT_MPLLB_WORD_DIV2_EN | EXT_MPLLB_TX_CLK_DIV(0x7));
-
-	/* Configure configure bandwidth for filtering and div10*/
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_1,
-	      EXT_MPLLB_BANDWIDTH(0x5f) | EXT_MPLLB_DIV10_CLK_EN,
-	      EXT_MPLLB_BANDWIDTH(0xffff) | EXT_MPLLB_DIV_CLK_EN |
-	      EXT_MPLLB_DIV8_CLK_EN | EXT_MPLLB_DIV_MULTIPLIER(0xff));
-
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLA_CTRL_1,
-	      EXT_MPLLA_BANDWIDTH(0xc5), EXT_MPLLA_BANDWIDTH(0xffff));
-
-	/* Configure VCO */
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_XPCS1_RX_OVRD_CTRL,
-	      XPCS1_RX_VCO_LD_VAL(0x540U) | XPCS1_RX_REF_LD_VAL(0x2bU),
-	      XPCS1_RX_VCO_LD_VAL(0x1fffU) | XPCS1_RX_REF_LD_VAL(0x3fU));
-
-	/* Boundary scan control */
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_BS_CTRL,
-	      EXT_BS_RX_LEVEL(0xb) | EXT_BS_RX_BIGSWING,
-	      EXT_BS_RX_LEVEL(0x1f) | EXT_BS_TX_LOWSWING);
-
-	/* Rx loss threshold */
-	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_1,
-	      EXT_RX_LOS_THRESHOLD(0x3U) | EXT_RX_VREF_CTRL(0x11U),
-	      EXT_RX_LOS_THRESHOLD(0x3fU) | EXT_RX_VREF_CTRL(0x1fU));
-}
-
-static void s32_serdes_start_mode5(struct serdes *serdes,
-				   enum serdes_xpcs_mode_gen2 xpcs[2])
-{
-	if (!s32_serdes_has_mode5_enabled(serdes->id))
-		return;
-
-	printf("SerDes%d: Enabling serdes mode5\n", serdes->id);
-	/* Initialize PMA */
-	serdes_pma_mode5(serdes->xpcs.base1);
-	/* Initialize PHY */
-	s32_serdes_xpcs1_pma_config(serdes);
-	/* Initialize PCS */
-	serdes_pcs_mode5(serdes->xpcs.base1);
-	/* mode5 representation */
-	xpcs[0] = SGMII_XPCS_PCIE;
-	xpcs[1] = SGMII_XPCS_2G5_OP;
+	return ret;
 }
 
 __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
@@ -412,17 +526,6 @@ __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
 	/* Configure SereDes XPCS for PFE/GMAC*/
 	printf("SerDes%d: XPCS is disabled\n", id);
 	return -ENODEV;
-}
-
-static const char *s32_serdes_get_pcie_phy_mode(struct serdes *serdes)
-{
-	if (serdes->ctrl.phy_mode == CRSS)
-		return "CRSS";
-	else if (serdes->ctrl.phy_mode == SRIS)
-		return "SRIS";
-
-	/* Default PCIE PHY mode */
-	return "CRNS";
 }
 
 static int get_serdes_alias_id(struct udevice *dev, int *devnump)
@@ -585,8 +688,6 @@ static int disable_serdes_clocks(struct serdes *serdes)
 static int serdes_probe(struct udevice *dev)
 {
 	struct serdes *serdes = dev_get_priv(dev);
-	unsigned long rate;
-	const char *pcie_phy_mode;
 	int ret = 0;
 
 	debug("%s: probing %s\n", __func__, dev->name);
@@ -601,10 +702,6 @@ static int serdes_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	ret = get_clk_rate(serdes, &rate);
-	if (ret)
-		goto disable_clks;
-
 	ret = pcie_dt_init(dev, serdes);
 	if (ret)
 		goto disable_clks;
@@ -613,60 +710,9 @@ static int serdes_probe(struct udevice *dev)
 	if (ret)
 		goto disable_clks;
 
-	serdes->devtype = s32_serdes_get_mode_from_hwconfig(serdes->id);
-	/* Get XPCS configuration */
-	serdes->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes->id);
-
-	serdes->ctrl.phy_mode = s32_serdes_get_phy_mode_from_hwconfig(serdes->id);
-
-	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(serdes);
-	printf("Using %s clock for PCIe%d, %s\n",
-	       SERDES_CLK_MODE(serdes->ctrl.ext_clk),
-	       serdes->id, pcie_phy_mode);
-	if (IS_SERDES_SGMII(serdes->devtype) &&
-	    serdes->xpcs_mode != SGMII_INAVALID)
-		printf("Frequency %s configured for PCIe%d\n",
-		       SERDES_CLK_FMHZ(rate),
-		       serdes->id);
-
 	ret = init_serdes(serdes);
 	if (ret)
 		goto disable_clks;
-
-	if (IS_SERDES_PCIE(serdes->devtype)) {
-		ret = pcie_phy_power_on(serdes, 0);
-		if (ret) {
-			dev_err(dev, "Failed to initialize PCIe line 0\n");
-			goto disable_clks;
-		}
-		if (serdes->ctrl.ss_mode == 0) {
-			ret = pcie_phy_power_on(serdes, 1);
-			if (ret) {
-				dev_err(dev, "Failed to initialize PCIe line 1\n");
-				goto disable_clks;
-			}
-		}
-	}
-
-	if (IS_SERDES_SGMII(serdes->devtype) &&
-	    serdes->xpcs_mode != SGMII_INAVALID) {
-		enum serdes_xpcs_mode_gen2 xpcs[2] = {SGMII_XPCS_PCIE};
-
-		/* Check, if mode5 demo is requested */
-		s32_serdes_start_mode5(serdes, xpcs);
-
-		ret = s32_eth_xpcs_init(serdes->xpcs.base0, serdes->xpcs.base1,
-					serdes->id,
-					serdes->ctrl.ss_mode,
-					serdes->xpcs_mode,
-					serdes->ctrl.ext_clk,
-					rate,
-					xpcs);
-		if (ret) {
-			printf("Error during configuration of SGMII on");
-			printf(" PCIe%d\n", serdes->id);
-		}
-	}
 
 disable_clks:
 	if (ret)
@@ -684,6 +730,7 @@ U_BOOT_DRIVER(s32cc_serdes) = {
 	.name = "s32cc_serdes_phy",
 	.id = UCLASS_PHY,
 	.of_match = serdes_match,
+	.ops	= &serdes_ops,
 	.probe	= serdes_probe,
 	.priv_auto_alloc_size = sizeof(struct serdes),
 };

@@ -7,6 +7,7 @@
 #ifndef PCIE_S32GEN1_H
 #define PCIE_S32GEN1_H
 #include <dm.h>
+#include <generic-phy.h>
 #include <pci.h>
 #include <asm/io.h>
 #include <linux/ioport.h>
@@ -138,6 +139,7 @@ enum pcie_link_width {
 
 struct s32_pcie {
 	struct list_head list;
+	struct phy phy0, phy1;
 	struct udevice *bus;
 	struct resource cfg_res;
 	void __iomem *dbi;
@@ -148,8 +150,10 @@ struct s32_pcie {
 	int id;
 	bool enabled;
 	bool ep_mode;
+	u8 has_phy1;
 	enum pcie_link_width linkwidth;
 	enum pcie_link_speed linkspeed;
+	enum pcie_phy_mode phy_mode;
 	int atu_out_num;
 	int atu_in_num;
 };

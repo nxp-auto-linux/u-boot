@@ -7,6 +7,7 @@
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
+#include <generic-phy.h>
 #include <hwconfig.h>
 #include <malloc.h>
 #include <misc.h>
@@ -15,6 +16,7 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/s32-cc/serdes_regs.h>
 #include <dm/device-internal.h>
+#include <dm/device_compat.h>
 #include <dm/uclass.h>
 #include <linux/io.h>
 #include <linux/iopoll.h>
@@ -24,6 +26,7 @@
 #include <s32-cc/pcie.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
+#include <dt-bindings/phy/phy.h>
 
 #include "serdes_s32gen1_io.h"
 #include "ss_pcie_regs.h"
@@ -57,6 +60,11 @@
 
 #define PCI_DEVICE_ID_S32GEN1	0x4002
 #define LINK_UP_TIMEOUT		(50 * USEC_PER_MSEC)
+
+enum pcie_device_mode {
+	PCIE_RC_TYPE,
+	PCIE_EP_TYPE
+};
 
 LIST_HEAD(s32_pcie_list);
 
@@ -596,16 +604,9 @@ static bool s32_pcie_set_link_width(void __iomem *dbi, int id,
 	return true;
 }
 
-static int s32_pcie_check_phy_mode(int id, const char *mode)
-{
-	char pcie_name[10];
-
-	sprintf(pcie_name, "pcie%d", id);
-	return hwconfig_subarg_cmp(pcie_name, "phy_mode", mode);
-}
-
 static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
-			  enum pcie_link_width linkwidth)
+			  enum pcie_link_width linkwidth,
+			  enum pcie_phy_mode phy_mode)
 {
 	printf("Configuring PCIe%d as %s\n", id, PCIE_EP_RC_MODE(!rc_mode));
 
@@ -617,7 +618,7 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		W32(UPTR(dbi) + SS_PE0_GEN_CTRL_1,
 		    BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_EP));
 
-	if (s32_pcie_check_phy_mode(id, "sris"))
+	if (phy_mode == SRIS)
 		BSET32(UPTR(dbi) + SS_PE0_GEN_CTRL_1, PCIE_SRIS_MODE_MASK);
 
 	/* Enable writing dbi registers */
@@ -719,11 +720,33 @@ static int s32_pcie_get_hw_mode_ep(struct s32_pcie *pcie)
 static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 {
 	struct udevice *dev = pcie->bus;
-	struct resource res;
+	struct resource res = {};
+	const char *pcie_phy_mode;
 	int ret = 0;
 	u32 val;
 
 	debug("%s: dt node: %s\n", __func__, dev_read_name(dev));
+
+	ret = generic_phy_get_by_name(dev, "serdes_lane0", &pcie->phy0);
+	if (ret) {
+		printf("Failed to get 'serdes_lane0' PHY\n");
+		return ret;
+	}
+
+	pcie_phy_mode = dev_read_string(dev, "nxp,phy-mode");
+	if (!pcie_phy_mode) {
+		dev_info(dev, "Missing 'nxp,phy-mode' property, using default CRNS\n");
+		pcie->phy_mode = CRNS;
+	} else if (!strcmp(pcie_phy_mode, "crns")) {
+		pcie->phy_mode = CRNS;
+	} else if (!strcmp(pcie_phy_mode, "crss")) {
+		pcie->phy_mode = CRSS;
+	} else if (!strcmp(pcie_phy_mode, "sris")) {
+		pcie->phy_mode = SRIS;
+	} else {
+		dev_info(dev, "Unsupported 'nxp,phy-mode' specified, using default CRNS\n");
+		pcie->phy_mode = CRNS;
+	}
 
 	ret = dev_read_alias_seq(dev, &pcie->id);
 	if (ret < 0) {
@@ -974,19 +997,94 @@ static int s32gen1_check_serdes(struct udevice *dev)
 	return 0;
 }
 
+static int init_pcie_phy(struct s32_pcie *pcie)
+{
+	struct udevice *dev = pcie->bus;
+	int ret;
+
+	ret = generic_phy_init(&pcie->phy0);
+	if (ret) {
+		dev_err(dev, "Failed to init 'serdes_lane0' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_set_mode_ext(&pcie->phy0, PHY_TYPE_PCIE,
+				       pcie->phy_mode);
+	if (ret) {
+		dev_err(dev, "Failed to set mode on 'serdes_lane0' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_power_on(&pcie->phy0);
+	if (ret) {
+		dev_err(dev, "Failed to power on 'serdes_lane0' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_get_by_name(dev, "serdes_lane1", &pcie->phy1);
+	if (ret)
+		pcie->has_phy1 = 0;
+	else
+		pcie->has_phy1 = 1;
+
+	if (!pcie->has_phy1)
+		return 0;
+
+	ret = generic_phy_init(&pcie->phy1);
+	if (ret) {
+		dev_err(dev, "Failed to init 'serdes_lane1' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_set_mode_ext(&pcie->phy1, PHY_TYPE_PCIE,
+				       pcie->phy_mode);
+	if (ret) {
+		dev_err(dev, "Failed to set mode on 'serdes_lane1' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_power_on(&pcie->phy1);
+	if (ret) {
+		dev_err(dev, "Failed to power on 'serdes_lane1' PHY\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int init_controller(struct s32_pcie *pcie)
+{
+	int ret;
+
+	s32_pcie_disable_ltssm(pcie->dbi);
+
+	ret = init_pcie_phy(pcie);
+	if (ret)
+		return ret;
+
+	if (!s32_pcie_init(pcie->dbi, pcie->id, !pcie->ep_mode,
+			   pcie->linkwidth, pcie->phy_mode))
+		return -EINVAL;
+
+	s32_pcie_enable_ltssm(pcie->dbi);
+
+	return ret;
+}
+
 static int s32_pcie_probe(struct udevice *dev)
 {
+	enum pcie_device_mode pcie_mode;
 	struct s32_pcie *pcie = dev_get_priv(dev);
 	struct uclass *uc = dev->uclass;
 	int ret = 0;
 	bool ltssm_en = false;
-	enum serdes_dev_type devtype;
 	u32 variant_bits, pcie_dev_id;
 
 	if (!pcie)
 		return -EINVAL;
 
 	pcie->enabled = false;
+	pcie_mode = (enum pcie_device_mode)dev_get_driver_data(dev);
 
 	ret = s32gen1_check_serdes(dev);
 	if (ret)
@@ -1006,23 +1104,15 @@ static int s32_pcie_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	devtype = s32_serdes_get_mode_from_hwconfig(pcie->id);
-	if (IS_SERDES_PCIE(devtype)) {
-		if (IS_SERDES_SGMII(devtype))
-			pcie->linkwidth = X1;
-
-		if (!s32_pcie_init(pcie->dbi, pcie->id, devtype & PCIE_RC,
-				   pcie->linkwidth))
-			return ret;
-
-		s32_pcie_enable_ltssm(pcie->dbi);
-	}
+	ret = init_controller(pcie);
+	if (ret)
+		return ret;
 
 	/*
 	 * it makes sense to link up only as RC, as the EP
 	 * may boot earlier
 	 */
-	if (devtype & PCIE_RC) {
+	if (pcie_mode == PCIE_RC_TYPE) {
 		if (s32_pcie_wait_link_up(pcie->dbi)) {
 			debug("SerDes%d: link is up (X%d)\n", pcie->id,
 			      pcie->linkwidth);
@@ -1177,8 +1267,8 @@ static const struct dm_pci_ops s32_pcie_ops = {
 };
 
 static const struct udevice_id s32_pcie_ids[] = {
-	{ .compatible = "nxp,s32cc-pcie", .data = PCIE_RC },
-	{ .compatible = "nxp,s32cc-pcie-ep", .data = PCIE_EP },
+	{ .compatible = "nxp,s32cc-pcie", .data = PCIE_RC_TYPE },
+	{ .compatible = "nxp,s32cc-pcie-ep", .data = PCIE_EP_TYPE },
 	{ }
 };
 
