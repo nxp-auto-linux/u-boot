@@ -174,7 +174,7 @@ config PCIE_S32GEN1
 	select DM_PCI_COMPAT
 	select OF_EMBED
 	select OF_CONTROL
-	select SERDES_S32GEN1
+	select PHY_S32CC_SERDES
 	help
 	  Support for S32GEN1 PCIe. The S32GEN1 SoC may have one or two
 	  PCIe controllers. The PCIe may work in RC or EP mode.
@@ -216,10 +216,3 @@ config PCIE_MEDIATEK
 	  which could be found on MT7623 SoC family.
 
 endif
-
-config SERDES_S32GEN1
-	bool "S32GEN1 SerDes support"
-	depends on NXP_S32CC && (PCIE_S32GEN1 || FSL_PFENG || DWC_ETH_QOS_S32CC)
-	help
-	  Support for S32GEN1 SerDes. The S32GEN1 SoC may have one or two
-	  SerDes modules.

@@ -74,7 +74,7 @@ config FSL_PFENG
 	depends on NET && DM_ETH && NXP_S32CC
 	select OF_EMBED
 	select OF_CONTROL
-	imply SERDES_S32GEN1
+	imply PHY_S32CC_SERDES
 	default n
 	help
 	  Enables support for PFEng on S32G.
@@ -226,7 +226,7 @@ config DWC_ETH_QOS_S32CC
 	select OF_EMBED
 	select OF_CONTROL
 	select PHYLIB
-	imply SERDES_S32GEN1
+	imply PHY_S32CC_SERDES
 	help
 	  This driver supports NXP S32G/R/V automotive chips.
 

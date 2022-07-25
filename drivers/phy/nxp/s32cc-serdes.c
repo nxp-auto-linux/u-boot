@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2020-2022 NXP
- * S32Gen1 PCIe driver
+ * SERDES driver for S32CC SoCs
  */
 
 #include <common.h>
@@ -26,7 +26,6 @@
 #include "serdes_regs.h"
 #include "serdes_s32gen1_io.h"
 #include "sgmii.h"
-#include "ss_pcie_regs.h"
 
 #define SERDES_CLK_MODE(EXT_CLK) \
 			((EXT_CLK) ? "external" : "internal")
@@ -278,7 +277,7 @@ static int s32_serdes_assert_reset(struct serdes *serdes)
 	return 0;
 }
 
-static int s32_serdes_deassert_reset(struct serdes *serdes)
+static int deassert_reset(struct serdes *serdes)
 {
 	__maybe_unused struct udevice *dev = serdes->dev;
 	int ret;
@@ -681,9 +680,9 @@ static const struct udevice_id serdes_match[] = {
 	{ /* sentinel */ }
 };
 
-U_BOOT_DRIVER(serdes_s32gen1) = {
-	.name = "serdes_s32gen1",
-	.id = UCLASS_PCI_GENERIC,
+U_BOOT_DRIVER(s32cc_serdes) = {
+	.name = "s32cc_serdes_phy",
+	.id = UCLASS_PHY,
 	.of_match = serdes_match,
 	.probe	= serdes_probe,
 	.priv_auto_alloc_size = sizeof(struct serdes),

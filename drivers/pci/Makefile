@@ -3,7 +3,7 @@
 # (C) Copyright 2000-2007
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
-ccflags-$(CONFIG_SERDES_S32GEN1) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc
+ccflags-$(CONFIG_PCIE_S32GEN1) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc
 ccflags-$(CONFIG_PCIE_S32GEN1) += -Idrivers/misc
 
 ifneq ($(CONFIG_DM_PCI),)
@@ -25,7 +25,6 @@ obj-$(CONFIG_PCI_GT64120) += pci_gt64120.o
 obj-$(CONFIG_PCI_MPC85XX) += pci_mpc85xx.o
 obj-$(CONFIG_PCI_MSC01) += pci_msc01.o
 obj-$(CONFIG_PCIE_IMX) += pcie_imx.o
-obj-$(CONFIG_SERDES_S32GEN1) += serdes_s32gen1.o
 obj-$(CONFIG_PCIE_S32GEN1) += pcie_s32gen1.o
 obj-$(CONFIG_FTPCI100) += pci_ftpci100.o
 obj-$(CONFIG_PCI_MVEBU) += pci_mvebu.o

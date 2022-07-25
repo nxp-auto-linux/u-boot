@@ -92,7 +92,7 @@ int s32_sgmii_wait_link(int serdes_id, int xpcs)
 }
 
 /* Function used to probe the SerDes in case the PCIe is disabled */
-#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(SERDES_S32GEN1)
+#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(PHY_S32CC_SERDES)
 static void s32_serdes_no_pcie_init(void)
 {
 	struct udevice *bus;
@@ -119,10 +119,10 @@ enum serdes_xpcs_mode_gen2 s32_get_xpcs_mode(int serd, int xpcs)
 		return SGMII_XPCS_PCIE;
 
 /* In case PCIe is disabled probe serdes drivers */
-#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(SERDES_S32GEN1)
+#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(PHY_S32CC_SERDES)
 	if (!serdes->is_init)
 		s32_serdes_no_pcie_init();
-#elif !CONFIG_IS_ENABLED(SERDES_S32GEN1)
+#elif !CONFIG_IS_ENABLED(PHY_S32CC_SERDES)
 	printf("SGMII is not supported in this configuration");
 #endif
 
@@ -478,7 +478,7 @@ U_BOOT_CMD(xpcs, 6, 0, do_xpcs_cmd,
 );
 
 /* Provide UCLASS DRV so SerDes driver can bind to it*/
-#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(SERDES_S32GEN1)
+#if	!CONFIG_IS_ENABLED(PCI) && CONFIG_IS_ENABLED(PHY_S32CC_SERDES)
 UCLASS_DRIVER(pci_uc_gen) = {
 	.id		= UCLASS_PCI_GENERIC,
 	.name		= "sgmii_s32gen1",

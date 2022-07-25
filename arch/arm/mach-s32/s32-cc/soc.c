@@ -121,12 +121,12 @@ static void serdes_init(void)
 	struct udevice *bus = NULL;
 
 	/*
-	 * Enumerate all known UCLASS_PCI_GENERIC devices. This will
+	 * Enumerate all known UCLASS_PHY devices. This will
 	 * also probe them, so the SerDes devices will be enumerated too.
 	 * TODO: Enumerate first the EPs, so that loopback between
 	 * the two PCIe interfaces will also work if PCIe1 is EP.
 	 */
-	for (uclass_first_device(UCLASS_PCI_GENERIC, &bus);
+	for (uclass_first_device(UCLASS_PHY, &bus);
 	     bus;
 	     uclass_next_device(&bus)) {
 		;
