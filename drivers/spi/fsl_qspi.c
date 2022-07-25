@@ -34,8 +34,6 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/libfdt.h>
-#include <linux/sizes.h>
-#include <linux/iopoll.h>
 #include <linux/iopoll.h>
 #include <linux/sizes.h>
 #include <linux/err.h>
@@ -359,6 +357,15 @@ static const struct fsl_qspi_devtype_data s32g_data = {
 	.little_endian = true,
 };
 
+static const struct fsl_qspi_devtype_data s32g3_data = {
+	.rxfifo = SZ_128,
+	.txfifo = SZ_256,
+	.ahb_buf_size = SZ_1K,
+	.quirks = QUADSPI_QUIRK_USE_TDH_SETTING | QUADSPI_QUIRK_HAS_DLL |
+	    QUADSPI_QUIRK_OCTAL_SUPPORT | QUADSPI_QUIRK_READ_ENTIRE_AHB,
+	.little_endian = true,
+};
+
 static const struct fsl_qspi_devtype_data s32r45_data = {
 	.rxfifo = SZ_128,
 	.txfifo = SZ_256,
@@ -474,6 +481,11 @@ static inline int can_read_entire_ahb(struct fsl_qspi *q)
 static inline int low_freq_chain(struct fsl_qspi *q)
 {
 	return q->devtype_data->quirks & QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN;
+}
+
+static inline int is_s32g3_qspi(struct fsl_qspi *q)
+{
+	return q->devtype_data == &s32g3_data;
 }
 
 /*
@@ -1007,7 +1019,7 @@ static int program_dllcra(struct fsl_qspi *q, u32 dllcra)
 static int enable_octal_ddr(struct fsl_qspi *q)
 {
 	void __iomem *base = q->iobase;
-	u32 mcr, dllcr;
+	u32 mcr, dllcr, smpr;
 	int ret;
 
 	if (q->proto == SNOR_PROTO_8_8_8_DTR)
@@ -1024,9 +1036,14 @@ static int enable_octal_ddr(struct fsl_qspi *q)
 	mcr |= octal_ddr_conf.mcr;
 	qspi_writel(q, mcr, base + QUADSPI_MCR);
 
+	smpr = octal_ddr_conf.smpr;
+	if (is_s32g3_qspi(q))
+		smpr = QUADSPI_SMPR_DLLFSMPFA_NTH(3) |
+			QUADSPI_SMPR_DLLFSMPFB_NTH(3);
+
 	qspi_writel(q, octal_ddr_conf.flshcr, base + QUADSPI_FLSHCR);
 	qspi_writel(q, octal_ddr_conf.sfacr, base + QUADSPI_SFACR);
-	qspi_writel(q, octal_ddr_conf.smpr, base + QUADSPI_SMPR);
+	qspi_writel(q, smpr, base + QUADSPI_SMPR);
 	qspi_writel(q, octal_ddr_conf.dlcr, base + QUADSPI_DLCR);
 
 	qspi_writel(q, octal_ddr_conf.dlpr, base + QUADSPI_DLPR);
@@ -1392,6 +1409,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "fsl,ls1088a-qspi", .data = (ulong)&ls2080a_data, },
 	{ .compatible = "fsl,ls2080a-qspi", .data = (ulong)&ls2080a_data, },
 	{ .compatible = "nxp,s32g-qspi", .data = (ulong)&s32g_data },
+	{ .compatible = "nxp,s32g3-qspi", .data = (ulong)&s32g3_data },
 	{ .compatible = "nxp,s32r45-qspi", .data = (ulong)&s32r45_data },
 	{ }
 };
