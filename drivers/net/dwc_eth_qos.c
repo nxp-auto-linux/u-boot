@@ -1666,14 +1666,23 @@ static int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	struct eqos_desc *rx_desc;
 	int length;
+	int n;
 
 	debug("%s(dev=%p, flags=%x):\n", __func__, dev, flags);
 
 	rx_desc = eqos_get_desc(eqos, eqos->rx_desc_idx, true);
 	eqos->config->ops->eqos_inval_desc(rx_desc);
 	if (rx_desc->des3 & EQOS_DESC3_OWN) {
-		debug("%s: RX packet not available\n", __func__);
-		return -EAGAIN;
+		n = (eqos->rx_desc_idx + 1) % EQOS_DESCRIPTORS_RX;
+		rx_desc = eqos_get_desc(eqos, n, true);
+		eqos->config->ops->eqos_inval_desc(rx_desc);
+
+		if (rx_desc->des3 & EQOS_DESC3_OWN) {
+			debug("%s: RX packet not available\n", __func__);
+			return -EAGAIN;
+		}
+
+		eqos->rx_desc_idx = n;
 	}
 
 	*packetp = eqos->rx_dma_buf +
