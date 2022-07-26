@@ -1531,6 +1531,10 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 
 	eqos->max_speed = dev_read_u32_default(dev, "max-speed", 0);
 
+	/* NXP GMAC has 20K FIFO, not 32K as reported by HW register */
+	eqos->tx_fifo_sz = 20480;
+	eqos->rx_fifo_sz = 20480;
+
 	ret = clk_get_by_name(dev, "stmmaceth", &eqos->clk_master_bus);
 	if (ret) {
 		pr_err("clk_get_by_name(stmmaceth) failed: %d\n", ret);
