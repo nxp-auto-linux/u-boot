@@ -5,3 +5,4 @@
 #
 
 obj-y += ../s32-cc/
+obj-y += s32r45evb.o
