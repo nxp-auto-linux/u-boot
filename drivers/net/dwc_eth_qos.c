@@ -148,6 +148,7 @@ struct eqos_mac_regs {
 #define EQOS_MAC_MDIO_ADDRESS_GB			BIT(0)
 
 #define EQOS_MAC_MDIO_DATA_GD_MASK			0xffff
+#define EQOS_MAC_MDIO_DATA_RA_SHIFT			16
 
 #define EQOS_MTL_REGS_BASE 0xd00
 struct eqos_mtl_regs {
@@ -441,16 +442,33 @@ static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 		return ret;
 	}
 
-	val = readl(&eqos->mac_regs->mdio_address);
-	val &= EQOS_MAC_MDIO_ADDRESS_SKAP |
-		EQOS_MAC_MDIO_ADDRESS_C45E;
-	val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
-		(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
-		(eqos->config->config_mac_mdio <<
-		 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
-		(EQOS_MAC_MDIO_ADDRESS_GOC_READ <<
-		 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
-		EQOS_MAC_MDIO_ADDRESS_GB;
+	if (mdio_devad == MDIO_DEVAD_NONE) {
+		/* Clause 22 */
+		val = readl(&eqos->mac_regs->mdio_address);
+
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_READ <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB;
+	} else {
+		/* Clause 45 */
+		writel(mdio_reg << EQOS_MAC_MDIO_DATA_RA_SHIFT, &eqos->mac_regs->mdio_data);
+		val = readl(&eqos->mac_regs->mdio_address);
+
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_devad << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_READ <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB |
+			EQOS_MAC_MDIO_ADDRESS_C45E;
+	}
 	writel(val, &eqos->mac_regs->mdio_address);
 
 	udelay(eqos->config->mdio_wait);
@@ -485,18 +503,35 @@ static int eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 		return ret;
 	}
 
-	writel(mdio_val, &eqos->mac_regs->mdio_data);
+	if (mdio_devad == MDIO_DEVAD_NONE) {
+		/* Clause 22 */
+		writel(mdio_val, &eqos->mac_regs->mdio_data);
+		val = readl(&eqos->mac_regs->mdio_address);
 
-	val = readl(&eqos->mac_regs->mdio_address);
-	val &= EQOS_MAC_MDIO_ADDRESS_SKAP |
-		EQOS_MAC_MDIO_ADDRESS_C45E;
-	val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
-		(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
-		(eqos->config->config_mac_mdio <<
-		 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
-		(EQOS_MAC_MDIO_ADDRESS_GOC_WRITE <<
-		 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
-		EQOS_MAC_MDIO_ADDRESS_GB;
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_reg << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_WRITE <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB;
+	} else {
+		/* Clause 45 */
+		writel(mdio_val | (mdio_reg << EQOS_MAC_MDIO_DATA_RA_SHIFT),
+		       &eqos->mac_regs->mdio_data);
+		val = readl(&eqos->mac_regs->mdio_address);
+
+		val &= EQOS_MAC_MDIO_ADDRESS_SKAP;
+		val |= (mdio_addr << EQOS_MAC_MDIO_ADDRESS_PA_SHIFT) |
+			(mdio_devad << EQOS_MAC_MDIO_ADDRESS_RDA_SHIFT) |
+			(eqos->config->config_mac_mdio <<
+			 EQOS_MAC_MDIO_ADDRESS_CR_SHIFT) |
+			(EQOS_MAC_MDIO_ADDRESS_GOC_WRITE <<
+			 EQOS_MAC_MDIO_ADDRESS_GOC_SHIFT) |
+			EQOS_MAC_MDIO_ADDRESS_GB |
+			EQOS_MAC_MDIO_ADDRESS_C45E;
+	}
 	writel(val, &eqos->mac_regs->mdio_address);
 
 	udelay(eqos->config->mdio_wait);
