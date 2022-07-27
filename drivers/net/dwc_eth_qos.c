@@ -299,6 +299,7 @@ struct eqos_ops {
 	int (*eqos_calibrate_pads)(struct udevice *dev);
 	int (*eqos_disable_calibration)(struct udevice *dev);
 	int (*eqos_set_tx_clk_speed)(struct udevice *dev);
+	int (*eqos_restart_rx_clk)(struct udevice *dev);
 	ulong (*eqos_get_tick_clk_rate)(struct udevice *dev);
 };
 
@@ -812,10 +813,9 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 	debug("%s(dev=%p): %lu\n", __func__, dev, clk_get_rate(&eqos->clk_master_bus));
 
 	ret = clk_enable(&eqos->clk_rx);
-	if (ret < 0) {
-		pr_err("clk_enable(clk_rx) failed: %d\n", ret);
-		goto err_disable_clk_master_bus;
-	}
+	if (ret < 0)
+		debug("clk_enable(clk_rx) failed: %d\n", ret);
+
 	debug("%s(dev=%p): %lu\n", __func__, dev, clk_get_rate(&eqos->clk_rx));
 
 	ret = clk_set_rate(&eqos->clk_tx, 125 * 1000 * 1000);
@@ -837,7 +837,6 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 #ifdef CONFIG_CLK
 err_disable_clk_rx:
 	clk_disable(&eqos->clk_rx);
-err_disable_clk_master_bus:
 	clk_disable(&eqos->clk_master_bus);
 err:
 	debug("%s: FAILED: %d\n", __func__, ret);
@@ -992,6 +991,30 @@ static int eqos_set_mii_speed_10(struct udevice *dev)
 	clrsetbits_le32(&eqos->mac_regs->configuration,
 			EQOS_MAC_CONFIGURATION_FES, EQOS_MAC_CONFIGURATION_PS);
 
+	return 0;
+}
+
+static int eqos_restart_rx_clk_s32cc(struct udevice *dev)
+{
+#ifdef CONFIG_CLK
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	int ret;
+
+	debug("%s(dev=%p):\n", __func__, dev);
+
+	if (eqos->clk_rx.enable_count) {
+		debug("%s(dev=%p): rx_clk already enabled\n", __func__, dev);
+		return 0;
+	}
+
+	ret = clk_enable(&eqos->clk_rx);
+	if (ret < 0) {
+		pr_err("clk_enable(rx_clk) failed: %d\n", ret);
+		return ret;
+	}
+#endif
+
+	debug("%s: OK\n", __func__);
 	return 0;
 }
 
@@ -1299,6 +1322,13 @@ static int eqos_start(struct udevice *dev)
 			pr_err("phy_config() failed: %d", ret);
 			goto err_shutdown_phy;
 		}
+
+		ret = eqos->config->ops->eqos_restart_rx_clk(dev);
+		if (ret < 0) {
+			pr_err("eqos_restart_rx_clk() failed: %d", ret);
+			goto err_shutdown_phy;
+		}
+
 	}
 
 	ret = phy_startup(eqos->phy);
@@ -2245,6 +2275,7 @@ static struct eqos_ops eqos_tegra186_ops = {
 	.eqos_calibrate_pads = eqos_calibrate_pads_tegra186,
 	.eqos_disable_calibration = eqos_disable_calibration_tegra186,
 	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_tegra186,
+	.eqos_restart_rx_clk = eqos_null_ops,
 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_tegra186
 };
 
@@ -2273,6 +2304,7 @@ static struct eqos_ops eqos_stm32_ops = {
 	.eqos_calibrate_pads = eqos_null_ops,
 	.eqos_disable_calibration = eqos_null_ops,
 	.eqos_set_tx_clk_speed = eqos_null_ops,
+	.eqos_restart_rx_clk = eqos_null_ops,
 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_stm32
 };
 
@@ -2301,6 +2333,7 @@ static struct eqos_ops eqos_imx_ops = {
 	.eqos_calibrate_pads = eqos_null_ops,
 	.eqos_disable_calibration = eqos_null_ops,
 	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_imx,
+	.eqos_restart_rx_clk = eqos_null_ops,
 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_imx
 };
 
@@ -2329,6 +2362,7 @@ static struct eqos_ops eqos_s32cc_ops = {
 	.eqos_calibrate_pads = eqos_null_ops,
 	.eqos_disable_calibration = eqos_null_ops,
 	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_s32cc,
+	.eqos_restart_rx_clk = eqos_restart_rx_clk_s32cc,
 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_stm32
 };
 
