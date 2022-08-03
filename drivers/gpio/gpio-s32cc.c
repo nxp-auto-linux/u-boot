@@ -10,7 +10,6 @@
 #include <asm/io.h>
 #include <dm/pinctrl.h>
 #include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/pinctrl/s32cc-pinctrl.h>
 
 #define MSCR_OFF	0x0240
 #define GPDO_BASE	0x1300
