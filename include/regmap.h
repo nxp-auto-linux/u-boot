@@ -7,6 +7,8 @@
 #ifndef __REGMAP_H
 #define __REGMAP_H
 
+#include <dm/ofnode.h>
+
 /**
  * DOC: Overview
  *
