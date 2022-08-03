@@ -22,6 +22,8 @@
 #define SIUL2_MSCR_ODE	BIT(20)
 
 #define SIUL2_MSCR_SSS_MASK	0x7
+#define SIUL2_MSCR_SRE_SHIFT	14
+#define SIUL2_MSCR_SRE_MASK	GENMASK(16, 14)
 
 #define UPTR(a) ((uintptr_t)(a))
 
@@ -160,6 +162,12 @@ static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 		break;
 	case PIN_CONFIG_DRIVE_PUSH_PULL:
 		mscr_value &= ~SIUL2_MSCR_ODE;
+		break;
+	case PIN_CONFIG_SLEW_RATE:
+		argument = (argument << SIUL2_MSCR_SRE_SHIFT) &
+			   SIUL2_MSCR_SRE_MASK;
+		mscr_value &= ~SIUL2_MSCR_SRE_MASK;
+		mscr_value |= argument;
 		break;
 	default:
 		return -ENOSYS;
