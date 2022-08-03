@@ -5,6 +5,7 @@
 #define SERDES_HWCONFIG_H
 
 #include <fsl-s32gen1-pcie-phy-submode.h>
+#include <generic-phy.h>
 #include <linux/types.h>
 
 #define SERDES_CLK_SUBARG	"clock"
@@ -113,5 +114,7 @@ bool s32_serdes_has_mode5_enabled(int id);
 bool is_pcie_enabled_in_hwconfig(int id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
+int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump);
+int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane);
 
 #endif

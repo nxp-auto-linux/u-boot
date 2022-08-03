@@ -5,6 +5,11 @@
 #include <common.h>
 #include <hwconfig.h>
 #include <asm/arch/s32-cc/serdes_regs.h>
+#include <dm/device.h>
+#include <dm/of_access.h>
+#include <dm/ofnode.h>
+#include <dm/read.h>
+#include <linux/ethtool.h>
 #include <s32-cc/serdes_hwconfig.h>
 
 #define SERDES_RC_MODE_STR "RootComplex"
@@ -321,4 +326,63 @@ bool s32_serdes_is_cfg_valid(int id)
 	}
 
 	return true;
+}
+
+int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
+{
+	ofnode node = dev_ofnode(serdes_dev);
+	const char *uc_name = "serdes";
+	int ret;
+
+	if (ofnode_is_np(node)) {
+		ret = of_alias_get_id(ofnode_to_np(node), uc_name);
+		if (ret >= 0) {
+			*devnump = ret;
+			ret = 0;
+		}
+	} else {
+		ret = fdtdec_get_alias_seq(gd->fdt_blob, uc_name,
+					   ofnode_to_offset(node), devnump);
+	}
+
+	return ret;
+}
+
+int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane)
+{
+	enum serdes_xpcs_mode xpcs_mode;
+	int serdes_id = 0;
+	int ret;
+
+	if (!serdes_dev)
+		return -EINVAL;
+
+	ret = s32_serdes_get_alias_id(serdes_dev, &serdes_id);
+	if (ret < 0) {
+		printf("Failed to get SerDes device id for device %s:\n",
+		       serdes_dev->name);
+		return ret;
+	}
+
+	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes_id);
+	switch (xpcs_mode) {
+	/* XPCS is on lane1 when using ss mode = 1 or 2 */
+	case SGMII_XPCS0:
+	case SGMII_XPCS1:
+		if (lane)
+			return SPEED_1000;
+		break;
+	case SGMII_XPCS0_XPCS1:
+		if (!lane || lane == 1)
+			return SPEED_1000;
+		break;
+	case SGMII_XPCS0_2G5:
+		if (!lane)
+			return SPEED_2500;
+		break;
+	case SGMII_INAVALID:
+		return -EINVAL;
+	}
+
+	return -EINVAL;
 }
