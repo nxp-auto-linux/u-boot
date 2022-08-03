@@ -16,6 +16,8 @@
 
 #define S32_PAD(pin)	((pin) * 4)
 
+#define SIUL2_MSCR_PUS	BIT(12)
+#define SIUL2_MSCR_PUE	BIT(13)
 #define SIUL2_MSCR_IBE	BIT(19)
 #define SIUL2_MSCR_OBE	BIT(21)
 #define SIUL2_MSCR_ODE	BIT(20)
@@ -44,6 +46,19 @@ struct s32_pinctrl {
 	struct s32_range *ranges;
 	int num_ranges;
 	struct list_head gpio_configs;
+};
+
+static const struct pinconf_param siul2_pinconf_params[] = {
+	{ "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 1 },
+	{ "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 1 },
+	{ "bias-disable", PIN_CONFIG_BIAS_DISABLE, 1 },
+	{ "input-enable", PIN_CONFIG_INPUT_ENABLE, 1 },
+	{ "input-disable", PIN_CONFIG_INPUT_ENABLE, 0 },
+	{ "output-enable", PIN_CONFIG_OUTPUT_ENABLE, 1 },
+	{ "output-disable", PIN_CONFIG_OUTPUT_ENABLE, 0 },
+	{ "slew-rate", PIN_CONFIG_SLEW_RATE, 4 },
+	{ "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 1 },
+	{ "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 1 },
 };
 
 static struct s32_range *s32_get_pin_range(struct s32_pinctrl *ctlr, u32 pin)
@@ -168,6 +183,16 @@ static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 		mscr_value &= ~SIUL2_MSCR_SRE_MASK;
 		mscr_value |= argument;
 		break;
+	case PIN_CONFIG_BIAS_PULL_UP:
+		mscr_value |= SIUL2_MSCR_PUE | SIUL2_MSCR_PUS;
+		break;
+	case PIN_CONFIG_BIAS_PULL_DOWN:
+		mscr_value |= SIUL2_MSCR_PUE;
+		mscr_value &= ~SIUL2_MSCR_PUS;
+		break;
+	case PIN_CONFIG_BIAS_DISABLE:
+		mscr_value &= ~SIUL2_MSCR_PUE;
+		break;
 	default:
 		return -ENOTSUPP;
 	}
@@ -268,6 +293,8 @@ static const struct pinctrl_ops s32_pinctrl_ops = {
 	.pinmux_set		= s32_pinmux_set,
 	.pinconf_set		= s32_pinconf_set,
 	.get_gpio_mux		= s32_get_gpio_mux,
+	.pinconf_num_params	= ARRAY_SIZE(siul2_pinconf_params),
+	.pinconf_params		= siul2_pinconf_params,
 };
 
 static int s32_pinctrl_probe(struct udevice *dev)
