@@ -607,6 +607,8 @@ enum ethtool_sfeatures_retval_bits {
 #define ADVERTISED_10000baseR_FEC	(1 << 20)
 #define ADVERTISED_1000baseX_Half	(1 << 21)
 #define ADVERTISED_1000baseX_Full	(1 << 22)
+#define ADVERTISED_100baseT1_Full	(1 << 23)
+#define ADVERTISED_2500baseT_Full	(1 << 24)
 
 /* The following are all involved in forcing a particular link
  * mode for the device for setting things.  When getting the
