@@ -722,6 +722,7 @@ static int set_serdes_mode(struct dts_node *root, int id)
 {
 	int ret;
 	enum serdes_mode mode;
+	u32 mode_num;
 	struct dts_node node;
 
 	mode = s32_serdes_get_op_mode_from_hwconfig(id);
@@ -736,7 +737,15 @@ static int set_serdes_mode(struct dts_node *root, int id)
 		return ret;
 	}
 
-	ret = node_set_prop_u32(&node, "fsl,sys-mode", mode);
+	mode_num = (u32)mode;
+	if (s32_serdes_has_mode5_enabled(id)) {
+		if (root->fdt)
+			mode_num = 2;
+		else
+			mode_num = 5;
+	}
+
+	ret = node_set_prop_u32(&node, "fsl,sys-mode", mode_num);
 	if (ret)
 		pr_err("Failed to set 'fsl,sys-mode'\n");
 

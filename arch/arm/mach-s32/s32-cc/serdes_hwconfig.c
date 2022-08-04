@@ -368,9 +368,15 @@ int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane)
 	switch (xpcs_mode) {
 	/* XPCS is on lane1 when using ss mode = 1 or 2 */
 	case SGMII_XPCS0:
-	case SGMII_XPCS1:
 		if (lane)
 			return SPEED_1000;
+		break;
+	case SGMII_XPCS1:
+		if (lane) {
+			if (s32_serdes_has_mode5_enabled(serdes_id))
+				return SPEED_2500;
+			return SPEED_1000;
+		}
 		break;
 	case SGMII_XPCS0_XPCS1:
 		if (!lane || lane == 1)
