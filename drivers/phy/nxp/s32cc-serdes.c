@@ -102,6 +102,8 @@
 #define PHY_REG_ADDR		(0x0)
 #define  PHY_REG_EN		BIT(31)
 #define PHY_REG_DATA		(0x4)
+#define PHY_RST_CTRL		(0x8)
+#define  WARM_RST		BIT(1)
 
 #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
@@ -187,6 +189,16 @@ static void pcie_phy_write(struct serdes *serdes, u32 reg, u32 val)
 	udelay(100);
 	writel(val, UPTR(serdes->pcie.phy_base) + PHY_REG_DATA);
 	udelay(100);
+}
+
+static void pcie_phy_cold_reset(struct serdes *serdes)
+{
+	u32 val;
+
+	val = readl(UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
+	writel(val | WARM_RST, UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
+	udelay(1000);
+	writel(val, UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
 }
 
 static struct clk *get_serdes_clk(struct serdes *serdes, const char *name)
@@ -313,7 +325,7 @@ static int xpcs_phy_init(struct serdes *serdes, int id)
 	struct serdes_ctrl *ctrl = &serdes->ctrl;
 	struct xpcs_ctrl *xpcs = &serdes->xpcs;
 	struct udevice *dev = serdes->dev;
-	bool shared = false;
+	enum pcie_xpcs_mode shared = NOT_SHARED;
 
 	void __iomem *base;
 	unsigned long rate;
@@ -331,8 +343,11 @@ static int xpcs_phy_init(struct serdes *serdes, int id)
 	if (ret)
 		return ret;
 
+	/* Mode 5 is virtual mode, a particularization of mode 2 */
 	if (ctrl->ss_mode == 1 || ctrl->ss_mode == 2)
-		shared = true;
+		shared = PCIE_XPCS_1G;
+	else if (ctrl->ss_mode == 5)
+		shared = PCIE_XPCS_2G5;
 
 	return xpcs->ops->init(&xpcs->phys[id], dev, id, base,
 			       ctrl->ext_clk, rate, shared);
@@ -362,6 +377,63 @@ static bool is_xpcs_rx_stable(struct serdes *serdes, int id)
 	return xpcs->ops->has_valid_rx(xpcs->phys[id]);
 }
 
+static void prepare_pma_mode5(struct serdes *serdes)
+{
+	/* Configure TX_VBOOST_LVL and TX_TERM_CTRL */
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_2,
+		      EXT_TX_VBOOST_LVL(0x7) | EXT_TX_TERM_CTRL(0x7),
+		      EXT_TX_VBOOST_LVL(0x3) | EXT_TX_TERM_CTRL(0x4));
+
+	/* Enable phy external control */
+	setbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_CTRL_SEL,
+		   EXT_PHY_CTRL_SEL);
+
+	/* Configure ref range, disable PLLB/ref div2 */
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_REF_CLK_CTRL,
+		      REF_CLK_DIV2_EN | REF_CLK_MPLLB_DIV2_EN |
+		      EXT_REF_RANGE(0x7),
+		      EXT_REF_RANGE(0x3));
+
+	/* Configure multiplier */
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_2,
+		      MPLLB_MULTIPLIER(0xffU) | EXT_MPLLB_FRACN_CTRL(0x7ff) |
+		      1 << 24U | 1 << 28U,
+		      MPLLB_MULTIPLIER(0x27U) | EXT_MPLLB_FRACN_CTRL(0x414));
+
+	clrbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLB_CTRL,
+		   MPLLB_SSC_EN_MASK);
+
+	/* Configure tx lane division, disable word clock div2*/
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_3,
+		      EXT_MPLLB_WORD_DIV2_EN | EXT_MPLLB_TX_CLK_DIV(0x7),
+		      EXT_MPLLB_TX_CLK_DIV(0x5));
+
+	/* Configure configure bandwidth for filtering and div10*/
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_1,
+		      EXT_MPLLB_BANDWIDTH(0xffff) | EXT_MPLLB_DIV_CLK_EN |
+		      EXT_MPLLB_DIV8_CLK_EN | EXT_MPLLB_DIV_MULTIPLIER(0xff),
+		      EXT_MPLLB_BANDWIDTH(0x5f) | EXT_MPLLB_DIV10_CLK_EN);
+
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLA_CTRL_1,
+		      EXT_MPLLA_BANDWIDTH(0xffff),
+		      EXT_MPLLA_BANDWIDTH(0xc5));
+
+	/* Configure VCO */
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_XPCS1_RX_OVRD_CTRL,
+		      XPCS1_RX_VCO_LD_VAL(0x1fffU) | XPCS1_RX_REF_LD_VAL(0x3fU),
+		      XPCS1_RX_VCO_LD_VAL(0x540U) | XPCS1_RX_REF_LD_VAL(0x2bU));
+
+	/* Boundary scan control */
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_BS_CTRL,
+		      EXT_BS_RX_LEVEL(0x1f) | EXT_BS_TX_LOWSWING,
+		      EXT_BS_RX_LEVEL(0xb) | EXT_BS_RX_BIGSWING);
+
+	/* Rx loss threshold */
+	clrsetbits_32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_1,
+		      EXT_RX_LOS_THRESHOLD(0x3fU) | EXT_RX_VREF_CTRL(0x1fU),
+		      EXT_RX_LOS_THRESHOLD(0x3U) | EXT_RX_VREF_CTRL(0x11U));
+}
+
 static int xpcs_init_clks(struct serdes *serdes)
 {
 	struct serdes_ctrl *ctrl = &serdes->ctrl;
@@ -379,6 +451,7 @@ static int xpcs_init_clks(struct serdes *serdes)
 		order[1] = XPCS_DISABLED;
 		break;
 	case 2:
+	case 5:
 		order[0] = XPCS_ID_1;
 		order[1] = XPCS_DISABLED;
 		break;
@@ -413,15 +486,28 @@ static int xpcs_init_clks(struct serdes *serdes)
 			return ret;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(order); i++) {
-		xpcs_id = order[i];
+	if (ctrl->ss_mode == 5) {
+		prepare_pma_mode5(serdes);
 
-		if (xpcs_id == XPCS_DISABLED)
-			continue;
-
-		ret = xpcs->ops->vreset(xpcs->phys[xpcs_id]);
-		if (ret)
+		ret = xpcs->ops->pre_pcie_2g5(xpcs->phys[1]);
+		if (ret) {
+			dev_err(serdes->dev,
+				"Failed to prepare SerDes for PCIE & XPCS @ 2G5 mode\n");
 			return ret;
+		}
+
+		pcie_phy_cold_reset(serdes);
+	} else {
+		for (i = 0; i < ARRAY_SIZE(order); i++) {
+			xpcs_id = order[i];
+
+			if (xpcs_id == XPCS_DISABLED)
+				continue;
+
+			ret = xpcs->ops->vreset(xpcs->phys[xpcs_id]);
+			if (ret)
+				return ret;
+		}
 	}
 
 	for (i = 0; i < ARRAY_SIZE(order); i++) {
@@ -573,6 +659,8 @@ static const struct serdes_conf serdes_mux_table[] = {
 	{ .lanes = { [0] = XPCS_LANE(0), [1] = XPCS_LANE(1), }, },
 	/* Mode 4 */
 	{ .lanes = { [0] = XPCS_LANE(0), [1] = XPCS_LANE(1), }, },
+	/* Demo mode 5 (Mode 2, where XPCS runs @2G5) */
+	{ .lanes = { [0] = PCIE_LANE(0), [1] = XPCS_LANE(1), }, },
 };
 
 struct s32cc_xpcs *s32cc_phy2xpcs(struct phy *phy)
@@ -765,7 +853,10 @@ static int init_serdes(struct serdes *serdes)
 
 	reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
 	reg0 &= ~SUBMODE_MASK;
-	reg0 |= ctrl->ss_mode;
+	if (ctrl->ss_mode == 5)
+		reg0 |= 2;
+	else
+		reg0 |= ctrl->ss_mode;
 	writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
 
 	reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
@@ -866,7 +957,7 @@ static int pcie_dt_init(struct udevice *dev, struct serdes *serdes)
 
 	pcie->phy_base = devm_ioremap(dev, res.start, resource_size(&res));
 	if (!pcie->phy_base) {
-		dev_err(dev, "Failed to map 'ss_pcie'\n");
+		dev_err(dev, "Failed to map 'pcie_phy'\n");
 		return -ENOMEM;
 	}
 

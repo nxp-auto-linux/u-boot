@@ -79,7 +79,8 @@
 #define     POWER_GOOD_STATE			0x4
 
 #define VR_MII_GEN5_12G_16G_TX_GENCTRL1 0x1F8031U
-#define  TX_CLK_RDY_0				BIT(12)
+#define   VBOOST_EN_0				BIT(4)
+#define   TX_CLK_RDY_0				BIT(12)
 
 #define VR_MII_GEN5_12G_16G_TX_GENCTRL2 0x1F8032U
 #define  TX_REQ_0				BIT(0)
@@ -93,6 +94,9 @@
 #define VR_MII_GEN5_12G_16G_TX_EQ_CTRL0		0x1F8036U
 #define   TX_EQ_MAIN_OFF			8
 #define   TX_EQ_MAIN_MASK			(0x3F << TX_EQ_MAIN_OFF)
+
+#define VR_MII_GEN5_12G_16G_TX_EQ_CTRL1		0x1F8037U
+#define   TX_EQ_OVR_RIDE			BIT(6)
 
 #define VR_MII_CONSUMER_10G_TX_TERM_CTRL	0x1F803CU
 #define   TX0_TERM_OFF				0
@@ -111,6 +115,7 @@
 #define     RX0_BAUD_DIV_8			0x3
 
 #define VR_MII_GEN5_12G_16G_CDR_CTRL		0x1F8056U
+#define   CDR_SSC_EN_0				BIT(4)
 #define   VCO_LOW_FREQ_0			BIT(8)
 
 #define VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL	0x1F8070U
@@ -155,6 +160,9 @@
 #define VR_MII_GEN5_12G_MPLLB_CTRL3		0x1F8078U
 #define   MPLLB_BANDWIDTH_OFF			0x0
 #define   MPLLB_BANDWIDTH_MASK			0xFFFF
+
+#define VR_MII_GEN5_12G_16G_MISC_CTRL0		0x1F8090U
+#define   PLL_CTRL				BIT(15)
 
 #define VR_MII_GEN5_12G_16G_REF_CLK_CTRL	0x1F8091U
 #define   REF_CLK_EN				BIT(0)
@@ -210,7 +218,7 @@ struct s32cc_xpcs {
 	unsigned char id;
 	bool ext_clk;
 	bool mhz125;
-	bool pcie_shared;
+	enum pcie_xpcs_mode pcie_shared;
 };
 
 typedef bool (*xpcs_poll_func_t)(struct s32cc_xpcs *);
@@ -315,11 +323,12 @@ static bool xpcs_readable_reg(struct udevice *dev, unsigned int reg)
 static int xpcs_regmap_reg_read(struct s32cc_xpcs *xpcs, unsigned int reg,
 				unsigned int *result)
 {
+	struct udevice *dev = get_xpcs_device(xpcs);
 	struct s32cc_xpcs_params params;
 	u32 data;
 
-	if (!xpcs_readable_reg(xpcs->dev, reg)) {
-		dev_err(xpcs->dev, "The register 0x%x isn't readable\n", reg);
+	if (!xpcs_readable_reg(dev, reg)) {
+		dev_err(dev, "The register 0x%x isn't readable\n", reg);
 		return -EPERM;
 	}
 
@@ -334,11 +343,12 @@ static int xpcs_regmap_reg_read(struct s32cc_xpcs *xpcs, unsigned int reg,
 static int xpcs_regmap_reg_write(struct s32cc_xpcs *xpcs, unsigned int reg,
 				 unsigned int val)
 {
+	struct udevice *dev = get_xpcs_device(xpcs);
 	struct s32cc_xpcs_params params;
 	u32 data;
 
-	if (!xpcs_writeable_reg(xpcs->dev, reg)) {
-		dev_err(xpcs->dev, "The register 0x%x isn't writable\n", reg);
+	if (!xpcs_writeable_reg(dev, reg)) {
+		dev_err(dev, "The register 0x%x isn't writable\n", reg);
 		return -EPERM;
 	}
 
@@ -400,7 +410,7 @@ static unsigned int xpcs_read(struct s32cc_xpcs *xpcs, const char *name,
 
 static int xpcs_init(struct s32cc_xpcs **xpcs, struct udevice *dev,
 		     unsigned char id, void __iomem *base, bool ext_clk,
-		     unsigned long rate, bool pcie_shared)
+		     unsigned long rate, enum pcie_xpcs_mode pcie_shared)
 {
 	struct s32cc_xpcs *xpcsp;
 
@@ -789,15 +799,40 @@ static int xpcs_init_mpllb(struct s32cc_xpcs *xpcs)
 	return 0;
 }
 
+static void serdes_pma_high_freq_recovery(struct s32cc_xpcs *xpcs)
+{
+	/* PCS signal protection, PLL railout recovery */
+	XPCS_WRITE_BITS(xpcs, VR_MII_DBG_CTRL, SUPPRESS_LOS_DET | RX_DT_EN_CTL,
+			SUPPRESS_LOS_DET | RX_DT_EN_CTL);
+	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_MISC_CTRL0,
+			PLL_CTRL, PLL_CTRL);
+}
+
+static void serdes_pma_configure_tx_eq_post(struct s32cc_xpcs *xpcs)
+{
+	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_EQ_CTRL1,
+			TX_EQ_OVR_RIDE, TX_EQ_OVR_RIDE);
+}
+
 static int xpcs_init_plls(struct s32cc_xpcs *xpcs)
 {
 	int ret;
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
 
-	if (!xpcs->ext_clk)
+	if (!xpcs->ext_clk) {
 		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, BYP_PWRUP, BYP_PWRUP);
-	else if (!xpcs->pcie_shared)
+	} else if (xpcs->pcie_shared == NOT_SHARED) {
 		wait_power_good_state(xpcs);
+	} else if (xpcs->pcie_shared == PCIE_XPCS_2G5) {
+		wait_power_good_state(xpcs);
+		/* Configure equlaization */
+		serdes_pma_configure_tx_eq_post(xpcs);
+		xpcs_electrical_configure(xpcs);
+
+		/* Enable receiver recover */
+		serdes_pma_high_freq_recovery(xpcs);
+		return 0;
+	}
 
 	xpcs_electrical_configure(xpcs);
 
@@ -998,6 +1033,32 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 	return 0;
 }
 
+static int xpcs_pre_pcie_2g5(struct s32cc_xpcs *xpcs)
+{
+	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
+	int ret;
+
+	/* Enable volatge boost */
+	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, VBOOST_EN_0,
+			VBOOST_EN_0);
+
+	/* TX rate baud  */
+	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL, 0x7, 0x0U);
+
+	/* Rx rate baud/2 */
+	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL, 0x3U, 0x1U);
+
+	/* Set low-frequency operating band */
+	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL, CDR_SSC_EN_0,
+			VCO_LOW_FREQ_0);
+
+	ret = serdes_bifurcation_pll_transit(xpcs, XPCS_PLLB);
+	if (ret)
+		dev_err(dev, "Switch to PLLB failed\n");
+
+	return ret;
+}
+
 static bool phylink_test(u32 advertising, u32 capab)
 {
 	return !!(advertising & capab);
@@ -1112,6 +1173,7 @@ static const struct s32cc_xpcs_ops s32cc_xpcs_ops = {
 	.init_plls = xpcs_init_plls,
 	.reset_rx = xpcs_reset_rx,
 	.has_valid_rx = xpcs_has_valid_rx,
+	.pre_pcie_2g5 = xpcs_pre_pcie_2g5,
 	.xpcs_config = xpcs_config,
 	.xpcs_get_state = xpcs_get_state,
 };
