@@ -10,7 +10,6 @@
  *    Based on Synopsys DW EQOS MAC 5.10a
  *
  */
-
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
@@ -24,10 +23,10 @@
 #include <wait_bit.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
+#include <s32-cc/serdes_hwconfig.h>
+#include <s32-cc/xpcs.h>
 
 #include "board_common.h"
-#include "serdes_regs.h"
-#include "serdes_xpcs_regs.h"
 
 #include <dm/platform_data/dwc_eth_qos_dm.h>
 
@@ -356,38 +355,81 @@ static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 	return set_tx_clk_enet_gmac(dev, speed);
 }
 
-static int check_sgmii_cfg(int gmac_no)
+static u32 get_speed_advertised(int speed)
 {
-	int serdes = gmac_no;
-	int xpcs = 0;
-	enum serdes_xpcs_mode_gen2 mode, desired_mode1, desired_mode2;
+	switch (speed) {
+	case SPEED_10:
+		return ADVERTISED_10baseT_Full;
+	case SPEED_100:
+		return ADVERTISED_100baseT_Full;
+	default:
+	case SPEED_1000:
+		return ADVERTISED_1000baseT_Full;
+	case SPEED_2500:
+		return ADVERTISED_2500baseT_Full;
+	}
+}
 
-#if defined(CONFIG_NXP_S32GEVB_BOARD) || \
-	defined(CONFIG_NXP_S32GRDB_BOARD)  || \
-	defined(CONFIG_TARGET_S32G399AEMU)
+static int init_sgmii_phy(struct udevice *dev)
+{
+	const struct s32cc_xpcs_ops *xpcs_ops;
+	struct s32cc_xpcs *xpcs;
+	struct phylink_link_state state;
+	struct phy xpcs_phy;
+	int ret, phy_speed;
 
-	desired_mode1 = SGMII_XPCS_1G_OP;
-	desired_mode2 = SGMII_XPCS_1G_OP;
+	xpcs_ops = s32cc_xpcs_get_ops();
+	if (!xpcs_ops) {
+		printf("Failed to get XPCS ops\n");
+		return -EIO;
+	}
 
-#elif defined(CONFIG_TARGET_S32R45EVB) || \
-	defined(CONFIG_TARGET_S32R45EMU)
+	ret = generic_phy_get_by_name(dev, "gmac_xpcs", &xpcs_phy);
+	if (ret) {
+		printf("Failed to get 'gmac_xpcs' PHY\n");
+		return ret;
+	}
 
-	desired_mode1 = SGMII_XPCS_1G_OP;
-	desired_mode2 = SGMII_XPCS_2G5_OP;
+	phy_speed = s32_serdes_get_lane_speed(xpcs_phy.dev, xpcs_phy.id);
+	if (phy_speed < 0) {
+		printf("Failed to get speed of XPCS for 'gmac_xpcs'");
+		return ret;
+	}
 
-#else
-#error "Board not supported"
-#endif
+	ret = generic_phy_init(&xpcs_phy);
+	if (ret) {
+		printf("Failed to init 'gmac_xpcs' PHY\n");
+		return ret;
+	}
 
-	mode = s32_get_xpcs_mode(serdes, 0);
+	ret = generic_phy_power_on(&xpcs_phy);
+	if (ret) {
+		printf("Failed to power on 'gmac_xpcs' PHY\n");
+		return ret;
+	}
 
-	if (mode != desired_mode1 && mode != desired_mode2) {
-		pr_err("Invalid SGMII configuration for GMAC%d\n", gmac_no);
-		pr_err("Check hwconfig env. var.\n");
+	ret = generic_phy_configure(&xpcs_phy, NULL);
+	if (ret) {
+		printf("Failed to configure 'gmac_xpcs' PHY\n");
+		return ret;
+	}
+
+	xpcs = s32cc_phy2xpcs(&xpcs_phy);
+	if (!xpcs) {
+		printf("Failed to get XPCS instance of 'gmac_xpcs'\n");
 		return -EINVAL;
 	}
 
-	s32_sgmii_wait_link(serdes, xpcs);
+	state.speed = phy_speed;
+	state.duplex = true;
+	state.advertising = get_speed_advertised(phy_speed);
+	state.an_enabled = 0;
+	state.an_complete = 0;
+	ret = xpcs_ops->xpcs_config(xpcs, &state);
+	if (ret) {
+		printf("Failed to configure 'gmac_xpcs' PHY\n");
+		return ret;
+	}
 
 	return 0;
 }
@@ -397,8 +439,8 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 	struct eqos_pdata *pdata = dev_get_platdata(dev);
 	const char *env_var = env_var_mode_name(dev);
 	char *env_mode = env_get(env_var);
-	int gmac_no = eqos_num(dev);
 	struct s32cc_priv *s32cc = s32ccgmac_get_priv(dev);
+	int ret;
 
 	if (!s32cc || !pdata)
 		return -EINVAL;
@@ -420,8 +462,7 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 	}
 
 	if (eqos_get_interface_s32cc(dev) == PHY_INTERFACE_MODE_SGMII) {
-		int ret = check_sgmii_cfg(gmac_no);
-
+		ret = init_sgmii_phy(dev);
 		if (ret)
 			return ret;
 	}
