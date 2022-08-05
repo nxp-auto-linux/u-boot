@@ -2,7 +2,9 @@
 /**
  * Copyright 2022 NXP
  */
+#include <command.h>
 #include <regmap.h>
+#include <sort.h>
 #include <dm/device.h>
 #include <dm/devres.h>
 #include <linux/bitops.h>
@@ -21,9 +23,10 @@
 #define XPCS_TIMEOUT_MS				(300 * USEC_PER_MSEC)
 
 #define SR_MII_CTRL				0x1F0000U
-#define   AN_ENABLE				BIT(12)
 #define   SR_RST				BIT(15)
+#define   LBE					BIT(14)
 #define   SS13					BIT(13)
+#define   AN_ENABLE				BIT(12)
 #define   RESTART_AN				BIT(9)
 #define   DUPLEX_MODE				BIT(8)
 #define   SS6					BIT(6)
@@ -230,6 +233,11 @@ struct xpcs_mask_poll {
 	unsigned int bits;
 };
 
+static struct {
+	struct s32cc_xpcs *xpcs[4];
+	unsigned int n_instances;
+} registered_xpcs;
+
 static const struct regmap_range xpcs_wr_ranges[] = {
 	regmap_reg_range(0x1F0000, 0x1F0000),
 	regmap_reg_range(0x1F0004, 0x1F0004),
@@ -263,6 +271,19 @@ static const struct regmap_range xpcs_rd_ranges[] = {
 	regmap_reg_range(0x1F8060, 0x1F8060),
 	regmap_reg_range(0x1F8098, 0x1F8098),
 };
+
+static int register_xpcs(struct s32cc_xpcs *xpcs)
+{
+	if (registered_xpcs.n_instances >= ARRAY_SIZE(registered_xpcs.xpcs)) {
+		printf("No more space left in XPCS array\n");
+		return -ENOMEM;
+	}
+
+	registered_xpcs.xpcs[registered_xpcs.n_instances] = xpcs;
+	registered_xpcs.n_instances++;
+
+	return 0;
+}
 
 static int get_xpcs_id(struct s32cc_xpcs *xpcs)
 {
@@ -454,7 +475,7 @@ static int xpcs_init(struct s32cc_xpcs **xpcs, struct udevice *dev,
 		};
 	}
 
-	return 0;
+	return register_xpcs(xpcsp);
 }
 
 static bool is_pgood_state(struct s32cc_xpcs *xpcs)
@@ -858,6 +879,18 @@ static int xpcs_init_plls(struct s32cc_xpcs *xpcs)
 	return 0;
 }
 
+static void set_2g5_mode(struct s32cc_xpcs *xpcs, bool enable)
+{
+	u32 val;
+
+	if (enable)
+		val = EN_2_5G_MODE;
+	else
+		val = 0;
+
+	XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, EN_2_5G_MODE, val);
+}
+
 static int serdes_bifurcation_pll_transit(struct s32cc_xpcs *xpcs,
 					  enum s32cc_xpc_pll target_pll)
 {
@@ -866,15 +899,14 @@ static int serdes_bifurcation_pll_transit(struct s32cc_xpcs *xpcs,
 
 	/* Configure XPCS speed and VCO */
 	if (target_pll == XPCS_PLLA) {
-		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, EN_2_5G_MODE, 0);
+		set_2g5_mode(xpcs, false);
 		xpcs_vco_cfg(xpcs, XPCS_PLLA);
 	} else {
-		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1,
-				EN_2_5G_MODE, EN_2_5G_MODE);
+		set_2g5_mode(xpcs, true);
 		xpcs_vco_cfg(xpcs, XPCS_PLLB);
 	}
 
-	/* Signal that clock are not available */
+	/* Signal that clocks are not available */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1,
 			TX_CLK_RDY_0, 0);
 
@@ -949,7 +981,6 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 	an_enabled = !!(mii_ctrl & AN_ENABLE);
 	intr_en = !!(XPCS_READ(xpcs, VR_MII_AN_CTRL) & MII_AN_INTR_EN);
 
-	/* Check this important condition */
 	if (an_enabled && !intr_en) {
 		dev_err(dev, "Invalid SGMII AN config interrupt is disabled\n");
 		return -EINVAL;
@@ -1023,7 +1054,7 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 	if ((mii_ctrl & EN_2_5G_MODE) && state->speed == SPEED_1000)
 		state->speed = SPEED_2500;
 
-	/* Cover SGMII AN inability to distigunish between 1G and 2.5G */
+	/* Cover SGMII AN inability to distinguish between 1G and 2.5G */
 	if ((mii_ctrl & EN_2_5G_MODE) &&
 	    state->speed != SPEED_2500 && an_enabled) {
 		dev_err(dev, "Speed not supported in SGMII AN mode\n");
@@ -1064,11 +1095,71 @@ static bool phylink_test(u32 advertising, u32 capab)
 	return !!(advertising & capab);
 }
 
+static int xpcs_set_speed(struct s32cc_xpcs *xpcs, int speed)
+{
+	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
+	u32 val = 0;
+
+	switch (speed) {
+	case SPEED_10:
+		break;
+	case SPEED_100:
+		val = SS13;
+		break;
+	case SPEED_1000:
+		val = SS6;
+		break;
+	case SPEED_2500:
+		val = SS6;
+		break;
+	default:
+		dev_err(dev, "Speed %d not supported\n", speed);
+		return -EINVAL;
+	}
+
+	XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, SS6 | SS13, val);
+	return 0;
+}
+
+static void xpcs_set_auto_sw(struct s32cc_xpcs *xpcs, bool enable)
+{
+	u32 val = 0;
+
+	if (enable)
+		val = MAC_AUTO_SW;
+
+	XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, MAC_AUTO_SW, val);
+}
+
+static void xpcs_set_link_timer(struct s32cc_xpcs *xpcs, u16 link_timer)
+{
+	XPCS_WRITE(xpcs, VR_MII_LINK_TIMER_CTRL, link_timer);
+	XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, CL37_TMR_OVRRIDE, 0);
+	XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1,
+			CL37_TMR_OVRRIDE, CL37_TMR_OVRRIDE);
+}
+
+static void xpcs_enable_an(struct s32cc_xpcs *xpcs)
+{
+	/* Select SGMII type AN, enable interrupt */
+	XPCS_WRITE_BITS(xpcs, VR_MII_AN_CTRL,
+			PCS_MODE_MASK | MII_AN_INTR_EN,
+			PCS_MODE_SET(PCS_MODE_SGMII) | MII_AN_INTR_EN);
+	/* Enable SGMII AN */
+	XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, AN_ENABLE, AN_ENABLE);
+}
+
+static void xpcs_disable_an(struct s32cc_xpcs *xpcs)
+{
+	XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, AN_ENABLE, 0);
+	XPCS_WRITE_BITS(xpcs, VR_MII_AN_CTRL, MII_AN_INTR_EN, 0);
+}
+
 static int xpcs_config(struct s32cc_xpcs *xpcs,
 		       const struct phylink_link_state *state)
 {
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
-	unsigned int val = 0, duplex = 0;
+	unsigned int duplex = 0;
 	int ret = 0;
 	int speed = state->speed;
 	bool sgmi_osc = false;
@@ -1087,43 +1178,24 @@ static int xpcs_config(struct s32cc_xpcs *xpcs,
 	    phylink_test(state->advertising, ADVERTISED_1000baseT_Half) ||
 	    phylink_test(state->advertising, ADVERTISED_1000baseT_Full) ||
 	    phylink_test(state->advertising, ADVERTISED_1000baseX_Full))
-		if (state->an_enabled && sgmi_osc)
+		if (state->an_enabled && sgmi_osc) {
 			dev_err(dev, "Invalid advertising configuration for SGMII AN\n");
+			return -EINVAL;
+		}
 
 	if (state->an_enabled && !state->an_complete) {
 		if (sgmi_osc) {
-			XPCS_WRITE(xpcs, VR_MII_LINK_TIMER_CTRL, 0x30e);
+			xpcs_set_link_timer(xpcs, 0x30e);
 			speed = SPEED_2500;
 		} else {
-			XPCS_WRITE(xpcs, VR_MII_LINK_TIMER_CTRL, 0x7a1);
+			xpcs_set_link_timer(xpcs, 0x7a1);
 			speed = SPEED_1000;
 		}
-		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, CL37_TMR_OVRRIDE, 0);
-		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1,
-				CL37_TMR_OVRRIDE, CL37_TMR_OVRRIDE);
 	} else if (!state->an_enabled) {
-		XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, AN_ENABLE, 0);
-		XPCS_WRITE_BITS(xpcs, VR_MII_AN_CTRL, MII_AN_INTR_EN, 0);
+		xpcs_disable_an(xpcs);
 	}
 
 	if (!state->an_enabled || !state->an_complete) {
-		switch (speed) {
-		case SPEED_10:
-			break;
-		case SPEED_100:
-			val = SS13;
-			break;
-		case SPEED_1000:
-			val = SS6;
-			break;
-		case SPEED_2500:
-			val = SS6;
-			break;
-		default:
-			dev_err(dev, "Speed not supported\n");
-			break;
-		}
-
 		if (state->duplex == DUPLEX_FULL)
 			duplex = DUPLEX_MODE;
 		else
@@ -1133,35 +1205,48 @@ static int xpcs_config(struct s32cc_xpcs *xpcs,
 
 		if (speed == SPEED_2500) {
 			ret = serdes_bifurcation_pll_transit(xpcs, XPCS_PLLB);
-			if (ret)
+			if (ret) {
 				dev_err(dev, "Switch to PLLB failed\n");
+				return ret;
+			}
 		} else {
 			ret = serdes_bifurcation_pll_transit(xpcs, XPCS_PLLA);
-			if (ret)
+			if (ret) {
 				dev_err(dev, "Switch to PLLA failed\n");
+				return ret;
+			}
 		}
 
-		XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, SS6 | SS13, val);
+		ret = xpcs_set_speed(xpcs, speed);
+		if (ret) {
+			dev_err(dev, "Failed to set XPCS%d speed\n",
+				get_xpcs_id(xpcs));
+			return ret;
+		}
 	}
 
 	if (state->an_enabled && !state->an_complete) {
-		/* Select SGMII type AN, enable interrupt */
-		XPCS_WRITE_BITS(xpcs, VR_MII_AN_CTRL,
-				PCS_MODE_MASK | MII_AN_INTR_EN,
-				PCS_MODE_SET(PCS_MODE_SGMII) | MII_AN_INTR_EN);
-		/* Enable SGMII AN */
-		XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, AN_ENABLE, AN_ENABLE);
+		xpcs_enable_an(xpcs);
 		/* Enable SGMII AUTO SW */
 		if (sgmi_osc)
-			XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, MAC_AUTO_SW, 0);
+			xpcs_set_auto_sw(xpcs, false);
 		else
-			XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1,
-					MAC_AUTO_SW, MAC_AUTO_SW);
+			xpcs_set_auto_sw(xpcs, true);
 
 		XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, RESTART_AN, RESTART_AN);
 	}
 
 	return 0;
+}
+
+static void xpcs_set_lbe(struct s32cc_xpcs *xpcs, bool enable)
+{
+	u16 lbe = 0;
+
+	if (enable)
+		lbe = LBE;
+
+	XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, LBE, lbe);
 }
 
 static const struct s32cc_xpcs_ops s32cc_xpcs_ops = {
@@ -1182,3 +1267,275 @@ const struct s32cc_xpcs_ops *s32cc_xpcs_get_ops(void)
 {
 	return &s32cc_xpcs_ops;
 }
+
+enum xpcs_cmd {
+	XPCS_INVALID,
+	XPCS_LIST,
+	XPCS_TRANSIT_TO_1000M,
+	XPCS_TRANSIT_TO_2500M,
+	XPCS_AN_AUTO_SW_ENABLE,
+	XPCS_AN_ENABLE,
+	XPCS_AN_DISABLE,
+	XPCS_LO_ENABLE,
+	XPCS_LO_DISABLE,
+	XPCS_DUMP,
+};
+
+struct xpcs_cmd_args {
+	struct s32cc_xpcs *xpcs;
+	u32 speed;
+};
+
+static enum xpcs_cmd get_command(int argc, char * const argv[],
+				 struct xpcs_cmd_args *args)
+{
+	u32 instance;
+
+	if (argc < 2)
+		return XPCS_INVALID;
+
+	if (!strcmp(argv[1], "list"))
+		return XPCS_LIST;
+
+	instance = simple_strtoul(argv[1], NULL, 10);
+	if (instance >= registered_xpcs.n_instances) {
+		printf("Invalid instance number: %d\n", instance);
+		return XPCS_INVALID;
+	}
+
+	args->xpcs = registered_xpcs.xpcs[instance];
+
+	if (!strcmp(argv[2], "dump"))
+		return XPCS_DUMP;
+
+	if (argc < 3)
+		return XPCS_INVALID;
+
+	if (!strcmp(argv[2], "transit")) {
+		if (!strcmp(argv[3], "1000M"))
+			return XPCS_TRANSIT_TO_1000M;
+		if (!strcmp(argv[3], "2500M"))
+			return XPCS_TRANSIT_TO_2500M;
+		return XPCS_INVALID;
+	}
+
+	if (!strcmp(argv[2], "ss")) {
+		if (!strcmp(argv[3], "10M")) {
+			args->speed = SPEED_10;
+			return XPCS_TRANSIT_TO_1000M;
+		}
+		if (!strcmp(argv[3], "100M")) {
+			args->speed = SPEED_100;
+			return XPCS_TRANSIT_TO_1000M;
+		}
+		if (!strcmp(argv[3], "1000M")) {
+			args->speed = SPEED_1000;
+			return XPCS_TRANSIT_TO_1000M;
+		}
+		if (!strcmp(argv[3], "2500M"))
+			return XPCS_TRANSIT_TO_2500M;
+		return XPCS_INVALID;
+	}
+
+	if (!strcmp(argv[2], "an") || !strcmp(argv[2], "an_auto")) {
+		if (!strcmp(argv[3], "enable") && !strcmp(argv[2], "an_auto"))
+			return XPCS_AN_AUTO_SW_ENABLE;
+		if (!strcmp(argv[3], "enable"))
+			return XPCS_AN_ENABLE;
+		if (!strcmp(argv[3], "disable"))
+			return XPCS_AN_DISABLE;
+		return XPCS_INVALID;
+	}
+
+	if (!strcmp(argv[2], "lo")) {
+		if (!strcmp(argv[3], "enable"))
+			return XPCS_LO_ENABLE;
+		if (!strcmp(argv[3], "disable"))
+			return XPCS_LO_DISABLE;
+	}
+
+	return XPCS_INVALID;
+}
+
+static int do_xpcs_list(void)
+{
+	struct udevice *dev;
+	struct s32cc_xpcs *xpcs;
+	size_t i;
+
+	puts("Registered XPCS instances:\n\n");
+	puts("| ID | SerDes instance | XPCS |\n");
+	for (i = 0; i < registered_xpcs.n_instances; i++) {
+		xpcs = registered_xpcs.xpcs[i];
+		dev = get_xpcs_device(xpcs);
+		printf("|  %zu | %s |    %u |\n", i, dev->name,
+		       get_xpcs_id(xpcs));
+	}
+
+	return 0;
+}
+
+static int do_xpcs_transit_1000M(struct xpcs_cmd_args *cmd_args)
+{
+	int ret;
+
+	ret = serdes_bifurcation_pll_transit(cmd_args->xpcs, XPCS_PLLA);
+	if (ret) {
+		printf("Failed to transition XPCS on PLLA\n");
+		return ret;
+	}
+
+	if (cmd_args->speed)
+		ret = xpcs_set_speed(cmd_args->xpcs, cmd_args->speed);
+
+	return ret;
+}
+
+static int do_xpcs_transit_2500M(struct xpcs_cmd_args *cmd_args)
+{
+	int ret;
+
+	ret = serdes_bifurcation_pll_transit(cmd_args->xpcs, XPCS_PLLB);
+	if (ret) {
+		printf("Failed to transition XPCS on PLLB\n");
+		return ret;
+	}
+
+	if (cmd_args->speed)
+		ret = xpcs_set_speed(cmd_args->xpcs, SPEED_2500);
+
+	return ret;
+}
+
+static void do_xpcs_auto_sw_en(struct xpcs_cmd_args *cmd_args)
+{
+	xpcs_set_auto_sw(cmd_args->xpcs, true);
+}
+
+static void do_xpcs_enable_an(struct xpcs_cmd_args *cmd_args)
+{
+	xpcs_set_link_timer(cmd_args->xpcs, 0x2faf);
+	xpcs_enable_an(cmd_args->xpcs);
+}
+
+static void do_xpcs_disable_an(struct xpcs_cmd_args *cmd_args)
+{
+	xpcs_set_auto_sw(cmd_args->xpcs, false);
+	xpcs_disable_an(cmd_args->xpcs);
+}
+
+static void do_xpcs_enable_loopback(struct xpcs_cmd_args *cmd_args)
+{
+	xpcs_set_lbe(cmd_args->xpcs, true);
+}
+
+static void do_xpcs_disable_loopback(struct xpcs_cmd_args *cmd_args)
+{
+	xpcs_set_lbe(cmd_args->xpcs, false);
+}
+
+static int range_comp(const void *a, const void *b)
+{
+	const struct regmap_range *ar = a;
+	const struct regmap_range *br = b;
+
+	if (ar->start != br->start)
+		return ar->start - br->start;
+
+	return ar->size - br->size;
+}
+
+static int do_xpcs_dump(struct xpcs_cmd_args *cmd_args)
+{
+	const struct regmap_range *range;
+	size_t i, start, end;
+	u32 reg;
+
+	struct regmap_range *ranges;
+	size_t n_ranges;
+
+	n_ranges = ARRAY_SIZE(xpcs_rd_ranges) + ARRAY_SIZE(xpcs_wr_ranges);
+	ranges = malloc(sizeof(xpcs_wr_ranges) + sizeof(xpcs_rd_ranges));
+	if (!ranges) {
+		printf("Failed to allocate memory for XPCS ranges\n");
+		return -ENOMEM;
+	}
+
+	memcpy(ranges, xpcs_rd_ranges, sizeof(xpcs_rd_ranges));
+	memcpy(ranges + ARRAY_SIZE(xpcs_rd_ranges), xpcs_wr_ranges,
+	       sizeof(xpcs_wr_ranges));
+
+	qsort(ranges, n_ranges, sizeof(*ranges), range_comp);
+
+	for (i = 0; i < n_ranges; i++) {
+		range = &ranges[i];
+		start = range->start;
+		end = start + range->size;
+
+		for (reg = range->start; reg <= end; reg++) {
+			printf("0x%08x => 0x%04x\n", reg,
+			       XPCS_READ(cmd_args->xpcs, reg));
+		}
+	}
+
+	free(ranges);
+	return 0;
+}
+
+static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+		       int argc, char * const argv[])
+{
+	struct xpcs_cmd_args cmd_args;
+
+	memset(&cmd_args, 0, sizeof(cmd_args));
+
+	switch (get_command(argc, argv, &cmd_args)) {
+	case XPCS_LIST:
+		do_xpcs_list();
+		break;
+	case XPCS_TRANSIT_TO_1000M:
+		return do_xpcs_transit_1000M(&cmd_args);
+	case XPCS_TRANSIT_TO_2500M:
+		return do_xpcs_transit_2500M(&cmd_args);
+	case XPCS_AN_AUTO_SW_ENABLE:
+		do_xpcs_auto_sw_en(&cmd_args);
+		/*fall through*/
+	case XPCS_AN_ENABLE:
+		do_xpcs_enable_an(&cmd_args);
+		break;
+	case XPCS_AN_DISABLE:
+		do_xpcs_disable_an(&cmd_args);
+		break;
+	case XPCS_LO_ENABLE:
+		do_xpcs_enable_loopback(&cmd_args);
+		break;
+	case XPCS_LO_DISABLE:
+		do_xpcs_disable_loopback(&cmd_args);
+		break;
+	case XPCS_DUMP:
+		return do_xpcs_dump(&cmd_args);
+	default:
+		return CMD_RET_USAGE;
+	}
+
+	return 0;
+}
+
+U_BOOT_CMD(xpcs, 4, 0, do_xpcs_cmd,
+	   "Utility command for SGMMI control",
+	   "list\n"
+	   "	List all registered XPCS modules\n"
+	   "xpcs <instance_id> transit <1000M|2500M>\n"
+	   "	Change serdes mode\n"
+	   "xpcs <instance_id> ss <10M|100M|1000M|2500M>\n"
+	   "	Change speed and serdes mode when required\n"
+	   "xpcs <instance_id> an <enable|disable>\n"
+	   "	Auto-negotiation control\n"
+	   "xpcs <instance_id> an_auto <enable|disable>\n"
+	   "	Auto-negotiation control with automatic speed change\n"
+	   "xpcs <instance_id> lo <enable|disable>\n"
+	   "	PMA loopback enable/disable\n"
+	   "xpcs <instance_id> dump\n"
+	   "	Dump XPCS indirect registers\n\n"
+	   "<instance_id> is obtained using 'xpcs list' command\n"
+);
