@@ -4,13 +4,17 @@
  */
 #include <common.h>
 #include <hwconfig.h>
-#include <asm/arch/s32-cc/serdes_regs.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>
 #include <dm/read.h>
 #include <linux/ethtool.h>
 #include <s32-cc/serdes_hwconfig.h>
+
+/* use a mask to fix DEVICE_TYPE for EP */
+#define SERDES_MODE(mode) ((mode) & 0xe)
+#define IS_SERDES_PCIE(mode) ((mode) & (PCIE_EP | PCIE_RC))
+#define IS_SERDES_SGMII(mode) ((mode) & (SGMII))
 
 #define SERDES_RC_MODE_STR "RootComplex"
 #define SERDES_EP_MODE_STR "EndPoint"

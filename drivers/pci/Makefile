@@ -3,7 +3,6 @@
 # (C) Copyright 2000-2007
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
-ccflags-$(CONFIG_PCIE_S32GEN1) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc
 ccflags-$(CONFIG_PCIE_S32GEN1) += -Idrivers/misc
 
 ifneq ($(CONFIG_DM_PCI),)

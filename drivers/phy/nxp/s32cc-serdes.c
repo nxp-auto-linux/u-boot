@@ -23,13 +23,11 @@
 #include <linux/ioport.h>
 #include <linux/sizes.h>
 #include <linux/time.h>
+#include <s32-cc/serdes_hwconfig.h>
 #include <s32-cc/xpcs.h>
 #include <dt-bindings/phy/phy.h>
 
-#include "serdes_regs.h"
-#include "serdes_s32gen1_io.h"
-#include "sgmii.h"
-
+#define UPTR(X)			((uintptr_t)(X))
 #define SERDES_MAX_LANES 2U
 #define SERDES_MAX_INSTANCES 2U
 
@@ -82,6 +80,7 @@
 #define  EXT_MPLLB_BANDWIDTH(x)	(((x) & 0xffffU) << 0)
 #define PCIE_PHY_EXT_MPLLB_CTRL_2	(0x44U)
 #define  EXT_MPLLB_FRACN_CTRL(x)	(((x) & 0x7ffU) << 12)
+#define  MPLLB_MULTIPLIER(n)		(((n) & 0xffU) << 0)
 #define PCIE_PHY_EXT_MPLLB_CTRL_3	(0x48U)
 #define  EXT_MPLLB_WORD_DIV2_EN		BIT(31)
 #define  EXT_MPLLB_TX_CLK_DIV(x)	(((x) & 0x7U) << 28)

@@ -4,7 +4,6 @@
  */
 #include <common.h>
 #include <malloc.h>
-#include <asm/arch-s32/s32-cc/serdes_regs.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>

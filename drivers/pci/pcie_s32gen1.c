@@ -14,7 +14,6 @@
 #include <pci.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/s32-cc/serdes_regs.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
 #include <dm/uclass.h>
@@ -25,10 +24,10 @@
 #include <s32-cc/nvmem.h>
 #include <s32-cc/pcie.h>
 #include <s32-cc/serdes_hwconfig.h>
+#include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 
-#include "serdes_s32gen1_io.h"
 #include "ss_pcie_regs.h"
 
 /* CFG1 is used in linux when finding devices on the bus.

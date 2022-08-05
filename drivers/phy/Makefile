@@ -26,4 +26,3 @@ obj-$(CONFIG_PHY_DA8XX_USB) += phy-da8xx-usb.o
 obj-$(CONFIG_PHY_MTK_TPHY) += phy-mtk-tphy.o
 obj-$(CONFIG_SAF1508BET_USB_PHY) += nxp_usb_saf1508.o
 obj-$(CONFIG_PHY_S32CC_SERDES) += nxp/s32cc-serdes.o
-ccflags-$(CONFIG_PHY_S32CC_SERDES) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc -Idrivers/pci

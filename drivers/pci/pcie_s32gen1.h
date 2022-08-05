@@ -12,6 +12,123 @@
 #include <asm/io.h>
 #include <linux/ioport.h>
 
+#ifdef CONFIG_PCIE_DEBUG_WRITES
+#define debug_wr debug
+#else
+#define debug_wr(...)
+#endif
+
+#define UPTR(a)		((uintptr_t)(a))
+
+#define s32_dbi_readb(addr) \
+	readb_relaxed((addr))
+
+#define s32_dbi_readw(addr) \
+	readw_relaxed((addr))
+
+#define s32_dbi_readl(addr) \
+	readl_relaxed((addr))
+
+#define s32_dbi_writeb(addr, val) \
+	writeb_relaxed((val), (addr))
+
+#define s32_dbi_writew(addr, val) \
+	writew_relaxed((val), (addr))
+
+#define s32_dbi_writel(addr, val) \
+	writel_relaxed((val), (addr))
+
+#define W16(address, write_data) \
+do { \
+	debug_wr("%s: W16(0x%llx, 0x%x) ... ", __func__, (u64)(address), \
+		(uint32_t)(write_data)); \
+	s32_dbi_writew((address), (write_data)); \
+	debug_wr("done\n"); \
+} while (0)
+
+#define W32(address, write_data) \
+do { \
+	debug_wr("%s: W32(0x%llx, 0x%x) ... ", __func__, (u64)(address), \
+		(uint32_t)(write_data)); \
+	s32_dbi_writel((address), (write_data)); \
+	debug_wr("done\n"); \
+} while (0)
+
+/* BCLR32 - SPARSE compliant version of `clrbits_le32`, with debug support. */
+#define BCLR32(address, mask_clear) \
+do { \
+	uintptr_t bclr_address = (address); \
+	u32 bclr_mask_clear = (mask_clear); \
+	debug_wr("%s: BCLR32(0x%lx, 0x%x) ... ", __func__, \
+		bclr_address, bclr_mask_clear); \
+	s32_dbi_writel(bclr_address, \
+		       s32_dbi_readl(bclr_address) & ~(bclr_mask_clear)); \
+	debug_wr("done\n"); \
+} while (0)
+
+/* BSET32 - SPARSE compliant version of `setbits_le32`, with debug support. */
+#define BSET32(address, mask_set) \
+do { \
+	uintptr_t bset_address = (address); \
+	u32 bset_mask_set = (mask_set); \
+	debug_wr("%s: BSET32(0x%lx, 0x%x) ... ", __func__, \
+		bset_address, bset_mask_set); \
+	s32_dbi_writel(bset_address, \
+		       s32_dbi_readl(bset_address) | (bset_mask_set)); \
+	debug_wr("done\n"); \
+} while (0)
+
+/* RMW32 - SPARSE compliant version of `clrsetbits_le32`, with debug support.
+ * Please pay attention to the arguments order.
+ */
+#define RMW32(address, mask_set, mask_clear) \
+do { \
+	uintptr_t rmw_address = (address); \
+	u32 rmw_mask_set = (mask_set), rmw_mask_clear = (mask_clear); \
+	debug_wr("%s: RMW32(0x%lx, set 0x%x, clear 0x%x) ... ", __func__, \
+		rmw_address, rmw_mask_set, rmw_mask_clear); \
+	s32_dbi_writel(rmw_address, \
+		       (s32_dbi_readl(rmw_address) & ~(rmw_mask_clear)) | \
+		       (rmw_mask_set)); \
+	debug_wr("done\n"); \
+} while (0)
+
+#define SERDES_SS_BASE		0x80000
+
+/* PCIe Controller 0 General Control 1-4 */
+#define SS_PE0_GEN_CTRL_1	(SERDES_SS_BASE + 0x1050U)
+#define SS_PE0_GEN_CTRL_2	(SERDES_SS_BASE + 0x1054U)
+#define SS_PE0_GEN_CTRL_3	(SERDES_SS_BASE + 0x1058U)
+#define SS_PE0_GEN_CTRL_4	(SERDES_SS_BASE + 0x105cU)
+
+/* PCIe Controller 0 Link Debug 2 */
+#define SS_PE0_LINK_DBG_2	(SERDES_SS_BASE + 0x10b4U)
+
+/* PCIe Controller 0 Link Debug 1 */
+#define SS_PE0_LINK_DBG_1	(SERDES_SS_BASE + 0x10b0U)
+
+/* Field definitions for PE0_GEN_CTRL_1 */
+#define DEVICE_TYPE_OVERRIDE	0x10
+#define DEVICE_TYPE_EP		0x0
+#define DEVICE_TYPE_RC		0x4
+
+#define DEVICE_TYPE_LSB		(0)
+#define DEVICE_TYPE_MASK	(0x0000000F)
+#define DEVICE_TYPE		((DEVICE_TYPE_MASK) << \
+				 (DEVICE_TYPE_LSB))
+
+/* Field definitions for PE0_LINK_DBG_2 */
+#define SMLH_LTSSM_STATE_LSB	(0)
+#define SMLH_LTSSM_STATE_MASK	(0x0000003F)
+#define SMLH_LTSSM_STATE	((SMLH_LTSSM_STATE_MASK) << \
+				 (SMLH_LTSSM_STATE_LSB))
+
+#define SMLH_LINK_UP_BIT	(6)
+#define SMLH_LINK_UP		BIT(SMLH_LINK_UP_BIT)
+
+#define RDLH_LINK_UP_BIT	(7)
+#define RDLH_LINK_UP		BIT(RDLH_LINK_UP_BIT)
+
 #define SERDES_LINKUP_MASK	(SMLH_LINK_UP | RDLH_LINK_UP | \
 		SMLH_LTSSM_STATE)
 #define SERDES_LINKUP_EXPECT	(SMLH_LINK_UP | RDLH_LINK_UP | \

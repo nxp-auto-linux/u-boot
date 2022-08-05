@@ -28,5 +28,4 @@ ccflags-y += -DPFE_CFG_IP_VERSION=PFE_CFG_IP_VERSION_NPU_7_14
 ccflags-y += -Idrivers/net/pfeng/regmap
 ccflags-y += -Idrivers/net/pfeng/hw_abi
 ccflags-y += -Wno-date-time
-ccflags-y += -I./arch/arm/include/asm/arch-s32/s32-cc
 ccflags-y += -I./drivers/net/s32

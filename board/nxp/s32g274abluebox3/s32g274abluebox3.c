@@ -2,12 +2,10 @@
 /*
  * Copyright 2018-2022 NXP
  */
-#include <board_common.h>
 #include <common.h>
+#include <i2c.h>
 #include <miiphy.h>
 #include <phy.h>
-#include <i2c.h>
-#include <asm/arch-s32/s32-cc/serdes_regs.h>
 
 #define BLUEBOX3_S32G_PHY_ADDR_5	0x05
 #define BLUEBOX3_S32G_PHY_ADDR_6	0x06
