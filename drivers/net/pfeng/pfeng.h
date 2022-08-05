@@ -8,6 +8,7 @@
 #ifndef _PFENG_H_
 #define _PFENG_H_
 
+#include <generic-phy.h>
 #include "pfe_hif_ring.h"
 #include "pfeng_hw.h"
 
@@ -120,6 +121,7 @@ struct pfeng_priv {
 
 	struct mii_dev *mii[PFENG_EMACS_COUNT];
 	struct phy_device *phy[PFENG_EMACS_COUNT];
+	struct phy xpcs[PFENG_EMACS_COUNT];
 
 	struct udevice *dev;
 	const struct pfeng_config *config;
@@ -167,10 +169,6 @@ void pfeng_cfg_emacs_disable_all(void);
 u32 pfeng_cfg_emac_get_interface(u32 idx);
 void pfeng_apply_clocks(struct udevice *pfe_dev);
 unsigned long long get_pfe_axi_clk_f(struct udevice *pfe_dev);
-
-/* SGMII/XPCS */
-int pfeng_serdes_wait_link(int emac);
-int pfeng_serdes_emac_is_init(int emac);
 
 /* cmd debug calls */
 void pfeng_debug(void);

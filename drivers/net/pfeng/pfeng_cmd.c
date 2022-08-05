@@ -13,11 +13,10 @@
 
 #include <clk.h>
 #include <s32gen1_clk_utils.h>
-#include <asm/arch/s32-cc/serdes_regs.h>
-#include <asm/arch/s32-cc/serdes_xpcs_regs.h>
 #include <dm/device_compat.h>
 #include <dm/pinctrl.h>
 #include <linux/string.h>
+#include <s32-cc/serdes_hwconfig.h>
 
 #include "pfeng.h"
 
@@ -136,67 +135,6 @@ static void disable_partition_2(void)
 	       RGM_PRST(MC_RGM_BASE_ADDR, PART_PFE_NO));
 	while (!(readl(RGM_PSTAT(MC_RGM_BASE_ADDR, PART_PFE_NO)) & 0x1))
 		;
-}
-
-/* Get xpcs and SerDes from MAC*/
-int pfeng_map_emac_to_serdes_xpcs(int emac, int *serdes, int *xpcs)
-{
-	int emac_to_serdes[] = {1, 1, 0};
-	int emac_to_pcs[] = {0, 1, 1};
-	enum serdes_xpcs_mode_gen2 mode;
-	bool check;
-
-	if (emac >= ARRAY_SIZE(emac_intf)) {
-		pr_err("invalid emac index %d\n", emac);
-		return -ENXIO;
-	}
-
-	mode = s32_get_xpcs_mode(emac_to_serdes[emac], emac_to_pcs[emac]);
-
-	if (mode == SGMII_XPCS_PCIE) {
-		pr_err("Emac %d not initialized\n", emac);
-		return -ENXIO;
-	}
-
-	if (mode == SGMII_XPCS_DISABLED) {
-		pr_err("PCS for emac %d was disabled\n", emac);
-		return -ENXIO;
-	}
-#if defined(CONFIG_ARCH_S32G2)
-	check = (emac == 0 && mode == SGMII_XPCS_2G5_OP);
-#else
-	check = (mode == SGMII_XPCS_2G5_OP);
-#endif
-	if (!(check || mode == SGMII_XPCS_1G_OP))
-		return -ENXIO;
-
-	*serdes = emac_to_serdes[emac];
-	*xpcs = emac_to_pcs[emac];
-
-	return 0;
-}
-
-/* Get link status for sgmii EMAC */
-int pfeng_serdes_wait_link(int emac)
-{
-	int serdes, xpcs;
-
-	if (!pfeng_map_emac_to_serdes_xpcs(emac, &serdes, &xpcs))
-		return s32_sgmii_wait_link(serdes, xpcs);
-
-	return -ENXIO;
-}
-
-/* Check if SerDes is initialized for emac operation */
-int pfeng_serdes_emac_is_init(int emac)
-{
-	int serdes, xpcs;
-
-	if (!pfeng_map_emac_to_serdes_xpcs(emac, &serdes, &xpcs))
-		return 0;
-
-	pr_err("Invalid sgmii configuration for emac index %d\n", emac);
-	return -ENXIO;
 }
 
 static void switch_pfe0_clock(int intf)
