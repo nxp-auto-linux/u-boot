@@ -27,6 +27,9 @@
 #define SIUL2_MSCR_SRE_SHIFT	14
 #define SIUL2_MSCR_SRE_MASK	GENMASK(16, 14)
 
+#define SIUL2_PIN_FROM_PINMUX(v) ((v) >> 4)
+#define SIUL2_FUNC_FROM_PINMUX(v) ((v) & 0XF)
+
 #define UPTR(a) ((uintptr_t)(a))
 
 #define SIUL2_NXP_PINS "nxp,pins"
@@ -76,53 +79,165 @@ static struct s32_range *s32_get_pin_range(struct s32_pinctrl *ctlr, u32 pin)
 	return NULL;
 }
 
-static int s32_set_state(struct udevice *dev, struct udevice *config)
+static int s32_get_mscr_setting_from_param(unsigned int param,
+					   unsigned int argument,
+					   u32 *mscr_value)
+{
+	enum pin_config_param cfg = (enum pin_config_param)param;
+
+	switch (cfg) {
+	case PIN_CONFIG_OUTPUT_ENABLE:
+		*mscr_value &= ~SIUL2_MSCR_OBE;
+		if (argument)
+			*mscr_value |= SIUL2_MSCR_OBE;
+		break;
+	case PIN_CONFIG_INPUT_ENABLE:
+		*mscr_value &= ~SIUL2_MSCR_IBE;
+		if (argument)
+			*mscr_value |= SIUL2_MSCR_IBE;
+		break;
+	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
+		*mscr_value |= SIUL2_MSCR_ODE;
+		break;
+	case PIN_CONFIG_DRIVE_PUSH_PULL:
+		*mscr_value &= ~SIUL2_MSCR_ODE;
+		break;
+	case PIN_CONFIG_SLEW_RATE:
+		argument = (((uint8_t)argument) << SIUL2_MSCR_SRE_SHIFT) &
+			   SIUL2_MSCR_SRE_MASK;
+		*mscr_value &= ~SIUL2_MSCR_SRE_MASK;
+		*mscr_value |= argument;
+		break;
+	case PIN_CONFIG_BIAS_PULL_UP:
+		*mscr_value |= SIUL2_MSCR_PUE | SIUL2_MSCR_PUS;
+		break;
+	case PIN_CONFIG_BIAS_PULL_DOWN:
+		*mscr_value |= SIUL2_MSCR_PUE;
+		*mscr_value &= ~SIUL2_MSCR_PUS;
+		break;
+	case PIN_CONFIG_BIAS_DISABLE:
+		*mscr_value &= ~SIUL2_MSCR_PUE;
+		break;
+	default:
+		return -ENOTSUPP;
+	}
+
+	return 0;
+}
+
+static int s32_get_pinconf_setting(struct udevice *dev, struct ofprop property,
+				   u32 *mscr_value)
+{
+	const struct pinconf_param *p;
+	const char *propname;
+	const void *value;
+	unsigned int arg;
+	int i, len;
+
+	value = dev_read_prop_by_prop(&property, &propname, &len);
+	if (!value)
+		return -EINVAL;
+
+	for (i = 0; i < ARRAY_SIZE(siul2_pinconf_params); ++i) {
+		if (!strcmp(propname, siul2_pinconf_params[i].property)) {
+			p = &siul2_pinconf_params[i];
+
+			if (len == sizeof(fdt32_t)) {
+				arg = fdt32_to_cpu(*(fdt32_t *)value);
+			} else if (len == 0) {
+				arg = p->default_value;
+			} else {
+				dev_err(dev,
+					"Wrong argument size: %s\n", propname);
+				return -EINVAL;
+			}
+
+			return s32_get_mscr_setting_from_param(p->param, arg,
+							       mscr_value);
+		}
+	}
+
+	return 0;
+}
+
+static int s32_parse_pinmux_len(struct udevice *dev, struct udevice *config)
+{
+	int size;
+
+	size = dev_read_size(config, "pinmux");
+	if (size < 0)
+		return size;
+	size /= sizeof(fdt32_t);
+
+	return size;
+}
+
+static int s32_set_state_subnode(struct udevice *dev, struct udevice *config)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	u32 pin, function;
-	struct s32_range *range = NULL;
-	int index = 0;
-	int sz;
-	int ret;
+	struct s32_range *range;
+	struct ofprop property;
+	u32 mscr_value = 0;
+	u32 pinmux_value, pin, func;
+	int ret, i, len;
 
-	if (!dev_read_prop(config, "fsl,pins", &sz)) {
-		pr_err("fsl,pins property not found\n");
-		return -EINVAL;
+	len = s32_parse_pinmux_len(dev, config);
+	if (len <= 0) {
+		/* Not a pinmux node. Skip parsing this. */
+		return 0;
 	}
 
-	sz >>= 2;
-	if (sz % 2) {
-		pr_err("fsl,pins invalid array size: %d\n", sz);
-		return -EINVAL;
+	dev_for_each_property(property, config) {
+		ret = s32_get_pinconf_setting(dev, property, &mscr_value);
+		if (ret) {
+			dev_err(dev,
+				"Could not parse property for: %s!\n",
+				config->name);
+			return ret;
+		}
 	}
 
-	while (index < sz) {
-		ret = dev_read_u32_index(config, "fsl,pins", index++, &pin);
+	for (i = 0; i < len; ++i) {
+		ret = dev_read_u32_index(config, "pinmux", i, &pinmux_value);
 		if (ret) {
-			pr_err("failed to read pin ID\n");
+			dev_err(dev, "Error reading pinmux index: %d\n", i);
 			return ret;
 		}
-		ret = dev_read_u32_index(config, "fsl,pins", index++,
-					 &function);
-		if (ret) {
-			pr_err("failed to read pin function\n");
-			return ret;
-		}
+
+		pin = SIUL2_PIN_FROM_PINMUX(pinmux_value);
+		func = SIUL2_FUNC_FROM_PINMUX(pinmux_value);
 
 		range = s32_get_pin_range(priv, pin);
-		if (range) {
-			pin -= range->begin;
-			writel(function, UPTR(range->base_addr) + S32_PAD(pin));
-			pr_debug("%s function:reg 0x%x:0x%p\n", config->name,
-				 function, range->base_addr + S32_PAD(pin));
-			continue;
+		if (!range) {
+			dev_err(dev, "Invalid pin: %d\n", pin);
+			return -EINVAL;
 		}
 
-		pr_err("%s invalid pin found function:pin 0x%x:%d\n",
-		       config->name, function, pin);
+		pin -= range->begin;
+		writel(mscr_value | func, UPTR(range->base_addr) + S32_PAD(pin));
+	}
 
-		return -ENOENT;
-	};
+	return 0;
+}
+
+static int s32_set_state(struct udevice *dev, struct udevice *config)
+{
+	struct udevice *child;
+	int ret;
+
+	ret = s32_set_state_subnode(dev, config);
+	if (ret) {
+		dev_err(dev, "Error %d parsing: %s\n", ret, config->name);
+		return ret;
+	}
+
+	for (device_find_first_child(config, &child);
+	     child;
+	     device_find_next_child(&child)) {
+		ret = s32_set_state_subnode(dev, child);
+		if (ret)
+			return ret;
+	}
 
 	return 0;
 }
@@ -152,8 +267,8 @@ static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
 	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
-	enum pin_config_param cfg = (enum pin_config_param)param;
 	u32 mscr_value;
+	int ret;
 
 	if (!range)
 		return -ENOENT;
@@ -161,42 +276,9 @@ static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 	pin_selector -= range->begin;
 	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(pin_selector));
 
-	switch (cfg) {
-	case PIN_CONFIG_OUTPUT_ENABLE:
-		mscr_value &= ~SIUL2_MSCR_OBE;
-		if (argument)
-			mscr_value |= SIUL2_MSCR_OBE;
-		break;
-	case PIN_CONFIG_INPUT_ENABLE:
-		mscr_value &= ~SIUL2_MSCR_IBE;
-		if (argument)
-			mscr_value |= SIUL2_MSCR_IBE;
-		break;
-	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-		mscr_value |= SIUL2_MSCR_ODE;
-		break;
-	case PIN_CONFIG_DRIVE_PUSH_PULL:
-		mscr_value &= ~SIUL2_MSCR_ODE;
-		break;
-	case PIN_CONFIG_SLEW_RATE:
-		argument = (argument << SIUL2_MSCR_SRE_SHIFT) &
-			   SIUL2_MSCR_SRE_MASK;
-		mscr_value &= ~SIUL2_MSCR_SRE_MASK;
-		mscr_value |= argument;
-		break;
-	case PIN_CONFIG_BIAS_PULL_UP:
-		mscr_value |= SIUL2_MSCR_PUE | SIUL2_MSCR_PUS;
-		break;
-	case PIN_CONFIG_BIAS_PULL_DOWN:
-		mscr_value |= SIUL2_MSCR_PUE;
-		mscr_value &= ~SIUL2_MSCR_PUS;
-		break;
-	case PIN_CONFIG_BIAS_DISABLE:
-		mscr_value &= ~SIUL2_MSCR_PUE;
-		break;
-	default:
-		return -ENOSYS;
-	}
+	ret = s32_get_mscr_setting_from_param(param, argument, &mscr_value);
+	if (ret)
+		return ret;
 
 	writel(mscr_value, UPTR(range->base_addr) + S32_PAD(pin_selector));
 
