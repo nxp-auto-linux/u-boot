@@ -116,23 +116,6 @@ int arch_cpu_init(void)
 	return 0;
 }
 
-static void serdes_init(void)
-{
-	struct udevice *bus = NULL;
-
-	/*
-	 * Enumerate all known UCLASS_PHY devices. This will
-	 * also probe them, so the SerDes devices will be enumerated too.
-	 * TODO: Enumerate first the EPs, so that loopback between
-	 * the two PCIe interfaces will also work if PCIe1 is EP.
-	 */
-	for (uclass_first_device(UCLASS_PHY, &bus);
-	     bus;
-	     uclass_next_device(&bus)) {
-		;
-	}
-}
-
 __weak void show_pcie_devices(void)
 {
 }
@@ -151,7 +134,6 @@ int initr_pci(void)
 		}
 	}
 
-	serdes_init();
 	/*
 	 * Enumerate all known PCIe controller devices. Enumeration has
 	 * the side-effect of probing them, so PCIe devices will be
