@@ -153,9 +153,9 @@ do { \
 #endif
 
 #define PCIE_BIT_VALUE(reg_val, bit_name) \
-			((reg_val & bit_name ## _MASK) >> bit_name ## _OFF)
+			((reg_val & bit_name ## _MASK) >> bit_name ## _LSB)
 #define PCIE_BIT_MASK(bit_name) \
-			((bit_name ## _MASK) << (bit_name ## _OFF))
+			((bit_name ## _MASK) << (bit_name ## _LSB))
 
 /* iATU register offsets and fields */
 
@@ -174,15 +174,15 @@ do { \
 
 /* Upper half of the LINK_CTRL_STATUS register, accessible by half-word reads */
 #define PCIE_LINK_STATUS			(0x82)
-#define PCIE_LINK_SPEED_MASK		0xf
-#define PCIE_LINK_SPEED_OFF			0
-#define PCIE_LINK_WIDTH_MASK		0x3f0
-#define PCIE_LINK_WIDTH_OFF			4
+#define PCIE_LINK_CRT_SPEED_MASK		0xf
+#define PCIE_LINK_CRT_SPEED_LSB			0
+#define PCIE_LINK_CRT_WIDTH_MASK		0x3f0
+#define PCIE_LINK_CRT_WIDTH_LSB			4
 
 /* Debug Register 0 (PL_DEBUG0_OFF) */
 #define PCIE_PL_DEBUG0		(0x728)
 #define LTSSM_STATE_MASK	0x3f
-#define LTSSM_STATE_OFF		0
+#define LTSSM_STATE_LSB		0
 
 /* Debug Register 1 (PL_DEBUG1_OFF) */
 #define PCIE_PL_DEBUG1		(0x72C)
@@ -241,7 +241,7 @@ do { \
 
 /* Register SS_RW_REG_0 */
 #define CLKEN_MASK	0x1
-#define CLKEN_OFF	23
+#define CLKEN_LSB	23
 
 enum pcie_link_speed {
 	GEN1 = 0x1,
@@ -249,9 +249,11 @@ enum pcie_link_speed {
 	GEN3 = 0x3
 };
 
+/* Supported link widths for PCIe on S32Gen1 */
 enum pcie_link_width {
 	X1 = 0x1,
-	X2 = 0x2
+	X2 = 0x2,
+	X_MAX = X2
 };
 
 struct s32_pcie {

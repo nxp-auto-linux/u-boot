@@ -576,25 +576,35 @@ static int s32_pcie_setup_ep(struct s32_pcie *pcie)
 	return ret;
 }
 
-static bool s32_pcie_set_link_width(void __iomem *dbi, int id,
-				    enum pcie_link_width linkwidth)
+/* Set max link width.
+ * S32 supports X2 at most, so this is mostly useful for limiting width to X1.
+ * Use this in EP mode, when width is fixed, or RC mode to speed up the
+ * link process.
+ */
+static bool s32_pcie_set_max_link_width(void __iomem *dbi, int id,
+					enum pcie_link_width linkwidth)
 {
 	s32_pcie_enable_dbi_rw(dbi);
+
+	/* Set link width capabilities */
+	RMW32(UPTR(dbi) + PCIE_CAP_LINK_CAPABILITIES_REG,
+	      BUILD_MASK_VALUE(PCIE_MAX_LINK_WIDTH, linkwidth),
+	      PCIE_MAX_LINK_WIDTH);
 
 	/* Set link width */
 	RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN2_CTRL,
 	      BUILD_MASK_VALUE(PCIE_NUM_OF_LANES, linkwidth),
 	      PCIE_NUM_OF_LANES);
 
-	if (linkwidth == X1) {
-		debug("PCIe%d: Set link X1\n", id);
-		RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_PORT_LINK_CTRL,
-		      BUILD_MASK_VALUE(PCIE_LINK_CAPABLE, 1),
-		      PCIE_LINK_CAPABLE);
-	} else {
+	if (linkwidth == X2) {
 		debug("PCIe%d: Set link X2\n", id);
 		RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_PORT_LINK_CTRL,
 		      BUILD_MASK_VALUE(PCIE_LINK_CAPABLE, 3),
+		      PCIE_LINK_CAPABLE);
+	} else {
+		debug("PCIe%d: Set link X1\n", id);
+		RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_PORT_LINK_CTRL,
+		      BUILD_MASK_VALUE(PCIE_LINK_CAPABLE, 1),
 		      PCIE_LINK_CAPABLE);
 	}
 
@@ -635,8 +645,12 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	/* Test value */
 	debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
 	      s32_dbi_readl(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL));
-	if (!s32_pcie_set_link_width(dbi, id, linkwidth))
+
+	if (!s32_pcie_set_max_link_width(dbi, id, linkwidth))
 		return false;
+
+	/* Enable writing dbi registers */
+	s32_pcie_enable_dbi_rw(dbi);
 
 	/* PCIE_COHERENCY_CONTROL_<n> registers provide defaults that configure
 	 * the transactions as Outer Shareable, Write-Back cacheable; we won't
@@ -644,9 +658,6 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	 */
 
 	BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_PORT_FORCE, PCIE_DO_DESKEW_FOR_SRIS);
-
-	/* Enable writing dbi registers */
-	s32_pcie_enable_dbi_rw(dbi);
 
 	if (rc_mode) {
 		/* Set max payload supported, 256 bytes and
@@ -788,6 +799,10 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	pcie->linkspeed = (enum pcie_link_speed)val;
 	/* get supported width (X1/X2) from device tree */
 	val = dev_read_u32_default(dev, "num-lanes", X1);
+	if (val > X_MAX) {
+		printf("PCIe%d: Invalid width\n", pcie->id);
+		val = X1;
+	}
 	pcie->linkwidth = (enum pcie_link_width)val;
 
 	return ret;
@@ -799,7 +814,8 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	u16 link_sta;
 
 #ifdef DEBUG
-	/* PCIE_CAP_LINK_CAP register contains the maximum link width and speed.
+	/* PCIE_CAP_LINK_CAPABILITIES_REG register contains the maximum link
+	 * width and speed.
 	 * For the field SUPPORT_LINK_SPEED_VECTOR,
 	 * The bit definitions within this field are:
 	 * Bit 0: 2.5 GT/s (Gen1)
@@ -812,7 +828,7 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	 */
 	if (verbose) {
 		u16 link_cap = s32_dbi_readw(UPTR(pcie->dbi) +
-					     PCIE_CAP_LINK_CAP);
+					     PCIE_CAP_LINK_CAPABILITIES_REG);
 
 		debug("PCIe%d: max X%d Gen%d\n", pcie->id,
 		      PCIE_BIT_VALUE(link_cap, PCIE_MAX_LINK_WIDTH),
@@ -822,7 +838,7 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 
 	link_sta = s32_dbi_readw(UPTR(pcie->dbi) + PCIE_LINK_STATUS);
 	/* update link width based on negotiated link status */
-	*width = PCIE_BIT_VALUE(link_sta, PCIE_LINK_WIDTH);
+	*width = PCIE_BIT_VALUE(link_sta, PCIE_LINK_CRT_WIDTH);
 	/* For link speed, LINK_SPEED value specifies a bit location in
 	 * LINK_CAPABILITIES_2[SUPPORT_LINK_SPEED_VECTOR] that corresponds
 	 * to the current link speed.
@@ -832,7 +848,7 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	 * 0100b - SUPPORT_LINK_SPEED_VECTOR bit 3 (Gen4) -- for S32G3
 	 * 0101b - SUPPORT_LINK_SPEED_VECTOR bit 4 (Gen5) -- for S32G3
 	 */
-	*speed = PCIE_BIT_VALUE(link_sta, PCIE_LINK_SPEED);
+	*speed = PCIE_BIT_VALUE(link_sta, PCIE_LINK_CRT_SPEED);
 	if (verbose)
 		debug("PCIe%d: current X%d Gen%d\n", pcie->id, *width, *speed);
 }
@@ -935,7 +951,7 @@ static int s32_pcie_probe_ep(struct s32_pcie *pcie, struct uclass *uc)
 		/* Supported value in dtb is smaller */
 		/* Set new link width */
 		s32_pcie_disable_ltssm(pcie->dbi);
-		if (!s32_pcie_set_link_width(pcie->dbi, pcie->id, pcie->linkwidth))
+		if (!s32_pcie_set_max_link_width(pcie->dbi, pcie->id, pcie->linkwidth))
 			return -EIO;
 
 		s32_pcie_enable_ltssm(pcie->dbi);
@@ -1121,9 +1137,9 @@ static int s32_pcie_probe(struct udevice *dev)
 				pcie->linkwidth = X1;
 				s32_pcie_disable_ltssm(pcie->dbi);
 
-				if (!s32_pcie_set_link_width(pcie->dbi,
-							     pcie->id,
-							     pcie->linkwidth))
+				if (!s32_pcie_set_max_link_width
+						(pcie->dbi, pcie->id,
+						 pcie->linkwidth))
 					return ret;
 
 				s32_pcie_enable_ltssm(pcie->dbi);
