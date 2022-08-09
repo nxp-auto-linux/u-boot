@@ -694,24 +694,11 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 		W32(UPTR(dbi) + SS_PE0_GEN_CTRL_1,
 		    BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_EP));
 
-	if (phy_mode == SRIS)
+	if (phy_mode == SRIS) {
 		BSET32(UPTR(dbi) + SS_PE0_GEN_CTRL_1, PCIE_SRIS_MODE_MASK);
-
-	/* Enable writing dbi registers */
-	s32_pcie_enable_dbi_rw(dbi);
-
-	/* Enable direct speed change */
-	BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN2_CTRL,
-	       PCIE_DIRECT_SPEED_CHANGE);
-
-	/* Disable phase 2,3 equalization */
-	RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL,
-	      BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
-	      BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84),
-	      PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
-	/* Test value */
-	debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
-	      s32_dbi_readl(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL));
+		BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_PORT_FORCE,
+		       PCIE_DO_DESKEW_FOR_SRIS);
+	}
 
 	if (!s32_pcie_set_max_link_width(dbi, id, linkwidth))
 		return false;
@@ -725,8 +712,6 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	 * the transactions as Outer Shareable, Write-Back cacheable; we won't
 	 * change those defaults.
 	 */
-
-	BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_PORT_FORCE, PCIE_DO_DESKEW_FOR_SRIS);
 
 	if (rc_mode) {
 		/* Set max payload supported, 256 bytes and
@@ -771,16 +756,20 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN2_CTRL,
 	       PCIE_DIRECT_SPEED_CHANGE);
 
-	/* Disable phase 2,3 equalization */
-	RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL,
-	      BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
-	      BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84),
-	      PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
-	/* Test value */
-	debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
-	      s32_dbi_readl(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL));
+	if (linkspeed == GEN3) {
+		/* Disable phase 2,3 equalization */
+		RMW32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL,
+		      BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
+		      BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84),
+		      PCIE_GEN3_EQ_FB_MODE | PCIE_GEN3_EQ_PSET_REQ_VEC);
+		/* Test value */
+		debug("PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
+		      s32_dbi_readl(UPTR(dbi) +
+				    PCIE_PORT_LOGIC_GEN3_EQ_CONTROL));
 
-	BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_RELATED, PCIE_EQ_PHASE_2_3);
+		BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_RELATED,
+		       PCIE_EQ_PHASE_2_3);
+	}
 
 	/* Disable writing dbi registers */
 	s32_pcie_disable_dbi_rw(dbi);
