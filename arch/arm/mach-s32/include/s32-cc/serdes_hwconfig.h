@@ -111,6 +111,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
 enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
 bool s32_serdes_is_cfg_valid(int id);
 bool s32_serdes_is_pcie_enabled_in_hwconfig(int id);
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id);
 bool s32_serdes_is_mode5_enabled_in_hwconfig(int id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);

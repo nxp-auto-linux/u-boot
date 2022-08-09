@@ -30,7 +30,15 @@ bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
 
 	ss_mode = s32_serdes_get_mode_from_hwconfig(id);
 	return IS_SERDES_PCIE(ss_mode);
+}
 
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id)
+{
+	enum serdes_dev_type ss_mode;
+
+	ss_mode = s32_serdes_get_mode_from_hwconfig(id);
+	return IS_SERDES_PCIE(ss_mode) &&
+			IS_SERDES_SGMII(ss_mode);
 }
 
 static inline
