@@ -24,15 +24,13 @@
 
 #define SERDES_NAME_SIZE 32
 
-bool is_pcie_enabled_in_hwconfig(int id)
+bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
 {
-	enum serdes_dev_type pcie_mode;
+	enum serdes_dev_type ss_mode;
 
-	pcie_mode = s32_serdes_get_mode_from_hwconfig(id);
-	if ((pcie_mode & PCIE_EP) || (pcie_mode & PCIE_RC))
-		return true;
+	ss_mode = s32_serdes_get_mode_from_hwconfig(id);
+	return IS_SERDES_PCIE(ss_mode);
 
-	return false;
 }
 
 static inline
@@ -225,7 +223,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 	return SERDES_MODE_INVAL;
 }
 
-bool s32_serdes_has_mode5_enabled(int id)
+bool s32_serdes_is_mode5_enabled_in_hwconfig(int id)
 {
 	size_t demo_len = 0;
 	char *demo;
@@ -311,7 +309,7 @@ bool s32_serdes_is_cfg_valid(int id)
 		return false;
 	}
 
-	mode5 = s32_serdes_has_mode5_enabled(id);
+	mode5 = s32_serdes_is_mode5_enabled_in_hwconfig(id);
 	if (mode5) {
 		if (!(ext_clk && freq == MHZ_100 &&
 		      xpcs_mode == SGMII_XPCS1)) {
@@ -377,7 +375,7 @@ int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane)
 		break;
 	case SGMII_XPCS1:
 		if (lane) {
-			if (s32_serdes_has_mode5_enabled(serdes_id))
+			if (s32_serdes_is_mode5_enabled_in_hwconfig(serdes_id))
 				return SPEED_2500;
 			return SPEED_1000;
 		}
