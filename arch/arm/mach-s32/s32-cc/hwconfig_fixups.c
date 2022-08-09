@@ -586,6 +586,12 @@ static int prepare_pcie_node(struct dts_node *root, int id)
 	if (ret)
 		return ret;
 
+	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
+	if (ret) {
+		pr_err("Failed to get 'pcie%u' alias\n", id);
+		return ret;
+	}
+
 	ret = enable_node(&node);
 	if (ret) {
 		pr_err("Failed to enable PCIe%d\n", id);
