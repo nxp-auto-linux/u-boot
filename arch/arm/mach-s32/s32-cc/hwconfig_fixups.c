@@ -566,7 +566,7 @@ static int prepare_pcie_node(struct dts_node *root, int id)
 		return ret;
 	}
 
-	if (!is_pcie_enabled_in_hwconfig(id)) {
+	if (!s32_serdes_is_pcie_enabled_in_hwconfig(id)) {
 		ret = disable_node(&node);
 		if (ret) {
 			pr_err("Failed to disable PCIe%d\n", id);
@@ -741,7 +741,7 @@ static int set_serdes_mode(struct dts_node *root, int id)
 	}
 
 	mode_num = (u32)mode;
-	if (s32_serdes_has_mode5_enabled(id)) {
+	if (s32_serdes_is_mode5_enabled_in_hwconfig(id)) {
 		if (root->fdt)
 			mode_num = 2;
 		else
