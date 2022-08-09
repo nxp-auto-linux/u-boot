@@ -243,10 +243,15 @@ do { \
 #define CLKEN_MASK	0x1
 #define CLKEN_LSB	23
 
+/* Supported link speeds for PCIe on S32Gen1
+ * Maximum supported value is in sync with field
+ * PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR of register LINK_CAPABILITIES2_REG
+ */
 enum pcie_link_speed {
 	GEN1 = 0x1,
 	GEN2 = 0x2,
-	GEN3 = 0x3
+	GEN3 = 0x3,
+	GEN_MAX = GEN3
 };
 
 /* Supported link widths for PCIe on S32Gen1 */

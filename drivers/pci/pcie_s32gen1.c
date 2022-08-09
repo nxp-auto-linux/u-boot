@@ -613,8 +613,75 @@ static bool s32_pcie_set_max_link_width(void __iomem *dbi, int id,
 	return true;
 }
 
+/* Set max link speed */
+static bool s32_pcie_set_max_link_speed(void __iomem *dbi,
+					int id,
+					enum pcie_link_speed linkspeed)
+{
+	u16 link_cap = s32_dbi_readw(UPTR(dbi) +
+				     PCIE_CAP_LINK_CAPABILITIES_REG);
+	enum pcie_link_speed crt_speed =
+		(enum pcie_link_speed)PCIE_BIT_VALUE(link_cap,
+						     PCIE_MAX_LINK_SPEED);
+
+	/* Change speed if different than existing settings */
+	if (linkspeed == crt_speed)
+		return true;
+
+	s32_pcie_enable_dbi_rw(dbi);
+
+	debug("Replacing max speed Gen%d with Gen%d\n", crt_speed, linkspeed);
+
+	/* Set link speed capabilities.
+	 *
+	 * PCIE_CAP_LINK_CAPABILITIES2_REG register contains the supported link
+	 * widths and speeds.
+	 * For the field PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR,
+	 * The bit definitions within this field are:
+	 * Bit 0: 1 - 2.5 GT/s (Gen1)
+	 * Bit 1: 1 - 5.0 GT/s (Gen2)
+	 * Bit 2: 1 - 8.0 GT/s (Gen3)
+	 * Bits 3-6: 0 for S32G2/3 and S32R
+	 *
+	 * This field is Read-Only.
+	 *
+	 * PCIE_CAP_LINK_CAPABILITIES_REG however permits to set the maximum
+	 * speed, by writing to the field PCIE_CAP_MAX_LINK_SPEED.
+	 * The bit definitions within this field are a reference to a bit in
+	 * PCIE_CAP_LINK_CAPABILITIES2_REG:PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR:
+	 * 0001b - Supported Link Speeds Vector field bit 0
+	 * 0010b - Supported Link Speeds Vector field bit 1
+	 * 0011b - Supported Link Speeds Vector field bit 2
+	 * etc.
+	 */
+	RMW32(UPTR(dbi) + PCIE_CAP_LINK_CAPABILITIES_REG,
+	      BUILD_MASK_VALUE(PCIE_MAX_LINK_SPEED, linkspeed),
+	      PCIE_MAX_LINK_SPEED);
+
+	/* Limit speed to `linkspeed` */
+	if (linkspeed < GEN3)
+		RMW32(UPTR(dbi) +
+		      PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG,
+		      BUILD_MASK_VALUE(PCIE_CAP_TARGET_LINK_SPEED,
+				       linkspeed),
+		      PCIE_CAP_TARGET_LINK_SPEED);
+
+#ifdef DEBUG
+	link_cap = s32_dbi_readw(UPTR(dbi) +
+				 PCIE_CAP_LINK_CAPABILITIES_REG);
+
+	debug("Max speed set to Gen%d\n",
+	      PCIE_BIT_VALUE(link_cap, PCIE_MAX_LINK_SPEED));
+#endif
+
+	s32_pcie_disable_dbi_rw(dbi);
+
+	return true;
+}
+
 static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 			  enum pcie_link_width linkwidth,
+			  enum pcie_link_speed linkspeed,
 			  enum pcie_phy_mode phy_mode)
 {
 	printf("Configuring PCIe%d as %s\n", id, PCIE_EP_RC_MODE(!rc_mode));
@@ -647,6 +714,8 @@ static bool s32_pcie_init(void __iomem *dbi, int id, bool rc_mode,
 	      s32_dbi_readl(UPTR(dbi) + PCIE_PORT_LOGIC_GEN3_EQ_CONTROL));
 
 	if (!s32_pcie_set_max_link_width(dbi, id, linkwidth))
+		return false;
+	if (!s32_pcie_set_max_link_speed(dbi, id, linkspeed))
 		return false;
 
 	/* Enable writing dbi registers */
@@ -795,7 +864,11 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 #endif
 
 	/* get supported speed (Gen1/Gen2/Gen3) from device tree */
-	val = dev_read_u32_default(dev, "link-speed", GEN1);
+	val = dev_read_u32_default(dev, "max-link-speed", GEN1);
+	if (val > GEN_MAX) {
+		printf("PCIe%d: Invalid speed\n", pcie->id);
+		val = GEN1;
+	}
 	pcie->linkspeed = (enum pcie_link_speed)val;
 	/* get supported width (X1/X2) from device tree */
 	val = dev_read_u32_default(dev, "num-lanes", X1);
@@ -821,10 +894,7 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	 * Bit 0: 2.5 GT/s (Gen1)
 	 * Bit 1: 5.0 GT/s (Gen2)
 	 * Bit 2: 8.0 GT/s (Gen3)
-	 * Bit 3: 16.0 GT/s (Gen4)
-	 * Bit 4: 32.0 GT/s (Gen5)
-	 * Bit 5-6: Reserved -- for S32G3
-	 * Bits 3-6: Reserved -- for S32G2 and S32R
+	 * Bits 3-6: Reserved for S32G2/3 and S32R
 	 */
 	if (verbose) {
 		u16 link_cap = s32_dbi_readw(UPTR(pcie->dbi) +
@@ -842,11 +912,9 @@ static void s32_get_link_status(struct s32_pcie *pcie,
 	/* For link speed, LINK_SPEED value specifies a bit location in
 	 * LINK_CAPABILITIES_2[SUPPORT_LINK_SPEED_VECTOR] that corresponds
 	 * to the current link speed.
-	 * 0001b - SUPPORT_LINK_SPEED_VECTOR bit 0 (Gen1)
-	 * 0010b - SUPPORT_LINK_SPEED_VECTOR bit 1 (Gen2)
-	 * 0011b - SUPPORT_LINK_SPEED_VECTOR bit 2 (Gen3)
-	 * 0100b - SUPPORT_LINK_SPEED_VECTOR bit 3 (Gen4) -- for S32G3
-	 * 0101b - SUPPORT_LINK_SPEED_VECTOR bit 4 (Gen5) -- for S32G3
+	 * 0001b - PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR bit 0 (Gen1)
+	 * 0010b - PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR bit 1 (Gen2)
+	 * 0011b - PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR bit 2 (Gen3)
 	 */
 	*speed = PCIE_BIT_VALUE(link_sta, PCIE_LINK_CRT_SPEED);
 	if (verbose)
@@ -1077,8 +1145,16 @@ static int init_controller(struct s32_pcie *pcie)
 	if (ret)
 		return ret;
 
+	if (s32_serdes_is_combo_mode_enabled_in_hwconfig(pcie->id)) {
+		pcie->linkwidth = X1;
+
+		if (s32_serdes_is_mode5_enabled_in_hwconfig(pcie->id))
+			pcie->linkspeed = GEN2;
+	}
+
 	if (!s32_pcie_init(pcie->dbi, pcie->id, !pcie->ep_mode,
-			   pcie->linkwidth, pcie->phy_mode))
+			   pcie->linkwidth, pcie->linkspeed,
+			   pcie->phy_mode))
 		return -EINVAL;
 
 	s32_pcie_enable_ltssm(pcie->dbi);
