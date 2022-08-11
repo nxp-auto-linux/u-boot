@@ -103,6 +103,24 @@ enum serdes_mode {
 	SERDES_MODE_MAX = SERDES_MODE_SGMII_SGMII_ALT
 };
 
+/* Supported link speeds for PCIe on S32CC
+ * Maximum supported value is in sync with field
+ * PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR of register LINK_CAPABILITIES2_REG
+ */
+enum pcie_link_speed {
+	GEN1 = 0x1,
+	GEN2 = 0x2,
+	GEN3 = 0x3,
+	GEN_MAX = GEN3
+};
+
+/* Supported link widths for PCIe on S32CC */
+enum pcie_link_width {
+	X1 = 0x1,
+	X2 = 0x2,
+	X_MAX = X2
+};
+
 enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
 bool s32_serdes_is_external_clk_in_hwconfig(int i);
 unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id);

@@ -555,6 +555,40 @@ static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
 	return 0;
 }
 
+static int set_pcie_width_and_speed(struct dts_node *root, int id)
+{
+	int ret;
+	struct dts_node node;
+	u32 linkwidth = X_MAX, linkspeed = GEN_MAX;
+
+	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
+	if (ret) {
+		pr_err("Failed to get 'pcie%u' alias\n", id);
+		return ret;
+	}
+
+	if (s32_serdes_is_combo_mode_enabled_in_hwconfig(id)) {
+		linkwidth = X1;
+
+		if (s32_serdes_is_mode5_enabled_in_hwconfig(id))
+			linkspeed = GEN2;
+	}
+
+	if (linkwidth < X_MAX) {
+		ret = node_set_prop_u32(&node, "num-lanes", linkwidth);
+		if (ret)
+			pr_err("Failed to set 'num-lanes'\n");
+	}
+
+	if (linkspeed < GEN_MAX) {
+		ret = node_set_prop_u32(&node, "max-link-speed", linkspeed);
+		if (ret)
+			pr_err("Failed to set 'max-link-speed'\n");
+	}
+
+	return ret;
+}
+
 static int prepare_pcie_node(struct dts_node *root, int id)
 {
 	int ret;
@@ -586,6 +620,10 @@ static int prepare_pcie_node(struct dts_node *root, int id)
 		return ret;
 
 	ret = set_serdes_lines(&node, id);
+	if (ret)
+		return ret;
+
+	ret = set_pcie_width_and_speed(&node, id);
 	if (ret)
 		return ret;
 
