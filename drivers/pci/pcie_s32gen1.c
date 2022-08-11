@@ -24,7 +24,6 @@
 #include <s32-cc/nvmem.h>
 #include <s32-cc/pcie.h>
 #include <s32-cc/serdes_hwconfig.h>
-#include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 
@@ -1133,13 +1132,6 @@ static int init_controller(struct s32_pcie *pcie)
 	ret = init_pcie_phy(pcie);
 	if (ret)
 		return ret;
-
-	if (s32_serdes_is_combo_mode_enabled_in_hwconfig(pcie->id)) {
-		pcie->linkwidth = X1;
-
-		if (s32_serdes_is_mode5_enabled_in_hwconfig(pcie->id))
-			pcie->linkspeed = GEN2;
-	}
 
 	if (!s32_pcie_init(pcie->dbi, pcie->id, !pcie->ep_mode,
 			   pcie->linkwidth, pcie->linkspeed,
