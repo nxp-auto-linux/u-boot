@@ -447,7 +447,7 @@ static int pfeng_serdes_wait_link(struct pfeng_priv *priv, int emac)
 	/* Check if SerDes is configured for SGMII */
 	xpcs_ops = s32cc_xpcs_get_ops();
 	if (!xpcs_ops) {
-		printf("Failed to get XPCS ops\n");
+		dev_err(dev, "Failed to get XPCS ops\n");
 		return -EIO;
 	}
 
@@ -471,7 +471,7 @@ static int pfeng_serdes_wait_link(struct pfeng_priv *priv, int emac)
 	}
 
 	if (!state.link) {
-		printf("Failed to establish XPCS link on PFE%d\n", emac);
+		dev_err(dev, "Failed to establish XPCS link on PFE%d\n", emac);
 		return -EIO;
 	}
 
@@ -662,6 +662,7 @@ static u32 get_speed_advertised(int speed)
 
 static int init_xpcs(struct pfeng_priv *priv)
 {
+	__maybe_unused struct udevice *dev = priv->dev;
 	char xpcs_name[sizeof(XPCS_PHY_FORMAT)];
 	const struct s32cc_xpcs_ops *xpcs_ops;
 	struct s32cc_xpcs *xpcs;
@@ -670,7 +671,7 @@ static int init_xpcs(struct pfeng_priv *priv)
 
 	xpcs_ops = s32cc_xpcs_get_ops();
 	if (!xpcs_ops) {
-		printf("Failed to get XPCS ops\n");
+		dev_err(dev, "Failed to get XPCS ops\n");
 		return -EIO;
 	}
 
@@ -682,39 +683,42 @@ static int init_xpcs(struct pfeng_priv *priv)
 		ret = generic_phy_get_by_name(priv->dev, xpcs_name,
 					      &priv->xpcs[i]);
 		if (ret) {
-			printf("Failed to get '%s' PHY\n", xpcs_name);
+			dev_err(dev, "Failed to get '%s' PHY\n", xpcs_name);
 			return ret;
 		}
 
 		phy_speed = s32_serdes_get_lane_speed(priv->xpcs[i].dev,
 						      priv->xpcs[i].id);
 		if (phy_speed < 0) {
-			printf("Failed to get speed of XPCS for %s", xpcs_name);
+			dev_err(dev, "Failed to get speed of XPCS for %s",
+				xpcs_name);
 			return ret;
 		}
 
 		ret = generic_phy_init(&priv->xpcs[i]);
 		if (ret) {
-			printf("Failed to init '%s' PHY\n", xpcs_name);
+			dev_err(dev, "Failed to init '%s' PHY\n", xpcs_name);
 			return ret;
 		}
 
 		ret = generic_phy_power_on(&priv->xpcs[i]);
 		if (ret) {
-			printf("Failed to power on '%s' PHY\n", xpcs_name);
+			dev_err(dev, "Failed to power on '%s' PHY\n",
+				xpcs_name);
 			return ret;
 		}
 
 		ret = generic_phy_configure(&priv->xpcs[i], NULL);
 		if (ret) {
-			printf("Failed to configure '%s' PHY\n", xpcs_name);
+			dev_err(dev, "Failed to configure '%s' PHY\n",
+				xpcs_name);
 			return ret;
 		}
 
 		xpcs = s32cc_phy2xpcs(&priv->xpcs[i]);
 		if (!xpcs) {
-			printf("Failed to get XPCS instance of '%s'\n",
-			       xpcs_name);
+			dev_err(dev, "Failed to get XPCS instance of '%s'\n",
+				xpcs_name);
 			return -EINVAL;
 		}
 
@@ -725,7 +729,8 @@ static int init_xpcs(struct pfeng_priv *priv)
 		state.an_complete = 0;
 		ret = xpcs_ops->xpcs_config(xpcs, &state);
 		if (ret) {
-			printf("Failed to configure '%s' PHY\n", xpcs_name);
+			dev_err(dev, "Failed to configure '%s' PHY\n",
+				xpcs_name);
 			return ret;
 		}
 	}
