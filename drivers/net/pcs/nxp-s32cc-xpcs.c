@@ -230,14 +230,14 @@ typedef bool (*xpcs_poll_func_t)(struct s32cc_xpcs *);
 
 struct xpcs_mask_poll {
 	struct s32cc_xpcs *xpcs;
-	unsigned int reg;
-	unsigned int mask;
-	unsigned int bits;
+	u32 reg;
+	u32 mask;
+	u32 bits;
 };
 
 static struct {
 	struct s32cc_xpcs *xpcs[4];
-	unsigned int n_instances;
+	u32 n_instances;
 } registered_xpcs;
 
 static const struct regmap_range xpcs_wr_ranges[] = {
@@ -312,7 +312,7 @@ static void init_params(u32 reg, struct s32cc_xpcs *xpcs,
 	params->addr2 -= xpcs->params.addr2;
 }
 
-static bool regmap_reg_in_ranges(unsigned int reg,
+static bool regmap_reg_in_ranges(u32 reg,
 				 const struct regmap_range *ranges,
 				 size_t n_ranges)
 {
@@ -328,13 +328,13 @@ static bool regmap_reg_in_ranges(unsigned int reg,
 	return false;
 }
 
-static bool xpcs_writeable_reg(struct udevice *dev, unsigned int reg)
+static bool xpcs_writeable_reg(struct udevice *dev, u32 reg)
 {
 	return regmap_reg_in_ranges(reg, xpcs_wr_ranges,
 				    ARRAY_SIZE(xpcs_wr_ranges));
 }
 
-static bool xpcs_readable_reg(struct udevice *dev, unsigned int reg)
+static bool xpcs_readable_reg(struct udevice *dev, u32 reg)
 {
 	if (!xpcs_writeable_reg(dev, reg))
 		return regmap_reg_in_ranges(reg, xpcs_rd_ranges,
@@ -343,8 +343,8 @@ static bool xpcs_readable_reg(struct udevice *dev, unsigned int reg)
 	return true;
 }
 
-static int xpcs_regmap_reg_read(struct s32cc_xpcs *xpcs, unsigned int reg,
-				unsigned int *result)
+static int xpcs_regmap_reg_read(struct s32cc_xpcs *xpcs, u32 reg,
+				u32 *result)
 {
 	struct udevice *dev = get_xpcs_device(xpcs);
 	struct s32cc_xpcs_params params;
@@ -363,8 +363,8 @@ static int xpcs_regmap_reg_read(struct s32cc_xpcs *xpcs, unsigned int reg,
 	return 0;
 }
 
-static int xpcs_regmap_reg_write(struct s32cc_xpcs *xpcs, unsigned int reg,
-				 unsigned int val)
+static int xpcs_regmap_reg_write(struct s32cc_xpcs *xpcs, u32 reg,
+				 u32 val)
 {
 	struct udevice *dev = get_xpcs_device(xpcs);
 	struct s32cc_xpcs_params params;
@@ -384,11 +384,11 @@ static int xpcs_regmap_reg_write(struct s32cc_xpcs *xpcs, unsigned int reg,
 }
 
 static void xpcs_write_bits(struct s32cc_xpcs *xpcs, const char *name,
-			    unsigned int reg, unsigned int mask,
-			    unsigned int value)
+			    u32 reg, u32 mask,
+			    u32 value)
 {
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
-	unsigned int val = 0;
+	u32 val = 0;
 	int ret;
 
 	ret = xpcs_regmap_reg_read(xpcs, reg, &val);
@@ -408,7 +408,7 @@ static void xpcs_write_bits(struct s32cc_xpcs *xpcs, const char *name,
 }
 
 static void xpcs_write(struct s32cc_xpcs *xpcs, const char *name,
-		       unsigned int reg, unsigned int value)
+		       u32 reg, u32 value)
 {
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
 	int ret = xpcs_regmap_reg_write(xpcs, reg, value);
@@ -417,11 +417,11 @@ static void xpcs_write(struct s32cc_xpcs *xpcs, const char *name,
 		dev_err(dev, "Failed to write XPCS reg: %s\n", name);
 }
 
-static unsigned int xpcs_read(struct s32cc_xpcs *xpcs, const char *name,
-			      unsigned int reg)
+static u32 xpcs_read(struct s32cc_xpcs *xpcs, const char *name,
+		     u32 reg)
 {
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
-	unsigned int val = 0;
+	u32 val = 0;
 	int ret;
 
 	ret = xpcs_regmap_reg_read(xpcs, reg, &val);
@@ -482,7 +482,7 @@ static int xpcs_init(struct s32cc_xpcs **xpcs, struct udevice *dev,
 
 static bool is_pgood_state(struct s32cc_xpcs *xpcs)
 {
-	unsigned int val;
+	u32 val;
 
 	/* Not in reset state */
 	val = XPCS_READ(xpcs, VR_MII_DIG_CTRL1);
@@ -496,7 +496,7 @@ static bool is_pgood_state(struct s32cc_xpcs *xpcs)
 
 static bool is_not_in_reset(struct s32cc_xpcs *xpcs)
 {
-	unsigned int val;
+	u32 val;
 
 	val = XPCS_READ(xpcs, SR_MII_CTRL);
 
@@ -515,8 +515,8 @@ static bool check_xpcs_bits(struct xpcs_mask_poll *data)
 	return (XPCS_READ(data->xpcs, data->reg) & data->mask) == data->bits;
 }
 
-static int xpcs_wait_bits(struct s32cc_xpcs *xpcs, unsigned int reg,
-			  unsigned int mask, unsigned int bits)
+static int xpcs_wait_bits(struct s32cc_xpcs *xpcs, u32 reg,
+			  u32 mask, u32 bits)
 {
 	bool val;
 	struct xpcs_mask_poll data = {
@@ -562,7 +562,7 @@ static int xpcs_power_on(struct s32cc_xpcs *xpcs)
 
 static bool xpcs_has_valid_rx(struct s32cc_xpcs *xpcs)
 {
-	unsigned int val;
+	u32 val;
 
 	val = XPCS_READ(xpcs, VR_MII_RX_LSTS);
 	return !!(val & RX_VALID_0);
@@ -643,10 +643,10 @@ static void xpcs_electrical_configure(struct s32cc_xpcs *xpcs)
 
 static int xpcs_vco_cfg(struct s32cc_xpcs *xpcs, enum s32cc_xpc_pll vco_pll)
 {
-	unsigned int vco_ld = 0;
-	unsigned int vco_ref = 0;
-	unsigned int rx_baud = 0;
-	unsigned int tx_baud = 0;
+	u32 vco_ld = 0;
+	u32 vco_ref = 0;
+	u32 rx_baud = 0;
+	u32 tx_baud = 0;
 
 	/* VCO LD and REF initialization according to SerDes Reference Manual */
 	switch (vco_pll) {
@@ -703,7 +703,7 @@ static int xpcs_vco_cfg(struct s32cc_xpcs *xpcs, enum s32cc_xpc_pll vco_pll)
 static int xpcs_init_mplla(struct s32cc_xpcs *xpcs)
 {
 	__maybe_unused struct udevice *dev;
-	unsigned int val;
+	u32 val;
 
 	if (!xpcs)
 		return -EINVAL;
@@ -756,7 +756,7 @@ static int xpcs_init_mplla(struct s32cc_xpcs *xpcs)
 static int xpcs_init_mpllb(struct s32cc_xpcs *xpcs)
 {
 	__maybe_unused struct udevice *dev;
-	unsigned int val;
+	u32 val;
 
 	if (!xpcs)
 		return -EINVAL;
@@ -965,7 +965,7 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 			  struct phylink_link_state *state)
 {
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
-	unsigned int mii_ctrl, val, ss;
+	u32 mii_ctrl, val, ss;
 	bool ss6, ss13, an_enabled, intr_en;
 
 	mii_ctrl = XPCS_READ(xpcs, SR_MII_CTRL);
@@ -1151,7 +1151,7 @@ static int xpcs_config(struct s32cc_xpcs *xpcs,
 		       const struct phylink_link_state *state)
 {
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
-	unsigned int duplex = 0;
+	u32 duplex = 0;
 	int ret = 0;
 	int speed = state->speed;
 	bool sgmi_osc = false;
