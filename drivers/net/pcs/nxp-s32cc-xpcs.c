@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
  * Copyright 2022 NXP
+ *
+ * Driver for XPCS side of the SerDes module present on S32CC platforms
  */
 #include <command.h>
 #include <regmap.h>
