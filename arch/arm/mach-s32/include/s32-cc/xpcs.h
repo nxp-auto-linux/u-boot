@@ -40,7 +40,7 @@ struct s32cc_xpcs_ops {
 	bool (*has_valid_rx)(struct s32cc_xpcs *xpcs);
 	int (*pre_pcie_2g5)(struct s32cc_xpcs *xpcs);
 
-	/* These function are planned to be used directly
+	/* These functions are planned to be used directly
 	 * by phylink in newer kernels (starting from 5.10).
 	 */
 	int (*xpcs_config)(struct s32cc_xpcs *xpcs,
@@ -56,7 +56,7 @@ const struct s32cc_xpcs_ops *s32cc_xpcs_get_ops(void);
  *
  * @phy: A generic PHY obtained from s32cc SerDes driver.
  *
- * The return value will be the XPCS instance associate with the
+ * The return value will be the XPCS instance associated with the
  * passed SerDes PHY.
  */
 struct s32cc_xpcs *s32cc_phy2xpcs(struct phy *phy);
