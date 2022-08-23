@@ -277,7 +277,7 @@ static const struct regmap_range xpcs_rd_ranges[] = {
 static int register_xpcs(struct s32cc_xpcs *xpcs)
 {
 	if (registered_xpcs.n_instances >= ARRAY_SIZE(registered_xpcs.xpcs)) {
-		printf("No more space left in XPCS array\n");
+		printf("No space for a new XPCS instance\n");
 		return -ENOMEM;
 	}
 
@@ -599,11 +599,9 @@ static int xpcs_reset_rx(struct s32cc_xpcs *xpcs)
 		return ret;
 	}
 
-	/* Step 21 */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1,
 			RX_RST_0, RX_RST_0);
 
-	/* Step 22 */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1,
 			RX_RST_0, 0);
 
@@ -650,6 +648,7 @@ static int xpcs_vco_cfg(struct s32cc_xpcs *xpcs, enum s32cc_xpc_pll vco_pll)
 	unsigned int rx_baud = 0;
 	unsigned int tx_baud = 0;
 
+	/* VCO LD and REF initialization according to SerDes Reference Manual */
 	switch (vco_pll) {
 	case XPCS_PLLA:
 		if (xpcs->mhz125) {
@@ -711,7 +710,6 @@ static int xpcs_init_mplla(struct s32cc_xpcs *xpcs)
 
 	dev = get_xpcs_device(xpcs);
 
-	/* Step 7 */
 	val = 0;
 	if (xpcs->ext_clk)
 		val |= REF_USE_PAD;
@@ -728,7 +726,6 @@ static int xpcs_init_mplla(struct s32cc_xpcs *xpcs)
 			REF_MPLLA_DIV2 | REF_USE_PAD | REF_RANGE_MASK |
 			REF_CLK_DIV2, val);
 
-	/* Step 8 */
 	if (xpcs->mhz125)
 		val = (80 << MLLA_MULTIPLIER_OFF);
 	else
@@ -738,16 +735,13 @@ static int xpcs_init_mplla(struct s32cc_xpcs *xpcs)
 			MPLLA_CAL_DISABLE | MLLA_MULTIPLIER_MASK,
 			val);
 
-	/* Step 9 */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_MPLLA_CTRL1,
 			MPLLA_FRACN_CTRL_MASK, 0);
 
-	/* Step 10 */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL2,
 			MPLLA_TX_CLK_DIV_MASK | MPLLA_DIV10_CLK_EN,
 			(1 << MPLLA_TX_CLK_DIV_OFF) | MPLLA_DIV10_CLK_EN);
 
-	/* Step 11 */
 	if (xpcs->mhz125)
 		val = 43 << MPLLA_BANDWIDTH_OFF;
 	else
@@ -769,7 +763,6 @@ static int xpcs_init_mpllb(struct s32cc_xpcs *xpcs)
 
 	dev = get_xpcs_device(xpcs);
 
-	/* Step 7 */
 	val = 0;
 	if (xpcs->ext_clk)
 		val |= REF_USE_PAD;
@@ -786,7 +779,6 @@ static int xpcs_init_mpllb(struct s32cc_xpcs *xpcs)
 			REF_MPLLB_DIV2 | REF_USE_PAD | REF_RANGE_MASK |
 			REF_CLK_DIV2, val);
 
-	/* Step 8 */
 	if (xpcs->mhz125)
 		val = 125 << MLLB_MULTIPLIER_OFF;
 	else
@@ -796,7 +788,6 @@ static int xpcs_init_mpllb(struct s32cc_xpcs *xpcs)
 			MPLLB_CAL_DISABLE | MLLB_MULTIPLIER_MASK,
 			val);
 
-	/* Step 9 */
 	if (xpcs->mhz125)
 		val = (0 << MPLLB_FRACN_CTRL_OFF);
 	else
@@ -805,12 +796,10 @@ static int xpcs_init_mpllb(struct s32cc_xpcs *xpcs)
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_MPLLB_CTRL1,
 			MPLLB_FRACN_CTRL_MASK, val);
 
-	/* Step 10 */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL2,
 			MPLLB_TX_CLK_DIV_MASK | MPLLB_DIV10_CLK_EN,
 			(5 << MPLLA_TX_CLK_DIV_OFF) | MPLLB_DIV10_CLK_EN);
 
-	/* Step 11 */
 	if (xpcs->mhz125)
 		val = (68 << MPLLB_BANDWIDTH_OFF);
 	else
@@ -848,7 +837,7 @@ static int xpcs_init_plls(struct s32cc_xpcs *xpcs)
 		wait_power_good_state(xpcs);
 	} else if (xpcs->pcie_shared == PCIE_XPCS_2G5) {
 		wait_power_good_state(xpcs);
-		/* Configure equlaization */
+		/* Configure equalization */
 		serdes_pma_configure_tx_eq_post(xpcs);
 		xpcs_electrical_configure(xpcs);
 
@@ -942,7 +931,7 @@ static int serdes_bifurcation_pll_transit(struct s32cc_xpcs *xpcs,
 		return ret;
 	}
 
-	/* Signal that clock are available */
+	/* Signal that clock is available */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1,
 			TX_CLK_RDY_0, TX_CLK_RDY_0);
 
@@ -984,7 +973,7 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 	intr_en = !!(XPCS_READ(xpcs, VR_MII_AN_CTRL) & MII_AN_INTR_EN);
 
 	if (an_enabled && !intr_en) {
-		dev_err(dev, "Invalid SGMII AN config interrupt is disabled\n");
+		dev_err(dev, "Invalid SGMII AN configuration, the interrupt is disabled)\n");
 		return -EINVAL;
 	}
 
@@ -1037,6 +1026,7 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 		ss = ss6 << 1 | ss13;
 	}
 
+	/* Speed selection based on SS6 and SS13 from MII_CTRL register */
 	switch (ss) {
 	case 0:
 		state->speed = SPEED_10;
@@ -1071,7 +1061,7 @@ static int xpcs_pre_pcie_2g5(struct s32cc_xpcs *xpcs)
 	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
 	int ret;
 
-	/* Enable volatge boost */
+	/* Enable voltage boost */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, VBOOST_EN_0,
 			VBOOST_EN_0);
 
