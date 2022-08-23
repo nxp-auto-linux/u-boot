@@ -117,7 +117,7 @@
 struct serdes_lane_conf {
 	/* Phy type from : include/dt-bindings/phy/phy.h */
 	u32 type;
-	u8 instance; /** Instance ID (e.g PCIE0, XPCS1) */
+	u8 instance; /* Instance ID (e.g PCIE0, XPCS1) */
 };
 
 struct serdes_conf {
