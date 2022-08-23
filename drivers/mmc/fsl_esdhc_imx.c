@@ -21,6 +21,7 @@
 #include <part.h>
 #include <dm/device_compat.h>
 #include <linux/err.h>
+#include <linux/iopoll.h>
 #include <power/regulator.h>
 #include <malloc.h>
 #include <fsl_esdhc_imx.h>
@@ -834,71 +835,61 @@ static int esdhc_set_voltage(struct mmc *mmc)
 	}
 }
 
-static int fsl_s32cc_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
+static int esdhc_reset(struct fsl_esdhc *regs);
+
+static int fsl_s32cc_manual_tuning(struct udevice *dev, uint32_t opcode)
 {
+	struct fsl_esdhc_plat *plat = dev_get_platdata(dev);
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
 	struct fsl_esdhc *regs = priv->esdhc_regs;
-	u32 val, ret;
+	struct mmc *mmc = &plat->mmc;
+	u32 r, value_start, value_end;
 
-	val = readl(&regs->irqstaten);
-	val |= IRQSTATEN_BRR;
-	writel(val, &regs->irqstaten);
+	esdhc_clrbits32(&regs->tuning_ctrl, ESDHC_STD_TUNING_EN);
+	esdhc_reset(regs);
+	esdhc_setbits32(&regs->mixctrl,
+			(MIX_CTRL_EXE_TUNE | MIX_CTRL_SMPCLK_SEL));
+	esdhc_setbits32(&regs->vendorspec,
+			VENDORSPEC_FRC_SDCLK_ON);
 
-	val = readl(&regs->vendorspec);
-	val |= VENDORSPEC_FRC_SDCLK_ON;
-	writel(val, &regs->vendorspec);
+	/* Find the start of the passing window */
+	for (value_start = DLY_CELL_SET_PRE_MIN;
+	     value_start <= DLY_CELL_SET_PRE_MAX;
+	     value_start += MANUAL_TUNING_STEP) {
+		esdhc_write32(&regs->clktunectrlstatus,
+			      DLY_CELL_SET_PRE(value_start));
+		if (!mmc_send_tuning(mmc, opcode, NULL))
+			break;
+	}
+	if (value_start > DLY_CELL_SET_PRE_MAX)
+		return -EINVAL;
 
-	val = readl(&regs->tuning_ctrl);
-	val |= ESDHC_STD_TUNING_EN;
-	val |= ESDHC_TUNING_WINDOW(3);
-	val |= ESDHC_TUNING_STEP(1);
-	val |= ESDHC_TUNING_COUNTER(127);
-	val |= ESDHC_TUNING_START_TAP(0x81);
-	writel(val, &regs->tuning_ctrl);
-
-	val = readl(&regs->autoc12err);
-	val |= AUTOC12ERR_EXECUTE_TUNING;
-	writel(val, &regs->autoc12err);
-
-	while (readl(&regs->autoc12err) & AUTOC12ERR_EXECUTE_TUNING) {
-		writel(BLKATTR_CNT(1) | BLKATTR_SIZE(0x80), &regs->blkattr);
-
-		while (readl(&regs->prsstat) & (PRSSTAT_CICHB | PRSSTAT_CIDHB))
-			;
-		writel(0xffffffff, &regs->irqstat);
-		writel(0, &regs->cmdarg);
-
-		val = readl(&regs->mixctrl);
-		val |= MIX_CTRL_DTDSEL_READ;
-		val &= ~MIX_CTRL_BCEN;
-		writel(val, &regs->mixctrl);
-
-		val = XFERTYP_CMD(opcode) | XFERTYP_RSPTYP_48;
-		val |= XFERTYP_DPSEL | XFERTYP_CICEN | XFERTYP_CCCEN;
-		writel(val, &regs->xfertyp);
-
-		while (!(readl(&regs->irqstat) & IRQSTAT_BRR))
-			;
-
-		val = readl(&regs->irqstat);
-		val |= IRQSTAT_BRR;
-		writel(val, &regs->irqstat);
+	/* Find the end of the passing window */
+	for (value_end = value_start;
+	     value_end + MANUAL_TUNING_STEP <= DLY_CELL_SET_PRE_MAX;
+	     value_end += MANUAL_TUNING_STEP) {
+		esdhc_write32(&regs->clktunectrlstatus,
+			      DLY_CELL_SET_PRE((value_end
+						+ MANUAL_TUNING_STEP)));
+		if (mmc_send_tuning(mmc, opcode, NULL))
+			break;
 	}
 
-	if (readl(&regs->autoc12err) & AUTOC12ERR_SMP_CLK_SEL) {
-		val = readl(&regs->mixctrl);
-		val |= MIX_CTRL_AUTO_TUNE_EN;
-		writel(val, &regs->mixctrl);
-		ret = 0;
-	} else {
-		ret = -ETIMEDOUT;
-	}
+	esdhc_clrbits32(&regs->mixctrl, MIX_CTRL_EXE_TUNE);
+	esdhc_clrbits32(&regs->vendorspec, VENDORSPEC_FRC_SDCLK_ON);
+	esdhc_reset(regs);
+	esdhc_setbits32(&regs->mixctrl, MIX_CTRL_SMPCLK_SEL);
 
-	val = readl(&regs->vendorspec);
-	val &= ~VENDORSPEC_FRC_SDCLK_ON;
-	writel(val, &regs->vendorspec);
+	/* According to the "Manual Tuning Procedure" chapter in the RM */
+	r = ((value_start + value_end) / 2);
+	r = ((((r << 8) & 0xffffff00) - 0x300) | 0x33);
+	esdhc_write32(&regs->clktunectrlstatus, r);
+	readl_poll_timeout(&regs->clktunectrlstatus, r,
+			   TAP_SEL(r) == DLY_CELL_SET(r), 0);
 
-	return ret;
+	esdhc_setbits32(&regs->mixctrl, MIX_CTRL_AUTO_TUNE_EN);
+
+	return 0;
 }
 
 static void esdhc_stop_tuning(struct mmc *mmc)
@@ -926,7 +917,7 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 		(struct esdhc_soc_data *)dev_get_driver_data(dev);
 
 	if (soc_data == &usdhc_s32cc_data)
-		return fsl_s32cc_esdhc_execute_tuning(dev, opcode);
+		return fsl_s32cc_manual_tuning(dev, opcode);
 
 	/* clock tuning is not needed for upto 52MHz */
 	if (mmc->clock <= 52000000)
@@ -1702,7 +1693,7 @@ static struct esdhc_soc_data usdhc_imx8qm_data = {
 };
 
 static struct esdhc_soc_data usdhc_s32cc_data = {
-	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_STD_TUNING |
+	.flags = ESDHC_FLAG_USDHC |
 		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
 		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
 };

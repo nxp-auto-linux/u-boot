@@ -3,7 +3,7 @@
  * FSL SD/MMC Defines
  *-------------------------------------------------------------------
  *
- * Copyright 2019-2021 NXP
+ * Copyright 2019-2022 NXP
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
  * Copyright 2007-2008,2010-2011 Freescale Semiconductor, Inc
@@ -204,6 +204,13 @@
 #define ESDHC_STROBE_DLL_STS_REF_LOCK	BIT(1)
 #define ESDHC_STROBE_DLL_STS_SLV_LOCK	0x1
 #define ESDHC_STROBE_DLL_CLK_FREQ	100000000
+
+#define MANUAL_TUNING_STEP		1
+#define DLY_CELL_SET_PRE_MIN		0
+#define DLY_CELL_SET_PRE_MAX		((1 << 7) - 1)
+#define DLY_CELL_SET_PRE(val)		(((val) << 8) & 0x7f00)
+#define TAP_SEL(r)			(((r) >> 16) & 0x7fff)
+#define DLY_CELL_SET(r)			((r) & 0x7fff)
 
 #define ESDHC_STD_TUNING_EN             BIT(24)
 /* NOTE: the minimum valid tuning start tap for mx6sl is 1 */
