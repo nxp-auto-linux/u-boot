@@ -484,8 +484,9 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	esdhc_write32(&regs->xfertyp, xfertyp);
 #endif
 
-	if ((cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK) ||
-	    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
+	if (priv->flags & ESDHC_FLAG_STD_TUNING &&
+	    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK ||
+	     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
 		flags = IRQSTAT_BRR;
 
 	/* Wait for the command to complete */
@@ -557,10 +558,10 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		esdhc_pio_read_write(priv, data);
 #else
 		flags = DATA_COMPLETE;
-		if ((cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK) ||
-		    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200)) {
+		if (priv->flags & ESDHC_FLAG_STD_TUNING &&
+		    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK ||
+		     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
 			flags = IRQSTAT_BRR;
-		}
 
 		do {
 			irqstat = esdhc_read32(&regs->irqstat);
