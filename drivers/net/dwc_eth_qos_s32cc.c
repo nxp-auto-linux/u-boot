@@ -380,43 +380,43 @@ static int init_sgmii_phy(struct udevice *dev)
 
 	xpcs_ops = s32cc_xpcs_get_ops();
 	if (!xpcs_ops) {
-		printf("Failed to get XPCS ops\n");
+		dev_err(dev, "Failed to get XPCS ops\n");
 		return -EIO;
 	}
 
 	ret = generic_phy_get_by_name(dev, "gmac_xpcs", &xpcs_phy);
 	if (ret) {
-		printf("Failed to get 'gmac_xpcs' PHY\n");
+		dev_err(dev, "Failed to get 'gmac_xpcs' PHY\n");
 		return ret;
 	}
 
 	phy_speed = s32_serdes_get_lane_speed(xpcs_phy.dev, xpcs_phy.id);
 	if (phy_speed < 0) {
-		printf("Failed to get speed of XPCS for 'gmac_xpcs'");
+		dev_err(dev, "Failed to get speed of XPCS for 'gmac_xpcs'");
 		return ret;
 	}
 
 	ret = generic_phy_init(&xpcs_phy);
 	if (ret) {
-		printf("Failed to init 'gmac_xpcs' PHY\n");
+		dev_err(dev, "Failed to init 'gmac_xpcs' PHY\n");
 		return ret;
 	}
 
 	ret = generic_phy_power_on(&xpcs_phy);
 	if (ret) {
-		printf("Failed to power on 'gmac_xpcs' PHY\n");
+		dev_err(dev, "Failed to power on 'gmac_xpcs' PHY\n");
 		return ret;
 	}
 
 	ret = generic_phy_configure(&xpcs_phy, NULL);
 	if (ret) {
-		printf("Failed to configure 'gmac_xpcs' PHY\n");
+		dev_err(dev, "Failed to configure 'gmac_xpcs' PHY\n");
 		return ret;
 	}
 
 	xpcs = s32cc_phy2xpcs(&xpcs_phy);
 	if (!xpcs) {
-		printf("Failed to get XPCS instance of 'gmac_xpcs'\n");
+		dev_err(dev, "Failed to get XPCS instance of 'gmac_xpcs'\n");
 		return -EINVAL;
 	}
 
@@ -427,7 +427,7 @@ static int init_sgmii_phy(struct udevice *dev)
 	state.an_complete = 0;
 	ret = xpcs_ops->xpcs_config(xpcs, &state);
 	if (ret) {
-		printf("Failed to configure 'gmac_xpcs' PHY\n");
+		dev_err(dev, "Failed to configure 'gmac_xpcs' PHY\n");
 		return ret;
 	}
 
