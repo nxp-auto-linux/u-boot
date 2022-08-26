@@ -42,5 +42,5 @@ config NXP_S32GEVB_BOARD
 	select SPI_FLASH_MACRONIX
 
 config S32GEN1_HWCONFIG
-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GRDB_BOARD
-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GEVB_BOARD
+	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && (NXP_S32GRDB_BOARD || TARGET_S32G3XXAEVB || TARGET_S32G3XXAEVB3)
+	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) && TARGET_S32G2XXAEVB
