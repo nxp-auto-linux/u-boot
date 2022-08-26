@@ -90,7 +90,7 @@ int board_late_init(void)
 	}
 
 	rev_idx = find_rdb_rev(adc_value);
-	if (rev_idx != -1) {
+	if (rev_idx >= 0) {
 		env_set("board_rev", rdb_revisions[rev_idx].rev);
 		switch (rdb_revisions[rev_idx].rev[0]) {
 		case 'C':
