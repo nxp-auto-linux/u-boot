@@ -746,7 +746,7 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 
 	if (!ring->bd) {
 		pr_warn("HIF ring couldn't be allocated.\n");
-		return NULL;
+		goto err_with_ring;
 	}
 
 	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
@@ -757,7 +757,7 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 
 	if (!ring->wb_bd) {
 		pr_warn("HIF ring couldn't be allocated.\n");
-		return NULL;
+		goto err_with_bd;
 	}
 
 	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
@@ -775,10 +775,8 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 		ring->mem = memalign(page_size,
 				     PFE_BUF_SIZE * PFE_HIF_RING_CFG_LENGTH);
 		offset = ring->mem;
-		if (!ring) {
-			free(ring);
-			return NULL;
-		}
+		if (!ring->mem)
+			goto err_with_wb_bd;
 	}
 
 	for (ii = 0; ii < RING_LEN; ii++) {
@@ -816,6 +814,14 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 	      ring->bd, ring->wb_bd, ring->mem);
 
 	return ring;
+
+err_with_wb_bd:
+	free(ring->wb_bd);
+err_with_bd:
+	free(ring->bd);
+err_with_ring:
+	free(ring);
+	return NULL;
 }
 
 struct pfe_hw_chnl *pfeng_hw_init_chnl(void)
