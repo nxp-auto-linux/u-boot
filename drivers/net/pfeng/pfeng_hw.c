@@ -1395,7 +1395,7 @@ static int
 pfeng_hw_init_class(struct pfe_platform *platform)
 {
 	void *base = platform->cbus_baseaddr;
-	u32 ret;
+	int ret = 0;
 	int ii;
 	u8 *fw;
 	Elf32_Shdr *shdr = NULL;
