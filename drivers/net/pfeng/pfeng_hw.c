@@ -749,9 +749,6 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 		goto err_with_ring;
 	}
 
-	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
-					size, DCACHE_OFF);
-
 	size = roundup(RING_LEN * sizeof(struct pfe_hif_wb_bd), page_size);
 	ring->wb_bd = memalign(max((u32)RING_BD_ALIGN, page_size), size);
 
@@ -759,12 +756,6 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 		pr_warn("HIF ring couldn't be allocated.\n");
 		goto err_with_bd;
 	}
-
-	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
-					size, DCACHE_OFF);
-
-	/* Flushe cache to update MMU mapings */
-	flush_dcache_all();
 
 	ring->is_rx = is_rx;
 
@@ -778,6 +769,14 @@ static struct pfe_hif_ring *pfeng_hw_init_ring(bool is_rx)
 		if (!ring->mem)
 			goto err_with_wb_bd;
 	}
+
+	/* Flushe cache to update MMU mapings */
+	flush_dcache_all();
+
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->bd,
+					size, DCACHE_OFF);
+	mmu_set_region_dcache_behaviour((phys_addr_t)ring->wb_bd,
+					size, DCACHE_OFF);
 
 	for (ii = 0; ii < RING_LEN; ii++) {
 		if (ring->is_rx) {
@@ -824,6 +823,20 @@ err_with_ring:
 	return NULL;
 }
 
+static void pfeng_hw_deinit_ring(struct pfe_hif_ring *ring)
+{
+	if (!ring)
+		return;
+
+	if (ring->mem)
+		free(ring->mem);
+	if (ring->wb_bd)
+		free(ring->wb_bd);
+	if (ring->bd)
+		free(ring->bd);
+	free(ring);
+}
+
 struct pfe_hw_chnl *pfeng_hw_init_chnl(void)
 {
 	int ret = 0;
@@ -835,21 +848,29 @@ struct pfe_hw_chnl *pfeng_hw_init_chnl(void)
 	/* init TX ring */
 	chnl->tx_ring = pfeng_hw_init_ring(false);
 	if (!chnl->tx_ring)
-		return NULL;
+		goto err_free;
 
 	/* init RX ring */
 	chnl->rx_ring = pfeng_hw_init_ring(true);
 	if (!chnl->rx_ring)
-		return NULL;
+		goto err_tx;
 
 	/* register rings to pfe HW */
 	ret = pfeng_hw_attach_ring(&pfe,
 				   chnl->tx_ring->bd, chnl->tx_ring->wb_bd,
 				   chnl->rx_ring->bd, chnl->rx_ring->wb_bd);
 	if (ret)
-		return NULL;
+		goto err_rx;
 
 	return chnl;
+
+err_rx:
+	pfeng_hw_deinit_ring(chnl->rx_ring);
+err_tx:
+	pfeng_hw_deinit_ring(chnl->tx_ring);
+err_free:
+	free(chnl);
+	return NULL;
 }
 
 void pfeng_hw_deinit_chnl(struct pfe_hw_chnl *chnl)
