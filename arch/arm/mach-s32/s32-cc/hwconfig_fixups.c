@@ -834,12 +834,8 @@ static int set_serdes_mode(struct dts_node *root, unsigned int id)
 	}
 
 	mode_num = (u32)mode;
-	if (s32_serdes_is_mode5_enabled_in_hwconfig(id)) {
-		if (root->fdt)
-			mode_num = 2;
-		else
-			mode_num = 5;
-	}
+	if (s32_serdes_is_mode5_enabled_in_hwconfig(id))
+		mode_num = 5;
 
 	ret = node_set_prop_u32(&node, "nxp,sys-mode", mode_num);
 	if (ret)
