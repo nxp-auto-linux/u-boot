@@ -3,15 +3,9 @@
  * Copyright 2021-2022 NXP
  */
 
-#include <config.h>
-#include <errno.h>
-#include <linux/types.h>
-#include <linux/string.h>
-#include <stdio.h>
-#include <vsprintf.h>
+#include <common.h>
 #include <clk.h>
 #include <command.h>
-#include <clk.h>
 #include <dm.h>
 #include <inttypes.h>
 #include <misc.h>
@@ -96,7 +90,8 @@ struct cmu_result {
 static struct cmu s32g2_cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC, FXOSC_FREQ),
 
-	FXOSC_PERIPH_CMU_FM(1, FIRC, FIRC_FREQ),
+	/* +-5% drift due to silicon and temperature factors  */
+	FXOSC_PERIPH_CMU_FM_RANGE(1, FIRC, FIRC_MIN_FREQ, FIRC_MAX_FREQ),
 	FXOSC_PERIPH_CMU_FM(2, SIRC, SIRC_FREQ),
 	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40000000),
 	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40000000),
@@ -140,7 +135,8 @@ static struct cmu s32g2_cmu_blocks[] = {
 static struct cmu s32g3_cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC, FXOSC_FREQ),
 
-	FXOSC_PERIPH_CMU_FM(1, FIRC, FIRC_FREQ),
+	/* +-5% drift due to silicon and temperature factors  */
+	FXOSC_PERIPH_CMU_FM_RANGE(1, FIRC, FIRC_MIN_FREQ, FIRC_MAX_FREQ),
 	FXOSC_PERIPH_CMU_FM(2, SIRC, SIRC_FREQ),
 	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40000000),
 	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40000000),
@@ -184,7 +180,8 @@ static struct cmu s32g3_cmu_blocks[] = {
 static struct cmu s32r45_cmu_blocks[] = {
 	FIRC_PERIPH_CMU_FC(0, FXOSC, FXOSC_FREQ),
 
-	FXOSC_PERIPH_CMU_FM(1, FIRC, FIRC_FREQ),
+	/* +-5% drift due to silicon and temperature factors  */
+	FXOSC_PERIPH_CMU_FM_RANGE(1, FIRC, FIRC_MIN_FREQ, FIRC_MAX_FREQ),
 	FXOSC_PERIPH_CMU_FM(2, SIRC, SIRC_FREQ),
 	FXOSC_PERIPH_CMU_FM(3, FTM_0_REF, 40000000),
 	FXOSC_PERIPH_CMU_FM(4, FTM_1_REF, 40000000),
