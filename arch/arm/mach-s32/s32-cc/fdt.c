@@ -16,7 +16,8 @@
 #include <s32-cc/nvmem.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
-#define S32_DDR_LIMIT_VAR "ddr_limitX"
+#define S32_DDR_LIMIT_VAR	"ddr_limitX"
+#define FDT_CLUSTER1_PATH	"/cpus/cpu-map/cluster1"
 
 static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
 {
@@ -115,12 +116,12 @@ static bool is_lockstep_enabled(void)
 
 static int ft_fixup_cpu(void *blob)
 {
-	int ret, off, addr_cells = 0;
+	int ret, addr_cells = 0;
 	u32 max_cores_per_cluster = 0;
 	u32 cpu_mask = 0;
 	u64 core_mpidr, core_id;
 	fdt32_t *reg;
-	int off_prev;
+	int off, off_prev, cluster1_off;
 
 	ret = get_cores_info(&max_cores_per_cluster, &cpu_mask);
 	if (ret)
@@ -162,7 +163,16 @@ static int ft_fixup_cpu(void *blob)
 		off = get_next_cpu(blob, off);
 	}
 
-	return 0;
+	if (!is_lockstep_enabled())
+		return 0;
+
+	cluster1_off = fdt_path_offset(blob, FDT_CLUSTER1_PATH);
+	if (cluster1_off < 0) {
+		printf("couldn't find %s node\n", FDT_CLUSTER1_PATH);
+		return -ENODEV;
+	}
+
+	return fdt_del_node(blob, cluster1_off);
 }
 
 static int apply_memory_fixups(void *blob, struct bd_info *bd)
