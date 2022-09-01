@@ -524,18 +524,22 @@ static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
 	enum serdes_dev_type mode;
 	struct dts_node serdes;
 
+	*skip = false;
+
 	ret = node_by_alias(root, &serdes, SERDES_ALIAS_FMT, id);
 	if (ret) {
 		pr_err("Failed to get 'serdes%u' alias\n", id);
 		return ret;
 	}
 
+	/* Do not skip SerDes & PCIe fixup for Linux device tree */
+	if (root->fdt)
+		return 0;
+
 	mode = s32_serdes_get_mode_from_hwconfig(id);
 
-	if (!(mode & SERDES_SKIP)) {
-		*skip = false;
+	if (!(mode & SERDES_SKIP))
 		return 0;
-	}
 
 	printf("Skipping configuration for SerDes%d.\n", id);
 	*skip = true;
@@ -774,7 +778,7 @@ static void disable_serdes_pcie_nodes(struct dts_node *root, u32 id)
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
-	bool skip;
+	bool skip = false;
 	int ret;
 	unsigned int id;
 	struct dts_node root = {
