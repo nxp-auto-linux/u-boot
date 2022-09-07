@@ -1017,8 +1017,8 @@ static void imximage_set_header(void *ptr, struct stat *sbuf, int ifd,
 			struct flash_header_v3 *fhdr_v3 = &hdr_v3->fhdr;
 			*secure_callback_ptr = (uint32_t)fhdr_v3->self +
 					       sbuf->st_size;
-			*auth_length_ptr = sbuf->st_size;
 		}
+		*auth_length_ptr = sbuf->st_size;
 		*header_size_ptr = ROUND(sbuf->st_size + imximage_ivt_offset,
 					 4096) + imximage_scc_size +
 					 imximage_init_loadsize;
