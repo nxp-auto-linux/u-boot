@@ -743,3 +743,98 @@ int sec_init(void)
 {
 	return sec_init_idx(0);
 }
+
+#if CONFIG_IS_ENABLED(DM)
+static int jr_power_on(ofnode node)
+{
+#if CONFIG_IS_ENABLED(POWER_DOMAIN)
+	struct udevice __maybe_unused jr_dev;
+	struct power_domain pd;
+
+	dev_set_ofnode(&jr_dev, node);
+
+	/* Power on Job Ring before access it */
+	if (!power_domain_get(&jr_dev, &pd)) {
+		if (power_domain_on(&pd))
+			return -EINVAL;
+	}
+#endif
+	return 0;
+}
+
+static int caam_jr_ioctl(struct udevice *dev, unsigned long request, void *buf)
+{
+	if (request != CAAM_JR_RUN_DESC)
+		return -ENOSYS;
+
+	return run_descriptor_jr(buf);
+}
+
+static int caam_jr_probe(struct udevice *dev)
+{
+	struct caam_regs *caam = dev_get_priv(dev);
+	fdt_addr_t addr;
+	ofnode node, scu_node;
+	unsigned int jr_node = 0;
+
+	caam_dev = dev;
+
+	addr = dev_read_addr(dev);
+	if (addr == FDT_ADDR_T_NONE) {
+		printf("caam_jr: crypto not found\n");
+		return -EINVAL;
+	}
+	caam->sec = (ccsr_sec_t *)(uintptr_t)addr;
+	caam->regs = (struct jr_regs *)caam->sec;
+
+	/* Check for enabled job ring node */
+	ofnode_for_each_subnode(node, dev_ofnode(dev)) {
+		if (!ofnode_is_enabled(node))
+			continue;
+
+		jr_node = ofnode_read_u32_default(node, "reg", -1);
+		if (jr_node > 0) {
+			caam->regs = (struct jr_regs *)((ulong)caam->sec + jr_node);
+			while (!(jr_node & 0x0F))
+				jr_node = jr_node >> 4;
+
+			caam->jrid = jr_node - 1;
+			scu_node = ofnode_by_compatible(ofnode_null(), "fsl,imx8-mu");
+			if (ofnode_valid(scu_node)) {
+				if (jr_power_on(node))
+					return -EINVAL;
+			}
+			break;
+		}
+	}
+
+	if (sec_init())
+		printf("\nsec_init failed!\n");
+
+	return 0;
+}
+
+static int caam_jr_bind(struct udevice *dev)
+{
+	return 0;
+}
+
+static const struct misc_ops caam_jr_ops = {
+	.ioctl = caam_jr_ioctl,
+};
+
+static const struct udevice_id caam_jr_match[] = {
+	{ .compatible = "fsl,sec-v4.0" },
+	{ }
+};
+
+U_BOOT_DRIVER(caam_jr) = {
+	.name		= "caam_jr",
+	.id		= UCLASS_MISC,
+	.of_match	= caam_jr_match,
+	.ops		= &caam_jr_ops,
+	.bind		= caam_jr_bind,
+	.probe		= caam_jr_probe,
+	.priv_auto	= sizeof(struct caam_regs),
+};
+#endif
