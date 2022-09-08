@@ -135,5 +135,6 @@ int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
 int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump);
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane);
+bool s32_serdes_is_hwconfig_instance_enabled(int id);
 
 #endif

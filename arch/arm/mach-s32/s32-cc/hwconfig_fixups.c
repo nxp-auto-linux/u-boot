@@ -825,6 +825,11 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 	};
 
 	for (id = 0; id <= 1; id++) {
+		if (!s32_serdes_is_hwconfig_instance_enabled(id)) {
+			disable_serdes_pcie_nodes(&root, id);
+			continue;
+		}
+
 		if (!s32_serdes_is_cfg_valid(id)) {
 			disable_serdes_pcie_nodes(&root, id);
 			pr_err("SerDes%d configuration will be ignored as it's invalid\n",
