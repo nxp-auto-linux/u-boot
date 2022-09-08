@@ -41,6 +41,31 @@ bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id)
 			IS_SERDES_SGMII(ss_mode);
 }
 
+bool s32_serdes_is_hwconfig_instance_enabled(int id)
+{
+	char serdes_name[SERDES_NAME_SIZE];
+	const char *arg;
+	size_t len;
+
+	/*
+	 * The SerDes mode is set by using option `serdesx`, where
+	 * `x` is the ID.
+	 */
+	snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%d", id);
+	arg = hwconfig_arg(serdes_name, &len);
+	if (!arg || !len) {
+		/* Backwards compatibility:
+		 * Initially the SerDes mode was set by using option `pciex`.
+		 */
+		sprintf(serdes_name, "pcie%d", id);
+		arg = hwconfig_arg(serdes_name, &len);
+		if (!arg || !len)
+			return false;
+	}
+
+	return true;
+}
+
 static inline
 char *s32_serdes_get_hwconfig_subarg(unsigned int id,
 				     const char *subarg,
