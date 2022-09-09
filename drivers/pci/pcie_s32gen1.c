@@ -1145,7 +1145,6 @@ static int init_controller(struct s32_pcie *pcie)
 
 static int s32_pcie_probe(struct udevice *dev)
 {
-	enum pcie_device_mode pcie_mode;
 	struct s32_pcie *pcie = dev_get_priv(dev);
 	struct uclass *uc = dev->uclass;
 	int ret = 0;
@@ -1156,13 +1155,15 @@ static int s32_pcie_probe(struct udevice *dev)
 		return -EINVAL;
 
 	pcie->enabled = false;
-	pcie_mode = (enum pcie_device_mode)dev_get_driver_data(dev);
+	pcie->ep_mode =
+		(enum pcie_device_mode)dev_get_driver_data(dev) == PCIE_EP_TYPE;
 
 	ret = s32gen1_check_serdes(dev);
 	if (ret)
 		return ret;
 
-	debug("%s: probing %s\n", __func__, dev->name);
+	debug("%s: probing %s as %s\n", __func__, dev->name,
+	      PCIE_EP_RC_MODE(pcie->ep_mode));
 	if (!pcie) {
 		printf("PCIe%d: invalid internal data\n", pcie->id);
 		return -EINVAL;
@@ -1184,7 +1185,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	 * it makes sense to link up only as RC, as the EP
 	 * may boot earlier
 	 */
-	if (pcie_mode == PCIE_RC_TYPE) {
+	if (!pcie->ep_mode) {
 		if (s32_pcie_wait_link_up(pcie->dbi)) {
 			debug("SerDes%d: link is up (X%d)\n", pcie->id,
 			      pcie->linkwidth);
