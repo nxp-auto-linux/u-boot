@@ -40,6 +40,7 @@ config NXP_S32CC
 	select CLK
 	select CLK_SCMI
 	select CPU
+	select DM_DEVICE_REMOVE
 	select DM_GPIO
 	select DM_MTD
 	select DM_SPI
@@ -57,6 +58,7 @@ config NXP_S32CC
 	select OF_BOARD
 	select OF_BOARD_FIXUP
 	select OF_CONTROL
+	select OF_LIVE
 	select OF_SYSTEM_SETUP
 	select PINCTRL
 	select PINCTRL_FULL

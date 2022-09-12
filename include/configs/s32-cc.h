@@ -52,6 +52,14 @@
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define MMC_PART_FAT			1
 
+#define CONFIG_HWCONFIG
+
+#if defined(CONFIG_S32CC_HWCONFIG)
+#  define SERDES_EXTRA_ENV_SETTINGS "hwconfig=" CONFIG_S32CC_HWCONFIG "\0"
+#else
+#  define SERDES_EXTRA_ENV_SETTINGS ""
+#endif
+
 #define S32CC_ENV_SETTINGS \
 	BOOTENV \
 	"boot_mtd=booti\0" \
@@ -87,6 +95,7 @@
 	"mmcpart=" __stringify(MMC_PART_FAT) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
 	"ramdisk_addr=" __stringify(S32CC_RAMDISK_ADDR) "\0" \
+	SERDES_EXTRA_ENV_SETTINGS
 
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND

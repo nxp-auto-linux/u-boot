@@ -14,6 +14,7 @@
 #include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/nvmem.h>
+#include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
@@ -296,6 +297,14 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
 
+	/* Add some space for the following changes */
+	ret = fdt_increase_size(blob, 512);
+	if (ret < 0) {
+		pr_err("Could not increase size of device tree: %s\n",
+		       fdt_strerror(ret));
+		return ret;
+	}
+
 	/*
 	 * Skip these fixups when reusing U-Boot dtb for Linux
 	 * as they don't make sense.
@@ -317,6 +326,10 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 		goto exit;
 
 	ret = ft_fixup_atf(blob);
+	if (ret)
+		goto exit;
+
+	ret = apply_fdt_hwconfig_fixups(blob);
 
 exit:
 	return ret;

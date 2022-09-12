@@ -28,6 +28,35 @@ config S32CC_MAX_DTB_SIZE
 config SYS_MALLOC_F_LEN
 	default 0x8000
 
+config S32CC_HWCONFIG
+	string "S32CC HWConfig definition"
+	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int"
+	help
+	  The configuration for the PCIe controllers, stored in
+	  the variable 'hwconfig'
+	  It configures the mode (rc, ep, sgmii) or the clock type
+	  (internal or external)
+	  It is also possible to configure combo mode either ep&sgmii or
+	  rc&sgmii, with these configurations lane0 is PCIe and lane1
+	  is connected to mac depending on 'xpcs_mode'.
+	  SGMII uses additional configurations 'fmhz' and 'xpcs_mode'.
+	  Config 'xpcs_mode' is used to specifically configure each line in
+	  SGMII mode. The following are valid options: '2G5', 'both', '0' and
+	  '1'. Mode '2G5' uses lane0 in 2.5G mode and leaves lane1 disabled.
+	  Mode 'both' configures both lanes for 1G operation so 2 macs can
+	  be connected. Mode '0' is used to configure only XPCS0, this can be
+	  used in 'sgmii' mode (one lane emac 1G other lane disabled) or
+	  in 'rc&sgmii'/'ep&sgmii' (one lane PCIeX1 other lane SGMII 1G).
+	  Same configuration is used for '1', which corresponds to XPCS1.
+	  Config 'fmhz' specifies frequency used as reference. In case of
+	  2.5G mode it is required to set this 125, if used in SGMII/PCIe
+	  combo mode 'fmhz' has to be 100 (PCIe ignores this and always
+	  uses 100). In case the SerDes is configured as SGMII and not in
+	  2.5G mode either 100 or 125 can be used in 'fmhz'.
+	  Available 'xpcs_mode' are depedent on platform:
+	      s32g274a - supports '0','1','both' and '2G5'
+	      s32r45   - supports '0' and '2G5'
+
 config S32CC_CONFIG_FILE
 	string
 	default "arch/arm/mach-s32/s32-cc/s32cc.cfg"
