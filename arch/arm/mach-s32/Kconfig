@@ -33,6 +33,7 @@ config NXP_S32CC
 	imply MP
 	imply NET_RANDOM_ETHADDR
 	imply NXP_S32CC_PIT_TIMER
+	imply S32CC_CMU
 	imply SPI
 	imply SYS_I2C_MXC
 	imply TIMER
