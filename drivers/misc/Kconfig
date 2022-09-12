@@ -299,6 +299,14 @@ config PCA9551_I2C_ADDR
 	help
 	  The I2C address of the PCA9551 LED controller.
 
+config S32CC_CMU
+	bool "Clock Monitoring Unit-Frequency Check driver"
+	default y
+	help
+	  Enable S32CC CMU driver.
+	  Checks if the frequency of a monitored clock (monitored_clock)
+	  is within a programmable frequency range specified by the user.
+
 config STM32MP_FUSE
 	bool "Enable STM32MP fuse wrapper providing the fuse API"
 	depends on ARCH_STM32MP && MISC
