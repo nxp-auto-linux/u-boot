@@ -437,6 +437,14 @@ config SPL_PWRSEQ
 	  device. When the device is started up, its power sequence can be
 	  initiated.
 
+config S32CC_CMU
+	bool "Clock Monitoring Unit-Frequency Check driver"
+	default y
+	help
+	  Enable S32CC CMU driver.
+	  Checks if the frequency of a monitored clock (monitored_clock)
+	  is within a programmable frequency range specified by the user.
+
 config STM32MP_FUSE
 	bool "Enable STM32MP fuse wrapper providing the fuse API"
 	depends on ARCH_STM32MP && MISC
