@@ -54,7 +54,6 @@ obj-$(CONFIG_$(SPL_)MXC_OCOTP) += mxc_ocotp.o
 obj-$(CONFIG_MXS_OCOTP) += mxs_ocotp.o
 obj-$(CONFIG_NUVOTON_NCT6102D) += nuvoton_nct6102d.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_a53_gpr.o
-obj-$(CONFIG_NXP_S32CC) += s32cc_cmu.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_fuse.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_ocotp.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_siul2_nvram.o
@@ -69,6 +68,7 @@ obj-$(CONFIG_SANDBOX) += qfw_sandbox.o
 endif
 obj-$(CONFIG_ROCKCHIP_EFUSE) += rockchip-efuse.o
 obj-$(CONFIG_ROCKCHIP_OTP) += rockchip-otp.o
+obj-$(CONFIG_S32CC_CMU) += s32cc_cmu.o
 obj-$(CONFIG_SANDBOX) += syscon_sandbox.o misc_sandbox.o
 obj-$(CONFIG_SIFIVE_OTP) += sifive-otp.o
 obj-$(CONFIG_SMSC_LPC47M) += smsc_lpc47m.o
