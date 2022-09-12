@@ -8,6 +8,7 @@
 #include <asm/sections.h>
 #include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
+#include <s32-cc/serdes_hwconfig.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -91,3 +92,17 @@ int arch_cpu_init(void)
 	return 0;
 }
 
+void cpu_secondary_init_r(void)
+{
+	int ret;
+
+	/*
+	 * This is the only place where the environment is available
+	 * and PCIe initialization didn't happen yet.
+	 */
+	if (IS_ENABLED(CONFIG_OF_LIVE)) {
+		ret = apply_dm_hwconfig_fixups();
+		if (ret)
+			pr_err("Failed to apply HWCONFIG fixups\n");
+	}
+}
