@@ -300,4 +300,11 @@ config SAF1508BET_USB_PHY
 
 	  This PHY is found on S32G274A-EVB board.
 
+config PHY_S32CC_SERDES
+	tristate "NXP S32 CC SERDES support"
+	depends on DM && PHY && DWC_ETH_QOS_S32CC
+	help
+	  This option enables support for S32 Common Chassis SerDes PHY used for
+	  PCIe & Ethernet
+
 endmenu
