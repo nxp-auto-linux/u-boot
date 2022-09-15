@@ -13,6 +13,8 @@
 
 #define UNSPECIFIED			-1
 
+#define BOOT_TARGET_MASK		(0x3)
+#define BCW_BOOT_TARGET_M7_0		(0)
 #define BCW_BOOT_TARGET_A53_0		(1)
 
 #define MBR_OFFSET			0x0
@@ -144,12 +146,19 @@ struct image_config {
 		size_t fw_size;
 	} secboot;
 	bool flash_boot;
+	bool a53_boot;
 	bool err051257;
 };
 
 struct line_parser {
 	const char *tag;
 	parser_handler_t parse;
+};
+
+enum boot_cpu {
+	M7_0_BOOT,
+	A53_0_BOOT,
+	INVALID_BOOT_CPU,
 };
 
 enum boot_type {
@@ -200,7 +209,9 @@ static const char * const data_file_cmds[] = {
 	[SET_SIZE] = "SIZE",
 };
 
-static struct image_config iconfig;
+static struct image_config iconfig = {
+	.a53_boot = true,
+};
 
 static struct program_image image_layout = {
 	.mbr_reserved = {
@@ -480,7 +491,12 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
 
 	if (dcd_data)
 		ivt->dcd_pointer = image_layout.dcd.offset;
-	ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
+
+	if (iconfig.a53_boot)
+		ivt->boot_configuration_word = BCW_BOOT_TARGET_A53_0;
+	else
+		ivt->boot_configuration_word = BCW_BOOT_TARGET_M7_0;
+
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
 	if (iconfig.secboot.enable) {
@@ -751,6 +767,7 @@ static void s32cc_print_header(const void *data)
 	const struct ivt *ivt;
 	const uint8_t *data8 = data;
 	const uint16_t *dcd_len;
+	uint32_t boot_target;
 	const struct application_boot_code *app;
 	bool qspi_boot;
 	size_t i;
@@ -767,6 +784,7 @@ static void s32cc_print_header(const void *data)
 	if (!ivt)
 		return;
 
+	boot_target = (ivt->boot_configuration_word & BOOT_TARGET_MASK);
 	ivt_comp.offset = (uint32_t)((void *)ivt - data);
 	ivt_comp.size = (uint32_t)sizeof(struct ivt);
 	ivt_comp.line_desc = "IVT:\t\t\t";
@@ -809,6 +827,14 @@ static void s32cc_print_header(const void *data)
 	qsort(comps, ARRAY_SIZE(comps), sizeof(comps[0]), layout_comparator);
 	print_layout(comps, ARRAY_SIZE(comps));
 
+	fprintf(stderr, "Boot Core:\t");
+	if (boot_target == BCW_BOOT_TARGET_A53_0)
+		fprintf(stderr, "A53_0\n");
+	else if (boot_target == BCW_BOOT_TARGET_M7_0)
+		fprintf(stderr, "M7_0\n");
+	else
+		fprintf(stderr, "Unknown (%u)\n", boot_target);
+
 	fprintf(stderr, "IVT Location:\t");
 	if (qspi_boot)
 		fprintf(stderr, "QSPI\n");
@@ -828,6 +854,39 @@ static char *ltrim(char *s)
 		s++;
 
 	return s;
+}
+
+static int parse_boot_core(char *line)
+{
+	size_t len, i;
+	enum boot_cpu cpu = INVALID_BOOT_CPU;
+	static const char * const bcpus[] = {
+		[M7_0_BOOT] = "m7",
+		[A53_0_BOOT] = "a53",
+	};
+
+	for (i = 0; i < ARRAY_SIZE(bcpus); i++) {
+		len = strlen(bcpus[i]);
+		if (strncmp(bcpus[i], line, len))
+			continue;
+
+		cpu = (enum boot_cpu)i;
+		break;
+	}
+
+	switch (cpu) {
+	case M7_0_BOOT:
+		iconfig.a53_boot = false;
+		break;
+	case A53_0_BOOT:
+		iconfig.a53_boot = true;
+		break;
+	case INVALID_BOOT_CPU:
+		fprintf(stderr, "Invalid boot cpu: %s\n", line);
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 static int parse_boot_cmd(char *line)
@@ -850,7 +909,7 @@ static int parse_boot_cmd(char *line)
 	}
 
 	if (boot == INVALID_BOOT) {
-		fprintf(stderr, "Invalid boot type: %s", line);
+		fprintf(stderr, "Invalid boot type: %s\n", line);
 		return -EINVAL;
 	}
 
@@ -1151,6 +1210,10 @@ static int parse_err051257(__attribute__((unused)) char *line)
 
 static const struct line_parser parsers[] = {
 	{
+		.tag = "BOOT_CORE",
+		.parse = parse_boot_core,
+	},
+	{
 		.tag = "BOOT_FROM",
 		.parse = parse_boot_cmd,
 	},
@@ -1191,7 +1254,7 @@ static int parse_config_line(char *line)
 		return parser->parse(ltrim(line + len));
 	}
 
-	fprintf(stderr, "Failed to parse line: %s", line);
+	fprintf(stderr, "Failed to parse line: %s\n", line);
 	return -EINVAL;
 }
 

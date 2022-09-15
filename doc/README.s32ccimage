@@ -119,6 +119,19 @@ Available commands
 
 	This will make BootROM to load the range: [0x0, 0x3CB47]
 
+6. BOOT_CORE (Optional)
+	Identifies the boot target, which is the core responsible for running the application
+	code.
+	It can be:
+		m7  - boots the platform using M7 0 core
+		a53 - boots the platform using A53 0 core
+
+	In the absence of this selector, the platform will boot using A53 0 core.
+
+	Usage:
+		BOOT_CORE m7
+		BOOT_CORE a53
+
 Typical example of s32cc.cfg file:
 -----------------------------------
 # Boot from QSPI
