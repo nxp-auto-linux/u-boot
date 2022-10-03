@@ -168,6 +168,7 @@ static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
 struct linflex_serial_priv {
 	struct linflex_fsl *lfuart;
 	struct clk clk;
+	unsigned long rate;
 };
 
 int linflex_serial_setbrg(struct udevice *dev, int baudrate)
@@ -175,7 +176,7 @@ int linflex_serial_setbrg(struct udevice *dev, int baudrate)
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
 
 	_linflex_enter_init(priv->lfuart);
-	_linflex_serial_setbrg(priv->lfuart, clk_get_rate(&priv->clk),
+	_linflex_serial_setbrg(priv->lfuart, priv->rate,
 			       baudrate);
 	_linflex_exit_init(priv->lfuart);
 
@@ -214,7 +215,6 @@ static int linflex_serial_probe(struct udevice *dev)
 {
 	struct linflex_serial_priv *priv = dev_get_priv(dev);
 	fdt_addr_t base_addr;
-	ulong rate;
 	const char *clk_name = "lin";
 	int ret;
 
@@ -234,10 +234,10 @@ static int linflex_serial_probe(struct udevice *dev)
 		return ret;
 	}
 
-	rate = clk_get_rate(&priv->clk);
+	priv->rate = clk_get_rate(&priv->clk);
 
 	priv->lfuart = (struct linflex_fsl *)base_addr;
-	_linflex_serial_init(priv->lfuart, rate);
+	_linflex_serial_init(priv->lfuart, priv->rate);
 
 	return 0;
 }
