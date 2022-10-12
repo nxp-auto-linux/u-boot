@@ -895,7 +895,7 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
 		return ret;
 	}
 
-	ret = dev_read_u32(dev, "fsl,sys-mode", &ctrl->ss_mode);
+	ret = dev_read_u32(dev, "nxp,sys-mode", &ctrl->ss_mode);
 	if (ret) {
 		dev_err(dev, "Failed to get SerDes subsystem mode\n");
 		return -EINVAL;
