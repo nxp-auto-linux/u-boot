@@ -841,9 +841,9 @@ static int set_serdes_mode(struct dts_node *root, unsigned int id)
 			mode_num = 5;
 	}
 
-	ret = node_set_prop_u32(&node, "fsl,sys-mode", mode_num);
+	ret = node_set_prop_u32(&node, "nxp,sys-mode", mode_num);
 	if (ret)
-		pr_err("Failed to set 'fsl,sys-mode'\n");
+		pr_err("Failed to set 'nxp,sys-mode'\n");
 
 	return ret;
 }
