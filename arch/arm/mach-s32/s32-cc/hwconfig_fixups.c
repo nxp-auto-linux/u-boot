@@ -184,7 +184,7 @@ static int enable_ofnode_device(ofnode node)
 
 	ret = dev_enable_by_path(buf);
 	if (ret) {
-		pr_err("Failed to disable '%s'\n", buf);
+		pr_err("Failed to (re)enable '%s'\n", buf);
 		return ret;
 	}
 
@@ -317,6 +317,23 @@ static const void *node_get_prop(struct dts_node *node, const char *prop,
 		return fdt_getprop(node->blob, node->off, prop, len);
 
 	return ofnode_get_property(node->node, prop, len);
+}
+
+static int node_get_prop_u32(struct dts_node *node, const char *prop, u32 *val)
+{
+	if (node->fdt) {
+		const fdt32_t *cell;
+		int len = 0;
+
+		cell = fdt_getprop(node->blob, node->off, prop, &len);
+		if (!cell || len != sizeof(*cell))
+			return -EINVAL;
+
+		*val = fdt32_to_cpu(*cell);
+		return 0;
+	}
+
+	return ofnode_read_u32(node->node, prop, val);
 }
 
 static int node_by_path(struct dts_node *root, struct dts_node *node,
@@ -808,6 +825,199 @@ static void disable_serdes_pcie_nodes(struct dts_node *root, u32 id)
 			pr_err("Failed to disable %s%u\n", fmts[i], id);
 		}
 	}
+}
+
+static void *unflatten_dt_alloc(void **mem, unsigned long size,
+				unsigned long align)
+{
+	void *res;
+
+	*mem = PTR_ALIGN(*mem, align);
+	res = *mem;
+	*mem += size;
+
+	return res;
+}
+
+/* See unflatten_dt_node() from of_live.c */
+static void *unflatten_dt_node(void *mem,
+			       struct device_node *dad,
+			       struct device_node **nodepp,
+			       const char *node_name, bool dryrun)
+{
+	struct device_node *np;
+	struct property *pp, **prev_pp = NULL;
+
+	size_t namel = 0;
+	size_t fpsize = 0;
+
+	if (!node_name)
+		return mem;
+
+	/* Size of the node name */
+	namel = strlen(node_name) + 1;
+	/* Size of the node full path */
+	fpsize = namel + 1;
+	if (dad && dad->parent)
+		fpsize += strlen(dad->full_name);
+
+	/* Set the node full name */
+	np = unflatten_dt_alloc(&mem, sizeof(struct device_node) + fpsize,
+				__alignof__(struct device_node));
+	if (!dryrun) {
+		char *fn;
+
+		fn = (char *)np + sizeof(*np);
+		np->full_name = fn;
+		/* Rebuild full path */
+		if (dad && dad->parent) {
+			strcpy(fn, dad->full_name);
+			fn += strlen(fn);
+		}
+		*(fn++) = '/';
+		memcpy(fn, node_name, namel);
+		debug("%s: Generated full name: %s\n", __func__, (char *)np->full_name);
+
+		prev_pp = &np->properties;
+		if (dad) {
+			np->parent = dad;
+			np->sibling = dad->child;
+			dad->child = np;
+		}
+	}
+
+	/* Set the 'name' property */
+	pp = unflatten_dt_alloc(&mem, sizeof(struct property) + namel,
+				__alignof__(struct property));
+	if (!dryrun) {
+		pp->name = "name";
+		pp->length = namel;
+		pp->value = pp + 1;
+		*prev_pp = pp;
+		prev_pp = &pp->next;
+		memcpy(pp->value, node_name, namel - 1);
+			((char *)pp->value)[namel - 1] = 0;
+		debug("%s: Generated node name: %s\n", __func__, (char *)pp->value);
+	}
+
+	/* Finish node initialization */
+	if (!dryrun) {
+		*prev_pp = NULL;
+		np->name = pp->value; /* pp holds property 'name' */
+		np->type = "<NULL>";
+	}
+
+	if (nodepp)
+		*nodepp = np;
+
+	return mem;
+}
+
+static int node_create_subnode(struct dts_node *node, struct dts_node *subnode,
+			       const char *subnode_name)
+{
+	int ret;
+
+	if (!node || !subnode)
+		return -EINVAL;
+
+	/* Check if node already exists */
+	ret = node_by_path(node, subnode, subnode_name);
+	if (!ret)
+		return 0;
+
+	*subnode = *node;
+	if (node->fdt) {
+		subnode->off = fdt_add_subnode(node->blob, node->off, subnode_name);
+		if (subnode->off < 0)
+			return subnode->off;
+		return 0;
+	}
+
+	if (ofnode_is_np(node->node)) {
+		struct device_node *np = (struct device_node *)ofnode_to_np(node->node);
+		struct device_node *subnp;
+		unsigned long size;
+		void *mem;
+
+		if (!np)
+			return -EINVAL;
+
+		size = (unsigned long)unflatten_dt_node(NULL, np, NULL,
+						subnode_name, true);
+		if (!size)
+			return -EFAULT;
+		size = ALIGN(size, 4);
+
+		debug("%s: Size is %lx, allocating...\n", __func__, size);
+
+		/* Allocate memory for the expanded device tree */
+		mem = malloc(size + 4);
+		memset(mem, '\0', size);
+
+		/* End marker, for validation */
+		*(__be32 *)(mem + size) = cpu_to_be32(0xdeadbeef);
+
+		/* Second pass, do actual creation */
+		unflatten_dt_node(mem, np, &subnp, subnode_name, false);
+		if (be32_to_cpup(mem + size) != 0xdeadbeef) {
+			debug("%s: End of tree marker overwritten: %08x\n",
+			      __func__, be32_to_cpup(mem + size));
+			return -ENOSPC;
+		}
+
+		subnode->node = np_to_ofnode(subnp);
+
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
+static int node_delete_property(struct dts_node *node, const char *prop_name)
+{
+	if (!node)
+		return -EINVAL;
+
+	if (node->fdt) {
+		fdt_delprop(node->blob, node->off, prop_name);
+		return 0;
+	}
+
+	if (ofnode_is_np(node->node)) {
+		struct device_node *np = (struct device_node *)ofnode_to_np(node->node);
+		struct property *pp;
+		struct property *pp_last = NULL;
+		struct property *del;
+
+		if (!np)
+			return -EINVAL;
+
+		for (pp = np->properties; pp; pp = pp->next) {
+			if (strcmp(pp->name, prop_name) == 0) {
+				/* Property exists -> remove */
+				del = pp;
+
+				if (pp == np->properties) {
+					/* First property */
+					np->properties = del->next;
+				} else if (!pp->next) {
+					/* Last property */
+					pp_last->next = NULL;
+				} else {
+					pp->next = del->next;
+				}
+
+				free(del);
+				break;
+			}
+			pp_last = pp;
+		}
+
+		return 0;
+	}
+
+	return -EINVAL;
 }
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
