@@ -4,9 +4,11 @@
  */
 #include <common.h>
 #include <malloc.h>
+#include <phy_interface.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>
+#include <dm/platform_data/pfeng_dm_eth.h>
 #include <linux/ctype.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
@@ -28,7 +30,15 @@
 #define SERDES_LINE_NAME_FMT		"serdes_lane%d"
 #define SERDES_LINE_NAME_LEN		sizeof(SERDES_LINE_NAME_FMT)
 
+#define GMAC_ALIAS_FMT			"gmac%d"
+#define PFE_ALIAS_FMT			"pfe%d"
+
+#define SERDES_COUNT			2
+#define XPCS_COUNT			2
+
 #define MAX_PATH_SIZE			100
+
+#define EMAC_ID_INVALID			(u32)(-1)
 
 struct dts_node {
 	union {
@@ -319,6 +329,7 @@ static const void *node_get_prop(struct dts_node *node, const char *prop,
 	return ofnode_get_property(node->node, prop, len);
 }
 
+#if (CONFIG_IS_ENABLED(FSL_PFENG))
 static int node_get_prop_u32(struct dts_node *node, const char *prop, u32 *val)
 {
 	if (node->fdt) {
@@ -335,6 +346,7 @@ static int node_get_prop_u32(struct dts_node *node, const char *prop, u32 *val)
 
 	return ofnode_read_u32(node->node, prop, val);
 }
+#endif
 
 static int node_by_path(struct dts_node *root, struct dts_node *node,
 			const char *path)
@@ -827,6 +839,8 @@ static void disable_serdes_pcie_nodes(struct dts_node *root, u32 id)
 	}
 }
 
+#if (CONFIG_IS_ENABLED(FSL_PFENG))
+/* This static function is copied from lib/of_live.c */
 static void *unflatten_dt_alloc(void **mem, unsigned long size,
 				unsigned long align)
 {
@@ -839,7 +853,7 @@ static void *unflatten_dt_alloc(void **mem, unsigned long size,
 	return res;
 }
 
-/* See unflatten_dt_node() from of_live.c */
+/* See unflatten_dt_node() from lib/of_live.c */
 static void *unflatten_dt_node(void *mem,
 			       struct device_node *dad,
 			       struct device_node **nodepp,
@@ -1020,6 +1034,97 @@ static int node_delete_property(struct dts_node *node, const char *prop_name)
 	return -EINVAL;
 }
 
+static int get_xpcs_node_from_alias(struct dts_node *root, struct dts_node *node,
+				    u32 serdes_id, u32 xpcs_id)
+{
+	static const char * const xpcs_fmts[SERDES_COUNT][XPCS_COUNT] = {
+		{GMAC_ALIAS_FMT, PFE_ALIAS_FMT},
+		{PFE_ALIAS_FMT, PFE_ALIAS_FMT}
+		};
+	static const u32 xpcs_ids[SERDES_COUNT][XPCS_COUNT] = {
+		{0, 2}, {0, 1}
+		};
+
+	/* Validate arguments. */
+	if (serdes_id >= SERDES_COUNT || xpcs_id >= XPCS_COUNT) {
+		debug("%s: Unsupported interface XPCS%u for SerDes%u\n",
+		      __func__, xpcs_id, serdes_id);
+		return -EINVAL;
+	}
+
+	return node_by_alias(root, node,
+			     xpcs_fmts[serdes_id][xpcs_id],
+			     xpcs_ids[serdes_id][xpcs_id]);
+}
+
+static int set_xpcs_config(struct dts_node *root, u32 serdes_id, u32 xpcs_id)
+{
+	int ret = 0;
+	struct dts_node node;
+	struct dts_node subnode;
+	u32 emac_id = EMAC_ID_INVALID;
+
+	/* We want this fixup only for Mode5.
+	 * For other nodes, do nothing.
+	 */
+	if (!s32_serdes_is_mode5_enabled_in_hwconfig(serdes_id)) {
+		debug("%s: SerDes%d not in Mode 5\n", __func__, serdes_id);
+		return 0;
+	}
+
+	/* We need the device tree node for the ethernet interface.
+	 * If we don't, exit silently as most probably we are not
+	 * supposed to apply the fixups for this context.
+	 */
+	ret = get_xpcs_node_from_alias(root, &node,
+				       serdes_id, xpcs_id);
+	if (ret) {
+		debug("%s: Failed to get the DT node for SerDes%u XPCS%u\n",
+		      __func__, serdes_id, xpcs_id);
+		return ret;
+	}
+
+	/* Check for PFE interfaces that the corresponding EMAC is configured as SGMII.
+	 * If the property is missing, then we have another type of interface (e.g. GMAC)
+	 * which we do not check if is SGMII (TBD).
+	 */
+	ret = node_get_prop_u32(&node, "nxp,pfeng-emac-id", &emac_id);
+	if (ret) {
+		pr_warn("Interface does not have ID\n");
+		return -ENODATA;
+	} else if (pfeng_cfg_emac_get_interface(emac_id) != PHY_INTERFACE_MODE_SGMII) {
+		pr_warn("PFE EMAC %d is not SGMII\n", emac_id);
+		return -ENODATA;
+	}
+
+	/* We may or may not have this property */
+	node_delete_property(&node, "phy-handle");
+	/* We need the fixed-link node */
+	ret = node_create_subnode(&node, &subnode, "fixed-link");
+	if (ret) {
+		debug("%s: Cannot create node 'fixed-link'\n", __func__);
+		goto exit;
+	}
+	ret = node_set_prop_u32(&subnode, "speed", 2500);
+	if (ret) {
+		debug("%s: Cannot set property 'speed'\n", __func__);
+		goto exit;
+	}
+	ret = node_set_prop(&subnode, "full-duplex", NULL, 0);
+	if (ret) {
+		debug("%s: Cannot set property 'full-duplex'\n", __func__);
+		goto exit;
+	}
+
+	ret = enable_node(&node);
+	if (ret)
+		pr_err("Failed to configure XPCS%d_%d\n", serdes_id, xpcs_id);
+
+exit:
+	return ret;
+}
+#endif
+
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
 	bool skip = false;
@@ -1058,6 +1163,13 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 		ret = set_serdes_mode(&root, id);
 		if (ret)
 			pr_err("Failed to set mode for SerDes%d\n", id);
+
+#if (CONFIG_IS_ENABLED(FSL_PFENG))
+		/* Mode 5 only - uses XPCS1 for either SerDes */
+		ret = set_xpcs_config(&root, id, 1);
+		if (ret)
+			pr_err("Failed to update pfe information for SerDes%d\n", id);
+#endif
 	}
 
 	return 0;
