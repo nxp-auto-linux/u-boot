@@ -131,10 +131,12 @@ static uint32_t detect_imximage_version(struct imx_header *imx_hdr)
 
 	/* Try to detect V2 */
 	if (fhdr_v2->header.tag == IVT_HEADER_TAG &&
+	    fhdr_v2->header.version == IVT_VERSION &&
 	    hdr_v2->data.dcd_table.header.tag == DCD_HEADER_TAG)
 		return IMXIMAGE_V2;
 
 	if (fhdr_v2->header.tag == IVT_HEADER_TAG &&
+	    fhdr_v2->header.version == IVT_VERSION &&
 	    hdr_v2->boot_data.plugin)
 		return IMXIMAGE_V2;
 
