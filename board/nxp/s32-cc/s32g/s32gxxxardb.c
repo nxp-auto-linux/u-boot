@@ -103,8 +103,6 @@ int board_late_init(void)
 			env_set("pfe1_phy_addr", "3");
 			break;
 		case 'D':
-			env_set("pfe1_phy_addr", "8");
-			break;
 		case 'E':
 		case 'F':
 			env_set("pfe1_phy_addr", "8");
