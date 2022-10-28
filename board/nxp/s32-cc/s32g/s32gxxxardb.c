@@ -36,9 +36,15 @@ static const struct {
 	},
 	{ /* 1.2v */
 		.rev = "E",
-		.desc = "RDB3",
+		.desc = "RDB3 Revision E",
 		.lower = 2730 - SARADC0_TOLERANCE,
 		.upper = 2730 + SARADC0_TOLERANCE,
+	},
+	{ /* 1.4v */
+		.rev = "F",
+		.desc = "RDB3 Revision F",
+		.lower = 3185 - SARADC0_TOLERANCE,
+		.upper = 3185 + SARADC0_TOLERANCE,
 	},
 };
 
@@ -100,6 +106,7 @@ int board_late_init(void)
 			env_set("pfe1_phy_addr", "8");
 			break;
 		case 'E':
+		case 'F':
 			env_set("pfe1_phy_addr", "8");
 			break;
 		default:
