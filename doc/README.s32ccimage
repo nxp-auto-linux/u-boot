@@ -119,6 +119,15 @@ Available commands
 
 	This will make BootROM to load the range: [0x0, 0x3CB47]
 
+6. RSRVD_SRAM (Optional)
+	Selects a range of SRAM that is reserved and within which the
+	application may not be loaded at boot. If the -a parameter
+	would result in any of the SRAM restrictions being violated,
+	mkimage will exit with an error.
+
+	Usage:
+		RSRVD_SRAM 0x34008000 0x34079c00
+
 Typical example of s32cc.cfg file:
 -----------------------------------
 # Boot from QSPI
