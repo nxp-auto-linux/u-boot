@@ -784,6 +784,33 @@ static int s32_pcie_get_hw_mode_ep(struct s32_pcie *pcie)
 	return (header_type & 0x7f) == PCI_HEADER_TYPE_NORMAL;
 }
 
+static int s32gen1_check_serdes(struct udevice *dev)
+{
+	struct nvmem_cell c;
+	int ret;
+	u32 serdes_presence = 0;
+
+	ret = nvmem_cell_get(dev, "serdes_presence", &c);
+	if (ret) {
+		printf("Failed to get 'serdes_presence' cell\n");
+		return ret;
+	}
+
+	ret = nvmem_cell_read(&c, &serdes_presence, sizeof(serdes_presence));
+	if (ret) {
+		printf("%s: Failed to read cell 'serdes_presence' (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	if (!serdes_presence) {
+		printf("SerDes Subsystem not present, skipping PCIe config\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
 static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 {
 	struct udevice *dev = pcie->bus;
@@ -793,6 +820,11 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	u32 val;
 
 	debug("%s: dt node: %s\n", __func__, dev_read_name(dev));
+
+	/* check if serdes is enabled for the pcie node */
+	ret = s32gen1_check_serdes(dev);
+	if (ret)
+		return ret;
 
 	ret = generic_phy_get_by_name(dev, "serdes_lane0", &pcie->phy0);
 	if (ret) {
@@ -1041,33 +1073,6 @@ static int s32_pcie_probe_ep(struct s32_pcie *pcie, struct uclass *uc)
 	return 0;
 }
 
-static int s32gen1_check_serdes(struct udevice *dev)
-{
-	struct nvmem_cell c;
-	int ret;
-	u32 serdes_presence = 0;
-
-	ret = nvmem_cell_get(dev, "serdes_presence", &c);
-	if (ret) {
-		printf("Failed to get 'serdes_presence' cell\n");
-		return ret;
-	}
-
-	ret = nvmem_cell_read(&c, &serdes_presence, sizeof(serdes_presence));
-	if (ret) {
-		printf("%s: Failed to read cell 'serdes_presence' (err = %d)\n",
-		       __func__, ret);
-		return ret;
-	}
-
-	if (!serdes_presence) {
-		printf("SerDes Subsystem not present, skipping PCIe config\n");
-		return -ENODEV;
-	}
-
-	return 0;
-}
-
 static int init_pcie_phy(struct s32_pcie *pcie)
 {
 	struct udevice *dev = pcie->bus;
@@ -1151,26 +1156,19 @@ static int s32_pcie_probe(struct udevice *dev)
 	bool ltssm_en = false;
 	u32 variant_bits, pcie_dev_id;
 
-	if (!pcie)
-		return -EINVAL;
-
-	pcie->enabled = false;
-	pcie->ep_mode =
-		(enum pcie_device_mode)dev_get_driver_data(dev) == PCIE_EP_TYPE;
-
-	ret = s32gen1_check_serdes(dev);
-	if (ret)
-		return ret;
-
-	debug("%s: probing %s as %s\n", __func__, dev->name,
-	      PCIE_EP_RC_MODE(pcie->ep_mode));
 	if (!pcie) {
 		printf("PCIe%d: invalid internal data\n", pcie->id);
 		return -EINVAL;
 	}
 
-	pcie->bus = dev;
+	pcie->enabled = false;
+	pcie->ep_mode =
+		(enum pcie_device_mode)dev_get_driver_data(dev) == PCIE_EP_TYPE;
 
+	debug("%s: probing %s as %s\n", __func__, dev->name,
+	      PCIE_EP_RC_MODE(pcie->ep_mode));
+
+	pcie->bus = dev;
 	list_add(&pcie->list, &s32_pcie_list);
 
 	ret = s32_pcie_get_config_from_device_tree(pcie);
@@ -1180,6 +1178,11 @@ static int s32_pcie_probe(struct udevice *dev)
 	ret = init_controller(pcie);
 	if (ret)
 		return ret;
+
+	if (pcie->ep_mode != s32_pcie_get_hw_mode_ep(pcie)) {
+		printf("PCIe%d: RC/EP configuration not set correctly\n",
+				pcie->id);
+	}
 
 	/*
 	 * it makes sense to link up only as RC, as the EP
@@ -1214,8 +1217,6 @@ static int s32_pcie_probe(struct udevice *dev)
 			pcie->id);
 		return ret;
 	}
-
-	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
 
 	variant_bits = s32_pcie_get_dev_id_variant(dev);
 	s32_pcie_enable_dbi_rw(pcie->dbi);
