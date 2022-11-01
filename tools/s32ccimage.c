@@ -144,6 +144,11 @@ struct image_config {
 		uint8_t *fw_data;
 		size_t fw_size;
 	} secboot;
+	struct {
+		uintptr_t start;
+		uintptr_t end;
+	} *rsrvd_sram;
+	int rsrvd_sram_len;
 	bool flash_boot;
 	bool err051257;
 };
@@ -274,36 +279,24 @@ static struct application_boot_code *get_app_code(struct program_image *image)
 	return (struct application_boot_code *)image->app_code.data;
 }
 
-/* Areas of SRAM reserved by BootROM according to the
- * Reset and Boot: Boot: Program Image section of the Reference Manual,
- * while taking into account the fact that SRAM is mirrored at 0x3800_0000.
- */
-
-struct reserved_range {
-	void *start;
-	void *end;
-};
-
-static struct reserved_range reserved_sram[] = {
-	{.start = (void *)0x34008000, .end = (void *)0x34078000},
-	{.start = (void *)0x38008000, .end = (void *)0x38078000},
-	{.start = (void *)0x343ff000, .end = (void *)0x34400000},
-	{.start = (void *)0x383ff000, .end = (void *)0x38400000},
-};
-
-static void enforce_reserved_ranges(void *image_start, int image_length)
+static void enforce_reserved_ranges(uintptr_t image_start, int image_length)
 {
-	void *image_end = (void *)((__u8 *)image_start + image_length);
+	uintptr_t image_end = (uintptr_t)((__u8 *)image_start + image_length);
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(reserved_sram); i++)
-		if (image_start < reserved_sram[i].end &&
-		    image_end > reserved_sram[i].start) {
+	for (i = 0; i < iconfig.rsrvd_sram_len; i++)
+		if (image_start < iconfig.rsrvd_sram[i].end &&
+		    image_end > iconfig.rsrvd_sram[i].start) {
 			fprintf(stderr,
-				"Loading data of size 0x%x at %p forbidden.",
+				"Loading data of size 0x%x at 0x%lx forbidden.",
 				image_length, image_start);
-			fprintf(stderr, " Range %p --- %p is reserved!\n",
-				reserved_sram[i].start, reserved_sram[i].end);
+			fprintf(stderr, " Range 0x%lx --- 0x%lx is reserved!\n",
+				iconfig.rsrvd_sram[i].start,
+				iconfig.rsrvd_sram[i].end);
+			fprintf(stderr, "\nIf you are using a different entity than BootRom ");
+			fprintf(stderr, "in order to load ATF into SRAM please comment or remove ");
+			fprintf(stderr, "the RSRVD_SRAM* defines from file: ");
+			fprintf(stderr, "<u-boot-dir>/arch/arm/mach-s32/s32-cc/s32cc.cfg\n");
 			exit(EXIT_FAILURE);
 		}
 }
@@ -513,8 +506,7 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
 	app_code->ram_entry_pointer = tool_params->ep;
 
 	if (!iconfig.flash_boot) {
-		enforce_reserved_ranges((void *)(uintptr_t)
-					app_code->ram_start_pointer,
+		enforce_reserved_ranges((uintptr_t)app_code->ram_start_pointer,
 					app_code->code_length);
 	} else {
 		s32cc_set_qspi_params(get_qspi_params(&image_layout));
@@ -1150,6 +1142,33 @@ static int parse_err051257(__always_unused char *line)
 	return 0;
 }
 
+static int parse_rsrvd_sram(char *line)
+{
+	int ret;
+	uintptr_t start, end;
+
+	ret = sscanf(line, "0x%" PRIx64 "%*[^0]0x%" PRIx64, &start, &end);
+
+	if (ret < 2) {
+		fprintf(stderr,
+			"Failed to interpret RSRVD_SRAM line: %s\n", line);
+		return -EINVAL;
+	}
+
+	iconfig.rsrvd_sram_len++;
+	iconfig.rsrvd_sram = realloc(iconfig.rsrvd_sram,
+				     iconfig.rsrvd_sram_len *
+				     sizeof(*iconfig.rsrvd_sram));
+	if (!iconfig.rsrvd_sram) {
+		fprintf(stderr, "Failure to allocate memory!\n");
+		return -ENOMEM;
+	}
+	iconfig.rsrvd_sram[iconfig.rsrvd_sram_len - 1].start = start;
+	iconfig.rsrvd_sram[iconfig.rsrvd_sram_len - 1].end = end;
+
+	return 0;
+}
+
 static const struct line_parser parsers[] = {
 	{
 		.tag = "BOOT_FROM",
@@ -1174,6 +1193,10 @@ static const struct line_parser parsers[] = {
 	{
 		.tag = "ERR051257_WORKAROUND",
 		.parse = parse_err051257,
+	},
+	{
+		.tag = "RSRVD_SRAM",
+		.parse = parse_rsrvd_sram,
 	},
 };
 
