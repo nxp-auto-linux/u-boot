@@ -863,13 +863,16 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 	ret = generic_phy_get_by_name(dev, "serdes_lane0", &pcie->phy0);
 	if (ret) {
-		printf("Failed to get 'serdes_lane0' PHY\n");
+		printf("%s: Failed to get 'serdes_lane0' PHY\n",
+		       dev_read_name(dev));
 		return ret;
 	}
 
 	pcie_phy_mode = dev_read_string(dev, "nxp,phy-mode");
 	if (!pcie_phy_mode) {
-		dev_info(dev, "Missing 'nxp,phy-mode' property, using default CRNS\n");
+		printf("%s: Missing 'nxp,phy-mode' property\n",
+		       dev_read_name(dev));
+		printf("%s: using default CRNS\n", dev_read_name(dev));
 		pcie->phy_mode = CRNS;
 	} else if (!strcmp(pcie_phy_mode, "crns")) {
 		pcie->phy_mode = CRNS;
@@ -878,13 +881,15 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 	} else if (!strcmp(pcie_phy_mode, "sris")) {
 		pcie->phy_mode = SRIS;
 	} else {
-		dev_info(dev, "Unsupported 'nxp,phy-mode' specified, using default CRNS\n");
+		printf("%s: Unsupported 'nxp,phy-mode' specified\n",
+		       dev_read_name(dev));
+		printf("%s: using default CRNS\n", dev_read_name(dev));
 		pcie->phy_mode = CRNS;
 	}
 
 	ret = dev_read_alias_seq(dev, &pcie->id);
 	if (ret < 0) {
-		printf("Failed to get PCIe device id\n");
+		printf("%s: Failed to get PCIe device id\n", dev_read_name(dev));
 		return ret;
 	}
 
@@ -1193,7 +1198,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	u32 variant_bits, pcie_dev_id;
 
 	if (!pcie) {
-		printf("PCIe%d: invalid internal data\n", pcie->id);
+		printf("%s: Invalid internal data\n", dev_read_name(dev));
 		return -EINVAL;
 	}
 
@@ -1201,7 +1206,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	pcie->ep_mode =
 		(enum pcie_device_mode)dev_get_driver_data(dev) == PCIE_EP_TYPE;
 
-	debug("%s: probing %s as %s\n", __func__, dev->name,
+	debug("%s: %s: probing as %s\n", __func__, dev_read_name(dev),
 	      PCIE_EP_RC_MODE(pcie->ep_mode));
 
 	pcie->bus = dev;
@@ -1216,8 +1221,8 @@ static int s32_pcie_probe(struct udevice *dev)
 		return ret;
 
 	if (pcie->ep_mode != s32_pcie_get_hw_mode_ep(pcie)) {
-		printf("PCIe%d: RC/EP configuration not set correctly\n",
-				pcie->id);
+		printf("%s: RC/EP configuration not set correctly\n",
+		       dev_read_name(dev));
 	}
 
 	/*
@@ -1226,7 +1231,7 @@ static int s32_pcie_probe(struct udevice *dev)
 	 */
 	if (!pcie->ep_mode) {
 		if (s32_pcie_wait_link_up(pcie->dbi)) {
-			debug("SerDes%d: link is up (X%d)\n", pcie->id,
+			debug("%s: link is up (X%d)\n", dev_read_name(dev),
 			      pcie->linkwidth);
 		} else {
 			if (pcie->linkwidth > X1) {
@@ -1241,8 +1246,9 @@ static int s32_pcie_probe(struct udevice *dev)
 
 				s32_pcie_enable_ltssm(pcie->dbi);
 				if (s32_pcie_wait_link_up(pcie->dbi))
-					debug("SerDes%d: link is up (X%d)\n",
-					      pcie->id, pcie->linkwidth);
+					debug("%s: link is up (X%d)\n",
+					      dev_read_name(dev),
+					      pcie->linkwidth);
 			}
 		}
 	}
@@ -1265,7 +1271,8 @@ static int s32_pcie_probe(struct udevice *dev)
 		 * revision (2 registers) is bigger than just
 		 * applying the fix.
 		 */
-		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		printf("%s: Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		       dev_read_name(dev),
 		       PCI_DEVICE_ID_S32GEN1, PCI_VENDOR_ID_FREESCALE);
 		W32(UPTR(pcie->dbi) + PCI_VENDOR_ID,
 		    (PCI_DEVICE_ID_S32GEN1 << 16) |
@@ -1273,7 +1280,8 @@ static int s32_pcie_probe(struct udevice *dev)
 	} else {
 		pcie_dev_id = s32_dbi_readw(UPTR(pcie->dbi) + PCI_DEVICE_ID);
 		pcie_dev_id |= variant_bits;
-		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		printf("%s: Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		       dev_read_name(dev),
 		       pcie_dev_id, PCI_VENDOR_ID_FREESCALE);
 		W32(UPTR(pcie->dbi) + PCI_VENDOR_ID,
 		    (pcie_dev_id << 16) | PCI_VENDOR_ID_FREESCALE);
