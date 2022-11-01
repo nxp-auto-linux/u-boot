@@ -329,14 +329,42 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 			  uint offset, void **paddress)
 {
 	struct s32_pcie *pcie = dev_get_priv(bus);
+	bool use_cfg0 = (PCI_BUS(bdf) > bus->seq);
+
+	if (!pcie)
+		return -EINVAL;
+
+	if (s32_pcie_addr_valid(pcie, bdf))
+		return -EINVAL;
+
+	if (PCI_BUS(bdf) < pcie->id) {
+		debug_wr("%s: (0x%x, %d): invalid bus\n", __func__,
+				PCI_BUS(bdf), bus->seq);
+		return -EINVAL;
+	}
+
 #ifdef PCIE_OVERCONFIG_BUS
 	u32 busdev = PCIE_ATU_BUS(PCI_BUS(bdf) - bus->seq) |
 				 PCIE_ATU_DEV(PCI_DEV(bdf)) |
 				 PCIE_ATU_FUNC(PCI_FUNC(bdf));
+	debug("%s: bdf=0x%x; bus=%d; seq=%d; device=0x%x; func=0x%x\n",
+	       dev_read_name(bus), bdf, PCI_BUS(bdf), bus->seq,
+	       PCI_DEV(bdf), PCI_FUNC(bdf));
 #endif
-
-	if (s32_pcie_addr_valid(pcie, bdf))
-		return -EINVAL;
+#ifdef PCIE_USE_CFG1
+	/* The process of enumeration must start with cfg0 space, as sequences
+	 * are not always consecutive to the parent's (depending how the
+	 * device tree is being parsed).
+	 * After cfg0 is covered, we go to cfg1, to search e.g. for devices
+	 * connected to PCIe switches.
+	 */
+	if (use_cfg0) {
+		if (pcie->cfg0_seq < 0)
+			pcie->cfg0_seq = PCI_BUS(bdf);
+		else if (pcie->cfg0_seq != PCI_BUS(bdf))
+			use_cfg0 = false;
+	}
+#endif
 
 	if (PCI_BUS(bdf) == bus->seq) {
 		*paddress = (void *)(UPTR(pcie->dbi) + offset);
@@ -344,7 +372,7 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 		return 0;
 	}
 
-	if (PCI_BUS(bdf) == bus->seq + 1) {
+	if (use_cfg0) {
 #ifdef PCIE_OVERCONFIG_BUS
 		debug_wr("%s: cfg0_set_busdev 0x%x\n", __func__, busdev);
 		s32_pcie_cfg0_set_busdev(pcie, busdev);
@@ -354,7 +382,7 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 	} else {
 #ifdef PCIE_USE_CFG1
 #ifdef PCIE_OVERCONFIG_BUS
-		debug_wr("%s: cfg1_set_busdev %d\n", __func__, busdev);
+		debug_wr("%s: cfg1_set_busdev 0x%x\n", __func__, busdev);
 		s32_pcie_cfg1_set_busdev(pcie, busdev);
 #endif
 		*paddress = (void *)(UPTR(pcie->cfg1) + offset);
@@ -888,6 +916,7 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 #ifdef PCIE_USE_CFG1
 	pcie->cfg1 = pcie->cfg0 + resource_size(&pcie->cfg_res) / 2;
+	pcie->cfg0_seq = -ENODEV;
 #endif
 
 	/* get supported speed (Gen1/Gen2/Gen3) from device tree */

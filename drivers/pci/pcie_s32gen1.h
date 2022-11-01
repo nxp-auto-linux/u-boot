@@ -251,6 +251,7 @@ struct s32_pcie {
 	void __iomem *dbi;
 	void __iomem *cfg0;
 #ifdef PCIE_USE_CFG1
+	int cfg0_seq;
 	void __iomem *cfg1;
 #endif
 	int id;
