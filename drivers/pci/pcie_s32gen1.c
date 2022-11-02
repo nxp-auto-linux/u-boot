@@ -83,14 +83,14 @@ static void s32_get_link_status(struct s32_pcie *, u32 *, u32 *, bool);
 
 static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
 {
-	printf("Pcie%d: LINK_DBG_1: 0x%08x, LINK_DBG_2: 0x%08x ", pcie->id,
-			s32_dbi_readl(UPTR(pcie->dbi) + SS_PE0_LINK_DBG_1),
-			s32_dbi_readl(UPTR(pcie->dbi) + SS_PE0_LINK_DBG_2));
-	printf("(expected 0x%08x)\n",
-			(u32)SERDES_LINKUP_EXPECT);
-	printf("DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
-			s32_dbi_readl(UPTR(pcie->dbi) + PCIE_PL_DEBUG0),
-			s32_dbi_readl(UPTR(pcie->dbi) + PCIE_PL_DEBUG1));
+	debug("Pcie%d: LINK_DBG_1: 0x%08x, LINK_DBG_2: 0x%08x ", pcie->id,
+	      s32_dbi_readl(UPTR(pcie->dbi) + SS_PE0_LINK_DBG_1),
+	      s32_dbi_readl(UPTR(pcie->dbi) + SS_PE0_LINK_DBG_2));
+	debug("(expected 0x%08x)\n",
+	      (u32)SERDES_LINKUP_EXPECT);
+	debug("DEBUG_R0: 0x%08x, DEBUG_R1: 0x%08x\n",
+	      s32_dbi_readl(UPTR(pcie->dbi) + PCIE_PL_DEBUG0),
+	      s32_dbi_readl(UPTR(pcie->dbi) + PCIE_PL_DEBUG1));
 }
 
 #ifdef PCIE_OVERCONFIG_BUS
@@ -148,7 +148,7 @@ void s32_pcie_atu_inbound_set_bar(struct s32_pcie *pcie,
 				  u64 phys, u32 ctrl_1)
 {
 	debug("PCIe%d: %s: iATU%d: BAR%d; addr=%p\n", pcie->id,
-			__func__, region_no, bar, (void *)phys);
+	      __func__, region_no, bar, (void *)phys);
 	if (region_no < PCIE_ATU_NR_REGIONS) {
 		BCLR32(UPTR(pcie->dbi) + PCIE_IATU_REGION_CTRL_2_INBOUND_0 +
 				(0x200 * region_no), PCIE_REGION_EN);
@@ -165,7 +165,7 @@ void s32_pcie_atu_inbound_set_bar(struct s32_pcie *pcie,
 			PCIE_REGION_EN | PCIE_MATCH_MODE | PCIE_BAR_NUM);
 	} else {
 		printf("PCIe%d: Invalid iATU IN region %d\n",
-				pcie->id, region_no);
+		       pcie->id, region_no);
 	}
 }
 
@@ -177,31 +177,31 @@ static void s32_pcie_dump_atu(struct s32_pcie *pcie)
 	for (i = 0; i < pcie->atu_out_num; i++) {
 		debug("PCIe%d: OUT iATU%d:\n", pcie->id, i);
 		debug("\tLOWER PHYS 0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_LWR_BASE_ADDR_OUTBOUND_0 +
 				(0x200 * i)));
 		debug("\tUPPER PHYS 0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_UPPER_BASE_ADDR_OUTBOUND_0 +
 				(0x200 * i)));
 		debug("\tLOWER BUS  0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_LWR_TARGET_ADDR_OUTBOUND_0 +
 				(0x200 * i)));
 		debug("\tUPPER BUS  0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_UPPER_TARGET_ADDR_OUTBOUND_0 +
 				(0x200 * i)));
 		debug("\tLIMIT      0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_LIMIT_ADDR_OUTBOUND_0 +
 				(0x200 * i)));
 		debug("\tCR1        0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_REGION_CTRL_1_OUTBOUND_0 +
 				(0x200 * i)));
 		debug("\tCR2        0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_REGION_CTRL_2_OUTBOUND_0 +
 				(0x200 * i)));
 	}
@@ -209,31 +209,31 @@ static void s32_pcie_dump_atu(struct s32_pcie *pcie)
 	for (i = 0; i < pcie->atu_in_num; i++) {
 		debug("PCIe%d: IN iATU%d:\n", pcie->id, i);
 		debug("\tLOWER PHYS 0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_LWR_BASE_ADDR_INBOUND_0 +
 				(0x200 * i)));
 		debug("\tUPPER PHYS 0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_UPPER_BASE_ADDR_INBOUND_0 +
 				(0x200 * i)));
 		debug("\tLOWER BUS  0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_LWR_TARGET_ADDR_INBOUND_0 +
 				(0x200 * i)));
 		debug("\tUPPER BUS  0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_UPPER_TARGET_ADDR_INBOUND_0 +
 				(0x200 * i)));
 		debug("\tLIMIT      0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_LIMIT_ADDR_INBOUND_0 +
 				(0x200 * i)));
 		debug("\tCR1        0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_REGION_CTRL_1_INBOUND_0 +
 				(0x200 * i)));
 		debug("\tCR2        0x%08x\n",
-		    s32_dbi_readl(UPTR(pcie->dbi) +
+		      s32_dbi_readl(UPTR(pcie->dbi) +
 				PCIE_IATU_REGION_CTRL_2_INBOUND_0 +
 				(0x200 * i)));
 	}
@@ -256,7 +256,7 @@ static void s32_pcie_rc_setup_atu(struct s32_pcie *pcie)
 	pcie->atu_in_num = 0;
 
 	debug("PCIe%d: %s: Create outbound windows\n",
-			pcie->id, __func__);
+	      pcie->id, __func__);
 
 	/* ATU 0 : OUTBOUND : CFG0 */
 	s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
@@ -348,8 +348,8 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 				 PCIE_ATU_DEV(PCI_DEV(bdf)) |
 				 PCIE_ATU_FUNC(PCI_FUNC(bdf));
 	debug("%s: bdf=0x%x; bus=%d; seq=%d; device=0x%x; func=0x%x\n",
-	       dev_read_name(bus), bdf, PCI_BUS(bdf), bus->seq,
-	       PCI_DEV(bdf), PCI_FUNC(bdf));
+	      dev_read_name(bus), bdf, PCI_BUS(bdf), bus->seq,
+	      PCI_DEV(bdf), PCI_FUNC(bdf));
 #endif
 #ifdef PCIE_USE_CFG1
 	/* The process of enumeration must start with cfg0 space, as sequences
@@ -1271,18 +1271,18 @@ static int s32_pcie_probe(struct udevice *dev)
 		 * revision (2 registers) is bigger than just
 		 * applying the fix.
 		 */
-		printf("%s: Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
-		       dev_read_name(dev),
-		       PCI_DEVICE_ID_S32GEN1, PCI_VENDOR_ID_FREESCALE);
+		debug("%s: Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		      dev_read_name(dev),
+		      PCI_DEVICE_ID_S32GEN1, PCI_VENDOR_ID_FREESCALE);
 		W32(UPTR(pcie->dbi) + PCI_VENDOR_ID,
 		    (PCI_DEVICE_ID_S32GEN1 << 16) |
 				PCI_VENDOR_ID_FREESCALE);
 	} else {
 		pcie_dev_id = s32_dbi_readw(UPTR(pcie->dbi) + PCI_DEVICE_ID);
 		pcie_dev_id |= variant_bits;
-		printf("%s: Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
-		       dev_read_name(dev),
-		       pcie_dev_id, PCI_VENDOR_ID_FREESCALE);
+		debug("%s: Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		      dev_read_name(dev),
+		      pcie_dev_id, PCI_VENDOR_ID_FREESCALE);
 		W32(UPTR(pcie->dbi) + PCI_VENDOR_ID,
 		    (pcie_dev_id << 16) | PCI_VENDOR_ID_FREESCALE);
 	}
