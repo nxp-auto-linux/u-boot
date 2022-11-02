@@ -1543,7 +1543,7 @@ int dm_pci_flr(struct udevice *dev)
 UCLASS_DRIVER(pci) = {
 	.id		= UCLASS_PCI,
 	.name		= "pci",
-	.flags		= DM_UC_FLAG_SEQ_ALIAS,
+	.flags		= DM_UC_FLAG_SEQ_ALIAS | DM_UC_FLAG_SEQ_PARENT_ALIAS,
 	.post_bind	= dm_scan_fdt_dev,
 	.pre_probe	= pci_uclass_pre_probe,
 	.post_probe	= pci_uclass_post_probe,

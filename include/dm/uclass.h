@@ -47,6 +47,9 @@ struct udevice;
 /* Same as DM_FLAG_ALLOC_PRIV_DMA */
 #define DM_UC_FLAG_ALLOC_PRIV_DMA		(1 << 5)
 
+/* Members of this class have sequences numbers greater than parent's */
+#define DM_UC_FLAG_SEQ_PARENT_ALIAS		(1 << 31)
+
 /**
  * struct uclass_driver - Driver for the uclass
  *
