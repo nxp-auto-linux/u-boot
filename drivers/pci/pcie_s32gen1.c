@@ -821,6 +821,13 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 	debug("%s: dt node: %s\n", __func__, dev_read_name(dev));
 
+	/* check if node is enabled */
+	if (!dev_read_enabled(dev)) {
+		debug("%s: %s: Node is disabled\n", __func__,
+		      dev_read_name(dev));
+		return -ENODEV;
+	}
+
 	/* check if serdes is enabled for the pcie node */
 	ret = s32gen1_check_serdes(dev);
 	if (ret)
