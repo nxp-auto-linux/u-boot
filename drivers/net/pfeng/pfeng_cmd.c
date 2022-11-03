@@ -177,8 +177,33 @@ static void enable_clocks(const char *tx, const char *rx,
 		dev_err(pfe_dev, "Failed to enable %s clock\n", tx);
 }
 
+static ulong get_mac_mode_freq(int intf)
+{
+	ulong freq;
+
+	switch (intf) {
+	case PHY_INTERFACE_MODE_SGMII:
+		freq = 125000000UL;
+		break;
+	case PHY_INTERFACE_MODE_RGMII:
+		freq = 125000000UL;
+		break;
+	case PHY_INTERFACE_MODE_RMII:
+		freq = 25000000UL;
+		break;
+	case PHY_INTERFACE_MODE_MII:
+	case PHY_INTERFACE_MODE_NONE:
+	default:
+		freq = 0;
+		break;
+	}
+
+	return freq;
+}
+
 static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
 {
+	ulong freq;
 	const char *rx, *tx;
 
 	rx = NULL;
@@ -195,6 +220,9 @@ static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
 		tx = "mac0_tx_rgmii";
 		break;
 	case PHY_INTERFACE_MODE_RMII:
+		rx = "mac0_rx_rmii";
+		tx = "mac0_tx_rmii";
+		break;
 	case PHY_INTERFACE_MODE_MII:
 	case PHY_INTERFACE_MODE_NONE:
 	default:
@@ -210,12 +238,14 @@ static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
 		return;
 	}
 
-	set_clock_freq(tx, rx, 125000000UL, 125000000UL, pfe_dev);
+	freq = get_mac_mode_freq(intf0);
+	set_clock_freq(tx, rx, freq, freq, pfe_dev);
 	enable_clocks(tx, rx, pfe_dev);
 }
 
 static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
 {
+	ulong freq;
 	const char *rx, *tx;
 
 	rx = NULL;
@@ -230,8 +260,10 @@ static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
 		rx = "mac1_rx_rgmii";
 		tx = "mac1_tx_rgmii";
 		break;
-
 	case PHY_INTERFACE_MODE_RMII:
+		rx = "mac1_rx_rmii";
+		tx = "mac1_tx_rmii";
+		break;
 	case PHY_INTERFACE_MODE_MII:
 	case PHY_INTERFACE_MODE_NONE:
 	default:
@@ -248,12 +280,14 @@ static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
 		return;
 	}
 
-	set_clock_freq(tx, rx, 125000000UL, 125000000UL, pfe_dev);
+	freq = get_mac_mode_freq(intf1);
+	set_clock_freq(tx, rx, freq, freq, pfe_dev);
 	enable_clocks(tx, rx, pfe_dev);
 }
 
 static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
 {
+	ulong freq;
 	const char *rx, *tx;
 
 	rx = NULL;
@@ -269,6 +303,9 @@ static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
 		tx = "mac2_tx_rgmii";
 		break;
 	case PHY_INTERFACE_MODE_RMII:
+		rx = "mac2_rx_rmii";
+		tx = "mac2_tx_rmii";
+		break;
 	case PHY_INTERFACE_MODE_MII:
 	case PHY_INTERFACE_MODE_NONE:
 	default:
@@ -285,7 +322,8 @@ static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
 		return;
 	}
 
-	set_clock_freq(tx, rx, 125000000UL, 125000000UL, pfe_dev);
+	freq = get_mac_mode_freq(intf2);
+	set_clock_freq(tx, rx, freq, freq, pfe_dev);
 	enable_clocks(tx, rx, pfe_dev);
 }
 
@@ -351,7 +389,7 @@ static void setup_iomux_pfe(struct udevice *dev,
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
-		/* TODO */
+		pinctrl_select_state(dev, "pfe0_rmii");
 		break;
 
 	case PHY_INTERFACE_MODE_MII:
@@ -374,7 +412,7 @@ static void setup_iomux_pfe(struct udevice *dev,
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
-		/* TODO */
+		pinctrl_select_state(dev, "pfe1_rmii");
 		break;
 
 	case PHY_INTERFACE_MODE_MII:
@@ -397,7 +435,7 @@ static void setup_iomux_pfe(struct udevice *dev,
 		break;
 
 	case PHY_INTERFACE_MODE_RMII:
-		/* TODO */
+		pinctrl_select_state(dev, "pfe2_rmii");
 		break;
 
 	case PHY_INTERFACE_MODE_MII:
