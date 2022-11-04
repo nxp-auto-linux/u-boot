@@ -45,7 +45,7 @@ bool s32_serdes_is_hwconfig_instance_enabled(int id)
 {
 	char serdes_name[SERDES_NAME_SIZE];
 	const char *arg;
-	size_t len;
+	size_t len = 0;
 
 	/*
 	 * The SerDes mode is set by using option `serdesx`, where
@@ -57,7 +57,7 @@ bool s32_serdes_is_hwconfig_instance_enabled(int id)
 		/* Backwards compatibility:
 		 * Initially the SerDes mode was set by using option `pciex`.
 		 */
-		sprintf(serdes_name, "pcie%d", id);
+		snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%d", id);
 		arg = hwconfig_arg(serdes_name, &len);
 		if (!arg || !len)
 			return false;
@@ -91,7 +91,7 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 		/* Backwards compatibility:
 		 * Initially the SerDes mode was set by using option `pciex`.
 		 */
-		sprintf(serdes_name, "pcie%d", id);
+		snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%d", id);
 		debug("%s: testing hwconfig for '%s'\n", __func__,
 		      serdes_name);
 		subarg_str = (char *)hwconfig_subarg(serdes_name, subarg,
