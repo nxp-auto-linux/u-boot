@@ -13,13 +13,13 @@
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
 
-#define PCIE_ALIAS_FMT			"pci%d"
+#define PCIE_ALIAS_FMT			"pci%u"
 #define PCIE_ALIAS_SIZE			sizeof(PCIE_ALIAS_FMT)
 
-#define SERDES_ALIAS_FMT		"serdes%d"
+#define SERDES_ALIAS_FMT		"serdes%u"
 #define SERDES_ALIAS_SIZE		sizeof(SERDES_ALIAS_FMT)
 
-#define SERDES_EXT_PATH_FMT		"/clocks/serdes_%d_ext"
+#define SERDES_EXT_PATH_FMT		"/clocks/serdes_%u_ext"
 #define SERDES_EXT_PATH_FMT_SIZE	sizeof(SERDES_EXT_PATH_FMT)
 /* Add some space for SerDes ID */
 #define SERDES_EXT_PATH_SIZE		(SERDES_EXT_PATH_FMT_SIZE + 2)
@@ -27,7 +27,7 @@
 #define SERDES_EXT_CLK			"ext"
 #define SERDES_EXT_SIZE			sizeof(SERDES_EXT_CLK)
 
-#define SERDES_LINE_NAME_FMT		"serdes_lane%d"
+#define SERDES_LINE_NAME_FMT		"serdes_lane%u"
 #define SERDES_LINE_NAME_LEN		sizeof(SERDES_LINE_NAME_FMT)
 
 #define GMAC_ALIAS_FMT			"gmac%d"
@@ -39,6 +39,8 @@
 #define MAX_PATH_SIZE			100
 
 #define EMAC_ID_INVALID			(u32)(-1)
+
+#define MAX_PROP_ALLOC			(500)
 
 struct dts_node {
 	union {
@@ -52,13 +54,16 @@ struct dts_node {
 	bool fdt;
 };
 
-static int fdt_alias2node(void *blob, const char *alias_fmt, int alias_id)
+static int fdt_alias2node(void *blob, const char *alias_fmt,
+			  unsigned int alias_id)
 {
 	const char *alias_path;
 	char alias_name[MAX_PATH_SIZE];
-	int nodeoff;
+	int nodeoff, ret;
 
-	sprintf(alias_name, alias_fmt, alias_id);
+	ret = sprintf(alias_name, alias_fmt, alias_id);
+	if (ret < 0)
+		return ret;
 
 	alias_path = fdt_get_alias(blob, alias_name);
 	if (!alias_path) {
@@ -76,8 +81,11 @@ static int fdt_alias2node(void *blob, const char *alias_fmt, int alias_id)
 static ofnode ofnode_by_alias(const char *alias_fmt, u32 alias_id)
 {
 	char alias_name[MAX_PATH_SIZE];
+	int ret;
 
-	sprintf(alias_name, alias_fmt, alias_id);
+	ret = sprintf(alias_name, alias_fmt, alias_id);
+	if (ret < 0)
+		return ofnode_null();
 
 	return ofnode_path(alias_name);
 }
@@ -106,13 +114,22 @@ static int ofnode_write_prop_u32(ofnode node, const char *prop, u32 val)
 }
 
 static int ofnode_append_prop(ofnode node, const char *prop,
-			      int len, const void *val)
+			      size_t len, const void *val)
 {
 	const void *old_val;
 	void *new_val;
-	int old_len;
+	int old_len = 0;
+
+	if (len > INT_MAX)
+		return -EINVAL;
 
 	old_val = ofnode_get_property(node, prop, &old_len);
+	if (old_len < 0)
+		return -EINVAL;
+
+	if (old_len + len < len || old_len + len < old_len)
+		return -EINVAL;
+
 	/* New property */
 	if (!old_val) {
 		new_val = malloc(len);
@@ -144,7 +161,12 @@ static int ofnode_append_prop_u32(ofnode node, const char *prop,
 static int ofnode_append_prop_str(ofnode node, const char *prop,
 				  const char *val)
 {
-	return ofnode_append_prop(node, prop, strlen(val) + 1, val);
+	size_t size = strlen(val);
+
+	if (check_size_overflow(size, 1))
+		return -1;
+
+	return ofnode_append_prop(node, prop, size + 1, val);
 }
 
 static unsigned int ofnode_create_phandle(ofnode node)
@@ -159,6 +181,9 @@ static unsigned int ofnode_create_phandle(ofnode node)
 	phandle = dn->phandle;
 	if (!phandle) {
 		phandle = get_max_phandle();
+		if (check_u32_overflow(phandle, 1)) {
+			return 0;
+		}
 		phandle++;
 
 		ret = ofnode_write_prop_u32(node, "phandle", phandle);
@@ -220,7 +245,7 @@ static int disable_ofnode_device(ofnode node)
 }
 
 static int node_by_alias(struct dts_node *root, struct dts_node *node,
-			 const char *alias_fmt, u32 alias_id)
+			 const char *alias_fmt, unsigned int alias_id)
 {
 	*node = *root;
 
@@ -367,7 +392,7 @@ static int node_by_path(struct dts_node *root, struct dts_node *node,
 	return 0;
 }
 
-static int set_pcie_mode(struct dts_node *node, int id)
+static int set_pcie_mode(struct dts_node *node, unsigned int id)
 {
 	int ret;
 	char *compatible;
@@ -389,7 +414,7 @@ static int set_pcie_mode(struct dts_node *node, int id)
 	return 0;
 }
 
-static int set_pcie_phy_mode(struct dts_node *node, int id)
+static int set_pcie_phy_mode(struct dts_node *node, unsigned int id)
 {
 	int ret = 0;
 	const char *mode;
@@ -397,7 +422,7 @@ static int set_pcie_phy_mode(struct dts_node *node, int id)
 
 	phy_mode = s32_serdes_get_pcie_phy_mode_from_hwconfig(id);
 	if (phy_mode == PCIE_PHY_MODE_INVALID) {
-		pr_err("Invalid PCIe%d PHY mode", id);
+		pr_err("Invalid PCIe%u PHY mode", id);
 		return -EINVAL;
 	}
 
@@ -423,12 +448,13 @@ static int set_pcie_phy_mode(struct dts_node *node, int id)
 	return ret;
 }
 
-static int add_pcie_serdes_lines(struct dts_node *root, int id, int lanes,
-				 u32 phandle)
+static int add_pcie_serdes_lines(struct dts_node *root, unsigned int id,
+				 u32 lanes, u32 phandle)
 {
 	char serdes_lane[SERDES_LINE_NAME_LEN];
 	struct dts_node node;
-	int i, ret;
+	u32 i;
+	int ret;
 
 	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
 	if (ret)
@@ -441,7 +467,10 @@ static int add_pcie_serdes_lines(struct dts_node *root, int id, int lanes,
 	}
 
 	for (i = 0; i < lanes; i++) {
-		sprintf(serdes_lane, SERDES_LINE_NAME_FMT, i);
+		ret = sprintf(serdes_lane, SERDES_LINE_NAME_FMT, i);
+		if (ret < 0)
+			return ret;
+
 		ret = node_append_prop_str(&node, "phy-names", serdes_lane);
 		if (ret) {
 			pr_err("Failed to append serdes lane to 'phy-names': %s\n",
@@ -481,22 +510,22 @@ static int add_pcie_serdes_lines(struct dts_node *root, int id, int lanes,
 	return 0;
 }
 
-static int set_pcie_serdes_lines(struct dts_node *node, int id)
+static int set_pcie_serdes_lines(struct dts_node *node, unsigned int id)
 {
 	enum serdes_mode mode;
-	u32 phandle;
-	int ret, lanes = 0;
+	u32 phandle, lanes = 0u;
+	int ret;
 	struct dts_node serdes, root = *node;
 
 	mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 	if (mode == SERDES_MODE_PCIE_PCIE)
-		lanes = 2;
+		lanes = 2u;
 
 	if (mode == SERDES_MODE_PCIE_XPCS0 || mode == SERDES_MODE_PCIE_XPCS1)
-		lanes = 1;
+		lanes = 1u;
 
 	if (!lanes) {
-		pr_err("Invalid PCIe%d lanes config\n", id);
+		pr_err("Invalid PCIe%u lanes config\n", id);
 		return -EINVAL;
 	}
 
@@ -508,7 +537,7 @@ static int set_pcie_serdes_lines(struct dts_node *node, int id)
 
 	phandle = node_create_phandle(&serdes);
 	if (!phandle) {
-		pr_err("Failed to create phandle for %s%d\n",
+		pr_err("Failed to create phandle for %s%u\n",
 		       SERDES_ALIAS_FMT, id);
 		return ret;
 	}
@@ -520,7 +549,8 @@ static int set_pcie_serdes_lines(struct dts_node *node, int id)
 	return 0;
 }
 
-static int skip_dts_node(struct dts_node *root, const char *alias_fmt, u32 id)
+static int skip_dts_node(struct dts_node *root, const char *alias_fmt,
+			 unsigned int id)
 {
 	int ret;
 	struct dts_node node;
@@ -547,7 +577,8 @@ static int skip_dts_node(struct dts_node *root, const char *alias_fmt, u32 id)
 	return 0;
 }
 
-static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
+static int skip_dts_nodes_config(struct dts_node *root, unsigned int id,
+				 bool *skip)
 {
 	int ret = -EINVAL;
 	struct dts_node serdes;
@@ -570,7 +601,7 @@ static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
 	if (!*skip)
 		return 0;
 
-	printf("Skipping configuration for SerDes%d\n", id);
+	printf("Skipping configuration for SerDes%u,\n", id);
 
 	ret = skip_dts_node(root, PCIE_ALIAS_FMT, id);
 	if (ret)
@@ -583,7 +614,7 @@ static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
 	return 0;
 }
 
-static int set_pcie_width_and_speed(struct dts_node *root, int id)
+static int set_pcie_width_and_speed(struct dts_node *root, unsigned int id)
 {
 	int ret;
 	struct dts_node node;
@@ -617,7 +648,7 @@ static int set_pcie_width_and_speed(struct dts_node *root, int id)
 	return ret;
 }
 
-static int prepare_pcie_node(struct dts_node *root, int id)
+static int prepare_pcie_node(struct dts_node *root, unsigned int id)
 {
 	int ret;
 	struct dts_node node;
@@ -631,7 +662,7 @@ static int prepare_pcie_node(struct dts_node *root, int id)
 	if (!s32_serdes_is_pcie_enabled_in_hwconfig(id)) {
 		ret = disable_node(&node);
 		if (ret) {
-			pr_err("Failed to disable PCIe%d\n", id);
+			pr_err("Failed to disable PCIe%u\n", id);
 			return ret;
 		}
 
@@ -663,7 +694,7 @@ static int prepare_pcie_node(struct dts_node *root, int id)
 
 	ret = enable_node(&node);
 	if (ret) {
-		pr_err("Failed to enable PCIe%d\n", id);
+		pr_err("Failed to enable PCIe%u\n", id);
 		return ret;
 	}
 
@@ -672,12 +703,19 @@ static int prepare_pcie_node(struct dts_node *root, int id)
 
 static int rename_ext_clk(struct dts_node *node, int prop_pos)
 {
-	int i, ret, length, str_pos;
+	size_t i, str_pos, prop_name_len;
+	int ret, length = 0;
 	const char *list;
 	char *propval;
 
+	if (prop_pos < 0)
+		return -EINVAL;
+
 	list = node_get_prop(node, "clock-names", &length);
 	if (!list)
+		return -EINVAL;
+
+	if (length < 0 || length > MAX_PROP_ALLOC)
 		return -EINVAL;
 
 	propval = malloc(length);
@@ -687,8 +725,22 @@ static int rename_ext_clk(struct dts_node *node, int prop_pos)
 	memcpy(propval, list, length);
 
 	/* Jump over elements before 'ext' clock */
-	for (str_pos = 0, i = 0; i < prop_pos; i++)
-		str_pos += strlen(&propval[str_pos]) + 1;
+	for (str_pos = 0, i = 0; i < prop_pos; i++) {
+		prop_name_len = strlen(&propval[str_pos]);
+
+		if (check_size_overflow(prop_name_len, 1))
+			return -EINVAL;
+
+		prop_name_len += 1;
+
+		if (check_size_overflow(str_pos, prop_name_len))
+			return -EINVAL;
+
+		str_pos += prop_name_len;
+	}
+
+	if (str_pos >= length)
+		return -EINVAL;
 
 	propval[str_pos] = toupper(propval[str_pos]);
 
@@ -702,20 +754,24 @@ static int rename_ext_clk(struct dts_node *node, int prop_pos)
 	return 0;
 }
 
-static int get_ext_clk_phandle(struct dts_node *root, int id, uint32_t *phandle)
+static int get_ext_clk_phandle(struct dts_node *root, unsigned int id,
+			       uint32_t *phandle)
 {
 	unsigned long mhz;
 	char ext_clk_path[SERDES_EXT_PATH_SIZE];
-	int clk_mhz, ret;
+	unsigned int clk_mhz;
 	struct dts_node node;
+	int ret;
 
 	mhz = s32_serdes_get_clock_fmhz_from_hwconfig(id);
 	if (mhz == MHZ_100)
-		clk_mhz = 100;
+		clk_mhz = 100u;
 	else
-		clk_mhz = 125;
+		clk_mhz = 125u;
 
-	sprintf(ext_clk_path, SERDES_EXT_PATH_FMT, clk_mhz);
+	ret = sprintf(ext_clk_path, SERDES_EXT_PATH_FMT, clk_mhz);
+	if (ret < 0)
+		return ret;
 
 	ret = node_by_path(root, &node, ext_clk_path);
 	if (ret) {
@@ -733,7 +789,7 @@ static int get_ext_clk_phandle(struct dts_node *root, int id, uint32_t *phandle)
 	return 0;
 }
 
-static int add_ext_clk(struct dts_node *node, int id)
+static int add_ext_clk(struct dts_node *node, unsigned int id)
 {
 	struct dts_node root = *node;
 	u32 phandle;
@@ -764,7 +820,7 @@ static int add_ext_clk(struct dts_node *node, int id)
 	return ret;
 }
 
-static int set_serdes_clk(struct dts_node *root, int id)
+static int set_serdes_clk(struct dts_node *root, unsigned int id)
 {
 	bool ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
 	int prop_pos, ret;
@@ -787,7 +843,7 @@ static int set_serdes_clk(struct dts_node *root, int id)
 	return 0;
 }
 
-static int set_serdes_mode(struct dts_node *root, int id)
+static int set_serdes_mode(struct dts_node *root, unsigned int id)
 {
 	int ret;
 	enum serdes_mode mode;
@@ -796,7 +852,7 @@ static int set_serdes_mode(struct dts_node *root, int id)
 
 	mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 	if (mode == SERDES_MODE_INVAL) {
-		pr_err("Invalid SerDes%d mode\n", id);
+		pr_err("Invalid SerDes%u mode\n", id);
 		return -EINVAL;
 	}
 
@@ -817,7 +873,7 @@ static int set_serdes_mode(struct dts_node *root, int id)
 	return ret;
 }
 
-static void disable_serdes_pcie_nodes(struct dts_node *root, u32 id)
+static void disable_serdes_pcie_nodes(struct dts_node *root, unsigned int id)
 {
 	size_t i;
 	int ret;
@@ -1142,7 +1198,7 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 
 		if (!s32_serdes_is_cfg_valid(id)) {
 			disable_serdes_pcie_nodes(&root, id);
-			pr_err("SerDes%d configuration will be ignored as it's invalid\n",
+			pr_err("SerDes%u configuration will be ignored as it's invalid\n",
 			       id);
 			continue;
 		}
@@ -1156,15 +1212,15 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 
 		ret = prepare_pcie_node(&root, id);
 		if (ret)
-			pr_warn("Failed to prepare PCIe node%d\n", id);
+			pr_warn("Failed to prepare PCIe node%u\n", id);
 
 		ret = set_serdes_clk(&root, id);
 		if (ret)
-			pr_err("Failed to set the clock for SerDes%d\n", id);
+			pr_err("Failed to set the clock for SerDes%u\n", id);
 
 		ret = set_serdes_mode(&root, id);
 		if (ret)
-			pr_err("Failed to set mode for SerDes%d\n", id);
+			pr_err("Failed to set mode for SerDes%u\n", id);
 
 #if (CONFIG_IS_ENABLED(FSL_PFENG))
 		/* Mode 5 only - uses XPCS1 for either SerDes */

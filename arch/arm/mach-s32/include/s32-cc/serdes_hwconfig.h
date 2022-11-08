@@ -138,24 +138,24 @@ enum pcie_link_width {
 	X_MAX = X2
 };
 
-enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(int id);
-bool s32_serdes_is_external_clk_in_hwconfig(int i);
-unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id);
-bool s32_serdes_get_skip_from_hwconfig(int id);
-enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(int id);
-int s32_serdes_get_xpcs_speed_from_hwconfig(int serdes_id,
-					    int xpcs_id);
-enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int serdes_id,
-							    int xpcs_id);
-enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(int id);
-bool s32_serdes_is_cfg_valid(int id);
-bool s32_serdes_is_pcie_enabled_in_hwconfig(int id);
-bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id);
-bool s32_serdes_is_mode5_enabled_in_hwconfig(int id);
+enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(unsigned int id);
+bool s32_serdes_is_external_clk_in_hwconfig(unsigned int i);
+unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned int id);
+bool s32_serdes_get_skip_from_hwconfig(unsigned int id);
+enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id);
+int s32_serdes_get_xpcs_speed_from_hwconfig(unsigned int serdes_id,
+					    unsigned int xpcs_id);
+enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(unsigned int serdes_id,
+							    unsigned int xpcs_id);
+enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(unsigned int id);
+bool s32_serdes_is_cfg_valid(unsigned int id);
+bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id);
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id);
+bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned int id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
-int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump);
+int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump);
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane);
-bool s32_serdes_is_hwconfig_instance_enabled(int id);
+bool s32_serdes_is_hwconfig_instance_enabled(unsigned int id);
 
 #endif

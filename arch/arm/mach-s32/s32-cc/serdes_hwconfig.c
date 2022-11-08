@@ -20,7 +20,7 @@
 
 #define SERDES_NAME_SIZE 32
 
-bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
+bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id)
 {
 	enum serdes_mode ss_mode;
 
@@ -28,7 +28,7 @@ bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
 	return IS_SERDES_PCIE(ss_mode);
 }
 
-bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id)
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id)
 {
 	enum serdes_mode ss_mode;
 
@@ -36,23 +36,30 @@ bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id)
 	return IS_SERDES_PCIE(ss_mode) && IS_SERDES_XPCS(ss_mode);
 }
 
-bool s32_serdes_is_hwconfig_instance_enabled(int id)
+bool s32_serdes_is_hwconfig_instance_enabled(unsigned int id)
 {
 	char serdes_name[SERDES_NAME_SIZE];
 	const char *arg;
 	size_t len = 0;
+	int ret;
 
 	/*
 	 * The SerDes mode is set by using option `serdesx`, where
 	 * `x` is the ID.
 	 */
-	snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%d", id);
+	ret = snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%u", id);
+	if (ret < 0)
+		return false;
+
 	arg = hwconfig_arg(serdes_name, &len);
 	if (!arg || !len) {
 		/* Backwards compatibility:
 		 * Initially the SerDes mode was set by using option `pciex`.
 		 */
-		snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%d", id);
+		ret = snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%u", id);
+		if (ret < 0)
+			return false;
+
 		arg = hwconfig_arg(serdes_name, &len);
 		if (!arg || !len)
 			return false;
@@ -62,14 +69,18 @@ bool s32_serdes_is_hwconfig_instance_enabled(int id)
 }
 
 static inline
-char *s32_serdes_get_pcie_hwconfig_subarg(int id,
+char *s32_serdes_get_pcie_hwconfig_subarg(unsigned int id,
 					  const char *subarg,
 					  size_t *subarg_len)
 {
 	char serdes_name[SERDES_NAME_SIZE + 1];
 	char *subarg_str = NULL;
+	int ret;
 
-	snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%d", id);
+	ret = snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%u", id);
+	if (ret < 0)
+		return NULL;
+
 	debug("%s: testing hwconfig for '%s' option '%s'\n", __func__,
 	      serdes_name, subarg);
 	subarg_str = (char *)hwconfig_subarg(serdes_name, subarg,
@@ -86,12 +97,13 @@ char *s32_serdes_get_pcie_hwconfig_subarg(int id,
 }
 
 static inline
-char *s32_serdes_get_serdes_hwconfig_subarg(int id,
+char *s32_serdes_get_serdes_hwconfig_subarg(unsigned int id,
 					    const char *subarg,
 					    size_t *subarg_len)
 {
 	char serdes_name[SERDES_NAME_SIZE + 1];
 	char *subarg_str = NULL;
+	int ret;
 
 	if (!subarg || !subarg_len)
 		return NULL;
@@ -100,7 +112,10 @@ char *s32_serdes_get_serdes_hwconfig_subarg(int id,
 	 * The SerDes mode is set by using option `serdesx`, where
 	 * `x` is the ID.
 	 */
-	snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%d", id);
+	ret = snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%u", id);
+	if (ret < 0)
+		return NULL;
+
 	debug("%s: testing hwconfig for '%s' option '%s'\n", __func__,
 	      serdes_name, subarg);
 
@@ -113,7 +128,10 @@ char *s32_serdes_get_serdes_hwconfig_subarg(int id,
 		 */
 		char pcie_name[SERDES_NAME_SIZE + 1];
 
-		snprintf(pcie_name, SERDES_NAME_SIZE, "pcie%d", id);
+		ret = snprintf(pcie_name, SERDES_NAME_SIZE, "pcie%u", id);
+		if (ret < 0)
+			return NULL;
+
 		subarg_str = s32_serdes_get_pcie_hwconfig_subarg(id, subarg,
 								 subarg_len);
 #endif
@@ -129,14 +147,20 @@ char *s32_serdes_get_serdes_hwconfig_subarg(int id,
 }
 
 static inline
-char *s32_serdes_get_xpcs_hwconfig_subarg(int serdes_id, int xpcs_id,
+char *s32_serdes_get_xpcs_hwconfig_subarg(unsigned int serdes_id,
+					  unsigned int xpcs_id,
 					  const char *subarg,
 					  size_t *subarg_len)
 {
 	char xpcs_name[SERDES_NAME_SIZE + 1];
 	char *subarg_str = NULL;
+	int ret;
 
-	snprintf(xpcs_name, SERDES_NAME_SIZE, "xpcs%d_%d", serdes_id, xpcs_id);
+	ret = snprintf(xpcs_name, SERDES_NAME_SIZE, "xpcs%u_%u",
+		       serdes_id, xpcs_id);
+	if (ret < 0)
+		return NULL;
+
 	debug("%s: testing hwconfig for '%s' option '%s'\n", __func__,
 	      xpcs_name, subarg);
 	subarg_str = (char *)hwconfig_subarg(xpcs_name, subarg,
@@ -163,7 +187,7 @@ char *s32_serdes_get_xpcs_hwconfig_subarg(int serdes_id, int xpcs_id,
 	return subarg_str;
 }
 
-enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(int id)
+enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id)
 {
 	enum pcie_type pcietype = PCIE_INVALID;
 	size_t subarg_len = 0;
@@ -189,11 +213,11 @@ enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(int id)
 		pcietype = PCIE_EP;
 #endif
 
-	debug("found pcie%d mode %d\n", id, pcietype);
+	debug("found pcie%u mode %d\n", id, pcietype);
 	return pcietype;
 }
 
-bool s32_serdes_get_skip_from_hwconfig(int id)
+bool s32_serdes_get_skip_from_hwconfig(unsigned int id)
 {
 	bool skip = false;
 	size_t subarg_len = 0;
@@ -203,12 +227,12 @@ bool s32_serdes_get_skip_from_hwconfig(int id)
 	    !strncmp(option_str, "1", subarg_len))
 		skip = true;
 
-	debug("found serdes%d skip %d\n", id, skip);
+	debug("found serdes%u skip %d\n", id, skip);
 	return skip;
 }
 
-int s32_serdes_get_xpcs_speed_from_hwconfig(int serdes_id,
-					    int xpcs_id)
+int s32_serdes_get_xpcs_speed_from_hwconfig(unsigned int serdes_id,
+					    unsigned int xpcs_id)
 {
 	/* Set default mode to invalid to force configuration */
 	int speed = SPEED_UNKNOWN;
@@ -235,7 +259,7 @@ int s32_serdes_get_xpcs_speed_from_hwconfig(int serdes_id,
 						  subarg_len))
 			speed = SPEED_2500;
 #endif
-		debug("found xpcs%d_%d speed %d\n", serdes_id, xpcs_id, speed);
+		debug("found xpcs%u_%u speed %d\n", serdes_id, xpcs_id, speed);
 		return speed;
 	}
 
@@ -248,12 +272,12 @@ int s32_serdes_get_xpcs_speed_from_hwconfig(int serdes_id,
 	else if (!strncmp(option_str, "2G5", subarg_len))
 		speed = SPEED_2500;
 
-	debug("found xpcs%d_%d speed %d\n", serdes_id, xpcs_id, speed);
+	debug("found xpcs%u_%u speed %d\n", serdes_id, xpcs_id, speed);
 	return speed;
 }
 
-enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int serdes_id,
-							    int xpcs_id)
+enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(
+	unsigned int serdes_id, unsigned int xpcs_id)
 {
 	/* Set default mode to invalid to force configuration */
 	enum serdes_xpcs_mode xpcs_mode = SGMII_INVALID;
@@ -270,11 +294,11 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int serdes_id,
 		break;
 	}
 
-	debug("found xpcs%d_%d mode %d\n", serdes_id, xpcs_id, xpcs_mode);
+	debug("found xpcs%u_%u mode %d\n", serdes_id, xpcs_id, xpcs_mode);
 	return xpcs_mode;
 }
 
-bool s32_serdes_is_external_clk_in_hwconfig(int id)
+bool s32_serdes_is_external_clk_in_hwconfig(unsigned int id)
 {
 	size_t subarg_len = 0;
 	bool ext = false;
@@ -287,11 +311,11 @@ bool s32_serdes_is_external_clk_in_hwconfig(int id)
 	if (!strncmp(option_str, "ext", subarg_len))
 		ext = true;
 
-	debug("found serdes%d ext clock %d\n", id, ext);
+	debug("found serdes%u ext clock %d\n", id, ext);
 	return ext;
 }
 
-unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
+unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned int id)
 {
 	size_t subarg_len = 0;
 	unsigned long fmhz = MHZ_100;
@@ -304,11 +328,11 @@ unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 	if (!strncmp(option_str, "125", subarg_len))
 		fmhz = MHZ_125;
 
-	debug("found serdes%d fmhz %lu\n", id, fmhz);
+	debug("found serdes%u fmhz %lu\n", id, fmhz);
 	return fmhz;
 }
 
-enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(int id)
+enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(unsigned int id)
 {
 	enum pcie_phy_mode phy_mode = CRNS;
 	size_t subarg_len = 0;
@@ -323,11 +347,11 @@ enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(int id)
 	else if (!strncmp(option_str, "sris", subarg_len))
 		phy_mode = SRIS;
 
-	debug("found pcie%d phy mode %d\n", id, phy_mode);
+	debug("found pcie%u phy mode %d\n", id, phy_mode);
 	return phy_mode;
 }
 
-enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(int id)
+enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(unsigned int id)
 {
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_serdes_hwconfig_subarg(id, "mode",
@@ -374,7 +398,7 @@ enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(int id)
 	return SERDES_MODE_INVAL;
 }
 
-bool s32_serdes_is_mode5_enabled_in_hwconfig(int id)
+bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned int id)
 {
 	enum serdes_xpcs_mode xpcs1_mode;
 	enum serdes_mode mode;
@@ -385,7 +409,7 @@ bool s32_serdes_is_mode5_enabled_in_hwconfig(int id)
 	return (mode == SERDES_MODE_PCIE_XPCS1 && xpcs1_mode == SGMII_XPCS_2G5);
 }
 
-bool s32_serdes_is_cfg_valid(int id)
+bool s32_serdes_is_cfg_valid(unsigned int id)
 {
 	enum serdes_xpcs_mode xpcs0_mode, xpcs1_mode;
 	enum serdes_mode mode;
@@ -393,6 +417,7 @@ bool s32_serdes_is_cfg_valid(int id)
 	unsigned long freq;
 	bool ext_clk;
 	char prefix[SERDES_NAME_SIZE + 1];
+	int ret;
 
 	ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
 	freq = s32_serdes_get_clock_fmhz_from_hwconfig(id);
@@ -400,7 +425,9 @@ bool s32_serdes_is_cfg_valid(int id)
 	xpcs1_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id, 1);
 	mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 	phy_mode = s32_serdes_get_pcie_phy_mode_from_hwconfig(id);
-	snprintf(prefix, SERDES_NAME_SIZE, "SerDes%d: 'hwconfig':", id);
+	ret = snprintf(prefix, SERDES_NAME_SIZE, "SerDes%u: 'hwconfig':", id);
+	if (ret < 0)
+		return false;
 
 	if (mode == SERDES_MODE_INVAL) {
 		printf("%s Invalid mode configuration\n", prefix);
@@ -434,12 +461,12 @@ bool s32_serdes_is_cfg_valid(int id)
 
 	/* Mode 1 */
 	if (mode == SERDES_MODE_PCIE_XPCS0 && xpcs0_mode != SGMII_XPCS_1G) {
-		printf("%s Invalid xpcs%d_0 configuration for", prefix, id);
+		printf("%s Invalid xpcs%u_0 configuration for", prefix, id);
 		printf("  PCIe/XPCS0 combo mode\n");
 		return false;
 	}
 	if (mode == SERDES_MODE_PCIE_XPCS0 && xpcs1_mode != SGMII_INVALID) {
-		printf("%s No xpcs%d_1 configuration allowed for", prefix, id);
+		printf("%s No xpcs%u_1 configuration allowed for", prefix, id);
 		printf("  PCIe/XPCS0 combo mode\n");
 		return false;
 	}
@@ -447,12 +474,12 @@ bool s32_serdes_is_cfg_valid(int id)
 	/* Mode 2 and 5 */
 	if (mode == SERDES_MODE_PCIE_XPCS1 &&
 	    !(xpcs1_mode == SGMII_XPCS_1G || xpcs1_mode == SGMII_XPCS_2G5)) {
-		printf("%s Invalid xpcs%d_1 configuration for", prefix, id);
+		printf("%s Invalid xpcs%u_1 configuration for", prefix, id);
 		printf("  PCIe/XPCS1 combo mode\n");
 		return false;
 	}
 	if (mode == SERDES_MODE_PCIE_XPCS1 && xpcs0_mode != SGMII_INVALID) {
-		printf("%s No xpcs%d_0 configuration allowed for", prefix, id);
+		printf("%s No xpcs%u_0 configuration allowed for", prefix, id);
 		printf("  PCIe/XPCS1 combo mode\n");
 		return false;
 	}
@@ -482,11 +509,11 @@ bool s32_serdes_is_cfg_valid(int id)
 	return true;
 }
 
-int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
+int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump)
 {
 	ofnode node = dev_ofnode(serdes_dev);
 	const char *uc_name = "serdes";
-	int ret;
+	int ret, val = 0;
 
 	if (ofnode_is_np(node)) {
 		ret = of_alias_get_id(ofnode_to_np(node), uc_name);
@@ -496,7 +523,11 @@ int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
 		}
 	} else {
 		ret = fdtdec_get_alias_seq(gd->fdt_blob, uc_name,
-					   ofnode_to_offset(node), devnump);
+					   ofnode_to_offset(node), &val);
+		if (val >= 0)
+			*devnump = val;
+		else
+			return -EINVAL;
 	}
 
 	return ret;
@@ -505,7 +536,7 @@ int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 xpcs_id)
 {
 	int speed;
-	int serdes_id = 0;
+	unsigned int serdes_id = 0;
 	int ret;
 
 	if (!serdes_dev)
@@ -522,7 +553,7 @@ int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 xpcs_id)
 	}
 
 	speed = s32_serdes_get_xpcs_speed_from_hwconfig(serdes_id, xpcs_id);
-	debug("SerDes%d: hwconfig: xpcs%d_%d has speed %d\n",
+	debug("SerDes%u: hwconfig: xpcs%u_%u has speed %d\n",
 	      serdes_id, serdes_id, xpcs_id, speed);
 
 	return speed;

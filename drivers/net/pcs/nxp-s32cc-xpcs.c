@@ -297,7 +297,7 @@ static struct udevice *get_xpcs_device(struct s32cc_xpcs *xpcs)
 	return xpcs->dev;
 }
 
-static void init_params(u32 reg, struct s32cc_xpcs *xpcs,
+static int init_params(u32 reg, struct s32cc_xpcs *xpcs,
 			struct s32cc_xpcs_params *params, u32 *data)
 {
 	u32 ofsleft = (reg >> 8) & 0xffffU;
@@ -305,11 +305,22 @@ static void init_params(u32 reg, struct s32cc_xpcs *xpcs,
 
 	*data = ofsleft;
 
+	if (check_u32_overflow(xpcs->params.addr2, ofsright * 4))
+		return -EOVERFLOW;
+
 	params->addr1 = xpcs->params.addr1;
 	params->addr2 = xpcs->params.addr2 + (ofsright * 4);
 
+	if (params->addr1 < xpcs->params.addr2)
+		return -EOVERFLOW;
+
+	if (params->addr2 < xpcs->params.addr2)
+		return -EOVERFLOW;
+
 	params->addr1 -= xpcs->params.addr2;
 	params->addr2 -= xpcs->params.addr2;
+
+	return 0;
 }
 
 static bool regmap_reg_in_ranges(u32 reg,
@@ -349,13 +360,19 @@ static int xpcs_regmap_reg_read(struct s32cc_xpcs *xpcs, u32 reg,
 	struct udevice *dev = get_xpcs_device(xpcs);
 	struct s32cc_xpcs_params params;
 	u32 data;
+	int ret;
 
 	if (!xpcs_readable_reg(dev, reg)) {
 		dev_err(dev, "The register 0x%x isn't readable\n", reg);
 		return -EPERM;
 	}
 
-	init_params(reg, xpcs, &params, &data);
+	ret = init_params(reg, xpcs, &params, &data);
+	if (ret)
+		return ret;
+
+	if (data > U16_MAX)
+		return -EOVERFLOW;
 
 	writew(data, UPTR(xpcs->base) + params.addr1);
 	*result = readw(UPTR(xpcs->base) + params.addr2);
@@ -369,13 +386,16 @@ static int xpcs_regmap_reg_write(struct s32cc_xpcs *xpcs, u32 reg,
 	struct udevice *dev = get_xpcs_device(xpcs);
 	struct s32cc_xpcs_params params;
 	u32 data;
+	int ret;
 
 	if (!xpcs_writeable_reg(dev, reg)) {
 		dev_err(dev, "The register 0x%x isn't writable\n", reg);
 		return -EPERM;
 	}
 
-	init_params(reg, xpcs, &params, &data);
+	ret = init_params(reg, xpcs, &params, &data);
+	if (ret)
+		return ret;
 
 	writel(data, UPTR(xpcs->base) + params.addr1);
 	writel(val, UPTR(xpcs->base) + params.addr2);
@@ -1282,6 +1302,7 @@ static enum xpcs_cmd get_command(int argc, char * const argv[],
 				 struct xpcs_cmd_args *args)
 {
 	u32 instance;
+	ulong inst_long;
 
 	if (argc < 2)
 		return XPCS_INVALID;
@@ -1289,11 +1310,13 @@ static enum xpcs_cmd get_command(int argc, char * const argv[],
 	if (!strcmp(argv[1], "list"))
 		return XPCS_LIST;
 
-	instance = simple_strtoul(argv[1], NULL, 10);
-	if (instance >= registered_xpcs.n_instances) {
-		printf("Invalid instance number: %d\n", instance);
+	inst_long = simple_strtoul(argv[1], NULL, 10);
+	if (inst_long >= registered_xpcs.n_instances) {
+		printf("Invalid instance number: %lu\n", inst_long);
 		return XPCS_INVALID;
 	}
+
+	instance = inst_long;
 
 	args->xpcs = registered_xpcs.xpcs[instance];
 
@@ -1431,17 +1454,24 @@ static int range_comp(const void *a, const void *b)
 	const struct regmap_range *ar = a;
 	const struct regmap_range *br = b;
 
-	if (ar->start != br->start)
-		return ar->start - br->start;
+	if (ar->start != br->start) {
+		if (ar->start < br->start)
+			return -1;
+		return 1;
+	}
 
-	return ar->size - br->size;
+	if (ar->size < br->size)
+		return -1;
+	else if (ar->size > br->size)
+		return 1;
+	return 0;
 }
 
 static int do_xpcs_dump(struct xpcs_cmd_args *cmd_args)
 {
 	const struct regmap_range *range;
 	size_t i, start, end;
-	u32 reg;
+	ulong reg;
 
 	struct regmap_range *ranges;
 	size_t n_ranges;
@@ -1465,7 +1495,7 @@ static int do_xpcs_dump(struct xpcs_cmd_args *cmd_args)
 		end = start + range->size;
 
 		for (reg = range->start; reg <= end; reg++) {
-			printf("0x%08x => 0x%04x\n", reg,
+			printf("0x%08lx => 0x%04x\n", reg,
 			       XPCS_READ(cmd_args->xpcs, reg));
 		}
 	}
