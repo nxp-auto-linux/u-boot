@@ -14,7 +14,6 @@
 #include <pci.h>
 #include <reset.h>
 #include <asm/io.h>
-#include <dm/device-internal.h>
 #include <dm/device_compat.h>
 #include <dm/of_access.h>
 #include <linux/io.h>
@@ -53,36 +52,36 @@
 			((clk_type == MHZ_100) ? "100Mhz" : "125Mhz")
 
 #define PCIE_PHY_GEN_CTRL	(0x0)
-#define  REF_USE_PAD_MASK	BIT(17)
-#define  RX_SRIS_MODE_MASK	BIT(9)
+#define  REF_USE_PAD_MASK	BIT_32(17)
+#define  RX_SRIS_MODE_MASK	BIT_32(9)
 #define PCIE_PHY_MPLLA_CTRL	(0x10)
-#define  MPLLA_STATE_MASK	BIT(31)
-#define  MPLL_STATE_MASK	BIT(30)
+#define  MPLLA_STATE_MASK	BIT_32(31)
+#define  MPLL_STATE_MASK	BIT_32(30)
 #define PCIE_PHY_MPLLB_CTRL	(0x14U)
-#define  MPLLB_SSC_EN_MASK	BIT(1)
+#define  MPLLB_SSC_EN_MASK	BIT_32(1)
 #define PCIE_PHY_EXT_CTRL_SEL	(0x18U)
-#define  EXT_PHY_CTRL_SEL	BIT(0)
+#define  EXT_PHY_CTRL_SEL	BIT_32(0)
 #define PCIE_PHY_EXT_BS_CTRL	(0x1cU)
-#define  EXT_BS_TX_LOWSWING	BIT(6)
-#define  EXT_BS_RX_BIGSWING	BIT(5)
+#define  EXT_BS_TX_LOWSWING	BIT_32(6)
+#define  EXT_BS_RX_BIGSWING	BIT_32(5)
 #define  EXT_BS_RX_LEVEL(x)	(((x) & 0x1fU) << 0)
 #define PCIE_PHY_REF_CLK_CTRL	(0x20U)
 #define  EXT_REF_RANGE(x)	(((x) & 0x7U) << 3)
-#define  REF_CLK_DIV2_EN	BIT(2)
-#define  REF_CLK_MPLLB_DIV2_EN	BIT(1)
+#define  REF_CLK_DIV2_EN	BIT_32(2)
+#define  REF_CLK_MPLLB_DIV2_EN	BIT_32(1)
 #define PCIE_PHY_EXT_MPLLA_CTRL_1	(0x30U)
 #define  EXT_MPLLA_BANDWIDTH(x)		(((x) & 0xffffU) << 0)
 #define PCIE_PHY_EXT_MPLLB_CTRL_1	(0x40U)
 #define  EXT_MPLLB_DIV_MULTIPLIER(x)	(((x) & 0xffU) << 24)
-#define  EXT_MPLLB_DIV_CLK_EN	BIT(19)
-#define  EXT_MPLLB_DIV8_CLK_EN	BIT(18)
-#define  EXT_MPLLB_DIV10_CLK_EN	BIT(16)
+#define  EXT_MPLLB_DIV_CLK_EN	BIT_32(19)
+#define  EXT_MPLLB_DIV8_CLK_EN	BIT_32(18)
+#define  EXT_MPLLB_DIV10_CLK_EN	BIT_32(16)
 #define  EXT_MPLLB_BANDWIDTH(x)	(((x) & 0xffffU) << 0)
 #define PCIE_PHY_EXT_MPLLB_CTRL_2	(0x44U)
 #define  EXT_MPLLB_FRACN_CTRL(x)	(((x) & 0x7ffU) << 12)
 #define  MPLLB_MULTIPLIER(n)		(((n) & 0xffU) << 0)
 #define PCIE_PHY_EXT_MPLLB_CTRL_3	(0x48U)
-#define  EXT_MPLLB_WORD_DIV2_EN		BIT(31)
+#define  EXT_MPLLB_WORD_DIV2_EN		BIT_32(31)
 #define  EXT_MPLLB_TX_CLK_DIV(x)	(((x) & 0x7U) << 28)
 #define PCIE_PHY_EXT_MISC_CTRL_1	(0xa0U)
 #define  EXT_RX_LOS_THRESHOLD(x)	(((x) & 0x3fU) << 1)
@@ -93,16 +92,16 @@
 #define PCIE_PHY_XPCS1_RX_OVRD_CTRL	(0xd0U)
 #define  XPCS1_RX_VCO_LD_VAL(x)		(((x) & 0x1fffU) << 16)
 #define  XPCS1_RX_REF_LD_VAL(x)		(((x) & 0x3fU) << 8)
-#define SS_RW_REG_0		(0xf0)
-#define  SUBMODE_MASK		(0x7)
-#define  CLKEN_MASK		BIT(23)
-#define  PHY0_CR_PARA_SEL_MASK	BIT(9)
+#define SS_RW_REG_0		(0xf0u)
+#define  SUBMODE_MASK		(0x7u)
+#define  CLKEN_MASK		BIT_32(23)
+#define  PHY0_CR_PARA_SEL_MASK	BIT_32(9)
 
 #define PHY_REG_ADDR		(0x0)
-#define  PHY_REG_EN		BIT(31)
+#define  PHY_REG_EN		BIT_32(31)
 #define PHY_REG_DATA		(0x4)
 #define PHY_RST_CTRL		(0x8)
-#define  WARM_RST		BIT(1)
+#define  WARM_RST		BIT_32(1)
 
 #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
@@ -159,7 +158,7 @@ struct serdes {
 	u32 phys_type[SERDES_MAX_LANES];
 	u8 lanes_status;
 
-	int id;
+	unsigned int id;
 };
 
 static const char * const serdes_clk_names[] = {
@@ -168,12 +167,13 @@ static const char * const serdes_clk_names[] = {
 
 static void mark_configured_lane(struct serdes *serdes, u32 lane)
 {
-	serdes->lanes_status |= BIT(lane);
+	if (BIT_32(lane) < U8_MAX)
+		serdes->lanes_status |= BIT_32(lane);
 }
 
 static bool is_lane_configured(struct serdes *serdes, u32 lane)
 {
-	return !!(serdes->lanes_status & BIT(lane));
+	return !!(serdes->lanes_status & BIT_32(lane));
 }
 
 static int serdes_phy_reset(struct phy *p)
@@ -296,11 +296,14 @@ static int pci_phy_power_on_common(struct serdes *serdes)
 	return 0;
 }
 
-static int pcie_phy_power_on(struct serdes *serdes, int id)
+static int pcie_phy_power_on(struct serdes *serdes, unsigned long id)
 {
 	struct pcie_ctrl *pcie = &serdes->pcie;
 	u32 iq_ovrd_in;
 	int ret;
+
+	if (id >= ARRAY_SIZE(pcie->powered_on))
+		return -EINVAL;
 
 	ret = pci_phy_power_on_common(serdes);
 	if (ret)
@@ -319,7 +322,7 @@ static int pcie_phy_power_on(struct serdes *serdes, int id)
 	return 0;
 }
 
-static int xpcs_phy_init(struct serdes *serdes, int id)
+static int xpcs_phy_init(struct serdes *serdes, unsigned long id)
 {
 	struct serdes_ctrl *ctrl = &serdes->ctrl;
 	struct xpcs_ctrl *xpcs = &serdes->xpcs;
@@ -329,6 +332,9 @@ static int xpcs_phy_init(struct serdes *serdes, int id)
 	void __iomem *base;
 	unsigned long rate;
 	int ret;
+
+	if (id >= ARRAY_SIZE(xpcs->phys))
+		return -EINVAL;
 
 	if (xpcs->phys[id])
 		return 0;
@@ -352,17 +358,20 @@ static int xpcs_phy_init(struct serdes *serdes, int id)
 			       ctrl->ext_clk, rate, shared);
 }
 
-static int xpcs_phy_power_on(struct serdes *serdes, int id)
+static int xpcs_phy_power_on(struct serdes *serdes, unsigned long id)
 {
 	struct xpcs_ctrl *xpcs = &serdes->xpcs;
 	int ret;
+
+	if (id >= ARRAY_SIZE(xpcs->powered_on) || id >= ARRAY_SIZE(xpcs->phys))
+		return -EINVAL;
 
 	if (xpcs->powered_on[id])
 		return 0;
 
 	ret = xpcs->ops->power_on(xpcs->phys[id]);
 	if (ret)
-		dev_err(serdes->dev, "Failed to power on XPCS%d\n", id);
+		dev_err(serdes->dev, "Failed to power on XPCS%lu\n", id);
 	else
 		xpcs->powered_on[id] = true;
 
@@ -372,6 +381,9 @@ static int xpcs_phy_power_on(struct serdes *serdes, int id)
 static bool is_xpcs_rx_stable(struct serdes *serdes, int id)
 {
 	struct xpcs_ctrl *xpcs = &serdes->xpcs;
+
+	if (id < 0 || id >= ARRAY_SIZE(xpcs->phys))
+		return false;
 
 	return xpcs->ops->has_valid_rx(xpcs->phys[id]);
 }
@@ -472,6 +484,9 @@ static int xpcs_init_clks(struct serdes *serdes)
 		if (xpcs_id == XPCS_DISABLED)
 			continue;
 
+		if (xpcs_id >= ARRAY_SIZE(xpcs->phys) || xpcs_id < 0)
+			continue;
+
 		ret = xpcs_phy_init(serdes, xpcs_id);
 		if (ret)
 			return ret;
@@ -503,6 +518,9 @@ static int xpcs_init_clks(struct serdes *serdes)
 			if (xpcs_id == XPCS_DISABLED)
 				continue;
 
+			if (xpcs_id < 0 || xpcs_id >= ARRAY_SIZE(xpcs->phys))
+				continue;
+
 			ret = xpcs->ops->vreset(xpcs->phys[xpcs_id]);
 			if (ret)
 				return ret;
@@ -513,6 +531,9 @@ static int xpcs_init_clks(struct serdes *serdes)
 		xpcs_id = order[i];
 
 		if (xpcs_id == XPCS_DISABLED)
+			continue;
+
+		if (xpcs_id < 0 || xpcs_id >= ARRAY_SIZE(xpcs->phys))
 			continue;
 
 		ret = xpcs->ops->wait_vreset(xpcs->phys[xpcs_id]);
@@ -533,9 +554,12 @@ static int xpcs_init_clks(struct serdes *serdes)
 static int serdes_phy_init(struct phy *p)
 {
 	struct serdes *serdes = dev_get_priv(p->dev);
-	int id = p->id;
+	unsigned long id = p->id;
 
 	if (!serdes)
+		return -EINVAL;
+
+	if (id >= ARRAY_SIZE(serdes->phys_type))
 		return -EINVAL;
 
 	if (serdes->phys_type[id] == PHY_TYPE_PCIE)
@@ -550,16 +574,19 @@ static int serdes_phy_init(struct phy *p)
 static int serdes_phy_set_mode_ext(struct phy *p, int mode, int submode)
 {
 	struct serdes *serdes = dev_get_priv(p->dev);
-	int id = p->id;
+	unsigned long id = p->id;
 
 	if (!serdes)
+		return -EINVAL;
+
+	if (id >= ARRAY_SIZE(serdes->phys_type))
 		return -EINVAL;
 
 	if (serdes->phys_type[id] != PHY_TYPE_PCIE)
 		return -EINVAL;
 
 	/* Check if same PCIE PHY mode is set on both lanes */
-	if (id == 1)
+	if (id == 1ul)
 		if (submode != serdes->ctrl.phy_mode)
 			return -EINVAL;
 
@@ -590,9 +617,12 @@ static int serdes_phy_set_mode_ext(struct phy *p, int mode, int submode)
 static int serdes_phy_power_on(struct phy *p)
 {
 	struct serdes *serdes = dev_get_priv(p->dev);
-	int id = p->id;
+	unsigned long id = p->id;
 
 	if (!serdes)
+		return -EINVAL;
+
+	if (id >= ARRAY_SIZE(serdes->phys_type))
 		return -EINVAL;
 
 	if (serdes->phys_type[id] == PHY_TYPE_PCIE)
@@ -634,10 +664,13 @@ static int xpcs_phy_configure(struct phy *phy, struct phylink_link_state *state)
 static int serdes_phy_configure(struct phy *phy, void *params)
 {
 	struct serdes *serdes = dev_get_priv(phy->dev);
-	int id = phy->id;
+	unsigned long id = phy->id;
 	int ret = -EINVAL;
 
 	if (!serdes)
+		return -EINVAL;
+
+	if (id >= ARRAY_SIZE(serdes->phys_type))
 		return -EINVAL;
 
 	if (serdes->phys_type[id] == PHY_TYPE_XPCS)
@@ -683,10 +716,15 @@ struct s32cc_xpcs *s32cc_phy2xpcs(struct phy *phy)
 	return xpcs->phys[lane_conf->instance];
 }
 
-static int mode_to_pcs_lane(int mode, int pcs_instance)
+static int mode_to_pcs_lane(u32 mode, u32 pcs_instance)
 {
-	const struct serdes_lane_conf *l0 = &serdes_mux_table[mode].lanes[0];
-	const struct serdes_lane_conf *l1 = &serdes_mux_table[mode].lanes[1];
+	const struct serdes_lane_conf *l0, *l1;
+
+	if (mode >= ARRAY_SIZE(serdes_mux_table))
+		return -EINVAL;
+
+	l0 = &serdes_mux_table[mode].lanes[0];
+	l1 = &serdes_mux_table[mode].lanes[1];
 
 	if (l0->type == PHY_TYPE_XPCS && l0->instance == pcs_instance)
 		return XPCS_LANE0;
