@@ -121,19 +121,19 @@ enum pcie_link_width {
 	X_MAX = X2
 };
 
-enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
-bool s32_serdes_is_external_clk_in_hwconfig(int i);
-unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id);
-enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
-enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
-enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
-bool s32_serdes_is_cfg_valid(int id);
-bool s32_serdes_is_pcie_enabled_in_hwconfig(int id);
-bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id);
-bool s32_serdes_is_mode5_enabled_in_hwconfig(int id);
+enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(unsigned id);
+bool s32_serdes_is_external_clk_in_hwconfig(unsigned int id);
+unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned id);
+enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(unsigned id);
+enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(unsigned id);
+enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(unsigned id);
+bool s32_serdes_is_cfg_valid(unsigned id);
+bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned id);
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned id);
+bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
-int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump);
+int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump);
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane);
 
 #endif

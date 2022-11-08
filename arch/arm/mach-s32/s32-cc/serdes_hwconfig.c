@@ -29,7 +29,7 @@
 
 #define SERDES_NAME_SIZE 32
 
-bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
+bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id)
 {
 	enum serdes_dev_type ss_mode;
 
@@ -37,7 +37,7 @@ bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
 	return IS_SERDES_PCIE(ss_mode);
 }
 
-bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id)
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id)
 {
 	enum serdes_dev_type ss_mode;
 
@@ -47,12 +47,13 @@ bool s32_serdes_is_combo_mode_enabled_in_hwconfig(int id)
 }
 
 static inline
-char *s32_serdes_get_hwconfig_subarg(int id,
+char *s32_serdes_get_hwconfig_subarg(unsigned int id,
 				     const char *subarg,
 				     size_t *subarg_len)
 {
 	char serdes_name[SERDES_NAME_SIZE];
 	char *subarg_str = NULL;
+	int ret;
 
 	if (!subarg || !subarg_len)
 		return NULL;
@@ -61,7 +62,10 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 	 * The SerDes mode is set by using option `serdesx`, where
 	 * `x` is the ID.
 	 */
-	snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%d", id);
+	ret = snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%u", id);
+	if (ret < 0)
+		return NULL;
+
 	debug("%s: testing hwconfig for '%s'\n", __func__,
 	      serdes_name);
 
@@ -71,24 +75,27 @@ char *s32_serdes_get_hwconfig_subarg(int id,
 		/* Backwards compatibility:
 		 * Initially the SerDes mode was set by using option `pciex`.
 		 */
-		sprintf(serdes_name, "pcie%d", id);
+		ret = sprintf(serdes_name, "pcie%u", id);
+		if (ret < 0)
+			return NULL;
+
 		debug("%s: testing hwconfig for '%s'\n", __func__,
 		      serdes_name);
 		subarg_str = (char *)hwconfig_subarg(serdes_name, subarg,
 			subarg_len);
 
 		if (!subarg_str || !*subarg_len) {
-			debug("'serdes%d' option '%s' not found in hwconfig\n",
+			debug("'serdes%u' option '%s' not found in hwconfig\n",
 			      id, subarg);
 			return NULL;
 		}
 	}
 
-	debug("found 'serdes%d' argument '%s=%s\n'", id, subarg, subarg_str);
+	debug("found 'serdes%u' argument '%s=%s\n'", id, subarg, subarg_str);
 	return subarg_str;
 }
 
-enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id)
+enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(unsigned int id)
 {
 	enum serdes_dev_type devtype = SERDES_INVALID;
 	size_t subarg_len = 0;
@@ -120,7 +127,7 @@ enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id)
 	return devtype;
 }
 
-enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id)
+enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(unsigned int id)
 {
 	/* Set default mode to invalid to force configuration */
 	enum serdes_xpcs_mode xpcs_mode = SGMII_INAVALID;
@@ -143,7 +150,7 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id)
 	return xpcs_mode;
 }
 
-bool s32_serdes_is_external_clk_in_hwconfig(int id)
+bool s32_serdes_is_external_clk_in_hwconfig(unsigned int id)
 {
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "clock",
@@ -160,7 +167,7 @@ bool s32_serdes_is_external_clk_in_hwconfig(int id)
 	return false;
 }
 
-unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
+unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned int id)
 {
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "fmhz",
@@ -177,7 +184,7 @@ unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
 	return MHZ_100;
 }
 
-enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
+enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(unsigned int id)
 {
 	enum pcie_phy_mode phy_mode = CRNS;
 	size_t subarg_len = 0;
@@ -195,7 +202,7 @@ enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
 	return phy_mode;
 }
 
-enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
+enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(unsigned int id)
 {
 	enum serdes_dev_type mode;
 	enum serdes_xpcs_mode xpcs_mode;
@@ -236,7 +243,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
 	return SERDES_MODE_INVAL;
 }
 
-bool s32_serdes_is_mode5_enabled_in_hwconfig(int id)
+bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned int id)
 {
 	size_t demo_len = 0;
 	char *demo;
@@ -252,7 +259,7 @@ bool s32_serdes_is_mode5_enabled_in_hwconfig(int id)
 	return true;
 }
 
-bool s32_serdes_is_cfg_valid(int id)
+bool s32_serdes_is_cfg_valid(unsigned int id)
 {
 	enum serdes_dev_type devtype;
 	enum serdes_xpcs_mode xpcs_mode;
@@ -269,12 +276,12 @@ bool s32_serdes_is_cfg_valid(int id)
 	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
 
 	if (mode == SERDES_MODE_INVAL) {
-		printf("Invalid opmode config on SerDes%d\n", id);
+		printf("Invalid opmode config on SerDes%u\n", id);
 		return false;
 	}
 
 	if (devtype == SERDES_INVALID) {
-		printf("Invalid SerDes%d configuration\n", id);
+		printf("Invalid SerDes%u configuration\n", id);
 		return false;
 	}
 
@@ -326,7 +333,7 @@ bool s32_serdes_is_cfg_valid(int id)
 	if (mode5) {
 		if (!(ext_clk && freq == MHZ_100 &&
 		      xpcs_mode == SGMII_XPCS1)) {
-			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
+			pr_err("SerDes%u: Invalid mode5 demo configuration\n",
 			       id);
 			return false;
 		}
@@ -334,7 +341,7 @@ bool s32_serdes_is_cfg_valid(int id)
 
 	if (!ext_clk) {
 		if (phy_mode == CRSS || phy_mode == SRIS) {
-			printf("SerDes%d: CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
+			printf("SerDes%u: CRSS or SRIS for PCIe%u PHY mode cannot be used with internal clock\n",
 			       id, id);
 			return false;
 		}
@@ -343,11 +350,11 @@ bool s32_serdes_is_cfg_valid(int id)
 	return true;
 }
 
-int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
+int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump)
 {
 	ofnode node = dev_ofnode(serdes_dev);
 	const char *uc_name = "serdes";
-	int ret;
+	int ret, val = 0;
 
 	if (ofnode_is_np(node)) {
 		ret = of_alias_get_id(ofnode_to_np(node), uc_name);
@@ -357,7 +364,11 @@ int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
 		}
 	} else {
 		ret = fdtdec_get_alias_seq(gd->fdt_blob, uc_name,
-					   ofnode_to_offset(node), devnump);
+					   ofnode_to_offset(node), &val);
+		if (val >= 0)
+			*devnump = val;
+		else
+			return -EINVAL;
 	}
 
 	return ret;
@@ -366,7 +377,7 @@ int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump)
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane)
 {
 	enum serdes_xpcs_mode xpcs_mode;
-	int serdes_id = 0;
+	unsigned int serdes_id = 0;
 	int ret;
 
 	if (!serdes_dev)
