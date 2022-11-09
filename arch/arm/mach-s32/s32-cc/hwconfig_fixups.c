@@ -366,9 +366,9 @@ static int set_pcie_mode(struct dts_node *node, unsigned int id)
 {
 	int ret;
 	char *compatible;
-	enum serdes_dev_type pcie_mode;
+	enum pcie_type pcie_mode;
 
-	pcie_mode = s32_serdes_get_mode_from_hwconfig(id);
+	pcie_mode = s32_serdes_get_pcie_type_from_hwconfig(id);
 	if (pcie_mode & PCIE_EP)
 		compatible = "nxp,s32cc-pcie-ep";
 	else
@@ -390,7 +390,7 @@ static int set_pcie_phy_mode(struct dts_node *node, unsigned int id)
 	const char *mode;
 	enum pcie_phy_mode phy_mode;
 
-	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
+	phy_mode = s32_serdes_get_pcie_phy_mode_from_hwconfig(id);
 	if (phy_mode == PCIE_PHY_MODE_INVALID) {
 		pr_err("Invalid PCIe%u PHY mode", id);
 		return -EINVAL;
@@ -418,8 +418,8 @@ static int set_pcie_phy_mode(struct dts_node *node, unsigned int id)
 	return ret;
 }
 
-static int add_serdes_lines(struct dts_node *root, unsigned int id, u32 lanes,
-			    u32 phandle)
+static int add_pcie_serdes_lines(struct dts_node *root, unsigned int id,
+				 int lanes, u32 phandle)
 {
 	char serdes_lane[SERDES_LINE_NAME_LEN];
 	struct dts_node node;
@@ -480,18 +480,18 @@ static int add_serdes_lines(struct dts_node *root, unsigned int id, u32 lanes,
 	return 0;
 }
 
-static int set_serdes_lines(struct dts_node *node, unsigned int id)
+static int set_pcie_serdes_lines(struct dts_node *node, unsigned int id)
 {
 	enum serdes_mode mode;
 	u32 phandle, lanes = 0u;
 	int ret;
 	struct dts_node serdes, root = *node;
 
-	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+	mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 	if (mode == SERDES_MODE_PCIE_PCIE)
 		lanes = 2u;
 
-	if (mode == SERDES_MODE_PCIE_SGMII0 || mode == SERDES_MODE_PCIE_SGMII1)
+	if (mode == SERDES_MODE_PCIE_XPCS0 || mode == SERDES_MODE_PCIE_XPCS1)
 		lanes = 1u;
 
 	if (!lanes) {
@@ -512,7 +512,7 @@ static int set_serdes_lines(struct dts_node *node, unsigned int id)
 		return ret;
 	}
 
-	ret = add_serdes_lines(&root, id, lanes, phandle);
+	ret = add_pcie_serdes_lines(&root, id, lanes, phandle);
 	if (ret)
 		return ret;
 
@@ -550,11 +550,11 @@ static int skip_dts_node(struct dts_node *root, const char *alias_fmt,
 static int skip_dts_nodes_config(struct dts_node *root, unsigned int id,
 				 bool *skip)
 {
-	int ret;
-	enum serdes_dev_type mode;
+	int ret = -EINVAL;
 	struct dts_node serdes;
 
-	*skip = false;
+	if (!skip || !root)
+		return ret;
 
 	ret = node_by_alias(root, &serdes, SERDES_ALIAS_FMT, id);
 	if (ret) {
@@ -566,13 +566,12 @@ static int skip_dts_nodes_config(struct dts_node *root, unsigned int id,
 	if (root->fdt)
 		return 0;
 
-	mode = s32_serdes_get_mode_from_hwconfig(id);
+	*skip = s32_serdes_get_skip_from_hwconfig(id);
 
-	if (!(mode & SERDES_SKIP))
+	if (!*skip)
 		return 0;
 
 	printf("Skipping configuration for SerDes%u.\n", id);
-	*skip = true;
 
 	ret = skip_dts_node(root, PCIE_ALIAS_FMT, id);
 	if (ret)
@@ -649,7 +648,7 @@ static int prepare_pcie_node(struct dts_node *root, unsigned int id)
 	if (ret)
 		return ret;
 
-	ret = set_serdes_lines(&node, id);
+	ret = set_pcie_serdes_lines(&node, id);
 	if (ret)
 		return ret;
 
@@ -821,7 +820,7 @@ static int set_serdes_mode(struct dts_node *root, unsigned int id)
 	u32 mode_num;
 	struct dts_node node;
 
-	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+	mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 	if (mode == SERDES_MODE_INVAL) {
 		pr_err("Invalid SerDes%u mode\n", id);
 		return -EINVAL;
@@ -889,6 +888,9 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 		}
 
 		ret = skip_dts_nodes_config(&root, id, &skip);
+		/* Either if we manage to disable the node or not, go to next node
+		 * if 'skip' is true
+		 */
 		if (skip || ret)
 			continue;
 

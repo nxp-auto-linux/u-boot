@@ -17,90 +17,107 @@
 #define MHZ_100			(100 * MHZ)
 #define MHZ_125			(125 * MHZ)
 
-enum serdes_dev_type {
-	SERDES_INVALID = 0,
-	PCIE_EP = 0x1, /* EP mode is 0x0, use 0x1 to allow us to use masks */
-	PCIE_RC = 0x4,
-	SGMII = 0x10, /* outside range of PE0_GEN_CTRL_1:DEVICE_TYPE */
-	/* TODO: If both PCIe/SGMII bifurcation modes are used, we may
-	 * need to use 2 SGMII modes - SGMII0 and SGMII1
-	 */
-	SERDES_SKIP = 0x20
-};
+#define SPEED_UNKNOWN		(-1)
 
-/* New enum */
-enum serdes_xpcs_mode_gen2 {
-	SGMII_XPCS_PCIE = 0,
-	SGMII_XPCS_DISABLED,
-	SGMII_XPCS_1G_OP,
-	SGMII_XPCS_2G5_OP,
-};
-
-/* Old enum TODO remove*/
-enum serdes_xpcs_mode {
-	SGMII_INAVALID = 0,
-	SGMII_XPCS0,		/* Combo mode PCIex1/SGMII(XPCS0) */
-	SGMII_XPCS1,		/* Combo mode PCIex1/SGMII(XPCS1) */
-	SGMII_XPCS0_XPCS1,	/* SGMII 2 x 1G mode */
-	SGMII_XPCS0_2G5,	/* SGMII 2.5G mode */
-	SGMII_XPCS_LAST = SGMII_XPCS0_2G5,
-};
+/* Same as in ethtool.h */
+/* The forced speed, 10Mb, 100Mb, gigabit, 2.5Gb, 10GbE. */
+#define SPEED_10		10
+#define SPEED_100		100
+#define SPEED_1000		1000
+#define SPEED_2500		2500
+#define SPEED_10000		10000
 
 /**
  * @brief	SerDes Subsystem Modes
  *
- * Based on doc from Synopsys:
+ * SS_RW_REG_0[SUBSYS_MODE] Based on S32G2RSERDESRM Rev5 / S32G3
  *
- * 000b - PCIe Gen3x2 mode
- * 001b - PCIe Gen3x1 and SGMII 1G bifurcation mode
- * 010b - PCIe Gen3x1 and SGMII 1G bifurcation mode
- * 011b - Two SGMII 1G/2.5G bifurcation mode
+ * 000b - PCIe Gen3 X2 mode
+ * 001b - PCIe Gen3 X1 and SGMII XPCS0 1G bifurcation mode
+ * 010b - PCIe Gen3 X1 and SGMII XPCS1 1G bifurcation mode
+ * 011b - Two SGMII 1G/2G5 bifurcation mode, PHY control XPCS0
+ * 100b - Two SGMII 1G/2G5 bifurcation mode, PHY control XPCS1
+ *
+ * Note: PCIe GenX means all speeds from Gen1 to GenX
+ * Note: Values for SUBSYS_MODE above are not 1:1 match with SerDes Modes below.
+ *
+ * Based on S32G2RM Rev5 / S32G3RM Rev2:
  *
  * SerDes_0 working modes
- * Mode Num-Name  PCIe        XPCS0     XPCS1     PHY        PHY        PHY Clk
- *                                                lane 0     lane 1     (MHz)
- * 0-PCIe only    X2 Gen3     N/A       N/A       PCIe Gen3  PCIe Gen3  100
- * 1-PCIe/SGMII   PCIe X1     SGMII     N/A       PCIe       SGMII      100
- * bifurcation    Gen2/3      1.25Gbps            Gen2/3     1.25Gbps
- *                                                           (GMAC0)
- * 2-PCIe/SGMII   PCIe X1     N/A       SGMII     PCIe       SGMII      100
- * bifurcation    Gen2/3                1.25Gbps  Gen2/3     1.25Gbps   100
- *                                                           (PFE_EMAC2)
- * 3-SGMII only   N/A         SGMII     SGMII     SGMII      SGMII      100/125
- *                            1.25Gbps  1.25Gbps  1.25Gbps   1.25Gbps
- *                            3.125Gbps 3.125Gbps 3.125Gbps  3.125Gbps
- *                                                (GMAC0)    (PFE_EMAC2)
+ *
+ * Mode Num - Name   PCIe     XPCS0     XPCS1     PHY        PHY        PHY Clk
+ *                                                lane 0     lane 1       (MHz)
+ * ----------------------------------------------------------------------------
+ * 0 - PCIe only     X2 Gen3  N/A       N/A       PCIe Gen3  PCIe Gen3      100
+ *
+ * 1 - PCIe/SGMII    X1 Gen3  SGMII 1G  N/A       PCIe Gen3  XPCS0 1G       100
+ *     bifurcation                                           (GMAC0)
+ *
+ * 2 - PCIe/SGMII    X1 Gen3    N/A     SGMII 1G  PCIe Gen3  XPCS1 1G       100
+ *     bifurcation   X1 Gen2(^) N/A     SGMII 2G5 PCIe Gen2  XPCS1 2G5      100
+ *                                                           (PFE_MAC2)
+ *
+ * 3 - SGMII only    N/A      SGMII 1G  SGMII 1G  XPCS0 1G   XPCS1 1G   100/125
+ *                                                (GMAC0)    (PFE_MAC2)
  *
  * SerDes_1 working modes
- * Mode Num-Name  PCIe        XPCS0     XPCS1     PHY        PHY        PHY Clk
- *                                                lane 0     lane 1     (MHz)
- * 0-PCIe only    X2 Gen3     N/A       N/A       PCIe Gen3  PCIe Gen3  100
- * 1-PCIe/SGMII   PCIe X1     SGMII     N/A       PCIe       SGMII      100
- * bifurcation    Gen2/3      1.25Gbps            Gen2/3     1.25Gbps
- *                                                          (PFE_MAC0/PFE_MAC1)
- * 2-PCIe/SGMII   PCIe X1     N/A       SGMII     PCIe       SGMII      100
- * bifurcation    Gen2/3                1.25Gbps  Gen2/3     1.25Gbps   100
- *                                                          (PFE_MAC0/PFE_MAC1)
- * 3-SGMII only   N/A         SGMII     SGMII     SGMII      SGMII      100/125
- *                            1.25Gbps  1.25Gbps  1.25Gbps   1.25Gbps
- *                            3.125Gbps 3.125Gbps 3.125Gbps  3.125Gbps
- *                                                (PFE_MAC0) (PFE_MAC0)
- * TODO: Investigate which of the two PCIe/SGMII bifurcation modes are
- * actually supported by S32G.
+ *
+ * Mode Num - Name   PCIe     XPCS0     XPCS1     PHY        PHY        PHY Clk
+ *                                                lane 0     lane 1       (MHz)
+ * ----------------------------------------------------------------------------
+ * 0 - PCIe only     X2 Gen3  N/A       N/A       PCIe Gen3  PCIe Gen3      100
+ *
+ * 1 - PCIe/SGMII    X1 Gen3  SGMII 1G  N/A       PCIe Gen3  XPCS0 1G       100
+ *     bifurcation                                           (PFE_MAC0)
+ *
+ * 2 - PCIe/SGMII    X1 Gen3    N/A     SGMII 1G  PCIe Gen3  XPCS1 1G       100
+ *     bifurcation   X1 Gen2(^) N/A     SGMII 2G5 PCIe Gen2  XPCS1 2G5      100
+ *                                                           (PFE_MAC1)
+ *
+ * 3 - SGMII only    N/A      SGMII 1G  SGMII 1G  XPCS0 1G   XPCS1 1G   100/125
+ *                                                (PFE_MAC0) (PFE_MAC1)
+ *
+ * 4 - SGMII only(^) N/A      SGMII 2G5 SGMII 1G  XPCS0 2G5  XPCS1 1G   100/125
+ *                   N/A      SGMII 1G  SGMII 2G5 XPCS0 1G   XPCS1 2G5  100/125
+ *                   N/A      SGMII 2G5 SGMII 2G5 XPCS0 2G5  XPCS1 2G5      125
+ *                                                (PFE_MAC0) (PFE_MAC1)
+ * Notes (^):
+ * Mode 2 - PCIe Gen2 on lane 0 and SGMII XPCS1 2G5 on lane 1 is supported only
+ *          for S32G3. To disambiguate, we'll call this second configuration of
+ *          Mode 2 as Mode 5.
+ * Mode 4 - Fully supported only on S32G3 (SerDes1). To disambiguate, we'll
+ *          call the three Mode 4 configuations as 4.1, 4.2, 4.3.
+ *          On S32G2, there is one limited flavor of configuration 4.3, running
+ *          at 125 MHz, with only XPCS0 2G5 on lane 0 and nothing on lane 1.
+ *
+ *
  */
 enum serdes_mode {
 	SERDES_MODE_INVAL = -1,
 	/*	Lane0=PCIe, Lane1=PCIe */
 	SERDES_MODE_PCIE_PCIE = 0,
 	/*	Lane0=PCIe, Lane1=SGMII(XPCS0) (1G) */
-	SERDES_MODE_PCIE_SGMII0 = 1,
+	SERDES_MODE_PCIE_XPCS0 = 1,
 	/*	Lane0=PCIe, Lane1=SGMII(XPCS1) (1G) */
-	SERDES_MODE_PCIE_SGMII1 = 2,
-	/*	Lane0=SGMII(1G/2.5G), Lane1=SGMII(1G/2.5G) */
-	SERDES_MODE_SGMII_SGMII = 3,
-	/*	Lane0=SGMII(1G/2.5G), Lane1=SGMII(1G/2.5G) */
-	SERDES_MODE_SGMII_SGMII_ALT = 4,
-	SERDES_MODE_MAX = SERDES_MODE_SGMII_SGMII_ALT
+	SERDES_MODE_PCIE_XPCS1 = 2,
+	/*	Lane0=SGMII(XPCS0) (1G/2G5), Lane1=SGMII(XPCS1) (1G/2G5) */
+	SERDES_MODE_XPCS0_XPCS1 = 3,
+	/*	Lane0=None, Lane1=SGMII(XPCS1) (1G/2G5); currently not used */
+	SERDES_MODE_XPCS1_ONLY = 4,
+	SERDES_MODE_MAX = SERDES_MODE_XPCS1_ONLY
+};
+
+enum serdes_xpcs_mode {
+	SGMII_INVALID = -1,
+	SGMII_XPCS_1G = 0,
+	SGMII_XPCS_2G5 = 1,
+	SGMII_XPCS_LAST = SGMII_XPCS_2G5
+};
+
+enum pcie_type {
+	PCIE_INVALID = 0,
+	PCIE_EP = 0x1, /* EP mode is 0x0, use 0x1 to allow us to use masks */
+	PCIE_RC = 0x4,
 };
 
 /* Supported link speeds for PCIe on S32CC
@@ -121,16 +138,20 @@ enum pcie_link_width {
 	X_MAX = X2
 };
 
-enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(unsigned id);
+enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(unsigned int id);
 bool s32_serdes_is_external_clk_in_hwconfig(unsigned int id);
-unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned id);
-enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(unsigned id);
-enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(unsigned id);
-enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(unsigned id);
-bool s32_serdes_is_cfg_valid(unsigned id);
-bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned id);
-bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned id);
-bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned id);
+unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned int id);
+bool s32_serdes_get_skip_from_hwconfig(unsigned int id);
+enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id);
+int s32_serdes_get_xpcs_speed_from_hwconfig(int serdes_id,
+					    int xpcs_id);
+enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int serdes_id,
+							    int xpcs_id);
+enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(unsigned int id);
+bool s32_serdes_is_cfg_valid(unsigned int id);
+bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id);
+bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id);
+bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned int id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
 int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump);
