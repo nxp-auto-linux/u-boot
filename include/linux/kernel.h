@@ -295,4 +295,11 @@
 #define check_u32_overflow(_u32, _inc) \
 	((_u32) > (UINT32_MAX - (_inc)))
 
+/*
+ * Evaluates to 1 if (size_t + inc) overflows, 0 otherwise.
+ * Both arguments must be of size_t type.
+ */
+#define check_size_overflow(_sizet, _inc) \
+	((_sizet) > (SIZE_MAX - (_inc)))
+
 #endif
