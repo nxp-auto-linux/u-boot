@@ -206,6 +206,7 @@ int _log_buffer(enum log_category_t cat, enum log_level_t level,
 		     (enum log_level_t)(_l | _LOG_DEBUG), __FILE__, \
 		     __LINE__, __func__, \
 		      pr_fmt(_fmt), ##_args); \
+	0; \
 	})
 
 /* Emit a dump if the level is less that the maximum */
@@ -225,6 +226,7 @@ int _log_buffer(enum log_category_t cat, enum log_level_t level,
 	if (_LOG_DEBUG != 0 || _l <= LOGL_INFO || \
 	    (_DEBUG && _l == LOGL_DEBUG)) \
 		printf(_fmt, ##_args); \
+	0; \
 	})
 
 #define log_buffer(_cat, _level, _addr, _data, _width, _count, _linelen)  ({ \
