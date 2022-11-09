@@ -139,6 +139,7 @@ static inline int _log_nop(enum log_category_t cat, enum log_level_t level,
 		_log((enum log_category_t)(_cat), _l, __FILE__, __LINE__, \
 		      __func__, \
 		      pr_fmt(_fmt), ##_args); \
+	0; \
 	})
 #else
 #define log(_cat, _level, _fmt, _args...)
