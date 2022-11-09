@@ -284,4 +284,18 @@
 	offsetof(struct structure, member) == (offset), \
 	"`struct " #structure "` offset for `" #member "` is not " #offset)
 
+/*
+ * Evaluates to 1 if (ptr + inc) overflows, 0 otherwise.
+ * Both arguments must be unsigned pointer values (i.e. uintptr_t).
+ */
+#define check_uptr_overflow(_ptr, _inc)		\
+	((_ptr) > (UINTPTR_MAX - (_inc)))
+
+/*
+ * Evaluates to 1 if (u32 + inc) overflows, 0 otherwise.
+ * Both arguments must be 32-bit unsigned integers (i.e. effectively uint32_t).
+ */
+#define check_u32_overflow(_u32, _inc) \
+	((_u32) > (UINT32_MAX - (_inc)))
+
 #endif
