@@ -40,6 +40,3 @@ config NXP_S32GEVB_BOARD
 	imply SJA1105
 	select MISC_INIT_R if SJA1105
 	select SPI_FLASH_MACRONIX
-
-config S32GEN1_HWCONFIG
-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5"

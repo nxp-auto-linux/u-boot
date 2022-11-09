@@ -55,20 +55,42 @@ config SYS_MEM_SIZE
 	help
 	  U-boot SRAM size (8 MB for Gen1)
 
-config S32GEN1_HWCONFIG
-	string "S32GEN1 HWConfig definition"
+config S32CC_HWCONFIG
+	string "S32CC HWConfig definition"
 	depends on NXP_S32CC && (PCIE_S32GEN1 || FSL_PFENG)
-	default "pcie0:mode=sgmii;pcie1:mode=sgmii" if (!PCIE_S32GEN1 && FSL_PFENG)
-	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int" if (PCIE_S32GEN1 && !FSL_PFENG)
+	default "serdes0:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs0_0:speed=2G5;xpcs0_1:speed=2G5;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5;xpcs1_1:speed=2G5" if (!PCIE_S32GEN1 && FSL_PFENG)
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=pcie,clock=int;pcie1:mode=ep" if (PCIE_S32GEN1 && !FSL_PFENG)
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5" if (PCIE_S32GEN1 && FSL_PFENG)
+
 	help
 	  The configuration for the PCIe controllers, stored in
-	  the variable 'hwconfig'
-	  It configures the mode (rc, ep, sgmii) or the clock type
-	  (internal or external)
-	  It is also possible to configure combo mode either ep&sgmii or
-	  rc&sgmii, with these configurations lane0 is PCIe and lane1
-	  is connected to mac depending on 'xpcs_mode'.
+	  the variable 'hwconfig'.
+	  It configures 'serdesX' generic attributes, such as 'mode' ('pcie',
+	  'pcie&xpcs0', 'pcie&xpcs1', 'xpcs0&xpcs1'), the clock type
+	  (internal or external), clock frequency 'fmhz', 'pcieX' mode (rc or ep)
+	  and the 'xpcsX_Y' interface for any of the two lanes.
+	  For the combo modes 'pcie&xpcs0' or 'pcie&xpcs1', lane0 is PCIe and lane1
+	  is connected to a GMAC or PFE MAC depending on 'xpcsX_Y' configuration.
 	  SGMII uses additional configurations 'fmhz' and 'xpcs_mode'.
+	  Config 'xpcsX_Y' is used to specifically configure each of the two SGMII
+	  PHYs, by setting the 'speed' (10M, 100M, 1G and 2G5).
+	  S32G2 and S32G3 have 1 GMAC running at 1Gbps and 3 PFE MACs, running at
+		10Mbps - 2.5Gbps speeds.
+	  S32R45 has one GMAC running at 1Gbps or 2.5Gbps
+
+config S32CC_HWCONFIG_LEGACY
+	bool "Legacy S32CC HWConfig definition"
+	default y
+	depends on NXP_S32CC && (PCIE_S32GEN1 || FSL_PFENG)
+	help
+	  Support for old format for variable HWCONFIG. Each SerDes
+	  is identified by the string 'pcieX' and is configured by a list of
+	  attributes such as 'mode' (rc, ep, sgmii) and the clock type
+	  (internal or external).
+	  It is also possible to configure combo modes, either 'ep&sgmii' or
+	  'rc&sgmii', with these configurations lane0 is PCIe and lane1
+	  is connected to GMAC of PFE mac depending on 'xpcs_mode'.
+	  'sgmii' mode uses additional config options 'fmhz' and 'xpcs_mode'.
 	  Config 'xpcs_mode' is used to specifically configure each line in
 	  SGMII mode. The following are valid options: '2G5', 'both', '0' and
 	  '1'. Mode '2G5' uses lane0 in 2.5G mode and leaves lane1 disabled.
@@ -85,6 +107,9 @@ config S32GEN1_HWCONFIG
 	  Available 'xpcs_mode' are depedent on platform:
 	  	s32g274a - supports '0','1','both' and '2G5'
 	  	s32r45   - supports '0' and '2G5'
+	  By default, legacy HWCONFIG was:
+	  "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5"
+	  This has lots of limitations, and has been redesigned.
 
 config S32CC_CONFIG_FILE
 	string

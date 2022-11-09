@@ -105,8 +105,8 @@
 #  define GMAC_EXTRA_ENV_SETTINGS	""
 #endif
 
-#if defined(CONFIG_S32GEN1_HWCONFIG)
-#  define PCIE_EXTRA_ENV_SETTINGS "hwconfig=" CONFIG_S32GEN1_HWCONFIG "\0"
+#if defined(CONFIG_S32CC_HWCONFIG)
+#  define PCIE_EXTRA_ENV_SETTINGS "hwconfig=" CONFIG_S32CC_HWCONFIG "\0"
 #else
 #  define PCIE_EXTRA_ENV_SETTINGS ""
 #endif
