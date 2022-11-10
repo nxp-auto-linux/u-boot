@@ -29,20 +29,9 @@
 
 #include "ss_pcie_regs.h"
 
-/* CFG1 is used in linux when finding devices on the bus.
- * It is actually the upper half of the config space
- * (defined as "config" in device tree).
- * TBD when it is actually used (one EP per RC does not require it) */
-#define PCIE_USE_CFG1
-
 #include "pcie_s32gen1.h"
 
 #define PCIE_DEFAULT_INTERNAL_CLK 0
-
-#define PCIE_OVERCONFIG_BUS
-
-/* Enable this if we want RC to be able to send config commands to EP */
-#define PCIE_ENABLE_EP_CFG_FROM_RC
 
 #define PCIE_EP_RC_MODE(ep_mode) ((ep_mode) ? "EndPoint" : "RootComplex")
 
@@ -93,20 +82,16 @@ static void s32_pcie_show_link_err_status(struct s32_pcie *pcie)
 	      s32_dbi_readl(UPTR(pcie->dbi) + PCIE_PL_DEBUG1));
 }
 
-#ifdef PCIE_OVERCONFIG_BUS
 static void s32_pcie_cfg0_set_busdev(struct s32_pcie *pcie, u32 busdev)
 {
 	W32(UPTR(pcie->dbi) + PCIE_IATU_LWR_TARGET_ADDR_OUTBOUND_0, busdev);
 }
 
-#ifdef PCIE_USE_CFG1
 static void s32_pcie_cfg1_set_busdev(struct s32_pcie *pcie, u32 busdev)
 {
 	W32(UPTR(pcie->dbi) + PCIE_IATU_LWR_TARGET_ADDR_OUTBOUND_0 + 0x200,
 	    busdev);
 }
-#endif
-#endif
 
 static
 void s32_pcie_atu_outbound_set(struct s32_pcie *pcie, u32 region_no,
@@ -243,11 +228,7 @@ static void s32_pcie_dump_atu(struct s32_pcie *pcie)
 static void s32_pcie_rc_setup_atu(struct s32_pcie *pcie)
 {
 	u64 cfg_start = pcie->cfg_res.start;
-#ifndef PCIE_USE_CFG1
-	u64 cfg_size = resource_size(&pcie->cfg_res);
-#else
 	u64 cfg_size = resource_size(&pcie->cfg_res) / 2;
-#endif
 	u64 limit = cfg_start + cfg_size;
 
 	struct pci_region *io, *mem, *pref;
@@ -263,12 +244,10 @@ static void s32_pcie_rc_setup_atu(struct s32_pcie *pcie)
 			cfg_start, limit,
 			(u64)0x0, PCIE_ATU_TYPE_CFG0, 0);
 
-#ifdef PCIE_USE_CFG1
 	/* ATU 1 : OUTBOUND : CFG1 */
 	s32_pcie_atu_outbound_set(pcie, pcie->atu_out_num++,
 			limit, limit + cfg_size,
 			(u64)0x0, PCIE_ATU_TYPE_CFG1, 0);
-#endif
 
 	/* Create regions returned by pci_get_regions()
 	 * TBD if we need an inbound for the entire address space (1TB)
@@ -343,15 +322,13 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 		return -EINVAL;
 	}
 
-#ifdef PCIE_OVERCONFIG_BUS
 	u32 busdev = PCIE_ATU_BUS(PCI_BUS(bdf) - bus->seq) |
 				 PCIE_ATU_DEV(PCI_DEV(bdf)) |
 				 PCIE_ATU_FUNC(PCI_FUNC(bdf));
 	debug("%s: bdf=0x%x; bus=%d; seq=%d; device=0x%x; func=0x%x\n",
 	      dev_read_name(bus), bdf, PCI_BUS(bdf), bus->seq,
 	      PCI_DEV(bdf), PCI_FUNC(bdf));
-#endif
-#ifdef PCIE_USE_CFG1
+
 	/* The process of enumeration must start with cfg0 space, as sequences
 	 * are not always consecutive to the parent's (depending how the
 	 * device tree is being parsed).
@@ -364,7 +341,6 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 		else if (pcie->cfg0_seq != PCI_BUS(bdf))
 			use_cfg0 = false;
 	}
-#endif
 
 	if (PCI_BUS(bdf) == bus->seq) {
 		*paddress = (void *)(UPTR(pcie->dbi) + offset);
@@ -373,25 +349,15 @@ int s32_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
 	}
 
 	if (use_cfg0) {
-#ifdef PCIE_OVERCONFIG_BUS
 		debug_wr("%s: cfg0_set_busdev 0x%x\n", __func__, busdev);
 		s32_pcie_cfg0_set_busdev(pcie, busdev);
-#endif
 		*paddress = (void *)(UPTR(pcie->cfg0) + offset);
 		debug_wr("%s: cfg0 addr: %p\n", __func__, *paddress);
 	} else {
-#ifdef PCIE_USE_CFG1
-#ifdef PCIE_OVERCONFIG_BUS
 		debug_wr("%s: cfg1_set_busdev 0x%x\n", __func__, busdev);
 		s32_pcie_cfg1_set_busdev(pcie, busdev);
-#endif
 		*paddress = (void *)(UPTR(pcie->cfg1) + offset);
 		debug_wr("%s: cfg1 addr: %p\n", __func__, *paddress);
-#else
-		debug_wr("%s: Unsupported bus sequence %d\n", __func__,
-				PCI_BUS(bdf));
-		return -EINVAL;
-#endif
 	}
 	return 0;
 }
@@ -568,12 +534,10 @@ static void s32_pcie_ep_setup_atu(struct s32_pcie *pcie)
  */
 static void s32_serdes_delay_cfg(struct s32_pcie *pcie, bool enable)
 {
-#ifdef PCIE_ENABLE_EP_CFG_FROM_RC
 	if (enable)
 		BSET32(UPTR(pcie->dbi) + SS_PE0_GEN_CTRL_3, CRS_EN);
 	else
 		BCLR32(UPTR(pcie->dbi) + SS_PE0_GEN_CTRL_3, CRS_EN);
-#endif
 }
 
 static int s32_pcie_setup_ep(struct s32_pcie *pcie)
@@ -919,10 +883,8 @@ static int s32_pcie_get_config_from_device_tree(struct s32_pcie *pcie)
 
 	pcie->cfg_res = res;
 
-#ifdef PCIE_USE_CFG1
 	pcie->cfg1 = pcie->cfg0 + resource_size(&pcie->cfg_res) / 2;
 	pcie->cfg0_seq = -ENODEV;
-#endif
 
 	/* get supported speed (Gen1/Gen2/Gen3) from device tree */
 	val = dev_read_u32_default(dev, "max-link-speed", GEN1);
