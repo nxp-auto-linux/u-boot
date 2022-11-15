@@ -13,6 +13,12 @@
 #include <linux/sizes.h>
 #include <linux/types.h>
 
+#ifdef CONFIG_NXP_S32CC
+#define MAX_LUT_ENTRIES 80
+#else
+#define MAX_LUT_ENTRIES 64
+#endif
+
 struct fsl_qspi_regs {
 	u32 mcr;
 	u32 rsvd0[1];
@@ -80,7 +86,7 @@ struct fsl_qspi_regs {
 	u32 lutkey;
 	u32 lckcr;
 	u32 rsvd9[2];
-	u32 lut[64];
+	u32 lut[MAX_LUT_ENTRIES];
 };
 
 #define RX_BUFFER_SIZE		0x80
