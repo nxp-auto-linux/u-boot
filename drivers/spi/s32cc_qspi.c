@@ -13,9 +13,8 @@
 #define LUT_STOP_CMD 0x00
 #define MAX_OPCODE 0xff
 
-#define MAX_LUTS 80
 #define LUTS_PER_CONFIG 5
-#define MAX_LUTS_CONFIGS (MAX_LUTS / LUTS_PER_CONFIG)
+#define MAX_LUTS_CONFIGS (MAX_LUT_ENTRIES / LUTS_PER_CONFIG)
 
 
 struct lut_config {
@@ -398,10 +397,15 @@ static bool add_op_to_lutdb(struct fsl_qspi_priv *priv,
 
 u32 *s32cc_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index)
 {
-	return &regs->lut[index * LUTS_PER_CONFIG];
+	u32 lut_no = index * LUTS_PER_CONFIG;
+
+	if (lut_no >= ARRAY_SIZE(regs->lut))
+		return ERR_PTR(-EINVAL);
+
+	return &regs->lut[lut_no];
 }
 
-static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
+static long set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
 {
 	struct fsl_qspi_regs *regs = priv->regs;
 	u32 *iterb, *iter;
@@ -411,6 +415,8 @@ static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
 	iterb = iter;
 
 	lutaddr = s32cc_get_lut_seq_start(regs, index);
+	if (IS_ERR(lutaddr))
+		return PTR_ERR(lutaddr);
 
 	/* Unlock the LUT */
 	qspi_write32(priv->flags, &regs->lutkey, LUT_KEY_VALUE);
@@ -429,6 +435,8 @@ static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
 	/* Lock the LUT */
 	qspi_write32(priv->flags, &regs->lutkey, LUT_KEY_VALUE);
 	qspi_write32(priv->flags, &regs->lckcr, QSPI_LCKCR_LOCK);
+
+	return 0;
 }
 
 static bool enable_op(struct fsl_qspi_priv *priv, const struct spi_mem_op *op)
@@ -450,7 +458,11 @@ static bool enable_op(struct fsl_qspi_priv *priv, const struct spi_mem_op *op)
 			return false;
 		}
 
-		set_lut(priv, lut_index, opcode);
+		if (set_lut(priv, lut_index, opcode)) {
+			printf("Error: Failed to set LUT configuration\n");
+			return false;
+		}
+
 		lut_configs[opcode].enabled = true;
 	}
 
