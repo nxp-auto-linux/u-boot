@@ -96,6 +96,10 @@ int s32cc_mem_exec_write_op(struct fsl_qspi_priv *priv,
 		if (len % 4)
 			words++;
 
+		if (check_uptr_overflow((uintptr_t)txbuf,
+					(uintptr_t)(words * sizeof(*txbuf))))
+			return -EOVERFLOW;
+
 		for (i = 0; i < words; i++) {
 			qspi_write32(priv->flags, &regs->tbdr, *txbuf);
 			txbuf++;
