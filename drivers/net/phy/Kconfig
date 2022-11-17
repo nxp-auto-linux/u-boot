@@ -307,6 +307,11 @@ config PHY_XILINX_GMII2RGMII
 	  as bridge between MAC connected over GMII and external phy that
 	  is connected over RGMII interface.
 
+config PHY_XWAY
+	bool "Intel XWAY PHY support"
+	help
+	  This adds support for the Intel XWAY (formerly Lantiq) Gbe PHYs.
+
 config PHY_FIXED
 	bool "Fixed-Link PHY"
 	depends on DM_ETH
