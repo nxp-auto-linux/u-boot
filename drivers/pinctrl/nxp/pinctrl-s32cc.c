@@ -68,11 +68,22 @@ static struct s32_range *s32_get_pin_range(struct s32_pinctrl *ctlr, u32 pin)
 {
 	int i;
 	struct s32_range *range = NULL;
+	u32 pin_off;
 
 	for (i = 0; i < ctlr->num_ranges; ++i) {
 		range = &ctlr->ranges[i];
-		if (pin >= range->begin && pin <= range->end)
+		if (pin >= range->begin && pin <= range->end) {
+			pin_off = pin - range->begin;
+
+			if (pin_off > __UINT32_MAX__ / 4)
+				return NULL;
+
+			if (UPTR(range->base_addr) + S32_PAD(pin_off) >
+			    __UINT32_MAX__)
+				return NULL;
+
 			return range;
+		}
 	}
 
 	return NULL;
@@ -242,9 +253,13 @@ static int s32_pinmux_set(struct udevice *dev, unsigned int pin_selector,
 			  unsigned int func_selector)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	struct s32_range *range;
 	u32 mscr_value;
 
+	if (!priv)
+		return -EINVAL;
+
+	range = s32_get_pin_range(priv, pin_selector);
 	if (!range)
 		return -ENOENT;
 
@@ -262,10 +277,14 @@ static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 			   unsigned int param, unsigned int argument)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	struct s32_range *range;
 	u32 mscr_value;
 	int ret;
 
+	if (!priv)
+		return -EINVAL;
+
+	range = s32_get_pin_range(priv, pin_selector);
 	if (!range)
 		return -ENOENT;
 
@@ -284,10 +303,14 @@ static int s32_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 static int s32_gpio_request_enable(struct udevice *dev, unsigned int pin_selector)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	struct s32_range *range;
 	u32 mscr_value;
 	struct s32_pin *pin;
 
+	if (!priv)
+		return -EINVAL;
+
+	range = s32_get_pin_range(priv, pin_selector);
 	if (!range)
 		return -ENOENT;
 
@@ -314,9 +337,13 @@ static int s32_gpio_request_enable(struct udevice *dev, unsigned int pin_selecto
 static int s32_gpio_disable_free(struct udevice *dev, unsigned int pin_selector)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	struct s32_range *range = s32_get_pin_range(priv, pin_selector);
+	struct s32_range *range;
 	struct list_head *pos, *temp;
 
+	if (!priv)
+		return -EINVAL;
+
+	range = s32_get_pin_range(priv, pin_selector);
 	if (!range)
 		return -ENOENT;
 
@@ -342,10 +369,14 @@ static int s32_get_gpio_mux(struct udevice *dev, __maybe_unused int banknum,
 			    int index)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
-	struct s32_range *range = s32_get_pin_range(priv, index);
+	struct s32_range *range;
 	u32 mscr_value;
 	u32 sss_value;
 
+	if (!priv || index < 0)
+		return -EINVAL;
+
+	range = s32_get_pin_range(priv, index);
 	if (!range)
 		return -ENOENT;
 
