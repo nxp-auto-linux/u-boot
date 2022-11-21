@@ -54,6 +54,18 @@ config SYS_FSL_SEC_COMPAT
 config SYS_FSL_SEC_LE
 	bool "Little-endian access to Freescale Secure Boot"
 
+config NXP_HSE_SUPPORT
+	bool "Enable NXP HSE features"
+	depends on NXP_S32CC
+	help
+		Enable support for NXP HSE (Hardware Security
+		Engine) firmware in TF-A, Kernel, and Userspace.
+
+config NXP_HSE_FW_FILE
+	string "HSE Firmware file"
+	default "s32cc_hse_fw.bin"
+	depends on NXP_HSE_SUPPORT
+
 if FSL_CAAM
 
 config FSL_CAAM_RNG
