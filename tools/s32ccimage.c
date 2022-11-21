@@ -144,7 +144,7 @@ struct image_config {
 		bool enable;
 		uint8_t *fw_data;
 		size_t fw_size;
-	} secboot;
+	} hse;
 	bool flash_boot;
 	bool a53_boot;
 	bool err051257;
@@ -439,8 +439,8 @@ static void s32cc_set_qspi_params(struct qspi_params *qspi_params)
 
 static void s32cc_set_hse_fw(struct program_image *image)
 {
-	uint8_t *data = iconfig.secboot.fw_data;
-	size_t size = iconfig.secboot.fw_size;
+	uint8_t *data = iconfig.hse.fw_data;
+	size_t size = iconfig.hse.fw_size;
 
 	memcpy(image->hse_fw.data, data, size);
 }
@@ -499,7 +499,7 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
 
 	ivt->application_boot_code_pointer = image_layout.app_code.offset;
 
-	if (iconfig.secboot.enable) {
+	if (iconfig.hse.enable) {
 		ivt->hse_firmware_pointer = image_layout.hse_fw.offset;
 		ivt->hse_sys_img_pointer = image_layout.hse_sys_img.offset;
 	}
@@ -535,7 +535,7 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
 		s32cc_set_qspi_params(get_qspi_params(&image_layout));
 	}
 
-	if (iconfig.secboot.enable)
+	if (iconfig.hse.enable)
 		s32cc_set_hse_fw(&image_layout);
 
 	image_layout.code.size = sbuf->st_size - image_layout.app_code.offset -
@@ -568,7 +568,7 @@ get_image_qspi_params(struct program_image *program_image)
 static struct image_comp *
 get_image_hse_fw(struct program_image *program_image)
 {
-	if (iconfig.secboot.enable)
+	if (iconfig.hse.enable)
 		return &program_image->hse_fw;
 
 	return NULL;
@@ -577,7 +577,7 @@ get_image_hse_fw(struct program_image *program_image)
 static struct image_comp *
 get_image_hse_sys_img(struct program_image *program_image)
 {
-	if (iconfig.secboot.enable)
+	if (iconfig.hse.enable)
 		return &program_image->hse_sys_img;
 
 	return NULL;
@@ -612,7 +612,7 @@ static void set_headers_size(struct program_image *program_image)
 		exit(EXIT_FAILURE);
 	}
 
-	program_image->hse_fw.size = iconfig.secboot.fw_size;
+	program_image->hse_fw.size = iconfig.hse.fw_size;
 	if (program_image->hse_fw.size > HSE_FW_MAX_SIZE) {
 		fprintf(stderr,
 			"HSE FW area exceeds the maximum allowed size (0x%lx\n)",
@@ -956,7 +956,7 @@ static int map_file(const char *path, uint8_t **data, size_t *size)
 	return 0;
 }
 
-static int parse_secboot_cmd(char *line)
+static int parse_hse_cmd(char *line)
 {
 	int ret;
 	char *path;
@@ -971,9 +971,9 @@ static int parse_secboot_cmd(char *line)
 		goto free_mem;
 	}
 
-	iconfig.secboot.enable = true;
-	ret = map_file(path, &iconfig.secboot.fw_data,
-		       &iconfig.secboot.fw_size);
+	iconfig.hse.enable = true;
+	ret = map_file(path, &iconfig.hse.fw_data,
+		       &iconfig.hse.fw_size);
 free_mem:
 	free(path);
 	return ret;
@@ -1218,8 +1218,8 @@ static const struct line_parser parsers[] = {
 		.parse = parse_boot_cmd,
 	},
 	{
-		.tag = "SECBOOT",
-		.parse = parse_secboot_cmd,
+		.tag = "HSE_FW",
+		.parse = parse_hse_cmd,
 	},
 	{
 		.tag = "DCD",
