@@ -19,7 +19,6 @@ obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
 ccflags-y			+= -Idrivers/misc
 ccflags-y			+= -Iboard/nxp/s32-cc
 
-obj-$(CONFIG_HSE_SECBOOT)	+= hse_adv_secboot.o
 obj-y				+= start_m7.o
 ccflags-y			+= -I./board/nxp/s32-cc/
 ccflags-y			+= -I./arch/arm/mach-s32/s32-cc/include
