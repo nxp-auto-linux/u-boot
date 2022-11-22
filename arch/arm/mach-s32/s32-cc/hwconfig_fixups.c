@@ -124,14 +124,9 @@ static int ofnode_append_prop(ofnode node, const char *prop,
 		return -EINVAL;
 
 	old_val = ofnode_get_property(node, prop, &old_len);
-	if (old_len < 0)
-		return -EINVAL;
 
-	if (old_len + len < len || old_len + len < old_len)
-		return -EINVAL;
-
-	/* New property */
-	if (!old_val) {
+	/* Check if new property */
+	if (!old_val || old_len < 0) {
 		new_val = malloc(len);
 		if (!new_val)
 			return -ENOMEM;
@@ -139,6 +134,9 @@ static int ofnode_append_prop(ofnode node, const char *prop,
 		memcpy(new_val, val, len);
 		return ofnode_write_prop(node, prop, len, new_val);
 	}
+
+	if (old_len + len < len || old_len + len < old_len)
+		return -EINVAL;
 
 	new_val = malloc(old_len + len);
 	if (!new_val)
