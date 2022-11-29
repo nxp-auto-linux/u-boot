@@ -26,7 +26,7 @@
 #include <dm/platform_data/pfeng_dm_eth.h>
 #endif
 
-#if CONFIG_IS_ENABLED(FSL_PFENG)
+#if CONFIG_IS_ENABLED(FSL_PFENG) || CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
 static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
 				       void *fdt, int nodeoff)
 {
@@ -158,6 +158,9 @@ void ft_enet_fixup(void *fdt)
 {
 	int __maybe_unused nodeoff;
 	bool __maybe_unused ena;
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	u8 idx = 0;
+#endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
 
 	/* PFE */
 #if CONFIG_IS_ENABLED(FSL_PFENG)
@@ -169,6 +172,15 @@ void ft_enet_fixup(void *fdt)
 		ft_enet_pfe_fixup_netif(2, fdt);
 	}
 #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
+
+#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+	nodeoff = fdt_node_offset_by_compatible(fdt, -1, "nxp,s32cc-dwmac");
+	while (nodeoff != -FDT_ERR_NOTFOUND) {
+		ft_update_eth_addr_by_name("eth", idx, fdt, nodeoff);
+		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff, "nxp,s32cc-dwmac");
+		idx++;
+	}
+#endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
 }
 
 /*
