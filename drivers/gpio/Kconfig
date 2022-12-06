@@ -445,4 +445,12 @@ config MT7621_GPIO
 	help
 	  Say yes here to support MediaTek MT7621 compatible GPIOs.
 
+config SCMI_GPIO
+	bool "Enable SCMI GPIO driver"
+	select SCMI_FIRMWARE
+	help
+	  Enable this option if you want to support GPIO devices exposed
+	  by a SCMI agent based on SCMI GPIO protocol communication
+	  with a SCMI server.
+
 endmenu

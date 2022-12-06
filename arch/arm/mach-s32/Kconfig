@@ -77,6 +77,7 @@ config NXP_S32CC
 	select RESET_SCMI
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
+	select SCMI_GPIO
 	select SPI_FLASH_MTD
 	select SYSRESET
 	select SYSRESET_PSCI

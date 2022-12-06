@@ -400,6 +400,9 @@ static int scmi_bind(struct udevice *dev)
 			if (IS_ENABLED(CONFIG_RESET_SCMI))
 				drv = DM_GET_DRIVER(scmi_reset_domain);
 			break;
+		case SCMI_PROTOCOL_ID_GPIO:
+			drv = DM_GET_DRIVER(scmi_gpio);
+			break;
 		default:
 			dev_dbg(dev, "Ignore unsupported SCMI protocol %u\n",
 				protocol_id);
