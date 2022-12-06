@@ -557,4 +557,12 @@ config SL28CPLD_GPIO
 	help
 	  Support GPIO access on Kontron sl28cpld board management controllers.
 
+config SCMI_GPIO
+	bool "Enable SCMI GPIO driver"
+	select SCMI_FIRMWARE
+	help
+	  Enable this option if you want to support GPIO devices exposed
+	  by a SCMI agent based on SCMI GPIO protocol communication
+	  with a SCMI server.
+
 endif
