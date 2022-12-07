@@ -180,41 +180,50 @@ pinctrl_gpio_get_pinctrl_and_offset(struct udevice *dev, unsigned offset,
 {
 	struct ofnode_phandle_args args;
 	unsigned gpio_offset, pfc_base, pfc_pins;
-	int ret;
+	bool found = false;
+	int ret = 0, i;
 
-	ret = dev_read_phandle_with_args(dev, "gpio-ranges", NULL, 3,
-					 0, &args);
-	if (ret) {
-		dev_dbg(dev, "%s: dev_read_phandle_with_args: err=%d\n",
-			__func__, ret);
-		return ret;
+	for (i = 0; !ret; i++) {
+		ret = dev_read_phandle_with_args(dev, "gpio-ranges", NULL, 3,
+						 i, &args);
+		if (ret) {
+			dev_dbg(dev, "%s: dev_read_phandle_with_args: err=%d index=%d\n",
+				__func__, ret, i);
+			return ret;
+		}
+
+		ret = uclass_get_device_by_ofnode(UCLASS_PINCTRL,
+						  args.node, pctldev);
+		if (ret) {
+			dev_dbg(dev,
+				"%s: uclass_get_device_by_of_offset failed: err=%d\n",
+				__func__, ret);
+			return ret;
+		}
+
+		gpio_offset = args.args[0];
+		pfc_base = args.args[1];
+		pfc_pins = args.args[2];
+
+		if (offset < gpio_offset || offset > gpio_offset + pfc_pins)
+			continue;
+
+		offset -= gpio_offset;
+		offset += pfc_base;
+		*pin_selector = offset;
+		found = true;
+
+		break;
 	}
 
-	ret = uclass_get_device_by_ofnode(UCLASS_PINCTRL,
-					  args.node, pctldev);
-	if (ret) {
-		dev_dbg(dev,
-			"%s: uclass_get_device_by_of_offset failed: err=%d\n",
-			__func__, ret);
-		return ret;
-	}
-
-	gpio_offset = args.args[0];
-	pfc_base = args.args[1];
-	pfc_pins = args.args[2];
-
-	if (offset < gpio_offset || offset > gpio_offset + pfc_pins) {
+	if (!found) {
 		dev_dbg(dev,
 			"%s: GPIO can not be mapped to pincontrol pin\n",
 			__func__);
-		return -EINVAL;
+		ret = -EINVAL;
 	}
 
-	offset -= gpio_offset;
-	offset += pfc_base;
-	*pin_selector = offset;
-
-	return 0;
+	return ret;
 }
 
 /**
