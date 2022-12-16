@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017,2019-2022 NXP
+ * Copyright 2017,2019-2023 NXP
  */
 
 #include <common.h>
@@ -19,6 +19,8 @@
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
 #define FDT_CLUSTER1_PATH	"/cpus/cpu-map/cluster1"
+
+const static char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
 
 static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
 {
@@ -293,6 +295,109 @@ static int ft_fixup_atf(void *new_blob)
 	return ret;
 }
 
+static int disable_node_by_compatible(void *blob, const char *compatible,
+				      uint32_t *phandle)
+{
+	const char *node_name;
+	int nodeoff, ret;
+
+	nodeoff = fdt_node_offset_by_compatible(blob, -1, compatible);
+	if (nodeoff < 0) {
+		pr_err("Failed to get a node based on compatible string '%s' (%s)\n",
+		       compatible, fdt_strerror(nodeoff));
+		return nodeoff;
+	}
+
+	node_name = fdt_get_name(blob, nodeoff, NULL);
+	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_DISABLED);
+	if (ret) {
+		pr_err("Failed to disable '%s' node\n", node_name);
+		return ret;
+	}
+
+	*phandle = fdt_get_phandle(blob, nodeoff);
+	if (!*phandle) {
+		pr_warn("The node '%s' is not referenced by any other nodes.",
+			node_name);
+		return 0;
+	}
+
+	ret = fdt_delprop(blob, nodeoff, "phandle");
+	if (ret) {
+		pr_err("Failed to remove phandle property of '%s' node: %s\n",
+		       node_name, fdt_strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
+{
+	int nodeoff, ret;
+
+	nodeoff = fdt_path_offset(blob, path);
+	if (nodeoff < 0) {
+		pr_err("Failed to get offset of '%s' node\n", path);
+		return nodeoff;
+	}
+
+	ret = fdt_set_phandle(blob, nodeoff, phandle);
+	if (ret) {
+		pr_err("Failed to set phandle property of '%s' node\n", path);
+		return ret;
+	}
+
+	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_OKAY);
+	if (ret) {
+		pr_err("Failed to enable '%s' node\n", path);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int enable_scmi_gpio_node(void *blob, uint32_t phandle)
+{
+	const char *path = "/firmware/scmi/protocol@81";
+
+	return enable_scmi_protocol(blob, path, phandle);
+}
+
+static int disable_siul2_gpio_node(void *blob, uint32_t *phandle)
+{
+	return disable_node_by_compatible(blob, s32cc_gpio_compatible,
+					  phandle);
+}
+
+static int enable_scmi_gpio(void *blob)
+{
+	ofnode node;
+	u32 phandle;
+	int ret;
+
+	node = ofnode_by_compatible(ofnode_null(), s32cc_gpio_compatible);
+	if (!ofnode_valid(node)) {
+		printf("%s: Couldn't find \"%s\" node\n", __func__,
+		       s32cc_gpio_compatible);
+		return -EINVAL;
+	}
+
+	/* Skip if default GPIO node is used */
+	if (ofnode_is_available(node))
+		return 0;
+
+	ret = disable_siul2_gpio_node(blob, &phandle);
+	if (ret)
+		return ret;
+
+	ret = enable_scmi_gpio_node(blob, phandle);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
@@ -330,7 +435,12 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 		goto exit;
 
 	ret = apply_fdt_hwconfig_fixups(blob);
+	if (ret)
+		goto exit;
 
+	ret = enable_scmi_gpio(blob);
+	if (ret)
+		return ret;
 exit:
 	return ret;
 }
