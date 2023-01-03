@@ -134,3 +134,12 @@ config PINCTRL_VYBRID
 	  configuration. This driver is different from the linux one,
 	  this is a simple implementation, only parses the 'fsl,pins'
 	  property and configure related registers.
+
+config PINCTRL_SCMI
+	bool "Enable SCMI Pinctrl driver"
+	select SCMI_FIRMWARE
+	help
+	  Say Y here to enable the pinctrl over SCMI driver.
+
+	  This provides a driver that sends all requests regarding
+	  pinmux/pinconfig to a SCP firmware.

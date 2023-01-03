@@ -10,3 +10,4 @@ obj-$(CONFIG_PINCTRL_MXS)		+= pinctrl-mxs.o
 obj-$(CONFIG_PINCTRL_VYBRID)		+= pinctrl-vf610.o
 obj-$(CONFIG_PINCTRL_IMXRT)		+= pinctrl-imxrt.o
 obj-$(CONFIG_PINCTRL_S32CC)		+= pinctrl-s32cc.o
+obj-$(CONFIG_PINCTRL_SCMI)		+= pinctrl-scmi.o
