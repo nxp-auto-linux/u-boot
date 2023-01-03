@@ -90,6 +90,10 @@ static int scmi_bind_protocols(struct udevice *dev)
 				drv = DM_DRIVER_GET(scmi_voltage_domain);
 			}
 			break;
+		case SCMI_PROTOCOL_ID_PINCTRL:
+			drv = DM_DRIVER_GET(scmi_pinctrl);
+			break;
+
 		case SCMI_PROTOCOL_ID_GPIO:
 			drv = DM_DRIVER_GET(scmi_gpio);
 			break;
