@@ -341,6 +341,9 @@ int scmi_send_and_process_msg(struct udevice *dev, struct scmi_msg *msg)
 {
 	struct scmi_agent *agent = dev_get_priv(dev);
 
+	if (!agent->method_ops)
+		return -EPROBE_DEFER;
+
 	return agent->method_ops->process_msg(dev, msg);
 }
 
