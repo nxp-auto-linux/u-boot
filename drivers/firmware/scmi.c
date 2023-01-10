@@ -401,8 +401,8 @@ static int scmi_bind(struct udevice *dev)
 				drv = DM_GET_DRIVER(scmi_reset_domain);
 			break;
 		default:
-			dev_info(dev, "Ignore unsupported SCMI protocol %u\n",
-				 protocol_id);
+			dev_dbg(dev, "Ignore unsupported SCMI protocol %u\n",
+				protocol_id);
 			continue;
 		}
 
