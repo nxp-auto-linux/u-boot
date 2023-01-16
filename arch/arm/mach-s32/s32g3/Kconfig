@@ -36,7 +36,7 @@ config TARGET_S32G3XXAEVB3
 	  This board is based on S32G3 family of SoCs. It is equipped with
 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
 	  I2C and DSPI.
-	select NXP_S32GEVB_BOARD
+	select NXP_S32GEVB3_BOARD
 
 endchoice
 
