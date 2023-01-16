@@ -29,6 +29,14 @@ config TARGET_S32G2XXAEVB
 	imply USB_ULPI
 	select NXP_S32GEVB_BOARD
 
+config TARGET_S32G2XXAEVB3
+	bool "Support S32G2-EVB3 board"
+	help
+	  This board is based on S32G2 family of SoCs. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+	  I2C and DSPI.
+	select NXP_S32GEVB3_BOARD
+
 config TARGET_S32G274ABLUEBOX3
 	bool "Support S32G274A BlueBox3 board"
 	help
@@ -60,6 +68,7 @@ config FSL_PFENG
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g274ardb2/Kconfig"
 source "board/nxp/s32g2xxaevb/Kconfig"
+source "board/nxp/s32g2xxaevb3/Kconfig"
 source "board/nxp/s32g274abluebox3/Kconfig"
 source "board/nxp/s32g274aemu/Kconfig"
 

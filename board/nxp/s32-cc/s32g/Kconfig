@@ -19,6 +19,11 @@ config NXP_S32GRDB_BOARD
 	select SARADC_S32CC
 	select SPI_FLASH_MACRONIX
 
+config NXP_S32GEVB3_BOARD
+	bool
+	default n
+	select NXP_S32GEVB_BOARD
+
 config NXP_S32GEVB_BOARD
 	bool
 	default n
