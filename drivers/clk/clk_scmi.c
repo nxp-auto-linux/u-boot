@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2019-2020 Linaro Limited
- * Copyright 2021 NXP
+ * Copyright 2021, 2023 NXP
  */
 #include <common.h>
 #include <clk-uclass.h>
@@ -116,8 +116,7 @@ static ulong scmi_clk_set_rate(struct clk *clk, ulong rate)
 {
 	struct scmi_clk_rate_set_in in = {
 		.clock_id = clk->id,
-		.flags = SCMI_CLK_RATE_ASYNC_NORESP |
-			 SCMI_CLK_RATE_ROUND_CLOSEST,
+		.flags = SCMI_CLK_RATE_ROUND_CLOSEST,
 		.rate_lsb = (u32)rate,
 		.rate_msb = (u32)((u64)rate >> 32),
 	};
