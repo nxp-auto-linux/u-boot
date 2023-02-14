@@ -65,6 +65,10 @@
 	"boot_mtd=booti\0" \
 	"console=ttyLF0\0" \
 	"fdt_addr=" __stringify(S32CC_FDT_ADDR) "\0" \
+	"fdt_enable_hs400es=" \
+		"fdt addr ${fdt_addr}; " \
+		"fdt rm /soc/mmc no-1-8-v; " \
+		"fdt resize; \0" \
 	"fdt_file=" FDT_FILE "\0" \
 	"fdt_high=" __stringify(S32CC_FDT_HIGH_ADDR) "\0" \
 	"fdt_override=;\0" \
