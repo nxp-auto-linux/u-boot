@@ -7,7 +7,6 @@
 
 #include <configs/s32g2.h>
 
-#define CONFIG_EXTRA_ENV_SETTINGS	S32CC_ENV_SETTINGS
 #define EXTRA_BOOT_ARGS			""
 #define FDT_FILE			"s32g274a-rdb2.dtb"
 
