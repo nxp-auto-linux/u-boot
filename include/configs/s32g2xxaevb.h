@@ -7,6 +7,7 @@
 
 #include <configs/s32g2.h>
 
+#define EXTRA_BOOT_ARGS			""
 #define FDT_FILE			"s32g2xxa-evb.dtb"
 
 #if defined(CONFIG_USB)
