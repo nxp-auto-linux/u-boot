@@ -36,4 +36,8 @@ config ENV_SECT_SIZE
 endif
 endif
 
+config S32CC_SCMI_GPIO_FIXUP
+	bool "Device tree fixup for SCMI GPIO protocol"
+	default n
+
 endif
