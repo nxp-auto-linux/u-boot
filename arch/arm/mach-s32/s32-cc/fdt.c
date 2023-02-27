@@ -20,7 +20,8 @@
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
 #define FDT_CLUSTER1_PATH	"/cpus/cpu-map/cluster1"
 
-const static char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
+static const char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
+static const char *scmi_gpio_node_path = "/firmware/scmi/protocol@81";
 
 static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
 {
@@ -359,9 +360,8 @@ static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
 
 static int enable_scmi_gpio_node(void *blob, uint32_t phandle)
 {
-	const char *path = "/firmware/scmi/protocol@81";
 
-	return enable_scmi_protocol(blob, path, phandle);
+	return enable_scmi_protocol(blob, scmi_gpio_node_path, phandle);
 }
 
 static int disable_siul2_gpio_node(void *blob, uint32_t *phandle)
@@ -375,6 +375,17 @@ static int enable_scmi_gpio(void *blob)
 	ofnode node;
 	u32 phandle;
 	int ret;
+
+	node = ofnode_path(scmi_gpio_node_path);
+	if (!ofnode_valid(node)) {
+		printf("%s: Couldn't find \"%s\" node\n", __func__,
+		       scmi_gpio_node_path);
+		return -EINVAL;
+	}
+
+	/* SCMI GPIO isn't enabled for U-Boot */
+	if (!ofnode_is_available(node))
+		return 0;
 
 	node = ofnode_by_compatible(ofnode_null(), s32cc_gpio_compatible);
 	if (!ofnode_valid(node)) {
@@ -438,9 +449,11 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	if (ret)
 		goto exit;
 
-	ret = enable_scmi_gpio(blob);
-	if (ret)
-		return ret;
+	if (CONFIG_IS_ENABLED(S32CC_SCMI_GPIO_FIXUP)) {
+		ret = enable_scmi_gpio(blob);
+		if (ret)
+			return ret;
+	}
 exit:
 	return ret;
 }
