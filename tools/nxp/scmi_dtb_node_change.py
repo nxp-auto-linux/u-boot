@@ -59,6 +59,12 @@ def main():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('dtb_file', metavar='dtb_file', type=pathlib.Path,
                         nargs=1, help="path to the dtb file to be processed")
+    parser.add_argument('--pinctrl', action='store_true', help="use SCMI pinctrl protocol")
+    parser.add_argument('--no-pinctrl', dest='pinctrl', action='store_false')
+    parser.set_defaults(pinctrl=True)
+    parser.add_argument('--gpio', action='store_true', help="use SCMI GPIO protocol")
+    parser.add_argument('--no-gpio', dest='gpio', action='store_false')
+    parser.set_defaults(gpio=True)
     args = parser.parse_args()
 
     dtb_file = args.dtb_file[0]
@@ -70,10 +76,13 @@ def main():
 
     dtb = fdt.parse_dtb(data)
 
-    print("Replacing pinctrl")
-    switch_node(dtb, SCMI_PINCTRL_NAME, SIUL2_PINCTRL_NAME)
-    print("Replacing GPIO")
-    switch_node(dtb, SCMI_GPIO_NAME, SIUL2_GPIO_NAME)
+    if args.pinctrl:
+        print("Enabling SCMI pinctrl")
+        switch_node(dtb, SCMI_PINCTRL_NAME, SIUL2_PINCTRL_NAME)
+
+    if args.gpio:
+        print("Enabling SCMI GPIO")
+        switch_node(dtb, SCMI_GPIO_NAME, SIUL2_GPIO_NAME)
 
     with open(dtb_file, "wb") as file:
         file.write(dtb.to_dtb())
