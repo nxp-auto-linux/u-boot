@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2020 Imagination Technologies Limited
- * Copyright 2019-2022 NXP
+ * Copyright 2019-2023 NXP
  *
  */
 
@@ -81,62 +81,6 @@ static bool pfeng_cfg_emac_set_interface(u32 idx, u32 mode)
 	return true;
 }
 
-#define PART_PFE_NO	2
-
-static void disable_partition_2(void)
-{
-	u32 val;
-
-	/* Unlocking the RDC register */
-	writel(readl(RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO)) |
-			RDC_RD_CTRL_UNLOCK,
-			RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO));
-	/* Clearing XBAR_INTERFACE_DISABLE bit */
-	writel(readl(RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO)) &
-			~RDC_RD_INTERCONNECT_DISABLE,
-	       RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO));
-	while ((readl(RDC_RD_N_STATUS(RDC_BASE_ADDR, PART_PFE_NO)) &
-		0x00000010))
-		;
-	/* Locking the register Write */
-	writel(readl(RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO)) & 0x7FFFFFFF,
-	       RDC_RD_N_CTRL(RDC_BASE_ADDR, PART_PFE_NO));
-
-	/* Disabling MC_ME partition 2 clock */
-	val = readl(MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO));
-	if (val & MC_ME_PRTN_N_PCE) {
-		writel(readl(MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO)) &
-		       ~MC_ME_PRTN_N_PCE,
-		       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO));
-		writel(readl(MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO)) |
-		       MC_ME_PRTN_N_PCUD,
-		       MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO));
-		writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-		writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-		while (readl(MC_ME_PRTN_N_STAT(MC_ME_BASE_ADDR, PART_PFE_NO))
-				& MC_ME_PRTN_N_PCS)
-			;
-	}
-
-	writel(readl(MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO)) |
-			MC_ME_PRTN_N_OSSE,
-	       MC_ME_PRTN_N_PCONF(MC_ME_BASE_ADDR, PART_PFE_NO));
-	writel(readl(MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO)) |
-			MC_ME_PRTN_N_OSSUD,
-	       MC_ME_PRTN_N_PUPD(MC_ME_BASE_ADDR, PART_PFE_NO));
-	writel(MC_ME_CTL_KEY_KEY, (MC_ME_BASE_ADDR));
-	writel(MC_ME_CTL_KEY_INVERTEDKEY, (MC_ME_BASE_ADDR));
-	while (!(readl(MC_ME_PRTN_N_STAT(MC_ME_BASE_ADDR, PART_PFE_NO)) &
-				MC_ME_PRTN_N_OSSS))
-		;
-
-	/* Assert partition reset for PFE */
-	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, PART_PFE_NO)) | 0x1,
-	       RGM_PRST(MC_RGM_BASE_ADDR, PART_PFE_NO));
-	while (!(readl(RGM_PSTAT(MC_RGM_BASE_ADDR, PART_PFE_NO)) & 0x1))
-		;
-}
-
 static void switch_pfe0_clock(int intf)
 {
 	u32 csel = 0;
@@ -163,21 +107,22 @@ static void set_clock_freq(const char *tx, const char *rx,
 		dev_err(pfe_dev, "Failed to set the frequency of %s\n", rx);
 }
 
-static void enable_clocks(const char *tx, const char *rx,
-			  struct udevice *pfe_dev)
+static void set_clocks_state(const char *tx, const char *rx,
+			     struct udevice *pfe_dev, bool enable)
 {
 	int ret;
+	const char *op = (enable ? "enable" : "disable");
 
-	ret = s32gen1_enable_dev_clk(rx, pfe_dev);
+	ret = s32gen1_set_dev_clk_state(rx, pfe_dev, enable);
 	if (ret)
-		dev_err(pfe_dev, "Failed to enable %s clock\n", rx);
+		dev_err(pfe_dev, "Failed to %s %s clock\n", op, rx);
 
-	ret = s32gen1_enable_dev_clk(tx, pfe_dev);
+	ret = s32gen1_set_dev_clk_state(tx, pfe_dev, enable);
 	if (ret)
-		dev_err(pfe_dev, "Failed to enable %s clock\n", tx);
+		dev_err(pfe_dev, "Failed to %s %s clock\n", op, tx);
 }
 
-static ulong get_mac_mode_freq(int intf)
+static ulong get_mac_mode_freq(u32 intf)
 {
 	ulong freq;
 
@@ -201,7 +146,7 @@ static ulong get_mac_mode_freq(int intf)
 	return freq;
 }
 
-static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
+static void set_pfe_mac0_clk(u32 intf0, struct udevice *pfe_dev, bool enable)
 {
 	ulong freq;
 	const char *rx, *tx;
@@ -239,11 +184,13 @@ static void set_pfe_mac0_clk(int intf0, struct udevice *pfe_dev)
 	}
 
 	freq = get_mac_mode_freq(intf0);
-	set_clock_freq(tx, rx, freq, freq, pfe_dev);
-	enable_clocks(tx, rx, pfe_dev);
+	if (enable)
+		set_clock_freq(tx, rx, freq, freq, pfe_dev);
+	else
+		set_clocks_state(tx, rx, pfe_dev, enable);
 }
 
-static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
+static void set_pfe_mac1_clk(u32 intf1, struct udevice *pfe_dev, bool enable)
 {
 	ulong freq;
 	const char *rx, *tx;
@@ -281,11 +228,13 @@ static void set_pfe_mac1_clk(int intf1, struct udevice *pfe_dev)
 	}
 
 	freq = get_mac_mode_freq(intf1);
-	set_clock_freq(tx, rx, freq, freq, pfe_dev);
-	enable_clocks(tx, rx, pfe_dev);
+	if (enable)
+		set_clock_freq(tx, rx, freq, freq, pfe_dev);
+	else
+		set_clocks_state(tx, rx, pfe_dev, enable);
 }
 
-static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
+static void set_pfe_mac2_clk(u32 intf2, struct udevice *pfe_dev, bool enable)
 {
 	ulong freq;
 	const char *rx, *tx;
@@ -323,13 +272,17 @@ static void set_pfe_mac2_clk(int intf2, struct udevice *pfe_dev)
 	}
 
 	freq = get_mac_mode_freq(intf2);
-	set_clock_freq(tx, rx, freq, freq, pfe_dev);
-	enable_clocks(tx, rx, pfe_dev);
+
+	if (enable)
+		set_clock_freq(tx, rx, freq, freq, pfe_dev);
+	else
+		set_clocks_state(tx, rx, pfe_dev, enable);
 }
 
-static void setup_pfe_clocks(int intf0, int intf1, int intf2,
-			     struct udevice *pfe_dev)
+static void setup_pfe_clocks(u32 intf0, u32 intf1, u32 intf2,
+			     struct udevice *pfe_dev, bool enable)
 {
+	const char *op = (enable ? "enable" : "disable");
 	int ret;
 	struct pfeng_priv *priv;
 
@@ -344,28 +297,40 @@ static void setup_pfe_clocks(int intf0, int intf1, int intf2,
 		return;
 	}
 
-	ret = s32gen1_enable_dev_clk("pe", pfe_dev);
-	if (ret)
-		dev_err(pfe_dev, "Failed to enable pfe_pe clock\n");
-
 	/* Apply clock setting to all EMAC ports for first time only.
 	 * Otherwise setup clocks only on focused EMAC port
+	 *
+	 * Disable all clocks together when requested.
 	 */
-	if (!priv->clocks_done) {
-		set_pfe_mac0_clk(intf0, pfe_dev);
-		set_pfe_mac1_clk(intf1, pfe_dev);
-		set_pfe_mac2_clk(intf2, pfe_dev);
+	if ((!priv->clocks_done && enable) || (priv->clocks_done && !enable)) {
+		if (enable) {
+			ret = s32gen1_set_dev_clk_state("pe", pfe_dev, enable);
+			if (ret)
+				dev_err(pfe_dev, "Failed to %s pfe_pe clock\n", op);
+		}
 
-		ret = s32gen1_enable_dev_clk("ts", pfe_dev);
+		set_pfe_mac0_clk(intf0, pfe_dev, enable);
+		set_pfe_mac1_clk(intf1, pfe_dev, enable);
+		set_pfe_mac2_clk(intf2, pfe_dev, enable);
+
+		ret = s32gen1_set_dev_clk_state("ts", pfe_dev, enable);
 		if (ret)
-			dev_err(pfe_dev, "Failed to enable ts clock\n");
-		priv->clocks_done = true;
+			dev_err(pfe_dev, "Failed to %s ts clock\n", op);
+
+		if (!enable) {
+			ret = s32gen1_set_dev_clk_state("pe", pfe_dev, enable);
+			if (ret)
+				dev_err(pfe_dev, "Failed to %s pfe_pe clock\n", op);
+		}
+
+		/* Toggle the status */
+		priv->clocks_done = !priv->clocks_done;
 	} else if (priv->if_index == 0) {
-		set_pfe_mac0_clk(intf0, pfe_dev);
+		set_pfe_mac0_clk(intf0, pfe_dev, enable);
 	} else if (priv->if_index == 1) {
-		set_pfe_mac1_clk(intf1, pfe_dev);
+		set_pfe_mac1_clk(intf1, pfe_dev, enable);
 	} else if (priv->if_index == 2) {
-		set_pfe_mac2_clk(intf2, pfe_dev);
+		set_pfe_mac2_clk(intf2, pfe_dev, enable);
 	}
 }
 
@@ -450,7 +415,8 @@ static void setup_iomux_pfe(struct udevice *dev,
 /* setup all EMACs clocks */
 void pfeng_apply_clocks(struct udevice *pfe_dev)
 {
-	setup_pfe_clocks(emac_intf[0], emac_intf[1], emac_intf[2], pfe_dev);
+	setup_pfe_clocks(emac_intf[0], emac_intf[1],
+			 emac_intf[2], pfe_dev, true);
 }
 
 /* disable power for EMACs */
@@ -488,13 +454,14 @@ void pfeng_cfg_emacs_enable_all(void)
 	}
 }
 
-static int pfeng_cfg_mode_disable(void)
+static int pfeng_cfg_mode_disable(struct udevice *pfe_dev)
 {
 	/* disable all EMACs to allow interface change */
 	pfeng_cfg_emacs_disable_all();
 
-	/* disable partition 2 */
-	disable_partition_2();
+	if (pfe_dev)
+		setup_pfe_clocks(emac_intf[0], emac_intf[1],
+				 emac_intf[2], pfe_dev, false);
 
 	return 0;
 }
@@ -516,7 +483,8 @@ static int pfeng_cfg_mode_enable(struct udevice *pfe_dev)
 
 	/* Setup clocks */
 	priv->clocks_done = false;
-	setup_pfe_clocks(emac_intf[0], emac_intf[1], emac_intf[2], pfe_dev);
+	setup_pfe_clocks(emac_intf[0], emac_intf[1],
+			 emac_intf[2], pfe_dev, true);
 
 	return 0;
 }
@@ -531,7 +499,7 @@ bool pfeng_cfg_set_mode(u32 mode, struct udevice *pfe_dev)
 
 	switch (mode) {
 	case PFENG_MODE_DISABLE:
-		ret = pfeng_cfg_mode_disable();
+		ret = pfeng_cfg_mode_disable(pfe_dev);
 		break;
 	case PFENG_MODE_ENABLE:
 		ret = pfeng_cfg_mode_enable(pfe_dev);

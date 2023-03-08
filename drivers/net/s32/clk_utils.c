@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2018-2022 NXP
+ * Copyright 2018-2023 NXP
  */
 
 #include <asm/arch/clock.h>
@@ -54,7 +54,8 @@ ulong s32gen1_get_dev_clk_rate(const char *name, struct udevice *dev)
 	return rate;
 }
 
-int s32gen1_enable_dev_clk(const char *name, struct udevice *dev)
+int s32gen1_set_dev_clk_state(const char *name, struct udevice *dev,
+			      bool enable)
 {
 	struct clk clk;
 	int ret = 0;
@@ -65,10 +66,19 @@ int s32gen1_enable_dev_clk(const char *name, struct udevice *dev)
 		return ret;
 	}
 
-	ret = clk_enable(&clk);
+	if (enable)
+		ret = clk_enable(&clk);
+	else
+		ret = clk_disable(&clk);
+
 	(void)clk_free(&clk);
 
 	return ret;
+}
+
+int s32gen1_enable_dev_clk(const char *name, struct udevice *dev)
+{
+	return s32gen1_set_dev_clk_state(name, dev, true);
 }
 
 int s32gen1_set_parent_clk_id(ulong clk_id, ulong parent_clk_id)
