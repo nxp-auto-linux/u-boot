@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2022 NXP
+ * Copyright 2017-2023 NXP
  */
 #include <common.h>
 #include <board_common.h>
@@ -38,7 +38,7 @@ int board_init(void)
 	return 0;
 }
 
-void board_prep_linux(bootm_headers_t *images)
+void board_cleanup_before_linux(void)
 {
 	int ret;
 
