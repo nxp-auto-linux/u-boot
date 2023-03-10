@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  * S32CC SAR-ADC driver
  */
 
@@ -200,6 +200,12 @@ static int s32_saradc_probe(struct udevice *dev)
 	ret = clk_get_by_index(dev, 0, &clk);
 	if (ret)
 		return ret;
+
+	ret = clk_enable(&clk);
+	if (ret) {
+		printf("Failed to enable saradc clock: %d\n", ret);
+		return ret;
+	}
 
 	priv->clk_rate = clk_get_rate(&clk);
 	if (!priv->clk_rate) {
