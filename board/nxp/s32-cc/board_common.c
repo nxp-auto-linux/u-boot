@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 #include <common.h>
 #include <fdtdec.h>
@@ -35,7 +35,7 @@ void *board_fdt_blob_setup(int *err)
 	return dtb;
 }
 
-void board_prep_linux(bootm_headers_t *images)
+void board_cleanup_before_linux(void)
 {
 	int ret;
 
