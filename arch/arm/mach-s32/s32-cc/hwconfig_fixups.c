@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022 NXP
+ * Copyright 2022,2023 NXP
  */
 #include <common.h>
 #include <malloc.h>
@@ -41,6 +41,8 @@
 #define EMAC_ID_INVALID			(u32)(-1)
 
 #define MAX_PROP_ALLOC			(500)
+
+#define MAX_PFE_EMAC_PHYIF_ID		2
 
 struct dts_node {
 	union {
@@ -1141,9 +1143,12 @@ static int set_xpcs_config(struct dts_node *root, u32 serdes_id, u32 xpcs_id)
 	 * If the property is missing, then we have another type of interface (e.g. GMAC)
 	 * which we do not check if is SGMII (TBD).
 	 */
-	ret = node_get_prop_u32(&node, "nxp,pfeng-emac-id", &emac_id);
+	ret = node_get_prop_u32(&node, "nxp,pfeng-linked-phyif", &emac_id);
 	if (ret) {
 		pr_warn("Interface does not have ID\n");
+		return -ENODATA;
+	} else if (emac_id > MAX_PFE_EMAC_PHYIF_ID) {
+		pr_warn("Interface has no EMAC\n");
 		return -ENODATA;
 	} else if (pfeng_cfg_emac_get_interface(emac_id) != PHY_INTERFACE_MODE_SGMII) {
 		pr_warn("PFE EMAC %d is not SGMII\n", emac_id);
