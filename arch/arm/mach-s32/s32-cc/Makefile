@@ -1,7 +1,7 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
-# (C) Copyright 2016-2018, 2020-2022 NXP
+# (C) Copyright 2016-2018, 2020-2023 NXP
 #
 ccflags-y += -I./board/nxp/common/
 ccflags-y += -I./board/nxp/s32-cc/include/
@@ -54,7 +54,8 @@ ifdef CONFIG_QSPI_BOOT
 $(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32-cc/s32cc_qspiparams FORCE
 	$(Q)$(objtree)/arch/arm/mach-s32/s32-cc/s32cc_qspiparams \
 		-m $(QSPI_MEMORY) \
-		-o $(QSPI_PARAMS_FILE)
+		-o $(QSPI_PARAMS_FILE) \
+		-f $(CONFIG_S32CC_QSPI_FREQ)
 else
 $(QSPI_PARAMS_FILE):
 endif
