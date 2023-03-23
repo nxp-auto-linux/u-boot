@@ -1,7 +1,7 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
-# (C) Copyright 2016-2018, 2020-2022 NXP
+# (C) Copyright 2016-2018, 2020-2023 NXP
 #
 ccflags-y += -I./board/nxp/common/
 ccflags-y += -I./board/nxp/s32-cc/include/
@@ -28,6 +28,12 @@ obj-$(CONFIG_NETDEVICES)	+= eth.o
 
 ifdef CONFIG_SPI_FLASH_MACRONIX
 QSPI_MEMORY = MX25UW51245G
+
+ifeq ($(CONFIG_TARGET_S32G2XXAEVB)$(CONFIG_TARGET_S32G3XXAEVB)$(CONFIG_TARGET_S32R45EVB),)
+QSPI_FREQ_ARG = -f 200
+else
+QSPI_FREQ_ARG = -f 133
+endif
 endif
 
 ifdef CONFIG_SPI_FLASH_STMICRO
@@ -54,7 +60,8 @@ ifdef CONFIG_QSPI_BOOT
 $(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32-cc/s32cc_qspiparams FORCE
 	$(Q)$(objtree)/arch/arm/mach-s32/s32-cc/s32cc_qspiparams \
 		-m $(QSPI_MEMORY) \
-		-o $(QSPI_PARAMS_FILE)
+		-o $(QSPI_PARAMS_FILE) \
+		$(QSPI_FREQ_ARG)
 else
 $(QSPI_PARAMS_FILE):
 endif

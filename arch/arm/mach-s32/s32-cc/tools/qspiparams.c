@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
-/* Copyright 2022 NXP */
+/* Copyright 2022-2023 NXP */
 
+#include <errno.h>
 #include <s32cc_image_params.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,10 +18,12 @@ enum qspi_memory {
 	INVALID_QSPI_MEM,
 };
 
-const char *mem_names[] = {
+static const char * const mem_names[] = {
 	[MX25UW51245G] = str(MX25UW51245G),
 	[MT35XU512ABA] = str(MT35XU512ABA),
 };
+
+static const unsigned int allowed_freqs[] = {133, 200};
 
 static void show_usage(char *arg)
 {
@@ -28,10 +31,12 @@ static void show_usage(char *arg)
 	fprintf(stderr, "binary for S32CC platforms.\n");
 	fprintf(stderr,
 		"The resulted binary will be added to IVT by mkimage tool.\n\n");
-	fprintf(stderr, "Usage: %s -m MEMORY -o FILE\n\n", arg);
+	fprintf(stderr, "Usage: %s -m MEMORY -f FREQUENCY -o FILE\n\n", arg);
 	fprintf(stderr, "\t-m\t\tSelects the QSPI memory. ");
 	fprintf(stderr,
 		"Available memories:\n\t\t\tMX25UW51245G and MT35XU512ABA\n");
+	fprintf(stderr,
+		"\t-f\t\t(Optional) Selects the frequency for MX25UW51245G\n");
 }
 
 static enum qspi_memory get_memory(const char *mem_name)
@@ -46,20 +51,41 @@ static enum qspi_memory get_memory(const char *mem_name)
 	return INVALID_QSPI_MEM;
 }
 
+static int check_freq(unsigned int freq)
+{
+	size_t i;
+
+	for (i = 0u; i < ARRAY_SIZE(allowed_freqs); i++)
+		if (freq == allowed_freqs[i])
+			return 0;
+
+	return -EINVAL;
+}
+
 int main(int argc, char **argv)
 {
 	int opt;
 	enum qspi_memory memory = INVALID_QSPI_MEM;
+	unsigned int freq = 0;
 	struct qspi_params *params;
 	char *output = NULL;
 	FILE *ofile;
+	errno = 0;
 
-	while ((opt = getopt(argc, argv, "hm:o:")) > 0) {
+	while ((opt = getopt(argc, argv, "hm:o:f:")) > 0) {
 		switch (opt) {
 		case 'm':
 			memory = get_memory(optarg);
 			if (memory == INVALID_QSPI_MEM) {
 				fprintf(stderr, "Invalid memory: %s\n",
+					optarg);
+				exit(EXIT_FAILURE);
+			}
+			break;
+		case 'f':
+			freq = strtoul(optarg, NULL, 0);
+			if (errno || check_freq(freq)) {
+				fprintf(stderr, "Invalid frequency: %s\n",
 					optarg);
 				exit(EXIT_FAILURE);
 			}
@@ -76,6 +102,8 @@ int main(int argc, char **argv)
 	switch (memory) {
 	case MX25UW51245G:
 		params = get_macronix_qspi_conf();
+		if (freq)
+			params->sflash_clk_freq = freq;
 		break;
 	case MT35XU512ABA:
 		params = get_micron_qspi_conf();
