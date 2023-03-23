@@ -28,6 +28,10 @@ config S32CC_MAX_DTB_SIZE
 config SYS_MALLOC_F_LEN
 	default 0x8000
 
+config S32CC_QSPI_FREQ
+	int "QSPI frequency setting (MHz) used in order to set BootROM's clock"
+	default 200
+
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
 	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int"
