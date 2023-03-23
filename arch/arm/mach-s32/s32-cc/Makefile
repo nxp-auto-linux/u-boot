@@ -1,5 +1,5 @@
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier:      GPL-2.0+
 #
@@ -42,7 +42,8 @@ ifdef CONFIG_QSPI_BOOT
 $(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32-cc/s32cc_qspiparams FORCE
 	$(Q)$(objtree)/arch/arm/mach-s32/s32-cc/s32cc_qspiparams \
 		-m $(QSPI_MEMORY) \
-		-o $(QSPI_PARAMS_FILE)
+		-o $(QSPI_PARAMS_FILE) \
+		-f $(CONFIG_S32CC_QSPI_FREQ)
 else
 $(QSPI_PARAMS_FILE):
 endif
