@@ -186,8 +186,7 @@ static void set_pfe_mac0_clk(u32 intf0, struct udevice *pfe_dev, bool enable)
 	freq = get_mac_mode_freq(intf0);
 	if (enable)
 		set_clock_freq(tx, rx, freq, freq, pfe_dev);
-	else
-		set_clocks_state(tx, rx, pfe_dev, enable);
+	set_clocks_state(tx, rx, pfe_dev, enable);
 }
 
 static void set_pfe_mac1_clk(u32 intf1, struct udevice *pfe_dev, bool enable)
@@ -230,8 +229,7 @@ static void set_pfe_mac1_clk(u32 intf1, struct udevice *pfe_dev, bool enable)
 	freq = get_mac_mode_freq(intf1);
 	if (enable)
 		set_clock_freq(tx, rx, freq, freq, pfe_dev);
-	else
-		set_clocks_state(tx, rx, pfe_dev, enable);
+	set_clocks_state(tx, rx, pfe_dev, enable);
 }
 
 static void set_pfe_mac2_clk(u32 intf2, struct udevice *pfe_dev, bool enable)
@@ -272,11 +270,9 @@ static void set_pfe_mac2_clk(u32 intf2, struct udevice *pfe_dev, bool enable)
 	}
 
 	freq = get_mac_mode_freq(intf2);
-
 	if (enable)
 		set_clock_freq(tx, rx, freq, freq, pfe_dev);
-	else
-		set_clocks_state(tx, rx, pfe_dev, enable);
+	set_clocks_state(tx, rx, pfe_dev, enable);
 }
 
 static void setup_pfe_clocks(u32 intf0, u32 intf1, u32 intf2,
