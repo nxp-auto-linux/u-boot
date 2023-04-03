@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 
 #include <common.h>
@@ -139,8 +139,8 @@ int soc_clk_dump(void)
 		return num_clocks;
 	}
 
-	printf(" Rate               Used         Name\n");
-	printf("-------------------------------------------\n");
+	printf(" ID  Rate               Used         Name\n");
+	printf("------------------------------------------------\n");
 
 	for (i = 0; i < num_clocks; ++i) {
 		memset(clock_name, 0, ARRAY_SIZE(clock_name));
@@ -151,7 +151,7 @@ int soc_clk_dump(void)
 			continue;
 		}
 
-		printf(" %-12u  %8d          ", clock_rate, enabled);
+		printf(" %-3d %-12u  %8d          ", i, clock_rate, enabled);
 		printf("%s\n", clock_name);
 	}
 
