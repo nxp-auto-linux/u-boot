@@ -37,7 +37,11 @@ void *board_fdt_blob_setup(int *err)
 
 void board_cleanup_before_linux(void)
 {
-	int ret;
+	int ret, skip;
+
+	skip = env_get_yesno("skip_scmi_reset_agent");
+	if (skip == 1)
+		return;
 
 	ret = scmi_reset_agent();
 	if (ret)
