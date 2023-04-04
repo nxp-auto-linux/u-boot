@@ -7,6 +7,7 @@
 
 #include <common.h>
 #include <clk-uclass.h>
+#include <command.h>
 #include <dm.h>
 #include <scmi_agent.h>
 #include <scmi_protocols.h>
@@ -100,3 +101,70 @@ U_BOOT_DRIVER(scmi_clock) = {
 	.id = UCLASS_CLK,
 	.ops = &scmi_clk_ops,
 };
+
+static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
+			    char *const argv[])
+{
+	struct clk clk;
+	int ret, enable;
+
+	if (argc < 4)
+		return CMD_RET_USAGE;
+
+	memset(&clk, 0, sizeof(clk));
+
+	ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &clk.dev);
+	if (ret) {
+		printf("Failed to get device '%s'\n", argv[1]);
+		return CMD_RET_FAILURE;
+	}
+
+	clk.id = simple_strtoul(argv[2], NULL, 10);
+	if (clk.id > INT_MAX)
+		return CMD_RET_FAILURE;
+
+	if (simple_strtoul(argv[3], NULL, 10))
+		enable = 1;
+	else
+		enable = 0;
+
+	ret = scmi_clk_gate(&clk, enable);
+	if (ret) {
+		printf("scmi_clk_enable failed: %d\n", ret);
+		return CMD_RET_FAILURE;
+	}
+
+	return CMD_RET_SUCCESS;
+}
+
+static struct cmd_tbl cmd_clk_sub[] = {
+	U_BOOT_CMD_MKENT(gate, 3, 1, do_scmi_clk_gate, "", ""),
+};
+
+static int do_scmi_clk(struct cmd_tbl *cmdtp, int flag, int argc,
+		       char *const argv[])
+{
+	struct cmd_tbl *c;
+
+	if (argc < 2)
+		return CMD_RET_USAGE;
+
+	/* Strip off leading 'scmi_clk' command argument */
+	argc--;
+	argv++;
+
+	c = find_cmd_tbl(argv[0], &cmd_clk_sub[0], ARRAY_SIZE(cmd_clk_sub));
+
+	if (c)
+		return c->cmd(cmdtp, flag, argc, argv);
+
+	return CMD_RET_USAGE;
+}
+
+#ifdef CONFIG_SYS_LONGHELP
+static char scmi_clk_help_text[] =
+	"gate [device_name] [clk] [enable/disable]- Turn on/off a clock";
+#endif
+
+U_BOOT_CMD(scmi_clk, 5, 1, do_scmi_clk, "SCMI CLK sub-system",
+	   scmi_clk_help_text);
