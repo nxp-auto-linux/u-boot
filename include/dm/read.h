@@ -5,12 +5,13 @@
  * Copyright (c) 2017 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
  *
- * Copyright 2021 NXP
+ * Copyright 2021,2023 NXP
  */
 
 #ifndef _DM_READ_H
 #define _DM_READ_H
 
+#include <dm/device.h>
 #include <dm/fdtaddr.h>
 #include <dm/ofnode.h>
 #include <dm/uclass.h>
