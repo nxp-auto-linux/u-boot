@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2022 NXP
+ * Copyright 2020-2023 NXP
  * S32Gen1 PCIe driver
  */
 
@@ -11,6 +11,7 @@
 #include <hwconfig.h>
 #include <malloc.h>
 #include <misc.h>
+#include <nvmem.h>
 #include <pci.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
@@ -21,7 +22,6 @@
 #include <linux/iopoll.h>
 #include <linux/sizes.h>
 #include <linux/time.h>
-#include <s32-cc/nvmem.h>
 #include <s32-cc/pcie.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
@@ -782,7 +782,7 @@ static int s32gen1_check_serdes(struct udevice *dev)
 	int ret;
 	u32 serdes_presence = 0;
 
-	ret = nvmem_cell_get(dev, "serdes_presence", &c);
+	ret = nvmem_cell_get_by_name(dev, "serdes_presence", &c);
 	if (ret) {
 		printf("Failed to get 'serdes_presence' cell\n");
 		return ret;
@@ -971,7 +971,7 @@ static u32 s32_pcie_get_dev_id_variant(struct udevice *dev)
 	int ret;
 	u32 variant_bits = 0;
 
-	ret = nvmem_cell_get(dev, "pcie_variant", &c);
+	ret = nvmem_cell_get_by_name(dev, "pcie_variant", &c);
 	if (ret) {
 		printf("Failed to get 'pcie_variant' cell\n");
 		return ret;

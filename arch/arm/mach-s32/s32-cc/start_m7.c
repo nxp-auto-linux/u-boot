@@ -1,14 +1,14 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 
 #include <common.h>
 #include <command.h>
 #include <misc.h>
+#include <nvmem.h>
 #include <asm/io.h>
 #include <dm/uclass.h>
-#include <s32-cc/nvmem.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 #define S32_SRAM_6M	(6 * SZ_1M)

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 
 #include <common.h>
 #include <cpu.h>
 #include <dm.h>
 #include <misc.h>
+#include <nvmem.h>
 #include <dm/uclass.h>
-#include <s32-cc/nvmem.h>
 
 struct cpu_s32cc_plat {
 	u32 letter;
@@ -75,7 +75,7 @@ static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
 	struct nvmem_cell c;
 	int ret;
 
-	ret = nvmem_cell_get(dev, cell->name, &c);
+	ret = nvmem_cell_get_by_name(dev, cell->name, &c);
 	if (ret) {
 		printf("Failed to get '%s' cell\n", cell->name);
 		return ret;
@@ -114,7 +114,7 @@ static int s32cc_cpu_probe(struct udevice *dev)
 			return ret;
 	}
 
-	ret = nvmem_cell_get(dev, subminor, &cell);
+	ret = nvmem_cell_get_by_name(dev, subminor, &cell);
 	if (ret) {
 		printf("Failed to get '%s' cell", subminor);
 		return ret;
