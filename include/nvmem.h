@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2022 Sean Anderson <sean.anderson@seco.com>
+ *
+ * Copyright 2023 NXP
  */
 
 #ifndef NVMEM_H
@@ -104,6 +106,22 @@ int nvmem_cell_get_by_index(struct udevice *dev, int index,
 int nvmem_cell_get_by_name(struct udevice *dev, const char *name,
 			   struct nvmem_cell *cell);
 
+/**
+ * nvmem_cell_get_by_offset() - Get an nvmem cell from a given device and offset
+ * @dev: The device that uses the nvmem cell
+ * @offset: The offset of the nvmem cell
+ * @cell: The cell to initialize
+ *
+ * Look up the nvmem cell referenced by @offset as subnode of @dev.
+ *
+ * Return:
+ * * 0 on success
+ * * -EINVAL if @cell does not point to a valid memory area
+ * * -ENOENT if nvmem cell referenced by @offset is not found.
+ */
+int nvmem_cell_get_by_offset(struct udevice *dev, unsigned int offset,
+			     struct nvmem_cell *cell);
+
 #else /* CONFIG_NVMEM */
 
 static inline int nvmem_cell_read(struct nvmem_cell *cell, void *buf, int size)
@@ -125,6 +143,13 @@ static inline int nvmem_cell_get_by_index(struct udevice *dev, int index,
 
 static inline int nvmem_cell_get_by_name(struct udevice *dev, const char *name,
 					 struct nvmem_cell *cell)
+{
+	return -ENOSYS;
+}
+
+static inline int nvmem_cell_get_by_offset(struct udevice *dev,
+					   unsigned int offset,
+					   struct nvmem_cell *cell)
 {
 	return -ENOSYS;
 }
