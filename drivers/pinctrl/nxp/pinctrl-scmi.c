@@ -20,8 +20,22 @@
 #define SCMI_PINCTRL_PIN_FROM_PINMUX(v) ((v) >> 4)
 #define SCMI_PINCTRL_FUNC_FROM_PINMUX(v) ((v) & 0XF)
 
-/* 128 (channel size) - 28 (SMT header) - 8 (extra space). */
-#define SCMI_MAX_BUFFER_SIZE 92
+/* 128 (channel size) - 28 (SMT header). */
+/* Temporary until: ALB-10137 */
+#define SCMI_MAX_BUFFER_SIZE 96
+
+/*
+ * Remaining message size is 100. The longer messages that use a variable
+ * number of pins are PINMUX_SET and PICONF_SET_*.
+ *
+ * PINMUX_SET would allow for maximum (100 - 4) / 4 = 24
+ * PINCONF_SET_* would allow for maximum (100 - 4 - 4 - 4 - 8 * 4) / 2 = 28
+ *
+ * Because of ALB-10137 we cannot use the maximum size. Switch to 23
+ * until it's fixed.
+ *
+ */
+#define SCMI_MAX_PINS 23
 
 #define PACK_CFG(p, a)		(((p) & 0xFF) | ((a) << 8))
 #define UNPACK_PARAM(packed)	((packed) & 0xFF)
@@ -179,6 +193,20 @@ static bool scmi_pinctrl_is_multi_bit_value(enum converted_pin_param p)
 	return !!(BIT_32(p) & scmi_pinctrl_multi_bit_cfgs);
 }
 
+static u32 scmi_pinctrl_count_mb_configs(struct scmi_pinctrl_pin_cfg *cfg)
+{
+	enum converted_pin_param param;
+	u32 count = 0, i;
+
+	for (i = 0; i < cfg->num_configs; i++) {
+		param = (enum converted_pin_param)UNPACK_PARAM(cfg->configs[i]);
+		if (scmi_pinctrl_is_multi_bit_value(param))
+			count++;
+	}
+
+	return count;
+}
+
 static int scmi_pinctrl_compare_cfgs(const void *a, const void *b)
 {
 	s32 pa, pb;
@@ -189,18 +217,22 @@ static int scmi_pinctrl_compare_cfgs(const void *a, const void *b)
 	return pb - pa;
 }
 
-static int scmi_pinctrl_set_configs(struct udevice *scmi_dev, unsigned int pin,
-				    struct scmi_pinctrl_pin_cfg *cfg)
+static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
+					  u16 no_pins,
+					  u16 *pins,
+					  struct scmi_pinctrl_pin_cfg *cfg)
 {
 	u8 buffer[SCMI_MAX_BUFFER_SIZE];
 	enum converted_pin_param p;
 	struct {
 		u32 no_pins;
-		u16 pin;
+		u16 pins[];
+	} *r_pins = (void *)buffer;
+	struct {
 		u32 mask;
 		u32 boolean_values;
 		u32 multi_bit_values[];
-	} *r = (void *)buffer;
+	} *r_configs;
 	struct {
 		s32 status;
 	} response;
@@ -212,21 +244,18 @@ static int scmi_pinctrl_set_configs(struct udevice *scmi_dev, unsigned int pin,
 		.out_msg	= (u8 *)&response,
 		.out_msg_sz	= sizeof(response),
 	};
+	u32 *mb_iter, *mb_end;
+	u32 param, arg;
 	int ret, i;
-	u32 param, arg, index = 0, max_mb_elems;
-
-	max_mb_elems =
-		(sizeof(buffer) - sizeof(*r)) / sizeof(r->multi_bit_values[0]);
 
 	memset(buffer, 0, ARRAY_SIZE(buffer));
 
-	if (pin > U16_MAX)
-		return -EINVAL;
+	r_pins->no_pins = no_pins;
+	memcpy(r_pins->pins, pins, no_pins * sizeof(*pins));
 
-	r->no_pins = 1;
-	r->pin = (u16)pin;
-	r->mask = 0;
-	r->boolean_values = 0;
+	r_configs = (void *)(r_pins->pins + no_pins);
+	mb_iter = &r_configs->multi_bit_values[0];
+	mb_end = mb_iter + scmi_pinctrl_count_mb_configs(cfg);
 
 	/* Sorting needs to be done in order to lay out
 	 * the configs in descending order of their
@@ -236,24 +265,29 @@ static int scmi_pinctrl_set_configs(struct udevice *scmi_dev, unsigned int pin,
 	qsort(cfg->configs, cfg->num_configs, sizeof(cfg->configs[0]),
 	      scmi_pinctrl_compare_cfgs);
 
+	r_configs->mask = 0;
+	r_configs->boolean_values = 0;
+
 	for (i = 0; i < cfg->num_configs; ++i) {
 		param = UNPACK_PARAM(cfg->configs[i]);
 		arg = UNPACK_ARG(cfg->configs[i]);
 
-		r->mask |= BIT_32(param);
+		r_configs->mask |= BIT_32(param);
 
 		if (param > CONV_PIN_CONFIG_NUM_CONFIGS)
 			return -EINVAL;
 
 		p = (enum converted_pin_param)param;
 
-		if (index >= max_mb_elems)
-			return -EINVAL;
+		if (scmi_pinctrl_is_multi_bit_value(p)) {
+			if (mb_iter >= mb_end)
+				return -EINVAL;
 
-		if (scmi_pinctrl_is_multi_bit_value(p))
-			r->multi_bit_values[index++] = arg;
-		else
-			r->boolean_values |= arg ? (u32)BIT_32(param) : 0;
+			*mb_iter = arg;
+			mb_iter++;
+		} else {
+			r_configs->boolean_values |= arg ? BIT_32(param) : 0;
+		}
 	}
 
 	ret = scmi_send_and_process_msg(scmi_dev, &msg);
@@ -269,6 +303,32 @@ static int scmi_pinctrl_set_configs(struct udevice *scmi_dev, unsigned int pin,
 	}
 
 	return 0;
+}
+
+static int scmi_pinctrl_set_configs(struct udevice *sdev,
+				    u16 no_pins,
+				    u16 *pins,
+				    struct scmi_pinctrl_pin_cfg *cfg)
+{
+	unsigned int i;
+	int ret = 0;
+
+	for (i = 0; i < no_pins / SCMI_MAX_PINS; i++) {
+		ret = scmi_pinctrl_set_configs_chunk(sdev, SCMI_MAX_PINS, pins,
+						     cfg);
+		if (ret)
+			return ret;
+
+		pins += SCMI_MAX_PINS;
+	}
+
+	if (no_pins % SCMI_MAX_PINS != 0)
+		ret = scmi_pinctrl_set_configs_chunk(sdev,
+						     no_pins % SCMI_MAX_PINS,
+						     pins,
+						     cfg);
+
+	return ret;
 }
 
 static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
@@ -323,29 +383,39 @@ static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
 	return ret;
 }
 
-static int scmi_pinctrl_set_mux(struct udevice *scmi_dev, u16 pin, u16 func)
+static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
+				      u16 *pins, u16 *funcs)
 {
-	struct {
-		u8 num_pins;
+	u8 buffer[SCMI_MAX_BUFFER_SIZE];
+	struct pin_function {
 		u16 pin;
 		u16 func;
-	} request;
+	};
+	struct {
+		u8 num_pins;
+		struct pin_function pf[];
+	} *request = (void *)buffer;
 	struct {
 		s32 status;
 	} response;
 	struct scmi_msg msg = {
 		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
 		.message_id	= SCMI_PINCTRL_PINMUX_SET,
-		.in_msg		= (u8 *)&request,
-		.in_msg_sz	= sizeof(request),
+		.in_msg		= buffer,
+		.in_msg_sz	= sizeof(buffer),
 		.out_msg	= (u8 *)&response,
 		.out_msg_sz	= sizeof(response),
 	};
-	int ret;
+	int ret, i;
 
-	request.num_pins = 1;
-	request.pin = pin;
-	request.func = func;
+	if (no_pins > SCMI_MAX_PINS)
+		return -EINVAL;
+
+	request->num_pins = no_pins;
+	for (i = 0; i < no_pins; i++) {
+		request->pf[i].pin = pins[i];
+		request->pf[i].func = funcs[i];
+	}
 
 	ret = scmi_send_and_process_msg(scmi_dev, &msg);
 	if (ret) {
@@ -356,6 +426,30 @@ static int scmi_pinctrl_set_mux(struct udevice *scmi_dev, u16 pin, u16 func)
 	ret = scmi_to_linux_errno(response.status);
 	if (ret)
 		pr_err("Error getting gpio_mux: %d!\n", ret);
+
+	return ret;
+}
+
+static int scmi_pinctrl_set_mux(struct udevice *sdev, u16 no_pins,
+				u16 *pins, u16 *funcs)
+{
+	unsigned int i;
+	int ret = 0;
+
+	for (i = 0; i < no_pins / SCMI_MAX_PINS; i++) {
+		ret = scmi_pinctrl_set_mux_chunk(sdev, SCMI_MAX_PINS, pins,
+						 funcs);
+		if (ret)
+			return ret;
+
+		pins += SCMI_MAX_PINS;
+		funcs += SCMI_MAX_PINS;
+	}
+
+	if (no_pins % SCMI_MAX_PINS != 0)
+		ret = scmi_pinctrl_set_mux_chunk(sdev,
+						 no_pins % SCMI_MAX_PINS,
+						 pins, funcs);
 
 	return ret;
 }
@@ -542,9 +636,10 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 {
 	struct udevice *scmi_dev = dev->parent;
 	struct ofprop property;
-	u32 pinmux_value = 0, pin, func;
+	u32 pinmux_value = 0;
 	struct scmi_pinctrl_pin_cfg cfg;
 	int ret = 0, i, len;
+	u16 pin, func;
 
 	cfg.allocated = 0;
 	cfg.num_configs = 0;
@@ -583,13 +678,13 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 			break;
 		}
 
-		ret = scmi_pinctrl_set_mux(scmi_dev, pin, func);
+		ret = scmi_pinctrl_set_mux(scmi_dev, 1, &pin, &func);
 		if (ret) {
 			pr_err("Error setting pinmux: %d!\n", ret);
 			break;
 		}
 
-		ret = scmi_pinctrl_set_configs(scmi_dev, pin, &cfg);
+		ret = scmi_pinctrl_set_configs(scmi_dev, 1, &pin, &cfg);
 		if (ret) {
 			pr_err("Error setting pinconf: %d!\n", ret);
 			break;
@@ -626,6 +721,7 @@ static int scmi_pinctrl_pinmux_set(struct udevice *dev,
 				   unsigned int func_selector)
 {
 	struct udevice *scmi_dev = dev->parent;
+	u16 pin, func;
 
 	if (!scmi_dev)
 		return -ENXIO;
@@ -633,8 +729,10 @@ static int scmi_pinctrl_pinmux_set(struct udevice *dev,
 	if (pin_selector > U16_MAX || func_selector > U16_MAX)
 		return -EINVAL;
 
-	return scmi_pinctrl_set_mux(scmi_dev, (u16)pin_selector,
-				    (u16)func_selector);
+	pin = pin_selector;
+	func = func_selector;
+
+	return scmi_pinctrl_set_mux(scmi_dev, 1, &pin, &func);
 }
 
 static int scmi_pinctrl_pinconf_set(struct udevice *dev,
@@ -663,31 +761,33 @@ static int scmi_pinctrl_gpio_request_enable(struct udevice *dev,
 	struct udevice *scmi_dev = dev->parent;
 	struct scmi_pinctrl_saved_pin *save;
 	struct scmi_pinctrl_pin_cfg cfg;
-	u16 function;
+	u16 pin, func;
 	int ret;
 
 	cfg.configs = NULL;
 
 	if (pin_selector > U16_MAX)
 		return -EINVAL;
+	pin = pin_selector;
 
 	save = malloc(sizeof(*save));
 	if (!save)
 		return -ENOMEM;
 
-	ret = scmi_pinctrl_get_mux(scmi_dev, pin_selector, &function);
+	ret = scmi_pinctrl_get_mux(scmi_dev, pin, &func);
 	if (ret)
 		goto err;
 
-	ret = scmi_pinctrl_get_config(scmi_dev, pin_selector, &cfg);
+	ret = scmi_pinctrl_get_config(scmi_dev, pin, &cfg);
 	if (ret)
 		goto err;
 
 	save->pin = pin_selector;
-	save->func = function;
+	save->func = func;
 	save->cfg = cfg;
 
-	ret = scmi_pinctrl_set_mux(scmi_dev, pin_selector, 0);
+	func = 0;
+	ret = scmi_pinctrl_set_mux(scmi_dev, 1, &pin, &func);
 	if (ret)
 		goto err;
 
@@ -703,23 +803,22 @@ err:
 }
 
 static int scmi_pinctrl_gpio_disable_free(struct udevice *dev,
-					  unsigned int pin)
+					  unsigned int pin_selector)
 {
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
+	struct udevice *sdev = dev->parent;
 	struct scmi_pinctrl_saved_pin *save, *temp;
 	int ret = -EINVAL;
 
 	list_for_each_entry_safe(save, temp, &priv->gpio_configs, list) {
-		if (save->pin != pin)
+		if (save->pin != pin_selector)
 			continue;
 
-		ret = scmi_pinctrl_set_mux(scmi_dev, pin, save->func);
+		ret = scmi_pinctrl_set_mux(sdev, 1, &save->pin, &save->func);
 		if (ret)
 			break;
 
-		ret = scmi_pinctrl_set_configs(scmi_dev, pin,
-					       &save->cfg);
+		ret = scmi_pinctrl_set_configs(sdev, 1, &save->pin, &save->cfg);
 		if (ret)
 			break;
 
