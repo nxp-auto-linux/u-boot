@@ -156,6 +156,9 @@ static const enum converted_pin_param scmi_pinctrl_convert[] = {
 	[PIN_CONFIG_SKEW_DELAY] = CONV_PIN_CONFIG_SKEW_DELAY,
 };
 
+/* This function allocates memory inside cfg->configs.
+ * It should be freed by the caller.
+ */
 static int scmi_pinctrl_add_config(u32 config, struct scmi_pinctrl_pin_cfg *cfg)
 {
 	void *temp;
@@ -198,6 +201,7 @@ static int scmi_pinctrl_set_configs(struct udevice *scmi_dev, unsigned int pin,
 	u8 buffer[SCMI_MAX_BUFFER_SIZE];
 	enum converted_pin_param p;
 	struct {
+		u32 no_pins;
 		u16 pin;
 		u32 mask;
 		u32 boolean_values;
@@ -225,6 +229,7 @@ static int scmi_pinctrl_set_configs(struct udevice *scmi_dev, unsigned int pin,
 	if (pin > U16_MAX)
 		return -EINVAL;
 
+	r->no_pins = 1;
 	r->pin = (u16)pin;
 	r->mask = 0;
 	r->boolean_values = 0;
@@ -276,6 +281,7 @@ static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
 				    unsigned int param, unsigned int arg)
 {
 	struct {
+		u32 no_pins;
 		u16 pin;
 		u32 mask;
 		u32 boolean_values;
@@ -300,6 +306,7 @@ static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
 
 	conv_param = (enum converted_pin_param)param;
 
+	request.no_pins = 1;
 	request.pin = (u16)pin;
 	request.mask = BIT_32(param);
 	request.boolean_values = 0;
