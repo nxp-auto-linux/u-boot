@@ -635,11 +635,13 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 					  struct udevice *config)
 {
 	struct udevice *scmi_dev = dev->parent;
+	struct scmi_pinctrl_pin_cfg cfg;
 	struct ofprop property;
 	u32 pinmux_value = 0;
-	struct scmi_pinctrl_pin_cfg cfg;
 	int ret = 0, i, len;
-	u16 pin, func;
+	u16 *pins, *funcs;
+	u32 pin, func;
+	u16 no_pins;
 
 	cfg.allocated = 0;
 	cfg.num_configs = 0;
@@ -662,11 +664,23 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 	if (ret)
 		goto err;
 
+	pins = malloc(len * sizeof(*pins));
+	if (!pins) {
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	funcs = malloc(len * sizeof(*funcs));
+	if (!funcs) {
+		ret = -ENOMEM;
+		goto err_pins;
+	}
+
 	for (i = 0; i < len; ++i) {
 		ret = dev_read_u32_index(config, "pinmux", i, &pinmux_value);
 		if (ret) {
 			pr_err("Error reading pinmux index: %d\n", i);
-			break;
+			goto err_funcs;
 		}
 
 		pin = SCMI_PINCTRL_PIN_FROM_PINMUX(pinmux_value);
@@ -675,22 +689,28 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 		if (pin > U16_MAX || func > U16_MAX) {
 			pr_err("Invalid pin or func: %u %u!\n", pin, func);
 			ret = -EINVAL;
-			break;
+			goto err_funcs;
 		}
 
-		ret = scmi_pinctrl_set_mux(scmi_dev, 1, &pin, &func);
-		if (ret) {
-			pr_err("Error setting pinmux: %d!\n", ret);
-			break;
-		}
-
-		ret = scmi_pinctrl_set_configs(scmi_dev, 1, &pin, &cfg);
-		if (ret) {
-			pr_err("Error setting pinconf: %d!\n", ret);
-			break;
-		}
+		pins[i] = pin;
+		funcs[i] = func;
 	}
 
+	no_pins = len;
+	ret = scmi_pinctrl_set_mux(scmi_dev, no_pins, pins, funcs);
+	if (ret) {
+		pr_err("Error setting pinmux: %d!\n", ret);
+		goto err_funcs;
+	}
+
+	ret = scmi_pinctrl_set_configs(scmi_dev, no_pins, pins, &cfg);
+	if (ret)
+		pr_err("Error setting pinconf: %d!\n", ret);
+
+err_funcs:
+	free(funcs);
+err_pins:
+	free(pins);
 err:
 	free(cfg.configs);
 	return ret;
