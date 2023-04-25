@@ -409,6 +409,9 @@ static int scmi_bind(struct udevice *dev)
 		case SCMI_PROTOCOL_ID_PINCTRL:
 			drv = DM_GET_DRIVER(scmi_pinctrl);
 			break;
+		case SCMI_PROTOCOL_ID_NVMEM:
+			drv = DM_GET_DRIVER(scmi_nvmem);
+			break;
 		default:
 			dev_dbg(dev, "Ignore unsupported SCMI protocol %u\n",
 				protocol_id);

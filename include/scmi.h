@@ -25,6 +25,7 @@ enum scmi_std_protocol {
 	SCMI_PROTOCOL_ID_RESET_DOMAIN = 0x16,
 	SCMI_PROTOCOL_ID_PINCTRL = 0x80,
 	SCMI_PROTOCOL_ID_GPIO = 0x81,
+	SCMI_PROTOCOL_ID_NVMEM = 0x82,
 };
 
 enum scmi_status_code {
