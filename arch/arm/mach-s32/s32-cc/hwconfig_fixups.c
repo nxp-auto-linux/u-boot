@@ -8,7 +8,9 @@
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>
+#if CONFIG_IS_ENABLED(FSL_PFENG)
 #include <dm/platform_data/pfeng_dm_eth.h>
+#endif
 #include <linux/ctype.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
