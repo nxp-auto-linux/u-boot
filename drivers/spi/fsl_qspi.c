@@ -7,7 +7,7 @@
  * Copyright (C) 2018 Bootlin
  * Copyright (C) 2018 exceet electronics GmbH
  * Copyright (C) 2018 Kontron Electronics GmbH
- * Copyright 2019-2020,2022 NXP
+ * Copyright 2019-2020,2022-2023 NXP
  *
  * This driver is a ported version of Linux Freescale QSPI driver taken from
  * v5.5-rc1 tag having following information.
@@ -24,6 +24,7 @@
  */
 
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <dm/device_compat.h>
 #include <inttypes.h>
@@ -483,7 +484,7 @@ static inline int low_freq_chain(struct fsl_qspi *q)
 	return q->devtype_data->quirks & QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN;
 }
 
-static inline int is_s32g3_qspi(struct fsl_qspi *q)
+static inline bool is_s32g3_qspi(struct fsl_qspi *q)
 {
 	return q->devtype_data == &s32g3_data;
 }
@@ -1319,6 +1320,30 @@ static int fsl_qspi_default_setup(struct fsl_qspi *q)
 	return ret;
 }
 
+static __maybe_unused int fsl_qspi_clk_en(struct udevice *bus)
+{
+	struct clk clk_qspi, clk_qspi_en;
+	int ret;
+
+	ret = clk_get_by_name(bus, "qspi_en", &clk_qspi_en);
+	if (ret)
+		return ret;
+
+	ret = clk_get_by_name(bus, "qspi", &clk_qspi);
+	if (ret)
+		return ret;
+
+	ret = clk_enable(&clk_qspi_en);
+	if (ret)
+		return ret;
+
+	ret = clk_enable(&clk_qspi);
+	if (ret)
+		clk_disable(&clk_qspi_en);
+
+	return ret;
+}
+
 static const struct spi_controller_mem_ops fsl_qspi_mem_ops = {
 	.adjust_op_size = fsl_qspi_adjust_op_size,
 	.supports_op = fsl_qspi_supports_op,
@@ -1336,6 +1361,12 @@ static int fsl_qspi_probe(struct udevice *bus)
 	q->dev = bus;
 	q->devtype_data = (struct fsl_qspi_devtype_data *)
 			   dev_get_driver_data(bus);
+
+	ret = fsl_qspi_clk_en(bus);
+	if (ret) {
+		dev_err(bus, "Failed to enable qspi clk(ret = %d)!\n", ret);
+		return ret;
+	}
 
 	/* find the resources */
 	mem_base = dev_read_addr_size_name(bus, "QuadSPI", &mem_size);
