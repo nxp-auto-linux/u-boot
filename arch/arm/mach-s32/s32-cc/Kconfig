@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if NXP_S32CC
 
@@ -61,8 +61,17 @@ config S32CC_CONFIG_FILE
 	string
 	default "arch/arm/mach-s32/s32-cc/s32cc.cfg"
 
+config TARGET_TYPE_S32CC_EMULATOR
+	bool
+	default n
+
 config LMB_MAX_REGIONS
 	default 16
+
+if TARGET_TYPE_S32CC_EMULATOR
+config BAUDRATE
+	default 7812500
+endif
 
 config ENV_OFFSET
 	default 0x1e0000

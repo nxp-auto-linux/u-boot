@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if ARCH_S32G2
 
@@ -54,6 +54,10 @@ config TARGET_S32G274ABLUEBOX3
 	imply SARADC_S32CC
 	select SPI_FLASH_STMICRO
 
+config TARGET_S32G274AEMU
+	bool "Support S32G274A ZeBu"
+	select TARGET_TYPE_S32CC_EMULATOR
+
 endchoice
 
 source "board/nxp/s32-cc/s32g/Kconfig"
@@ -61,5 +65,6 @@ source "board/nxp/s32g274ardb2/Kconfig"
 source "board/nxp/s32g2xxaevb/Kconfig"
 source "board/nxp/s32g2xxaevb3/Kconfig"
 source "board/nxp/s32g274abluebox3/Kconfig"
+source "board/nxp/s32g274aemu/Kconfig"
 
 endif
