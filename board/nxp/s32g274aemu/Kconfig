@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2023 NXP
+
+if TARGET_S32G274AEMU
+
+config SYS_CONFIG_NAME
+	default "s32g274aemu"
+
+config SYS_BOARD
+	default "s32g274aemu"
+
+config NR_DRAM_BANKS
+	default 2
+
+config BOOTARGS
+	default "root=/dev/ram rw earlycon loglevel=7"
+
+endif

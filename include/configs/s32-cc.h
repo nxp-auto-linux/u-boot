@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 #ifndef __S32CC_H__
 #define __S32CC_H__
@@ -100,6 +100,26 @@
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
 	"ramdisk_addr=" __stringify(S32CC_RAMDISK_ADDR) "\0" \
 	SERDES_EXTRA_ENV_SETTINGS
+
+#if defined(CONFIG_TARGET_TYPE_S32CC_EMULATOR)
+#  define BOOTCOMMAND "${boot_mtd} ${loadaddr} - ${fdt_addr}"
+#elif defined(CONFIG_QSPI_BOOT)
+#  define BOOTCOMMAND "run flashboot"
+#elif defined(CONFIG_SD_BOOT)
+#  define BOOTCOMMAND \
+	"mmc dev ${mmcdev}; " \
+	"if mmc rescan; " \
+	"then " \
+		"if run loadimage; "\
+		"then " \
+			"run mmcboot; " \
+		"else " \
+			"run netboot; " \
+		"fi; " \
+	"else " \
+		"run netboot;" \
+	"fi"
+#endif
 
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND
