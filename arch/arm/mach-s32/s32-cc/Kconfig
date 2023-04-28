@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if NXP_S32CC
 
@@ -115,7 +115,7 @@ config S32CC_CONFIG_FILE
 	string
 	default "arch/arm/mach-s32/s32-cc/s32cc.cfg"
 
-config TARGET_TYPE_S32GEN1_EMULATOR
+config TARGET_TYPE_S32CC_EMULATOR
 	bool
 	default n
 
@@ -150,7 +150,7 @@ config ERR051257_WORKAROUND
 	  images(QSPI parameters for BootROM, DCD, HSE FW, etc) have an unused
 	  space of 1K between them.
 
-if TARGET_TYPE_S32GEN1_EMULATOR
+if TARGET_TYPE_S32CC_EMULATOR
 config BAUDRATE
 	default 7812500
 endif

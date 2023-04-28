@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if ARCH_S32R45
 
@@ -25,7 +25,7 @@ config TARGET_S32R45EVB
 
 config TARGET_S32R45EMU
 	bool "Support S32R45 ZeBu"
-	select TARGET_TYPE_S32GEN1_EMULATOR
+	select TARGET_TYPE_S32CC_EMULATOR
 
 endchoice
 

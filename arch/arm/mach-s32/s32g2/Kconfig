@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if ARCH_S32G2
 
@@ -58,12 +58,12 @@ config TARGET_S32G274ABLUEBOX3
 
 config TARGET_S32G274AEMU
 	bool "Support S32G274A ZeBu"
-	select TARGET_TYPE_S32GEN1_EMULATOR
+	select TARGET_TYPE_S32CC_EMULATOR
 
 endchoice
 
 config FSL_PFENG
-	default y if !TARGET_TYPE_S32GEN1_EMULATOR
+	default y if !TARGET_TYPE_S32CC_EMULATOR
 
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g274ardb2/Kconfig"

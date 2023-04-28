@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2022 NXP
+ * Copyright 2017-2023 NXP
  *
  */
 
@@ -234,7 +234,7 @@
 	PCIE_EXTRA_ENV_SETTINGS \
 	XEN_EXTRA_ENV_SETTINGS \
 
-#if defined(CONFIG_TARGET_TYPE_S32GEN1_EMULATOR)
+#if defined(CONFIG_TARGET_TYPE_S32CC_EMULATOR)
 #  define BOOTCOMMAND "${boot_mtd} ${loadaddr} - ${fdt_addr}"
 #elif defined(CONFIG_QSPI_BOOT)
 #  define BOOTCOMMAND "run flashboot"
