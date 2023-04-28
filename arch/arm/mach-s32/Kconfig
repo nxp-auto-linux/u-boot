@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 config MACH_S32
 	bool
@@ -22,19 +22,28 @@ config NXP_S32CC
 	imply CMD_PART
 	imply CMD_PING
 	imply DM_ETH
+	imply DM_SPI
+	imply DM_SPI_FLASH
 	imply DM_I2C
 	imply DOS_PARTITION
+	imply DWC_ETH_QOS
 	imply DWC_ETH_QOS_S32CC
 	imply EFI_LOADER
 	imply EFI_LOADER_BOUNCE_BUFFER
 	imply FSL_DSPI
+	imply FSL_QSPI
+	imply FSL_QSPI_AHB_FULL_MAP
 	imply FS_FAT
 	imply MISC
 	imply MP
 	imply NET_RANDOM_ETHADDR
 	imply NXP_S32CC_PIT_TIMER
+	imply PHY_S32CC_SERDES
 	imply S32CC_CMU
 	imply SPI
+	imply SPI_FLASH
+	imply SPI_FLASH_MTD
+	imply SPI_FLASH_SFDP_SUPPORT
 	imply SYS_I2C_MXC
 	imply TIMER
 	select CLK
@@ -43,12 +52,8 @@ config NXP_S32CC
 	select DM_DEVICE_REMOVE
 	select DM_GPIO
 	select DM_MTD
-	select DM_SPI
-	select DM_SPI_FLASH
-	select DWC_ETH_QOS
+	select DM_SERIAL
 	select FSL_LINFLEXUART
-	select FSL_QSPI
-	select FSL_QSPI_AHB_FULL_MAP
 	select FSL_USDHC
 	select HUSH_PARSER
 	select MACH_S32
@@ -61,17 +66,12 @@ config NXP_S32CC
 	select OF_LIVE
 	select OF_SYSTEM_SETUP
 	select PHY
-	select PHY_S32CC_SERDES
 	select PINCTRL
 	select PINCTRL_FULL
 	select PINCTRL_S32CC
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
 	select SCMI_GPIO
-	select SPI_FLASH
-	select SPI_FLASH_MTD
-	select SPI_FLASH_SFDP_SUPPORT
-	select SPI_MEM
 	select SYSRESET
 	select SYSRESET_PSCI
 
