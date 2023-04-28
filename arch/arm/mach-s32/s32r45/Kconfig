@@ -26,8 +26,13 @@ config TARGET_S32R45EVB
 	select SPI_FLASH_SOFT_RESET
 	select SPI_FLASH_SOFT_RESET_ON_BOOT
 
+config TARGET_S32R45EMU
+	bool "Support S32R45 ZeBu"
+	select TARGET_TYPE_S32CC_EMULATOR
+
 endchoice
 
 source "board/nxp/s32r45evb/Kconfig"
+source "board/nxp/s32r45emu/Kconfig"
 
 endif
