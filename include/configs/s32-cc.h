@@ -51,6 +51,11 @@
 
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define MMC_PART_FAT			1
+#define MMC_PART_EXT			2
+
+#ifndef CONFIG_XEN_SUPPORT
+#  define CONFIG_ARMV8_SWITCH_TO_EL1
+#endif
 
 #define CONFIG_HWCONFIG
 
@@ -58,6 +63,19 @@
 #  define SERDES_EXTRA_ENV_SETTINGS "hwconfig=" CONFIG_S32CC_HWCONFIG "\0"
 #else
 #  define SERDES_EXTRA_ENV_SETTINGS ""
+#endif
+
+#ifdef CONFIG_XEN_SUPPORT
+#  define XEN_EXTRA_ENV_SETTINGS \
+	"script_addr=0x80200000\0" \
+	"mmcpart_ext=" __stringify(MMC_PART_EXT) "\0" \
+
+#  define XEN_BOOTCMD \
+	"ext4load mmc ${mmcdev}:${mmcpart_ext} ${script_addr} " \
+		"boot/${script}; source ${script_addr}; " \
+		"booti ${xen_addr} - ${fdt_addr};"
+#else
+#  define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
 #define S32CC_ENV_SETTINGS \
@@ -99,7 +117,9 @@
 	"mmcpart=" __stringify(MMC_PART_FAT) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
 	"ramdisk_addr=" __stringify(S32CC_RAMDISK_ADDR) "\0" \
-	SERDES_EXTRA_ENV_SETTINGS
+	"script=boot.scr\0" \
+	SERDES_EXTRA_ENV_SETTINGS \
+	XEN_EXTRA_ENV_SETTINGS \
 
 #if defined(CONFIG_TARGET_TYPE_S32CC_EMULATOR)
 #  define BOOTCOMMAND "${boot_mtd} ${loadaddr} - ${fdt_addr}"
@@ -162,8 +182,11 @@
 #  define BOOTENV
 #  if defined(CONFIG_QSPI_BOOT)
 #    define CONFIG_BOOTCOMMAND "run flashboot"
-#  else
-#    define CONFIG_BOOTCOMMAND \
+#  elif defined(CONFIG_SD_BOOT)
+#    if defined(CONFIG_XEN_SUPPORT)
+#      define CONFIG_BOOTCOMMAND XEN_BOOTCMD
+#    else
+#      define CONFIG_BOOTCOMMAND \
 	"mmc dev ${mmcdev}; " \
 	"if mmc rescan; " \
 	"then " \
@@ -172,6 +195,7 @@
 			"run mmcboot; " \
 		"fi; " \
 	"fi"
+#    endif
 #  endif
 #endif
 
