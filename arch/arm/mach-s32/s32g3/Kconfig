@@ -38,11 +38,16 @@ config TARGET_S32G3XXAEVB3
 	  I2C and DSPI.
 	select NXP_S32GEVB3_BOARD
 
+config TARGET_S32G399AEMU
+	bool "Support S32G399A ZeBu"
+	select TARGET_TYPE_S32CC_EMULATOR
+
 endchoice
 
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g399ardb3/Kconfig"
 source "board/nxp/s32g3xxaevb/Kconfig"
 source "board/nxp/s32g3xxaevb3/Kconfig"
+source "board/nxp/s32g399aemu/Kconfig"
 
 endif
