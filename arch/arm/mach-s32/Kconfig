@@ -19,6 +19,7 @@ config NXP_S32CC
 	imply CMD_MDIO
 	imply CMD_MII
 	imply CMD_MTD
+	imply CMD_MEMTEST
 	imply CMD_PART
 	imply CMD_PING
 	imply DM_ETH
