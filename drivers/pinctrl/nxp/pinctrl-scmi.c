@@ -392,7 +392,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
 		u16 func;
 	};
 	struct {
-		u8 num_pins;
+		u32 num_pins;
 		struct pin_function pf[];
 	} *request = (void *)buffer;
 	struct {
