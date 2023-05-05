@@ -53,6 +53,7 @@ config NXP_S32CC
 	select DM_DEVICE_REMOVE
 	select DM_GPIO
 	select DM_MTD
+	select DM_RESET
 	select DM_SERIAL
 	select FSL_LINFLEXUART
 	select FSL_USDHC
@@ -70,6 +71,7 @@ config NXP_S32CC
 	select PINCTRL
 	select PINCTRL_FULL
 	select PINCTRL_S32CC
+	select RESET_SCMI
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
 	select SCMI_GPIO
