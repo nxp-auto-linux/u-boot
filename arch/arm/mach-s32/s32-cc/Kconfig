@@ -34,32 +34,64 @@ config S32CC_QSPI_FREQ
 
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
-	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int"
+	depends on PHY_S32CC_SERDES
+	default "serdes0:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs0_0:speed=2G5;xpcs0_1:speed=2G5;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5;xpcs1_1:speed=2G5" if (!PCI_S32CC && FSL_PFENG)
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=pcie,clock=int;pcie1:mode=ep" if (PCI_S32CC && !FSL_PFENG)
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5" if (PCI_S32CC && FSL_PFENG)
+
 	help
-	  The configuration for the PCIe controllers, stored in
-	  the variable 'hwconfig'
-	  It configures the mode (rc, ep, sgmii) or the clock type
-	  (internal or external)
-	  It is also possible to configure combo mode either ep&sgmii or
-	  rc&sgmii, with these configurations lane0 is PCIe and lane1
-	  is connected to mac depending on 'xpcs_mode'.
-	  SGMII uses additional configurations 'fmhz' and 'xpcs_mode'.
+	  The configuration for the SerDes modules, stored in
+	  the variable 'hwconfig'.
+	  It configures generic attributes for 'serdesX', such as 'mode' (see below),
+	  the clock type (internal or external),
+	  clock frequency 'fmhz' (100 or 125, SGMII only modes), 'pcieX' mode
+	  ('rc' or 'ep') and the 'xpcsX_Y' interfaces for any of the two lanes.
+	  In the atributes presented above and below, 'X' (0 or 1) is the index
+	  of the SerDes module and 'Y' (0 or 1) is the index of the XPCS interface.
+	  SerDes 'mode' attribute can be 'pcie' (PCIe only mode), 'pcie&xpcsY' (PCIe
+	  and SGMII combo mode), 'xpcs0&xpcs1' (SGMII only mode).
+	  For the combo modes 'pcie&xpcsY', lane0 is PCIe and lane1
+	  is connected to a GMAC or PFE MAC depending on 'Y' and 'fmhz' (which
+	  match a certain SerDes configuration from the SerDes manual).
+	  PCIe always works at 100MHz, therefore 'fmhz' is only for SGMII only mode.
+	  Config 'xpcsX_Y' is used to specifically configure each of the two SGMII
+	  PHYs, by setting the 'speed' (10M, 100M, 1G and 2G5).
+	  S32G2 and S32G3 have 1 GMAC running at 1Gbps and 3 PFE MACs, running at
+		10Mbps - 2.5Gbps speeds.
+	  S32R45 has two GMACs, GMAC0 running at 1Gbps and GMAC1 running at 2.5Gbps.
+
+config S32CC_HWCONFIG_LEGACY
+	bool "Legacy S32CC HWConfig definition"
+	default y
+	depends on PHY_S32CC_SERDES
+	help
+	  Support for old format for variable HWCONFIG. Each SerDes
+	  is identified by the string 'pcieX' and is configured by a list of
+	  attributes such as 'mode' (rc, ep, sgmii) and the clock type
+	  (internal or external).
+	  It is also possible to configure combo modes, either 'ep&sgmii' or
+	  'rc&sgmii', with these configurations lane0 is PCIe and lane1
+	  is connected to GMAC of PFE mac depending on 'xpcs_mode'.
+	  'sgmii' mode uses additional config options 'fmhz' and 'xpcs_mode'.
 	  Config 'xpcs_mode' is used to specifically configure each line in
 	  SGMII mode. The following are valid options: '2G5', 'both', '0' and
 	  '1'. Mode '2G5' uses lane0 in 2.5G mode and leaves lane1 disabled.
 	  Mode 'both' configures both lanes for 1G operation so 2 macs can
 	  be connected. Mode '0' is used to configure only XPCS0, this can be
 	  used in 'sgmii' mode (one lane emac 1G other lane disabled) or
-	  in 'rc&sgmii'/'ep&sgmii' (one lane PCIeX1 other lane SGMII 1G).
+	  in 'rc&sgmii'/'ep&sgmii' (one lane PCIeX1, the other lane SGMII 1G).
 	  Same configuration is used for '1', which corresponds to XPCS1.
 	  Config 'fmhz' specifies frequency used as reference. In case of
 	  2.5G mode it is required to set this 125, if used in SGMII/PCIe
 	  combo mode 'fmhz' has to be 100 (PCIe ignores this and always
 	  uses 100). In case the SerDes is configured as SGMII and not in
 	  2.5G mode either 100 or 125 can be used in 'fmhz'.
-	  Available 'xpcs_mode' are depedent on platform:
-	      s32g274a - supports '0','1','both' and '2G5'
-	      s32r45   - supports '0' and '2G5'
+	  Available 'xpcs_mode' are dependent on platform:
+		s32g274a - supports '0','1','both' and '2G5'
+		s32r45   - supports '0' and '2G5'
+	  By default, legacy HWCONFIG was:
+	  "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5"
+	  This has lots of limitations, and has been redesigned.
 
 config S32CC_CONFIG_FILE
 	string
