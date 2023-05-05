@@ -11,12 +11,14 @@ config NXP_S32CC_BOARD_COMMON
 	imply CMD_CLK
 	imply CMD_CPU
 	imply CMD_DM
+	imply CMD_E1000
 	imply CMD_FUSE
 	imply CMD_GPIO
 	imply CMD_I2C
 	imply CMD_MD5SUM
 	imply CMD_MMC
 	imply CMD_MP
+	imply CMD_PCI
 	imply CMD_SMC
 	imply CMD_SPI
 	imply CMD_TIME
