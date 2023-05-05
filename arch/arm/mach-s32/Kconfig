@@ -39,6 +39,9 @@ config NXP_S32CC
 	imply MP
 	imply NET_RANDOM_ETHADDR
 	imply NXP_S32CC_PIT_TIMER
+	imply PCI
+	imply PCI_INIT_R
+	imply PCI_S32CC
 	imply PHY_S32CC_SERDES
 	imply S32CC_CMU
 	imply SPI
