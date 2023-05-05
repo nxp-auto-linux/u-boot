@@ -14,6 +14,7 @@
 
 #include <bootretry.h>
 #include <cli.h>
+#include <cmd_pci.h>
 #include <command.h>
 #include <console.h>
 #include <dm.h>
@@ -270,7 +271,7 @@ static void pciinfo_header(bool short_listing)
  *
  * @dev: PCI device to show
  */
-static void pci_header_show_brief(struct udevice *dev)
+void pci_header_show_brief(struct udevice *dev)
 {
 	ulong vendor, device;
 	ulong class, subclass;

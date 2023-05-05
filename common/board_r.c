@@ -86,6 +86,11 @@ __weak int cpu_secondary_init_r(void)
 	return 0;
 }
 
+__weak int show_pcie_devices(void)
+{
+	return 0;
+}
+
 static int initr_trace(void)
 {
 #ifdef CONFIG_TRACE
@@ -766,6 +771,13 @@ static void initcall_run_r(void)
 #endif
 #if CONFIG_IS_ENABLED(PCI_ENDPOINT)
 	INITCALL(pci_ep_init);
+#endif
+#if CONFIG_IS_ENABLED(PCI_INIT_R) && !CONFIG_IS_ENABLED(SYS_EARLY_PCI_INIT)
+	/*
+	 * Show the PCIe RC/EP table after full host enumeration and EP init.
+	 * Must run here (before initr_net), not right after pci_init.
+	 */
+	INITCALL(show_pcie_devices);
 #endif
 #if CONFIG_IS_ENABLED(NET) || CONFIG_IS_ENABLED(NET_LWIP)
 	WATCHDOG_RESET();
