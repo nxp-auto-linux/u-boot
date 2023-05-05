@@ -81,6 +81,11 @@ __weak int cpu_secondary_init_r(void)
 	return 0;
 }
 
+__weak int show_pcie_devices(void)
+{
+	return 0;
+}
+
 static int initr_trace(void)
 {
 #ifdef CONFIG_TRACE
@@ -718,6 +723,7 @@ static init_fnc_t init_sequence_r[] = {
 	 * Do pci configuration
 	 */
 	pci_init,
+	show_pcie_devices,
 #endif
 	stdio_add_devices,
 	jumptable_init,
