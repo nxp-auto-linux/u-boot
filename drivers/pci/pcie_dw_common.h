@@ -11,10 +11,10 @@
 #ifndef PCIE_DW_COMMON_H
 #define PCIE_DW_COMMON_H
 
-#define DEFAULT_DBI_ATU_OFFSET (0x3 << 20)
+#define DEFAULT_DBI_ATU_OFFSET		(0x3 << 20)
 
 /* PCI DBICS registers */
-#define PCIE_LINK_STATUS_REG		0x80
+#define PCIE_LINK_STATUS_REG		0x80U
 #define PCIE_LINK_STATUS_SPEED_OFF	16
 #define PCIE_LINK_STATUS_SPEED_MASK	(0xf << PCIE_LINK_STATUS_SPEED_OFF)
 #define PCIE_LINK_STATUS_WIDTH_OFF	20
@@ -40,28 +40,28 @@
 #define PCIE_ATU_TYPE_IO		(0x2 << 0)
 #define PCIE_ATU_TYPE_CFG0		(0x4 << 0)
 #define PCIE_ATU_TYPE_CFG1		(0x5 << 0)
-#define PCIE_ATU_ENABLE			(0x1 << 31)
-#define PCIE_ATU_BAR_MODE_ENABLE	(0x1 << 30)
+#define PCIE_ATU_ENABLE			BIT(31)
+#define PCIE_ATU_BAR_MODE_ENABLE	BIT(30)
+#define PCIE_ATU_FUNC_NUM_MATCH_EN      BIT(19)
 #define PCIE_ATU_BUS(x)			(((x) & 0xff) << 24)
 #define PCIE_ATU_DEV(x)			(((x) & 0x1f) << 19)
 #define PCIE_ATU_FUNC(x)		(((x) & 0x7) << 16)
+#define PCIE_ATU_FUNC_NUM(pf)           ((pf) << 20)
 
 /* Register address builder */
 #define PCIE_GET_ATU_OUTB_UNR_REG_OFFSET(region)	((region) << 9)
-
-/* Parameters for the waiting for iATU enabled routine */
-#define LINK_WAIT_MAX_IATU_RETRIES	5
-#define LINK_WAIT_IATU_US		10000
+#define PCIE_GET_ATU_INB_UNR_REG_OFFSET(region) \
+		(((region) << 9) | BIT(8))
 
 /* PCI DBICS registers */
-#define PCIE_LINK_STATUS_REG		0x80
+#define PCIE_LINK_STATUS_REG		0x80U
 #define PCIE_LINK_STATUS_SPEED_OFF	16
 #define PCIE_LINK_STATUS_SPEED_MASK	(0xf << PCIE_LINK_STATUS_SPEED_OFF)
 #define PCIE_LINK_STATUS_WIDTH_OFF	20
 #define PCIE_LINK_STATUS_WIDTH_MASK	(0xf << PCIE_LINK_STATUS_WIDTH_OFF)
 
-#define PCIE_LINK_CAPABILITY		0x7c
-#define PCIE_LINK_CTL_2			0xa0
+#define PCIE_LINK_CAPABILITY		0x7cU
+#define PCIE_LINK_CTL_2			0xa0U
 #define TARGET_LINK_SPEED_MASK		0xf
 #define LINK_SPEED_GEN_1		0x1
 #define LINK_SPEED_GEN_2		0x2
@@ -95,17 +95,31 @@
 #define PORT_LOGIC_LINK_WIDTH_4_LANES	PORT_LOGIC_LINK_WIDTH(0x4)
 #define PORT_LOGIC_LINK_WIDTH_8_LANES	PORT_LOGIC_LINK_WIDTH(0x8)
 
-#define PCIE_MISC_CONTROL_1_OFF		0x8bc
+#define PCIE_MISC_CONTROL_1_OFF		0x8bcU
 #define PCIE_DBI_RO_WR_EN		BIT(0)
 
 /* Parameters for the waiting for iATU enabled routine */
 #define LINK_WAIT_MAX_IATU_RETRIES	5
 #define LINK_WAIT_IATU			10000
 
+struct pcie_dw;
+
+struct dw_pcie_ops {
+	u32	(*read_dbi)(struct pcie_dw *pcie, void __iomem *base, u32 reg,
+			    size_t size);
+	void	(*write_dbi)(struct pcie_dw *pcie, void __iomem *base, u32 reg,
+			     size_t size, u32 val);
+	void    (*write_dbi2)(struct pcie_dw *pcie, void __iomem *base, u32 reg,
+			      size_t size, u32 val);
+	int	(*link_up)(struct pcie_dw *pcie);
+	int	(*start_link)(struct pcie_dw *pcie);
+};
+
 /**
  * struct pcie_dw - DW PCIe controller state
  *
  * @dbi_base: The base address of dbi register space
+ * @dbi_base2: The base address of shadowed dbi register space
  * @cfg_base: The base address of configuration space
  * @atu_base: The base address of ATU space
  * @cfg_size: The size of the configuration space which is needed
@@ -117,10 +131,12 @@
  * @io: The IO space for EP's BAR
  * @mem: The memory space for EP's BAR
  * @prefetch: The prefetch space for EP's BAR
+ * @ops: Custom I/O and link operations
  */
 struct pcie_dw {
 	struct udevice	*dev;
 	void __iomem *dbi_base;
+	void __iomem *dbi_base2;
 	void __iomem *cfg_base;
 	void __iomem *atu_base;
 	fdt_size_t cfg_size;
@@ -131,6 +147,8 @@ struct pcie_dw {
 	struct pci_region io;
 	struct pci_region mem;
 	struct pci_region prefetch;
+
+	const struct dw_pcie_ops *ops;
 };
 
 int pcie_dw_get_link_speed(struct pcie_dw *pci);
@@ -140,7 +158,7 @@ int pcie_dw_get_link_width(struct pcie_dw *pci);
 void dw_pcie_link_set_max_link_width(struct pcie_dw *pci, u32 num_lanes);
 
 int pcie_dw_prog_outbound_atu_unroll(struct pcie_dw *pci, int index, int type, u64 cpu_addr,
-				     u64 pci_addr, u32 size);
+				     u64 pci_addr, size_t size);
 
 int pcie_dw_read_config(const struct udevice *bus, pci_dev_t bdf, uint offset, ulong *valuep,
 			enum pci_size_t size);
@@ -149,6 +167,8 @@ int pcie_dw_write_config(struct udevice *bus, pci_dev_t bdf, uint offset, ulong 
 			 enum pci_size_t size);
 
 u8 pcie_dw_find_capability(struct pcie_dw *pci, u8 cap);
+void dw_pcie_writel_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg, u32 val);
+u32 dw_pcie_readl_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg);
 
 static inline void dw_pcie_dbi_write_enable(struct pcie_dw *pci, bool en)
 {
