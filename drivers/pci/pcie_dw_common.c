@@ -12,9 +12,10 @@
 #include <dm.h>
 #include <log.h>
 #include <pci.h>
-#include <dm/device_compat.h>
 #include <asm/io.h>
+#include <dm/device_compat.h>
 #include <linux/delay.h>
+
 #include "pcie_dw_common.h"
 
 int pcie_dw_get_link_speed(struct pcie_dw *pci)
@@ -29,19 +30,26 @@ int pcie_dw_get_link_width(struct pcie_dw *pci)
 		PCIE_LINK_STATUS_WIDTH_MASK) >> PCIE_LINK_STATUS_WIDTH_OFF;
 }
 
-static void dw_pcie_writel_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg,
-				     u32 val)
+void dw_pcie_writel_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg, u32 val)
 {
 	u32 offset = PCIE_GET_ATU_OUTB_UNR_REG_OFFSET(index);
 	void __iomem *base = pci->atu_base;
+
+	if (pci->ops && pci->ops->write_dbi) {
+		pci->ops->write_dbi(pci, base, offset + reg, 4, val);
+		return;
+	}
 
 	writel(val, base + offset + reg);
 }
 
-static u32 dw_pcie_readl_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg)
+u32 dw_pcie_readl_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg)
 {
 	u32 offset = PCIE_GET_ATU_OUTB_UNR_REG_OFFSET(index);
 	void __iomem *base = pci->atu_base;
+
+	if (pci->ops && pci->ops->read_dbi)
+		return pci->ops->read_dbi(pci, base, offset + reg, 4);
 
 	return readl(base + offset + reg);
 }
@@ -60,11 +68,11 @@ static u32 dw_pcie_readl_ob_unroll(struct pcie_dw *pci, u32 index, u32 reg)
  */
 int pcie_dw_prog_outbound_atu_unroll(struct pcie_dw *pci, int index,
 				     int type, u64 cpu_addr,
-					     u64 pci_addr, u32 size)
+					     u64 pci_addr, size_t size)
 {
 	u32 retries, val;
 
-	dev_dbg(pci->dev, "ATU programmed with: index: %d, type: %d, cpu addr: %8llx, pci addr: %8llx, size: %8x\n",
+	dev_dbg(pci->dev, "ATU programmed with: index: %d, type: %d, cpu addr: %8llx, pci addr: %8llx, size: %8lx\n",
 		index, type, cpu_addr, pci_addr, size);
 
 	dw_pcie_writel_ob_unroll(pci, index, PCIE_ATU_UNR_LOWER_BASE,
