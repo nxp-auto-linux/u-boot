@@ -29,6 +29,7 @@ config NXP_S32CC
 	imply DOS_PARTITION
 	imply DWC_ETH_QOS
 	imply DWC_ETH_QOS_S32CC
+	imply E1000
 	imply EFI_LOADER
 	imply EFI_LOADER_BOUNCE_BUFFER
 	imply FSL_DSPI
@@ -38,6 +39,7 @@ config NXP_S32CC
 	imply MISC
 	imply MP
 	imply NET_RANDOM_ETHADDR
+	imply NVME_PCI
 	imply NXP_S32CC_PIT_TIMER
 	imply PCI
 	imply PCI_INIT_R
