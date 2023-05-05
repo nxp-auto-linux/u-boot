@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
- * Copyright 2020,2022 NXP
+ * Copyright 2020,2022-2023 NXP
  */
 #include <common.h>
 #include <scmi_agent.h>
@@ -49,7 +49,7 @@ int scmi_reset_agent(void)
 {
 	struct udevice *dev;
 	const struct scmi_base_reset_agent_in in = {
-		.agent_id = 0,
+		.agent_id = S32_SCMI_AGENT_OSPM,
 		.flags = SCMI_RESET_AGENT_FLAG,
 	};
 	struct scmi_base_reset_agent_out out;
