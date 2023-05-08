@@ -4,6 +4,7 @@
  * Written by Simon Glass <sjg@chromium.org>
  * Copyright (c) 2016, NVIDIA CORPORATION.
  * Copyright (c) 2018, Theobroma Systems Design und Consulting GmbH
+ * Copyright 2021,2023 NXP
  */
 
 #define LOG_CATEGORY UCLASS_CLK
@@ -302,6 +303,7 @@ static int clk_set_default_rates(struct udevice *dev,
 	int size;
 	int ret = 0;
 	u32 *rates = NULL;
+	ulong rate;
 
 	size = dev_read_size(dev, "assigned-clock-rates");
 	if (size < 0)
@@ -354,9 +356,10 @@ static int clk_set_default_rates(struct udevice *dev,
 		if (IS_ERR(c))
 			return PTR_ERR(c);
 
-		ret = clk_set_rate(c, rates[index]);
+		rate = clk_set_rate(c, rates[index]);
 
-		if (ret < 0) {
+		if (!rate) {
+			ret = -EINVAL;
 			dev_warn(dev,
 				 "failed to set rate on clock index %d (%ld) (error = %d)\n",
 				 index, clk.id, ret);
@@ -591,7 +594,7 @@ ulong clk_set_rate(struct clk *clk, ulong rate)
 	ops = clk_dev_ops(clk->dev);
 
 	if (!ops->set_rate)
-		return -ENOSYS;
+		return 0;
 
 	/* Clean up cached rates for us and all child clocks */
 	clk_clean_rate_cache(clk);
