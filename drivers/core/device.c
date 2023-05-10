@@ -517,12 +517,14 @@ int device_probe(struct udevice *dev)
 			return 0;
 	}
 
-	seq = uclass_resolve_seq(dev);
-	if (seq < 0) {
-		ret = seq;
-		goto fail;
+	if (drv->flags & DM_FLAG_SEQ_PARENT_ALIAS) {
+		seq = uclass_resolve_seq(dev);
+		if (seq < 0) {
+			ret = seq;
+			goto fail;
+		}
+		dev->seq_ = seq;
 	}
-	dev->seq_ = seq;
 
 	dev_or_flags(dev, DM_FLAG_ACTIVATED);
 

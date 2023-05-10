@@ -86,6 +86,11 @@ struct driver_info;
  * dev_or_flags(dev, DM_FLAG_PROBE_AFTER_BIND) in the devices bind function.
  */
 #define DM_FLAG_PROBE_AFTER_BIND	(1 << 15)
+/* Some devices which use aliases in device tree and existing in a certain hierarchy
+ * (such as PCIe devices) require this flag and need a sequencing
+ * scheme that would ensure sequences numbers greater than parent's.
+ */
+#define DM_FLAG_SEQ_PARENT_ALIAS	BIT_32(31)
 
 /*
  * One or multiple of these flags are passed to device_remove() so that
