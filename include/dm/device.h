@@ -80,6 +80,12 @@ struct driver_info;
  */
 #define DM_FLAG_VITAL			(1 << 14)
 
+/* Some devices which use aliases in device tree and existing in a certain hierarchy
+ * (such as PCIe devices) require this flag and need a sequencing
+ * scheme that would ensure sequences numbers greater than parent's.
+ */
+#define DM_FLAG_SEQ_PARENT_ALIAS	BIT_32(31)
+
 /*
  * One or multiple of these flags are passed to device_remove() so that
  * a selective device removal as specified by the remove-stage and the

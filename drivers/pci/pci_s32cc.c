@@ -798,4 +798,5 @@ U_BOOT_DRIVER(pci_s32cc) = {
 	.of_to_plat	= s32cc_pcie_dt_init_common,
 	.probe	= s32cc_pcie_probe,
 	.priv_auto = sizeof(struct s32cc_pcie),
+	.flags = DM_FLAG_SEQ_PARENT_ALIAS,
 };
