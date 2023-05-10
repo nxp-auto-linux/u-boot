@@ -486,6 +486,7 @@ int device_probe(struct udevice *dev)
 {
 	const struct driver *drv;
 	int ret;
+	int seq;
 
 	if (!dev)
 		return -EINVAL;
@@ -515,6 +516,13 @@ int device_probe(struct udevice *dev)
 		if (dev_get_flags(dev) & DM_FLAG_ACTIVATED)
 			return 0;
 	}
+
+	seq = uclass_resolve_seq(dev);
+	if (seq < 0) {
+		ret = seq;
+		goto fail;
+	}
+	dev->seq_ = seq;
 
 	dev_or_flags(dev, DM_FLAG_ACTIVATED);
 

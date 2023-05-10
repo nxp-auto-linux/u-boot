@@ -416,6 +416,16 @@ int uclass_first_device_drvdata(enum uclass_id id, ulong driver_data,
 				struct udevice **devp);
 
 /**
+ * uclass_resolve_seq() - Resolve a device's sequence number
+ *
+ * Note that the device's seq value is not changed by this function.
+ *
+ * @dev: Device for which to allocate sequence number
+ * @return sequence number allocated, or -ve on error
+ */
+int uclass_resolve_seq(struct udevice *dev);
+
+/**
  * uclass_probe_all() - Probe all devices based on an uclass ID
  *
  * This function probes all devices associated with a uclass by

@@ -327,7 +327,7 @@ int uclass_find_device_by_seq(enum uclass_id id, int seq, struct udevice **devp)
 	int ret;
 
 	*devp = NULL;
-	log_debug("%d\n", seq);
+	log_debug("seq=%d\n", seq);
 	if (seq == -1)
 		return -ENODEV;
 	ret = uclass_get(id, &uc);
@@ -335,7 +335,7 @@ int uclass_find_device_by_seq(enum uclass_id id, int seq, struct udevice **devp)
 		return ret;
 
 	uclass_foreach_dev(dev, uc) {
-		log_debug("   - %d '%s'\n", dev->seq_, dev->name);
+		log_debug("   - seq_=%d name='%s'\n", dev->seq_, dev->name);
 		if (dev->seq_ == seq) {
 			*devp = dev;
 			log_debug("   - found\n");
@@ -345,6 +345,41 @@ int uclass_find_device_by_seq(enum uclass_id id, int seq, struct udevice **devp)
 	log_debug("   - not found\n");
 
 	return -ENODEV;
+}
+
+int uclass_resolve_seq(struct udevice *dev)
+{
+	struct uclass *uc = dev->uclass;
+	struct uclass_driver *uc_drv = uc->uc_drv;
+	struct udevice *dup;
+	int seq = 0;
+	int ret;
+
+	ret = uclass_find_device_by_seq(uc_drv->id, dev->seq_, &dup);
+	if (!ret) {
+		log_debug("Device '%s': seq %d is in use by '%s'\n",
+			  dev->name, dev->seq_, dup->name);
+	} else if (ret == -ENODEV) {
+		/* Our requested sequence number is available */
+		if (dev->seq_ != -1)
+			return dev->seq_;
+	} else {
+		return ret;
+	}
+
+	/* Start sequencing from parent's */
+	if (dev->parent && dev->parent->seq_ >= 0)
+		seq = dev->parent->seq_ + 1;
+
+	for (; seq < DM_MAX_SEQ; seq++) {
+		ret = uclass_find_device_by_seq(dev->uclass->uc_drv->id, seq,
+						&dup);
+		if (ret == -ENODEV)
+			break;
+		if (ret)
+			return ret;
+	}
+	return seq;
 }
 
 int uclass_find_device_by_of_offset(enum uclass_id id, int node,
