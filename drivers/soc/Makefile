@@ -4,3 +4,4 @@
 
 obj-$(CONFIG_SOC_TI) += ti/
 obj-$(CONFIG_SOC_DEVICE) += soc-uclass.o
+obj-$(CONFIG_NXP_S32CC) += soc_s32cc.o
