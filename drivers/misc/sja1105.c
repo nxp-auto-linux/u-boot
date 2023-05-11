@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <command.h>
 #include <spi.h>
 #include <dm/device.h>
 #include <dm/uclass.h>
@@ -670,7 +671,7 @@ static int sja11105_dm_probe(struct udevice *dev)
 {
 	struct sja_parms *sjap = dev_get_priv(dev);
 	int cs = spi_chip_select(dev);
-	int bus = dev->parent->seq;
+	int bus = dev->parent->seq_;
 	int ret;
 
 	if (!sjap)
@@ -934,7 +935,7 @@ U_BOOT_DRIVER(sja1105_fw_loader) = {
 	.id	= UCLASS_MISC,
 	.of_match = sja1105_ids,
 	.probe	= sja11105_dm_probe,
-	.priv_auto_alloc_size = sizeof(struct sja_parms),
+	.priv_auto = sizeof(struct sja_parms),
 };
 
 static int get_sja1105_device(struct udevice **dev, struct sja_parms *sjap)
@@ -962,14 +963,14 @@ static int get_sja1105_device(struct udevice **dev, struct sja_parms *sjap)
 			continue;
 
 		if (spi_chip_select(*dev) == sjap->cs &&
-		    parent->req_seq == sjap->bus)
+		    parent->seq_ == sjap->bus)
 			return 0;
 	}
 
 	return -EINVAL;
 }
 
-static int do_sja_cmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_sja_cmd(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *cp = NULL, *options = NULL;
 	struct udevice *dev;
