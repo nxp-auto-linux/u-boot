@@ -4,9 +4,11 @@
  */
 #include <common.h>
 #include <generic-phy.h>
-#include <dm/uclass.h>
-#include <dm/device.h>
 #include <dm/device-internal.h>
+#include <dm/device.h>
+#include <dm/uclass.h>
+
+#define SJA1105_NAME   "ethernet-switch@0"
 
 static int enable_saf1508bet(void)
 {
@@ -52,6 +54,18 @@ static int enable_saf1508bet(void)
 
 int misc_init_r(void)
 {
+	if (IS_ENABLED(CONFIG_NET) && IS_ENABLED(CONFIG_FSL_PFENG) &&
+	    IS_ENABLED(CONFIG_SJA1105)) {
+		struct udevice *dev;
+		/* Probe sja1105 in order to provide a clock for the PFE2 interface,
+		 * otherwise clock init for this interface will fail.
+		 * The return value is not checked on purpose. If the S32G PROCEVB
+		 * board is used without PLATEVB board the uclass_get_device_by_name
+		 * call will fail and returning and error code will break the init_call
+		 * sequence of the u-boot.
+		 */
+		uclass_get_device_by_name(UCLASS_MISC, SJA1105_NAME, &dev);
+	}
 	/* The usb phy must be probed in u-boot in order to have a working USB
 	 * interface in linux.
 	 */
