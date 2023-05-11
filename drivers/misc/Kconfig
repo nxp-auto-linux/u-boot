@@ -415,7 +415,7 @@ config SPL_I2C_EEPROM
 	  This option is an SPL-variant of the I2C_EEPROM option.
 	  See the help of I2C_EEPROM for details.
 
-config SJA1105
+config SJA1105X
 	bool "NXP SJA1105x driver"
 	depends on FSL_DSPI
 	help

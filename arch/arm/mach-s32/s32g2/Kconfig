@@ -26,7 +26,7 @@ config TARGET_S32G2XXAEVB
 	imply USB
 	imply USB_EHCI_HCD
 	imply USB_ULPI
-	imply SJA1105
+	imply SJA1105X
 	select NXP_S32GEVB_BOARD
 	select MISC_INIT_R
 

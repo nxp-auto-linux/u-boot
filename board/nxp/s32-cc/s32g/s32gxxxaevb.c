@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2022 NXP
+ * Copyright 2018-2023 NXP
  */
 #include <common.h>
 #include <generic-phy.h>
@@ -55,7 +55,7 @@ static int enable_saf1508bet(void)
 int misc_init_r(void)
 {
 	if (IS_ENABLED(CONFIG_NET) && IS_ENABLED(CONFIG_FSL_PFENG) &&
-	    IS_ENABLED(CONFIG_SJA1105)) {
+	    IS_ENABLED(CONFIG_SJA1105X)) {
 		struct udevice *dev;
 		/* Probe sja1105 in order to provide a clock for the PFE2 interface,
 		 * otherwise clock init for this interface will fail.
