@@ -5,6 +5,8 @@
  */
 #include <common.h>
 #include <debug_uart.h>
+#include <init.h>
+#include <soc.h>
 #include <asm/global_data.h>
 #include <asm/sections.h>
 #include <asm/armv8/mmu.h>
@@ -142,6 +144,37 @@ int initr_pci(void)
 
 	/* now show the devices */
 	show_pcie_devices();
+
+	return 0;
+}
+
+int print_socinfo(void)
+{
+	struct udevice *soc;
+	char str[SOC_MAX_STR_SIZE];
+	int ret;
+
+	printf("SoC:   ");
+
+	ret = soc_get(&soc);
+	if (ret) {
+		printf("Unknown\n");
+		return 0;
+	}
+
+	ret = soc_get_family(soc, str, sizeof(str));
+	if (!ret)
+		printf("%s", str);
+
+	ret = soc_get_machine(soc, str, sizeof(str));
+	if (!ret)
+		printf("%s", str);
+
+	ret = soc_get_revision(soc, str, sizeof(str));
+	if (!ret)
+		printf(" rev. %s", str);
+
+	printf("\n");
 
 	return 0;
 }
