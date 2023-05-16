@@ -918,6 +918,9 @@ static const init_fnc_t init_sequence_f[] = {
 #if defined(CONFIG_SYSRESET)
 	print_resetinfo,
 #endif
+#if defined(CONFIG_DISPLAY_SOCINFO)
+	print_socinfo,
+#endif
 #if defined(CONFIG_DISPLAY_CPUINFO)
 	print_cpuinfo,		/* display cpu info (and speed) */
 #endif

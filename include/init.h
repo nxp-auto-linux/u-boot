@@ -136,6 +136,13 @@ int arch_reserve_stacks(void);
  */
 int init_cache_f_r(void);
 
+/**
+ * print_socinfo() - Display information about the SoC
+ *
+ * Return: 0 if OK, -ve on error
+ */
+int print_socinfo(void);
+
 #if !CONFIG_IS_ENABLED(CPU)
 /**
  * print_cpuinfo() - Display information about the CPU
