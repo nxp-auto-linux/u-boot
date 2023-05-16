@@ -4,46 +4,93 @@
  */
 
 #include <common.h>
+#include <clk.h>
 #include <cpu.h>
 #include <dm.h>
 #include <misc.h>
 #include <nvmem.h>
+#include <asm/armv8/cpu.h>
 #include <dm/uclass.h>
+#include <dt-bindings/clock/s32cc-scmi-clock.h>
 
 struct cpu_s32cc_plat {
-	u32 letter;
-	u32 part_number;
-	u32 major;
-	u32 minor;
-	u32 subminor;
-	bool has_subminor;
+	const char *name;
+	u32 variant;
+	u32 revision;
+	u32 max_freq;
 };
 
-struct soc_nvmem_cell {
-	const char *name;
-	u32 *data;
-};
+static struct udevice *get_clk_device(void)
+{
+	static struct udevice *dev;
+	int ret;
+
+	if (dev)
+		return dev;
+
+	ret = uclass_get_device_by_driver(UCLASS_CLK, DM_GET_DRIVER(scmi_clock),
+					  &dev);
+	if (ret)
+		return NULL;
+
+	return dev;
+}
 
 static int cpu_s32cc_get_desc(struct udevice *dev, char *buf, int size)
 {
 	struct cpu_s32cc_plat *plat = dev_get_platdata(dev);
 	int ret;
 
-	ret = snprintf(buf, size, "NXP S32%c%uA rev. %u.%u",
-		       (char)plat->letter, plat->part_number, plat->major,
-		       plat->minor);
-
-	if (plat->has_subminor)
-		snprintf(buf + ret, size - ret, ".%u", plat->subminor);
+	ret = snprintf(buf, size,
+		       "ARM Cortex-%s r%up%u @ max %u MHz",
+		       plat->name, plat->variant, plat->revision,
+		       plat->max_freq);
+	if (ret >= size || ret < 0)
+		return -ENOSPC;
 
 	return 0;
 }
 
 static int cpu_s32cc_get_info(struct udevice *dev, struct cpu_info *info)
 {
+	int ret;
+	ulong freq;
+	struct udevice *clk_dev;
+	struct clk a53_clock = {
+		.id = S32CC_SCMI_CLK_A53,
+	};
+
+	clk_dev = get_clk_device();
+	if (!clk_dev) {
+		printf("%s: Failed to get clock device\n", __func__);
+		return -ENODEV;
+	}
+
+	ret = clk_request(clk_dev, &a53_clock);
+	if (ret) {
+		printf("%s: Failed to request clock for CPU (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	freq = clk_get_rate(&a53_clock);
+	if (!freq) {
+		printf("%s: Failed to get clock freq for CPU\n", __func__);
+		goto exit;
+	}
+
+	info->cpu_freq = freq;
 	info->features = BIT(CPU_FEAT_L1_CACHE) | BIT(CPU_FEAT_MMU);
 
-	return 0;
+exit:
+	ret = clk_free(&a53_clock);
+	if (ret) {
+		printf("%s: Failed to free clock for CPU (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	return freq ? 0 : -EINVAL;
 }
 
 static int cpu_s32cc_get_count(struct udevice *dev)
@@ -54,7 +101,12 @@ static int cpu_s32cc_get_count(struct udevice *dev)
 
 static int cpu_s32cc_get_vendor(struct udevice *dev,  char *buf, int size)
 {
-	snprintf(buf, size, "NXP");
+	int ret;
+
+	ret = snprintf(buf, size, "NXP");
+	if (ret >= size || ret < 0)
+		return -ENOSPC;
+
 	return 0;
 }
 
@@ -70,60 +122,49 @@ static const struct udevice_id cpu_s32cc_ids[] = {
 	{ }
 };
 
-static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
+static const char *s32cc_get_core_name(void)
 {
-	struct nvmem_cell c;
-	int ret;
+	if (is_cortex_a53())
+		return "A53";
 
-	ret = nvmem_cell_get_by_name(dev, cell->name, &c);
-	if (ret) {
-		printf("Failed to get '%s' cell\n", cell->name);
-		return ret;
-	}
-
-	ret = nvmem_cell_read(&c, cell->data, sizeof(*cell->data));
-	if (ret) {
-		printf("%s: Failed to read cell '%s' (err = %d)\n",
-		       __func__, cell->name, ret);
-		return ret;
-	}
-
-	return 0;
+	return "?";
 }
 
 static int s32cc_cpu_probe(struct udevice *dev)
 {
 	struct cpu_s32cc_plat *plat = dev_get_platdata(dev);
 	struct nvmem_cell cell;
-	struct soc_nvmem_cell cells[] = {
-		{ .name = "soc_letter", .data = &plat->letter },
-		{ .name = "part_no", .data = &plat->part_number },
-		{ .name = "soc_major", .data = &plat->major },
-		{ .name = "soc_minor", .data = &plat->minor },
-	};
-	const char *subminor = "soc_subminor";
+	const char *max_freq_name = "core_max_freq";
 	int ret;
-	size_t i;
 
 	if (!plat)
 		return -EINVAL;
 
-	for (i = 0u; i < ARRAY_SIZE(cells); i++) {
-		ret = read_soc_nvmem_cell(dev, &cells[i]);
-		if (ret)
-			return ret;
-	}
+	plat->name = s32cc_get_core_name();
+	plat->variant = read_core_midr_variant();
+	plat->revision = read_core_midr_revision();
 
-	ret = nvmem_cell_get_by_name(dev, subminor, &cell);
+	ret = nvmem_cell_get_by_name(dev, max_freq_name, &cell);
 	if (ret) {
-		printf("Failed to get '%s' cell", subminor);
+		printf("Failed to get '%s' cell\n", max_freq_name);
 		return ret;
 	}
 
-	ret = nvmem_cell_read(&cell, &plat->subminor,
-			      sizeof(plat->subminor));
-	if (ret)
-		plat->has_subminor = false;
+	ret = nvmem_cell_read(&cell, &plat->max_freq, sizeof(plat->max_freq));
+	if (ret) {
+		printf("%s: Failed to read cell '%s' (err = %d)\n",
+		       __func__, max_freq_name, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int s32cc_cpu_bind(struct udevice *dev)
+{
+	struct cpu_platdata *plat = dev_get_parent_platdata(dev);
+
+	plat->cpu_id = dev_read_u32_default(dev, "reg", 0);
 
 	return 0;
 }
@@ -133,6 +174,7 @@ U_BOOT_DRIVER(cpu_s32cc_drv) = {
 	.id		= UCLASS_CPU,
 	.of_match	= cpu_s32cc_ids,
 	.ops		= &cpu_s32cc_ops,
+	.bind		= s32cc_cpu_bind,
 	.probe		= s32cc_cpu_probe,
 	.platdata_auto_alloc_size = sizeof(struct cpu_s32cc_plat),
 	.flags		= DM_FLAG_PRE_RELOC,
