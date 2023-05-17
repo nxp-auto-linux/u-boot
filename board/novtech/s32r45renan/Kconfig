@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2023 NXP
+
+if TARGET_S32R45RENAN
+
+config SYS_VENDOR
+	string
+	default "novtech"
+
+config SYS_CONFIG_NAME
+	default "s32r45renan"
+
+config SYS_BOARD
+	default "s32r45renan"
+
+config NR_DRAM_BANKS
+	default 1
+
+if QSPI_BOOT
+config ENV_SECT_SIZE
+	default 0x10000
+endif
+
+config SYS_EEPROM_PAGE_WRITE_DELAY_MS
+	default 10
+
+config SYS_EEPROM_SIZE
+	default 128
+
+endif

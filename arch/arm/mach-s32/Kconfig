@@ -6,10 +6,6 @@ config MACH_S32
 	select ARM64
 	select DM
 
-config SYS_VENDOR
-	string
-	default "nxp"
-
 config NXP_S32CC
 	bool
 	imply CMD_DHCP

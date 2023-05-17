@@ -1,7 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022,2023 NXP
 
 if NXP_S32CC
+
+config SYS_VENDOR
+	string
+	default "nxp"
 
 config NXP_S32CC_BOARD_COMMON
 	bool
