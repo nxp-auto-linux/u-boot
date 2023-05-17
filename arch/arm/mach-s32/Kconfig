@@ -11,10 +11,6 @@ config MACH_S32
 	select DM
 	select OF_BOARD_SETUP
 
-config SYS_VENDOR
-	string
-	default "nxp"
-
 config NXP_S32CC
 	bool
 	imply CMD_DHCP

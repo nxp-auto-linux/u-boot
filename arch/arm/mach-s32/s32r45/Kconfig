@@ -24,6 +24,23 @@ config TARGET_S32R45EVB
 	imply SARADC_S32CC
 	select SPI_FLASH_MACRONIX
 
+config TARGET_S32R45RENAN
+	bool "Support S32R45RENAN board"
+	help
+	  This board is a NovTech board based on S32R45 SoC.
+	imply ADC
+	imply CMD_EEPROM
+	imply I2C_EEPROM
+	imply NXP_S32CC_BOARD_COMMON
+	imply SARADC_S32CC
+	imply I2C_SET_DEFAULT_BUS_NUM
+	imply ETH_DESIGNWARE
+	imply RGMII
+	imply MII
+	imply NVME
+	select LAST_STAGE_INIT
+	select BOARD_EARLY_INIT_R
+
 config TARGET_S32R45EMU
 	bool "Support S32R45 ZeBu"
 	select TARGET_TYPE_S32CC_EMULATOR
@@ -32,5 +49,6 @@ endchoice
 
 source "board/nxp/s32r45evb/Kconfig"
 source "board/nxp/s32r45emu/Kconfig"
+source "board/novtech/s32r45renan/Kconfig"
 
 endif
