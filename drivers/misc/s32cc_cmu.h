@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  */
 
 #ifndef __S32_CMU_H
@@ -91,9 +91,9 @@ enum cmu_fc_clk {
 	DDR,
 	SPI,
 	A53_CORE,
-	ACCEL3,
-	ACCEL4_0,
-	ACCEL4_1,
+	SPT,
+	LAX0,
+	LAX1,
 	MIPICSI2_0,
 	MIPICSI2_2,
 	GMAC_TS,
