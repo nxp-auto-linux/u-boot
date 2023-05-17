@@ -341,7 +341,7 @@ source "drivers/phy/starfive/Kconfig"
 
 config SAF1508BET_USB_PHY
 	bool "NXP SAF1508BET USB PHY support"
-	depends on PHY
+	depends on PHY && USB
 	help
 	  Support for the S32G274A-EVB's USB PHY.
 
