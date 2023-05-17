@@ -11,6 +11,7 @@
 #include <misc.h>
 #include <asm/io.h>
 #include <linux/delay.h>
+#include <linux/iopoll.h>
 #include <linux/math64.h>
 
 #include "s32cc_cmu.h"
@@ -28,6 +29,9 @@
 #define CMU_FC_SR_FLAGS			(CMU_FC_SR_FLL | CMU_FC_SR_HLL)
 #define CMU_FC_SR_STATE(SR)		(((SR) >> 2) & 0x3)
 #define CMU_FC_SR_RS			BIT(4)
+
+#define CMU_FC_WAIT				100		/* us */
+#define CMU_FC_TIMEOUT			100000	/* us */
 
 #define CMU_FM_GCR(BASE)		((BASE) + 0x0)
 #define CMU_FM_GCR_FME			BIT(0)
@@ -77,6 +81,7 @@ enum fc_result {
 	MATCH = 0x0,
 	LOWER = 0x1,
 	HIGHER = 0x2,
+	TIMEOUT = 0x3,
 };
 
 struct cmu_result {
@@ -335,6 +340,8 @@ static int get_fc_params(u64 ref_clk, u64 mon_clk,
 static enum fc_result fc_check_frequency(uintptr_t addr,
 					 struct cmu_params *params)
 {
+	u32 fc_sr_val;
+
 	/* Disable the module */
 	writel(0x0, CMU_FC_GCR(addr));
 
@@ -349,8 +356,10 @@ static enum fc_result fc_check_frequency(uintptr_t addr,
 	/* Start the frequency check */
 	writel(CMU_FC_GCR_FCE, CMU_FC_GCR(addr));
 
-	while (!(readl(CMU_FC_SR(addr)) & CMU_FC_SR_RS))
-		;
+	if (read_poll_timeout(readl, CMU_FC_SR(addr), fc_sr_val,
+			      (fc_sr_val & CMU_FC_SR_RS),
+				  CMU_FC_WAIT, CMU_FC_TIMEOUT))
+		return (enum fc_result)(TIMEOUT);
 
 	udelay(params->udelay * 3);
 
@@ -396,6 +405,10 @@ static int _get_fc_mon_freq(struct cmu *s32cc_cmu, uintptr_t addr,
 	case LOWER:
 		freq_int->max = mon_freq;
 		return _get_fc_mon_freq(s32cc_cmu, addr, freq_int, depth);
+	case TIMEOUT:
+		pr_err("Timeout while measuring the frequency of %s\n",
+		       s32cc_cmu->mon_name);
+		return -ETIMEDOUT;
 	default:
 		freq_int->min = mon_freq;
 		freq_int->max = mon_freq;
@@ -451,7 +464,7 @@ static int get_fm_mon_freq(struct cmu *s32cc_cmu, uintptr_t addr,
 		if (sr & CMU_FM_SR_FMTO) {
 			pr_err("Timeout while measuring the frequency of %s\n",
 			       s32cc_cmu->mon_name);
-			return -EINVAL;
+			return -ETIMEDOUT;
 		}
 	} while (!CMU_FM_SR_MET_CNT(sr));
 
