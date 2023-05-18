@@ -53,7 +53,7 @@ enum scmi_pinctrl_msg_id {
 
 struct scmi_pinctrl_range {
 	u32 begin;
-	u32 num_pins;
+	u32 no_pins;
 };
 
 struct scmi_pinctrl_priv {
@@ -392,7 +392,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
 		u16 func;
 	};
 	struct {
-		u32 num_pins;
+		u32 no_pins;
 		struct pin_function pf[];
 	} *request = (void *)buffer;
 	struct {
@@ -411,7 +411,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
 	if (no_pins > SCMI_MAX_PINS)
 		return -EINVAL;
 
-	request->num_pins = no_pins;
+	request->no_pins = no_pins;
 	for (i = 0; i < no_pins; i++) {
 		request->pf[i].pin = pins[i];
 		request->pf[i].func = funcs[i];
@@ -954,7 +954,7 @@ static int scmi_pinctrl_get_pin_ranges(struct udevice *dev,
 		s32 status;
 		struct pr {
 			u16 begin;
-			u16 num_pins;
+			u16 no_pins;
 		} pin_ranges[];
 	} *response;
 	struct scmi_msg msg = {
@@ -997,7 +997,7 @@ static int scmi_pinctrl_get_pin_ranges(struct udevice *dev,
 
 	for (i = 0; i < priv->num_ranges; ++i) {
 		priv->ranges[i].begin = response->pin_ranges[i].begin;
-		priv->ranges[i].num_pins = response->pin_ranges[i].num_pins;
+		priv->ranges[i].no_pins = response->pin_ranges[i].no_pins;
 	}
 
 err_response:
