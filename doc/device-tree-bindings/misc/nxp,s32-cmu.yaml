@@ -44,6 +44,6 @@ examples:
     cmu: cmu@4005C000 {
       compatible = "nxp,s32g2-cmu";
       reg = <0x0 0x4005C000 0x0 0x1000>;
-      clocks = <&clks S32GEN1_SCMI_CLK_CMU_MODULE>,
-               <&clks S32GEN1_SCMI_CLK_CMU_REG>;
+      clocks = <&clks S32CC_SCMI_CLK_CMU_MODULE>,
+               <&clks S32CC_SCMI_CLK_CMU_REG>;
     };
