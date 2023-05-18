@@ -46,6 +46,9 @@
 #define PCI_UNROLL_OFF			0x200
 #define PCI_UPPER_ADDR_SHIFT		32
 
+#define PCIE_SYMBOL_TIMER_FILTER_1	0x71cU
+#define   CX_FLT_MASK_MSG_DROP_BIT	29
+
 #define PCIE_LINKUP_MASK	(PCIE_SS_SMLH_LINK_UP | PCIE_SS_RDLH_LINK_UP | \
 			PCIE_SS_SMLH_LTSSM_STATE)
 #define PCIE_LINKUP_EXPECT	(PCIE_SS_SMLH_LINK_UP | PCIE_SS_RDLH_LINK_UP | \
@@ -111,6 +114,217 @@ u32 dw_pcie_readl_ctrl(struct s32cc_pcie *pci, u32 reg)
 	return val;
 }
 
+static void s32cc_pcie_cfg0_set_busdev(struct s32cc_pcie *s32cc_pp, u32 busdev)
+{
+	dw_pcie_writel_ob_unroll(&s32cc_pp->pcie, PCIE_ATU_REGION_INDEX0,
+				 PCIE_ATU_UNR_LOWER_TARGET, busdev);
+}
+
+static void s32cc_pcie_cfg1_set_busdev(struct s32cc_pcie *s32cc_pp, u32 busdev)
+{
+	dw_pcie_writel_ob_unroll(&s32cc_pp->pcie, PCIE_ATU_REGION_INDEX1,
+				 PCIE_ATU_UNR_LOWER_TARGET, busdev);
+}
+
+static void s32cc_pcie_dump_atu(struct s32cc_pcie *s32cc_pp)
+{
+	int i;
+	struct dw_pcie *pcie = &s32cc_pp->pcie;
+
+	if (!IS_ENABLED(CONFIG_PCI_S32CC_DEBUG))
+		return;
+
+	for (i = 0; i < s32cc_pp->atu_out_num; i++) {
+		debug("PCIe%d: OUT iATU%d:\n", s32cc_pp->id, i);
+		debug("\tLOWER PHYS 0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_LOWER_BASE));
+		debug("\tUPPER PHYS 0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_UPPER_BASE));
+		debug("\tLOWER BUS  0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_LOWER_TARGET));
+		debug("\tUPPER BUS  0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_UPPER_TARGET));
+		debug("\tLIMIT      0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_LIMIT));
+		debug("\tCR1        0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_REGION_CTRL1));
+		debug("\tCR2        0x%08x\n",
+		      dw_pcie_readl_ob_unroll(pcie, i,
+					      PCIE_ATU_UNR_REGION_CTRL2));
+	}
+
+	for (i = 0; i < s32cc_pp->atu_in_num; i++) {
+		debug("PCIe%d: IN iATU%d:\n", s32cc_pp->id, i);
+		debug("\tLOWER PHYS 0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_LOWER_BASE));
+		debug("\tUPPER PHYS 0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_UPPER_BASE));
+		debug("\tLOWER BUS  0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_LOWER_TARGET));
+		debug("\tUPPER BUS  0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_UPPER_TARGET));
+		debug("\tLIMIT      0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_LIMIT));
+		debug("\tCR1        0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_REGION_CTRL1));
+		debug("\tCR2        0x%08x\n",
+		      dw_pcie_readl_ib_unroll(pcie, i,
+					      PCIE_ATU_UNR_REGION_CTRL2));
+	}
+}
+
+static void s32cc_pcie_rc_setup_atu(struct s32cc_pcie *s32cc_pp)
+{
+	struct dw_pcie *pcie = &s32cc_pp->pcie;
+	u64 cfg_start = (u64)s32cc_pp->cfg0;
+	size_t cfg_size = pcie->cfg_size / 2;
+	u64 limit = cfg_start + cfg_size;
+
+	struct pci_region *io = NULL, *mem = NULL, *pref = NULL;
+
+	s32cc_pp->atu_out_num = 0;
+	s32cc_pp->atu_in_num = 0;
+
+	debug("PCIe%d: %s: Create outbound windows\n",
+	      s32cc_pp->id, __func__);
+
+	pcie_dw_prog_outbound_atu_unroll(pcie, s32cc_pp->atu_out_num++,
+					 PCIE_ATU_TYPE_CFG0, cfg_start,
+					 0x0, cfg_size);
+	pcie_dw_prog_outbound_atu_unroll(pcie, s32cc_pp->atu_out_num++,
+					 PCIE_ATU_TYPE_CFG1, limit,
+					 0x0, cfg_size);
+
+	/* Create regions returned by pci_get_regions() */
+
+	pci_get_regions(pcie->dev, &io, &mem, &pref);
+
+	if (io) {
+		/* OUTBOUND WIN: IO */
+		pcie_dw_prog_outbound_atu_unroll(pcie, s32cc_pp->atu_out_num++,
+						 PCIE_ATU_TYPE_IO, io->phys_start,
+						 io->bus_start, io->size);
+	}
+	if (mem) {
+		/* OUTBOUND WIN: MEM */
+		pcie_dw_prog_outbound_atu_unroll(pcie, s32cc_pp->atu_out_num++,
+						 PCIE_ATU_TYPE_MEM, mem->phys_start,
+						 mem->bus_start, mem->size);
+	}
+	if (pref) {
+		/* OUTBOUND WIN: pref MEM */
+		pcie_dw_prog_outbound_atu_unroll(pcie, s32cc_pp->atu_out_num++,
+						 PCIE_ATU_TYPE_MEM, pref->phys_start,
+						 pref->bus_start, pref->size);
+	}
+
+	s32cc_pcie_dump_atu(s32cc_pp);
+}
+
+/* Return 0 if the address is valid, -errno if not valid */
+static int s32cc_pcie_addr_valid(struct s32cc_pcie *pcie_rc, pci_dev_t bdf)
+{
+	struct pcie_dw *pcie = &pcie_rc->pcie;
+	struct udevice *bus = pcie->dev;
+
+	if ((readb(pcie->dbi_base + PCI_HEADER_TYPE) & 0x7f) == PCI_HEADER_TYPE_NORMAL)
+		return -ENODEV;
+
+	debug("%s: bus: %d seq: %d\n", __func__, PCI_BUS(bdf), dev_seq(bus));
+	if (PCI_BUS(bdf) < dev_seq(bus))
+		return -EINVAL;
+
+	if ((PCI_BUS(bdf) > dev_seq(bus)) && (!pcie->ops || !pcie->ops->link_up(pcie)))
+		return -EINVAL;
+
+	if (PCI_BUS(bdf) <= (dev_seq(bus) + 1) && (PCI_DEV(bdf) > 0))
+		return -EINVAL;
+
+	return 0;
+}
+
+static
+int s32cc_pcie_conf_address(const struct udevice *bus, pci_dev_t bdf,
+			    uint offset, void **paddress)
+{
+	struct s32cc_pcie *pcie_rc = dev_get_priv(bus);
+	struct pcie_dw *pcie = &pcie_rc->pcie;
+	u32 busdev;
+
+	if (s32cc_pcie_addr_valid(pcie_rc, bdf))
+		return -EINVAL;
+
+	if (PCI_BUS(bdf) == dev_seq(bus)) {
+		*paddress = pcie->dbi_base + offset;
+		return 0;
+	}
+
+	busdev = PCIE_ATU_BUS(PCI_BUS(bdf) - dev_seq(bus)) |
+		 PCIE_ATU_DEV(PCI_DEV(bdf)) |
+		 PCIE_ATU_FUNC(PCI_FUNC(bdf));
+
+	if (PCI_BUS(bdf) == dev_seq(bus) + 1) {
+		s32cc_pcie_cfg0_set_busdev(pcie_rc, busdev);
+		*paddress = pcie_rc->cfg0 + offset;
+	} else {
+		s32cc_pcie_cfg1_set_busdev(pcie_rc, busdev);
+		*paddress = pcie_rc->cfg1 + offset;
+	}
+
+	return 0;
+}
+
+static int s32cc_pcie_read_config(const struct udevice *bus, pci_dev_t bdf,
+				  uint offset, ulong *valuep,
+				  enum pci_size_t size)
+{
+	if (IS_ENABLED(CONFIG_PCI_S32CC_USE_DW_CFG_IATU_SETUP))
+		return pcie_dw_read_config(bus, bdf, offset, valuep, size);
+
+	return pci_generic_mmap_read_config(bus, s32cc_pcie_conf_address,
+					    bdf, offset, valuep, size);
+}
+
+static int s32cc_pcie_write_config(struct udevice *bus, pci_dev_t bdf,
+				   uint offset, ulong value,
+				   enum pci_size_t size)
+{
+	if (IS_ENABLED(CONFIG_PCI_S32CC_USE_DW_CFG_IATU_SETUP))
+		return pcie_dw_write_config(bus, bdf, offset, value, size);
+
+	return pci_generic_mmap_write_config(bus, s32cc_pcie_conf_address,
+					     bdf, offset, value, size);
+}
+
+/* Clear multi-function bit */
+static void s32cc_pcie_clear_multifunction(struct s32cc_pcie *pcie)
+{
+	dw_pcie_writeb_dbi(&pcie->pcie, PCI_HEADER_TYPE,
+			   PCI_HEADER_TYPE_BRIDGE);
+}
+
+/* Drop MSG TLP except for Vendor MSG */
+static void s32cc_pcie_drop_msg_tlp(struct s32cc_pcie *pcie)
+{
+	u32 val;
+
+	val = dw_pcie_readl_dbi(&pcie->pcie, PCIE_SYMBOL_TIMER_FILTER_1);
+	val &= ~BIT_32(CX_FLT_MASK_MSG_DROP_BIT);
+	dw_pcie_writel_dbi(&pcie->pcie, PCIE_SYMBOL_TIMER_FILTER_1, val);
+}
+
 int s32cc_check_serdes(struct udevice *dev)
 {
 	struct nvmem_cell c;
@@ -162,8 +376,9 @@ static u32 s32cc_pcie_get_dev_id_variant(struct udevice *dev)
 
 static void s32cc_pcie_disable_ltssm(struct s32cc_pcie *pci)
 {
-	u32 gen_ctrl_3 = dw_pcie_readl_ctrl(pci, PE0_GEN_CTRL_3)
-			& ~(LTSSM_EN_MASK);
+	u32 gen_ctrl_3 = dw_pcie_readl_ctrl(pci, PE0_GEN_CTRL_3);
+
+	gen_ctrl_3 &= ~(LTSSM_EN_MASK);
 
 	dw_pcie_dbi_ro_wr_en(&pci->pcie);
 	dw_pcie_writel_ctrl(pci, PE0_GEN_CTRL_3, gen_ctrl_3);
@@ -245,7 +460,7 @@ static int s32cc_pcie_start_link(struct dw_pcie *pcie)
 	bool speed_set;
 	int ret = 0;
 
-	/* Don't do anything for End Point */
+	/* Don't do anything if not Root Complex */
 	if (!is_s32cc_pcie_rc(s32cc_pp->mode))
 		return 0;
 
@@ -384,6 +599,13 @@ static int s32cc_pcie_dt_init_common(struct udevice *dev)
 		return -EINVAL;
 	}
 	dev_dbg(dev, "Config base: 0x%lx\n", (uintptr_t)pcie->cfg_base);
+
+	if (!IS_ENABLED(CONFIG_PCI_S32CC_USE_DW_CFG_IATU_SETUP)) {
+		s32cc_pp->cfg0 = pcie->cfg_base;
+
+		s32cc_pp->cfg1 = s32cc_pp->cfg0 + pcie->cfg_size / 2;
+		s32cc_pp->cfg0_seq = -ENODEV;
+	}
 
 	s32cc_pp->ctrl_base  = (void *)dev_read_addr_name(dev, "ctrl");
 	if ((fdt_addr_t)s32cc_pp->ctrl_base == FDT_ADDR_T_NONE) {
@@ -621,7 +843,7 @@ static int s32cc_pcie_config_host(struct s32cc_pcie *s32cc_pp)
 	if (ret)
 		return ret;
 
-	pcie_dw_setup_host(pcie);
+	dw_pcie_setup_rc(pcie);
 
 	ret = s32cc_pcie_start_link(pcie);
 	if (ret) {
@@ -629,11 +851,23 @@ static int s32cc_pcie_config_host(struct s32cc_pcie *s32cc_pp)
 		return 0;
 	}
 
-	pcie_dw_prog_outbound_atu_unroll(pcie, PCIE_ATU_REGION_INDEX0,
-					 PCIE_ATU_TYPE_MEM,
-					 pcie->mem.phys_start,
-					 pcie->mem.bus_start,
-					 pcie->mem.size);
+	/* Enable writing dbi registers */
+	dw_pcie_dbi_ro_wr_en(&s32cc_pp->pcie);
+
+	if (!IS_ENABLED(CONFIG_PCI_S32CC_USE_DW_CFG_IATU_SETUP))
+		s32cc_pcie_rc_setup_atu(s32cc_pp);
+	else
+		pcie_dw_prog_outbound_atu_unroll(pcie, PCIE_ATU_REGION_INDEX0,
+						 PCIE_ATU_TYPE_MEM,
+						 pcie->mem.phys_start,
+						 pcie->mem.bus_start,
+						 pcie->mem.size);
+
+	s32cc_pcie_clear_multifunction(s32cc_pp);
+	s32cc_pcie_drop_msg_tlp(s32cc_pp);
+
+	/* Disable writing dbi registers */
+	dw_pcie_dbi_ro_wr_dis(&s32cc_pp->pcie);
 
 	return 0;
 }
@@ -781,8 +1015,8 @@ int show_pcie_devices(void)
 }
 
 static const struct dm_pci_ops s32cc_dm_pcie_ops = {
-	.read_config	= pcie_dw_read_config,
-	.write_config	= pcie_dw_write_config,
+	.read_config	= s32cc_pcie_read_config,
+	.write_config	= s32cc_pcie_write_config,
 };
 
 static const struct udevice_id s32cc_pcie_of_match[] = {

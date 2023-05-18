@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2022 NXP
+ * Copyright 2019-2023 NXP
  * S32CC PCIe driver
  */
 
@@ -8,12 +8,12 @@
 #define PCIE_S32CC_H
 
 #include <generic-phy.h>
+#include <pci.h>
 #include <asm/io.h>
 #include <linux/bitops.h>
 #include <linux/ioport.h>
 #include <linux/stringify.h>
 #include <linux/types.h>
-#include <pci.h>
 
 #include "pcie-designware.h"
 
@@ -76,14 +76,22 @@ struct s32cc_pcie {
 	 */
 	struct pcie_dw	pcie;
 
-	enum dw_pcie_device_mode mode;
 	void __iomem *ctrl_base;
 
+	enum dw_pcie_device_mode mode;
 	int id;
 	enum pcie_phy_mode phy_mode;
 	enum pcie_link_speed linkspeed;
 
 	struct phy phy0, phy1;
+
+	/* Used only if CONFIG_PCI_S32CC_USE_DW_CFG_IATU_SETUP not defined */
+	void __iomem *cfg0;
+	int cfg0_seq;
+	void __iomem *cfg1;
+
+	int atu_out_num;
+	int atu_in_num;
 };
 
 static inline

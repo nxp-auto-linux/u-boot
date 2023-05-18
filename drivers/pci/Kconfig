@@ -272,6 +272,18 @@ config PCI_S32CC_DEBUG_WRITES
 	  Say Y to enable dumping register writes performed by the S32CC PCIe module.
 	  Register writes done by the DW code is not dumped.
 
+config PCI_S32CC_USE_DW_CFG_IATU_SETUP
+	bool "Use default DesignWare setup for PCIe CFG and iATU regions"
+	depends on PCI_S32CC && PCIE_DW_COMMON
+	help
+	  Common DesignWare PCIe configuration code was added for several
+	  platforms which use DesignWare PCIe controllers. However this support
+	  is very different from its Linux counterpart, and it is not
+	  performing the configuration expected by the S32CC PCIe driver.
+	  It is very likely to be updated in the near future, so keep an open
+	  window towards using it.
+	  Say Y to use this API.
+
 config PCIE_INTEL_FPGA
 	bool "Intel FPGA PCIe support"
 	help
