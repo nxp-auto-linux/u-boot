@@ -9,6 +9,7 @@
 
 #include <generic-phy.h>
 #include <pci.h>
+#include <pci_ep.h>
 #include <asm/io.h>
 #include <linux/bitops.h>
 #include <linux/ioport.h>
@@ -84,6 +85,34 @@ struct s32cc_pcie {
 	int atu_in_num;
 };
 
+struct s32cc_pcie_ep {
+	struct s32cc_pcie common;
+
+	void __iomem *shared_base;
+	void __iomem *addr_space_base;
+	phys_size_t shared_size;
+	phys_size_t addr_space_size;
+
+	bool auto_config_bars;
+
+	struct pci_bar ep_bars[BAR_5 + 1];
+};
+
+/**
+ * struct pci_epc_features - features supported by an EP controller device.
+ * Adapted from Linux pci-epc.h, with interrupts and notifiers stripped down.
+ * @reserved_bar: bitmap to indicate reserved BAR unavailable to driver
+ * @bar_fixed_64bit: bitmap to indicate fixed 64bit BARs
+ * @bar_fixed_size: Array specifying the size supported by each BAR
+ * @align: alignment size required for BAR buffer allocation
+ */
+struct pci_epc_features {
+	u8	reserved_bar;
+	u8	bar_fixed_64bit;
+	u64	bar_fixed_size[BAR_5 + 1];
+	size_t	align;
+};
+
 static inline
 struct s32cc_pcie *to_s32cc_from_dw_pcie(struct pcie_dw *x)
 {
@@ -91,9 +120,21 @@ struct s32cc_pcie *to_s32cc_from_dw_pcie(struct pcie_dw *x)
 }
 
 static inline
+struct s32cc_pcie_ep *to_s32cc_ep_from_s32cc_pcie(struct s32cc_pcie *x)
+{
+	return container_of(x, struct s32cc_pcie_ep, common);
+}
+
+static inline
 bool is_s32cc_pcie_rc(enum dw_pcie_device_mode mode)
 {
 	return mode == DW_PCIE_RC_TYPE;
+}
+
+static inline
+bool is_s32cc_pcie_ep(enum dw_pcie_device_mode mode)
+{
+	return mode == DW_PCIE_EP_TYPE;
 }
 
 static inline

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2021,2022 NXP */
+/* Copyright 2021-2023 NXP */
 
 #ifndef SERDES_HWCONFIG_H
 #define SERDES_HWCONFIG_H

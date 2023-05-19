@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 #include <common.h>
 #include <fdt_support.h>
@@ -367,10 +367,10 @@ static int set_pcie_mode(struct dts_node *node, unsigned int id)
 	enum pcie_type pcie_mode;
 
 	pcie_mode = s32_serdes_get_pcie_type_from_hwconfig(id);
-	if (pcie_mode & PCIE_EP)
-		compatible = PCIE_COMPATIBLE_EP;
 	if (pcie_mode & PCIE_RC)
 		compatible = PCIE_COMPATIBLE_RC;
+	else if (pcie_mode & PCIE_EP)
+		compatible = PCIE_COMPATIBLE_EP;
 
 	if (compatible) {
 		debug("PCIe%d: Set compatible to %s\n", id, compatible);

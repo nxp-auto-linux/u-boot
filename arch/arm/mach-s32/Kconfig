@@ -42,6 +42,7 @@ config NXP_S32CC
 	imply NVME_PCI
 	imply NXP_S32CC_PIT_TIMER
 	imply PCI
+	imply PCI_ENDPOINT
 	imply PCI_INIT_R
 	imply PCI_S32CC
 	imply PHY_S32CC_SERDES

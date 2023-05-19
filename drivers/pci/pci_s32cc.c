@@ -897,6 +897,7 @@ struct dw_pcie_ops s32cc_dw_pcie_ops = {
 	.link_up = s32cc_pcie_link_is_up,
 	.start_link = s32cc_pcie_start_link,
 	.write_dbi = s32cc_pcie_write,
+	.write_dbi2 = s32cc_pcie_write,
 };
 
 static int s32cc_pcie_probe(struct udevice *dev)
@@ -981,6 +982,7 @@ int show_pcie_devices(void)
 
 	memset(parsed_bus, false, sizeof(bool) * PCI_MAX_BUS_NUM);
 
+	/* Show Host controllers with children */
 	for (uclass_find_first_device(UCLASS_PCI, &bus);
 		     bus;
 		     uclass_find_next_device(&bus)) {
@@ -1021,6 +1023,37 @@ int show_pcie_devices(void)
 				show_pcie_devices_aligned(bus, dev, depth - 3,
 							  is_last, parsed_bus);
 			}
+		}
+	}
+
+	memset(parsed_bus, false, sizeof(bool) * PCI_MAX_BUS_NUM);
+
+	/* Show End Point controllers */
+	for (uclass_find_first_device(UCLASS_PCI_EP, &bus);
+		     bus;
+		     uclass_find_next_device(&bus)) {
+		struct s32cc_pcie *pcie = dev_get_priv(bus);
+
+		if (dev_seq(bus) >= PCI_MAX_BUS_NUM) {
+			dev_dbg(pcie->pcie.dev, "Invalid seq number\n");
+			continue;
+		}
+		if (parsed_bus[dev_seq(bus)])
+			continue;
+
+		if (pcie && pcie->mode != DW_PCIE_UNKNOWN_TYPE) {
+			if (show_header) {
+				printf(PCIE_TABLE_HEADER);
+				show_header = false;
+			}
+			if (s32cc_pcie_link_is_up(&pcie->pcie))
+				printf("%s %s (X%d, Gen%d)\n", bus->name,
+				       s32cc_pcie_ep_rc_mode_str(pcie->mode),
+				       s32cc_pcie_get_link_width(&pcie->pcie),
+				       s32cc_pcie_get_link_speed(&pcie->pcie));
+			else
+				printf("%s %s\n", bus->name,
+				       s32cc_pcie_ep_rc_mode_str(pcie->mode));
 		}
 	}
 
