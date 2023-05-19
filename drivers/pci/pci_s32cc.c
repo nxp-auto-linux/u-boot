@@ -39,7 +39,7 @@
 #define PCIE_ALIGNMENT 2
 
 #define PCIE_TABLE_HEADER \
-"BusDevFun               VendorId   DeviceId   Device Class       Sub-Class\n" \
+"PCIe:   BusDevFun       VendorId   DeviceId   Device Class       Sub-Class\n" \
 "__________________________________________________________________________\n"
 
 #define PCI_MAX_BUS_NUM			256
@@ -221,17 +221,21 @@ static bool speed_change_completed(struct dw_pcie *pcie)
 	return ctrl & PORT_LOGIC_SPEED_CHANGE;
 }
 
-static int s32cc_pcie_get_link_speed(struct s32cc_pcie *s32cc_pp)
+static int s32cc_pcie_get_link_speed(struct dw_pcie *pcie)
 {
-	struct dw_pcie *pcie = &s32cc_pp->pcie;
 	u32 cap_offset = dw_pcie_find_capability(pcie, PCI_CAP_ID_EXP);
 	u32 link_sta = dw_pcie_readw_dbi(pcie, cap_offset + PCI_EXP_LNKSTA);
 
-	dev_dbg(pcie->dev, "PCIe%d: Speed Gen%d\n", s32cc_pp->id,
-		link_sta & PCI_EXP_LNKSTA_CLS);
-
 	/* return link speed based on negotiated link status */
 	return link_sta & PCI_EXP_LNKSTA_CLS;
+}
+
+static u32 s32cc_pcie_get_link_width(struct dw_pcie *pcie)
+{
+	u32 cap_offset = dw_pcie_find_capability(pcie, PCI_CAP_ID_EXP);
+	u32 link_sta = dw_pcie_readw_dbi(pcie, cap_offset + PCI_EXP_LNKSTA);
+
+	return (link_sta & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
 }
 
 static int s32cc_pcie_start_link(struct dw_pcie *pcie)
@@ -298,8 +302,9 @@ static int s32cc_pcie_start_link(struct dw_pcie *pcie)
 	}
 
 	if (!ret)
-		dev_info(pcie->dev, "Link up, Gen=%d\n",
-			 s32cc_pcie_get_link_speed(s32cc_pp));
+		dev_info(pcie->dev, "X%d, Gen%d\n",
+			 s32cc_pcie_get_link_width(pcie),
+			 s32cc_pcie_get_link_speed(pcie));
 
 	return ret;
 }
@@ -699,7 +704,8 @@ void show_pcie_devices_aligned(struct udevice *bus, struct udevice *dev,
 	pplat = dev_get_parent_plat(dev);
 	printf("%02x:%02x.%02x", dev_seq(bus),
 	       PCI_DEV(pplat->devfn), PCI_FUNC(pplat->devfn));
-	parsed_bus[dev_seq(bus)] = true;
+	if (dev_seq(bus) < PCI_MAX_BUS_NUM)
+		parsed_bus[dev_seq(bus)] = true;
 
 	for (i = (PCIE_ALIGNMENT - depth + 1); i > 0; i--)
 		printf("    ");
@@ -735,6 +741,10 @@ int show_pcie_devices(void)
 		struct udevice *dev;
 		struct s32cc_pcie *pcie = dev_get_priv(bus);
 
+		if (dev_seq(bus) >= PCI_MAX_BUS_NUM) {
+			dev_dbg(pcie->pcie.dev, "Invalid seq number\n");
+			continue;
+		}
 		if (parsed_bus[dev_seq(bus)])
 			continue;
 
@@ -743,8 +753,14 @@ int show_pcie_devices(void)
 				printf(PCIE_TABLE_HEADER);
 				show_header = false;
 			}
-			printf("%s %s\n", bus->name,
-			       s32cc_pcie_ep_rc_mode_str(pcie->mode));
+			if (s32cc_pcie_link_is_up(&pcie->pcie))
+				printf("%s %s (X%d, Gen%d)\n", bus->name,
+				       s32cc_pcie_ep_rc_mode_str(pcie->mode),
+				       s32cc_pcie_get_link_width(&pcie->pcie),
+				       s32cc_pcie_get_link_speed(&pcie->pcie));
+			else
+				printf("%s %s\n", bus->name,
+				       s32cc_pcie_ep_rc_mode_str(pcie->mode));
 		}
 		for (device_find_first_child(bus, &dev);
 			    dev;
@@ -752,8 +768,10 @@ int show_pcie_devices(void)
 			int depth = pci_get_depth(dev);
 			int is_last = list_is_last(&dev->sibling_node,
 					&bus->child_head);
-			if (dev_seq(dev) < 0)
+			if (dev_seq(dev) < 0 || dev_seq(bus) >= PCI_MAX_BUS_NUM) {
+				dev_dbg(dev, "Invalid seq number\n");
 				continue;
+			}
 			show_pcie_devices_aligned(bus, dev, depth - 3,
 						  is_last, parsed_bus);
 		}
