@@ -10,6 +10,7 @@
 #endif
 
 #include <common.h>
+#include <cmd_pci.h>
 #include <dm.h>
 #include <errno.h>
 #include <generic-phy.h>
@@ -18,16 +19,16 @@
 #include <misc.h>
 #include <pci.h>
 #include <asm/io.h>
-#include <dm/device-internal.h>
 #include <dm/device_compat.h>
+#include <dm/uclass-internal.h>
 #include <dm/uclass.h>
 #include <linux/io.h>
 #include <linux/iopoll.h>
 #include <linux/sizes.h>
 #include <linux/time.h>
 #include <s32-cc/nvmem.h>
+#include <s32-cc/pcie.h>
 #include <s32-cc/serdes_hwconfig.h>
-#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 
 #include "pci-s32cc-regs.h"
@@ -38,8 +39,8 @@
 #define PCIE_ALIGNMENT 2
 
 #define PCIE_TABLE_HEADER \
-"BusDevFun           VendorId   DeviceId   Device Class       Sub-Class\n" \
-"______________________________________________________________________\n"
+"BusDevFun               VendorId   DeviceId   Device Class       Sub-Class\n" \
+"__________________________________________________________________________\n"
 
 #define PCI_MAX_BUS_NUM			256
 #define PCI_UNROLL_OFF			0x200
@@ -670,6 +671,95 @@ static int s32cc_pcie_probe(struct udevice *dev)
 
 	dw_pcie_dbi_ro_wr_dis(pcie);
 	return ret;
+}
+
+static
+void show_pcie_devices_aligned(struct udevice *bus, struct udevice *dev,
+			       int depth, int last_flag, bool *parsed_bus)
+{
+	int i, is_last;
+	struct udevice *child;
+	struct pci_child_plat *pplat;
+
+	for (i = depth; i >= 0; i--) {
+		is_last = (last_flag >> i) & 1;
+		if (i) {
+			if (is_last)
+				printf("    ");
+			else
+				printf("|   ");
+		} else {
+			if (is_last)
+				printf("`-- ");
+			else
+				printf("|-- ");
+		}
+	}
+
+	pplat = dev_get_parent_plat(dev);
+	printf("%02x:%02x.%02x", dev_seq(bus),
+	       PCI_DEV(pplat->devfn), PCI_FUNC(pplat->devfn));
+	parsed_bus[dev_seq(bus)] = true;
+
+	for (i = (PCIE_ALIGNMENT - depth + 1); i > 0; i--)
+		printf("    ");
+	pci_header_show_brief(dev);
+
+	list_for_each_entry(child, &dev->child_head, sibling_node) {
+		is_last = list_is_last(&child->sibling_node, &dev->child_head);
+		show_pcie_devices_aligned(dev, child, depth + 1,
+					  (last_flag << 1) | is_last,
+					  parsed_bus);
+	}
+}
+
+static int pci_get_depth(struct udevice *dev)
+{
+	if (!dev)
+		return 0;
+
+	return (1 + pci_get_depth(dev->parent));
+}
+
+int show_pcie_devices(void)
+{
+	struct udevice *bus;
+	bool show_header = true;
+	bool parsed_bus[PCI_MAX_BUS_NUM];
+
+	memset(parsed_bus, false, sizeof(bool) * PCI_MAX_BUS_NUM);
+
+	for (uclass_find_first_device(UCLASS_PCI, &bus);
+		     bus;
+		     uclass_find_next_device(&bus)) {
+		struct udevice *dev;
+		struct s32cc_pcie *pcie = dev_get_priv(bus);
+
+		if (parsed_bus[dev_seq(bus)])
+			continue;
+
+		if (pcie && pcie->mode != DW_PCIE_UNKNOWN_TYPE) {
+			if (show_header) {
+				printf(PCIE_TABLE_HEADER);
+				show_header = false;
+			}
+			printf("%s %s\n", bus->name,
+			       s32cc_pcie_ep_rc_mode_str(pcie->mode));
+		}
+		for (device_find_first_child(bus, &dev);
+			    dev;
+			    device_find_next_child(&dev)) {
+			int depth = pci_get_depth(dev);
+			int is_last = list_is_last(&dev->sibling_node,
+					&bus->child_head);
+			if (dev_seq(dev) < 0)
+				continue;
+			show_pcie_devices_aligned(bus, dev, depth - 3,
+						  is_last, parsed_bus);
+		}
+	}
+
+	return 0;
 }
 
 static const struct dm_pci_ops s32cc_dm_pcie_ops = {
