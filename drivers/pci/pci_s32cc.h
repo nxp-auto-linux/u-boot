@@ -64,13 +64,6 @@ struct s32cc_pcie;
 enum pcie_link_speed;
 
 struct s32cc_pcie {
-	/* Must be the first member of the struct, as the
-	 * U-Boot version of the DesignWare API relies on
-	 * the (undocumented) restriction that
-	 * both s32cc_pcie and pcie_dw objects be at the
-	 * same address, so that the object returned by
-	 * dev_get_priv(bus) could be cast to any of them
-	 */
 	struct pcie_dw	pcie;
 
 	void __iomem *ctrl_base;
@@ -112,6 +105,14 @@ const char *s32cc_pcie_ep_rc_mode_str(enum dw_pcie_device_mode mode)
 void dw_pcie_writel_ctrl(struct s32cc_pcie *pci, u32 reg, u32 val);
 u32 dw_pcie_readl_ctrl(struct s32cc_pcie *pci, u32 reg);
 
+void s32cc_pcie_dump_atu(struct s32cc_pcie *s32cc_pp);
+
 int s32cc_check_serdes(struct udevice *dev);
+void s32cc_pcie_set_device_id(struct s32cc_pcie *s32cc_pp);
+int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp);
+int s32cc_pcie_dt_init_host(struct udevice *dev);
+int s32cc_pcie_init_controller(struct s32cc_pcie *s32cc_pp);
+
+void pci_header_show_brief(struct udevice *dev);
 
 #endif /* PCIE_S32CC_H */
