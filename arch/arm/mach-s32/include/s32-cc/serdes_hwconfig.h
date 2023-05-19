@@ -27,6 +27,9 @@
 #define SPEED_2500		2500
 #define SPEED_10000		10000
 
+#define PCIE_COMPATIBLE_RC	"nxp,s32cc-pcie"
+#define PCIE_COMPATIBLE_EP	"nxp,s32cc-pcie-ep"
+
 /**
  * @brief	SerDes Subsystem Modes
  *

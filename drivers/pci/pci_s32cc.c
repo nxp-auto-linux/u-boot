@@ -4,11 +4,6 @@
  * S32CC PCIe Host driver
  */
 
-#define ENABLE_DEBUG (IS_ENABLED(CONFIG_PCI_S32CC_DEBUG))
-#if ENABLE_DEBUG
-#define DEBUG
-#endif
-
 #include <common.h>
 #include <cmd_pci.h>
 #include <dm.h>
@@ -129,7 +124,7 @@ static void s32cc_pcie_cfg1_set_busdev(struct s32cc_pcie *s32cc_pp, u32 busdev)
 				 PCIE_ATU_UNR_LOWER_TARGET, busdev);
 }
 
-static void s32cc_pcie_dump_atu(struct s32cc_pcie *s32cc_pp)
+void s32cc_pcie_dump_atu(struct s32cc_pcie *s32cc_pp)
 {
 	int i;
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
@@ -527,12 +522,39 @@ static int s32cc_pcie_start_link(struct dw_pcie *pcie)
 	return ret;
 }
 
-static int s32cc_pcie_dt_init_common(struct udevice *dev)
+void s32cc_pcie_set_device_id(struct s32cc_pcie *s32cc_pp)
 {
-	struct s32cc_pcie *s32cc_pp = dev_get_priv(dev);
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
-	const char *pcie_phy_mode;
 	u32 pcie_vendor_id = PCI_VENDOR_ID_FREESCALE, pcie_variant_bits = 0;
+	struct udevice *dev = s32cc_pp->pcie.dev;
+
+	pcie_variant_bits = dev_read_u32_default(dev, "pcie_device_id", 0);
+	if (!pcie_variant_bits)
+		pcie_variant_bits = s32cc_pcie_get_dev_id_variant(dev);
+	if (!pcie_variant_bits) {
+		dev_info(dev, "Could not set DEVICE ID\n");
+		return;
+	}
+
+	/* Write PCI Vendor and Device ID. */
+	pcie_vendor_id |= pcie_variant_bits << PCI_DEVICE_ID_SHIFT;
+	dev_dbg(dev, "Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+		(u32)(pcie_vendor_id >> PCI_DEVICE_ID_SHIFT),
+		(u32)(pcie_vendor_id & GENMASK(15, 0)));
+	dw_pcie_dbi_ro_wr_en(pcie);
+	dw_pcie_writel_dbi(pcie, PCI_VENDOR_ID, pcie_vendor_id);
+
+	if (pcie_vendor_id != dw_pcie_readl_dbi(pcie, PCI_VENDOR_ID))
+		dev_info(dev, "PCI Device and Vendor IDs could not be set\n");
+
+	dw_pcie_dbi_ro_wr_dis(pcie);
+}
+
+int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp)
+{
+	struct dw_pcie *pcie = &s32cc_pp->pcie;
+	struct udevice *dev = pcie->dev;
+	const char *pcie_phy_mode;
 	int ret = 0;
 
 	ret = dev_read_alias_seq(dev, &s32cc_pp->id);
@@ -626,28 +648,22 @@ static int s32cc_pcie_dt_init_common(struct udevice *dev)
 		s32cc_pp->linkspeed  = GEN1;
 	}
 
-	pcie_variant_bits = dev_read_u32_default(dev, "pcie_device_id", 0);
-	if (!pcie_variant_bits)
-		pcie_variant_bits = s32cc_pcie_get_dev_id_variant(dev);
-	if (!pcie_variant_bits) {
-		dev_info(dev, "Could not set DEVICE ID\n");
-		return 0;
-	}
-
-	/* Write PCI Vendor and Device ID. */
-	pcie_vendor_id |= pcie_variant_bits << PCI_DEVICE_ID_SHIFT;
-	dev_dbg(dev, "Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
-		(u32)(pcie_vendor_id >> PCI_DEVICE_ID_SHIFT),
-		(u32)(pcie_vendor_id & GENMASK(15, 0)));
-	dw_pcie_dbi_ro_wr_en(pcie);
-	dw_pcie_writel_dbi(pcie, PCI_VENDOR_ID, pcie_vendor_id);
-
-	if (pcie_vendor_id != dw_pcie_readl_dbi(pcie, PCI_VENDOR_ID))
-		dev_info(dev, "PCI Device and Vendor IDs could not be set\n");
-
-	dw_pcie_dbi_ro_wr_dis(pcie);
-
 	return 0;
+}
+
+/* s32cc_pcie_dt_init_host - Function intended to initialize platform
+ * data from the (live) device tree.
+ * Note that it is called before the probe function.
+ */
+int s32cc_pcie_dt_init_host(struct udevice *dev)
+{
+	struct s32cc_pcie *s32cc_pp = dev_get_priv(dev);
+	struct dw_pcie *pcie = &s32cc_pp->pcie;
+
+	s32cc_pp->mode = DW_PCIE_UNKNOWN_TYPE;
+	pcie->dev = dev;
+
+	return s32cc_pcie_dt_init_common(s32cc_pp);
 }
 
 static void disable_equalization(struct dw_pcie *pcie)
@@ -676,11 +692,14 @@ static int init_pcie(struct s32cc_pcie *s32cc_pp)
 	struct udevice *dev = pcie->dev;
 	u32 val;
 
-	if (is_s32cc_pcie_rc(s32cc_pp->mode)) {
+	if (is_s32cc_pcie_rc(s32cc_pp->mode))
 		val = dw_pcie_readl_ctrl(s32cc_pp, PE0_GEN_CTRL_1) |
 				BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_RC_VAL);
-		dw_pcie_writel_ctrl(s32cc_pp, PE0_GEN_CTRL_1, val);
-	}
+	else
+		val = dw_pcie_readl_ctrl(s32cc_pp, PE0_GEN_CTRL_1) |
+				BUILD_MASK_VALUE(DEVICE_TYPE, PCIE_EP_VAL);
+
+	dw_pcie_writel_ctrl(s32cc_pp, PE0_GEN_CTRL_1, val);
 
 	if (s32cc_pp->phy_mode == SRIS) {
 		val = dw_pcie_readl_ctrl(s32cc_pp, PE0_GEN_CTRL_1) |
@@ -813,7 +832,7 @@ static int init_pcie_phy(struct s32cc_pcie *s32cc_pp)
 	return 0;
 }
 
-static int s32cc_pcie_init_controller(struct s32cc_pcie *s32cc_pp)
+int s32cc_pcie_init_controller(struct s32cc_pcie *s32cc_pp)
 {
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
 	int ret = 0;
@@ -828,12 +847,6 @@ static int s32cc_pcie_init_controller(struct s32cc_pcie *s32cc_pp)
 	if (ret)
 		return ret;
 
-	/* Only wait for link if RC.
-	 * With or witout link, go ahead and configure the controller.
-	 */
-	if (is_s32cc_pcie_rc(s32cc_pp->mode))
-		wait_phy_data_link(s32cc_pp);
-
 	dev_info(pcie->dev, "Configuring as %s\n",
 		 s32cc_pcie_ep_rc_mode_str(s32cc_pp->mode));
 
@@ -844,6 +857,8 @@ static int s32cc_pcie_config_host(struct s32cc_pcie *s32cc_pp)
 {
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
 	int ret = 0;
+
+	s32cc_pcie_set_device_id(s32cc_pp);
 
 	ret = s32cc_pcie_init_controller(s32cc_pp);
 	if (ret)
@@ -890,25 +905,16 @@ static int s32cc_pcie_probe(struct udevice *dev)
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
 	int ret = 0;
 
-	s32cc_pp->mode = DW_PCIE_UNKNOWN_TYPE;
 	ret = s32cc_check_serdes(dev);
 	if (ret)
 		return ret;
 
 	pcie->first_busno = dev_seq(dev);
-	pcie->dev = dev;
 	pcie->ops = &s32cc_dw_pcie_ops;
 
-	s32cc_pp->mode =
-		(enum dw_pcie_device_mode)dev_get_driver_data(dev);
+	s32cc_pp->mode = DW_PCIE_RC_TYPE;
 
-	if (is_s32cc_pcie_rc(s32cc_pp->mode)) {
-		ret = s32cc_pcie_config_host(s32cc_pp);
-	} else {
-		dev_err(dev, "Invalid PCIe host operating mode\n");
-		ret = -EINVAL;
-	}
-
+	ret = s32cc_pcie_config_host(s32cc_pp);
 	if (ret) {
 		dev_err(dev, "Failed to set PCIe host settings\n");
 		s32cc_pp->mode = DW_PCIE_UNKNOWN_TYPE;
@@ -1001,19 +1007,20 @@ int show_pcie_devices(void)
 			else
 				printf("%s %s\n", bus->name,
 				       s32cc_pcie_ep_rc_mode_str(pcie->mode));
-		}
-		for (device_find_first_child(bus, &dev);
-			    dev;
-			    device_find_next_child(&dev)) {
-			int depth = pci_get_depth(dev);
-			int is_last = list_is_last(&dev->sibling_node,
-					&bus->child_head);
-			if (dev_seq(dev) < 0 || dev_seq(bus) >= PCI_MAX_BUS_NUM) {
-				dev_dbg(dev, "Invalid seq number\n");
-				continue;
+
+			for (device_find_first_child(bus, &dev);
+				dev;
+				device_find_next_child(&dev)) {
+				int depth = pci_get_depth(dev);
+				int is_last = list_is_last(&dev->sibling_node,
+						&bus->child_head);
+				if (dev_seq(dev) < 0 || dev_seq(bus) >= PCI_MAX_BUS_NUM) {
+					dev_dbg(dev, "Invalid seq number\n");
+					continue;
+				}
+				show_pcie_devices_aligned(bus, dev, depth - 3,
+							  is_last, parsed_bus);
 			}
-			show_pcie_devices_aligned(bus, dev, depth - 3,
-						  is_last, parsed_bus);
 		}
 	}
 
@@ -1026,7 +1033,7 @@ static const struct dm_pci_ops s32cc_dm_pcie_ops = {
 };
 
 static const struct udevice_id s32cc_pcie_of_match[] = {
-	{ .compatible = "nxp,s32cc-pcie", .data = DW_PCIE_RC_TYPE },
+	{ .compatible = PCIE_COMPATIBLE_RC },
 	{ }
 };
 
@@ -1035,7 +1042,7 @@ U_BOOT_DRIVER(pci_s32cc) = {
 	.id = UCLASS_PCI,
 	.of_match = s32cc_pcie_of_match,
 	.ops = &s32cc_dm_pcie_ops,
-	.of_to_plat	= s32cc_pcie_dt_init_common,
+	.of_to_plat = s32cc_pcie_dt_init_host,
 	.probe	= s32cc_pcie_probe,
 	.priv_auto = sizeof(struct s32cc_pcie),
 	.flags = DM_FLAG_SEQ_PARENT_ALIAS,

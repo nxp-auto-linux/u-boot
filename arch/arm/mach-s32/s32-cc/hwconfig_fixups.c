@@ -363,20 +363,26 @@ static int node_by_path(struct dts_node *root, struct dts_node *node,
 static int set_pcie_mode(struct dts_node *node, unsigned int id)
 {
 	int ret;
-	char *compatible;
+	char *compatible = NULL;
 	enum pcie_type pcie_mode;
 
 	pcie_mode = s32_serdes_get_pcie_type_from_hwconfig(id);
 	if (pcie_mode & PCIE_EP)
-		compatible = "nxp,s32cc-pcie-ep";
-	else
-		compatible = "nxp,s32cc-pcie";
+		compatible = PCIE_COMPATIBLE_EP;
+	if (pcie_mode & PCIE_RC)
+		compatible = PCIE_COMPATIBLE_RC;
 
-	ret = node_set_prop_str(node, "compatible", compatible);
-	if (ret) {
-		pr_err("Failed to set PCIE compatible: %s\n",
-		       fdt_strerror(ret));
-		return ret;
+	if (compatible) {
+		debug("PCIe%d: Set compatible to %s\n", id, compatible);
+		ret = node_set_prop_str(node, "compatible", compatible);
+		if (ret) {
+			pr_err("Failed to set PCIE compatible: %s\n",
+			       fdt_strerror(ret));
+			return ret;
+		}
+	} else {
+		pr_err("No RC/EP PCIe mode selected\n");
+		return -EINVAL;
 	}
 
 	return 0;

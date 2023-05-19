@@ -184,10 +184,6 @@ enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id)
 		pcietype = PCIE_RC;
 	else if (!strncmp(option_str, "ep", subarg_len))
 		pcietype = PCIE_EP;
-	else if (!strncmp(option_str, "rc&xpcs", strlen("rc&xpcs")))
-		pcietype = PCIE_RC;
-	else if (!strncmp(option_str, "ep&xpcs", strlen("ep&xpcs")))
-		pcietype = PCIE_EP;
 #ifdef CONFIG_S32CC_HWCONFIG_LEGACY
 	else if (!strncmp(option_str, "rc&sgmii", subarg_len))
 		pcietype = PCIE_RC;
