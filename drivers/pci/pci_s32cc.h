@@ -17,9 +17,6 @@
 
 #include "pcie-designware.h"
 
-#define BUILD_BIT_VALUE(field, x) (((x) & (1)) << field##_BIT)
-#define BUILD_MASK_VALUE(field, x) (((x) & (field##_MASK)) << field##_LSB)
-
 /* PCIe MSI capabilities register */
 #define PCI_MSI_CAP		0x50U
 /* MSI Enable bit */
