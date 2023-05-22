@@ -311,6 +311,25 @@ void setup_clocks_enet_gmac(int intf, struct udevice *gmac_dev)
 		dev_err(gmac_dev, "Failed to enable %s clock\n", tx);
 }
 
+void stop_clocks_enet_gmac(int intf, struct udevice *gmac_dev)
+{
+	const char *rx, *tx;
+	int ret;
+
+	ret = get_gmac_clocks(intf, &rx, &tx);
+	/* Do nothing for the interfaces that are not supported */
+	if (ret)
+		return;
+
+	ret = s32gen1_disable_dev_clk(rx, gmac_dev);
+	if (ret)
+		dev_err(gmac_dev, "Failed to disable %s clock\n", rx);
+
+	ret = s32gen1_disable_dev_clk(tx, gmac_dev);
+	if (ret)
+		dev_err(gmac_dev, "Failed to disable %s clock\n", tx);
+}
+
 #endif /* CONFIG_DWC_ETH_QOS_S32CC */
 
 /*

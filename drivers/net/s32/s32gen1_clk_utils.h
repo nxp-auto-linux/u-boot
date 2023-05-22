@@ -11,6 +11,7 @@
 int enable_early_clocks(void);
 
 int s32gen1_enable_dev_clk(const char *name, struct udevice *dev);
+int s32gen1_disable_dev_clk(const char *name, struct udevice *dev);
 int s32gen1_set_dev_clk_state(const char *name, struct udevice *dev,
 			      bool enable);
 ulong s32gen1_set_dev_clk_rate(const char *name,

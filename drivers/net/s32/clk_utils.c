@@ -81,6 +81,11 @@ int s32gen1_enable_dev_clk(const char *name, struct udevice *dev)
 	return s32gen1_set_dev_clk_state(name, dev, true);
 }
 
+int s32gen1_disable_dev_clk(const char *name, struct udevice *dev)
+{
+	return s32gen1_set_dev_clk_state(name, dev, false);
+}
+
 int s32gen1_set_parent_clk_id(ulong clk_id, ulong parent_clk_id)
 {
 	struct clk clk, pclk;

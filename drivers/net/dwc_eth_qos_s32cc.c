@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright 2019-2022 NXP
+ * Copyright 2019-2023 NXP
  *
  */
 
@@ -239,7 +239,9 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 
 static void eqos_stop_clks_s32cc(struct udevice *dev)
 {
-	/* empty */
+	u32 mode = eqos_get_interface_s32cc(dev);
+
+	stop_clocks_enet_gmac(mode, dev);
 }
 
 static int eqos_start_resets_s32cc(struct udevice *dev)
