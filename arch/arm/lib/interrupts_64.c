@@ -11,27 +11,20 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-int __interrupt_init(void)
+int interrupt_init(void)
 {
 	return 0;
 }
 
-void __enable_interrupts(void)
+void enable_interrupts(void)
 {
 	return;
 }
 
-int __disable_interrupts(void)
+int disable_interrupts(void)
 {
 	return 0;
 }
-
-int interrupt_init(void)
-        __attribute__((weak, alias("__interrupt_init")));
-void enable_interrupts(void)
-        __attribute__((weak, alias("__enable_interrupts")));
-int disable_interrupts(void)
-        __attribute__((weak, alias("__disable_interrupts")));
 
 static void show_efi_loaded_images(struct pt_regs *regs)
 {
@@ -127,9 +120,9 @@ void do_sync(struct pt_regs *pt_regs, unsigned int esr)
 }
 
 /*
- * __do_irq handles the Irq exception.
+ * do_irq handles the Irq exception.
  */
-void __do_irq(struct pt_regs *pt_regs, unsigned int esr)
+void do_irq(struct pt_regs *pt_regs, unsigned int esr)
 {
 	efi_restore_gd();
 	printf("\"Irq\" handler, esr 0x%08x\n", esr);
@@ -139,9 +132,9 @@ void __do_irq(struct pt_regs *pt_regs, unsigned int esr)
 }
 
 /*
- * __do_fiq handles the Fiq exception.
+ * do_fiq handles the Fiq exception.
  */
-void __do_fiq(struct pt_regs *pt_regs, unsigned int esr)
+void do_fiq(struct pt_regs *pt_regs, unsigned int esr)
 {
 	efi_restore_gd();
 	printf("\"Fiq\" handler, esr 0x%08x\n", esr);
@@ -149,11 +142,6 @@ void __do_fiq(struct pt_regs *pt_regs, unsigned int esr)
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");
 }
-
-void do_irq(struct pt_regs *pt_regs, unsigned int esr)
-        __attribute__((weak, alias("__do_irq")));
-void do_fiq(struct pt_regs *pt_regs, unsigned int esr)
-        __attribute__((weak, alias("__do_fiq")));
 
 /*
  * do_error handles the Error exception.
