@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2019-2022 NXP
+ * Copyright 2019-2023 NXP
  */
 #include <common.h>
 #include <clk.h>
@@ -285,11 +285,6 @@ int set_tx_clk_enet_gmac(struct udevice *gmac_dev, u32 speed)
 
 	if (s32gen1_set_dev_clk_rate(tx, gmac_dev, freq) != freq)
 		return -EINVAL;
-
-	if (s32gen1_enable_dev_clk(tx, gmac_dev)) {
-		dev_err(gmac_dev, "Failed to enable gmac_tx clock\n");
-		return -EINVAL;
-	}
 
 	return 0;
 }
