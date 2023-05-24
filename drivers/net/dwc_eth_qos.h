@@ -241,9 +241,12 @@ struct eqos_config {
 	int swr_wait;
 	int config_mac;
 	int config_mac_mdio;
+	int tx_fifo_size;
+	int rx_fifo_size;
 	unsigned int axi_bus_width;
 	phy_interface_t (*interface)(const struct udevice *dev);
 	struct eqos_ops *ops;
+	u32 quirks;
 };
 
 struct eqos_ops {
@@ -318,3 +321,4 @@ extern struct eqos_config eqos_stm32mp15_config;
 extern struct eqos_config eqos_stm32mp25_config;
 extern struct eqos_config eqos_jh7110_config;
 extern struct eqos_config eqos_adi_config;
+extern struct eqos_config eqos_s32cc_config;
