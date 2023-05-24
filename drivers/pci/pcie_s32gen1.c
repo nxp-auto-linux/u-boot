@@ -971,15 +971,15 @@ static u32 s32_pcie_get_dev_id_variant(struct udevice *dev)
 	int ret;
 	u32 variant_bits = 0;
 
-	ret = nvmem_cell_get_by_name(dev, "pcie_variant", &c);
+	ret = nvmem_cell_get_by_name(dev, "pcie_dev_id", &c);
 	if (ret) {
-		printf("Failed to get 'pcie_variant' cell\n");
+		printf("Failed to get 'pcie_dev_id' cell\n");
 		return ret;
 	}
 
 	ret = nvmem_cell_read(&c, &variant_bits, sizeof(variant_bits));
 	if (ret) {
-		printf("%s: Failed to read cell 'pcie_variant' (err = %d)\n",
+		printf("%s: Failed to read cell 'pcie_dev_id' (err = %d)\n",
 		       __func__, ret);
 		return ret;
 	}
