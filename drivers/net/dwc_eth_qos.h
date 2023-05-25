@@ -3,6 +3,7 @@
  * Copyright 2023 NXP
  */
 
+#include <generic-phy.h>
 #include <phy_interface.h>
 #include <linux/bitops.h>
 
@@ -82,6 +83,7 @@ struct eqos_priv {
 	struct clk clk_slave_bus;
 	struct mii_dev *mii;
 	struct phy_device *phy;
+	struct phy pcs;
 	u32 max_speed;
 	void *descs;
 	int tx_desc_idx, rx_desc_idx;

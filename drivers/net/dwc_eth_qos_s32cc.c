@@ -10,8 +10,11 @@
 #include <reset.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
+#include <dm/device_compat.h>
 #include <dm/pinctrl.h>
 #include <linux/delay.h>
+#include <s32-cc/serdes_hwconfig.h>
+#include <s32-cc/xpcs.h>
 
 #include "dwc_eth_qos.h"
 
@@ -21,6 +24,99 @@
 #define PHY_INTF_SEL_RMII	0x08
 
 #define CLK_NAME_SZ		16
+
+static u32 s32cc_get_speed_advertised(int speed)
+{
+	switch (speed) {
+	case SPEED_10:
+		return ADVERTISED_10baseT_Full;
+	case SPEED_100:
+		return ADVERTISED_100baseT_Full;
+	case SPEED_2500:
+		return ADVERTISED_2500baseT_Full;
+	case SPEED_1000:
+	default:
+		return ADVERTISED_1000baseT_Full;
+	}
+}
+
+static int eqos_pcs_config_s32cc(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	const struct s32cc_xpcs_ops *xpcs_ops;
+	struct phylink_link_state state;
+	struct s32cc_xpcs *xpcs;
+	int ret, phy_speed;
+
+	if (!eqos->phy)
+		return 0;
+
+	if (eqos->phy->interface != PHY_INTERFACE_MODE_SGMII)
+		return 0;
+
+	xpcs_ops = s32cc_xpcs_get_ops();
+	if (!xpcs_ops) {
+		dev_err(dev, "Failed to get XPCS ops\n");
+		return -EIO;
+	}
+
+	phy_speed = s32_serdes_get_lane_speed(eqos->pcs.dev, eqos->pcs.id);
+	if (phy_speed < 0) {
+		dev_err(dev, "Failed to get speed of XPCS for 'gmac_xpcs'");
+		return phy_speed;
+	}
+
+	xpcs = s32cc_phy2xpcs(&eqos->pcs);
+	if (!xpcs) {
+		dev_err(dev, "Failed to get XPCS instance of 'gmac_xpcs'\n");
+		return -EINVAL;
+	}
+
+	state.speed = eqos->phy->speed;
+	state.duplex = true;
+	state.advertising = s32cc_get_speed_advertised(phy_speed);
+	state.an_enabled = 0;
+	state.an_complete = 0;
+	ret = xpcs_ops->xpcs_config(xpcs, &state);
+	if (ret) {
+		dev_err(dev, "Failed to configure 'gmac_xpcs' PHY\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int eqos_pcs_init_s32cc(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	int ret;
+
+	ret = generic_phy_get_by_name(dev, "gmac_xpcs", &eqos->pcs);
+	if (ret) {
+		dev_err(dev, "Failed to get 'gmac_xpcs' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_init(&eqos->pcs);
+	if (ret) {
+		dev_err(dev, "Failed to init 'gmac_xpcs' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_power_on(&eqos->pcs);
+	if (ret) {
+		dev_err(dev, "Failed to power on 'gmac_xpcs' PHY\n");
+		return ret;
+	}
+
+	ret = generic_phy_configure(&eqos->pcs, NULL);
+	if (ret) {
+		dev_err(dev, "Failed to configure 'gmac_xpcs' PHY\n");
+		return ret;
+	}
+
+	return 0;
+}
 
 static int eqos_start_resets_s32cc(struct udevice *dev)
 {
@@ -135,6 +231,12 @@ static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 	ret = clk_enable(&eqos->clk_tx);
 	if (ret < 0) {
 		pr_err("clk_enable(tx_clk) failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = eqos_pcs_config_s32cc(dev);
+	if (ret < 0) {
+		pr_err("eqos_pcs_config_s32cc(dev) failed: %d\n", ret);
 		return ret;
 	}
 
@@ -275,9 +377,17 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 		goto err_free_clk_rx;
 	}
 
+	if (interface == PHY_INTERFACE_MODE_SGMII) {
+		ret = eqos_pcs_init_s32cc(dev);
+		if (ret)
+			goto err_free_clk_tx;
+	}
+
 	debug("%s: OK\n", __func__);
 	return 0;
 
+err_free_clk_tx:
+	clk_free(&eqos->clk_rx);
 err_free_clk_rx:
 	clk_free(&eqos->clk_rx);
 err_free_clk_master_bus:

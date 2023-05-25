@@ -211,6 +211,7 @@ config DWC_ETH_QOS_S32CC
 	bool "Synopsys DWC Ethernet QOS device support for S32CC"
 	depends on DWC_ETH_QOS
 	select DM_ETH_PHY
+	select PHY_S32CC_SERDES
 	default y if NXP_S32CC
 	help
 	  The Synopsys Designware Ethernet QOS IP block with the specific
