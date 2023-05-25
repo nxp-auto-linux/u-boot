@@ -723,7 +723,6 @@ static init_fnc_t init_sequence_r[] = {
 	 * Do pci configuration
 	 */
 	pci_init,
-	show_pcie_devices,
 #endif
 	stdio_add_devices,
 	jumptable_init,
@@ -771,6 +770,9 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #ifdef CONFIG_PCI_ENDPOINT
 	pci_ep_init,
+#endif
+#if defined(CONFIG_PCI_INIT_R) && !defined(CONFIG_SYS_EARLY_PCI_INIT)
+	show_pcie_devices,
 #endif
 #ifdef CONFIG_CMD_NET
 	INIT_FUNC_WATCHDOG_RESET
