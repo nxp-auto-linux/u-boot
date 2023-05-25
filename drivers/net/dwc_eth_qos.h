@@ -5,6 +5,7 @@
 
 #include <asm/gpio.h>
 #include <clk.h>
+#include <generic-phy.h>
 #include <linux/bitops.h>
 #include <phy_interface.h>
 #include <reset.h>
@@ -302,6 +303,7 @@ struct eqos_priv {
 	bool clk_ck_enabled;
 	unsigned int tx_fifo_sz, rx_fifo_sz;
 	u32 reset_delays[3];
+	struct phy pcs;
 };
 
 void eqos_inval_desc_generic(void *desc);
