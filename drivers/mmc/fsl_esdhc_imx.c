@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019, 2021-2022 NXP
+ * Copyright 2019, 2021-2023 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
@@ -177,16 +177,20 @@ struct fsl_esdhc_priv {
 };
 
 /* Return the XFERTYP flags for a given command and data packet */
-static uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
+static uint esdhc_xfertyp(u32 priv_flags, struct mmc_cmd *cmd,
+			  struct mmc_data *data)
 {
 	uint xfertyp = 0;
 
 	if (data) {
 		xfertyp |= XFERTYP_DPSEL;
-		if (!IS_ENABLED(CONFIG_SYS_FSL_ESDHC_USE_PIO) &&
-		    cmd->cmdidx != MMC_CMD_SEND_TUNING_BLOCK &&
-		    cmd->cmdidx != MMC_CMD_SEND_TUNING_BLOCK_HS200)
-			xfertyp |= XFERTYP_DMAEN;
+		if (!IS_ENABLED(CONFIG_SYS_FSL_ESDHC_USE_PIO)) {
+			if (!(priv_flags & ESDHC_FLAG_STD_TUNING))
+				xfertyp |= XFERTYP_DMAEN;
+			else if (cmd->cmdidx != MMC_CMD_SEND_TUNING_BLOCK &&
+				 cmd->cmdidx != MMC_CMD_SEND_TUNING_BLOCK_HS200)
+				xfertyp |= XFERTYP_DMAEN;
+		}
 		if (data->blocks > 1) {
 			xfertyp |= XFERTYP_MSBSEL;
 			xfertyp |= XFERTYP_BCEN;
@@ -448,7 +452,7 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	}
 
 	/* Figure out the transfer arguments */
-	xfertyp = esdhc_xfertyp(cmd, data);
+	xfertyp = esdhc_xfertyp(priv->flags, cmd, data);
 
 	/* Mask all irqs */
 	esdhc_write32(&regs->irqsigen, 0);
