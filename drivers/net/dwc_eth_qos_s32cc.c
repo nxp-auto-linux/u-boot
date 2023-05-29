@@ -283,7 +283,19 @@ err_disable_clk_rx:
 	clk_disable(&eqos->clk_rx);
 	clk_disable(&eqos->clk_master_bus);
 err:
-	debug("%s: FAILED: %d\n", __func__, ret);
+
+	/* If the phy interface is SGMII and serdes is configured in a
+	 * non-xpcs mode, clock enable operations will fail. To allow the
+	 * user to fix the hwconfig variable, the error code will be
+	 * ignored.
+	 */
+	if (eqos->config->interface(dev) == PHY_INTERFACE_MODE_SGMII) {
+		dev_err(dev, "Failed to start clocks. Check XPCS configuration (err=%d)\n",
+			ret);
+		return 0;
+	}
+
+	dev_err(dev, "Failed to start clocks (err=%d)\n", ret);
 	return ret;
 }
 
@@ -379,15 +391,12 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 
 	if (interface == PHY_INTERFACE_MODE_SGMII) {
 		ret = eqos_pcs_init_s32cc(dev);
-		if (ret)
-			goto err_free_clk_tx;
+		dev_err(dev, "XPCS init failed. Check hwconfig. (err=%d)\n", ret);
 	}
 
 	debug("%s: OK\n", __func__);
 	return 0;
 
-err_free_clk_tx:
-	clk_free(&eqos->clk_rx);
 err_free_clk_rx:
 	clk_free(&eqos->clk_rx);
 err_free_clk_master_bus:
