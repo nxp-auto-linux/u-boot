@@ -6,6 +6,7 @@
 #include <debug_uart.h>
 #include <asm/global_data.h>
 #include <asm/sections.h>
+#include <asm/system.h>
 #include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
 #include <s32-cc/serdes_hwconfig.h>
@@ -22,18 +23,25 @@ DECLARE_GLOBAL_DATA_PTR;
 #define CONFIG_SYS_PCIE1_PHYS_SIZE_HI       0x0800000000ULL
 #endif
 
+#define DTB_SIZE	(CONFIG_S32CC_MAX_DTB_SIZE)
+#define DTB_ADDR	(CONFIG_SYS_TEXT_BASE - DTB_SIZE)
+
+#define DDR_ATTRS	(PTE_BLOCK_MEMTYPE(MT_NORMAL) | \
+			 PTE_BLOCK_OUTER_SHARE | \
+			 PTE_BLOCK_NS)
+
 #ifndef CONFIG_SYS_DCACHE_OFF
 static struct mm_region s32_mem_map[] = {
 	{
-		PHYS_SDRAM_1, PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE,
-		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE |
-		    PTE_BLOCK_NS
+		PHYS_SDRAM_1, PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE, DDR_ATTRS
+	},
+	{
+		DTB_ADDR, DTB_ADDR, DTB_SIZE,
+		DDR_ATTRS | PTE_BLOCK_AP_RO | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 #ifdef PHYS_SDRAM_2
 	{
-		PHYS_SDRAM_2, PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE,
-		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE |
-		    PTE_BLOCK_NS
+		PHYS_SDRAM_2, PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE, DDR_ATTRS
 	},
 #endif
 	{
