@@ -59,6 +59,8 @@
  */
 #define PTE_BLOCK_MEMTYPE(x)	((x) << 2)
 #define PTE_BLOCK_NS            (1 << 5)
+#define PTE_BLOCK_AP_RO		BIT(7)
+#define PTE_BLOCK_AP_EL0_RO	BIT(6)
 #define PTE_BLOCK_NON_SHARE	(0 << 8)
 #define PTE_BLOCK_OUTER_SHARE	(2 << 8)
 #define PTE_BLOCK_INNER_SHARE	(3 << 8)
