@@ -32,6 +32,11 @@ config S32CC_QSPI_FREQ
 	int "QSPI frequency setting (MHz) used in order to set BootROM's clock"
 	default 200
 
+config BOARD_NFS_BOOT_INTERFACE
+	string "Board NFS Boot Interface"
+	default "br0" if TARGET_S32G274ABLUEBOX3
+	default "eth0"
+
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
 	depends on PHY_S32CC_SERDES
