@@ -126,6 +126,7 @@ static int ft_fixup_cpu(void *blob)
 	u64 core_mpidr, core_id;
 	fdt32_t *reg;
 	int off, off_prev, cluster1_off;
+	bool lockstep_enabled;
 
 	ret = get_cores_info(&max_cores_per_cluster, &cpu_mask);
 	if (ret)
@@ -141,7 +142,8 @@ static int ft_fixup_cpu(void *blob)
 	fdt_support_default_count_cells(blob, off, &addr_cells, NULL);
 	off = get_next_cpu(blob, off);
 
-	if (is_lockstep_enabled()) {
+	lockstep_enabled = is_lockstep_enabled();
+	if (lockstep_enabled) {
 		/* Disable secondary cluster */
 		cpu_mask &= ~GENMASK(max_cores_per_cluster * 2 - 1,
 							 max_cores_per_cluster);
@@ -167,7 +169,7 @@ static int ft_fixup_cpu(void *blob)
 		off = get_next_cpu(blob, off);
 	}
 
-	if (!is_lockstep_enabled())
+	if (!lockstep_enabled)
 		return 0;
 
 	cluster1_off = fdt_path_offset(blob, FDT_CLUSTER1_PATH);
