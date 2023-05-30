@@ -57,6 +57,12 @@
 #  define CONFIG_ARMV8_SWITCH_TO_EL1
 #endif
 
+#define NFSRAMFS_ADDR			"-"
+#define NFSRAMFS_TFTP_CMD		""
+#define S32CC_IPADDR			"10.0.0.100"
+#define S32CC_NETMASK			"255.255.255.0"
+#define S32CC_SERVERIP			"10.0.0.1"
+
 #define CONFIG_HWCONFIG
 
 #if defined(CONFIG_S32CC_HWCONFIG)
@@ -101,9 +107,12 @@
 		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
 	"image=Image\0" \
 	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
+	"ipaddr=" S32CC_IPADDR "\0"\
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
 		 "run fdt_override;\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate}" \
 		" root=${mmcroot} earlycon " EXTRA_BOOT_ARGS "\0" \
 	"mmcboot=echo Booting from mmc ...; " \
@@ -116,8 +125,45 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=" __stringify(MMC_PART_FAT) "\0" \
 	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
+	"netargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs " \
+		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
+		"earlycon " EXTRA_BOOT_ARGS "\0" \
+	"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"${get_cmd} ${image}; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
+				"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"${boot_mtd}; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"${boot_mtd}; " \
+		"fi;\0" \
+	"netmask=" S32CC_NETMASK "\0" \
+	"nfsboot=echo Booting from net using tftp and nfs...; " \
+		"run nfsbootargs;"\
+		"run loadtftpimage; " NFSRAMFS_TFTP_CMD "run loadtftpfdt;"\
+		"${boot_mtd} ${loadaddr} " NFSRAMFS_ADDR " ${fdt_addr};\0" \
+	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=/dev/nfs rw " \
+		"ip=${ipaddr}:${serverip}::${netmask}::" \
+			CONFIG_BOARD_NFS_BOOT_INTERFACE ":off " \
+		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp " \
+		"earlycon " EXTRA_BOOT_ARGS "\0" \
 	"ramdisk_addr=" __stringify(S32CC_RAMDISK_ADDR) "\0" \
 	"script=boot.scr\0" \
+	"serverip=" S32CC_SERVERIP "\0" \
 	SERDES_EXTRA_ENV_SETTINGS \
 	XEN_EXTRA_ENV_SETTINGS \
 
