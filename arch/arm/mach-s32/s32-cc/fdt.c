@@ -14,11 +14,14 @@
 #include <dm/uclass.h>
 #include <linux/ctype.h>
 #include <linux/ioport.h>
+#include <linux/kernel.h>
+#include <linux/libfdt.h>
 #include <linux/sizes.h>
 #include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/s32cc_soc.h>
 #include <s32-cc/serdes_hwconfig.h>
+#include <dt-bindings/nvmem/s32cc-scmi-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
@@ -26,6 +29,7 @@
 
 const static char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
 const static char *scmi_gpio_node_path = "/firmware/scmi/protocol@81";
+const static char *scmi_nvmem_node_path = "/firmware/scmi/protocol@82";
 
 #define SOC_CPUMASK_S32G2			GENMASK(3, 0)
 #define SOC_CPUMASK_S32G2_DERIVATIVE		(BIT(0) | BIT(2))
@@ -472,6 +476,173 @@ static int enable_scmi_gpio(void *blob)
 	return 0;
 }
 
+static int fdt_node_offset_by_prop_found(const void *fdt, int startoffset,
+					 const char *propname)
+{
+	int offset;
+	const void *val;
+	int len;
+
+	for (offset = fdt_next_node(fdt, startoffset, NULL);
+	     offset >= 0;
+	     offset = fdt_next_node(fdt, offset, NULL)) {
+		val = fdt_getprop(fdt, offset, propname, &len);
+		if (val)
+			return offset;
+	}
+
+	return offset; /* error from fdt_next_node() */
+}
+
+static int find_nvmem_scmi_node(void *blob, int *nodeoff,
+				const u32 **phandles)
+{
+	int scmi_nvmem_nodeoff;
+	const u32 *scmi_nvmem_phandles;
+
+	scmi_nvmem_nodeoff = fdt_path_offset(blob, scmi_nvmem_node_path);
+	if (scmi_nvmem_nodeoff < 0) {
+		pr_err("Failed to get NVMEM SCMI node with path '%s' (%s)\n",
+		       scmi_nvmem_node_path, fdt_strerror(scmi_nvmem_nodeoff));
+		return scmi_nvmem_nodeoff;
+	}
+
+	scmi_nvmem_phandles = fdt_getprop(blob, scmi_nvmem_nodeoff,
+					  "nvmem-cells", NULL);
+	if (!scmi_nvmem_phandles) {
+		pr_err("Failed to get 'nvmem-cells' property of '%s' node\n",
+		       scmi_nvmem_node_path);
+		return -FDT_ERR_NOTFOUND;
+	}
+
+	*nodeoff = scmi_nvmem_nodeoff;
+	*phandles = scmi_nvmem_phandles;
+
+	return 0;
+}
+
+static int find_nvmem_consumer_node(void *blob, int nodeoff_scmi, int *nodeoff,
+				    int *num_phandles)
+{
+	int count;
+	int startoffset = *nodeoff;
+
+	*nodeoff = fdt_node_offset_by_prop_found(blob, startoffset,
+						 "nvmem-cells");
+	/* Skip the NVMEM SCMI node */
+	if (*nodeoff == nodeoff_scmi)
+		*nodeoff = fdt_node_offset_by_prop_found(blob, *nodeoff,
+							 "nvmem-cells");
+	if (*nodeoff < 0) {
+		if (startoffset == 0)
+			pr_err("Failed to get at least 1 node with 'nvmem-cells' property (%s)\n",
+			       fdt_strerror(*nodeoff));
+		return -FDT_ERR_NOTFOUND;
+	}
+
+	/* Count string values in "nvmem-cell-names" property */
+	count = fdt_stringlist_count(blob, *nodeoff, "nvmem-cell-names");
+	if (count < 0) {
+		pr_err("Failed to get 'nvmem-cell-names' property of node '%s' (%s)\n",
+		       fdt_get_name(blob, *nodeoff, NULL), fdt_strerror(count));
+		return count;
+	}
+	if (count == 0) {
+		pr_err("Empty 'nvmem-cell-names' property of node '%s'\n",
+		       fdt_get_name(blob, *nodeoff, NULL));
+		return -FDT_ERR_NOTFOUND;
+	}
+
+	*num_phandles = count;
+
+	return 0;
+}
+
+static int update_nvmem_consumer_phandles(void *blob, int nodeoff_consumer,
+					  int num_phandles, int nodeoff_scmi,
+					  const u32 *phandles_scmi)
+{
+	int ret, i, idx;
+	const char *cell_name;
+	static u32 new_phandles[S32CC_SCMI_NVMEM_MAX];
+	const u32 *old_phandles;
+
+	old_phandles = (u32 *)fdt_getprop(blob, nodeoff_consumer, "nvmem-cells",
+					  NULL);
+
+	for (i = 0; i < num_phandles; i++) {
+		/* Get nvmem cell name which corresponds to a phandle */
+		cell_name = fdt_stringlist_get(blob, nodeoff_consumer,
+					       "nvmem-cell-names", i, &ret);
+		if (!cell_name) {
+			pr_err("Failed to get cell name at index %d in node '%s' (%s)\n",
+			       i, fdt_get_name(blob, nodeoff_consumer, NULL),
+			       fdt_strerror(ret));
+			return ret;
+		}
+
+		/* Find idx of 'cell_name' in nvmem node */
+		idx = fdt_stringlist_search(blob, nodeoff_scmi,
+					    "nvmem-cell-names", cell_name);
+		if (idx < 0) {
+			pr_warn("Cell '%s' not provided by '%s' node. Skipping.\n",
+				cell_name, scmi_nvmem_node_path);
+			/* No corresponding SCMI NVMEM cell, keep old cell */
+			new_phandles[i] = old_phandles[i];
+			continue;
+		}
+
+		/* Store new phandles to be written all at once */
+		new_phandles[i] = phandles_scmi[idx];
+	}
+
+	ret = fdt_setprop_inplace(blob, nodeoff_consumer, "nvmem-cells",
+				  new_phandles, num_phandles * sizeof(u32));
+	if (ret) {
+		pr_err("Failed to update 'nvmem-cells' property of '%s' (%s)\n",
+		       fdt_get_name(blob, nodeoff_consumer, NULL),
+		       fdt_strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+static int ft_fixup_scmi_nvmem(void *blob)
+{
+	int ret, nodeoff_scmi, nodeoff_consumer, num_phandles;
+	const u32 *phandles_scmi;
+
+	ret = find_nvmem_scmi_node(blob, &nodeoff_scmi, &phandles_scmi);
+	if (ret)
+		return ret;
+
+	/*
+	 * Find all nodes with "nvmem-cells" property, except the
+	 * SCMI NVMEM node
+	 */
+	nodeoff_consumer = 0;
+	while (!(ret = find_nvmem_consumer_node(blob, nodeoff_scmi,
+						&nodeoff_consumer,
+						&num_phandles))) {
+		/* Update node NVMEM phandles to point to NVMEM SCMI cells */
+		ret = update_nvmem_consumer_phandles(blob, nodeoff_consumer,
+						     num_phandles, nodeoff_scmi,
+						     phandles_scmi);
+		if (ret)
+			return ret;
+	}
+
+	if (ret && nodeoff_consumer >= 0) {
+		pr_err("Malformed node '%s' (%s)\n",
+		       fdt_get_name(blob, nodeoff_consumer, NULL),
+		       fdt_strerror(ret));
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int ft_system_setup(void *blob, bd_t *bd)
 {
 	int ret;
@@ -514,6 +685,12 @@ int ft_system_setup(void *blob, bd_t *bd)
 
 	if (CONFIG_IS_ENABLED(S32CC_SCMI_GPIO_FIXUP)) {
 		ret = enable_scmi_gpio(blob);
+		if (ret)
+			return ret;
+	}
+
+	if (CONFIG_IS_ENABLED(S32CC_SCMI_NVMEM_FIXUP)) {
+		ret = ft_fixup_scmi_nvmem(blob);
 		if (ret)
 			return ret;
 	}

@@ -41,4 +41,8 @@ config S32CC_SCMI_GPIO_FIXUP
 	bool "Device tree fixup for SCMI GPIO protocol"
 	default n
 
+config S32CC_SCMI_NVMEM_FIXUP
+	bool "Device tree fixup for SCMI NVMEM protocol"
+	default n
+
 endif
