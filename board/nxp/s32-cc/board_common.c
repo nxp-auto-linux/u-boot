@@ -29,6 +29,7 @@ void *board_fdt_blob_setup(int *err)
 
 	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32CC_MAX_DTB_SIZE);
 
+	*err = 0;
 	if (fdt_magic(dtb) != FDT_MAGIC)
 		*err = -EFAULT;
 
