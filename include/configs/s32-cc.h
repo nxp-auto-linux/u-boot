@@ -89,14 +89,14 @@
 
 #define CONFIG_HWCONFIG
 
-#define S32CC_DEFAULT_IP		"10.0.0.100"
-#define S32CC_NETMASK			"255.255.255.0"
-
 /*
  * In case U-Boot needs a ramdisk for booting over NFS
  */
 #define NFSRAMFS_ADDR			"-"
 #define NFSRAMFS_TFTP_CMD		""
+#define S32CC_IPADDR			"10.0.0.100"
+#define S32CC_NETMASK			"255.255.255.0"
+#define S32CC_SERVERIP			"10.0.0.1"
 
 #ifdef CONFIG_DWC_ETH_QOS_S32CC
 #  define GMAC_EXTRA_ENV_SETTINGS	"s32cc_gmac_mode=enable\0"\
@@ -150,7 +150,7 @@
 		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
 	"image=Image\0" \
 	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
-	"ipaddr=" S32CC_DEFAULT_IP "\0"\
+	"ipaddr=" S32CC_IPADDR "\0"\
 	"jtagboot=echo Booting using jtag...; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}\0" \
 	"jtagsdboot=echo Booting loading Linux with ramdisk from SD...; " \
@@ -213,7 +213,7 @@
 		"earlycon " EXTRA_BOOT_ARGS "\0" \
 	"ramdisk_addr=" __stringify(S32CC_RAMDISK_ADDR) "\0" \
 	"script=boot.scr\0" \
-	"serverip=10.0.0.1\0" \
+	"serverip=" S32CC_SERVERIP "\0" \
 	"update_sd_firmware_filename=fip.s32\0" \
 	"update_sd_firmware=" \
 		"if test ${ip_dyn} = yes; " \
