@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2022 NXP
+ * Copyright 2017-2023 NXP
  */
 #include <common.h>
 #include <debug_uart.h>
@@ -103,9 +103,6 @@ static void disable_qspi_mmu_entry(void)
 
 int arch_cpu_init(void)
 {
-	/* Clear the BSS. */
-	memset(__bss_start, 0, __bss_end - __bss_start);
-
 	disable_qspi_mmu_entry();
 
 	gd->flags |= GD_FLG_SKIP_RELOC;
