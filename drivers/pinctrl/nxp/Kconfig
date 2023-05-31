@@ -142,4 +142,4 @@ config PINCTRL_SCMI
 	  Say Y here to enable the pinctrl over SCMI driver.
 
 	  This provides a driver that sends all requests regarding
-	  pinmux/pinconfig to a SCP firmware.
+	  pinmux/pinconfig to a SCMI platform.
