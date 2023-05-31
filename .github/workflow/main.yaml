@@ -1,0 +1,33 @@
+name: Build u-boot
+
+on:
+  push:
+    branches:
+      - release/bsp33.0-2020.04
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev openssl device-tree-compiler
+
+      - name: Download GCC toolchain
+        run: |
+          wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz -O toolchain.tar.xz
+          tar -xf toolchain.tar.xz
+          rm toolchain.tar.xz
+
+      - name: Build u-boot
+        run: |
+          export HOME=$PWD
+          git checkout release/bsp.330-2020.04
+          export CROSS_COMPILE=$HOME/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linuxgnu/bin/aarch64-none-linux-gnu-
+          make s32g274ardb2_defconfig
+          make
