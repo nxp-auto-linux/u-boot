@@ -27,7 +27,6 @@ jobs:
       - name: Build u-boot
         run: |
           export HOME=$PWD
-          git checkout release/bsp.330-2020.04
           export CROSS_COMPILE=$HOME/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linuxgnu/bin/aarch64-none-linux-gnu-
           make s32g274ardb2_defconfig
           make
