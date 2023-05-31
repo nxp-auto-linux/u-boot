@@ -104,9 +104,6 @@ static void disable_qspi_mmu_entry(void)
 
 int arch_cpu_init(void)
 {
-	/* Clear the BSS. */
-	memset(__bss_start, 0, __bss_end - __bss_start);
-
 	disable_qspi_mmu_entry();
 
 	gd->flags |= GD_FLG_SKIP_RELOC;
