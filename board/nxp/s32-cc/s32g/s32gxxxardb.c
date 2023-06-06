@@ -5,9 +5,8 @@
 #include <common.h>
 #include <adc.h>
 #include <env.h>
-#include <nvmem.h>
+#include <soc.h>
 #include <dm/uclass.h>
-#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 #define SARADC0_CH5		5
 #define SARADC0_TOLERANCE	200
@@ -76,26 +75,28 @@ static const struct rdb_revisions rdb3_revisions[] = {
 
 static int get_board_type(enum board_type *board)
 {
+	struct udevice *soc;
+	char str[SOC_MAX_STR_SIZE];
 	int ret;
-	const char *dev_name = "siul2_0_nvram";
-	struct udevice *siul20_nvmem = NULL;
-	u32 part_number = 0;
-	struct nvmem_cell cell;
+	unsigned long part_number = 0;
 
 	if (!board)
 		return -EINVAL;
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name, &siul20_nvmem);
-	if (ret)
-		goto nvmem_err;
+	ret = soc_get(&soc);
+	if (ret) {
+		printf(":%s: Failed to get SoC (err = %d)\n", __func__, ret);
+		return ret;
+	}
 
-	ret = nvmem_cell_get_by_offset(siul20_nvmem, S32CC_SOC_PART_NO, &cell);
-	if (ret)
-		goto nvmem_err;
+	ret = soc_get_machine(soc, str, sizeof(str));
+	if (ret) {
+		printf(":%s: Failed to get SoC machine (err = %d)\n", __func__,
+		       ret);
+		return ret;
+	}
 
-	ret = nvmem_cell_read(&cell, &part_number, sizeof(part_number));
-	if (ret)
-		goto nvmem_err;
+	part_number = simple_strtoul(str, NULL, 10);
 
 	/* extract SoC family, i.e. S32G2/S32G3 */
 	while (part_number / 10)
@@ -115,9 +116,6 @@ static int get_board_type(enum board_type *board)
 	}
 
 	return 0;
-nvmem_err:
-	printf(":%s: Failed to read SIUL2 NVMEM (err = %d)\n", __func__, ret);
-	return ret;
 }
 
 static int get_adc_value(u32 *adc_value)
