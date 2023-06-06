@@ -10,8 +10,8 @@
 #include <vsprintf.h>
 #include <adc.h>
 #include <env.h>
+#include <nvmem.h>
 #include <dm/uclass.h>
-#include <s32-cc/nvmem.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
 #define SARADC0_CH5		5

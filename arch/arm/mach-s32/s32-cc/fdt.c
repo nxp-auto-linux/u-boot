@@ -8,12 +8,12 @@
 #include <env.h>
 #include <fdt_support.h>
 #include <misc.h>
+#include <nvmem.h>
 #include <asm/global_data.h>
 #include <dm/uclass.h>
 #include <linux/ioport.h>
 #include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
-#include <s32-cc/nvmem.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 
