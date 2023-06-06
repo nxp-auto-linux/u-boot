@@ -918,6 +918,9 @@ static void initcall_run_f(void)
 #if CONFIG_IS_ENABLED(SYSRESET)
 	INITCALL(print_resetinfo);
 #endif
+#if defined(CONFIG_DISPLAY_SOCINFO)
+	INITCALL(print_socinfo);
+#endif
 	/* display cpu info (and speed) */
 #if CONFIG_IS_ENABLED(DISPLAY_CPUINFO)
 	INITCALL(print_cpuinfo);
