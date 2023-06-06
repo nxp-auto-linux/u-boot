@@ -10,15 +10,15 @@
 #include <hwconfig.h>
 #include <malloc.h>
 #include <misc.h>
-#include <nvmem.h>
+#include <soc.h>
 #include <dm/uclass.h>
 #include <linux/ctype.h>
 #include <linux/ioport.h>
 #include <linux/sizes.h>
 #include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
+#include <s32-cc/s32cc_soc.h>
 #include <s32-cc/serdes_hwconfig.h>
-#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
@@ -27,6 +27,101 @@
 const static char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
 const static char *scmi_gpio_node_path = "/firmware/scmi/protocol@81";
 
+#define SOC_CPUMASK_S32G2			GENMASK(3, 0)
+#define SOC_CPUMASK_S32G2_DERIVATIVE		(BIT(0) | BIT(2))
+#define SOC_CPUMASK_S32G3			GENMASK(7, 0)
+#define SOC_CPUMASK_S32G37X_DERIVATIVE		(GENMASK(5, 4) | GENMASK(1, 0))
+#define SOC_CPUMASK_S32G35X_DERIVATIVE		(BIT(4) | BIT(0))
+#define SOC_CPUMASK_S32R			GENMASK(3, 0)
+#define SOC_MAX_CORES_PER_CLUSTER_S32G2		2
+#define SOC_MAX_CORES_PER_CLUSTER_S32G3		4
+#define SOC_MAX_CORES_PER_CLUSTER_S32R		2
+
+struct s32cc_soc_cores_info {
+	u32 max_cores_per_cluster;
+	u32 cpu_mask;
+};
+
+static const struct soc_attr s32cc_soc_cores_info_data[] = {
+	{
+		.machine = SOC_MACHINE_S32G233A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G2,
+			.cpu_mask = SOC_CPUMASK_S32G2_DERIVATIVE,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G254A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G2,
+			.cpu_mask = SOC_CPUMASK_S32G2_DERIVATIVE,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G274A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G2,
+			.cpu_mask = SOC_CPUMASK_S32G2,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G358A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G3,
+			.cpu_mask = SOC_CPUMASK_S32G35X_DERIVATIVE,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G359A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G3,
+			.cpu_mask = SOC_CPUMASK_S32G35X_DERIVATIVE,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G378A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G3,
+			.cpu_mask = SOC_CPUMASK_S32G37X_DERIVATIVE,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G379A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G3,
+			.cpu_mask = SOC_CPUMASK_S32G37X_DERIVATIVE,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G398A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G3,
+			.cpu_mask = SOC_CPUMASK_S32G3,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G399A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32G3,
+			.cpu_mask = SOC_CPUMASK_S32G3,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R455A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R,
+			.cpu_mask = SOC_CPUMASK_S32R,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R458A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R,
+			.cpu_mask = SOC_CPUMASK_S32R,
+		},
+	},
+	{ /* sentinel */ }
+};
 
 static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
 {
@@ -38,56 +133,19 @@ static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
 static int get_cores_info(u32 *max_cores_per_cluster,
 			  u32 *cpu_mask)
 {
-	int ret;
-	const char *dev_name = "siul2_0_nvram";
-	struct udevice *siul2_nvmem = NULL;
-	struct nvmem_cell cell;
+	const struct soc_attr *soc_match_data;
+	const struct s32cc_soc_cores_info *s32cc_match_data;
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name,
-					&siul2_nvmem);
-	if (ret) {
-		printf("%s: No SIUL21 NVMEM (err = %d)\n", __func__, ret);
-		return ret;
-	}
-
-	ret = nvmem_cell_get_by_offset(siul2_nvmem,
-				       S32CC_MAX_A53_CORES_PER_CLUSTER,
-				       &cell);
-	if (ret) {
-		printf("%s: Failed to get A53 cores per cluster cell (err = %d)\n",
-		       __func__, ret);
-		return -ENODEV;
-	}
-
-	ret = nvmem_cell_read(&cell, max_cores_per_cluster,
-			      sizeof(*max_cores_per_cluster));
-	if (ret) {
-		printf("%s: Failed to read A53 cores per cluster cell (err = %d)\n",
-		       __func__, ret);
+	soc_match_data = soc_device_match(s32cc_soc_cores_info_data);
+	if (!soc_match_data)
 		return -EINVAL;
-	}
 
-	if (!(*max_cores_per_cluster)) {
-		printf("%s: Number of max cores per cluster cannot be 0\n",
-		       __func__);
-		return -EINVAL;
-	}
+	s32cc_match_data = (struct s32cc_soc_cores_info *)soc_match_data->data;
+	*max_cores_per_cluster = s32cc_match_data->max_cores_per_cluster;
+	*cpu_mask = s32cc_match_data->cpu_mask;
 
-	ret = nvmem_cell_get_by_offset(siul2_nvmem,
-				       S32CC_A53_CORES_MASK,
-				       &cell);
-	if (ret) {
-		printf("%s: Failed to get A53 cores mask cell (err = %d)\n",
-		       __func__, ret);
-		return -ENODEV;
-	}
-
-	ret = nvmem_cell_read(&cell, cpu_mask, sizeof(*cpu_mask));
-	if (ret) {
-		printf("%s: Failed to read A53 cores mask cell (err = %d)\n",
-		       __func__, ret);
-		return -EINVAL;
-	}
+	debug("%s: max_cores_per_cluster = %u, cpu_mask = 0x%x\n",
+	      __func__, *max_cores_per_cluster, *cpu_mask);
 
 	return 0;
 }

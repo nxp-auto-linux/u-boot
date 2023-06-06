@@ -6,15 +6,15 @@
 #include <common.h>
 #include <command.h>
 #include <misc.h>
-#include <nvmem.h>
+#include <soc.h>
 #include <asm/io.h>
 #include <dm/uclass.h>
-#include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
+#include <s32-cc/s32cc_soc.h>
 
-#define S32_SRAM_6M	(6 * SZ_1M)
-#define S32_SRAM_8M	(8 * SZ_1M)
-#define S32_SRAM_15M	(15 * SZ_1M)
-#define S32_SRAM_20M	(20 * SZ_1M)
+#define S32CC_SRAM_6M	(6 * SZ_1M)
+#define S32CC_SRAM_8M	(8 * SZ_1M)
+#define S32CC_SRAM_15M	(15 * SZ_1M)
+#define S32CC_SRAM_20M	(20 * SZ_1M)
 
 #define MC_ME_BASE_ADDR			(0x40088000)
 #define MC_RGM_BASE_ADDR		(0x40078000)
@@ -64,68 +64,94 @@
 
 #define MC_ME_CM7_PRTN		(0)
 
-static u32 get_sram_size(void)
+struct s32cc_soc_sram_size {
+	u32 sram_size;
+};
+
+static const struct soc_attr s32cc_soc_sram_size_data[] = {
+	{
+		.machine = SOC_MACHINE_S32G233A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_6M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G254A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_8M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G274A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_8M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G358A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_15M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G359A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_20M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G378A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_15M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G379A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_20M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G398A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_15M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32G399A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_20M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R455A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_8M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R458A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_8M,
+		},
+	},
+	{ /* sentinel */ }
+};
+
+static int get_sram_size(u32 *sram_size)
 {
-	int ret;
-	const char *dev_name = "siul2_0_nvram";
-	struct udevice *siul20_nvmem = NULL;
-	u32 letter = 0, part_number = 0;
-	struct nvmem_cell cell;
+	const struct soc_attr *soc_match_data;
+	const struct s32cc_soc_sram_size *s32cc_match_data;
 
-	ret = uclass_get_device_by_name(UCLASS_MISC, dev_name,
-					&siul20_nvmem);
-	if (ret)
-		goto nvmem_err;
+	soc_match_data = soc_device_match(s32cc_soc_sram_size_data);
+	if (!soc_match_data)
+		return -EINVAL;
 
-	ret = nvmem_cell_get_by_offset(siul20_nvmem,
-				       S32CC_SOC_LETTER,
-				       &cell);
-	if (ret)
-		goto nvmem_err;
+	s32cc_match_data = (struct s32cc_soc_sram_size *)soc_match_data->data;
+	*sram_size = s32cc_match_data->sram_size;
 
-	ret = nvmem_cell_read(&cell, &letter, sizeof(letter));
-	if (ret)
-		goto nvmem_err;
+	debug("%s: SRAM size: %u\n", __func__, *sram_size);
 
-	ret = nvmem_cell_get_by_offset(siul20_nvmem,
-				       S32CC_SOC_PART_NO,
-				       &cell);
-	if (ret)
-		goto nvmem_err;
-
-	ret = nvmem_cell_read(&cell, &part_number, sizeof(part_number));
-	if (ret)
-		goto nvmem_err;
-
-	if ((char)letter == 'G') {
-		switch (part_number) {
-		case 233:
-			return S32_SRAM_6M;
-
-		case 274:
-		case 254:
-			return S32_SRAM_8M;
-
-		case 398:
-		case 378:
-			return S32_SRAM_15M;
-
-		case 399:
-		case 379:
-			return S32_SRAM_20M;
-
-		default:
-			printf("%s: %u is not a valid part number\n",
-			       __func__, part_number);
-			return 0;
-		}
-	} else if ((char)letter == 'R') {
-		return S32_SRAM_8M;
-	}
-
-nvmem_err:
-	printf("%s: Failed to read SIUL2 NVMEM (err = %d)\n",
-	       __func__, ret);
 	return 0;
 }
 
@@ -134,6 +160,7 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	u32 coreid = 0, sram_size;
 	unsigned long addr;
 	char *ep = NULL;
+	int ret;
 
 	if (argc < 2)
 		return CMD_RET_USAGE;
@@ -142,8 +169,8 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (ep == argv[1] || *ep != '\0')
 		return CMD_RET_USAGE;
 
-	sram_size = get_sram_size();
-	if (!sram_size) {
+	ret = get_sram_size(&sram_size);
+	if (ret) {
 		printf("ERROR: Could not get SRAM size\n");
 		return CMD_RET_FAILURE;
 	}
