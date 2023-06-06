@@ -467,6 +467,14 @@ config BOARD_TYPES
 	  displayed immediately after the model is shown on the console
 	  early in boot.
 
+config DISPLAY_SOCINFO
+	bool "Display information about the SoC during start up"
+	default y if SOC_DEVICE
+	help
+	  Display information about the SoC that U-Boot is running on
+	  when U-Boot starts up. The function print_socinfo() is called
+	  to do this.
+
 config DISPLAY_CPUINFO
 	bool "Display information about the CPU during start up"
 	default y if ARC|| ARM || NIOS2 || X86 || XTENSA || M68K
