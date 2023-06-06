@@ -119,6 +119,29 @@ static u32 adjust_freq(u32 value, struct siul2_nvram *nvram)
 		[9] = 600,
 		[10] = 800,
 		[11] = 1000,
+		[12] = 1200,
+	};
+
+	if (value < ARRAY_SIZE(freqs))
+		return freqs[value];
+
+	return 0;
+}
+
+static u32 adjust_s32g3_freq(u32 value, struct siul2_nvram *nvram)
+{
+	static const u32 freqs[] = {
+		[1] = 64,
+		[2] = 80,
+		[3] = 120,
+		[4] = 160,
+		[5] = 240,
+		[6] = 320,
+		[7] = 340,
+		[8] = 400,
+		[9] = 600,
+		[10] = 800,
+		[11] = 1000,
 		[12] = 1100,
 		[14] = 1300,
 	};
@@ -358,6 +381,17 @@ static const struct siul_mapping s32g2_siul21_mappings[] = {
 	},
 };
 
+static const struct siul_mapping s32g3_siul20_mappings[] = {
+	{
+		.nvram_off = S32CC_MAX_CORE_FREQ,
+		.siul2_off = MIDR2_OFF,
+		.mask = CORE_FREQ_MASK,
+		.shift = CORE_FREQ_SHIFT,
+		.adjust_value = adjust_s32g3_freq,
+	},
+
+};
+
 static const struct siul_plat siul20_plat = {
 	.mappings = &siul20_mappings[0],
 	.n_mappings = ARRAY_SIZE(siul20_mappings),
@@ -393,7 +427,7 @@ static const struct siul_plat s32g2_siul21_plat = {
 };
 
 static const struct siul_plat s32g3_siul20_plat = {
-	.mappings = &s32g_siul20_mappings[0],
+	.mappings = &s32g3_siul20_mappings[0],
 	.n_mappings = ARRAY_SIZE(s32g_siul20_mappings),
 	.next = &s32g_siul20_plat,
 };
