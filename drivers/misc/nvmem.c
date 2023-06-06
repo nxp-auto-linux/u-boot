@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2022 Sean Anderson <sean.anderson@seco.com>
+ *
+ * Copyright 2023 NXP
  */
 
 #include <common.h>
@@ -139,4 +141,42 @@ int nvmem_cell_get_by_name(struct udevice *dev, const char *name,
 		return index;
 
 	return nvmem_cell_get_by_index(dev, index, cell);
+}
+
+int nvmem_cell_get_by_offset(struct udevice *dev, unsigned int offset,
+			     struct nvmem_cell *cell)
+{
+	fdt_addr_t cell_addr;
+	fdt_size_t cell_size = FDT_SIZE_T_NONE;
+	ofnode subnode;
+	bool found = false;
+
+	dev_dbg(dev, "%s: offset=%u\n", __func__, offset);
+
+	if (!cell)
+		return -EINVAL;
+
+	ofnode_for_each_subnode(subnode, dev_ofnode(dev)) {
+		cell_addr = ofnode_get_addr_size_index_notrans(subnode, 0,
+							       &cell_size);
+		if (cell_addr == FDT_ADDR_T_NONE) {
+			dev_err(dev, "Invalid DTB: missing address for %s\n",
+				ofnode_get_name(subnode));
+			return -EINVAL;
+		}
+
+		if ((unsigned int)cell_addr == offset) {
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+		return -ENOENT;
+
+	cell->size = cell_size;
+	cell->offset = offset;
+	cell->nvmem = dev;
+
+	return 0;
 }
