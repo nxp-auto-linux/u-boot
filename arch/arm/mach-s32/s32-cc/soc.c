@@ -4,6 +4,8 @@
  */
 #include <common.h>
 #include <debug_uart.h>
+#include <init.h>
+#include <soc.h>
 #include <asm/global_data.h>
 #include <asm/sections.h>
 #include <asm/system.h>
@@ -114,7 +116,7 @@ int arch_cpu_init(void)
 	return 0;
 }
 
-void cpu_secondary_init_r(void)
+int cpu_secondary_init_r(void)
 {
 	int ret;
 
@@ -124,7 +126,42 @@ void cpu_secondary_init_r(void)
 	 */
 	if (IS_ENABLED(CONFIG_OF_LIVE)) {
 		ret = apply_dm_hwconfig_fixups();
-		if (ret)
+		if (ret) {
 			pr_err("Failed to apply HWCONFIG fixups\n");
+			return ret;
+		}
 	}
+
+	return 0;
+}
+
+int print_socinfo(void)
+{
+	struct udevice *soc;
+	char str[SOC_MAX_STR_SIZE];
+	int ret;
+
+	printf("SoC:   ");
+
+	ret = soc_get(&soc);
+	if (ret) {
+		printf("Unknown\n");
+		return 0;
+	}
+
+	ret = soc_get_family(soc, str, sizeof(str));
+	if (!ret)
+		printf("%s", str);
+
+	ret = soc_get_machine(soc, str, sizeof(str));
+	if (!ret)
+		printf("%s", str);
+
+	ret = soc_get_revision(soc, str, sizeof(str));
+	if (!ret)
+		printf(" rev. %s", str);
+
+	printf("\n");
+
+	return 0;
 }
