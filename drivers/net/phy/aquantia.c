@@ -3,7 +3,7 @@
  * Aquantia PHY drivers
  *
  * Copyright 2014 Freescale Semiconductor, Inc.
- * Copyright 2018, 2021 NXP
+ * Copyright 2018, 2021, 2023 NXP
  */
 #include <config.h>
 #include <dm.h>
@@ -662,6 +662,20 @@ U_BOOT_PHY_DRIVER(aqr107) = {
 U_BOOT_PHY_DRIVER(aqr112) = {
 	.name = "Aquantia AQR112",
 	.uid = 0x3a1b660,
+	.mask = 0xfffffff0,
+	.features = PHY_10G_FEATURES,
+	.mmds = (MDIO_MMD_PMAPMD | MDIO_MMD_PCS |
+		 MDIO_MMD_PHYXS | MDIO_MMD_AN |
+		 MDIO_MMD_VEND1),
+	.config = &aquantia_config,
+	.startup = &aquantia_startup,
+	.shutdown = &gen10g_shutdown,
+	.data = AQUANTIA_GEN3,
+};
+
+U_BOOT_PHY_DRIVER(aqr113) = {
+	.name = "Aquantia AQR113",
+	.uid = 0x31c31c42,
 	.mask = 0xfffffff0,
 	.features = PHY_10G_FEATURES,
 	.mmds = (MDIO_MMD_PMAPMD | MDIO_MMD_PCS |
