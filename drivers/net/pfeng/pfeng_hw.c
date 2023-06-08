@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL 2.0
 /*
  *  Copyright (c) 2020 Imagination Technologies Limited
- *  Copyright 2018-2022 NXP
+ *  Copyright 2018-2023 NXP
  */
 
 /**
@@ -1260,10 +1260,8 @@ static void pfeng_hw_deinit_bmu(struct pfe_platform *platform)
 	platform->bmu_base = NULL;
 
 free_return:
-	if (platform->bmu_buffers_va) {
-		free(platform->bmu_buffers_va);
-		platform->bmu_buffers_va = NULL;
-	}
+	if (platform->bmu_buffers_va)
+		platform->bmu_buffers_va = NULL; /* not malloc'ed */
 }
 
 static int
