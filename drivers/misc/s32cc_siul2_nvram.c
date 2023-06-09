@@ -48,9 +48,9 @@
 #define S32R_PART_NO_MIN	450
 
 #define CPUMASK_S32G2				GENMASK(3, 0)
-#define CPUMASK_S32G2_DERIVATIVE	(BIT(0) | BIT(2))
+#define CPUMASK_S32G2_DERIVATIVE		(BIT(0) | BIT(2))
 #define CPUMASK_S32G3				GENMASK(7, 0)
-#define CPUMASK_S32G3_DERIVATIVE	GENMASK(3, 0)
+#define CPUMASK_S32G37X_DERIVATIVE		(GENMASK(5, 4) | GENMASK(1, 0))
 #define CPUMASK_S32R				GENMASK(3, 0)
 
 struct siul2_nvram;
@@ -203,7 +203,7 @@ static u32 adjust_s32g_derivative_cores(u32 value,
 		if (perf_id == 9)
 			return CPUMASK_S32G3;
 		else if (perf_id == 7)
-			return CPUMASK_S32G3_DERIVATIVE;
+			return CPUMASK_S32G37X_DERIVATIVE;
 	} else if (series == 2) {
 		if (perf_id == 3 || perf_id == 5)
 			return CPUMASK_S32G2_DERIVATIVE;
