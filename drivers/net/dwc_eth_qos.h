@@ -187,6 +187,7 @@ struct eqos_dma_regs {
 #define EQOS_DMA_SYSBUS_MODE_BLEN8			BIT(2)
 #define EQOS_DMA_SYSBUS_MODE_BLEN4			BIT(1)
 
+#define EQOS_DMA_CH0_CONTROL_DSL_SHIFT			18
 #define EQOS_DMA_CH0_CONTROL_PBLX8			BIT(16)
 
 #define EQOS_DMA_CH0_TX_CONTROL_TXPBL_SHIFT		16
@@ -218,15 +219,11 @@ struct eqos_tegra186_regs {
 
 /* Descriptors */
 
-#define EQOS_DESCRIPTOR_WORDS	4
-#define EQOS_DESCRIPTOR_SIZE	(EQOS_DESCRIPTOR_WORDS * 4)
 /* We assume ARCH_DMA_MINALIGN >= 16; 16 is the EQOS HW minimum */
 #define EQOS_DESCRIPTOR_ALIGN	ARCH_DMA_MINALIGN
 #define EQOS_DESCRIPTORS_TX	4
 #define EQOS_DESCRIPTORS_RX	4
 #define EQOS_DESCRIPTORS_NUM	(EQOS_DESCRIPTORS_TX + EQOS_DESCRIPTORS_RX)
-#define EQOS_DESCRIPTORS_SIZE	ALIGN(EQOS_DESCRIPTORS_NUM * \
-				      EQOS_DESCRIPTOR_SIZE, ARCH_DMA_MINALIGN)
 #define EQOS_BUFFER_ALIGN	ARCH_DMA_MINALIGN
 #define EQOS_MAX_PACKET_SIZE	ALIGN(1568, ARCH_DMA_MINALIGN)
 #define EQOS_RX_BUFFER_SIZE	(EQOS_DESCRIPTORS_RX * EQOS_MAX_PACKET_SIZE)
@@ -243,6 +240,10 @@ struct eqos_desc {
 #define EQOS_DESC3_LD		BIT(28)
 #define EQOS_DESC3_BUF1V	BIT(24)
 
+#define EQOS_AXI_WIDTH_32	4
+#define EQOS_AXI_WIDTH_64	8
+#define EQOS_AXI_WIDTH_128	16
+
 struct eqos_config {
 	bool reg_access_always_ok;
 	int mdio_wait;
@@ -251,6 +252,7 @@ struct eqos_config {
 	u32 rx_fifo_size;
 	int config_mac;
 	int config_mac_mdio;
+	unsigned int axi_bus_width;
 	u32 config_phy_addr;
 	phy_interface_t (*interface)(struct udevice *dev);
 	struct eqos_ops *ops;
@@ -300,9 +302,8 @@ struct eqos_priv {
 	u32 phy_addr;
 	u32 max_speed;
 	void *descs;
-	struct eqos_desc *tx_descs;
-	struct eqos_desc *rx_descs;
 	int tx_desc_idx, rx_desc_idx;
+	unsigned int desc_size;
 	void *tx_dma_buf;
 	void *rx_dma_buf;
 	void *rx_pkt;

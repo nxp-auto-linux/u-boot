@@ -49,24 +49,6 @@
 static int num_cards;
 
 /*
- * Warn if the cache-line size is larger than the descriptor size. In such
- * cases the driver will likely fail because the CPU needs to flush the cache
- * when requeuing RX buffers, therefore descriptors written by the hardware
- * may be discarded. Architectures with full IO coherence, such as x86, do not
- * experience this issue, and hence are excluded from this condition.
- *
- * This can be fixed by defining CONFIG_SYS_NONCACHED_MEMORY which will cause
- * the driver to allocate descriptors from a pool of non-cached memory.
- */
-#if EQOS_DESCRIPTOR_SIZE < ARCH_DMA_MINALIGN
-#if !defined(CONFIG_SYS_NONCACHED_MEMORY) && \
-	!defined(CONFIG_SYS_DCACHE_OFF) && !defined(CONFIG_X86) && \
-	!defined(CONFIG_ARM)
-#warning Cache line size is larger than descriptor size
-#endif
-#endif
-
-/*
  * TX and RX descriptors are 16 bytes. This causes problems with the cache
  * maintenance on CPUs where the cache-line size exceeds the size of these
  * descriptors. What will happen is that when the driver receives a packet
@@ -84,45 +66,42 @@ static int num_cards;
  * not have the same constraints since they are 1536 bytes large, so they
  * are unlikely to share cache-lines.
  */
-static void *eqos_alloc_descs(unsigned int num)
+static void *eqos_alloc_descs(struct eqos_priv *eqos, unsigned int num)
 {
-#ifdef CONFIG_SYS_NONCACHED_MEMORY
-	return (void *)noncached_alloc(EQOS_DESCRIPTORS_SIZE,
-				      EQOS_DESCRIPTOR_ALIGN);
-#else
-	return memalign(EQOS_DESCRIPTOR_ALIGN, EQOS_DESCRIPTORS_SIZE);
-#endif
+	eqos->desc_size = ALIGN(sizeof(struct eqos_desc),
+				(unsigned int)ARCH_DMA_MINALIGN);
+
+	return memalign(eqos->desc_size, num * eqos->desc_size);
 }
 
 static void eqos_free_descs(void *descs)
 {
-#ifdef CONFIG_SYS_NONCACHED_MEMORY
-	/* FIXME: noncached_alloc() has no opposite */
-#else
 	free(descs);
-#endif
+}
+
+static struct eqos_desc *eqos_get_desc(struct eqos_priv *eqos,
+				       unsigned int num, bool rx)
+{
+	return eqos->descs +
+		((rx ? EQOS_DESCRIPTORS_TX : 0) + num) * eqos->desc_size;
 }
 
 void eqos_inval_desc_generic(void *desc)
 {
-#ifndef CONFIG_SYS_NONCACHED_MEMORY
-	unsigned long start = rounddown((unsigned long)desc, ARCH_DMA_MINALIGN);
-	unsigned long end = roundup((unsigned long)desc + EQOS_DESCRIPTOR_SIZE,
-				    ARCH_DMA_MINALIGN);
+	unsigned long start = (unsigned long)desc;
+	unsigned long end = ALIGN(start + sizeof(struct eqos_desc),
+				  ARCH_DMA_MINALIGN);
 
 	invalidate_dcache_range(start, end);
-#endif
 }
 
 void eqos_flush_desc_generic(void *desc)
 {
-#ifndef CONFIG_SYS_NONCACHED_MEMORY
-	unsigned long start = rounddown((unsigned long)desc, ARCH_DMA_MINALIGN);
-	unsigned long end = roundup((unsigned long)desc + EQOS_DESCRIPTOR_SIZE,
-				    ARCH_DMA_MINALIGN);
+	unsigned long start = (unsigned long)desc;
+	unsigned long end = ALIGN(start + sizeof(struct eqos_desc),
+				  ARCH_DMA_MINALIGN);
 
 	flush_dcache_range(start, end);
-#endif
 }
 
 void eqos_inval_buffer_generic(void *buf, size_t size)
@@ -444,6 +423,7 @@ static int eqos_start(struct udevice *dev)
 	ulong rate;
 	u32 val, tx_fifo_sz, rx_fifo_sz, tqs, rqs, pbl;
 	ulong last_rx_desc;
+	ulong desc_pad;
 
 	debug("%s(dev=%p):\n", __func__, dev);
 
@@ -673,8 +653,12 @@ static int eqos_start(struct udevice *dev)
 			EQOS_MAX_PACKET_SIZE <<
 			EQOS_DMA_CH0_RX_CONTROL_RBSZ_SHIFT);
 
+	desc_pad = (eqos->desc_size - sizeof(struct eqos_desc)) /
+		   eqos->config->axi_bus_width;
+
 	setbits_le32(&eqos->dma_regs->ch0_control,
-		     EQOS_DMA_CH0_CONTROL_PBLX8);
+		     EQOS_DMA_CH0_CONTROL_PBLX8 |
+		     (desc_pad << EQOS_DMA_CH0_CONTROL_DSL_SHIFT));
 
 	/*
 	 * Burst length must be < 1/2 FIFO size.
@@ -703,9 +687,17 @@ static int eqos_start(struct udevice *dev)
 
 	/* Set up descriptors */
 
-	memset(eqos->descs, 0, EQOS_DESCRIPTORS_SIZE);
+	memset(eqos->descs, 0, eqos->desc_size * EQOS_DESCRIPTORS_NUM);
+
+	for (i = 0; i < EQOS_DESCRIPTORS_TX; i++) {
+		struct eqos_desc *tx_desc = eqos_get_desc(eqos, i, false);
+
+		eqos->config->ops->eqos_flush_desc(tx_desc);
+	}
+
 	for (i = 0; i < EQOS_DESCRIPTORS_RX; i++) {
-		struct eqos_desc *rx_desc = &(eqos->rx_descs[i]);
+		struct eqos_desc *rx_desc = eqos_get_desc(eqos, i, true);
+
 		rx_desc->des0 = (u32)(ulong)(eqos->rx_dma_buf +
 					     (i * EQOS_MAX_PACKET_SIZE));
 		rx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
@@ -714,12 +706,14 @@ static int eqos_start(struct udevice *dev)
 	eqos->config->ops->eqos_flush_desc(eqos->descs);
 
 	writel(0, &eqos->dma_regs->ch0_txdesc_list_haddress);
-	writel((ulong)eqos->tx_descs, &eqos->dma_regs->ch0_txdesc_list_address);
+	writel((ulong)eqos_get_desc(eqos, 0, false),
+	       &eqos->dma_regs->ch0_txdesc_list_address);
 	writel(EQOS_DESCRIPTORS_TX - 1,
 	       &eqos->dma_regs->ch0_txdesc_ring_length);
 
 	writel(0, &eqos->dma_regs->ch0_rxdesc_list_haddress);
-	writel((ulong)eqos->rx_descs, &eqos->dma_regs->ch0_rxdesc_list_address);
+	writel((ulong)eqos_get_desc(eqos, 0, true),
+	       &eqos->dma_regs->ch0_rxdesc_list_address);
 	writel(EQOS_DESCRIPTORS_RX - 1,
 	       &eqos->dma_regs->ch0_rxdesc_ring_length);
 
@@ -740,7 +734,7 @@ static int eqos_start(struct udevice *dev)
 	 * that's not distinguishable from none of the descriptors being
 	 * available.
 	 */
-	last_rx_desc = (ulong)&(eqos->rx_descs[(EQOS_DESCRIPTORS_RX - 1)]);
+	last_rx_desc = (ulong)eqos_get_desc(eqos, EQOS_DESCRIPTORS_RX - 1, true);
 	writel(last_rx_desc, &eqos->dma_regs->ch0_rxdesc_tail_pointer);
 
 	eqos->started = true;
@@ -825,7 +819,7 @@ static int eqos_send(struct udevice *dev, void *packet, int length)
 	memcpy(eqos->tx_dma_buf, packet, length);
 	eqos->config->ops->eqos_flush_buffer(eqos->tx_dma_buf, length);
 
-	tx_desc = &(eqos->tx_descs[eqos->tx_desc_idx]);
+	tx_desc = eqos_get_desc(eqos, eqos->tx_desc_idx, false);
 	eqos->tx_desc_idx++;
 	eqos->tx_desc_idx %= EQOS_DESCRIPTORS_TX;
 
@@ -840,8 +834,8 @@ static int eqos_send(struct udevice *dev, void *packet, int length)
 	tx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_FD | EQOS_DESC3_LD | length;
 	eqos->config->ops->eqos_flush_desc(tx_desc);
 
-	writel((ulong)(&(eqos->tx_descs[eqos->tx_desc_idx])),
-		&eqos->dma_regs->ch0_txdesc_tail_pointer);
+	writel((ulong)eqos_get_desc(eqos, eqos->tx_desc_idx, false),
+	       &eqos->dma_regs->ch0_txdesc_tail_pointer);
 
 	for (i = 0; i < 1000000; i++) {
 		eqos->config->ops->eqos_inval_desc(tx_desc);
@@ -863,14 +857,14 @@ static int eqos_recv(struct udevice *dev, int flags, uchar **packetp)
 
 	debug("%s(dev=%p, flags=%x):\n", __func__, dev, flags);
 
-	rx_desc = &(eqos->rx_descs[eqos->rx_desc_idx]);
+	rx_desc = eqos_get_desc(eqos, eqos->rx_desc_idx, true);
 
 	eqos->config->ops->eqos_inval_desc(rx_desc);
 
 	if (rx_desc->des3 & EQOS_DESC3_OWN) {
 		int n = (eqos->rx_desc_idx + 1) % EQOS_DESCRIPTORS_RX;
 
-		rx_desc = &eqos->rx_descs[n];
+		rx_desc = eqos_get_desc(eqos, n, true);
 		eqos->config->ops->eqos_inval_desc(rx_desc);
 
 		if (rx_desc->des3 & EQOS_DESC3_OWN) {
@@ -907,7 +901,7 @@ static int eqos_free_pkt(struct udevice *dev, uchar *packet, int length)
 		return -EINVAL;
 	}
 
-	rx_desc = &(eqos->rx_descs[eqos->rx_desc_idx]);
+	rx_desc = eqos_get_desc(eqos, eqos->rx_desc_idx, true);
 
 	rx_desc->des0 = 0;
 	/*
@@ -943,17 +937,12 @@ static int eqos_probe_resources_core(struct udevice *dev)
 
 	debug("%s(dev=%p):\n", __func__, dev);
 
-	eqos->descs = eqos_alloc_descs(EQOS_DESCRIPTORS_TX +
-				       EQOS_DESCRIPTORS_RX);
+	eqos->descs = eqos_alloc_descs(eqos, EQOS_DESCRIPTORS_NUM);
 	if (!eqos->descs) {
 		debug("%s: eqos_alloc_descs() failed\n", __func__);
 		ret = -ENOMEM;
 		goto err;
 	}
-	eqos->tx_descs = (struct eqos_desc *)eqos->descs;
-	eqos->rx_descs = (eqos->tx_descs + EQOS_DESCRIPTORS_TX);
-	debug("%s: tx_descs=%p, rx_descs=%p\n", __func__, eqos->tx_descs,
-	      eqos->rx_descs);
 
 	eqos->tx_dma_buf = memalign(EQOS_BUFFER_ALIGN, EQOS_MAX_PACKET_SIZE);
 	if (!eqos->tx_dma_buf) {

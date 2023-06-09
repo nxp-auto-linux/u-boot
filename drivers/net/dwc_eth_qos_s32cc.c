@@ -519,6 +519,7 @@ struct eqos_config eqos_s32cc_config = {
 	.rx_fifo_size = 20480,
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
 	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
+	.axi_bus_width = EQOS_AXI_WIDTH_64,
 	.interface = eqos_get_interface_s32cc,
 	.ops = &eqos_s32cc_ops
 };

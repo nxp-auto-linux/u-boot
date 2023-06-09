@@ -300,6 +300,7 @@ struct eqos_config eqos_stm32_config = {
 	.swr_wait = 50,
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_AV,
 	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_250_300,
+	.axi_bus_width = EQOS_AXI_WIDTH_64,
 	.interface = eqos_get_interface_stm32,
 	.ops = &eqos_stm32_ops
 };

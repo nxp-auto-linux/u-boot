@@ -369,6 +369,7 @@ struct eqos_config eqos_tegra186_config = {
 	.swr_wait = 10,
 	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
 	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_20_35,
+	.axi_bus_width = EQOS_AXI_WIDTH_128,
 	.interface = eqos_get_interface_tegra186,
 	.ops = &eqos_tegra186_ops
 };
