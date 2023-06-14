@@ -130,7 +130,7 @@ config BAUDRATE
 endif
 
 config ENV_OFFSET
-	default 0x1e0000
+	default 0x280000
 
 config SF_DEFAULT_BUS
 	default 6
