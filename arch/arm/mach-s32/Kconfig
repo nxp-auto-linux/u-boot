@@ -83,6 +83,7 @@ config NXP_S32CC
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
 	select SCMI_GPIO
+	select SCMI_NVMEM
 	select PINCTRL_SCMI
 	select SOC_DEVICE
 	select SYSRESET
