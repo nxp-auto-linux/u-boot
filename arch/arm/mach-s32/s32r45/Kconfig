@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if ARCH_S32R45
 
@@ -17,6 +17,7 @@ config TARGET_S32R45EVB
 	imply CMD_EEPROM
 	imply I2C_EEPROM
 	imply NXP_S32CC_BOARD_COMMON
+	imply PHY_AQUANTIA
 	imply PHY_FIXED
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
