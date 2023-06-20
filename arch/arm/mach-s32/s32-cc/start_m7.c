@@ -6,15 +6,8 @@
 #include <common.h>
 #include <command.h>
 #include <misc.h>
-#include <soc.h>
 #include <asm/io.h>
 #include <dm/uclass.h>
-#include <s32-cc/s32cc_soc.h>
-
-#define S32CC_SRAM_6M	(6 * SZ_1M)
-#define S32CC_SRAM_8M	(8 * SZ_1M)
-#define S32CC_SRAM_15M	(15 * SZ_1M)
-#define S32CC_SRAM_20M	(20 * SZ_1M)
 
 #define MC_ME_BASE_ADDR			(0x40088000)
 #define MC_RGM_BASE_ADDR		(0x40078000)
@@ -64,103 +57,11 @@
 
 #define MC_ME_CM7_PRTN		(0)
 
-struct s32cc_soc_sram_size {
-	u32 sram_size;
-};
-
-static const struct soc_attr s32cc_soc_sram_size_data[] = {
-	{
-		.machine = SOC_MACHINE_S32G233A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_6M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G254A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_8M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G274A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_8M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G358A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_15M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G359A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_20M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G378A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_15M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G379A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_20M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G398A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_15M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32G399A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_20M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32R455A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_8M,
-		},
-	},
-	{
-		.machine = SOC_MACHINE_S32R458A,
-		.data = &(struct s32cc_soc_sram_size) {
-			.sram_size = S32CC_SRAM_8M,
-		},
-	},
-	{ /* sentinel */ }
-};
-
-static int get_sram_size(u32 *sram_size)
-{
-	const struct soc_attr *soc_match_data;
-	const struct s32cc_soc_sram_size *s32cc_match_data;
-
-	soc_match_data = soc_device_match(s32cc_soc_sram_size_data);
-	if (!soc_match_data)
-		return -EINVAL;
-
-	s32cc_match_data = (struct s32cc_soc_sram_size *)soc_match_data->data;
-	*sram_size = s32cc_match_data->sram_size;
-
-	debug("%s: SRAM size: %u\n", __func__, *sram_size);
-
-	return 0;
-}
-
 static int do_startm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 {
-	u32 coreid = 0, sram_size;
+	u32 coreid = 0;
 	unsigned long addr;
 	char *ep = NULL;
-	int ret;
 
 	if (argc < 2)
 		return CMD_RET_USAGE;
@@ -168,18 +69,6 @@ static int do_startm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const ar
 	addr = simple_strtoul(argv[1], &ep, 16);
 	if (ep == argv[1] || *ep != '\0')
 		return CMD_RET_USAGE;
-
-	ret = get_sram_size(&sram_size);
-	if (ret) {
-		printf("ERROR: Could not get SRAM size\n");
-		return CMD_RET_FAILURE;
-	}
-
-	if (addr < S32CC_SRAM_BASE || addr >= S32CC_SRAM_BASE + sram_size) {
-		printf("ERROR: Address 0x%08lX is not in internal SRAM ...\n",
-		       addr);
-		return CMD_RET_USAGE;
-	}
 
 	printf("Starting CM7_%d core at SRAM address 0x%08lX ... ",
 	       coreid, addr);
