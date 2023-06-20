@@ -9,14 +9,29 @@ config DEFAULT_DEVICE_TREE
 config BUILD_TARGET
 	default "u-boot-s32.cfgout"
 
+config CUSTOM_SYS_TEXT_BASE
+	bool "Use a custom SYS_TEXT_BASE"
+	help
+	  Enable this if you need to use a custom SYS_TEXT_BASE address.
+	  When disabled, a suitable SYS_TEXT_BASE address will be calculated
+	  automatically.
+
 config SYS_TEXT_BASE
+	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
 	default 0xffaa0000
 
 config SYS_LOAD_ADDR
 	default 0x80000000
 
+config CUSTOM_SYS_DATA_BASE
+	bool "Use a custom SYS_DATA_BASE address"
+	help
+	  Enable this if you need to define a custom SYS_DATA_BASE address.
+	  When disabled, a suitable SYS_DATA_BASE address is calculated
+	  automatically.
+
 config SYS_DATA_BASE
-	hex "Data Base"
+	hex "Data Base" if CUSTOM_SYS_DATA_BASE
 	default 0xffa00000
 	help
 	  U-Boot data base address in DDR.
