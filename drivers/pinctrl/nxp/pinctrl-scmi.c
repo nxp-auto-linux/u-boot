@@ -950,58 +950,60 @@ static int scmi_pinctrl_get_pin_ranges(struct udevice *dev,
 				       struct udevice *scmi_dev)
 {
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
+	u8 buffer[SCMI_MAX_BUFFER_SIZE];
+	struct {
+		u32 range_index;
+	} request;
 	struct {
 		s32 status;
+		u32 no_ranges;
 		struct pr {
 			u16 begin;
 			u16 no_pins;
 		} pin_ranges[];
-	} *response;
+	} *response = (void *)buffer;
 	struct scmi_msg msg = {
 		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
 		.message_id	= SCMI_PINCTRL_DESCRIBE,
-		.in_msg		= NULL,
-		.in_msg_sz	= 0,
+		.in_msg		= (u8 *)&request,
+		.in_msg_sz	= sizeof(request),
+		.out_msg	= buffer,
+		.out_msg_sz	= ARRAY_SIZE(buffer),
 	};
-	size_t out_msg_sz;
-	int i, ret;
-
-	out_msg_sz = sizeof(*response) + priv->num_ranges * sizeof(struct pr);
-
-	response = malloc(out_msg_sz);
-	if (!response) {
-		pr_err("Error allocating memory!\n");
-		ret = -ENOMEM;
-		goto err;
-	}
-	msg.out_msg = (u8 *)response;
-	msg.out_msg_sz = out_msg_sz;
-
-	ret = scmi_send_and_process_msg(scmi_dev, &msg);
-	if (ret) {
-		pr_err("Error getting pin ranges: %d!\n", ret);
-		goto err_response;
-	}
-
-	ret = scmi_to_linux_errno(response->status);
-	if (ret) {
-		pr_err("Error getting pin ranges: %d!\n", ret);
-		goto err_response;
-	}
+	u32 i, range_index = 0, tmp_idx;
+	int ret;
 
 	priv->ranges = malloc(priv->num_ranges * sizeof(*priv->ranges));
 	if (!priv->ranges) {
 		ret = -ENOMEM;
-		goto err_response;
+		goto err;
 	}
 
-	for (i = 0; i < priv->num_ranges; ++i) {
-		priv->ranges[i].begin = response->pin_ranges[i].begin;
-		priv->ranges[i].no_pins = response->pin_ranges[i].no_pins;
+	while (range_index < priv->num_ranges) {
+		request.range_index = range_index;
+		ret = scmi_send_and_process_msg(scmi_dev, &msg);
+		if (ret) {
+			pr_err("Error getting pin ranges: %d!\n", ret);
+			break;
+		}
+
+		ret = scmi_to_linux_errno(response->status);
+		if (ret) {
+			pr_err("Error getting pin ranges: %d!\n", ret);
+			break;
+		}
+
+		for (i = 0; i < response->no_ranges; ++i) {
+			tmp_idx = i + range_index;
+			priv->ranges[tmp_idx].begin =
+				response->pin_ranges[i].begin;
+			priv->ranges[tmp_idx].no_pins =
+				response->pin_ranges[i].no_pins;
+		}
+
+		range_index += response->no_ranges;
 	}
 
-err_response:
-	free(response);
 err:
 	return ret;
 }
