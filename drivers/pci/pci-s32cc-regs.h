@@ -29,7 +29,7 @@
 #define PCIE_IO_EN_BIT				(0)
 
 #define PCIE_MSE_VALUE(x)			(((x) & 0x00000001) << 1)
-#define PCIE_MSE_BIT				(0)
+#define PCIE_MSE_BIT				(1)
 
 #define PCIE_BME_VALUE(x)			(((x) & 0x00000001) << 2)
 #define PCIE_BME_BIT				(2)
