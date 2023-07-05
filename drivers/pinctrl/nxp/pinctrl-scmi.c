@@ -59,11 +59,11 @@ struct scmi_pinctrl_range {
 struct scmi_pinctrl_priv {
 	struct scmi_pinctrl_range *ranges;
 	struct list_head gpio_configs;
-	unsigned int num_ranges;
+	unsigned int no_ranges;
 };
 
 struct scmi_pinctrl_pin_cfg {
-	u8 num_configs;
+	u8 no_configs;
 	u8 allocated;
 	u32 *configs;
 };
@@ -171,19 +171,19 @@ static int scmi_pinctrl_add_config(u32 config, struct scmi_pinctrl_pin_cfg *cfg)
 {
 	void *temp;
 
-	if (cfg->num_configs > CONV_PIN_CONFIG_NUM_CONFIGS)
+	if (cfg->no_configs > CONV_PIN_CONFIG_NUM_CONFIGS)
 		return -EINVAL;
 
-	if (cfg->allocated <= cfg->num_configs) {
+	if (cfg->allocated <= cfg->no_configs) {
 		/* Reserve extra space. */
-		cfg->allocated = (u8)2 * cfg->num_configs + 1;
+		cfg->allocated = (u8)2 * cfg->no_configs + 1;
 		temp = realloc(cfg->configs, cfg->allocated * sizeof(u32));
 		if (!temp)
 			return -ENOMEM;
 		cfg->configs = temp;
 	}
 
-	cfg->configs[cfg->num_configs++] = config;
+	cfg->configs[cfg->no_configs++] = config;
 
 	return 0;
 }
@@ -198,7 +198,7 @@ static u32 scmi_pinctrl_count_mb_configs(struct scmi_pinctrl_pin_cfg *cfg)
 	enum converted_pin_param param;
 	u32 count = 0, i;
 
-	for (i = 0; i < cfg->num_configs; i++) {
+	for (i = 0; i < cfg->no_configs; i++) {
 		param = (enum converted_pin_param)UNPACK_PARAM(cfg->configs[i]);
 		if (scmi_pinctrl_is_multi_bit_value(param))
 			count++;
@@ -262,13 +262,13 @@ static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
 	 * pinconf parameter value which matches
 	 * the protocol specification.
 	 */
-	qsort(cfg->configs, cfg->num_configs, sizeof(cfg->configs[0]),
+	qsort(cfg->configs, cfg->no_configs, sizeof(cfg->configs[0]),
 	      scmi_pinctrl_compare_cfgs);
 
 	r_configs->mask = 0;
 	r_configs->boolean_values = 0;
 
-	for (i = 0; i < cfg->num_configs; ++i) {
+	for (i = 0; i < cfg->no_configs; ++i) {
 		param = UNPACK_PARAM(cfg->configs[i]);
 		arg = UNPACK_ARG(cfg->configs[i]);
 
@@ -505,7 +505,7 @@ static int scmi_pinctrl_get_config(struct udevice *scmi_dev, u16 pin,
 	memset(response_buffer, 0, ARRAY_SIZE(response_buffer));
 
 	cfg->allocated = 0;
-	cfg->num_configs = 0;
+	cfg->no_configs = 0;
 	cfg->configs = NULL;
 
 	ret = scmi_send_and_process_msg(scmi_dev, &msg);
@@ -644,7 +644,7 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 	u16 no_pins;
 
 	cfg.allocated = 0;
-	cfg.num_configs = 0;
+	cfg.no_configs = 0;
 	cfg.configs = NULL;
 
 	len = scmi_pinctrl_parse_pinmux_len(dev, config);
@@ -879,7 +879,7 @@ static int scmi_pinctrl_get_gpio_mux(struct udevice *dev,
 	if (ret)
 		return ret;
 
-	for (i = 0; i < cfg.num_configs; ++i) {
+	for (i = 0; i < cfg.no_configs; ++i) {
 		param = UNPACK_PARAM(cfg.configs[i]);
 		arg = UNPACK_ARG(cfg.configs[i]);
 
@@ -941,7 +941,7 @@ static int scmi_pinctrl_get_proto_attr(struct udevice *dev,
 		return ret;
 	}
 
-	priv->num_ranges = response.attributes & SCMI_PINCTRL_NUM_RANGES_MASK;
+	priv->no_ranges = response.attributes & SCMI_PINCTRL_NUM_RANGES_MASK;
 
 	return 0;
 }
@@ -973,13 +973,13 @@ static int scmi_pinctrl_get_pin_ranges(struct udevice *dev,
 	u32 i, range_index = 0, tmp_idx;
 	int ret;
 
-	priv->ranges = malloc(priv->num_ranges * sizeof(*priv->ranges));
+	priv->ranges = malloc(priv->no_ranges * sizeof(*priv->ranges));
 	if (!priv->ranges) {
 		ret = -ENOMEM;
 		goto err;
 	}
 
-	while (range_index < priv->num_ranges) {
+	while (range_index < priv->no_ranges) {
 		request.range_index = range_index;
 		ret = scmi_send_and_process_msg(scmi_dev, &msg);
 		if (ret) {
