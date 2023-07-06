@@ -21,8 +21,7 @@
 #define SCMI_PINCTRL_FUNC_FROM_PINMUX(v) ((v) & 0XF)
 
 /* 128 (channel size) - 28 (SMT header). */
-/* Temporary until: ALB-10137 */
-#define SCMI_MAX_BUFFER_SIZE 96
+#define SCMI_MAX_BUFFER_SIZE 100
 
 /*
  * Remaining message size is 100. The longer messages that use a variable
