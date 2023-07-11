@@ -8,7 +8,7 @@
 #include <nvmem.h>
 #include <soc.h>
 
-struct soc_s32cc_plat {
+struct soc_s32cc_priv {
 	u32 letter;
 	u32 part_number;
 	u32 major;
@@ -24,10 +24,10 @@ struct soc_nvmem_cell {
 
 static int soc_s32cc_get_machine(struct udevice *dev, char *buf, int size)
 {
-	struct soc_s32cc_plat *plat = dev_get_platdata(dev);
+	struct soc_s32cc_priv *priv = dev_get_priv(dev);
 	int ret;
 
-	ret = snprintf(buf, size, "%dA", plat->part_number);
+	ret = snprintf(buf, size, "%dA", priv->part_number);
 	if (ret >= size || ret < 0)
 		return -ENOSPC;
 
@@ -36,16 +36,16 @@ static int soc_s32cc_get_machine(struct udevice *dev, char *buf, int size)
 
 static int soc_s32cc_get_revision(struct udevice *dev, char *buf, int size)
 {
-	struct soc_s32cc_plat *plat = dev_get_platdata(dev);
+	struct soc_s32cc_priv *priv = dev_get_priv(dev);
 	int ret;
 
-	ret = snprintf(buf, size, "%u.%u", plat->major, plat->minor);
+	ret = snprintf(buf, size, "%u.%u", priv->major, priv->minor);
 	if (ret >= size || ret < 0)
 		return -ENOSPC;
 
 	size -= ret;
-	if (plat->has_subminor) {
-		ret = snprintf(buf + ret, size, ".%u", plat->subminor);
+	if (priv->has_subminor) {
+		ret = snprintf(buf + ret, size, ".%u", priv->subminor);
 		if (ret >= size || ret < 0)
 			return -ENOSPC;
 	}
@@ -55,10 +55,10 @@ static int soc_s32cc_get_revision(struct udevice *dev, char *buf, int size)
 
 static int soc_s32cc_get_family(struct udevice *dev, char *buf, int size)
 {
-	struct soc_s32cc_plat *plat = dev_get_platdata(dev);
+	struct soc_s32cc_priv *priv = dev_get_priv(dev);
 	int ret;
 
-	ret = snprintf(buf, size, "NXP S32%c", (char)plat->letter);
+	ret = snprintf(buf, size, "NXP S32%c", (char)priv->letter);
 	if (ret >= size || ret < 0)
 		return -ENOSPC;
 
@@ -94,19 +94,19 @@ static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
 
 static int soc_s32cc_probe(struct udevice *dev)
 {
-	struct soc_s32cc_plat *plat = dev_get_platdata(dev);
+	struct soc_s32cc_priv *priv = dev_get_priv(dev);
 	struct nvmem_cell cell;
 	struct soc_nvmem_cell cells[] = {
-		{ .name = "soc_letter", .data = &plat->letter },
-		{ .name = "part_no", .data = &plat->part_number },
-		{ .name = "soc_major", .data = &plat->major },
-		{ .name = "soc_minor", .data = &plat->minor },
+		{ .name = "soc_letter", .data = &priv->letter },
+		{ .name = "part_no", .data = &priv->part_number },
+		{ .name = "soc_major", .data = &priv->major },
+		{ .name = "soc_minor", .data = &priv->minor },
 	};
 	const char *subminor = "soc_subminor";
 	int ret;
 	size_t i;
 
-	if (!plat)
+	if (!priv)
 		return -EINVAL;
 
 	for (i = 0u; i < ARRAY_SIZE(cells); i++) {
@@ -121,10 +121,10 @@ static int soc_s32cc_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = nvmem_cell_read(&cell, &plat->subminor,
-			      sizeof(plat->subminor));
+	ret = nvmem_cell_read(&cell, &priv->subminor,
+			      sizeof(priv->subminor));
 	if (ret)
-		plat->has_subminor = false;
+		priv->has_subminor = false;
 
 	return 0;
 }
@@ -140,6 +140,6 @@ U_BOOT_DRIVER(soc_s32cc_drv) = {
 	.ops = &soc_s32cc_ops,
 	.of_match = soc_s32cc_ids,
 	.probe = soc_s32cc_probe,
-	.platdata_auto_alloc_size = sizeof(struct soc_s32cc_plat),
+	.priv_auto_alloc_size = sizeof(struct soc_s32cc_priv),
 	.flags = DM_FLAG_PRE_RELOC,
 };
