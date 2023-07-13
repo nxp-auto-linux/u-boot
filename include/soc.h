@@ -2,6 +2,7 @@
 /*
  * (C) Copyright 2020 - Texas Instruments Incorporated - http://www.ti.com/
  *	Dave Gerlach <d-gerlach@ti.com>
+ * Copyright 2023 NXP
  */
 
 #ifndef __SOC_H
@@ -59,6 +60,16 @@ struct soc_ops {
 	 * @return 0 if OK, -ENOSPC if buffer is too small, other -ve on error
 	 */
 	int (*get_family)(struct udevice *dev, char *buf, int size);
+
+	/**
+	 * get_platform_data() - Get custom platform data of an SOC
+	 *
+	 * @dev:	Device to check (UCLASS_SOC)
+	 * @data:	Pointer to custom platform data struct to fill
+	 * @size:	Size of custom platform data struct
+	 * @return 0 if OK, -EINVAL if "data" is NULL or "size" is invalid
+	 */
+	int (*get_platform_data)(struct udevice *dev, void *data, int size);
 };
 
 #define soc_get_ops(dev)        ((struct soc_ops *)(dev)->driver->ops)
@@ -106,6 +117,16 @@ int soc_get_revision(struct udevice *dev, char *buf, int size);
 int soc_get_family(struct udevice *dev, char *buf, int size);
 
 /**
+ * soc_get_platform_data() - Get custom platform data of an SOC
+ * @dev:	Device to check (UCLASS_SOC)
+ * @data:	Pointer to custom platform data struct to fill
+ * @size:	Size of custom platform data struct
+ *
+ * Return: 0 if OK, -EINVAL if "data" is NULL or "size" is invalid
+ */
+int soc_get_platform_data(struct udevice *dev, void *data, int size);
+
+/**
  * soc_device_match() - Return match from an array of soc_attr
  * @matches:	Array with any combination of family, revision or machine set
  *
@@ -132,6 +153,12 @@ static inline int soc_get_revision(struct udevice *dev, char *buf, int size)
 }
 
 static inline int soc_get_family(struct udevice *dev, char *buf, int size)
+{
+	return -ENOSYS;
+}
+
+static inline int soc_get_platform_data(struct udevice *dev, void *data,
+					int size)
 {
 	return -ENOSYS;
 }
