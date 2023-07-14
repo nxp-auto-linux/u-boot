@@ -1038,6 +1038,7 @@ config MDIO_GPIO_BITBANG
 	depends on DM_MDIO && DM_GPIO
 	help
 	 Driver for bitbanging MDIO
+source "drivers/net/nxp_pfeng/Kconfig"
 
 config MDIO_MUX_I2CREG
 	bool "MDIO MUX accessed as a register over I2C"

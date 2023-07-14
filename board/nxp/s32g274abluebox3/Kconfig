@@ -12,6 +12,9 @@ config SYS_BOARD
 config NR_DRAM_BANKS
 	default 2
 
+config S32CC_HWCONFIG
+	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCI_S32CC && NXP_PFENG)
+
 config ENV_SECT_SIZE
 	default 0x1000 if QSPI_BOOT
 

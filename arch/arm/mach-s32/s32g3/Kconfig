@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 
 if ARCH_S32G3
 
@@ -43,6 +43,12 @@ config TARGET_S32G399AEMU
 	select TARGET_TYPE_S32CC_EMULATOR
 
 endchoice
+
+config NXP_PFENG
+	default y if !TARGET_TYPE_S32CC_EMULATOR
+
+config S32CC_HWCONFIG
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5;xpcs1_1:speed=2G5" if (PCI_S32CC && NXP_PFENG)
 
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g399ardb3/Kconfig"
