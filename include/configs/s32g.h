@@ -9,4 +9,7 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS S32CC_ENV_SETTINGS
 
+/* Ethernet */
+#define CONFIG_SYS_RX_ETH_BUFFER	16
+
 #endif
