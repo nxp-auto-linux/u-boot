@@ -9,4 +9,8 @@
 
 #define CFG_EXTRA_ENV_SETTINGS S32CC_ENV_SETTINGS
 
+/* Ethernet */
+
+#define S32CC_SRAM_BASE		0x34000000
+
 #endif

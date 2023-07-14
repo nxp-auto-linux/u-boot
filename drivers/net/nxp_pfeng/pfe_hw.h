@@ -8,6 +8,15 @@
 
 #include <dm/device.h>
 
+#define PFENG_EGPI_COUNT 3U
+#define PFENG_ETGPI_COUNT 3U
+#define PFENG_HGPI_COUNT 1U
+#define PFENG_GPI_COUNT (PFENG_EGPI_COUNT + PFENG_ETGPI_COUNT + PFENG_HGPI_COUNT)
+#define PFENG_BMU_COUNT 2U
+#define PFENG_SHP_COUNT 4U
+#define PFENG_SCH_COUNT 2U
+#define PFENG_PE_COUNT 8U
+
 struct pfe_hw_emac;
 struct pfe_hw_hif;
 struct pfe_hw_chnl;
@@ -18,6 +27,35 @@ enum pfe_hw_ip_ver {
 	PFE_IP_NONE = 0,
 	PFE_IP_S32G2,
 	PFE_IP_S32G3,
+};
+
+enum pfe_hw_gpi_blocks {
+	PFENG_EGPI1 = 0,
+	PFENG_EGPI2,
+	PFENG_EGPI3,
+	PFENG_ETGPI1,
+	PFENG_ETGPI2,
+	PFENG_ETGPI3,
+	PFENG_HGPI,
+	PFENG_GPIS_COUNT,
+};
+
+enum pfe_hw_bmu_blocks {
+	PFENG_BMU1 = 0,
+	PFENG_BMU2,
+	PFENG_BMUS_COUNT,
+};
+
+enum pfe_hw_shp_blocks {
+	PFENG_SHP1 = 0,
+	PFENG_SHP2,
+	PFENG_SHPS_COUNT,
+};
+
+enum pfe_hw_sch_blocks {
+	PFENG_SCH1 = 0,
+	PFENG_SCH2,
+	PFENG_SCHS_COUNT,
 };
 
 enum pfe_hw_blocks {

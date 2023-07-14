@@ -9,4 +9,7 @@ obj-y += pfeng.o \
 	 pfeng_netif.o \
 	 pfeng_mdio.o \
 	 pfe_hw.o \
+	 pfe_hw_emac.o \
+	 pfe_hw_hif.o \
+	 pfe_hw_pe.o \
 
