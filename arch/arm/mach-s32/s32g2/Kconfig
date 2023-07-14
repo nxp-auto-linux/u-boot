@@ -26,7 +26,6 @@ config TARGET_S32G2XXAEVB
 	imply USB
 	imply USB_EHCI_HCD
 	imply USB_ULPI
-	imply SJA1105X
 	select NXP_S32GEVB_BOARD
 	select MISC_INIT_R
 
@@ -61,6 +60,9 @@ config TARGET_S32G274AEMU
 	select TARGET_TYPE_S32CC_EMULATOR
 
 endchoice
+
+config NXP_PFENG
+	default y if !TARGET_TYPE_S32CC_EMULATOR
 
 source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g274ardb2/Kconfig"
