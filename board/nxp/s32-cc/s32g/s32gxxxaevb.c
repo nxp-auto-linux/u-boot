@@ -54,7 +54,7 @@ static int enable_saf1508bet(void)
 
 int misc_init_r(void)
 {
-	if (IS_ENABLED(CONFIG_NET) && IS_ENABLED(CONFIG_FSL_PFENG) &&
+	if (IS_ENABLED(CONFIG_NET) && IS_ENABLED(CONFIG_NXP_PFENG) &&
 	    IS_ENABLED(CONFIG_SJA1105X)) {
 		struct udevice *dev;
 		/* Probe sja1105 in order to provide a clock for the PFE2 interface,

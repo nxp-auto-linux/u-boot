@@ -1,0 +1,51 @@
+config NXP_PFENG
+	bool "NXP S32G PFE Ethernet controller"
+	default n
+	depends on DM_ETH
+	imply PHY_FIXED
+	imply PHY_AQUANTIA
+	imply PHY_S32CC_SERDES
+	select DM_RESET
+	select DM_MDIO
+	help
+	  This driver supports the NXP PFE Ethernet controller found on
+	  the S32G2 and S32G3 NXP SoCs.
+
+	  If unsure, say N
+
+choice
+	prompt "PFE firmware location"
+	depends on NXP_PFENG
+	default NXP_PFENG_FW_LOC_SDCARD if SD_BOOT
+	default NXP_PFENG_FW_LOC_QSPI if QSPI_BOOT
+
+config NXP_PFENG_FW_LOC_SDCARD
+	bool "SD card"
+	depends on NXP_PFENG
+	help
+	  The firmware file is located on SD card.
+
+config NXP_PFENG_FW_LOC_QSPI
+	bool "QSPI flash"
+	depends on NXP_PFENG
+	help
+	  The firmware is on the QSPI memory.
+endchoice
+
+config NXP_PFENG_FW_NAME
+	string "PFE firmware filename"
+	depends on NXP_PFENG_FW_LOC_SDCARD
+	default "s32g_pfe_class.fw"
+	help
+	  The PFEng network controller firmware filename.
+
+config NXP_PFENG_FW_PART
+	string "PFE firmware partition"
+	depends on NXP_PFENG
+	default "0:1" if NXP_PFENG_FW_LOC_SDCARD
+	default "0x03000000" if NXP_PFENG_FW_LOC_QSPI
+	help
+	  Partition containing the firmware file.
+	  For "sdcard" it's usually the first device's boot partition, so "0:1".
+	  For "qspi" it's the address of reserved memory partition.
+
