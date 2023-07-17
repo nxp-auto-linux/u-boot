@@ -17,7 +17,6 @@
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/s32cc_soc.h>
 #include <s32-cc/serdes_hwconfig.h>
-#include <dt-bindings/nvmem/s32cc-a53-gpr-nvmem.h>
 #include <dt-bindings/nvmem/s32cc-scmi-nvmem.h>
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
@@ -152,33 +151,24 @@ static int get_cores_info(u32 *max_cores_per_cluster,
 
 static bool is_lockstep_enabled(void)
 {
+	struct udevice *soc;
+	struct soc_s32cc_plat soc_data;
 	int ret;
-	u32 lockstep_enabled = 0;
-	struct udevice *s32cc_a53_gpr = NULL;
-	const char *a53_compat = "nxp,s32cc-a53-gpr";
-	ofnode node;
 
-	node = ofnode_by_compatible(ofnode_null(), a53_compat);
-	if (!ofnode_valid(node)) {
-		printf("%s: Couldn't find \"%s\" node\n", __func__, a53_compat);
-		return false;
-	}
-
-	ret = uclass_get_device_by_ofnode(UCLASS_MISC, node, &s32cc_a53_gpr);
+	ret = soc_get(&soc);
 	if (ret) {
-		printf("%s: No A53 GPR (err = %d)\n", __func__, ret);
-		return false;
+		printf(":%s: Failed to get SoC (err = %d)\n", __func__, ret);
+		return ret;
 	}
 
-	ret = misc_read(s32cc_a53_gpr, S32CC_A53_GPR_LOCKSTEP_ENABLED_OFFSET,
-			&lockstep_enabled, sizeof(lockstep_enabled));
-	if (ret != sizeof(lockstep_enabled)) {
-		printf("%s: Failed to read if Lockstep Enabled (err = %d)\n",
+	ret = soc_get_platform_data(soc, &soc_data, sizeof(soc_data));
+	if (ret) {
+		printf(":%s: Failed to get SoC platform data (err = %d)\n",
 		       __func__, ret);
-		return false;
+		return ret;
 	}
 
-	return !!lockstep_enabled;
+	return soc_data.lockstep_enabled;
 }
 
 static int ft_fixup_cpu(void *blob)
