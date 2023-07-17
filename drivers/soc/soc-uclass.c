@@ -2,6 +2,7 @@
 /*
  * (C) Copyright 2020 - Texas Instruments Incorporated - http://www.ti.com/
  *	Dave Gerlach <d-gerlach@ti.com>
+ * Copyright 2023 NXP
  */
 
 #define LOG_CATEGORY UCLASS_SOC
@@ -46,6 +47,16 @@ int soc_get_revision(struct udevice *dev, char *buf, int size)
 		return -ENOSYS;
 
 	return ops->get_revision(dev, buf, size);
+}
+
+int soc_get_platform_data(struct udevice *dev, void *data, int size)
+{
+	struct soc_ops *ops = soc_get_ops(dev);
+
+	if (!ops->get_platform_data)
+		return -ENOSYS;
+
+	return ops->get_platform_data(dev, data, size);
 }
 
 const struct soc_attr *
