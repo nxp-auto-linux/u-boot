@@ -18,4 +18,8 @@
 #define SOC_MACHINE_S32R455A	"455A"
 #define SOC_MACHINE_S32R458A	"458A"
 
+struct soc_s32cc_plat {
+	bool lockstep_enabled;
+};
+
 #endif

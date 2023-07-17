@@ -7,6 +7,7 @@
 #include <dm.h>
 #include <nvmem.h>
 #include <soc.h>
+#include <s32-cc/s32cc_soc.h>
 
 struct soc_s32cc_priv {
 	u32 letter;
@@ -95,12 +96,15 @@ static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
 static int soc_s32cc_probe(struct udevice *dev)
 {
 	struct soc_s32cc_priv *priv = dev_get_priv(dev);
+	struct soc_s32cc_plat *plat = dev_get_plat(dev);
 	struct nvmem_cell cell;
+	u32 lockstep_enabled;
 	struct soc_nvmem_cell cells[] = {
 		{ .name = "soc_letter", .data = &priv->letter },
 		{ .name = "part_no", .data = &priv->part_number },
 		{ .name = "soc_major", .data = &priv->major },
 		{ .name = "soc_minor", .data = &priv->minor },
+		{ .name = "lockstep_enabled", .data = &lockstep_enabled},
 	};
 	const char *subminor = "soc_subminor";
 	int ret;
@@ -114,6 +118,8 @@ static int soc_s32cc_probe(struct udevice *dev)
 		if (ret)
 			return ret;
 	}
+
+	plat->lockstep_enabled = !!lockstep_enabled;
 
 	ret = nvmem_cell_get_by_name(dev, subminor, &cell);
 	if (ret) {
@@ -141,5 +147,6 @@ U_BOOT_DRIVER(soc_s32cc_drv) = {
 	.of_match = soc_s32cc_ids,
 	.probe = soc_s32cc_probe,
 	.priv_auto = sizeof(struct soc_s32cc_priv),
+	.plat_auto = sizeof(struct soc_s32cc_plat),
 	.flags = DM_FLAG_PRE_RELOC,
 };
