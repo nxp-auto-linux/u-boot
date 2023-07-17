@@ -66,10 +66,24 @@ static int soc_s32cc_get_family(struct udevice *dev, char *buf, int size)
 	return 0;
 }
 
+static int soc_s32cc_get_platform_data(struct udevice *dev, void *data,
+				       int size)
+{
+	struct soc_s32cc_plat *plat = dev_get_plat(dev);
+
+	if (!data || size != sizeof(*plat))
+		return -EINVAL;
+
+	memcpy(data, plat, size);
+
+	return 0;
+}
+
 static const struct soc_ops soc_s32cc_ops = {
 	.get_machine = soc_s32cc_get_machine,
 	.get_revision = soc_s32cc_get_revision,
 	.get_family = soc_s32cc_get_family,
+	.get_platform_data = soc_s32cc_get_platform_data,
 };
 
 static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
