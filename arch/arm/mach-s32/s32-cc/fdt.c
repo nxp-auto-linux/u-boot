@@ -17,10 +17,10 @@
 #include <linux/kernel.h>
 #include <linux/libfdt.h>
 #include <linux/sizes.h>
-#include <s32-cc/a53_gpr.h>
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/s32cc_soc.h>
 #include <s32-cc/serdes_hwconfig.h>
+#include <dt-bindings/nvmem/s32cc-a53-gpr-nvmem.h>
 #include <dt-bindings/nvmem/s32cc-scmi-nvmem.h>
 #include <dt-bindings/phy/phy.h>
 
@@ -174,7 +174,7 @@ static bool is_lockstep_enabled(void)
 		return false;
 	}
 
-	ret = misc_read(s32cc_a53_gpr, S32CC_A53_GPR_LOCKSTEP_EN,
+	ret = misc_read(s32cc_a53_gpr, S32CC_A53_GPR_LOCKSTEP_ENABLED_OFFSET,
 			&lockstep_enabled, sizeof(lockstep_enabled));
 	if (ret != sizeof(lockstep_enabled)) {
 		printf("%s: Failed to read if Lockstep Enabled (err = %d)\n",
