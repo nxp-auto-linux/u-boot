@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 
 #include <common.h>
@@ -8,11 +8,11 @@
 #include <misc.h>
 #include <asm/io.h>
 #include <dm/device.h>
-#include <s32-cc/a53_gpr.h>
+#include <dt-bindings/nvmem/s32cc-a53-gpr-nvmem.h>
 
-#define A53_CLUSTER_GPR_GPR(x) ((x) * 0x4)
-#define GPR06_CA53_LOCKSTEP_EN_MASK	BIT(0)
-#define GPR06_CA53_LOCKSTEP_EN_SHIFT	0
+#define A53_CLUSTER_GPR_GPR(x)			((x) * 0x4)
+#define GPR06_CA53_LOCKSTEP_ENABLED_MASK	BIT(0)
+#define GPR06_CA53_LOCKSTEP_ENABLED_SHIFT	0
 
 struct a53_gpr {
 	const struct a53_gpr_plat *plat;
@@ -34,10 +34,10 @@ struct a53_gpr_plat {
 
 static const struct a53_gpr_mapping a53_gpr_mappings[] = {
 	{
-		.gpr_misc_off = S32CC_A53_GPR_LOCKSTEP_EN,
+		.gpr_misc_off = S32CC_A53_GPR_LOCKSTEP_ENABLED_OFFSET,
 		.gpr_off = A53_CLUSTER_GPR_GPR(6),
-		.mask = GPR06_CA53_LOCKSTEP_EN_MASK,
-		.shift = GPR06_CA53_LOCKSTEP_EN_SHIFT,
+		.mask = GPR06_CA53_LOCKSTEP_ENABLED_MASK,
+		.shift = GPR06_CA53_LOCKSTEP_ENABLED_SHIFT,
 	},
 };
 
