@@ -12,6 +12,7 @@
 
 #include <malloc.h>
 #include <linux/bitmap.h>
+#include <linux/err.h>
 #include <linux/list.h>
 
 #include <sort.h>
@@ -894,6 +895,82 @@ static int scmi_pinctrl_get_gpio_mux(struct udevice *dev,
 	return GPIOF_INPUT;
 }
 
+static int scmi_pinctrl_get_pins_count(struct udevice *dev)
+{
+	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
+	u32 last = priv->no_ranges - 1;
+
+	return priv->ranges[last].begin + priv->ranges[last].no_pins;
+}
+
+static struct scmi_pinctrl_range *scmi_pinctrl_get_range(struct udevice *dev,
+							 unsigned int pin)
+{
+	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
+	struct scmi_pinctrl_range *range;
+	unsigned int i;
+
+	for (i = 0; i < priv->no_ranges; i++) {
+		range = &priv->ranges[i];
+		if (pin >= range->begin && pin < range->begin + range->no_pins)
+			return range;
+	}
+
+	return NULL;
+}
+
+static const char *scmi_pinctrl_get_pin_name(struct udevice *dev,
+					     unsigned int pin)
+{
+	static char pin_name[PINNAME_SIZE];
+	struct scmi_pinctrl_range *range;
+	int ret;
+
+	memset(pin_name, 0, PINNAME_SIZE);
+
+	range = scmi_pinctrl_get_range(dev, pin);
+	if (range) {
+		ret = snprintf(pin_name, sizeof(pin_name), "pin%d", pin);
+		if (ret >= sizeof(pin_name))
+			return ERR_PTR(-EINVAL);
+		return pin_name;
+	}
+
+	ret = snprintf(pin_name, sizeof(pin_name), "invalid");
+	if (ret >= sizeof(pin_name))
+		return ERR_PTR(-EINVAL);
+
+	return ERR_PTR(-ENODEV);
+}
+
+static int scmi_pinctrl_get_pin_muxing(struct udevice *dev, unsigned int pin,
+				       char *buf, int size)
+{
+	struct udevice *scmi_dev = dev->parent;
+	struct scmi_pinctrl_range *range;
+	u16 func;
+	int ret;
+
+	if (pin > U16_MAX || size <= 0)
+		return -EINVAL;
+
+	memset(buf, 0, size);
+
+	range = scmi_pinctrl_get_range(dev, pin);
+	if (!range)
+		return -ENODEV;
+
+	ret = scmi_pinctrl_get_mux(scmi_dev, pin, &func);
+	if (ret)
+		return ret;
+
+	ret = snprintf(buf, size, "function %hu", func);
+	if (ret >= size)
+		return -EINVAL;
+
+	return 0;
+}
+
 static const struct pinctrl_ops scmi_pinctrl_ops = {
 	.set_state		= scmi_pinctrl_set_state,
 	.gpio_request_enable	= scmi_pinctrl_gpio_request_enable,
@@ -903,6 +980,9 @@ static const struct pinctrl_ops scmi_pinctrl_ops = {
 	.get_gpio_mux		= scmi_pinctrl_get_gpio_mux,
 	.pinconf_num_params	= ARRAY_SIZE(scmi_pinctrl_pinconf_params),
 	.pinconf_params		= scmi_pinctrl_pinconf_params,
+	.get_pins_count		= scmi_pinctrl_get_pins_count,
+	.get_pin_name		= scmi_pinctrl_get_pin_name,
+	.get_pin_muxing		= scmi_pinctrl_get_pin_muxing,
 };
 
 static int scmi_pinctrl_get_proto_attr(struct udevice *dev,
