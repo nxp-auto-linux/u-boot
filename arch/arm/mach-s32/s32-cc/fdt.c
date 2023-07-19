@@ -408,10 +408,12 @@ static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
 		return nodeoff;
 	}
 
-	ret = fdt_set_phandle(blob, nodeoff, phandle);
-	if (ret) {
-		pr_err("Failed to set phandle property of '%s' node\n", path);
-		return ret;
+	if (phandle) {
+		ret = fdt_set_phandle(blob, nodeoff, phandle);
+		if (ret) {
+			pr_err("Failed to set phandle property of '%s' node\n", path);
+			return ret;
+		}
 	}
 
 	ret = fdt_set_node_status(blob, nodeoff, FDT_STATUS_OKAY);
@@ -425,8 +427,12 @@ static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
 
 static int enable_scmi_gpio_node(void *blob, uint32_t phandle)
 {
-
 	return enable_scmi_protocol(blob, scmi_gpio_node_path, phandle);
+}
+
+static int enable_scmi_nvmem_node(void *blob, uint32_t phandle)
+{
+	return enable_scmi_protocol(blob, scmi_nvmem_node_path, phandle);
 }
 
 static int disable_siul2_gpio_node(void *blob, uint32_t *phandle)
@@ -638,7 +644,7 @@ static int ft_fixup_scmi_nvmem(void *blob)
 		return -EINVAL;
 	}
 
-	return 0;
+	return enable_scmi_nvmem_node(blob, 0);
 }
 
 int ft_system_setup(void *blob, struct bd_info *bd)
