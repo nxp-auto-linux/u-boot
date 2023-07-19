@@ -411,11 +411,16 @@ int pinctrl_get_pin_name(struct udevice *dev, int selector, char *buf,
 			 int size)
 {
 	struct pinctrl_ops *ops = pinctrl_get_ops(dev);
+	const char *pin_name;
 
 	if (!ops->get_pin_name)
 		return -ENOSYS;
 
-	snprintf(buf, size, ops->get_pin_name(dev, selector));
+	pin_name = ops->get_pin_name(dev, selector);
+	if (IS_ERR(pin_name))
+		return PTR_ERR(pin_name);
+
+	snprintf(buf, size, pin_name);
 
 	return 0;
 }

@@ -67,6 +67,9 @@ static int show_pinmux(struct udevice *dev, char *name)
 
 	for (i = 0; i < pins_count; i++) {
 		ret = pinctrl_get_pin_name(dev, i, pin_name, PINNAME_SIZE);
+		if (ret == -ENODEV)
+			continue;
+
 		if (ret) {
 			printf("Ops get_pin_name error (%d) by %s\n", ret, dev->name);
 			return ret;
@@ -75,6 +78,9 @@ static int show_pinmux(struct udevice *dev, char *name)
 			continue;
 		found = true;
 		ret = pinctrl_get_pin_muxing(dev, i, pin_mux, PINMUX_SIZE);
+		if (ret == -ENODEV)
+			continue;
+
 		if (ret) {
 			printf("Ops get_pin_muxing error (%d) by %s in %s\n",
 			       ret, pin_name, dev->name);
