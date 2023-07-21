@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2022 NXP
+ * Copyright 2020-2023 NXP
  */
 #include <cpu_func.h>
 #include <inttypes.h>
@@ -651,13 +651,15 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
 	if (priv->ddr_mode)
 		return 0;
 
-#if defined(CONFIG_SPI_FLASH_MACRONIX) || \
-	defined(CONFIG_SPI_FLASH_STMICRO)
+#if !(defined(CONFIG_SPI_FLASH_MACRONIX) || defined(CONFIG_SPI_FLASH_STMICRO))
+	printf("Skipping QSPI DTR-OPI mode enablement due to unsupported Flash Memory Type\n");
+	return 0;
+#endif
+
 	if (s32cc_mem_enable_ddr(priv, &ddr_config)) {
 		printf("Error: Failed to enable OPI DDR mode\n");
 		return -1;
 	}
-#endif
 
 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
 		;
