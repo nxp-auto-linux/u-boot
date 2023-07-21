@@ -4,11 +4,15 @@
  * Copyright 2017-2023 NXP
  */
 #include <common.h>
+#include <cpu_func.h>
 #include <debug_uart.h>
 #include <init.h>
+#include <malloc.h>
+#include <relocate.h>
 #include <soc.h>
 #include <asm/global_data.h>
 #include <asm/sections.h>
+#include <asm/system.h>
 #include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
 #include <dm/uclass.h>
@@ -97,9 +101,50 @@ static void disable_qspi_mmu_entry(void)
 		}
 	}
 }
+
+static int early_mmu_init(void)
+{
+	u64 pgtable_size = PGTABLE_SIZE;
+
+	gd->arch.tlb_addr = (uintptr_t)memalign(pgtable_size, pgtable_size);
+	if (!gd->arch.tlb_addr)
+		return -ENOMEM;
+
+	gd->arch.tlb_size = pgtable_size;
+	icache_enable();
+	dcache_enable();
+
+	return 0;
+}
+
+static void clear_early_mmu_settings(void)
+{
+	/* Reset fillptr to allow reinit of page tables */
+	gd->arch.tlb_fillptr = (uintptr_t)NULL;
+
+	icache_disable();
+	dcache_disable();
+}
+
+/*
+ * Assumption: Called at the end of init_sequence_f to clean-up
+ * before initr_caches().
+ */
+int clear_bss(void)
+{
+	clear_early_mmu_settings();
+
+	return 0;
+}
+
 #else /* CONFIG_SYS_DCACHE_OFF */
 static void disable_qspi_mmu_entry(void)
 {
+}
+
+static int early_mmu_init(void)
+{
+	return 0;
 }
 #endif
 
@@ -112,7 +157,8 @@ int arch_cpu_init(void)
 	if (IS_ENABLED(CONFIG_DEBUG_UART))
 		debug_uart_init();
 
-	return 0;
+	/* Enable MMU and caches early to speed-up boot process */
+	return early_mmu_init();
 }
 
 __weak void show_pcie_devices(void)
