@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  */
 
 #include <common.h>
@@ -29,6 +29,8 @@
 
 #define SIUL2_PIN_FROM_PINMUX(v) ((v) >> 4)
 #define SIUL2_FUNC_FROM_PINMUX(v) ((v) & 0XF)
+
+#define SIUL2_IMCR_OFFSET 512
 
 #define UPTR(a) ((uintptr_t)(a))
 
@@ -369,35 +371,110 @@ static int s32_gpio_disable_free(struct udevice *dev, unsigned int pin_selector)
 	return 0;
 }
 
-static int s32_get_gpio_mux(struct udevice *dev, __maybe_unused int banknum,
-			    int index)
+static int s32_pinmux_get(struct udevice *dev, unsigned int pin,
+			  unsigned int *raw_function,
+			  unsigned int *gpio_function)
 {
 	struct s32_pinctrl *priv = dev_get_priv(dev);
 	struct s32_range *range;
 	u32 mscr_value;
 	u32 sss_value;
 
-	if (!priv || index < 0)
+	*raw_function = 0;
+	*gpio_function = GPIOF_UNKNOWN;
+
+	if (!priv)
 		return -EINVAL;
 
-	range = s32_get_pin_range(priv, index);
+	range = s32_get_pin_range(priv, pin);
 	if (!range)
 		return -ENOENT;
 
-	index -= range->begin;
-	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(index));
-
+	pin -= range->begin;
+	mscr_value = readl(UPTR(range->base_addr) + S32_PAD(pin));
 	sss_value = mscr_value & SIUL2_MSCR_SSS_MASK;
+	*raw_function = sss_value;
 
-	if (sss_value != 0)
-		return GPIOF_FUNC;
+	if (sss_value != 0) {
+		*gpio_function = GPIOF_FUNC;
+		return 0;
+	}
 
 	if (mscr_value & SIUL2_MSCR_OBE)
-		return GPIOF_OUTPUT;
+		*gpio_function = GPIOF_OUTPUT;
 	else if (mscr_value & SIUL2_MSCR_IBE)
-		return GPIOF_INPUT;
+		*gpio_function = GPIOF_INPUT;
 
-	return GPIOF_UNKNOWN;
+	return 0;
+}
+
+static int s32_get_gpio_mux(struct udevice *dev, __maybe_unused int banknum,
+			    int index)
+{
+	unsigned int function, gpio_function;
+	int ret;
+
+	if (index < 0)
+		return -EINVAL;
+
+	ret = s32_pinmux_get(dev, index, &function, &gpio_function);
+	if (ret)
+		return ret;
+
+	return gpio_function;
+}
+
+static int s32_pinctrl_get_pins_count(struct udevice *dev)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+
+	return priv->ranges[priv->num_ranges - 1].end + 1;
+}
+
+static const char *s32_pinctrl_get_pin_name(struct udevice *dev,
+					    unsigned int pin)
+{
+	struct s32_pinctrl *priv = dev_get_priv(dev);
+	static char pin_name[PINNAME_SIZE];
+	struct s32_range *range;
+	int ret;
+
+	memset(pin_name, 0, PINNAME_SIZE);
+
+	range = s32_get_pin_range(priv, pin);
+	if (!range)
+		return ERR_PTR(-ENODEV);
+
+	if (pin < SIUL2_IMCR_OFFSET)
+		ret = snprintf(pin_name, sizeof(pin_name), "mscr%d", pin);
+	else
+		ret = snprintf(pin_name, sizeof(pin_name), "imcr%d",
+			       pin - SIUL2_IMCR_OFFSET);
+
+	if (ret >= sizeof(pin_name))
+		return ERR_PTR(-EINVAL);
+
+	return pin_name;
+}
+
+static int s32_pinctrl_get_pin_muxing(struct udevice *dev, unsigned int pin,
+				      char *buf, int size)
+{
+	unsigned int function, gpio_function;
+	int ret;
+
+	if (size <= 0)
+		return -EINVAL;
+
+	ret = s32_pinmux_get(dev, pin, &function, &gpio_function);
+	if (ret < 0)
+		return ret;
+
+	ret = snprintf(buf, size, "function %hu", function);
+	if (ret >= size)
+		return -EINVAL;
+
+	return 0;
 }
 
 static const struct pinctrl_ops s32_pinctrl_ops = {
@@ -409,6 +486,9 @@ static const struct pinctrl_ops s32_pinctrl_ops = {
 	.get_gpio_mux		= s32_get_gpio_mux,
 	.pinconf_num_params	= ARRAY_SIZE(siul2_pinconf_params),
 	.pinconf_params		= siul2_pinconf_params,
+	.get_pins_count		= s32_pinctrl_get_pins_count,
+	.get_pin_name		= s32_pinctrl_get_pin_name,
+	.get_pin_muxing		= s32_pinctrl_get_pin_muxing,
 };
 
 static int s32_pinctrl_probe(struct udevice *dev)
