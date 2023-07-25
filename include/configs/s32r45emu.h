@@ -2,8 +2,8 @@
 /*
  * Copyright 2023 NXP
  */
-#ifndef __S32GR45EMU_H__
-#define __S32GR45EMU_H__
+#ifndef __S32R45EMU_H__
+#define __S32R45EMU_H__
 
 #include <configs/s32r45.h>
 
