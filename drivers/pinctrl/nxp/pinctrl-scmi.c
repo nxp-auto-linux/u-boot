@@ -464,6 +464,9 @@ static int scmi_pinctrl_push_back_configs(u8 *buffer,
 	int ret = 0;
 
 	do {
+		if (!(BIT_32(bit) & r->mask))
+			continue;
+
 		p = (enum converted_pin_param)bit;
 		if (p >= CONV_PIN_CONFIG_NUM_CONFIGS)
 			return -EINVAL;
