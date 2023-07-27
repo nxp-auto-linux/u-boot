@@ -893,12 +893,13 @@ static int scmi_pinctrl_get_gpio_mux(struct udevice *dev,
 
 	free(cfg.configs);
 
+	if (!input)
+		return GPIOF_UNKNOWN;
+
 	if (output)
 		return GPIOF_OUTPUT;
-	else if (input)
-		return GPIOF_INPUT;
 
-	return GPIOF_UNKNOWN;
+	return GPIOF_INPUT;
 }
 
 static const struct pinctrl_ops scmi_pinctrl_ops = {
