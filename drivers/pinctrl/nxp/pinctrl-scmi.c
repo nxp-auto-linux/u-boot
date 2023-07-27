@@ -461,6 +461,7 @@ static int scmi_pinctrl_push_back_configs(u8 *buffer,
 	enum converted_pin_param p;
 	u32 current_cfg;
 	int ret = 0;
+	u32 val;
 
 	do {
 		if (!(BIT_32(bit) & r->mask))
@@ -474,11 +475,11 @@ static int scmi_pinctrl_push_back_configs(u8 *buffer,
 			if (cfg_idx >= hweight32(scmi_pinctrl_multi_bit_cfgs))
 				return -EINVAL;
 
-			current_cfg = PACK_CFG(bit,
-					       r->multi_bit_values[cfg_idx++]);
+			val = r->multi_bit_values[cfg_idx++];
+			current_cfg = PACK_CFG(bit, val);
 		} else {
-			current_cfg = PACK_CFG(bit,
-					       r->boolean_values & BIT_32(bit));
+			val =  !!(r->boolean_values & BIT_32(bit));
+			current_cfg = PACK_CFG(bit, val);
 		}
 
 		ret = scmi_pinctrl_add_config(current_cfg, cfg);
