@@ -500,7 +500,7 @@ static int s32_pinctrl_probe(struct udevice *dev)
 	u32 begin, end;
 
 	pins_prop = dev_read_prop(dev, SIUL2_NXP_PINS, &num_ranges);
-	if (!pins_prop || (num_ranges % sizeof(u32) != 0)) {
+	if (!pins_prop || !num_ranges || (num_ranges % sizeof(u32) != 0)) {
 		dev_err(dev, "Error retrieving %s!\n", SIUL2_NXP_PINS);
 		return -EINVAL;
 	}
