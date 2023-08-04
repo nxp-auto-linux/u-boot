@@ -362,7 +362,6 @@ static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
 	free(cfg.configs);
 
 	return ret;
-
 }
 
 static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
@@ -459,11 +458,11 @@ static int scmi_pinctrl_push_back_configs(u8 *buffer,
 				return -EINVAL;
 
 			val = r->multi_bit_values[cfg_idx++];
-			current_cfg = PACK_CFG(bit, val);
 		} else {
-			val =  !!(r->boolean_values & BIT_32(bit));
-			current_cfg = PACK_CFG(bit, val);
+			val = !!(r->boolean_values & BIT_32(bit));
 		}
+
+		current_cfg = PACK_CFG(bit, val);
 
 		ret = scmi_pinctrl_add_config(current_cfg, cfg);
 		if (ret)
