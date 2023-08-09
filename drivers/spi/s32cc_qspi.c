@@ -534,7 +534,7 @@ static void dllcra_bypass(struct fsl_qspi_priv *priv, u32 dllmask)
 	qspi_write32(priv->flags, &regs->dllcra, dllcra);
 
 	while (!(qspi_read32(priv->flags, &regs->dllsr) &
-		 QSPI_DLLSR_DLLA_LOCK_MASK))
+		 QSPI_DLLSR_SLVA_LOCK_MASK))
 		;
 
 	dllcra &= ~QSPI_DLLCR_SLV_UPD_EN;
