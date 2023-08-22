@@ -241,7 +241,7 @@ static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
 		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
 		.message_id	= SCMI_PINCTRL_PINCONF_SET_APP,
 		.in_msg		= buffer,
-		.in_msg_sz	= sizeof(buffer),
+		.in_msg_sz	= sizeof(*r_pins),
 		.out_msg	= (u8 *)&response,
 		.out_msg_sz	= sizeof(response),
 	};
@@ -255,11 +255,15 @@ static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
 	memset(buffer, 0, ARRAY_SIZE(buffer));
 
 	r_pins->no_pins = no_pins;
+	msg.in_msg_sz += no_pins * sizeof(r_pins->pins[0]);
 	memcpy(r_pins->pins, pins, no_pins * sizeof(*pins));
 
 	r_configs = (void *)(r_pins->pins + no_pins);
+	msg.in_msg_sz += sizeof(*r_configs);
 	mb_iter = &r_configs->multi_bit_values[0];
 	mb_end = mb_iter + scmi_pinctrl_count_mb_configs(cfg);
+	msg.in_msg_sz += scmi_pinctrl_count_mb_configs(cfg) *
+			 sizeof(r_configs->multi_bit_values[0]);
 
 	/* Sorting needs to be done in order to lay out
 	 * the configs in descending order of their
@@ -384,7 +388,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
 		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
 		.message_id	= SCMI_PINCTRL_PINMUX_SET,
 		.in_msg		= buffer,
-		.in_msg_sz	= sizeof(buffer),
+		.in_msg_sz	= sizeof(*request),
 		.out_msg	= (u8 *)&response,
 		.out_msg_sz	= sizeof(response),
 	};
@@ -394,6 +398,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
 		return -EINVAL;
 
 	request->no_pins = no_pins;
+	msg.in_msg_sz += no_pins * sizeof(request->pf[0]);
 	for (i = 0; i < no_pins; i++) {
 		request->pf[i].pin = pins[i];
 		request->pf[i].func = funcs[i];
