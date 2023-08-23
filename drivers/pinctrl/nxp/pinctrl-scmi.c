@@ -248,6 +248,9 @@ static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
 	u32 param, arg;
 	int ret, i;
 
+	if (cfg->no_configs == 0)
+		return 0;
+
 	if (override)
 		msg.message_id = SCMI_PINCTRL_PINCONF_SET_OVR;
 
