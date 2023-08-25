@@ -48,6 +48,10 @@
 #define PCI_DEVICE_ID_S32GEN1	0x4002
 #define LINK_UP_TIMEOUT		(50 * USEC_PER_MSEC)
 
+/* Parameters for the waiting for DBI R/W enabled routine */
+#define LINK_WAIT_MAX_DBI_RW_EN_RETRIES     1000
+#define LINK_WAIT_DBI_RW_EN         10
+
 enum pcie_device_mode {
 	PCIE_RC_TYPE,
 	PCIE_EP_TYPE
@@ -57,9 +61,20 @@ LIST_HEAD(s32_pcie_list);
 
 static inline void s32_pcie_enable_dbi_rw(void __iomem *dbi)
 {
-	/* Enable writing dbi registers */
-	BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_MISC_CONTROL_1,
-	       PCIE_DBI_RO_WR_EN);
+	u32 i, reg;
+
+	/* Make sure DBI R/W is really enabled */
+	for (i = 0; i < LINK_WAIT_MAX_DBI_RW_EN_RETRIES; i++) {
+		/* Enable writing dbi registers */
+		BSET32(UPTR(dbi) + PCIE_PORT_LOGIC_MISC_CONTROL_1,
+		       PCIE_DBI_RO_WR_EN);
+
+		reg = s32_dbi_readl(UPTR(dbi) + PCIE_PORT_LOGIC_MISC_CONTROL_1);
+		if (reg & PCIE_DBI_RO_WR_EN)
+			return;
+
+		udelay(LINK_WAIT_DBI_RW_EN);
+	}
 }
 
 static inline void s32_pcie_disable_dbi_rw(void __iomem *dbi)
