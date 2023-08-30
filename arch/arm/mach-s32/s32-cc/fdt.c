@@ -8,6 +8,7 @@
 #include <env.h>
 #include <fdt_support.h>
 #include <misc.h>
+#include <phy.h>
 #include <soc.h>
 #include <asm/global_data.h>
 #include <dm/uclass.h>
@@ -35,6 +36,7 @@
 static const char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
 static const char *scmi_gpio_node_path = "/firmware/scmi/protocol@81";
 static const char *scmi_nvmem_node_path = "/firmware/scmi/protocol@82";
+static const char *s32g_pfe_compatible = "nxp,s32g-pfe-netif";
 
 struct s32cc_soc_cores_info {
 	u32 max_cores_per_cluster;
@@ -637,6 +639,78 @@ static int ft_fixup_scmi_nvmem(void *blob)
 	return enable_scmi_nvmem_node(blob, 0);
 }
 
+static bool apply_pfe_sgmii_phy_fixup(void *fdt, int nodeoff, u32 phy_addr)
+{
+	const char *phy_mode, *sgmii_mode;
+	int off, len = 0;
+	const u32 *php;
+	int err;
+
+	phy_mode = fdt_getprop(fdt, nodeoff, "phy-mode", &len);
+	if (!phy_mode || !len)
+		return false;
+
+	sgmii_mode = phy_string_for_interface(PHY_INTERFACE_MODE_SGMII);
+	if (strncmp(phy_mode, sgmii_mode, strlen(sgmii_mode)))
+		return false;
+
+	php = fdt_getprop(fdt, nodeoff, "phy-handle", &len);
+	if (!php || len != sizeof(*php))
+		return false;
+
+	off = fdt_node_offset_by_phandle(fdt, fdt32_to_cpu(*php));
+	if (off < 0)
+		return false;
+
+	err = fdt_setprop_u32(fdt, off, "reg", phy_addr);
+	if (err) {
+		pr_err("failed to apply PFE SGMII PHY addr fixup (0x%x)\n",
+		       phy_addr);
+		return false;
+	}
+
+	return true;
+}
+
+static void ft_fixup_enet_pfe(void *fdt)
+{
+	char phy_envname[32], *phy_addr_str;
+	const char *ifname;
+	int i, nlen = 0;
+	ulong phy_addr;
+	char *ep = NULL;
+	int ret;
+
+	fdt_for_each_node_by_compatible(i, fdt, -1, s32g_pfe_compatible) {
+		ifname = fdt_getprop(fdt, i, "nxp,pfeng-if-name", &nlen);
+		if (!ifname || !nlen)
+			continue;
+
+		ret = snprintf(phy_envname, sizeof(phy_envname), "%s_phy_addr",
+			       ifname);
+		if (ret <= 0 || ret >= sizeof(phy_envname)) {
+			pr_err("fixup: %s: env var name parsing failed (%s)",
+			       ifname, phy_envname);
+			continue;
+		}
+
+		phy_addr_str = env_get(phy_envname);
+		if (!phy_addr_str)
+			continue;
+
+		phy_addr = simple_strtoul(phy_addr_str, &ep, 16);
+		if (phy_addr >= PHY_MAX_ADDR || *ep != '\0') {
+			pr_err("fixup: %s: invalid PHY fixup address 0x%lx\n",
+			       ifname, phy_addr);
+			continue;
+		}
+
+		if (apply_pfe_sgmii_phy_fixup(fdt, i, phy_addr))
+			printf("   fixup: %s: update phy addr to 0x%lx\n",
+			       ifname, phy_addr);
+	}
+}
+
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
@@ -672,6 +746,9 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	ret = ft_fixup_atf(blob);
 	if (ret)
 		goto exit;
+
+	if (CONFIG_IS_ENABLED(NXP_PFENG))
+		ft_fixup_enet_pfe(blob);
 
 	ret = apply_fdt_hwconfig_fixups(blob);
 	if (ret)
