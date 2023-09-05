@@ -51,6 +51,7 @@ config NXP_S32CC
 	imply TIMER
 	select CLK
 	select CLK_SCMI
+	select CLK_CCF
 	select CPU
 	select DM_DEVICE_REMOVE
 	select DM_GPIO
