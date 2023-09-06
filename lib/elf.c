@@ -190,16 +190,23 @@ unsigned long load_elf64_image_shdr(unsigned long addr)
  *
  * The loader firstly reads the EFI class to see if it's a 64-bit image.
  * If yes, call the ELF64 loader. Otherwise continue with the ELF32 loader.
+ *
+ * If the `skip` parameter is set to true, any segment that are empty will
+ * be skipped from loading.
  */
-unsigned long load_elf_image_phdr(unsigned long addr)
+unsigned long load_elf_image_phdr_skip_empty(unsigned long addr, bool skip)
 {
 	Elf32_Ehdr *ehdr; /* Elf header structure pointer */
 	Elf32_Phdr *phdr; /* Program header structure pointer */
+	bool skip_segment;
 	int i;
 
 	ehdr = (Elf32_Ehdr *)addr;
 	if (ehdr->e_ident[EI_CLASS] == ELFCLASS64)
 		return load_elf64_image_phdr(addr);
+
+	if (check_uptr_overflow(addr, ehdr->e_phoff))
+		return 0;
 
 	phdr = (Elf32_Phdr *)(addr + ehdr->e_phoff);
 
@@ -207,6 +214,7 @@ unsigned long load_elf_image_phdr(unsigned long addr)
 	for (i = 0; i < ehdr->e_phnum; ++i, ++phdr) {
 		void *dst = (void *)(uintptr_t)phdr->p_paddr;
 		void *src = (void *)addr + phdr->p_offset;
+		skip_segment = false;
 
 		/* Only load PT_LOAD program header */
 		if (phdr->p_type != PT_LOAD)
@@ -216,14 +224,24 @@ unsigned long load_elf_image_phdr(unsigned long addr)
 		      i, dst, phdr->p_filesz);
 		if (phdr->p_filesz)
 			memcpy(dst, src, phdr->p_filesz);
-		if (phdr->p_filesz != phdr->p_memsz)
-			memset(dst + phdr->p_filesz, 0x00,
-			       phdr->p_memsz - phdr->p_filesz);
-		flush_cache(rounddown((unsigned long)dst, ARCH_DMA_MINALIGN),
-			    roundup(phdr->p_memsz, ARCH_DMA_MINALIGN));
+		else if (skip)
+			skip_segment = true;
+
+		if (!skip_segment) {
+			if (phdr->p_filesz != phdr->p_memsz)
+				memset(dst + phdr->p_filesz, 0x00,
+				       phdr->p_memsz - phdr->p_filesz);
+			flush_cache(rounddown((unsigned long)dst, ARCH_DMA_MINALIGN),
+				    roundup(phdr->p_memsz, ARCH_DMA_MINALIGN));
+		}
 	}
 
 	return ehdr->e_entry;
+}
+
+unsigned long load_elf_image_phdr(unsigned long addr)
+{
+	return load_elf_image_phdr_skip_empty(addr, false);
 }
 
 unsigned long load_elf_image_shdr(unsigned long addr)
