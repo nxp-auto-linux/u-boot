@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <command.h>
+#include <elf.h>
 #include <misc.h>
 #include <asm/io.h>
 #include <dm/uclass.h>
@@ -57,22 +58,8 @@
 
 #define MC_ME_CM7_PRTN		(0)
 
-static int do_startm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
+static void kick_off_m7(u32 coreid, unsigned long addr)
 {
-	u32 coreid = 0;
-	unsigned long addr;
-	char *ep = NULL;
-
-	if (argc < 2)
-		return CMD_RET_USAGE;
-
-	addr = simple_strtoul(argv[1], &ep, 16);
-	if (ep == argv[1] || *ep != '\0')
-		return CMD_RET_USAGE;
-
-	printf("Starting CM7_%d core at SRAM address 0x%08lX ... ",
-	       coreid, addr);
-
 	writel(readl(RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7)) |
 	       PRST_PERIPH_CM7n_RST(coreid),
 	       RGM_PRST(MC_RGM_BASE_ADDR, MC_RGM_PRST_CM7));
@@ -99,8 +86,77 @@ static int do_startm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const ar
 	while (readl(RGM_PSTAT(MC_RGM_BASE_ADDR, MC_RGM_PSTAT_CM7)) &
 	       PSTAT_PERIPH_CM7n_STAT(coreid))
 		;
+}
+
+static int do_startm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
+{
+	u32 coreid = 0;
+	unsigned long addr;
+	char *ep = NULL;
+
+	if (argc < 2)
+		return CMD_RET_USAGE;
+
+	addr = simple_strtoul(argv[1], &ep, 16);
+	if (ep == argv[1] || *ep != '\0')
+		return CMD_RET_USAGE;
+
+	printf("Starting CM7_%d core at SRAM address 0x%08lX ... ",
+	       coreid, addr);
+
+	kick_off_m7(coreid, addr);
 
 	printf("done.\n");
+
+	return CMD_RET_SUCCESS;
+}
+
+static int do_bootm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
+{
+	Elf32_Ehdr *ehdr;
+	const char *address_argv = argv[1];
+	const char *entry_argv = argv[2];
+	unsigned long addr, entry, elf_entry;
+
+	if (argc < 2)
+		return CMD_RET_USAGE;
+
+	if (strict_strtoul(address_argv, 16, &addr) == -EINVAL) {
+		printf("Invalid ELF address: %s\n", address_argv);
+		return CMD_RET_FAILURE;
+	}
+
+	if (!valid_elf_image(addr)) {
+		printf("Cannot find ELF headers @0x%08lx\n", addr);
+		return CMD_RET_FAILURE;
+	}
+
+	ehdr = (Elf32_Ehdr *)addr;
+	if (ehdr->e_ident[EI_CLASS] == ELFCLASS64) {
+		printf("Cannot boot an AARCH64 ELF on the CM7_0 core.\n");
+		return CMD_RET_FAILURE;
+	}
+
+	printf("## Loading ELF from 0x%08lx ...\n", addr);
+
+	elf_entry = load_elf_image_phdr_skip_empty(addr, true);
+	if (argc == 2) {
+		entry = elf_entry;
+	} else if (argc == 3) {
+		/* Entry as address */
+		if (strict_strtoul(entry_argv, 16, &entry) == -EINVAL) {
+			/* Entry as a symbol */
+			if (elf32_symbol_lookup(addr, entry_argv, &entry)) {
+				printf("Failed to identify %s symbol\n",
+				       entry_argv);
+				return CMD_RET_FAILURE;
+			}
+		}
+	}
+
+	printf("## Starting CM7_0 core using 0x%08lx ...\n", entry);
+
+	kick_off_m7(0, entry);
 
 	return CMD_RET_SUCCESS;
 }
@@ -108,4 +164,12 @@ static int do_startm7(struct cmd_tbl *cmdtp, int flag, int argc, char * const ar
 U_BOOT_CMD(startm7,	2,	1,	do_startm7,
 	   "start CM7_0 core from SRAM address",
 	   "<start_address>"
+);
+
+U_BOOT_CMD(bootm7, 3, 0, do_bootm7,
+	   "Boot from an ELF image in memory using CM7_0 core",
+	   "[address] [entry]\n"
+	   "\t- load ELF image stored at [address] via program headers and\n"
+	   "\t  kick-off the CM7_0 core using the [entry].\n"
+	   "\t- [entry] can be the name of a symbol part of the elf or an address\n"
 );
