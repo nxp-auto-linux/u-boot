@@ -12,6 +12,8 @@
 #include <linux/err.h>
 
 #define S32R_PHY_ADDR_1 0x01
+#define RENAN_TXRX_SKEW	0xb400
+#define RENAN_PHYCTRL_REG	0x17
 #define RENAN_I2C_CPLD_VERSIONADDR	0x13
 #define RENAN_I2C_EEPROM_ENETADDR	0x55
 
@@ -187,6 +189,12 @@ int last_stage_init(void)
 	/* Is not critical if the phy has not been found.
 	 * The error code is ignored on purpose.
 	 */
+
+	ret = bus->write(bus, S32R_PHY_ADDR_1, MDIO_DEVAD_NONE,
+			RENAN_PHYCTRL_REG, RENAN_TXRX_SKEW);
+	if (ret)
+		pr_warn("%s: RGMII internal delays not applied. No traffic will pass through the PHY\n",
+			gmac0->name);
 
 	return 0;
 }
