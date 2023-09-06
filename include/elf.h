@@ -697,6 +697,8 @@ unsigned long load_elf64_image_shdr(unsigned long addr);
 unsigned long load_elf_image_phdr(unsigned long addr);
 unsigned long load_elf_image_phdr_skip_empty(unsigned long addr, bool skip);
 unsigned long load_elf_image_shdr(unsigned long addr);
+int elf32_symbol_lookup(unsigned long addr, const char *sym_name,
+			unsigned long *sym_addr);
 #endif
 
 #endif /* _ELF_H */

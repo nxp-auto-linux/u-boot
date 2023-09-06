@@ -263,3 +263,64 @@ int valid_elf_image(unsigned long addr)
 
 	return 1;
 }
+
+static Elf32_Shdr *elf32_get_sec_hdr(Elf32_Ehdr *ehdr, const char *sec_name)
+{
+	Elf32_Shdr *shdr; /* Section header structure pointer */
+	unsigned char *strtab = 0; /* String table pointer */
+	uintptr_t addr = (uintptr_t)ehdr;
+	u32 i;
+
+	/* Find the section header string table for output info */
+	shdr = (Elf32_Shdr *)(addr + ehdr->e_shoff +
+			     (ehdr->e_shstrndx * sizeof(Elf32_Shdr)));
+
+	if (shdr->sh_type == SHT_STRTAB)
+		strtab = (unsigned char *)(addr + shdr->sh_offset);
+
+	if (!strtab)
+		return NULL;
+
+	for (i = 0; i < ehdr->e_shnum; ++i) {
+		shdr = (Elf32_Shdr *)(addr + ehdr->e_shoff +
+				     (i * sizeof(Elf32_Shdr)));
+		if (!strcmp((const char *)&strtab[shdr->sh_name], sec_name))
+			return shdr;
+	}
+
+	return NULL;
+}
+
+int elf32_symbol_lookup(unsigned long addr, const char *sym_name,
+			unsigned long *sym_addr)
+{
+	Elf32_Shdr *strtab, *symtab;
+	const char *strs;
+	Elf32_Sym *syms;
+	size_t i;
+
+	strtab = elf32_get_sec_hdr((Elf32_Ehdr *)addr, ELF_STRTAB);
+	symtab = elf32_get_sec_hdr((Elf32_Ehdr *)addr, ELF_SYMTAB);
+
+	if (!strtab || !symtab)
+		return -EINVAL;
+
+	if (check_uptr_overflow(addr, strtab->sh_offset))
+		return -EOVERFLOW;
+
+	if (check_uptr_overflow(addr, symtab->sh_offset))
+		return -EOVERFLOW;
+
+	strs = (const char *)(addr + strtab->sh_offset);
+	syms = (Elf32_Sym *)(addr + symtab->sh_offset);
+
+	for (i = 0; i < symtab->sh_size / sizeof(*syms); i++) {
+		if (strcmp(&strs[syms[i].st_name], sym_name))
+			continue;
+
+		*sym_addr = syms[i].st_value;
+		return 0;
+	}
+
+	return -EINVAL;
+}
