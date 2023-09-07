@@ -123,6 +123,7 @@
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"if run loadfdt; then " \
+			"run fdt_fixups; " \
 			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 		"else " \
 			"echo WARN: Cannot load the DT; " \
