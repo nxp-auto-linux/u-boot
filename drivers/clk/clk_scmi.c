@@ -190,36 +190,77 @@ U_BOOT_DRIVER(scmi_clock) = {
 	.probe = &scmi_clk_probe,
 };
 
+static int gate_scmi_clk_id(struct udevice *dev, unsigned long clk_id,
+			    int enable)
+{
+	struct clk clk;
+
+	memset(&clk, 0, sizeof(clk));
+
+	clk.dev = dev;
+	clk.id = clk_id;
+
+	return scmi_clk_gate(&clk, enable);
+}
+
 static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
 			    char *const argv[])
 {
-	struct clk clk;
+	size_t num_clocks, i;
+	struct udevice *dev;
+	unsigned long id;
 	int ret, enable;
+	char *name, *res;
 
 	if (argc < 4)
 		return CMD_RET_USAGE;
 
-	memset(&clk, 0, sizeof(clk));
-
-	ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &clk.dev);
+	ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &dev);
 	if (ret) {
 		printf("Failed to get device '%s'\n", argv[1]);
 		return CMD_RET_FAILURE;
 	}
-
-	clk.id = simple_strtoul(argv[2], NULL, 10);
-	if (clk.id > INT_MAX)
-		return CMD_RET_FAILURE;
 
 	if (simple_strtoul(argv[3], NULL, 10))
 		enable = 1;
 	else
 		enable = 0;
 
-	ret = scmi_clk_gate(&clk, enable);
+	/* Is it a number ?*/
+	if (!strict_strtoul(argv[2], 10, &id)) {
+		if (gate_scmi_clk_id(dev, id, enable)) {
+			printf("Failed to control the clock %lu\n", id);
+			return CMD_RET_FAILURE;
+		}
+
+		return CMD_RET_SUCCESS;
+	}
+
+	ret = scmi_clk_get_num_clock(dev, &num_clocks);
 	if (ret) {
-		printf("scmi_clk_enable failed: %d\n", ret);
+		printf("Failed to get the number of clocks\n");
 		return CMD_RET_FAILURE;
+	}
+
+	/* Look for clocks containing the given string */
+	for (i = 0; i < num_clocks; i++) {
+		if (scmi_clk_get_attibute(dev, i, &name))
+			continue;
+
+		res = strstr(name, argv[2]);
+		if (res)
+			printf("## Setting %s clock ...\n", name);
+
+		free(name);
+
+		if (!res)
+			continue;
+
+		if (gate_scmi_clk_id(dev, i, enable)) {
+			printf("Failed to control the clock %lu\n", i);
+			return CMD_RET_FAILURE;
+		}
+
 	}
 
 	return CMD_RET_SUCCESS;
