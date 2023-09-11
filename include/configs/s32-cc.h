@@ -55,6 +55,9 @@
 #define MMC_PART_FAT			1
 #define MMC_PART_EXT			2
 
+/* Increase max gunzip size */
+#define CONFIG_SYS_BOOTM_LEN	(SZ_64M)
+
 #ifndef CONFIG_XEN_SUPPORT
 #  define CONFIG_ARMV8_SWITCH_TO_EL1
 #endif
