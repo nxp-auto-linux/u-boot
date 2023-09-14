@@ -289,7 +289,7 @@
  * Both arguments must be unsigned pointer values (i.e. uintptr_t).
  */
 #define check_uptr_overflow(_ptr, _inc)		\
-	((_ptr) > (UINTPTR_MAX - (_inc)))
+	((_ptr) > (ULONG_MAX - (_inc)))
 
 /*
  * Evaluates to 1 if (u32 + inc) overflows, 0 otherwise.
