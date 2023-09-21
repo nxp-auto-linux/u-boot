@@ -15,6 +15,7 @@ SIUL2_GPIO_NAME = "siul2-gpio@4009d700"
 SCMI_PINCTRL_NAME = "protocol@80"
 SCMI_GPIO_NAME = "protocol@81"
 SCMI_NVMEM_NAME = "protocol@82"
+GPR_CAN_MUX_CONTROLLER_NAME = "mux-controller@f0"
 
 def log_step(msg):
     """Log an indented message (an execution step of the script)."""
@@ -100,6 +101,20 @@ def update_nvmem_consumers(dtb, scmi_node_name):
 
     scmi_node.set_property("status", "okay")
 
+def disable_gpr_mux_controller(dtb, mux_node_name):
+    """Disable the MMIO MUX node that enables writing to a GPR."""
+
+    nodes = dtb.search(mux_node_name, itype=fdt.ItemType.NODE)
+    if len(nodes) != 1:
+        log_step("Can't find MMIO MUX node!")
+        sys.exit(1)
+
+    mux_node = nodes[0]
+    log_step("Found MMIO MUX node: " + mux_node.path + "/" + mux_node.name)
+
+    mux_node.set_property("status", "disabled")
+    log_step("Disabled MMIO MUX node!")
+
 def main():
     """Main script function."""
     description = """This script does the required DT changes for switching to
@@ -145,6 +160,9 @@ def main():
     if args.nvmem:
         print("Enabling SCMI NVMEM")
         update_nvmem_consumers(dtb, SCMI_NVMEM_NAME)
+
+    print("Disabling MMIO MUX node")
+    disable_gpr_mux_controller(dtb, GPR_CAN_MUX_CONTROLLER_NAME)
 
     with open(dtb_file, "wb") as file:
         file.write(dtb.to_dtb())
