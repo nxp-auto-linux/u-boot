@@ -9,9 +9,11 @@
 #include <asm/io.h>
 #include <dm/device.h>
 #include <dt-bindings/nvmem/s32cc-gpr-nvmem.h>
+#include <dt-bindings/nvmem/s32r45-gpr-nvmem.h>
 
 #define SRC_0_OFF				(0x0)
 #define A53_GPR_OFF				(0x400)
+#define SRC_1_OFF				(0xA00)
 
 #define A53_CLUSTER_GPR_GPR(x)			((x) * 0x4)
 #define GPR06_CA53_LOCKSTEP_ENABLED_MASK	BIT(0)
@@ -21,6 +23,11 @@
 #define GMAC_0_CTRL_STS_PHY_INTF_SHIFT	0
 #define GMAC_0_CTRL_STS_PHY_INTF_MASK	\
 	GENMASK(3, GMAC_0_CTRL_STS_PHY_INTF_SHIFT)
+
+#define GMAC_1_CTRL_STS_OFF		0x0
+#define GMAC_1_CTRL_STS_PHY_INTF_SHIFT	0
+#define GMAC_1_CTRL_STS_PHY_INTF_MASK	\
+	GENMASK(3, GMAC_1_CTRL_STS_PHY_INTF_SHIFT)
 
 struct s32cc_gpr {
 	const struct s32cc_gpr_plat *plat;
@@ -61,9 +68,26 @@ static const struct s32cc_gpr_mapping s32cc_gpr_mappings[] = {
 	},
 };
 
+static const struct s32cc_gpr_mapping s32r_gpr_mappings[] = {
+	{
+		.gpr_misc_off = S32R45_GPR_GMAC1_PHY_INTF_SEL_OFFSET,
+		.gpr_off = SRC_1_OFF,
+		.reg_off = GMAC_1_CTRL_STS_OFF,
+		.mask = GMAC_1_CTRL_STS_PHY_INTF_MASK,
+		.shift = GMAC_1_CTRL_STS_PHY_INTF_SHIFT,
+		.read_only = false,
+	},
+};
+
 static const struct s32cc_gpr_plat s32cc_gpr_plat = {
 	.mappings = &s32cc_gpr_mappings[0],
 	.n_mappings = ARRAY_SIZE(s32cc_gpr_mappings),
+};
+
+static const struct s32cc_gpr_plat s32r_gpr_plat = {
+	.mappings = &s32r_gpr_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32r_gpr_mappings),
+	.next = &s32cc_gpr_plat,
 };
 
 static int find_gpr_mapping(const struct s32cc_gpr_plat *plat, int offset,
@@ -165,7 +189,8 @@ static const struct misc_ops s32cc_gpr_ops = {
 };
 
 static const struct udevice_id s32cc_gpr_ids[] = {
-	{ .compatible = "nxp,s32cc-gpr", .data = (ulong)&s32cc_gpr_plat, },
+	{ .compatible = "nxp,s32cc-gpr",  .data = (ulong)&s32cc_gpr_plat, },
+	{ .compatible = "nxp,s32r45-gpr", .data = (ulong)&s32r_gpr_plat,  },
 	{ /* sentinel */ }
 };
 
