@@ -7,6 +7,7 @@
 #include <clk.h>
 #include <dm.h>
 #include <eth_phy.h>
+#include <nvmem.h>
 #include <reset.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
@@ -118,20 +119,35 @@ static int eqos_pcs_init_s32cc(struct udevice *dev)
 	return 0;
 }
 
+static int eqos_set_interface_mode_s32cc(struct udevice *dev, u32 mode)
+{
+	struct nvmem_cell c;
+	int ret;
+
+	ret = nvmem_cell_get_by_name(dev, "gmac_phy_intf_sel", &c);
+	if (ret) {
+		pr_err("Failed to get 'gmac_phy_intf_sel' cell\n");
+		return ret;
+	}
+
+	ret = nvmem_cell_write(&c, &mode, sizeof(mode));
+	if (ret) {
+		pr_err("%s: Failed to write cell 'gmac_phy_intf_sel' (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 static int eqos_start_resets_s32cc(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	phy_interface_t interface;
-	fdt_addr_t ctrl;
 	u32 mode;
+	int ret;
 
 	debug("%s(dev=%p):\n", __func__, dev);
-
-	ctrl = dev_read_addr_index(dev, 1);
-	if (ctrl == FDT_ADDR_T_NONE) {
-		debug("%s(dev=%p): missing CTRL_STS reg\n", __func__, dev);
-		return -EINVAL;
-	}
 
 	interface = eqos->config->interface(dev);
 	if (interface == PHY_INTERFACE_MODE_NONE) {
@@ -159,7 +175,9 @@ static int eqos_start_resets_s32cc(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	writel(mode, ctrl);
+	ret = eqos_set_interface_mode_s32cc(dev, mode);
+	if (ret)
+		return ret;
 
 	/* reset DMA to reread phyif config */
 	writel(EQOS_DMA_MODE_SWR, &eqos->dma_regs->mode);
