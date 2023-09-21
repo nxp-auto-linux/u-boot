@@ -8,6 +8,7 @@
 
 #define S32G_GPR_PFE_EMACS_INTF_SEL_OFFSET	0x80
 #define S32G_GPR_PFE_COH_EN_OFFSET              0x81
+#define S32G_GPR_PFE_PWR_CTRL_OFFSET            0x82
 
 #define S32G_GPR_CELL_SIZE			0x4
 
