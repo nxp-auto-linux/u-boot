@@ -10,11 +10,17 @@
 #include <dm/device.h>
 #include <dt-bindings/nvmem/s32cc-gpr-nvmem.h>
 
+#define SRC_0_OFF				(0x0)
 #define A53_GPR_OFF				(0x400)
 
 #define A53_CLUSTER_GPR_GPR(x)			((x) * 0x4)
 #define GPR06_CA53_LOCKSTEP_ENABLED_MASK	BIT(0)
 #define GPR06_CA53_LOCKSTEP_ENABLED_SHIFT	0
+
+#define GMAC_0_CTRL_STS_OFF		0x4
+#define GMAC_0_CTRL_STS_PHY_INTF_SHIFT	0
+#define GMAC_0_CTRL_STS_PHY_INTF_MASK	\
+	GENMASK(3, GMAC_0_CTRL_STS_PHY_INTF_SHIFT)
 
 struct s32cc_gpr {
 	const struct s32cc_gpr_plat *plat;
@@ -44,6 +50,14 @@ static const struct s32cc_gpr_mapping s32cc_gpr_mappings[] = {
 		.mask = GPR06_CA53_LOCKSTEP_ENABLED_MASK,
 		.shift = GPR06_CA53_LOCKSTEP_ENABLED_SHIFT,
 		.read_only = true,
+	},
+	{
+		.gpr_misc_off = S32CC_GPR_GMAC0_PHY_INTF_SEL_OFFSET,
+		.gpr_off = SRC_0_OFF,
+		.reg_off = GMAC_0_CTRL_STS_OFF,
+		.mask = GMAC_0_CTRL_STS_PHY_INTF_MASK,
+		.shift = GMAC_0_CTRL_STS_PHY_INTF_SHIFT,
+		.read_only = false,
 	},
 };
 
