@@ -569,7 +569,7 @@ config SCMI_NVMEM
 	select SCMI_FIRMWARE
 	help
 	  Enable this option if you want to support NVMEM over SCMI, in order
-	  for U-Boot, as an SCMI Agent, to read NVMEM cells provided by an
-	  SCMI Platform.
+	  for U-Boot, as an SCMI Agent, to read/write NVMEM cells provided by
+	  an SCMI Platform.
 
 endmenu

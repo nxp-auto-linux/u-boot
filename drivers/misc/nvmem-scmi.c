@@ -17,6 +17,7 @@ enum scmi_nvmem_message_id {
 	SCMI_NVMEM_PROTOCOL_ATTRIBUTES = 0x1,
 	SCMI_NVMEM_PROTOCOL_MESSAGE_ATTRIBUTES = 0x2,
 	SCMI_NVMEM_READ_CELL = 0x3,
+	SCMI_NVMEM_WRITE_CELL = 0x4,
 };
 
 static int scmi_nvmem_read(struct udevice *dev, int offset,
@@ -63,8 +64,55 @@ static int scmi_nvmem_read(struct udevice *dev, int offset,
 	return response.bytes_read;
 }
 
+static int scmi_nvmem_write(struct udevice *dev, int offset, const void *buf,
+			    int size)
+{
+	struct {
+		s32 status;
+		u32 bytes_written;
+	} response;
+	struct {
+		u32 offset;
+		u32 bytes;
+		u32 value;
+	} request;
+	struct scmi_msg msg = {
+		.protocol_id = SCMI_PROTOCOL_ID_NVMEM,
+		.message_id = SCMI_NVMEM_WRITE_CELL,
+		.in_msg = (u8 *)&request,
+		.in_msg_sz = sizeof(request),
+		.out_msg = (u8 *)&response,
+		.out_msg_sz = sizeof(response),
+	};
+	int ret;
+
+	if (size > sizeof(u32))
+		return -EINVAL;
+
+	request.offset = (u32)offset;
+	request.bytes = (u32)size;
+	memcpy(&request.value, buf, size);
+
+	ret = devm_scmi_process_msg(dev, &msg);
+	if (ret) {
+		pr_err("Error writing cell %d, size %d, value %u: %d!\n",
+		       offset, size, request.value, ret);
+		return ret;
+	}
+
+	ret = scmi_to_linux_errno(response.status);
+	if (ret) {
+		pr_err("Error writing cell %d, size %d, value %u: %d!\n",
+		       offset, size, request.value, ret);
+		return ret;
+	}
+
+	return response.bytes_written;
+}
+
 static const struct misc_ops scmi_nvmem_ops = {
 	.read = scmi_nvmem_read,
+	.write = scmi_nvmem_write,
 };
 
 static int scmi_nvmem_get_num_cells(struct udevice *scmi_dev,
