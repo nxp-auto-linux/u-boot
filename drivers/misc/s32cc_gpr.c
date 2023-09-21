@@ -30,6 +30,10 @@
 #define GMAC_1_CTRL_STS_PHY_INTF_MASK	\
 	GENMASK(3, GMAC_1_CTRL_STS_PHY_INTF_SHIFT)
 
+#define PFE_COH_EN_OFF			0x0
+#define PFE_COH_EN_SHIFT		0
+#define PFE_COH_EN_MASK			GENMASK(5, PFE_COH_EN_SHIFT)
+
 #define PFE_EMACS_INTF_SEL_OFF		0x4
 #define PFE_EMACS_INTF_SEL_SHIFT	0
 #define PFE_EMACS_INTF_SEL_MASK		\
@@ -81,6 +85,14 @@ static const struct s32cc_gpr_mapping s32g_gpr_mappings[] = {
 		.reg_off = PFE_EMACS_INTF_SEL_OFF,
 		.mask = PFE_EMACS_INTF_SEL_MASK,
 		.shift = PFE_EMACS_INTF_SEL_SHIFT,
+		.read_only = false,
+	},
+	{
+		.gpr_misc_off = S32G_GPR_PFE_COH_EN_OFFSET,
+		.gpr_off = SRC_1_OFF,
+		.reg_off = PFE_COH_EN_OFF,
+		.mask = PFE_COH_EN_MASK,
+		.shift = PFE_COH_EN_SHIFT,
 		.read_only = false,
 	},
 };
