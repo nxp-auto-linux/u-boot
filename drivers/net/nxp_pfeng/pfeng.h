@@ -30,8 +30,6 @@ enum pfeng_emac_mode {
 struct pfeng_cfg {
 	phys_addr_t		csr_phys_addr;
 	resource_size_t		csr_size;
-	phys_addr_t		gpr_phys_addr;
-	resource_size_t		gpr_size;
 	struct reset_ctl	*rst;
 	u32			hif_id;
 	phys_addr_t		bmu_addr;
@@ -45,7 +43,6 @@ struct pfeng_cfg {
 
 struct pfeng_priv {
 	void			*csr_base;
-	void			*gpr_base;
 	enum pfe_hw_ip_ver	pfe_ver;
 	ulong			clk_sys_rate;
 	void			*fw_class_data;	/* The CLASS fw data buffer */
@@ -104,34 +101,18 @@ struct pfeng_mdio_cfg {
 	enum pfe_hw_blocks	id;
 };
 
-static inline u32 pfe_read_gpr(struct pfeng_priv *priv, u32 off)
-{
-	return readl(priv->gpr_base + off);
-}
-
-static inline u32 pfe_write_gpr(struct pfeng_priv *priv, u32 off, u32 v)
-{
-	return writel(v, priv->gpr_base + off);
-}
-
 int pfeng_hw_detect_version(struct pfeng_priv *priv);
 
 int pfeng_fw_set_from_env_and_load(struct pfeng_priv *priv);
 
 /* S32G global (GPR) regs for PFE */
-#define GPR_PFE_COH_EN_OFF		0x0
-
 #define PFE_COH_PORTS_MASK_HIF_0_3	GENMASK(4, 1)
 
-#define GPR_PFE_EMACX_INTF_SEL_OFF	0x04
 #define GPR_PFE_EMAC_IF_MII(n)		(BIT_32(4 * (n)))
 #define GPR_PFE_EMAC_IF_RMII(n)		(9U << (4 * (n)))
 #define GPR_PFE_EMAC_IF_RGMII(n)	(2U << (4 * (n)))
 #define GPR_PFE_EMAC_IF_SGMII(n)	0U
 
-#define GPR_PFE_PRW_CTRL_OFF		0x20
 #define PFE_EMAC_PWRDWN(n)		(BIT_32(3 + (n)))
-
-#define GPR_PFE_GENCTRL1_OFF		0xE4
 
 #endif /* PFENG_H_ */

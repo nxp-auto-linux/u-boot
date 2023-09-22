@@ -10,6 +10,7 @@
 #include <common.h>
 #include <command.h>
 #include <dm.h>
+#include <nvmem.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
 #include <linux/delay.h>
@@ -65,22 +66,6 @@ static int pfeng_of_to_plat(struct udevice *dev)
 	}
 
 	log_debug("DEB: CSR base %llx\n", cfg->csr_phys_addr);
-
-	ret = dev_read_resource_byname(dev, "s32g-main-gpr", &res);
-	if (ret < 0) {
-		dev_err(dev, "Missing reg 's32g-main-gpr'\n");
-		return ret;
-	}
-
-	cfg->gpr_phys_addr = res.start;
-	cfg->csr_size = resource_size(&res);
-	ret = pfeng_eval_mem_limit(cfg->gpr_phys_addr);
-	if (ret) {
-		dev_err(dev, "Invalid reg 's32g-main-gpr'\n");
-		return ret;
-	}
-
-	log_debug("DEB: PFE GPR base %llx\n", cfg->gpr_phys_addr);
 
 	/* Memory regions */
 	phandle = 0;
@@ -161,21 +146,65 @@ static u32 emac_mode_to_gpr_intf_sel(const struct pfeng_cfg *cfg, u8 emac_id)
 	}
 }
 
-/* Set EMAC modes */
-static void pfeng_set_emacs_intf_mode(struct pfeng_priv *priv)
+static int pfeng_write_nvmem_cell(struct udevice *dev, const char *cell_name,
+				  u32 value)
 {
+	struct nvmem_cell c;
+	int ret;
+
+	ret = nvmem_cell_get_by_name(dev, cell_name, &c);
+	if (ret) {
+		dev_err(dev, "Failed to get cell '%s' (err = %d)\n", cell_name,
+			ret);
+		return ret;
+	}
+
+	ret = nvmem_cell_write(&c, &value, sizeof(value));
+	if (ret) {
+		dev_err(dev, "Failed to write cell '%s' (err = %d)\n",
+			cell_name, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+/* Set EMAC modes */
+static int pfeng_set_emacs_intf_mode(struct pfeng_priv *priv)
+{
+	u32 intf_sel, pfe_pwr;
+	int ret;
+
 	/* set up interfaces */
-	pfe_write_gpr(priv, GPR_PFE_EMACX_INTF_SEL_OFF,
-		      emac_mode_to_gpr_intf_sel(priv->cfg, 2) |
-		      emac_mode_to_gpr_intf_sel(priv->cfg, 1) |
-		      emac_mode_to_gpr_intf_sel(priv->cfg, 0));
+	intf_sel = emac_mode_to_gpr_intf_sel(priv->cfg, 2) |
+		   emac_mode_to_gpr_intf_sel(priv->cfg, 1) |
+		   emac_mode_to_gpr_intf_sel(priv->cfg, 0);
+
+	ret = pfeng_write_nvmem_cell(priv->cfg->dev, "pfe_emacs_intf_sel",
+				     intf_sel);
+	if (ret) {
+		dev_err(priv->cfg->dev, "Failed to set EMACs Interface Modes\n");
+		return ret;
+	}
 
 	/* power down and up the EMACs */
-	pfe_write_gpr(priv, GPR_PFE_PRW_CTRL_OFF, PFE_EMAC_PWRDWN(0) |
-						  PFE_EMAC_PWRDWN(1) |
-						  PFE_EMAC_PWRDWN(2));
+	pfe_pwr = PFE_EMAC_PWRDWN(0) | PFE_EMAC_PWRDWN(1) | PFE_EMAC_PWRDWN(2);
+	ret = pfeng_write_nvmem_cell(priv->cfg->dev, "pfe_pwr_ctrl", pfe_pwr);
+	if (ret) {
+		dev_err(priv->cfg->dev, "Failed to power down the EMACs\n");
+		return ret;
+	}
+
 	udelay(SW_RESET_DELAY);
-	pfe_write_gpr(priv, GPR_PFE_PRW_CTRL_OFF, 0);
+
+	pfe_pwr = 0;
+	ret = pfeng_write_nvmem_cell(priv->cfg->dev, "pfe_pwr_ctrl", pfe_pwr);
+	if (ret) {
+		dev_err(priv->cfg->dev, "Failed to power up the EMACs\n");
+		return ret;
+	}
+
+	return 0;
 }
 
 static int pfeng_init_hardware(struct pfeng_priv *priv)
@@ -211,13 +240,20 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 	return 0;
 }
 
-static void pfeng_gpr_global_init(struct pfeng_priv *priv)
+static int pfeng_gpr_global_init(struct pfeng_priv *priv)
 {
+	int ret;
+
 	/* Setup PFE HIF coherency */
-	pfe_write_gpr(priv, GPR_PFE_COH_EN_OFF, PFE_COH_PORTS_MASK_HIF_0_3);
+	ret = pfeng_write_nvmem_cell(priv->cfg->dev, "pfe_coh_en",
+				     PFE_COH_PORTS_MASK_HIF_0_3);
+	if (ret) {
+		dev_err(priv->cfg->dev, "Failed to set PFE HIF coherency\n");
+		return ret;
+	}
 
 	/* Configure working mode of EMAC interfaces */
-	pfeng_set_emacs_intf_mode(priv);
+	return pfeng_set_emacs_intf_mode(priv);
 }
 
 static int pfeng_clocks_init(struct pfeng_priv *priv)
@@ -298,12 +334,12 @@ static int pfeng_probe(struct udevice *dev)
 	priv->cfg = cfg;
 
 	/* Prepare HW config for platform code */
-
 	priv->csr_base = map_physmem(cfg->csr_phys_addr, cfg->csr_size, MAP_NOCACHE);
-	priv->gpr_base = map_physmem(cfg->gpr_phys_addr, cfg->gpr_size, MAP_NOCACHE);
 
 	/* GPR settings */
-	pfeng_gpr_global_init(priv);
+	ret = pfeng_gpr_global_init(priv);
+	if (ret)
+		return ret;
 
 	/* PFE partition reset */
 	if (cfg->rst) {
@@ -345,7 +381,6 @@ static int pfeng_remove(struct udevice *dev)
 			return 0;
 
 	unmap_physmem(priv->csr_base, MAP_NOCACHE);
-	unmap_physmem(priv->gpr_base, MAP_NOCACHE);
 
 	pfe_hw_hif_chnl_destroy(&priv->pfe_hw);
 	pfe_hw_remove(&priv->pfe_hw);
