@@ -38,7 +38,7 @@ config SYS_DATA_BASE
 
 config S32CC_MAX_DTB_SIZE
 	hex "Max size reserved for device tree in image layout"
-	default 0x9000
+	default 0xa000
 
 config SYS_MALLOC_F_LEN
 	default 0x40000
