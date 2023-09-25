@@ -130,9 +130,9 @@ int devm_scmi_process_msg(struct udevice *dev, struct scmi_msg *msg)
 	struct udevice *parent = dev;
 
 	/* Find related SCMI agent device */
-	do {
+	while (parent && device_get_uclass_id(parent) != UCLASS_SCMI_AGENT) {
 		parent = dev_get_parent(parent);
-	} while (parent && device_get_uclass_id(parent) != UCLASS_SCMI_AGENT);
+	};
 
 	if (!parent) {
 		dev_err(dev, "Invalid SCMI device, agent not found\n");
