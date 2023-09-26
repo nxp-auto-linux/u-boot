@@ -1117,6 +1117,22 @@ int ofnode_write_string(ofnode node, const char *propname, const char *value)
 	return ofnode_write_prop(node, propname, strlen(value) + 1, value);
 }
 
+int ofnode_delete_prop(ofnode node, const char *propname)
+{
+	if (ofnode_is_np(node)) {
+		struct property *prop;
+		int len;
+
+		prop = of_find_property(ofnode_to_np(node), propname, &len);
+		if (prop)
+			return of_remove_property(ofnode_to_np(node), prop);
+		return 0;
+	} else {
+		return fdt_delprop((void *)gd->fdt_blob, ofnode_to_offset(node),
+				propname);
+	}
+}
+
 int ofnode_set_enabled(ofnode node, bool value)
 {
 	if (!of_live_active())
@@ -1217,4 +1233,27 @@ int ofnode_add_subnode(ofnode node, const char *name, ofnode *subnodep)
 	*subnodep = subnode;
 
 	return ret;	/* 0 or -EEXIST */
+}
+
+int ofnode_delete(ofnode *nodep)
+{
+	ofnode node = *nodep;
+	int ret;
+
+	assert(ofnode_valid(node));
+	if (ofnode_is_np(node)) {
+		ret = of_remove_node(ofnode_to_np(node));
+	} else {
+		void *fdt = (void *)gd->fdt_blob;
+		int offset = ofnode_to_offset(node);
+
+		ret = fdt_del_node(fdt, offset);
+		if (ret)
+			ret = -EFAULT;
+	}
+	if (ret)
+		return ret;
+	*nodep = ofnode_null();
+
+	return 0;
 }

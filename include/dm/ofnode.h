@@ -1153,6 +1153,15 @@ int ofnode_write_prop(ofnode node, const char *propname, int len,
 int ofnode_write_string(ofnode node, const char *propname, const char *value);
 
 /**
+ * ofnode_delete_prop() - Delete a property
+ *
+ * @node:      Node containing the property to delete
+ * @propname:  Name of property to delete
+ * Return: 0 if successful, -ve on error
+ */
+int ofnode_delete_prop(ofnode node, const char *propname);
+
+/**
  * ofnode_set_enabled() - Enable or disable a device tree node given by its
  *			  ofnode
  *
@@ -1229,5 +1238,18 @@ ofnode ofnode_get_phy_node(ofnode eth_node);
  * -ve on other error
  */
 int ofnode_add_subnode(ofnode parent, const char *name, ofnode *nodep);
+
+/**
+ * ofnode_delete() - Delete a node
+ *
+ * Delete a node from the tree
+ *
+ * @nodep: Pointer to node to delete (set to ofnode_null() on success)
+ * Return: 0 if OK, -ENOENT if the node does not exist, -EPERM if it is the root
+ * node (wWhich cannot be removed), -EFAULT if the tree is broken (to_remove is
+ * not a child of its parent),
+ *
+ */
+int ofnode_delete(ofnode *nodep);
 
 #endif
