@@ -5,11 +5,17 @@
 #include <common.h>
 #include <adc.h>
 #include <env.h>
+#include <fdt_support.h>
 #include <soc.h>
 #include <dm/uclass.h>
 
 #define SARADC0_CH5		5
 #define SARADC0_TOLERANCE	200
+
+#define SPI5_ALIAS "spi5"
+#define SJA1110_UC_COMPATIBLE "nxp,sja1110-uc"
+#define SJA1110_SWITCH_COMPATIBLE "nxp,sja1110-switch"
+#define SJA1110_DSA_COMPATIBLE "nxp,sja1110a"
 
 /**
  * enum board_type - RDB board type
@@ -225,6 +231,77 @@ find_err:
 	env_set("board_rev", NULL);
 	env_set("pfe1_phy_addr", NULL);
 	printf("Revision Unknown: (0x%x)\n", adc_value);
+
+	return 0;
+}
+
+static void compatible_err(const char *path, const char *compat, int err)
+{
+	pr_err("Failed to find node by compatible %s in %s. Error: %s\n",
+	       compat, path, fdt_strerror(err));
+}
+
+static void ft_sja1110_dsa_setup(void *blob)
+{
+	const char *spi5_path;
+	int spi5_offset;
+	int offset;
+	int ret;
+
+	if (env_get_yesno("sja1110_dsa") < 1)
+		return;
+
+	spi5_path = fdt_get_alias(blob, SPI5_ALIAS);
+	if (!spi5_path) {
+		pr_err("Alias not found: %s\n", SPI5_ALIAS);
+		goto out_err;
+	}
+
+	spi5_offset = fdt_path_offset(blob, spi5_path);
+	if (spi5_offset < 0) {
+		pr_err("Failed to get node offset by path %s. Error: %s\n",
+		       spi5_path, fdt_strerror(spi5_offset));
+		goto out_err;
+	}
+
+	offset = fdt_node_offset_by_compatible(blob, spi5_offset,
+					       SJA1110_UC_COMPATIBLE);
+	if (offset >= 0)
+		fdt_del_node(blob, offset);
+	else
+		compatible_err(spi5_path, SJA1110_UC_COMPATIBLE, offset);
+
+	offset = fdt_node_offset_by_compatible(blob, spi5_offset,
+					       SJA1110_SWITCH_COMPATIBLE);
+	if (offset >= 0)
+		fdt_del_node(blob, offset);
+	else
+		compatible_err(spi5_path, SJA1110_SWITCH_COMPATIBLE,
+			       offset);
+
+	offset = fdt_node_offset_by_compatible(blob, spi5_offset,
+					       SJA1110_DSA_COMPATIBLE);
+	if (offset < 0) {
+		compatible_err(spi5_path, SJA1110_DSA_COMPATIBLE, offset);
+		goto out_err;
+	}
+
+	ret = fdt_status_okay(blob, offset);
+	if (ret < 0) {
+		pr_err("Failed to set status \"okay\". Error: %s\n",
+		       fdt_strerror(spi5_offset));
+		goto out_err;
+	}
+
+	return;
+
+out_err:
+	pr_err("SJA1110 DSA driver not enabled.\n");
+}
+
+int ft_board_setup(void *blob, struct bd_info *bd)
+{
+	ft_sja1110_dsa_setup(blob);
 
 	return 0;
 }
