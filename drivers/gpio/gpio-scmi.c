@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 #include <config.h>
 #include <errno.h>
@@ -101,7 +101,6 @@ static int init_gpio_base_available(struct udevice *dev, unsigned int ngpios,
 				    unsigned int *gpio_base)
 {
 	struct scmi_gpio *gpio_dev = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
 	struct gpio_describe_reply *response = NULL;
 	struct scmi_msg msg = {
 		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_81,
@@ -125,7 +124,7 @@ static int init_gpio_base_available(struct udevice *dev, unsigned int ngpios,
 	msg.out_msg = (u8 *)response;
 	msg.out_msg_sz = out_size;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret)
 		goto free_response;
 
@@ -155,7 +154,6 @@ static int scmi_gpio_request(struct udevice *dev, unsigned int offset,
 			     const char *label)
 {
 	struct scmi_gpio *gpio_dev = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
 	struct {
 		s32 status;
 	} response;
@@ -184,7 +182,7 @@ static int scmi_gpio_request(struct udevice *dev, unsigned int offset,
 	if (ret)
 		return ret;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret)
 		goto release_pinctrl;
 
@@ -202,7 +200,6 @@ release_pinctrl:
 static int scmi_gpio_free(struct udevice *dev, unsigned int offset)
 {
 	struct scmi_gpio *gpio_dev = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
 	struct {
 		s32 status;
 	} response;
@@ -227,7 +224,7 @@ static int scmi_gpio_free(struct udevice *dev, unsigned int offset)
 
 	request.pin = offset;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret)
 		return ret;
 
@@ -247,7 +244,6 @@ static int scmi_gpio_free(struct udevice *dev, unsigned int offset)
 static int scmi_gpio_get_value(struct udevice *dev, unsigned int offset)
 {
 	struct scmi_gpio *gpio_dev = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
 	struct {
 		s32 status;
 		u32 value;
@@ -284,7 +280,7 @@ static int scmi_gpio_get_value(struct udevice *dev, unsigned int offset)
 
 	request.gpio = offset;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret)
 		goto release_pin;
 
@@ -309,7 +305,6 @@ static int scmi_gpio_set_value(struct udevice *dev, unsigned int offset,
 			       int value)
 {
 	struct scmi_gpio *gpio_dev = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
 	struct {
 		s32 status;
 	} response;
@@ -336,7 +331,7 @@ static int scmi_gpio_set_value(struct udevice *dev, unsigned int offset,
 	request.gpio = offset;
 	request.value = value ? 1u : 0u;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret)
 		return ret;
 
@@ -492,7 +487,7 @@ static int scmi_gpio_probe(struct udevice *dev)
 	}
 
 	uc_priv->bank_name = dev->name;
-	ret = get_num_gpios(dev->parent, &uc_priv->gpio_count);
+	ret = get_num_gpios(dev, &uc_priv->gpio_count);
 	if (ret)
 		return ret;
 

@@ -22,7 +22,6 @@ enum scmi_nvmem_message_id {
 static int scmi_nvmem_read(struct udevice *dev, int offset,
 			   void *buf, int size)
 {
-	struct udevice *scmi_dev = dev->parent;
 	struct {
 		s32 status;
 		u32 value;
@@ -42,13 +41,10 @@ static int scmi_nvmem_read(struct udevice *dev, int offset,
 	};
 	int ret;
 
-	if (!scmi_dev)
-		return -ENODEV;
-
 	request.offset = (u32)offset;
 	request.bytes = (u32)size;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret) {
 		pr_err("Error reading cell %d, size %d: %d!\n", offset, size,
 		       ret);
@@ -101,11 +97,10 @@ static int scmi_nvmem_get_num_cells(struct udevice *scmi_dev,
 
 static int scmi_nvmem_probe(struct udevice *dev)
 {
-	struct udevice *scmi_dev = dev->parent;
 	u32 num_cells = 0;
 	int ret;
 
-	ret = scmi_nvmem_get_num_cells(scmi_dev, &num_cells);
+	ret = scmi_nvmem_get_num_cells(dev, &num_cells);
 	if (ret)
 		return ret;
 
