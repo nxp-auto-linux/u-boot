@@ -218,7 +218,7 @@ static int scmi_pinctrl_compare_cfgs(const void *a, const void *b)
 	return pb - pa;
 }
 
-static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
+static int scmi_pinctrl_set_configs_chunk(struct udevice *dev,
 					  u16 no_pins,
 					  u16 *pins,
 					  struct scmi_pinctrl_pin_cfg *cfg,
@@ -302,7 +302,7 @@ static int scmi_pinctrl_set_configs_chunk(struct udevice *scmi_dev,
 		}
 	}
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret) {
 		pr_err("Error setting pin_config: %d!\n", ret);
 		return ret;
@@ -342,7 +342,7 @@ static int scmi_pinctrl_set_configs(struct udevice *sdev,
 	return ret;
 }
 
-static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
+static int scmi_pinctrl_append_conf(struct udevice *dev, unsigned int pin,
 				    unsigned int param, unsigned int arg)
 {
 	struct scmi_pinctrl_pin_cfg cfg;
@@ -364,7 +364,7 @@ static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
 		return ret;
 	}
 
-	ret = scmi_pinctrl_set_configs_chunk(scmi_dev, 1, &pin_id, &cfg, false);
+	ret = scmi_pinctrl_set_configs_chunk(dev, 1, &pin_id, &cfg, false);
 	if (ret)
 		pr_err("Error appending pinconf %d for pin %d\n", param, pin);
 
@@ -373,7 +373,7 @@ static int scmi_pinctrl_append_conf(struct udevice *scmi_dev, unsigned int pin,
 	return ret;
 }
 
-static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
+static int scmi_pinctrl_set_mux_chunk(struct udevice *dev, u16 no_pins,
 				      u16 *pins, u16 *funcs)
 {
 	u8 buffer[SCMI_MAX_BUFFER_SIZE];
@@ -408,7 +408,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *scmi_dev, u16 no_pins,
 		request->pf[i].func = funcs[i];
 	}
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret) {
 		pr_err("Error getting gpio_mux: %d!\n", ret);
 		return ret;
@@ -482,7 +482,7 @@ static int scmi_pinctrl_push_back_configs(u8 *buffer,
 	return ret;
 }
 
-static int scmi_pinctrl_get_config(struct udevice *scmi_dev, u16 pin,
+static int scmi_pinctrl_get_config(struct udevice *dev, u16 pin,
 				   struct scmi_pinctrl_pin_cfg *cfg)
 {
 	u8 response_buffer[SCMI_MAX_BUFFER_SIZE];
@@ -503,7 +503,7 @@ static int scmi_pinctrl_get_config(struct udevice *scmi_dev, u16 pin,
 	cfg->no_configs = 0;
 	cfg->configs = NULL;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret) {
 		pr_err("Error getting pin_config: %d!\n", ret);
 		goto err;
@@ -529,7 +529,7 @@ err:
 	return ret;
 }
 
-static int scmi_pinctrl_get_mux(struct udevice *scmi_dev, u16 pin, u16 *func)
+static int scmi_pinctrl_get_mux(struct udevice *dev, u16 pin, u16 *func)
 {
 	struct {
 		u16 pin;
@@ -550,7 +550,7 @@ static int scmi_pinctrl_get_mux(struct udevice *scmi_dev, u16 pin, u16 *func)
 
 	request.pin = pin;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret) {
 		pr_err("Error getting gpio_mux: %d!\n", ret);
 		return ret;
@@ -629,7 +629,6 @@ static int scmi_pinctrl_parse_pinmux_len(struct udevice *dev,
 static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 					  struct udevice *config)
 {
-	struct udevice *scmi_dev = dev->parent;
 	struct scmi_pinctrl_pin_cfg cfg;
 	struct ofprop property;
 	u32 pinmux_value = 0;
@@ -692,13 +691,13 @@ static int scmi_pinctrl_set_state_subnode(struct udevice *dev,
 	}
 
 	no_pins = len;
-	ret = scmi_pinctrl_set_mux(scmi_dev, no_pins, pins, funcs);
+	ret = scmi_pinctrl_set_mux(dev, no_pins, pins, funcs);
 	if (ret) {
 		pr_err("Error setting pinmux: %d!\n", ret);
 		goto err_funcs;
 	}
 
-	ret = scmi_pinctrl_set_configs(scmi_dev, no_pins, pins, &cfg);
+	ret = scmi_pinctrl_set_configs(dev, no_pins, pins, &cfg);
 	if (ret)
 		pr_err("Error setting pinconf: %d!\n", ret);
 
@@ -735,11 +734,7 @@ static int scmi_pinctrl_pinmux_set(struct udevice *dev,
 				   unsigned int pin_selector,
 				   unsigned int func_selector)
 {
-	struct udevice *scmi_dev = dev->parent;
 	u16 pin, func;
-
-	if (!scmi_dev)
-		return -ENXIO;
 
 	if (pin_selector > U16_MAX || func_selector > U16_MAX)
 		return -EINVAL;
@@ -747,18 +742,13 @@ static int scmi_pinctrl_pinmux_set(struct udevice *dev,
 	pin = pin_selector;
 	func = func_selector;
 
-	return scmi_pinctrl_set_mux(scmi_dev, 1, &pin, &func);
+	return scmi_pinctrl_set_mux(dev, 1, &pin, &func);
 }
 
 static int scmi_pinctrl_pinconf_set(struct udevice *dev,
 				    unsigned int pin_selector,
 				    unsigned int p, unsigned int arg)
 {
-	struct udevice *scmi_dev = dev->parent;
-
-	if (!scmi_dev)
-		return -ENXIO;
-
 	if (p >= ARRAY_SIZE(scmi_pinctrl_convert))
 		return -EINVAL;
 
@@ -766,14 +756,13 @@ static int scmi_pinctrl_pinconf_set(struct udevice *dev,
 	if (p == CONV_PIN_CONFIG_ERROR)
 		return -EINVAL;
 
-	return scmi_pinctrl_append_conf(scmi_dev, pin_selector, p, arg);
+	return scmi_pinctrl_append_conf(dev, pin_selector, p, arg);
 }
 
 static int scmi_pinctrl_gpio_request_enable(struct udevice *dev,
 					    unsigned int pin_selector)
 {
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
-	struct udevice *scmi_dev = dev->parent;
 	struct scmi_pinctrl_saved_pin *save;
 	struct scmi_pinctrl_pin_cfg cfg;
 	u16 pin, func;
@@ -789,11 +778,11 @@ static int scmi_pinctrl_gpio_request_enable(struct udevice *dev,
 	if (!save)
 		return -ENOMEM;
 
-	ret = scmi_pinctrl_get_mux(scmi_dev, pin, &func);
+	ret = scmi_pinctrl_get_mux(dev, pin, &func);
 	if (ret)
 		goto err;
 
-	ret = scmi_pinctrl_get_config(scmi_dev, pin, &cfg);
+	ret = scmi_pinctrl_get_config(dev, pin, &cfg);
 	if (ret)
 		goto err;
 
@@ -802,7 +791,7 @@ static int scmi_pinctrl_gpio_request_enable(struct udevice *dev,
 	save->cfg = cfg;
 
 	func = 0;
-	ret = scmi_pinctrl_set_mux(scmi_dev, 1, &pin, &func);
+	ret = scmi_pinctrl_set_mux(dev, 1, &pin, &func);
 	if (ret)
 		goto err;
 
@@ -821,7 +810,6 @@ static int scmi_pinctrl_gpio_disable_free(struct udevice *dev,
 					  unsigned int pin_selector)
 {
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
-	struct udevice *sdev = dev->parent;
 	struct scmi_pinctrl_saved_pin *save, *temp;
 	int ret = -EINVAL;
 
@@ -829,11 +817,11 @@ static int scmi_pinctrl_gpio_disable_free(struct udevice *dev,
 		if (save->pin != pin_selector)
 			continue;
 
-		ret = scmi_pinctrl_set_mux(sdev, 1, &save->pin, &save->func);
+		ret = scmi_pinctrl_set_mux(dev, 1, &save->pin, &save->func);
 		if (ret)
 			break;
 
-		ret = scmi_pinctrl_set_configs(sdev, 1, &save->pin, &save->cfg);
+		ret = scmi_pinctrl_set_configs(dev, 1, &save->pin, &save->cfg);
 		if (ret)
 			break;
 
@@ -851,7 +839,6 @@ static int scmi_pinctrl_get_gpio_mux(struct udevice *dev,
 				     int index)
 {
 	struct scmi_pinctrl_pin_cfg cfg;
-	struct udevice *scmi_dev = dev->parent;
 	u16 function;
 	int ret, i;
 	u32 param, arg;
@@ -860,17 +847,14 @@ static int scmi_pinctrl_get_gpio_mux(struct udevice *dev,
 	if (index > U16_MAX || index < 0)
 		return -EINVAL;
 
-	if (!scmi_dev)
-		return -ENXIO;
-
-	ret = scmi_pinctrl_get_mux(scmi_dev, (u16)index, &function);
+	ret = scmi_pinctrl_get_mux(dev, (u16)index, &function);
 	if (ret)
 		return ret;
 
 	if (function != 0)
 		return GPIOF_FUNC;
 
-	ret = scmi_pinctrl_get_config(scmi_dev, (u16)index, &cfg);
+	ret = scmi_pinctrl_get_config(dev, (u16)index, &cfg);
 	if (ret)
 		return ret;
 
@@ -946,7 +930,6 @@ static const char *scmi_pinctrl_get_pin_name(struct udevice *dev,
 static int scmi_pinctrl_get_pin_muxing(struct udevice *dev, unsigned int pin,
 				       char *buf, int size)
 {
-	struct udevice *scmi_dev = dev->parent;
 	struct scmi_pinctrl_range *range;
 	u16 func;
 	int ret;
@@ -960,7 +943,7 @@ static int scmi_pinctrl_get_pin_muxing(struct udevice *dev, unsigned int pin,
 	if (!range)
 		return -ENODEV;
 
-	ret = scmi_pinctrl_get_mux(scmi_dev, pin, &func);
+	ret = scmi_pinctrl_get_mux(dev, pin, &func);
 	if (ret)
 		return ret;
 
@@ -985,8 +968,7 @@ static const struct pinctrl_ops scmi_pinctrl_ops = {
 	.get_pin_muxing		= scmi_pinctrl_get_pin_muxing,
 };
 
-static int scmi_pinctrl_get_proto_attr(struct udevice *dev,
-				       struct udevice *scmi_dev)
+static int scmi_pinctrl_get_proto_attr(struct udevice *dev)
 {
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
 	struct {
@@ -1003,7 +985,7 @@ static int scmi_pinctrl_get_proto_attr(struct udevice *dev,
 	};
 	int ret;
 
-	ret = devm_scmi_process_msg(scmi_dev, &msg);
+	ret = devm_scmi_process_msg(dev, &msg);
 	if (ret) {
 		if (ret != -EPROBE_DEFER)
 			pr_err("Error getting proto attr: %d!\n", ret);
@@ -1021,8 +1003,7 @@ static int scmi_pinctrl_get_proto_attr(struct udevice *dev,
 	return 0;
 }
 
-static int scmi_pinctrl_get_pin_ranges(struct udevice *dev,
-				       struct udevice *scmi_dev)
+static int scmi_pinctrl_get_pin_ranges(struct udevice *dev)
 {
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
 	u8 buffer[SCMI_MAX_BUFFER_SIZE];
@@ -1056,7 +1037,7 @@ static int scmi_pinctrl_get_pin_ranges(struct udevice *dev,
 
 	while (range_index < priv->no_ranges) {
 		request.range_index = range_index;
-		ret = devm_scmi_process_msg(scmi_dev, &msg);
+		ret = devm_scmi_process_msg(dev, &msg);
 		if (ret) {
 			pr_err("Error getting pin ranges: %d!\n", ret);
 			break;
@@ -1083,27 +1064,23 @@ err:
 	return ret;
 }
 
-static int scmi_pinctrl_init(struct udevice *dev, struct udevice *scmi_dev)
+static int scmi_pinctrl_init(struct udevice *dev)
 {
 	int ret = 0;
 
-	ret = scmi_pinctrl_get_proto_attr(dev, scmi_dev);
+	ret = scmi_pinctrl_get_proto_attr(dev);
 	if (ret)
 		return ret;
 
-	return scmi_pinctrl_get_pin_ranges(dev, scmi_dev);
+	return scmi_pinctrl_get_pin_ranges(dev);
 }
 
 static int scmi_pinctrl_probe(struct udevice *dev)
 {
-	struct udevice *scmi_dev = dev->parent;
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
 	int ret;
 
-	if (!scmi_dev)
-		return -ENXIO;
-
-	ret = scmi_pinctrl_init(dev, scmi_dev);
+	ret = scmi_pinctrl_init(dev);
 	if (ret)
 		return ret;
 
