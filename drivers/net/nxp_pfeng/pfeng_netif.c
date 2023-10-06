@@ -331,6 +331,7 @@ static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int emac_id)
 	struct phylink_link_state state;
 	struct phy *xpcs;
 	int phy_speed;
+	int xpcs_id;
 	int ret;
 
 	xpcs = kzalloc(sizeof(*xpcs), GFP_KERNEL);
@@ -355,12 +356,20 @@ static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int emac_id)
 		goto err;
 	}
 
-	if (xpcs->id > U32_MAX) {
-		dev_err(dev, "PHY '%s' with invalid device ID: %lu\n", xpcs_name, xpcs->id);
+	xpcs_dev = s32cc_phy2xpcs(xpcs);
+	if (!xpcs_dev) {
+		dev_err(dev, "Failed to get XPCS instance of '%s'\n",
+			xpcs_name);
 		goto err;
 	}
 
-	phy_speed = s32_serdes_get_lane_speed(xpcs->dev, xpcs->id);
+	xpcs_id = xpcs_ops->get_id(xpcs_dev);
+	if (xpcs_id < 0) {
+		dev_err(dev, "Failed to get XPCS id for %s\n", xpcs_name);
+		goto err;
+	}
+
+	phy_speed = s32_serdes_get_lane_speed(xpcs->dev, xpcs_id);
 	if (phy_speed < 0) {
 		dev_err(dev, "Failed to get speed of XPCS for '%s'\n", xpcs_name);
 		goto err;
@@ -386,12 +395,6 @@ static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int emac_id)
 	ret = generic_phy_configure(xpcs, NULL);
 	if (ret) {
 		dev_err(dev, "Failed to configure '%s' PHY\n", xpcs_name);
-		goto err;
-	}
-
-	xpcs_dev = s32cc_phy2xpcs(xpcs);
-	if (!xpcs_dev) {
-		dev_err(dev, "Failed to get XPCS instance of '%s'\n", xpcs_name);
 		goto err;
 	}
 
