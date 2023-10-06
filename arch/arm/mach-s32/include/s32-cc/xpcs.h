@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /**
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  */
 #ifndef S32CC_XPCS_H
 #define S32CC_XPCS_H
@@ -47,6 +47,7 @@ struct s32cc_xpcs_ops {
 			   const struct phylink_link_state *state);
 	int (*xpcs_get_state)(struct s32cc_xpcs *xpcs,
 			      struct phylink_link_state *state);
+	int (*get_id)(struct s32cc_xpcs *xpcs);
 };
 
 const struct s32cc_xpcs_ops *s32cc_xpcs_get_ops(void);
