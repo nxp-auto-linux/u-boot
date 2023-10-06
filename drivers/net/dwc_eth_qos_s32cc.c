@@ -48,6 +48,7 @@ static int eqos_pcs_config_s32cc(struct udevice *dev)
 	struct phylink_link_state state;
 	struct s32cc_xpcs *xpcs;
 	int ret, phy_speed;
+	int xpcs_id;
 
 	if (!eqos->phy)
 		return 0;
@@ -61,16 +62,22 @@ static int eqos_pcs_config_s32cc(struct udevice *dev)
 		return -EIO;
 	}
 
-	phy_speed = s32_serdes_get_lane_speed(eqos->pcs.dev, eqos->pcs.id);
-	if (phy_speed < 0) {
-		dev_err(dev, "Failed to get speed of XPCS for 'gmac_xpcs'");
-		return phy_speed;
-	}
-
 	xpcs = s32cc_phy2xpcs(&eqos->pcs);
 	if (!xpcs) {
 		dev_err(dev, "Failed to get XPCS instance of 'gmac_xpcs'\n");
 		return -EINVAL;
+	}
+
+	xpcs_id = xpcs_ops->get_id(xpcs);
+	if (xpcs_id < 0) {
+		dev_err(dev, "Failed to get XPCS id for 'gmac_xpcs'\n");
+		return xpcs_id;
+	}
+
+	phy_speed = s32_serdes_get_lane_speed(eqos->pcs.dev, xpcs_id);
+	if (phy_speed < 0) {
+		dev_err(dev, "Failed to get speed of XPCS for 'gmac_xpcs'");
+		return phy_speed;
 	}
 
 	state.speed = eqos->phy->speed;
@@ -409,7 +416,10 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 
 	if (interface == PHY_INTERFACE_MODE_SGMII) {
 		ret = eqos_pcs_init_s32cc(dev);
-		dev_err(dev, "XPCS init failed. Check hwconfig. (err=%d)\n", ret);
+		if (ret)
+			dev_err(dev,
+				"XPCS init failed. Check hwconfig. (err=%d)\n",
+				ret);
 	}
 
 	debug("%s: OK\n", __func__);
