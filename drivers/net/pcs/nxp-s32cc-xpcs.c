@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * Driver for XPCS side of the SerDes module present on S32CC platforms
  */
@@ -1262,6 +1262,14 @@ static void xpcs_set_lbe(struct s32cc_xpcs *xpcs, bool enable)
 	XPCS_WRITE_BITS(xpcs, SR_MII_CTRL, LBE, lbe);
 }
 
+static int xpcs_get_id(struct s32cc_xpcs *xpcs)
+{
+	if (!xpcs)
+		return -EINVAL;
+
+	return xpcs->id;
+}
+
 static const struct s32cc_xpcs_ops s32cc_xpcs_ops = {
 	.init = xpcs_init,
 	.power_on = xpcs_power_on,
@@ -1274,6 +1282,7 @@ static const struct s32cc_xpcs_ops s32cc_xpcs_ops = {
 	.pre_pcie_2g5 = xpcs_pre_pcie_2g5,
 	.xpcs_config = xpcs_config,
 	.xpcs_get_state = xpcs_get_state,
+	.get_id = xpcs_get_id,
 };
 
 const struct s32cc_xpcs_ops *s32cc_xpcs_get_ops(void)
