@@ -323,7 +323,7 @@ static u32 get_speed_advertised(int speed)
 	}
 }
 
-static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int xpcs_id)
+static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int emac_id)
 {
 	char xpcs_name[sizeof(XPCS_PHY_FORMAT)];
 	const struct s32cc_xpcs_ops *xpcs_ops;
@@ -343,7 +343,7 @@ static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int xpcs_id)
 		goto err;
 	}
 
-	ret = snprintf(xpcs_name, sizeof(xpcs_name), XPCS_PHY_FORMAT, xpcs_id);
+	ret = snprintf(xpcs_name, sizeof(xpcs_name), XPCS_PHY_FORMAT, emac_id);
 	if (ret >= sizeof(xpcs_name) || ret < 0) {
 		dev_err(dev, "Failed to get XPCS name\n");
 		goto err;
