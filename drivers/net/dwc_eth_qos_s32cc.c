@@ -188,10 +188,6 @@ static int eqos_start_resets_s32cc(struct udevice *dev)
 
 	/* reset DMA to reread phyif config */
 	writel(EQOS_DMA_MODE_SWR, &eqos->dma_regs->mode);
-	udelay(10);
-	while (readl(&eqos->dma_regs->mode) & EQOS_DMA_MODE_SWR)
-		;
-
 	debug("%s: OK\n", __func__);
 	return 0;
 }
