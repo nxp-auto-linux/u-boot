@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2022 NXP
+ * Copyright 2020-2023 NXP
  * SERDES driver for S32CC SoCs
  */
 
@@ -160,6 +160,9 @@ struct serdes {
 
 	unsigned int id;
 };
+
+static unsigned long lane_id_to_xpcs_id(unsigned int mode,
+					unsigned long lane_id);
 
 static const char * const serdes_clk_names[] = {
 	"axi", "aux", "apb", "ref", "ext"
@@ -555,6 +558,7 @@ static int serdes_phy_init(struct phy *p)
 {
 	struct serdes *serdes = dev_get_priv(p->dev);
 	unsigned long id = p->id;
+	unsigned long xpcs_id;
 
 	if (!serdes)
 		return -EINVAL;
@@ -565,8 +569,10 @@ static int serdes_phy_init(struct phy *p)
 	if (serdes->phys_type[id] == PHY_TYPE_PCIE)
 		return 0;
 
-	if (serdes->phys_type[id] == PHY_TYPE_XPCS)
-		return xpcs_phy_init(serdes, p->id);
+	if (serdes->phys_type[id] == PHY_TYPE_XPCS) {
+		xpcs_id = lane_id_to_xpcs_id(serdes->ctrl.ss_mode, id);
+		return xpcs_phy_init(serdes, xpcs_id);
+	}
 
 	return -EINVAL;
 }
@@ -618,6 +624,7 @@ static int serdes_phy_power_on(struct phy *p)
 {
 	struct serdes *serdes = dev_get_priv(p->dev);
 	unsigned long id = p->id;
+	unsigned long xpcs_id;
 
 	if (!serdes)
 		return -EINVAL;
@@ -628,8 +635,10 @@ static int serdes_phy_power_on(struct phy *p)
 	if (serdes->phys_type[id] == PHY_TYPE_PCIE)
 		return pcie_phy_power_on(serdes, p->id);
 
-	if (serdes->phys_type[id] == PHY_TYPE_XPCS)
-		return xpcs_phy_power_on(serdes, p->id);
+	if (serdes->phys_type[id] == PHY_TYPE_XPCS){
+		xpcs_id = lane_id_to_xpcs_id(serdes->ctrl.ss_mode, id);
+		return xpcs_phy_power_on(serdes, xpcs_id);
+	}
 
 	return 0;
 }
@@ -644,6 +653,7 @@ static int xpcs_phy_configure(struct phy *phy, struct phylink_link_state *state)
 	struct serdes *serdes = dev_get_priv(phy->dev);
 	struct xpcs_ctrl *xpcs;
 	__maybe_unused struct udevice *dev;
+	unsigned long xpcs_id;
 	int ret;
 
 	if (!serdes)
@@ -651,8 +661,8 @@ static int xpcs_phy_configure(struct phy *phy, struct phylink_link_state *state)
 
 	xpcs = &serdes->xpcs;
 	dev = serdes->dev;
-
-	ret = xpcs->ops->config(xpcs->phys[phy->id], NULL);
+	xpcs_id = lane_id_to_xpcs_id(serdes->ctrl.ss_mode, phy->id);
+	ret = xpcs->ops->config(xpcs->phys[xpcs_id], NULL);
 	if (ret) {
 		dev_err(dev, "Failed to configure XPCS\n");
 		return ret;
@@ -694,6 +704,14 @@ static const struct serdes_conf serdes_mux_table[] = {
 	/* Demo mode 5 (Mode 2, where XPCS runs @2G5) */
 	{ .lanes = { [0] = PCIE_LANE(0), [1] = XPCS_LANE(1), }, },
 };
+
+static unsigned long lane_id_to_xpcs_id(unsigned int mode,
+					unsigned long lane_id)
+{
+	int xpcs_id = serdes_mux_table[mode].lanes[lane_id].instance;
+
+	return xpcs_id;
+}
 
 struct s32cc_xpcs *s32cc_phy2xpcs(struct phy *phy)
 {
