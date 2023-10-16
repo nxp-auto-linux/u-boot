@@ -162,29 +162,58 @@ static struct mm_region s32_mem_map[] = {
 
 struct mm_region *mem_map = s32_mem_map;
 
+static struct mm_region *get_mm_region(u64 phys_base)
+{
+	struct mm_region *region;
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(s32_mem_map); i++) {
+		region = &s32_mem_map[i];
+
+		if (region->phys == phys_base)
+			return region;
+	}
+
+	return NULL;
+}
+
 static void mmu_disable_qspi_entry(void)
 {
 	struct mm_region *region;
 	ofnode node;
-	size_t i;
 
 	node = ofnode_by_compatible(ofnode_null(), "nxp,s32cc-qspi");
 	if (ofnode_valid(node) && ofnode_is_available(node))
 		return;
 
 	/* Skip AHB mapping by setting its size to 0 */
-	for (i = 0; i < ARRAY_SIZE(s32_mem_map); i++) {
-		region = &s32_mem_map[i];
-		if (region->phys == CONFIG_SYS_FLASH_BASE) {
-			region->size = 0U;
-			break;
-		}
-	}
+	region = get_mm_region(CONFIG_SYS_FLASH_BASE);
+	if (!region)
+		return;
+
+	region->size = 0U;
+}
+
+static void set_dtb_wr_access(bool enable)
+{
+	struct mm_region *region;
+
+	region = get_mm_region(DTB_ADDR);
+	if (!region)
+		return;
+
+	if (enable)
+		region->attrs &= ~PTE_BLOCK_AP_RO;
+	else
+		region->attrs |= PTE_BLOCK_AP_RO;
 }
 
 static int early_mmu_init(void)
 {
 	u64 pgtable_size = PGTABLE_SIZE;
+
+	/* Allow device tree fixups */
+	set_dtb_wr_access(true);
 
 	gd->arch.tlb_addr = (uintptr_t)memalign(pgtable_size, pgtable_size);
 	if (!gd->arch.tlb_addr)
@@ -237,7 +266,6 @@ static int get_sram_size(u32 *sram_size)
 static void mmu_set_sram_size(void)
 {
 	struct mm_region *region;
-	size_t i;
 	u32 sram_size;
 	int ret;
 
@@ -245,13 +273,11 @@ static void mmu_set_sram_size(void)
 	if (ret)
 		panic("Failed to get SRAM size (err=%d)\n", ret);
 
-	for (i = 0; i < ARRAY_SIZE(s32_mem_map); i++) {
-		region = &s32_mem_map[i];
-		if (region->phys == S32CC_SRAM_BASE) {
-			region->size = sram_size;
-			break;
-		}
-	}
+	region = get_mm_region(CONFIG_SYS_FLASH_BASE);
+	if (!region)
+		return;
+
+	region->size = sram_size;
 }
 
 #else /* CONFIG_SYS_DCACHE_OFF */
@@ -282,6 +308,8 @@ int arch_cpu_init(void)
 
 int arch_cpu_init_dm(void)
 {
+	/* RO access for device tree */
+	set_dtb_wr_access(false);
 	mmu_disable_qspi_entry();
 	mmu_set_sram_size();
 
