@@ -144,6 +144,7 @@ static u32 adjust_s32g3_freq(u32 value, struct siul2_nvram *nvram)
 		[11] = 1000,
 		[12] = 1100,
 		[14] = 1300,
+		[15] = 1400,
 	};
 
 	if (value < ARRAY_SIZE(freqs))
