@@ -18,7 +18,6 @@
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/s32cc_soc.h>
 #include <s32-cc/serdes_hwconfig.h>
-#include <dt-bindings/nvmem/s32cc-scmi-nvmem.h>
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
 #define FDT_CLUSTER1_PATH	"/cpus/cpu-map/cluster1"
@@ -32,6 +31,8 @@
 #define SOC_MAX_CORES_PER_CLUSTER_S32G2		2
 #define SOC_MAX_CORES_PER_CLUSTER_S32G3		4
 #define SOC_MAX_CORES_PER_CLUSTER_S32R		2
+
+#define S32CC_MAX_NVMEM_CELLS_PER_NODE		0x10
 
 static const char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
 static const char *scmi_gpio_node_path = "/firmware/scmi/protocol@81";
@@ -560,7 +561,7 @@ static int update_nvmem_consumer_phandles(void *blob, int nodeoff_consumer,
 {
 	int ret, i, idx;
 	const char *cell_name;
-	static u32 new_phandles[S32CC_SCMI_NVMEM_MAX];
+	static u32 new_phandles[S32CC_MAX_NVMEM_CELLS_PER_NODE];
 	const u32 *old_phandles;
 
 	old_phandles = (u32 *)fdt_getprop(blob, nodeoff_consumer, "nvmem-cells",
