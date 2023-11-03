@@ -273,7 +273,7 @@ static void mmu_set_sram_size(void)
 	if (ret)
 		panic("Failed to get SRAM size (err=%d)\n", ret);
 
-	region = get_mm_region(CONFIG_SYS_FLASH_BASE);
+	region = get_mm_region(S32CC_SRAM_BASE);
 	if (!region)
 		return;
 
