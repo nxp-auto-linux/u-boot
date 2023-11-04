@@ -102,20 +102,6 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 	return 0;
 }
 
-static int pfeng_gpr_global_init(struct pfeng_priv *priv)
-{
-	int ret;
-
-	/* Setup PFE HIF coherency */
-	if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE_MANAGE_COHERENCY)) {
-		ret = pfeng_set_port_coherency_nvmem(priv->cfg->dev);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
-}
-
 static void pfeng_gpr_global_deinit(struct pfeng_priv *priv)
 {
 	/* Clear PFE HIF coherency */
@@ -127,18 +113,12 @@ static int pfeng_probe(struct udevice *dev)
 {
 	const struct pfeng_cfg *cfg = dev_get_plat(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
-	int ret;
 
 	priv->cfg = cfg;
 
 	/* Prepare HW config for platform code */
 
 	priv->csr_base = map_physmem(cfg->csr_phys_addr, cfg->csr_size, MAP_NOCACHE);
-
-	/* GPR settings */
-	ret = pfeng_gpr_global_init(priv);
-	if (ret)
-		return ret;
 
 	/* Init PFE HW */
 	priv->pfe_hw_cfg.hif_chnl_id = cfg->hif_id;
@@ -198,6 +178,7 @@ static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 	struct pfeng_priv *priv;
 	struct pfeng_cfg *cfg;
 	struct udevice *dev = NULL;
+	bool ip_is_ready;
 	int ret;
 
 	ret = uclass_get_device_by_name(UCLASS_MISC, "pfeng-base", &dev);
@@ -208,6 +189,19 @@ static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 	cfg = dev_get_plat(dev);
 	priv = dev_get_priv(dev);
 
+	ret = pfeng_is_ip_ready_get_nvmem_cell(dev, &ip_is_ready);
+	if (ret) {
+		dev_err(dev, "Failed to get PFE IP ready state\n");
+		return ret;
+	}
+
+	if (!ip_is_ready) {
+		printf("PFE IP is not ready\n");
+		printf("Statistics are not available\n");
+		return 0;
+	}
+
+	printf("PFE IP is ready\n");
 	printf("HIF channel: %d\n", cfg->hif_id);
 
 	pfe_hw_print_stats(&priv->pfe_hw);

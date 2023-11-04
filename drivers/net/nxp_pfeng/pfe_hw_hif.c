@@ -53,6 +53,11 @@ void pfe_hw_chnl_print_stats(struct pfe_hw_chnl *chnl)
 	printf("HIF_TX_WRBK_BD_BUFFER_SIZE : 0x%x\n", reg);
 }
 
+bool pfe_hw_chnl_cfg_ltc_get(struct pfe_hw_chnl *chnl)
+{
+	return pfe_hw_read(chnl, HIF_LTC_MAX_PKT_CHN_ADDR(chnl->id)) & PFENG_MASTER_UP;
+}
+
 static void *pfe_hw_dma_alloc(size_t size, size_t align)
 {
 	return memalign(align, size);

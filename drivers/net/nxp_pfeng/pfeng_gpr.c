@@ -97,3 +97,17 @@ int pfeng_clear_port_coherency_nvmem(struct udevice *dev)
 
 	return 0;
 }
+
+int pfeng_is_ip_ready_get_nvmem_cell(struct udevice *dev, bool *is_ready)
+{
+	u32 value = 0;
+	int ret;
+
+	ret = pfeng_read_nvmem_cell(dev, "pfe_genctrl3", &value);
+	if (ret)
+		return ret;
+
+	*is_ready = !!(value);
+
+	return 0;
+}
