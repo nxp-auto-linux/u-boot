@@ -24,29 +24,44 @@
 
 static int pfeng_netif_start(struct udevice *dev)
 {
+	struct pfeng_netif *netif = dev_get_priv(dev);
+	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
+	const struct pfe_hw_cfg *hw_cfg = pfeng_priv_get_hw_cfg(netif->priv);
+	int ret;
+
+	ret = pfe_hw_hif_chnl_hw_init(hw, hw_cfg);
+	if (ret)
+		return ret;
+
+	ret = pfe_hw_hif_chnl_create(hw);
+	if (ret)
+		return ret;
+
+	netif->hw_chnl = hw->hw_chnl;
+	pfe_hw_hif_chnl_enable(netif->hw_chnl);
+
 	return 0;
 }
 
 static void pfeng_netif_stop(struct udevice *dev)
 {
+	struct pfeng_netif *netif = dev_get_priv(dev);
+
+	pfe_hw_hif_chnl_disable(netif->hw_chnl);
 }
 
 static int pfeng_netif_send(struct udevice *dev, void *packet, int length)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 
-	log_debug("pfeng:%s: TX phyif#%d len %d\n", netif->cfg->name, netif->cfg->phyif, length);
-
-	return 0;
+	return pfe_hw_chnl_xmit(netif->hw_chnl, netif->cfg->phyif, packet, length);
 }
 
 static int pfeng_netif_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 
-	log_debug("pfeng:%s: RX phyif#%d\n", netif->cfg->name, netif->cfg->phyif);
-
-	return 0;
+	return pfe_hw_chnl_receive(netif->hw_chnl, flags, packetp);
 }
 
 static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
@@ -56,9 +71,7 @@ static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 	if (!packet)
 		return 0;
 
-	log_debug("pfeng:%s: FREE phyif#%d len %d\n", netif->cfg->name, netif->cfg->phyif, length);
-
-	return 0;
+	return pfe_hw_chnl_free_pkt(netif->hw_chnl, packet, length);
 }
 
 static void pfeng_netif_unregister(struct udevice *dev)

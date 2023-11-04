@@ -83,6 +83,25 @@ static int pfeng_of_to_plat(struct udevice *dev)
 	return 0;
 }
 
+static int pfeng_init_hardware(struct pfeng_priv *priv)
+{
+	struct pfe_hw_cfg *hw_cfg = &priv->pfe_hw_cfg;
+	int ret;
+
+	hw_cfg->dev = priv->cfg->dev;
+
+	hw_cfg->cbus_base = priv->cfg->csr_phys_addr;
+	ret = pfe_hw_init(&priv->pfe_hw, hw_cfg);
+	if (ret) {
+		dev_err(priv->cfg->dev, "Could not init PFE platform\n");
+		return ret;
+	}
+
+	priv->pfe_hw.hw_chnl = NULL;
+
+	return 0;
+}
+
 static int pfeng_probe(struct udevice *dev)
 {
 	const struct pfeng_cfg *cfg = dev_get_plat(dev);
@@ -94,7 +113,10 @@ static int pfeng_probe(struct udevice *dev)
 
 	priv->csr_base = map_physmem(cfg->csr_phys_addr, cfg->csr_size, MAP_NOCACHE);
 
-	return 0;
+	/* Init PFE HW */
+	priv->pfe_hw_cfg.hif_chnl_id = cfg->hif_id;
+
+	return pfeng_init_hardware(priv);
 }
 
 static int pfeng_remove(struct udevice *dev)
@@ -109,6 +131,9 @@ static int pfeng_remove(struct udevice *dev)
 			return 0;
 
 	unmap_physmem(priv->csr_base, MAP_NOCACHE);
+
+	pfe_hw_hif_chnl_destroy(&priv->pfe_hw);
+	pfe_hw_remove(&priv->pfe_hw);
 
 	return 0;
 }
