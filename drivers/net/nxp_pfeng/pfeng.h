@@ -117,5 +117,6 @@ int pfeng_write_nvmem_cell(struct udevice *dev, const char *cell_name, u32 value
 int pfeng_read_nvmem_cell(struct udevice *dev, const char *cell_name, u32 *value);
 int pfeng_set_port_coherency_nvmem(struct udevice *dev);
 int pfeng_clear_port_coherency_nvmem(struct udevice *dev);
+int pfeng_is_ip_ready_get_nvmem_cell(struct udevice *dev, bool *is_ready);
 
 #endif /* PFENG_H_ */

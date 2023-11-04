@@ -22,20 +22,73 @@
 
 #define PHYIF_ID_NOT_SET 255
 
-static int pfeng_netif_start(struct udevice *dev)
+static bool is_hw_chnl_initialized(struct pfeng_netif *netif)
+{
+	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
+
+	return hw->hw_chnl_state == PFE_HW_CHNL_READY;
+}
+
+static int initialize_hw_chnl(struct udevice *dev)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
 	const struct pfe_hw_cfg *hw_cfg = pfeng_priv_get_hw_cfg(netif->priv);
+	bool ip_is_ready;
 	int ret;
 
-	ret = pfe_hw_hif_chnl_hw_init(hw, hw_cfg);
-	if (ret)
-		return ret;
+	if (hw->hw_chnl_state == PFE_HW_CHNL_READY)
+		return 0;
 
-	ret = pfe_hw_hif_chnl_create(hw);
-	if (ret)
-		return ret;
+	if (hw->hw_chnl_state == PFE_HW_CHNL_IN_ERROR)
+		return hw->hw_chnl_error;
+
+	if (hw->hw_chnl_state == PFE_HW_CHNL_UNINITIALIZED) {
+		ret = pfeng_is_ip_ready_get_nvmem_cell(dev->parent, &ip_is_ready);
+		if (ret) {
+			dev_err(dev, "Failed to get PFE IP ready state\n");
+			return -EAGAIN;
+		}
+
+		if (!ip_is_ready)
+			return -EAGAIN;
+
+		ret = pfe_hw_hif_chnl_hw_init(hw, hw_cfg);
+		if (ret) {
+			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
+			hw->hw_chnl_error = ret;
+			return ret;
+		}
+
+		ret = pfe_hw_hif_chnl_create(hw);
+		if (ret) {
+			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
+			hw->hw_chnl_error = ret;
+			return ret;
+		}
+
+		hw->hw_chnl_state = PFE_HW_CHNL_CREATED;
+	}
+
+	if (pfe_hw_chnl_cfg_ltc_get(hw->hw_chnl)) {
+		hw->hw_chnl_state = PFE_HW_CHNL_READY;
+		return 0;
+	}
+
+	return -EAGAIN;
+}
+
+static int pfeng_netif_start(struct udevice *dev)
+{
+	struct pfeng_netif *netif = dev_get_priv(dev);
+	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
+	int ret;
+
+	if (!is_hw_chnl_initialized(netif)) {
+		ret = initialize_hw_chnl(dev);
+		if (ret)
+			return ret;
+	}
 
 	netif->hw_chnl = hw->hw_chnl;
 	pfe_hw_hif_chnl_enable(netif->hw_chnl);
@@ -47,12 +100,16 @@ static void pfeng_netif_stop(struct udevice *dev)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 
-	pfe_hw_hif_chnl_disable(netif->hw_chnl);
+	if (is_hw_chnl_initialized(netif))
+		pfe_hw_hif_chnl_disable(netif->hw_chnl);
 }
 
 static int pfeng_netif_send(struct udevice *dev, void *packet, int length)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
+
+	if (!is_hw_chnl_initialized(netif))
+		return -EAGAIN;
 
 	return pfe_hw_chnl_xmit(netif->hw_chnl, netif->cfg->phyif, packet, length);
 }
@@ -60,6 +117,9 @@ static int pfeng_netif_send(struct udevice *dev, void *packet, int length)
 static int pfeng_netif_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
+
+	if (!is_hw_chnl_initialized(netif))
+		return -EAGAIN;
 
 	return pfe_hw_chnl_receive(netif->hw_chnl, flags, packetp);
 }
@@ -70,6 +130,9 @@ static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
 
 	if (!packet)
 		return 0;
+
+	if (!is_hw_chnl_initialized(netif))
+		return -EAGAIN;
 
 	return pfe_hw_chnl_free_pkt(netif->hw_chnl, packet, length);
 }

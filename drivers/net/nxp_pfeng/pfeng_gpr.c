@@ -5,7 +5,12 @@
  * Copyright 2023 NXP
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <dm.h>
 #include <nvmem.h>
 #include <dm/device_compat.h>
@@ -94,6 +99,20 @@ int pfeng_clear_port_coherency_nvmem(struct udevice *dev)
 		dev_err(dev, "Failed to clear PFE HIF coherency\n");
 		return ret;
 	}
+
+	return 0;
+}
+
+int pfeng_is_ip_ready_get_nvmem_cell(struct udevice *dev, bool *is_ready)
+{
+	u32 value = 0;
+	int ret;
+
+	ret = pfeng_read_nvmem_cell(dev, "pfe_genctrl3", &value);
+	if (ret)
+		return ret;
+
+	*is_ready = !!(value);
 
 	return 0;
 }

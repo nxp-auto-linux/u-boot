@@ -16,6 +16,7 @@
 #define PFENG_SHP_COUNT 4U
 #define PFENG_SCH_COUNT 2U
 #define PFENG_PE_COUNT 8U
+#define PFENG_MASTER_UP 1U
 
 struct pfe_hw_emac;
 struct pfe_hw_hif;
@@ -69,11 +70,20 @@ enum pfe_hw_blocks {
 	PFENG_HIF3,
 };
 
+enum pfe_hw_chnl_stage {
+	PFE_HW_CHNL_UNINITIALIZED = 0,
+	PFE_HW_CHNL_CREATED,
+	PFE_HW_CHNL_READY,
+	PFE_HW_CHNL_IN_ERROR,
+};
+
 struct pfe_hw_ext {
 	struct pfe_hw *hw;
 	struct pfe_hw_chnl *hw_chnl;
 	/* variable number of emacs, from 0 to max */
 	struct pfe_hw_emac *hw_emac[PFENG_EMACS_COUNT];
+	enum pfe_hw_chnl_stage hw_chnl_state;
+	int hw_chnl_error;
 };
 
 struct pfe_hw_cfg {
@@ -106,6 +116,7 @@ void pfe_hw_hif_chnl_disable(struct pfe_hw_chnl *chnl);
 int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, u8 phyif, void *packet, int length);
 int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp);
 int pfe_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length);
+bool pfe_hw_chnl_cfg_ltc_get(struct pfe_hw_chnl *chnl);
 
 /* EMAC - MDIO functionality */
 void pfe_hw_emac_enable(struct pfe_hw_emac *emac);
