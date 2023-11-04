@@ -102,16 +102,43 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 	return 0;
 }
 
+static int pfeng_gpr_global_init(struct pfeng_priv *priv)
+{
+	int ret;
+
+	/* Setup PFE HIF coherency */
+	if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE_MANAGE_COHERENCY)) {
+		ret = pfeng_set_port_coherency_nvmem(priv->cfg->dev);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static void pfeng_gpr_global_deinit(struct pfeng_priv *priv)
+{
+	/* Clear PFE HIF coherency */
+	if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE_MANAGE_COHERENCY))
+		(void)pfeng_clear_port_coherency_nvmem(priv->cfg->dev);
+}
+
 static int pfeng_probe(struct udevice *dev)
 {
 	const struct pfeng_cfg *cfg = dev_get_plat(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
+	int ret;
 
 	priv->cfg = cfg;
 
 	/* Prepare HW config for platform code */
 
 	priv->csr_base = map_physmem(cfg->csr_phys_addr, cfg->csr_size, MAP_NOCACHE);
+
+	/* GPR settings */
+	ret = pfeng_gpr_global_init(priv);
+	if (ret)
+		return ret;
 
 	/* Init PFE HW */
 	priv->pfe_hw_cfg.hif_chnl_id = cfg->hif_id;
@@ -129,6 +156,9 @@ static int pfeng_remove(struct udevice *dev)
 	for (i = 0; i < ARRAY_SIZE(cfg->netdevs); i++)
 		if (cfg->netdevs[i])
 			return 0;
+
+	/* GPR settings */
+	pfeng_gpr_global_deinit(priv);
 
 	unmap_physmem(priv->csr_base, MAP_NOCACHE);
 

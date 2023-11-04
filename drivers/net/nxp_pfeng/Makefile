@@ -5,6 +5,7 @@
 
 # NXP S32G PFE Ethernet accelerator driver
 obj-y += pfe_hw_hif.o \
+	 pfeng_gpr.o \
 
 ifdef CONFIG_NXP_PFENG_SLAVE
 obj-y += pfeng_slave.o \
