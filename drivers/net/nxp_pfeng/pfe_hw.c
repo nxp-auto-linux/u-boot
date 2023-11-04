@@ -812,7 +812,7 @@ int pfe_hw_detect_version(phys_addr_t csr_base_addr, enum pfe_hw_ip_ver *pfe_ver
 	return 0;
 }
 
-int pfe_hw_print_stats(struct pfe_hw_ext *ext)
+void pfe_hw_print_stats(struct pfe_hw_ext *ext)
 {
 	u32 i;
 
@@ -826,6 +826,4 @@ int pfe_hw_print_stats(struct pfe_hw_ext *ext)
 		printf("EMAC#%d statistics\n", i);
 		pfe_hw_emac_print_stats(ext->hw_emac[i]);
 	}
-
-	return 0;
 }

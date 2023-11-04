@@ -79,3 +79,13 @@ void pfe_hw_remove(struct pfe_hw_ext *ext)
 	kfree(pfe);
 	ext->hw = NULL;
 }
+
+void pfe_hw_print_stats(struct pfe_hw_ext *ext)
+{
+	printf("HIF statistics\n");
+
+	if (ext->hw_chnl)
+		pfe_hw_chnl_print_stats(ext->hw_chnl);
+	else
+		printf("Not available, HIF channel is not created yet\n");
+}

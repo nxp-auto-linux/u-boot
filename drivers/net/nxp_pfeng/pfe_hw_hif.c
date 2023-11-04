@@ -20,38 +20,37 @@
 
 static struct pfe_ct_hif_tx_hdr tx_header;
 
-static const struct pfe_hw_stats pfe_stats_hif[] = {
-	{"HIF_TX_STATE", HIF_TX_STATE },
-	{"HIF_TX_ACTV", HIF_TX_ACTV },
-	{"HIF_TX_CURR_CH_NO", HIF_TX_CURR_CH_NO },
-	{"HIF_DXR_TX_FIFO_CNT", HIF_DXR_TX_FIFO_CNT },
-	{"HIF_TX_CTRL_WORD_FIFO_CNT1", HIF_TX_CTRL_WORD_FIFO_CNT1 },
-	{"HIF_TX_CTRL_WORD_FIFO_CNT2", HIF_TX_CTRL_WORD_FIFO_CNT2 },
-	{"HIF_TX_BVALID_FIFO_CNT", HIF_TX_BVALID_FIFO_CNT },
-	{"HIF_TX_PKT_CNT1", HIF_TX_PKT_CNT1 },
-	{"HIF_TX_PKT_CNT2", HIF_TX_PKT_CNT2 },
-	{"HIF_RX_STATE", HIF_RX_STATE },
-	{"HIF_RX_ACTV", HIF_RX_ACTV },
-	{"HIF_RX_CURR_CH_NO", HIF_RX_CURR_CH_NO },
-	{"HIF_DXR_RX_FIFO_CNT", HIF_DXR_RX_FIFO_CNT },
-	{"HIF_RX_CTRL_WORD_FIFO_CNT", HIF_RX_CTRL_WORD_FIFO_CNT },
-	{"HIF_RX_BVALID_FIFO_CNT", HIF_RX_BVALID_FIFO_CNT },
-	{"HIF_RX_PKT_CNT1", HIF_RX_PKT_CNT1 },
-	{"HIF_RX_PKT_CNT2", HIF_RX_PKT_CNT2 },
-};
-
 void pfe_hw_chnl_print_stats(struct pfe_hw_chnl *chnl)
 {
 	u32 reg;
-	size_t i;
 
-	for (i = 0; i < ARRAY_SIZE(pfe_stats_hif); i++) {
-		const struct pfe_hw_stats *stat = &pfe_stats_hif[i];
+	reg = pfe_hw_read(chnl, HIF_RX_STATUS_0_CHN(chnl->id));
+	printf("HIF_RX_STATUS_0            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_RX_DMA_STATUS_0_CHN(chnl->id));
+	printf("HIF_RX_DMA_STATUS_0        : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_RX_PKT_CNT0_CHN(chnl->id));
+	printf("HIF_RX_PKT_CNT0            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_RX_PKT_CNT1_CHN(chnl->id));
+	printf("HIF_RX_PKT_CNT1            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_BDP_CHN_RX_FIFO_CNT(chnl->id));
+	printf("HIF_BDP_RX_FIFO_CNT        : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_RX_WRBK_BD_CHN_BUFFER_SIZE(chnl->id));
+	printf("HIF_RX_WRBK_BD_BUFFER_SIZE : 0x%x\n", reg);
 
-		reg = pfe_hw_read(chnl, stat->reg_off);
-
-		printf("%-40s : 0x%08x\n", stat->reg_name, reg);
-	}
+	reg = pfe_hw_read(chnl, HIF_TX_STATUS_0_CHN(chnl->id));
+	printf("HIF_TX_STATUS_0            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_TX_STATUS_1_CHN(chnl->id));
+	printf("HIF_TX_STATUS_1            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_TX_DMA_STATUS_0_CHN(chnl->id));
+	printf("HIF_TX_DMA_STATUS_0        : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_TX_PKT_CNT0_CHN(chnl->id));
+	printf("HIF_TX_PKT_CNT0            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_TX_PKT_CNT1_CHN(chnl->id));
+	printf("HIF_TX_PKT_CNT1            : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_BDP_CHN_TX_FIFO_CNT(chnl->id));
+	printf("HIF_BDP_TX_FIFO_CNT        : 0x%x\n", reg);
+	reg = pfe_hw_read(chnl, HIF_TX_WRBK_BD_CHN_BUFFER_SIZE(chnl->id));
+	printf("HIF_TX_WRBK_BD_BUFFER_SIZE : 0x%x\n", reg);
 }
 
 static void *pfe_hw_dma_alloc(size_t size, size_t align)
