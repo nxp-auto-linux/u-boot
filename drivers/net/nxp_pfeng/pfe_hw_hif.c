@@ -494,47 +494,49 @@ int pfe_hw_hif_init(struct pfe_hw_hif *hif, void __iomem *base, u8 hif_chnl,
 	hif->base = base;
 	hif->hif_chnl = hif_chnl;
 
-	/* Disable and clear HIF interrupts */
-	pfe_hw_write(hif, HIF_ERR_INT_EN, 0);
-	pfe_hw_write(hif, HIF_TX_FIFO_ERR_INT_EN, 0);
-	pfe_hw_write(hif, HIF_RX_FIFO_ERR_INT_EN, 0);
-	pfe_hw_write(hif, HIF_ERR_INT_SRC, 0xffffffff);
-	pfe_hw_write(hif, HIF_TX_FIFO_ERR_INT_SRC, 0xffffffff);
-	pfe_hw_write(hif, HIF_RX_FIFO_ERR_INT_SRC, 0xffffffff);
+	if (!IS_ENABLED(CONFIG_NXP_PFENG_SLAVE)) {
+		/* Disable and clear HIF interrupts */
+		pfe_hw_write(hif, HIF_ERR_INT_EN, 0);
+		pfe_hw_write(hif, HIF_TX_FIFO_ERR_INT_EN, 0);
+		pfe_hw_write(hif, HIF_RX_FIFO_ERR_INT_EN, 0);
+		pfe_hw_write(hif, HIF_ERR_INT_SRC, 0xffffffff);
+		pfe_hw_write(hif, HIF_TX_FIFO_ERR_INT_SRC, 0xffffffff);
+		pfe_hw_write(hif, HIF_RX_FIFO_ERR_INT_SRC, 0xffffffff);
 
-	if (config->on_g3) {
-		log_debug("Skipping HIF soft reset\n");
-	} else {
-		/* SOFT RESET */
-		pfe_hw_write(hif, HIF_SOFT_RESET, HIF_SOFT_RESET_CMD);
-		if (read_poll_timeout(readl, pfe_hw_addr(hif, HIF_SOFT_RESET), reg,
-				      !(reg & HIF_SOFT_RESET_CMD),
-				      1000, HIF_SOFT_RESET_TIMEOUT_US) < 0) {
-			dev_err(config->dev, "HIF reset timed out.\n");
-			return -ETIMEDOUT;
+		if (config->on_g3) {
+			log_debug("Skipping HIF soft reset\n");
+		} else {
+			/* SOFT RESET */
+			pfe_hw_write(hif, HIF_SOFT_RESET, HIF_SOFT_RESET_CMD);
+			if (read_poll_timeout(readl, pfe_hw_addr(hif, HIF_SOFT_RESET), reg,
+					      !(reg & HIF_SOFT_RESET_CMD),
+					      1000, HIF_SOFT_RESET_TIMEOUT_US) < 0) {
+				dev_err(config->dev, "HIF reset timed out.\n");
+				return -ETIMEDOUT;
+			}
+			pfe_hw_write(hif, HIF_SOFT_RESET, 0);
+			log_debug("HIF soft reset done\n");
 		}
-		pfe_hw_write(hif, HIF_SOFT_RESET, 0);
-		log_debug("HIF soft reset done\n");
+
+		/* # of poll cycles */
+		pfe_hw_write(hif, HIF_TX_POLL_CTRL, (0xff << 16) | (0xff));
+		pfe_hw_write(hif, HIF_RX_POLL_CTRL, (0xff << 16) | (0xff));
+
+		/* misc */
+		pfe_hw_write(hif, HIF_MISC, HIF_TIMEOUT_EN | BD_START_SEQ_NUM(0));
+
+		/* Timeout in cycles of sys_clk */
+		pfe_hw_write(hif, HIF_TIMEOUT_REG, 100000000);
+
+		/* TMU queue mapping. 0,1->ch.0, 2,3->ch.1, 4,5->ch.2, 6,7->ch.3 */
+		pfe_hw_write(hif, HIF_RX_QUEUE_MAP_CH_NO_ADDR, 0x33221100);
+
+		/* DMA burst size */
+		pfe_hw_write(hif, HIF_DMA_BURST_SIZE_ADDR, 0);
+
+		/* DMA base address */
+		pfe_hw_write(hif, HIF_DMA_BASE_ADDR, 0);
 	}
-
-	/* # of poll cycles */
-	pfe_hw_write(hif, HIF_TX_POLL_CTRL, (0xff << 16) | (0xff));
-	pfe_hw_write(hif, HIF_RX_POLL_CTRL, (0xff << 16) | (0xff));
-
-	/* misc */
-	pfe_hw_write(hif, HIF_MISC, HIF_TIMEOUT_EN | BD_START_SEQ_NUM(0));
-
-	/* Timeout in cycles of sys_clk */
-	pfe_hw_write(hif, HIF_TIMEOUT_REG, 100000000);
-
-	/* TMU queue mapping. 0,1->ch.0, 2,3->ch.1, 4,5->ch.2, 6,7->ch.3 */
-	pfe_hw_write(hif, HIF_RX_QUEUE_MAP_CH_NO_ADDR, 0x33221100);
-
-	/* DMA burst size */
-	pfe_hw_write(hif, HIF_DMA_BURST_SIZE_ADDR, 0);
-
-	/* DMA base address */
-	pfe_hw_write(hif, HIF_DMA_BASE_ADDR, 0);
 
 	/* Disable channel interrupts */
 	pfe_hw_write(hif, HIF_CHN_INT_EN(hif_chnl), 0);
@@ -548,9 +550,11 @@ int pfe_hw_hif_init(struct pfe_hw_hif *hif, void __iomem *base, u8 hif_chnl,
 	pfe_hw_write(hif, HIF_ABS_INT_TIMER_CHN(hif_chnl), 0);
 	pfe_hw_write(hif, HIF_ABS_FRAME_COUNT_CHN(hif_chnl), 0);
 
-	/* LTC reset */
-	pfe_hw_write(hif, HIF_LTC_PKT_CTRL_ADDR, 0);
-	pfe_hw_write(hif, HIF_LTC_MAX_PKT_CHN_ADDR(hif_chnl), 0);
+	if (!IS_ENABLED(CONFIG_NXP_PFENG_SLAVE)) {
+		/* LTC reset */
+		pfe_hw_write(hif, HIF_LTC_PKT_CTRL_ADDR, 0);
+		pfe_hw_write(hif, HIF_LTC_MAX_PKT_CHN_ADDR(hif_chnl), 0);
+	}
 
 	return 0;
 }
