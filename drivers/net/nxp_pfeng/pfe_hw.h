@@ -63,6 +63,10 @@ enum pfe_hw_blocks {
 	PFENG_EMAC1,
 	PFENG_EMAC2,
 	PFENG_EMACS_COUNT,
+	PFENG_HIF0 = 6U,
+	PFENG_HIF1,
+	PFENG_HIF2,
+	PFENG_HIF3,
 };
 
 struct pfe_hw_ext {
