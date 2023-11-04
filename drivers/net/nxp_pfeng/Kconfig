@@ -14,20 +14,48 @@ config NXP_PFENG
 	  If unsure, say N
 
 choice
+	prompt "Driver working Mode"
+	default NXP_PFENG_STANDALONE
+	help
+	  NXP PFE Ethernet controller supports two working modes
+	  Standalone and Slave driver mode.
+
+config NXP_PFENG_STANDALONE
+	bool "PFE Standalone driver"
+	help
+	  Standalone driver for the NXP PFE Ethernet controller.
+
+	  PFE hardware is fully managed by this driver.
+
+config NXP_PFENG_SLAVE
+	bool "PFE Slave driver"
+	depends on DM_ETH
+	help
+	  Slave driver for the NXP PFE Ethernet controller.
+
+	  The Slave driver gets registered but defers its work until
+	  it detects Master driver up and running.
+
+	  NOTE: If declared netdevs use different HIF channels,
+	  the first one parsed will be used.
+
+endchoice
+
+choice
 	prompt "PFE firmware location"
-	depends on NXP_PFENG
+	depends on NXP_PFENG_STANDALONE
 	default NXP_PFENG_FW_LOC_SDCARD if SD_BOOT
 	default NXP_PFENG_FW_LOC_QSPI if QSPI_BOOT
 
 config NXP_PFENG_FW_LOC_SDCARD
 	bool "SD card"
-	depends on NXP_PFENG
+	depends on NXP_PFENG_STANDALONE
 	help
 	  The firmware file is located on SD card.
 
 config NXP_PFENG_FW_LOC_QSPI
 	bool "QSPI flash"
-	depends on NXP_PFENG
+	depends on NXP_PFENG_STANDALONE
 	help
 	  The firmware is on the QSPI memory.
 endchoice
@@ -41,7 +69,7 @@ config NXP_PFENG_FW_NAME
 
 config NXP_PFENG_FW_PART
 	string "PFE firmware partition"
-	depends on NXP_PFENG
+	depends on NXP_PFENG_STANDALONE
 	default "0:1" if NXP_PFENG_FW_LOC_SDCARD
 	default "0x03000000" if NXP_PFENG_FW_LOC_QSPI
 	help

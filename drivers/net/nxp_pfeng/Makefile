@@ -4,6 +4,10 @@
 #
 
 # NXP S32G PFE Ethernet accelerator driver
+ifdef CONFIG_NXP_PFENG_SLAVE
+obj-y += pfeng_slave.o \
+	 pfeng_netif_slave.o
+else
 obj-y += pfeng.o \
 	 pfeng_fw.o \
 	 pfeng_netif.o \
@@ -11,5 +15,6 @@ obj-y += pfeng.o \
 	 pfe_hw.o \
 	 pfe_hw_emac.o \
 	 pfe_hw_hif.o \
-	 pfe_hw_pe.o \
+	 pfe_hw_pe.o
+endif
 
