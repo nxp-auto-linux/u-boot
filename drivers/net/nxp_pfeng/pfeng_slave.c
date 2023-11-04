@@ -165,6 +165,7 @@ static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 			char *const argv[])
 {
 	struct pfeng_netif_cfg;
+	struct pfeng_priv *priv;
 	struct pfeng_cfg *cfg;
 	struct udevice *dev = NULL;
 	int ret;
@@ -175,8 +176,11 @@ static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 		return -EINVAL;
 	}
 	cfg = dev_get_plat(dev);
+	priv = dev_get_priv(dev);
 
 	printf("HIF channel: %d\n", cfg->hif_id);
+
+	pfe_hw_print_stats(&priv->pfe_hw);
 
 	return 0;
 }
