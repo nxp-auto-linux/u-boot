@@ -77,3 +77,12 @@ config NXP_PFENG_FW_PART
 	  For "sdcard" it's usually the first device's boot partition, so "0:1".
 	  For "qspi" it's the address of reserved memory partition.
 
+config NXP_PFENG_SLAVE_MANAGE_COHERENCY
+	bool "Manage Coherency by PFE Ethernet Slave driver"
+	default n
+	depends on NXP_PFENG_SLAVE
+	help
+	  Setting HIF port coherency should be done once for A53 domain!
+	  The recommended way is to use external solution, to not
+	  get conflict when two A53 Slave instances are trying to manage
+	  coherency register concurrently.

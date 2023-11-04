@@ -146,29 +146,6 @@ static u32 emac_mode_to_gpr_intf_sel(const struct pfeng_cfg *cfg, u8 emac_id)
 	}
 }
 
-static int pfeng_write_nvmem_cell(struct udevice *dev, const char *cell_name,
-				  u32 value)
-{
-	struct nvmem_cell c;
-	int ret;
-
-	ret = nvmem_cell_get_by_name(dev, cell_name, &c);
-	if (ret) {
-		dev_err(dev, "Failed to get cell '%s' (err = %d)\n", cell_name,
-			ret);
-		return ret;
-	}
-
-	ret = nvmem_cell_write(&c, &value, sizeof(value));
-	if (ret) {
-		dev_err(dev, "Failed to write cell '%s' (err = %d)\n",
-			cell_name, ret);
-		return ret;
-	}
-
-	return 0;
-}
-
 /* Set EMAC modes */
 static int pfeng_set_emacs_intf_mode(struct pfeng_priv *priv)
 {
@@ -245,12 +222,9 @@ static int pfeng_gpr_global_init(struct pfeng_priv *priv)
 	int ret;
 
 	/* Setup PFE HIF coherency */
-	ret = pfeng_write_nvmem_cell(priv->cfg->dev, "pfe_coh_en",
-				     PFE_COH_PORTS_MASK_HIF_0_3);
-	if (ret) {
-		dev_err(priv->cfg->dev, "Failed to set PFE HIF coherency\n");
+	ret = pfeng_set_port_coherency_nvmem(priv->cfg->dev);
+	if (ret)
 		return ret;
-	}
 
 	/* Configure working mode of EMAC interfaces */
 	return pfeng_set_emacs_intf_mode(priv);

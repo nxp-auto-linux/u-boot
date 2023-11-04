@@ -106,13 +106,16 @@ int pfeng_hw_detect_version(struct pfeng_priv *priv);
 int pfeng_fw_set_from_env_and_load(struct pfeng_priv *priv);
 
 /* S32G global (GPR) regs for PFE */
-#define PFE_COH_PORTS_MASK_HIF_0_3	GENMASK(4, 1)
-
 #define GPR_PFE_EMAC_IF_MII(n)		(BIT_32(4 * (n)))
 #define GPR_PFE_EMAC_IF_RMII(n)		(9U << (4 * (n)))
 #define GPR_PFE_EMAC_IF_RGMII(n)	(2U << (4 * (n)))
 #define GPR_PFE_EMAC_IF_SGMII(n)	0U
 
 #define PFE_EMAC_PWRDWN(n)		(BIT_32(3 + (n)))
+
+int pfeng_write_nvmem_cell(struct udevice *dev, const char *cell_name, u32 value);
+int pfeng_read_nvmem_cell(struct udevice *dev, const char *cell_name, u32 *value);
+int pfeng_set_port_coherency_nvmem(struct udevice *dev);
+int pfeng_clear_port_coherency_nvmem(struct udevice *dev);
 
 #endif /* PFENG_H_ */
