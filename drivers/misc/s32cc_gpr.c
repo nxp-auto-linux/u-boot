@@ -47,6 +47,10 @@
 #define PFE_EMACS_GENCTRL1_SHIFT	0
 #define PFE_EMACS_GENCTRL1_MASK		GENMASK(2, PFE_EMACS_GENCTRL1_SHIFT)
 
+#define PFE_GENCTRL3_OFF		0xEC
+#define PFE_GENCTRL3_SHIFT		16
+#define PFE_GENCTRL3_MASK		BIT(PFE_GENCTRL3_SHIFT)
+
 struct s32cc_gpr {
 	const struct s32cc_gpr_plat *plat;
 	void __iomem *base;
@@ -117,6 +121,14 @@ static const struct s32cc_gpr_mapping s32g_gpr_mappings[] = {
 		.reg_off = PFE_EMACS_GENCTRL1_OFF,
 		.mask = PFE_EMACS_GENCTRL1_MASK,
 		.shift = PFE_EMACS_GENCTRL1_SHIFT,
+		.read_only = false,
+	},
+	{
+		.gpr_misc_off = S32G_GPR_PFE_GENCTRL3_OFFSET,
+		.gpr_off = SRC_1_OFF,
+		.reg_off = PFE_GENCTRL3_OFF,
+		.mask = PFE_GENCTRL3_MASK,
+		.shift = PFE_GENCTRL3_SHIFT,
 		.read_only = false,
 	},
 };
