@@ -6,7 +6,7 @@
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
  * Copyright 2007-2008,2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019-2022 NXP
+ * Copyright 2019-2023 NXP
  */
 
 #ifndef __FSL_ESDHC_IMX_H__
@@ -28,6 +28,7 @@
 #define SYSCTL_PEREN		0x00000004
 #define SYSCTL_HCKEN		0x00000002
 #define SYSCTL_IPGEN		0x00000001
+#define SYSCTL_FIFO		0x00400000
 #define SYSCTL_RSTA		0x01000000
 #define SYSCTL_RSTC		0x02000000
 #define SYSCTL_RSTD		0x04000000
