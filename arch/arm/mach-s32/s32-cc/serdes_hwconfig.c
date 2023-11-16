@@ -164,7 +164,7 @@ char *s32_serdes_get_xpcs_hwconfig_subarg(int serdes_id, int xpcs_id,
 		}
 	}
 
-	debug("found '%s' argument '%s=%s'\n", xpcs_name,
+	debug("found '%s' argument '%s=%s\n'", xpcs_name,
 	      subarg, subarg_str);
 	return subarg_str;
 }
@@ -460,21 +460,30 @@ bool s32_serdes_is_cfg_valid(unsigned int id)
 	}
 
 	/* Modes 3 and 4 */
-	/* We allow SERDES_MODE_XPCS0_XPCS1 only with xpcsX_0 configured,
-	 * as this was the only Mode3 2G5 configuration supported before S32G3
+	/* There are multiple combinations between xpcs0 and xpcs1,
+	 * including xpcs0 only or xpcs1 only, 1G or 2G5, depending on board,
+	 * so do not overact and add unnecessary restrictions.
+	 * It's perfectly sane to want to use only one interface or both.
 	 */
-	if (mode == SERDES_MODE_XPCS0_XPCS1 && xpcs0_mode == SGMII_INVALID) {
-		printf("%s Invalid xpcs configuration for", prefix);
-		printf("  XPCS1 only mode\n");
-		return false;
-	}
-	if (mode == SERDES_MODE_XPCS0_XPCS1 && xpcs0_mode == SGMII_XPCS_1G &&
-	    xpcs1_mode == SGMII_INVALID) {
-		printf("%s Invalid xpcs configuration for", prefix);
-		printf("  XPCS1 only mode\n");
+	if (mode == SERDES_MODE_XPCS0_XPCS1 &&
+	    xpcs0_mode == SGMII_INVALID && xpcs1_mode == SGMII_INVALID) {
+		printf("%s No xpcs configured for", prefix);
+		printf("  XPCS only mode\n");
 		return false;
 	}
 
+	/* Combined SerDes validation. Performed for SerDes1 */
+	if (id > 0) {
+		/* Check that we don't have XPCS0_1 (pfe2) and XPCS1_0 (pfe0)
+		 * both configured as SGMII
+		 */
+		enum serdes_xpcs_mode xpcs0_1_mode =
+			s32_serdes_get_xpcs_cfg_from_hwconfig(0, 1);
+		if (xpcs0_mode != SGMII_INVALID && xpcs0_1_mode != SGMII_INVALID) {
+			printf("xpcs0_1 and xpcs 1_0 can't be both SGMII\n");
+			return false;
+		}
+	}
 	return true;
 }
 
