@@ -57,7 +57,7 @@ config S32CC_HWCONFIG
 	depends on PHY_S32CC_SERDES
 	default "serdes0:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs0_0:speed=2G5;xpcs0_1:speed=2G5;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5;xpcs1_1:speed=2G5" if (!PCI_S32CC && NXP_PFENG)
 	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=pcie,clock=int;pcie1:mode=ep" if (PCI_S32CC && !NXP_PFENG)
-	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5;xpcs1_1:speed=1G" if (PCI_S32CC && NXP_PFENG)
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5;xpcs1_1:speed=2G5" if (PCI_S32CC && NXP_PFENG)
 
 	help
 	  The configuration for the SerDes modules, stored in
