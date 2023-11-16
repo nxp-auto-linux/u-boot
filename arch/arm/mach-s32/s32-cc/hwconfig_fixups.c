@@ -206,7 +206,7 @@ static int enable_ofnode_device(ofnode node)
 
 	ret = dev_enable_by_path(buf);
 	if (ret) {
-		pr_err("Failed to disable '%s'\n", buf);
+		pr_err("Failed to (re)enable '%s'\n", buf);
 		return ret;
 	}
 
@@ -339,6 +339,22 @@ static const void *node_get_prop(struct dts_node *node, const char *prop,
 		return fdt_getprop(node->blob, node->off, prop, len);
 
 	return ofnode_get_property(node->node, prop, len);
+}
+
+static int node_get_prop_u32(struct dts_node *node, const char *prop, u32 *val)
+{
+	const fdt32_t *cell;
+	int len = 0;
+
+	if (!node->fdt)
+		return ofnode_read_u32(node->node, prop, val);
+
+	cell = fdt_getprop(node->blob, node->off, prop, &len);
+	if (!cell || len != sizeof(*cell))
+		return -EINVAL;
+
+	*val = fdt32_to_cpu(*cell);
+	return 0;
 }
 
 static int node_by_path(struct dts_node *root, struct dts_node *node,
@@ -866,6 +882,52 @@ static void disable_serdes_pcie_nodes(struct dts_node *root, unsigned int id)
 			pr_err("Failed to disable %s%u\n", fmts[i], id);
 		}
 	}
+}
+
+static int node_get_path(struct dts_node *node, char *buf, int len)
+{
+	if (node->fdt)
+		return fdt_get_path(node->blob, node->off, buf, len);
+
+	if (ofnode_is_np(node->node))
+		return ofnode_get_path(node->node, buf, len);
+
+	return -EINVAL;
+}
+
+static int node_find_subnode(struct dts_node *node, struct dts_node *subnode,
+			     const char *subnode_name)
+{
+	int ret, len;
+	char buf[MAX_PATH_SIZE] = "";
+
+	if (!node || !subnode)
+		return -EINVAL;
+
+	ret = node_get_path(node, buf, MAX_PATH_SIZE);
+	if (ret) {
+		debug("%s: Cannot get node path\n", __func__);
+		return -EINVAL;
+	}
+
+	len = strlen(buf);
+	ret = snprintf(&buf[len], MAX_PATH_SIZE - len, "/%s", subnode_name);
+	if (ret < 0 || ret >= MAX_PATH_SIZE - len) {
+		debug("%s: Subnode full path too long\n", __func__);
+		return -EINVAL;
+	}
+
+	debug("%s: searching for subnode: %s\n", __func__, buf);
+	ret = node_by_path(node, subnode, buf);
+	if (!ret) {
+		/* Already exists */
+		debug("Subnode %s already exists\n", buf);
+		return 0;
+	}
+
+	/* All good but no subnode */
+	debug("Subnode %s not found\n", buf);
+	return -ENOENT;
 }
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
