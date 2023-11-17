@@ -513,4 +513,19 @@ int of_alias_get_highest_id(const char *stem);
  */
 struct device_node *of_get_stdout(void);
 
+/**
+ * of_add_subnode() - add a new subnode to a node
+ *
+ * @node:	parent node to add to
+ * @name:	name of subnode
+ * @len:	length of name (so the caller does not need to nul-terminate a
+ *	partial string), or -1 for strlen(@name)
+ * @subnodep:	returns pointer to new subnode (valid if the function returns 0
+ *	or -EEXIST)
+ * Returns 0 if OK, -EEXIST if already exists, -ENOMEM if out of memory, other
+ * -ve on other error
+ */
+int of_add_subnode(struct device_node *node, const char *name, int len,
+		   struct device_node **subnodep);
+
 #endif
