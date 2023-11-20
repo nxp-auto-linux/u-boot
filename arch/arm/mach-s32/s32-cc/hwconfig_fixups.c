@@ -29,7 +29,7 @@
 #define SERDES_LINE_NAME_FMT		"serdes_lane%u"
 #define SERDES_LINE_NAME_LEN		sizeof(SERDES_LINE_NAME_FMT)
 
-#define MAX_PATH_SIZE			100
+#define MAX_PATH_SIZE			100UL
 
 struct dts_node {
 	union {
@@ -898,7 +898,8 @@ static int node_get_path(struct dts_node *node, char *buf, int len)
 static int node_find_subnode(struct dts_node *node, struct dts_node *subnode,
 			     const char *subnode_name)
 {
-	int ret, len;
+	int ret;
+	size_t len;
 	char buf[MAX_PATH_SIZE] = "";
 
 	if (!node || !subnode)
@@ -928,6 +929,78 @@ static int node_find_subnode(struct dts_node *node, struct dts_node *subnode,
 	/* All good but no subnode */
 	debug("Subnode %s not found\n", buf);
 	return -ENOENT;
+}
+
+static int node_create_subnode(struct dts_node *node, struct dts_node *subnode,
+			       const char *subnode_name)
+{
+	int ret;
+
+	if (!node || !subnode)
+		return -EINVAL;
+
+	/* Check if node already exists */
+	ret = node_find_subnode(node, subnode, subnode_name);
+	if (!ret) {
+		debug("%s: subnode '%s' already exists\n", __func__, subnode_name);
+		return 0;
+	}
+	if (ret != -ENOENT)
+		return ret; /* Error */
+
+	subnode->fdt = node->fdt;
+	subnode->blob = node->blob;
+	if (node->fdt) {
+		subnode->off = fdt_add_subnode(node->blob, node->off, subnode_name);
+		if (subnode->off < 0)
+			return subnode->off;
+		return 0;
+	}
+
+	ret = ofnode_add_subnode(node->node, subnode_name, &subnode->node);
+
+	/* Init properties */
+	if (ofnode_is_np(subnode->node)) {
+		struct device_node *np;
+		struct property *pp, **prev_pp = NULL;
+
+		debug("Checking properties for subnode %s\n", subnode_name);
+		np = (struct device_node *)ofnode_to_np(subnode->node);
+		if (!np->properties) {
+			debug("Null properties\n");
+			prev_pp = &np->properties;
+
+			/* Set the 'name' property */
+			pp = calloc(1, sizeof(struct property));
+			if (!pp) {
+				pr_err("Cannot alloc memory\n");
+				return -ENOMEM;
+			}
+			pp->name = strdup("name");
+			if (np->name) {
+				pp->value = (char *)np->name;
+				pp->length = (int)strlen(pp->value) + 1;
+			} else {
+				size_t len = strlen(subnode_name);
+
+				if (len > MAX_PATH_SIZE) {
+					debug("Node name %s is too long\n",
+					      subnode_name);
+					free(pp->name); free(pp);
+					return -EINVAL;
+				}
+				pp->value = strdup(subnode_name);
+				pp->length = (int)len + 1;
+				np->name = pp->value;
+			}
+
+			*prev_pp = pp;
+			if (!np->type)
+				np->type = strdup("<NULL>");
+		}
+	}
+
+	return ret;
 }
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
