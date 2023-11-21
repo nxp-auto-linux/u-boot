@@ -29,6 +29,14 @@ static const char * const pfeng_emac_mode_strings[] = {
 	[PFENG_EMAC_SGMII]	= "sgmii",
 };
 
+void pfeng_emac_mode_to_str(enum pfeng_emac_mode mode, const char **str)
+{
+	if (mode < ARRAY_SIZE(pfeng_emac_mode_strings))
+		*str = pfeng_emac_mode_strings[mode];
+	else
+		*str = pfeng_emac_mode_strings[PFENG_EMAC_NONE];
+}
+
 static int pfeng_eval_mem_limit(phys_addr_t base)
 {
 	if (base > U32_MAX)

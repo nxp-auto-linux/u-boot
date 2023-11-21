@@ -22,6 +22,8 @@
 
 #define PHYIF_ID_NOT_SET 255
 
+enum pfeng_dir {TX, RX};
+
 static bool is_phyif_emac(u8 phyif)
 {
 	return phyif < PFENG_EMACS_COUNT;
@@ -94,54 +96,83 @@ static ulong get_mac_mode_freq(const struct pfeng_cfg *cfg, u8 id)
 	return freq;
 }
 
-static int emac_clocks_start(const struct pfeng_cfg *cfg, u8 id)
+static int emac_clocks_start(struct udevice *dev)
 {
-	struct udevice *dev = cfg->netdevs[id];
-	const char * const emac_clk_str[] = {"emac_rx", "emac_tx"};
-	struct clk *emac_clk[ARRAY_SIZE(emac_clk_str)];
-	int i, ret;
+	const struct pfeng_cfg *cfg = dev_get_plat(dev->parent);
+	struct pfeng_netif *netif = dev_get_priv(dev);
+	const char * const dir_str[] = {"tx", "rx"};
+	u8 id = netif->cfg->phyif;
+	char emac_clk_str[16];
+	const char *mode_str;
+	struct clk *emac_clk;
 	ulong rate;
+	int i, ret;
 
 	/* skip unused EMACs */
 	if (!dev)
 		return 0;
 
-	for (i = 0; i < ARRAY_SIZE(emac_clk_str); i++) {
-		emac_clk[i] = devm_clk_get(dev, emac_clk_str[i]);
-		if (IS_ERR(emac_clk[i])) {
-			dev_err(dev, "Failed to read clock '%s': %ld\n",
-				emac_clk_str[i], PTR_ERR(emac_clk[i]));
-			return PTR_ERR(emac_clk[i]);
+	pfeng_emac_mode_to_str(cfg->emac_int_mode[id], &mode_str);
+
+	for (i = 0; i < ARRAY_SIZE(dir_str); i++) {
+		ret = snprintf(emac_clk_str, sizeof(emac_clk_str), "%s_%s",
+			       dir_str[i], mode_str);
+		if (ret <= 0 || ret >= sizeof(emac_clk_str)) {
+			dev_err(dev, "Failed to parse %s clock name, ret: %d",
+				dir_str[i], ret);
+			return -EINVAL;
 		}
 
-		rate = clk_set_rate(emac_clk[i], get_mac_mode_freq(cfg, id));
+		emac_clk = devm_clk_get(dev, emac_clk_str);
+		if (IS_ERR(emac_clk)) {
+			dev_err(dev, "Failed to read clock '%s': %ld\n",
+				emac_clk_str, PTR_ERR(emac_clk));
+			return PTR_ERR(emac_clk);
+		}
+
+		rate = clk_set_rate(emac_clk, get_mac_mode_freq(cfg, id));
 		if (IS_ERR_VALUE(rate)) {
 			ret = rate;
 			dev_err(dev, "Failed to set clock '%s' rate to: %ld\n",
-				emac_clk_str[i], get_mac_mode_freq(cfg, id));
+				emac_clk_str, get_mac_mode_freq(cfg, id));
 			return ret;
 		}
 
 		/* Start EMAC clock */
-		ret = clk_enable(emac_clk[i]);
+		ret = clk_enable(emac_clk);
 		if (ret < 0) {
 			dev_err(dev, "Clock '%s' enabling failed: %d\n",
-				emac_clk_str[i], ret);
+				emac_clk_str, ret);
 			return ret;
 		}
 
-		log_debug("DEB: phyif#%hhu '%s' clock rate = %lu\n", id,
-			  emac_clk_str[i], rate);
+		if (i == TX)
+			netif->tx_clk = emac_clk;
+
+		if (i == RX)
+			netif->rx_clk = emac_clk;
+
+		log_debug("DEB: phyif#%u '%s' clock rate = %lu\n", id,
+			  emac_clk_str, rate);
 	}
 
 	return 0;
+}
+
+static void emac_clocks_stop(struct udevice *dev)
+{
+	struct pfeng_netif *netif = dev_get_priv(dev);
+
+	clk_disable(netif->tx_clk);
+	clk_disable(netif->rx_clk);
+	devm_clk_put(dev, netif->tx_clk);
+	devm_clk_put(dev, netif->rx_clk);
 }
 
 static int pfeng_netif_start(struct udevice *dev)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
-	struct pfeng_cfg *pcfg = dev_get_plat(dev->parent);
 	u8 phyif = netif->cfg->phyif;
 	int ret;
 
@@ -150,6 +181,10 @@ static int pfeng_netif_start(struct udevice *dev)
 
 	if (!is_phyif_active_emac(netif, phyif))
 		return 0;
+
+	ret = emac_clocks_start(dev);
+	if (ret)
+		goto err;
 
 	if (netif->xpcs) {
 		ret = pfeng_xpcs_start_link(dev, netif->xpcs, phyif);
@@ -163,12 +198,8 @@ static int pfeng_netif_start(struct udevice *dev)
 		goto err;
 	}
 
-	ret = emac_clocks_start(pcfg, phyif);
-	if (ret)
-		goto err;
-
-	pfe_hw_emac_set_speed(hw->hw_emac[netif->cfg->phyif], netif->phy->speed);
-	pfe_hw_emac_set_duplex(hw->hw_emac[netif->cfg->phyif], netif->phy->duplex);
+	pfe_hw_emac_set_speed(hw->hw_emac[phyif], netif->phy->speed);
+	pfe_hw_emac_set_duplex(hw->hw_emac[phyif], netif->phy->duplex);
 
 	pfe_hw_emac_enable(hw->hw_emac[phyif]);
 
@@ -192,6 +223,8 @@ static void pfeng_netif_stop(struct udevice *dev)
 		return;
 
 	pfe_hw_emac_disable(hw->hw_emac[phyif]);
+
+	emac_clocks_stop(dev);
 }
 
 static int pfeng_netif_send(struct udevice *dev, void *packet, int length)
