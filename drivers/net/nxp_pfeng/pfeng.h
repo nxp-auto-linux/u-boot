@@ -93,6 +93,8 @@ struct pfeng_netif {
 	struct phy_device		*phy;
 	struct pfeng_priv		*priv;
 	struct phy			*xpcs;
+	struct clk			*rx_clk;
+	struct clk			*tx_clk;
 	const struct pfeng_netif_cfg	*cfg;
 };
 
@@ -118,5 +120,6 @@ int pfeng_read_nvmem_cell(struct udevice *dev, const char *cell_name, u32 *value
 int pfeng_set_port_coherency_nvmem(struct udevice *dev);
 int pfeng_clear_port_coherency_nvmem(struct udevice *dev);
 int pfeng_is_ip_ready_get_nvmem_cell(struct udevice *dev, bool *is_ready);
+void pfeng_emac_mode_to_str(enum pfeng_emac_mode mode, const char **str);
 
 #endif /* PFENG_H_ */
