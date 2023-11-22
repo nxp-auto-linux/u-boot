@@ -5,6 +5,7 @@
 #include <common.h>
 #include <fdt_support.h>
 #include <malloc.h>
+#include <phy_interface.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>
@@ -29,7 +30,16 @@
 #define SERDES_LINE_NAME_FMT		"serdes_lane%u"
 #define SERDES_LINE_NAME_LEN		sizeof(SERDES_LINE_NAME_FMT)
 
+#define ETH_ALIAS_FMT			"ethernet%d"
+
+#define SERDES_COUNT			2
+#define XPCS_COUNT			2
+
+#define PFENG_EMACS_COUNT		3 /* S32G has 3 PFEs */
+
 #define MAX_PATH_SIZE			100UL
+
+#define EMAC_ID_INVALID			(u32)(-1)
 
 struct dts_node {
 	union {
@@ -251,6 +261,16 @@ static int node_by_alias(struct dts_node *root, struct dts_node *node,
 		return -ENOMEM;
 
 	return 0;
+}
+
+static int node_is_compatible(struct dts_node *node, const char *compat)
+{
+	if (node->fdt)
+		return !fdt_node_check_compatible(node->blob,
+						  node->off,
+						  compat);
+
+	return ofnode_device_is_compatible(node->node, compat);
 }
 
 static int enable_node(struct dts_node *node)
@@ -1003,11 +1023,148 @@ static int node_create_subnode(struct dts_node *node, struct dts_node *subnode,
 	return ret;
 }
 
+static int get_xpcs_node_from_alias(struct dts_node *root, struct dts_node *node,
+				    int serdes_id, int xpcs_id)
+{
+	static const u32 xpcs_ids[SERDES_COUNT][XPCS_COUNT] = {
+		{0, 3}, {1, 2}
+		};
+
+	/* Validate arguments. */
+	if ((u32)serdes_id >= SERDES_COUNT || (u32)xpcs_id >= XPCS_COUNT) {
+		debug("%s: Unsupported interface XPCS%u for SerDes%u\n",
+		      __func__, xpcs_id, serdes_id);
+		return -EINVAL;
+	}
+
+	return node_by_alias(root, node, ETH_ALIAS_FMT, xpcs_ids[serdes_id][xpcs_id]);
+}
+
+static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
+				 int xpcs_id, bool enable_xpcs)
+{
+	int ret = 0, len = 0;
+	struct dts_node node;
+	struct dts_node subnode;
+	const char *phy_mode;
+	const char *sgmii_mode = phy_string_for_interface(PHY_INTERFACE_MODE_SGMII);
+	int speed = s32_serdes_get_xpcs_speed_from_hwconfig(serdes_id, xpcs_id);
+
+	/* Disable XPCS node if speed is invalid. This can only happen when
+	 * XPCS is missing from hwconfig or there is some config error.
+	 */
+	if (speed < 0)
+		enable_xpcs = false;
+
+	/* We need the device tree node for the ethernet interface.
+	 * If we don't, exit silently as most probably we are not
+	 * supposed to apply the fixups for this context.
+	 */
+	ret = get_xpcs_node_from_alias(root, &node,
+				       serdes_id, xpcs_id);
+	if (ret) {
+		pr_warn("Failed to get the DT node for SerDes%d XPCS%d\n",
+			serdes_id, xpcs_id);
+		return ret;
+	}
+
+	/* Check for the ethernet interface that the corresponding EMAC is configured as SGMII.
+	 * If yes, check and set fixed-link speed attribute.
+	 * If not, remove phandle and create fixed-link node with appropriate properties.
+	 * We don't care if it's PFE or GMAC at this point.
+	 */
+
+	/* Our node must be compatible with "nxp,s32g-pfe-netif" or "nxp,s32cc-dwmac" */
+	if (node_is_compatible(&node, "nxp,s32g-pfe-netif")) {
+		u32 val = 0;
+
+		ret = node_get_prop_u32(&node, "nxp,pfeng-linked-phyif", &val);
+		if (ret || val >= (u32)PFENG_EMACS_COUNT) {
+			pr_warn("Invalid linked PHY ID for XPCS%d_%d\n",
+				serdes_id, xpcs_id);
+		}
+	} else if (!node_is_compatible(&node, "nxp,s32cc-dwmac")) {
+		/* No special check for GMAC */
+		pr_warn("Node for XPCS%d_%d is not PFE or GMAC compatible\n",
+			serdes_id, xpcs_id);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	phy_mode = node_get_prop(&node, "phy-mode", &len);
+	/* Check if SGMII mode is enabled */
+	if (phy_mode && len && !strncmp(phy_mode, sgmii_mode, strlen(sgmii_mode))) {
+		/* Should we disable? Do this only for SGMII mode; don't touch
+		 * the node if it is RGMII or other mode
+		 */
+		if (!enable_xpcs) {
+			printf("Disabling XPCS%d_%d\n", serdes_id, xpcs_id);
+			ret = disable_node(&node);
+			goto exit;
+		}
+		/* Check 'fixed-link' node and update 'speed' property */
+		ret = node_find_subnode(&node, &subnode, "fixed-link");
+		if (!ret) {
+			debug("Set fixed-link/speed for XPCS%d_%d to %d\n",
+			      serdes_id, xpcs_id, speed);
+			ret = node_set_prop_u32(&subnode, "speed", speed);
+			if (ret)
+				pr_warn("Cannot set property 'speed' for XPCS%d_%d\n",
+					serdes_id, xpcs_id);
+			/* After setting the speed, we're done */
+			goto exit;
+		}
+		/* Otherwise go ahead and create the fixed-link node */
+	} else {
+		/* RGMII mode or other non-SGMII */
+		/* Don't change to SGMII if not in hwconfig */
+		if (!enable_xpcs)
+			goto exit;
+
+		ret = node_set_prop_str(&node, "phy-mode", sgmii_mode);
+		if (ret) {
+			pr_err("Cannot set 'phy-mode' to SGMII for XPCS%d_%d\n",
+			       serdes_id, xpcs_id);
+			goto exit;
+		}
+	}
+
+	/*
+	 * Do this only for Linux. In U-Boot we don't need to remove phandle.
+	 * We may or may not have this property so no error checking.
+	 */
+	if (node.fdt)
+		fdt_delprop(&node.blob, node.off, "phy-handle");
+
+	/* We need the fixed-link node */
+	ret = node_create_subnode(&node, &subnode, "fixed-link");
+	if (ret) {
+		debug("%s: Cannot create node 'fixed-link'\n", __func__);
+		goto exit;
+	}
+	ret = node_set_prop_u32(&subnode, "speed", speed);
+	if (ret) {
+		debug("%s: Cannot set property 'speed'\n", __func__);
+		goto exit;
+	}
+	ret = node_set_prop_u32(&subnode, "full-duplex", 1);
+	if (ret) {
+		debug("%s: Cannot set property 'full-duplex'\n", __func__);
+		goto exit;
+	}
+
+exit:
+	if (ret)
+		pr_err("Failed to configure XPCS%d_%d\n", serdes_id, xpcs_id);
+	return ret;
+}
+
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
 	bool skip = false;
 	int ret;
 	unsigned int id;
+	enum serdes_mode mode;
 	struct dts_node root = {
 		.fdt = fdt,
 		.blob = blob,
@@ -1043,7 +1200,36 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 
 		ret = set_serdes_mode(&root, id);
 		if (ret)
-			pr_err("Failed to set mode for SerDes%u\n", id);
+			pr_err("Failed to set mode for SerDes%d\n", id);
+
+		if (!IS_ENABLED(CONFIG_NXP_PFENG))
+			continue;
+
+		/* TODO: handle the case when there is no PFE, only GMAC */
+		mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
+
+		if (mode == SERDES_MODE_PCIE_XPCS0) {
+			ret = set_xpcs_config_sgmii(&root, id, 0, true);
+			if (ret)
+				pr_err("Failed to update XPCS0 for SerDes%d\n", id);
+			ret = set_xpcs_config_sgmii(&root, id, 1, false /* disable */);
+			if (ret)
+				pr_err("Failed to disable XPCS1 for SerDes%d\n", id);
+		} else if (mode == SERDES_MODE_XPCS0_XPCS1) {
+			ret = set_xpcs_config_sgmii(&root, id, 0, true);
+			if (ret)
+				pr_err("Failed to update XPCS0 for SerDes%d\n", id);
+			ret = set_xpcs_config_sgmii(&root, id, 1, true);
+			if (ret)
+				pr_err("Failed to update XPCS1 for SerDes%d\n", id);
+		} else if (mode == SERDES_MODE_PCIE_XPCS1) {
+			ret = set_xpcs_config_sgmii(&root, id, 0, false /* disable */);
+			if (ret)
+				pr_err("Failed to disable XPCS0 for SerDes%d\n", id);
+			ret = set_xpcs_config_sgmii(&root, id, 1, true);
+			if (ret)
+				pr_err("Failed to update XPCS1 for SerDes%d\n", id);
+		}
 	}
 
 	return 0;
