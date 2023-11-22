@@ -741,6 +741,22 @@ static int setup_reloc(void)
 		      gd->start_addr_sp);
 	}
 
+	/**
+	 * The below checks are needed to avoid relocation over the data
+	 * regions used before relocation. The overlap may occur between
+	 * text + data used before relocation and a limited set of relocated
+	 * data placed right before the DDR limit. This relocated data comprises
+	 * TLB, malloc, BD, GD, FDT and is placed between RAM TOP and
+	 * gd->start_addr_sp limits.
+	 */
+	if (gd->flags & GD_FLG_SKIP_RELOC) {
+		if (gd->start_addr_sp < (ulong)&__bss_end)
+			panic("Wrong U-Boot config. Please lower the data base address\n");
+
+		if (gd->start_addr_sp < (ulong)&_end)
+			panic("Wrong U-Boot config. Please lower the text base address\n");
+	}
+
 	return 0;
 }
 
