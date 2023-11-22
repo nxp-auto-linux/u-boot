@@ -86,7 +86,7 @@ char *s32_serdes_get_pcie_hwconfig_subarg(unsigned int id,
 		return NULL;
 	}
 
-	debug("found '%s' argument '%s=%s\n'", serdes_name, subarg, subarg_str);
+	debug("found '%s' argument '%s=%s'\n", serdes_name, subarg, subarg_str);
 	return subarg_str;
 }
 
@@ -129,13 +129,13 @@ char *s32_serdes_get_serdes_hwconfig_subarg(int id,
 								 subarg_len);
 #endif
 		if (!subarg_str || !*subarg_len) {
-			debug("'%s' option '%s' not found in hwconfig\n",
+			debug("'%s' option '%s' not found in hwconfigs",
 			      serdes_name, subarg);
 			return NULL;
 		}
 	}
 
-	debug("found '%s' argument '%s=%s\n'", serdes_name, subarg, subarg_str);
+	debug("found '%s' argument '%s=%s'\n", serdes_name, subarg, subarg_str);
 	return subarg_str;
 }
 
@@ -169,7 +169,7 @@ char *s32_serdes_get_xpcs_hwconfig_subarg(int serdes_id, int xpcs_id,
 		}
 	}
 
-	debug("found '%s' argument '%s=%s\n'", xpcs_name,
+	debug("found '%s' argument '%s=%s'\n", xpcs_name,
 	      subarg, subarg_str);
 	return subarg_str;
 }
@@ -475,12 +475,6 @@ bool s32_serdes_is_cfg_valid(unsigned int id)
 	}
 	if (mode == SERDES_MODE_XPCS0_XPCS1 && xpcs0_mode == SGMII_XPCS_1G &&
 	    xpcs1_mode == SGMII_INVALID) {
-		printf("%s Invalid xpcs configuration for", prefix);
-		printf("  XPCS1 only mode\n");
-		return false;
-	}
-	if (mode == SERDES_MODE_XPCS1_ONLY && (xpcs0_mode != SGMII_INVALID ||
-					       xpcs1_mode == SGMII_INVALID)) {
 		printf("%s Invalid xpcs configuration for", prefix);
 		printf("  XPCS1 only mode\n");
 		return false;

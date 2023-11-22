@@ -105,9 +105,7 @@ enum serdes_mode {
 	SERDES_MODE_PCIE_XPCS1 = 2,
 	/*	Lane0=SGMII(XPCS0) (1G/2G5), Lane1=SGMII(XPCS1) (1G/2G5) */
 	SERDES_MODE_XPCS0_XPCS1 = 3,
-	/*	Lane0=None, Lane1=SGMII(XPCS1) (1G/2G5); currently not used */
-	SERDES_MODE_XPCS1_ONLY = 4,
-	SERDES_MODE_MAX = SERDES_MODE_XPCS1_ONLY
+	SERDES_MODE_MAX = SERDES_MODE_XPCS0_XPCS1
 };
 
 enum serdes_xpcs_mode {
