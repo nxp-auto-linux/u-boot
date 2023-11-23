@@ -17,6 +17,7 @@
 
 #define PFE_HW_BD_TIMEOUT_US 1000UL
 #define HIF_SOFT_RESET_TIMEOUT_US 1000000UL
+#define DUMMY_TX_BUF_LEN 64U
 
 static struct pfe_ct_hif_tx_hdr tx_header;
 
@@ -463,6 +464,81 @@ int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, u8 phyif, void *packet, int lengt
 		rd_idx = pfe_hif_get_buffer_idx(rd_idx + 1);
 		ring->read_idx = rd_idx;
 	}
+
+	return 0;
+}
+
+int pfe_hw_chnl_xmit_dummy(struct pfe_hw_chnl *chnl)
+{
+	struct pfe_hif_ring *ring = chnl->tx_ring;
+	struct pfe_hif_bd *bd_hd, *bp_rd;
+	struct pfe_hif_wb_bd *wb_bd_hd, *wb_bp_rd;
+	struct pfe_ct_hif_tx_hdr *tx_hdr;
+	u32 wr_idx, rd_idx;
+	int ret;
+
+	tx_hdr = pfe_hw_dma_alloc(sizeof(struct pfe_ct_hif_tx_hdr) + DUMMY_TX_BUF_LEN, 8U);
+	if (!tx_hdr)
+		return -ENOMEM;
+
+	memset(tx_hdr, 0, sizeof(struct pfe_ct_hif_tx_hdr) + DUMMY_TX_BUF_LEN);
+
+	tx_hdr->e_phy_ifs = htonl(1U << (PFE_PHY_IF_ID_HIF0 + chnl->id));
+	tx_hdr->flags = HIF_TX_INJECT | HIF_TX_IHC;
+	tx_hdr->chid = chnl->id;
+
+	wr_idx = pfe_hif_get_buffer_idx(ring->write_idx);
+
+	/* Get descriptor for header */
+	bd_hd = pfe_hif_get_bd(ring, wr_idx);
+	wb_bd_hd = pfe_hif_get_wb_bd(ring, wr_idx);
+
+	pfe_hw_inval_d(bd_hd, sizeof(struct pfe_hif_bd));
+
+	if (pfe_hif_get_bd_desc_en(bd_hd))
+		log_debug("Invalid Tx desc state (%u)\n", wr_idx);
+
+	pfe_hw_flush_d(tx_hdr, sizeof(struct pfe_ct_hif_tx_hdr) + DUMMY_TX_BUF_LEN);
+
+	pfe_hif_set_bd_data(bd_hd, tx_hdr);
+	bd_hd->buflen = sizeof(struct pfe_ct_hif_tx_hdr) + DUMMY_TX_BUF_LEN;
+	bd_hd->status = 0;
+	bd_hd->lifm = 1;
+	wb_bd_hd->desc_en = 1;
+	dmb();
+	bd_hd->desc_en = 1;
+	pfe_hw_flush_d(wb_bd_hd, sizeof(*wb_bd_hd));
+	pfe_hw_flush_d(bd_hd, sizeof(*bd_hd));
+
+	/* Increment index for next buffer descriptor */
+	wr_idx = pfe_hif_get_buffer_idx(wr_idx + 1);
+	ring->write_idx = wr_idx;
+	rd_idx = pfe_hif_get_buffer_idx(ring->read_idx);
+
+	/* Tx Confirmation */
+	while (rd_idx != wr_idx) {
+		u32 wb_ctrl = 0;
+
+		bp_rd = pfe_hif_get_bd(ring, rd_idx);
+		wb_bp_rd = pfe_hif_get_wb_bd(ring, rd_idx);
+
+		pfe_hw_inval_d(bp_rd, sizeof(struct pfe_hif_bd));
+		pfe_hw_inval_d(wb_bp_rd, sizeof(struct pfe_hif_wb_bd));
+
+		ret = readl_poll_timeout(&wb_bp_rd->ctrl, wb_ctrl,
+					 !(wb_ctrl & RING_WBBD_DESC_EN),
+					 PFE_HW_BD_TIMEOUT_US);
+		if (ret < 0)
+			log_debug("Tx BD timeout (%d)\n", ret);
+
+		bp_rd->desc_en = 0;
+		wb_bp_rd->desc_en = 0;
+		dmb();
+		rd_idx = pfe_hif_get_buffer_idx(rd_idx + 1);
+		ring->read_idx = rd_idx;
+	}
+
+	pfe_hw_dma_free(tx_hdr);
 
 	return 0;
 }
