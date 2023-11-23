@@ -39,6 +39,8 @@ struct pfeng_cfg {
 	struct udevice		*dev;
 	bool			parsed;
 	u8			emacs_mask;
+	u8			ihc_hif_chnl;
+	u8			master_hif_chnl;
 	enum pfeng_emac_mode	emac_int_mode[PFENG_EMACS_COUNT];
 	struct udevice		*netdevs[PFENG_NETDEVS_COUNT];
 };

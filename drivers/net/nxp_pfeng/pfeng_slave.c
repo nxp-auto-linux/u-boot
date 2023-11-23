@@ -75,6 +75,28 @@ out:
 	return -EINVAL;
 }
 
+static int get_pfe_hif_channel(struct udevice *dev, const char *name, u8 *hif_chan)
+{
+	ofnode node = dev_ofnode(dev);
+	u32 val;
+	int ret;
+
+	ret =  ofnode_read_u32(node, name, &val);
+	if (ret) {
+		dev_err(dev, "Missing '%s'\n", name);
+		return ret;
+	}
+
+	if (val > PFE_HIF_CHANNEL_3) {
+		dev_err(dev, "Invalid value '%s': %u\n", name, val);
+		return -EINVAL;
+	}
+
+	*hif_chan = val;
+
+	return 0;
+}
+
 static int pfeng_of_to_plat(struct udevice *dev)
 {
 	struct pfeng_cfg *cfg = dev_get_plat(dev);
@@ -117,6 +139,14 @@ static int pfeng_of_to_plat(struct udevice *dev)
 		dev_err(dev, "Invalid value 'pfe-bdr-pool'\n");
 		return ret;
 	}
+
+	ret = get_pfe_hif_channel(dev, "nxp,pfeng-ihc-channel", &cfg->ihc_hif_chnl);
+	if (ret)
+		return ret;
+
+	ret = get_pfe_hif_channel(dev, "nxp,pfeng-master-channel", &cfg->master_hif_chnl);
+	if (ret)
+		return ret;
 
 	cfg->parsed = true;
 	/* Collect all used netifs */
