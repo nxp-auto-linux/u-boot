@@ -129,7 +129,7 @@ void pfe_hw_hif_chnl_disable(struct pfe_hw_chnl *chnl);
 void pfe_hw_chnl_rings_attach(struct pfe_hw_chnl *chnl);
 int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, bool is_ihc, u8 phyif, void *packet, int length);
 int pfe_hw_chnl_xmit_dummy(struct pfe_hw_chnl *chnl);
-int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp);
+int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, uchar **packetp);
 int pfe_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length);
 bool pfe_hw_chnl_cfg_ltc_get(struct pfe_hw_chnl *chnl);
 u32 pfe_hw_chnl_get_rx_bd_ring_addr(struct pfe_hw_chnl *chnl);

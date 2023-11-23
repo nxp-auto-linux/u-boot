@@ -238,7 +238,7 @@ static int pfeng_netif_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 
-	return pfe_hw_chnl_receive(netif->hw_chnl, flags, packetp);
+	return pfe_hw_chnl_receive(netif->hw_chnl, flags, true, packetp);
 }
 
 static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)
