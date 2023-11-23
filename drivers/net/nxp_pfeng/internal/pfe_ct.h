@@ -38,6 +38,7 @@ enum pfe_ct_phy_if_id {
 
 /* Tx header flags*/
 #define HIF_TX_INJECT		BIT_32(6)
+#define HIF_TX_IHC		BIT_32(7)
 
 /* HIF TX packet header */
 struct pfe_ct_hif_tx_hdr {
