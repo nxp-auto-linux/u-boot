@@ -159,7 +159,7 @@ static int pfeng_netif_recv(struct udevice *dev, int flags, uchar **packetp)
 	if (!is_hw_chnl_initialized(netif))
 		return -EAGAIN;
 
-	return pfe_hw_chnl_receive(netif->hw_chnl, flags, packetp);
+	return pfe_hw_chnl_receive(netif->hw_chnl, flags, true, packetp);
 }
 
 static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)

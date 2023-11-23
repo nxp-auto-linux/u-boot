@@ -113,9 +113,14 @@ static void pfe_hif_set_bd_data(struct pfe_hif_bd *bd, void *addr)
 	bd->data = (u32)(pfe_hw_dma_addr(addr) & U32_MAX);
 }
 
-static void *pfe_hif_get_bd_data(struct pfe_hif_bd *bd)
+static void *pfe_hif_get_bd_data_strip_hdr(struct pfe_hif_bd *bd)
 {
 	return pfe_hw_phys_addr(bd->data + HIF_HEADER_SIZE);
+}
+
+static void *pfe_hif_get_bd_data(struct pfe_hif_bd *bd)
+{
+	return pfe_hw_phys_addr(bd->data);
 }
 
 static inline int pfe_hw_check_mem_bounds(void *dat, u32 len)
@@ -548,7 +553,7 @@ int pfe_hw_chnl_xmit_dummy(struct pfe_hw_chnl *chnl)
 	return 0;
 }
 
-int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp)
+int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, uchar **packetp)
 {
 	struct pfe_hif_bd *bd_pkt;
 	struct pfe_hif_wb_bd *wb_bd_pkt;
@@ -576,9 +581,14 @@ int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp)
 	pfe_hw_flush_d(wb_bd_pkt, sizeof(*wb_bd_pkt));
 	pfe_hw_flush_d(bd_pkt, sizeof(*bd_pkt));
 	dmb();
-	*packetp = pfe_hif_get_bd_data(bd_pkt);
-	if (wb_bd_pkt->buflen >= HIF_HEADER_SIZE)
-		plen = wb_bd_pkt->buflen - HIF_HEADER_SIZE;
+	if (strip_hdr) {
+		*packetp = pfe_hif_get_bd_data_strip_hdr(bd_pkt);
+		if (wb_bd_pkt->buflen >= HIF_HEADER_SIZE)
+			plen = wb_bd_pkt->buflen - HIF_HEADER_SIZE;
+	} else {
+		*packetp = pfe_hif_get_bd_data(bd_pkt);
+		plen = wb_bd_pkt->buflen;
+	}
 
 	/* Advance read buffer */
 	rd_idx = pfe_hif_get_buffer_idx(rd_idx + 1);
