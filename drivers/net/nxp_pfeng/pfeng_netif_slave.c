@@ -22,6 +22,35 @@
 
 #define PHYIF_ID_NOT_SET 255
 
+static int hif_chnl_inspect_hw_state(struct udevice *dev)
+{
+	struct pfeng_netif *netif = dev_get_priv(dev);
+	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
+	u32 rx_ring_addr, rx_wb_ring_addr, tx_ring_addr, tx_wb_ring_addr;
+
+	if (!hw->hw_chnl) {
+		dev_err(dev, "HIF channel is not created yet\n");
+		return -EINVAL;
+	}
+
+	rx_ring_addr = pfe_hw_chnl_get_rx_bd_ring_addr(hw->hw_chnl);
+	rx_wb_ring_addr = pfe_hw_chnl_get_rx_wb_table_addr(hw->hw_chnl);
+	tx_ring_addr = pfe_hw_chnl_get_tx_bd_ring_addr(hw->hw_chnl);
+	tx_wb_ring_addr = pfe_hw_chnl_get_tx_wb_table_addr(hw->hw_chnl);
+
+	if (!rx_ring_addr && !rx_wb_ring_addr && !tx_ring_addr && !tx_wb_ring_addr) {
+		dev_dbg(dev, "HIF channel is in clean state\n");
+		return 0;
+	}
+
+	dev_dbg(dev, "RX ring addr: %x\n", rx_ring_addr);
+	dev_dbg(dev, "RX wb ring addr: %x\n", rx_wb_ring_addr);
+	dev_dbg(dev, "TX ring addr: %x\n", tx_ring_addr);
+	dev_dbg(dev, "TX wb ring addr: %x\n", tx_wb_ring_addr);
+
+	return -EINVAL;
+}
+
 static bool is_hw_chnl_initialized(struct pfeng_netif *netif)
 {
 	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
@@ -62,6 +91,14 @@ static int initialize_hw_chnl(struct udevice *dev)
 
 		ret = pfe_hw_hif_chnl_create(hw);
 		if (ret) {
+			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
+			hw->hw_chnl_error = ret;
+			return ret;
+		}
+
+		ret = hif_chnl_inspect_hw_state(dev);
+		if (ret) {
+			dev_err(dev, "HIF channel is not in clean state\n");
 			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
 			hw->hw_chnl_error = ret;
 			return ret;
