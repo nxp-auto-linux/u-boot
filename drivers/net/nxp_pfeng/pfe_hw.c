@@ -603,6 +603,11 @@ static int pfe_hw_safety_clear(struct pfe_hw *pfe)
 }
 
 /* external API */
+void pfe_hw_hif_chnl_rings_attach(struct pfe_hw_ext *ext)
+{
+	pfe_hw_chnl_rings_attach(ext->hw_chnl);
+}
+
 int pfe_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *hw_cfg)
 {
 	struct pfe_hw *pfe;

@@ -222,6 +222,8 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 		return ret;
 	}
 
+	pfe_hw_hif_chnl_rings_attach(&priv->pfe_hw);
+
 	return 0;
 }
 

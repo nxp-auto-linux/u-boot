@@ -67,6 +67,7 @@ static int initialize_hw_chnl(struct udevice *dev)
 			return ret;
 		}
 
+		pfe_hw_chnl_rings_attach(hw->hw_chnl);
 		hw->hw_chnl_state = PFE_HW_CHNL_CREATED;
 	}
 
