@@ -41,6 +41,8 @@ struct pfe_hw {
 	void __iomem *base;
 	void *bmu_buffers_va;
 	u64 bmu_buffers_size;
+	void *bdr_buffers_va;
+	u64 bdr_buffers_size;
 	u32 hif_chnl_count;	/* Number of HIF channels */
 	bool on_g3;		/* True if running on S32G3 */
 	u8 emac_mdio_div;	/* Divider for mdio clk */
