@@ -63,6 +63,8 @@ int pfe_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *hw_cfg)
 
 	/* Create HW components */
 	pfe->hif_chnl = hw_cfg->hif_chnl_id;
+	pfe->ihc_hif_id = hw_cfg->ihc_hif_id;
+	pfe->master_hif_id = hw_cfg->master_hif_id;
 
 	return 0;
 

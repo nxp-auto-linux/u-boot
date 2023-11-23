@@ -105,6 +105,8 @@ struct pfe_hw_cfg {
 	phys_addr_t bdrs_addr;
 	phys_size_t bdrs_size;
 	u8 hif_chnl_id;
+	u8 ihc_hif_id;
+	u8 master_hif_id;
 	u8 emac_mask;
 	u8 emac_mdio_div; /* Divider for mdio clk */
 	bool on_g3; /* True if running on S32G3 */

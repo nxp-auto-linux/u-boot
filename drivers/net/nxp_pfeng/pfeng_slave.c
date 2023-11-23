@@ -216,6 +216,8 @@ static int pfeng_probe(struct udevice *dev)
 
 	/* Init PFE HW */
 	priv->pfe_hw_cfg.hif_chnl_id = cfg->hif_id;
+	priv->pfe_hw_cfg.ihc_hif_id = cfg->ihc_hif_chnl + PFENG_HIF0;
+	priv->pfe_hw_cfg.master_hif_id = cfg->master_hif_chnl + PFENG_HIF0;
 
 	return pfeng_init_hardware(priv);
 }
