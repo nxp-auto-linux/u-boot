@@ -474,8 +474,10 @@ int pfe_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length)
 	bd_pkt->status = 0;
 	bd_pkt->lifm = 1;
 	wb_bd_pkt->desc_en = 1;
+	pfe_hw_flush_d(wb_bd_pkt, sizeof(*wb_bd_pkt));
 	dmb();
 	bd_pkt->desc_en = 1;
+	pfe_hw_flush_d(bd_pkt, sizeof(*bd_pkt));
 
 	/* This has to be here for correct HW functionality */
 	pfe_hw_flush_d(packet, length);
