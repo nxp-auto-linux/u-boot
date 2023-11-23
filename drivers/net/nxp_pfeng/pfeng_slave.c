@@ -192,6 +192,7 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 	}
 
 	priv->pfe_hw.hw_chnl = NULL;
+	priv->pfe_hw.in_grace_reset = false;
 
 	return 0;
 }
@@ -227,11 +228,17 @@ static int pfeng_remove(struct udevice *dev)
 	struct pfeng_cfg *cfg = dev_get_plat(dev);
 	struct pfeng_priv *priv = dev_get_priv(dev);
 	int i;
+	int ret = 0;
 
 	/* Wait until all netdevs get deregistered */
 	for (i = 0; i < ARRAY_SIZE(cfg->netdevs); i++)
 		if (cfg->netdevs[i])
 			return 0;
+
+	if (priv->pfe_hw.hw_chnl &&
+	    (priv->pfe_hw.hw_chnl_state == PFE_HW_CHNL_CREATED ||
+	     priv->pfe_hw.hw_chnl_state == PFE_HW_CHNL_READY))
+		ret = pfe_hw_grace_reset(&priv->pfe_hw);
 
 	/* GPR settings */
 	pfeng_gpr_global_deinit(priv);
@@ -241,7 +248,7 @@ static int pfeng_remove(struct udevice *dev)
 	pfe_hw_hif_chnl_destroy(&priv->pfe_hw);
 	pfe_hw_remove(&priv->pfe_hw);
 
-	return 0;
+	return ret;
 }
 
 static int pfeng_bind(struct udevice *dev)
