@@ -47,6 +47,8 @@ struct pfe_hw {
 	bool on_g3;		/* True if running on S32G3 */
 	u8 emac_mdio_div;	/* Divider for mdio clk */
 	u8 hif_chnl;		/* HIF channel ID to be used by u-boot */
+	u8 ihc_hif_id;
+	u8 master_hif_id;
 	struct pfe_hw_hif hif;
 	struct pfe_hw_pe class;
 	void *hif_base;
