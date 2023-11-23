@@ -127,7 +127,7 @@ void pfe_hw_hif_chnl_destroy(struct pfe_hw_ext *ext);
 void pfe_hw_hif_chnl_enable(struct pfe_hw_chnl *chnl);
 void pfe_hw_hif_chnl_disable(struct pfe_hw_chnl *chnl);
 void pfe_hw_chnl_rings_attach(struct pfe_hw_chnl *chnl);
-int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, u8 phyif, void *packet, int length);
+int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, bool is_ihc, u8 phyif, void *packet, int length);
 int pfe_hw_chnl_xmit_dummy(struct pfe_hw_chnl *chnl);
 int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp);
 int pfe_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length);

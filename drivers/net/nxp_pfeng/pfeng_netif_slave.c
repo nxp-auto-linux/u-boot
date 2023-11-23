@@ -149,7 +149,7 @@ static int pfeng_netif_send(struct udevice *dev, void *packet, int length)
 	if (!is_hw_chnl_initialized(netif))
 		return -EAGAIN;
 
-	return pfe_hw_chnl_xmit(netif->hw_chnl, netif->cfg->phyif, packet, length);
+	return pfe_hw_chnl_xmit(netif->hw_chnl, false, netif->cfg->phyif, packet, length);
 }
 
 static int pfeng_netif_recv(struct udevice *dev, int flags, uchar **packetp)
