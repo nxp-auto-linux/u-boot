@@ -11,6 +11,82 @@
 #include "pfe_hw.h"
 #include "internal/pfe_hw_priv.h"
 
+#define RPC_PFE_IF_LOCK 0xBE
+#define RPC_PFE_IF_UNLOCK 0xBF
+#define RPC_PFE_IF_DISABLE 0x66
+
+#define IHC_BUFFER_SIZE 128
+#define MINIMAL_IHC_FRAME_SIZE 68
+
+#define IDEX_RPC_RETRIES 3
+
+#define FLUSH_COUNT_LIMIT (RING_LEN * 4)
+
+enum pfe_idex_frame_type {
+	IDEX_FRAME_CTRL_REQUEST,
+	IDEX_FRAME_CTRL_RESPONSE,
+};
+
+struct pfe_idex_frame_header {
+	u8 dst_phy_if;
+	u8 type;
+} __packed;
+
+_ct_assert(sizeof(struct pfe_idex_frame_header) == 2);
+
+enum pfe_idex_request_type {
+	IDEX_MASTER_DISCOVERY,
+	IDEX_RPC,
+};
+
+struct pfe_idex_request {
+	u32 seqnum;
+	u8 type;
+	u8 dst_phy_id;
+	u8 state;
+	u8 padding[30U];
+} __packed;
+
+_ct_assert(sizeof(struct pfe_idex_request) == 37);
+
+struct pfe_idex_msg_rpc {
+	u32 rpc_id;
+	int rpc_ret;
+	u16 plen;
+} __packed;
+
+struct pfe_idex_rpc_req_hdr {
+	struct pfe_idex_frame_header idex_hdr;
+	struct pfe_idex_request idex_req;
+	struct pfe_idex_msg_rpc idex_msg;
+} __packed;
+
+_ct_assert(sizeof(struct pfe_idex_rpc_req_hdr) == 49);
+
+struct pfe_idex_rpc_req_hdr_if_mode {
+	struct pfe_idex_rpc_req_hdr idex_rpc_req_hdr;
+	u32 phy_if_id;
+} __packed;
+
+_ct_assert(sizeof(struct pfe_idex_rpc_req_hdr_if_mode) == 53);
+
+struct pfe_idex_response {
+	u32 seqnum;
+	u8 type;
+	u16 plen;
+} __packed;
+
+_ct_assert(sizeof(struct pfe_idex_response) == 7);
+
+struct pfe_idex_resp {
+	struct pfe_ct_hif_rx_hdr rx_hdr;
+	struct pfe_idex_frame_header idex_hdr;
+	struct pfe_idex_response idex_resp;
+	struct pfe_idex_msg_rpc idex_msg;
+} __packed;
+
+_ct_assert(sizeof(struct pfe_idex_resp) == 35);
+
 static inline phys_addr_t pfe_hw_block_pa_of(phys_addr_t addr, u32 pa_off)
 {
 	if (check_uptr_overflow(addr, (uintptr_t)pa_off))
