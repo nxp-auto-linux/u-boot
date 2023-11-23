@@ -274,6 +274,7 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 		ret = -EINVAL;
 	} else {
 		ret = 0;
+		ext->in_grace_reset = true;
 	}
 
 exit:
@@ -374,6 +375,11 @@ int pfe_hw_grace_reset(struct pfe_hw_ext *ext)
 	printf("HIF graceful reset\n");
 
 	if (ext->hw_chnl) {
+		if (ext->in_grace_reset) {
+			printf("PFE is in the grace reset state already\n");
+			return ret;
+		}
+
 		ret = hif_channel_grace_reset(ext);
 		if (!ret)
 			printf("Performed graceful PFE reset\n");

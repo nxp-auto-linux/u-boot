@@ -91,6 +91,7 @@ struct pfe_hw_ext {
 	struct pfe_hw_emac *hw_emac[PFENG_EMACS_COUNT];
 	enum pfe_hw_chnl_stage hw_chnl_state;
 	int hw_chnl_error;
+	bool in_grace_reset;
 };
 
 struct pfe_hw_cfg {
