@@ -376,7 +376,7 @@ void pfe_hw_hif_chnl_disable(struct pfe_hw_chnl *chnl)
 		   RX_BDP_POLL_CNTR_EN | RX_DMA_ENABLE | TX_BDP_POLL_CNTR_EN | TX_DMA_ENABLE);
 }
 
-int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, u8 phyif, void *packet, int length)
+int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, bool is_ihc, u8 phyif, void *packet, int length)
 {
 	struct pfe_hif_ring *ring = chnl->tx_ring;
 	struct pfe_hif_bd *bd_hd, *bd_pkt, *bp_rd;
@@ -411,7 +411,12 @@ int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, u8 phyif, void *packet, int lengt
 
 	/* Fill header */
 	memset(&tx_header, 0, HIF_HEADER_SIZE);
-	tx_header.flags = HIF_TX_INJECT;
+
+	if (is_ihc)
+		tx_header.flags = HIF_TX_INJECT | HIF_TX_IHC;
+	else
+		tx_header.flags = HIF_TX_INJECT;
+
 	tx_header.chid = chnl->id;
 	tx_header.e_phy_ifs = htonl(1U << phyif);
 	pfe_hw_flush_d(&tx_header, HIF_HEADER_SIZE);
