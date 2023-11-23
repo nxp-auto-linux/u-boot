@@ -170,7 +170,7 @@ void pfe_hw_chnl_rings_attach(struct pfe_hw_chnl *chnl)
 	pfe_hw_write(chnl, HIF_RX_WRBK_BD_CHN_BUFFER_SIZE(id), RING_LEN);
 }
 
-static struct pfe_hif_ring *pfe_hw_chnl_rings_create(bool is_rx)
+static struct pfe_hif_ring *pfe_hw_chnl_rings_create(bool is_rx, void *bd, void *wb_db)
 {
 	struct pfe_hif_ring *ring;
 	size_t size;
@@ -181,7 +181,11 @@ static struct pfe_hif_ring *pfe_hw_chnl_rings_create(bool is_rx)
 		return NULL;
 
 	size = RING_LEN * sizeof(*ring->bd);
-	ring->bd = pfe_hw_dma_alloc(size, RING_BD_ALIGN);
+	if (bd)
+		ring->bd = bd;
+	else
+		ring->bd = pfe_hw_dma_alloc(size, RING_BD_ALIGN);
+
 	if (!ring->bd) {
 		log_warning("WARN: HIF ring couldn't be allocated.\n");
 		goto err_with_ring;
@@ -190,7 +194,11 @@ static struct pfe_hif_ring *pfe_hw_chnl_rings_create(bool is_rx)
 	memset_io(ring->bd, 0, size);
 
 	size = RING_LEN * sizeof(*ring->wb_bd);
-	ring->wb_bd = pfe_hw_dma_alloc(size, RING_BD_ALIGN);
+	if (wb_db)
+		ring->wb_bd = wb_db;
+	else
+		ring->wb_bd = pfe_hw_dma_alloc(size, RING_BD_ALIGN);
+
 	if (!ring->wb_bd) {
 		log_warning("WARN: HIF ring couldn't be allocated.\n");
 		goto err_with_bd;
@@ -237,21 +245,24 @@ static struct pfe_hif_ring *pfe_hw_chnl_rings_create(bool is_rx)
 	return ring;
 
 err_with_bd:
-	pfe_hw_dma_free(ring->bd);
+	if (!bd)
+		pfe_hw_dma_free(ring->bd);
 err_with_ring:
 	kfree(ring);
 	return NULL;
 }
 
-static void pfe_hw_chnl_rings_destroy(struct pfe_hif_ring *ring)
+static void pfe_hw_chnl_rings_destroy(struct pfe_hif_ring *ring, bool do_free)
 {
 	if (!ring)
 		return;
 
-	if (ring->wb_bd)
-		pfe_hw_dma_free(ring->wb_bd);
-	if (ring->bd)
-		pfe_hw_dma_free(ring->bd);
+	if (do_free) {
+		if (ring->wb_bd)
+			pfe_hw_dma_free(ring->wb_bd);
+		if (ring->bd)
+			pfe_hw_dma_free(ring->bd);
+	}
 
 	ring->wb_bd = NULL;
 	ring->bd = NULL;
@@ -263,10 +274,27 @@ static void pfe_hw_chnl_rings_destroy(struct pfe_hif_ring *ring)
 int pfe_hw_hif_chnl_create(struct pfe_hw_ext *ext)
 {
 	struct pfe_hw_chnl *chnl;
+	void *rx_bd = NULL, *rx_wb_db = NULL, *tx_bd = NULL, *tx_wb_db = NULL;
+	size_t bd_size, wb_bd_size;
 	int ret;
 
 	if (!ext->hw->hif_base)
 		return -EINVAL;
+
+	if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE) && ext->hw->bdr_buffers_va) {
+		bd_size = RING_LEN * sizeof(struct pfe_hif_bd);
+		wb_bd_size = RING_LEN * sizeof(struct pfe_hif_wb_bd);
+
+		rx_bd = (void *)ALIGN((u64)ext->hw->bdr_buffers_va, RING_BD_ALIGN);
+		rx_wb_db = (void *)ALIGN((u64)rx_bd + bd_size, RING_BD_ALIGN);
+		tx_bd = (void *)ALIGN((u64)rx_wb_db + wb_bd_size, RING_BD_ALIGN);
+		tx_wb_db = (void *)ALIGN((u64)tx_bd + bd_size, RING_BD_ALIGN);
+
+		if ((tx_wb_db + wb_bd_size) >
+		    (ext->hw->bdr_buffers_va + ext->hw->bdr_buffers_size)) {
+			return -ENOMEM;
+		}
+	}
 
 	chnl = kzalloc(sizeof(*chnl), GFP_KERNEL);
 	if (!chnl)
@@ -279,14 +307,14 @@ int pfe_hw_hif_chnl_create(struct pfe_hw_ext *ext)
 	chnl->rx_ring = NULL;
 
 	/* init TX ring */
-	chnl->tx_ring = pfe_hw_chnl_rings_create(false);
+	chnl->tx_ring = pfe_hw_chnl_rings_create(false, tx_bd, tx_wb_db);
 	if (!chnl->tx_ring) {
 		ret = -ENODEV;
 		goto err;
 	}
 
 	/* init RX ring */
-	chnl->rx_ring = pfe_hw_chnl_rings_create(true);
+	chnl->rx_ring = pfe_hw_chnl_rings_create(true, rx_bd, rx_wb_db);
 	if (!chnl->rx_ring) {
 		ret = -ENODEV;
 		goto err;
@@ -302,19 +330,23 @@ err:
 void pfe_hw_hif_chnl_destroy(struct pfe_hw_ext *ext)
 {
 	struct pfe_hw_chnl *chnl;
+	bool do_free = true;
 
 	if (!ext || !ext->hw_chnl)
 		return;
 
+	if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE))
+		do_free = !ext->hw->bdr_buffers_va;
+
 	chnl = ext->hw_chnl;
 
 	if (chnl->rx_ring) {
-		pfe_hw_chnl_rings_destroy(chnl->rx_ring);
+		pfe_hw_chnl_rings_destroy(chnl->rx_ring, do_free);
 		chnl->rx_ring = NULL;
 	}
 
 	if (chnl->tx_ring) {
-		pfe_hw_chnl_rings_destroy(chnl->tx_ring);
+		pfe_hw_chnl_rings_destroy(chnl->tx_ring, do_free);
 		chnl->tx_ring = NULL;
 	}
 
