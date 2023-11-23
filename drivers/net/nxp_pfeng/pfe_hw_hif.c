@@ -58,6 +58,31 @@ bool pfe_hw_chnl_cfg_ltc_get(struct pfe_hw_chnl *chnl)
 	return pfe_hw_read(chnl, HIF_LTC_MAX_PKT_CHN_ADDR(chnl->id)) & PFENG_MASTER_UP;
 }
 
+u32 pfe_hw_chnl_get_rx_bd_ring_addr(struct pfe_hw_chnl *chnl)
+{
+	return pfe_hw_read(chnl, HIF_RX_BDP_RD_LOW_ADDR_CHN(chnl->id));
+}
+
+u32 pfe_hw_chnl_get_rx_wb_table_addr(struct pfe_hw_chnl *chnl)
+{
+	return pfe_hw_read(chnl, HIF_RX_BDP_WR_LOW_ADDR_CHN(chnl->id));
+}
+
+u32 pfe_hw_chnl_get_tx_bd_ring_addr(struct pfe_hw_chnl *chnl)
+{
+	return pfe_hw_read(chnl, HIF_TX_BDP_RD_LOW_ADDR_CHN(chnl->id));
+}
+
+u32 pfe_hw_chnl_get_tx_wb_table_addr(struct pfe_hw_chnl *chnl)
+{
+	return pfe_hw_read(chnl, HIF_TX_BDP_WR_LOW_ADDR_CHN(chnl->id));
+}
+
+u32 pfe_hw_chnl_rx_bdp_fifo_len(struct pfe_hw_chnl *chnl)
+{
+	return pfe_hw_read(chnl, HIF_BDP_CHN_RX_FIFO_CNT(chnl->id));
+}
+
 static void *pfe_hw_dma_alloc(size_t size, size_t align)
 {
 	return memalign(align, size);
