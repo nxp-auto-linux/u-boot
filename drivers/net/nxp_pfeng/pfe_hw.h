@@ -95,6 +95,8 @@ struct pfe_hw_cfg {
 	u32 fw_class_size; /* The CLASS fw data size */
 	phys_addr_t bmu_addr;
 	phys_size_t bmu_addr_size;
+	phys_addr_t bdrs_addr;
+	phys_size_t bdrs_size;
 	u8 hif_chnl_id;
 	u8 emac_mask;
 	u8 emac_mdio_div; /* Divider for mdio clk */

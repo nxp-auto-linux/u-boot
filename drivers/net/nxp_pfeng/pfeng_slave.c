@@ -153,6 +153,8 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 	hw_cfg->dev = priv->cfg->dev;
 
 	hw_cfg->cbus_base = priv->cfg->csr_phys_addr;
+	hw_cfg->bdrs_addr = priv->cfg->bdrs_addr;
+	hw_cfg->bdrs_size = priv->cfg->bdrs_size;
 	ret = pfe_hw_init(&priv->pfe_hw, hw_cfg);
 	if (ret) {
 		dev_err(priv->cfg->dev, "Could not init PFE platform\n");

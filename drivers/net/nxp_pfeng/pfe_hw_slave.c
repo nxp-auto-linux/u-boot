@@ -58,6 +58,9 @@ int pfe_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *hw_cfg)
 		goto exit;
 	}
 
+	pfe->bdr_buffers_va = pfe_hw_phys_addr(hw_cfg->bdrs_addr);
+	pfe->bdr_buffers_size = hw_cfg->bdrs_size;
+
 	/* Create HW components */
 	pfe->hif_chnl = hw_cfg->hif_chnl_id;
 
