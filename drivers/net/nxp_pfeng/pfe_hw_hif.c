@@ -51,6 +51,20 @@ void pfe_hw_chnl_print_stats(struct pfe_hw_chnl *chnl)
 	printf("HIF_BDP_TX_FIFO_CNT        : 0x%x\n", reg);
 	reg = pfe_hw_read(chnl, HIF_TX_WRBK_BD_CHN_BUFFER_SIZE(chnl->id));
 	printf("HIF_TX_WRBK_BD_BUFFER_SIZE : 0x%x\n", reg);
+
+	if (!IS_ENABLED(CONFIG_NXP_PFENG_SLAVE))
+		return;
+
+	reg = pfe_hw_read(chnl, HIF_LTC_MAX_PKT_CHN_ADDR(chnl->id));
+	printf("HIF_LTC_MAX_PKT_ADDR       : 0x%x\n", reg);
+	reg = pfe_hw_chnl_get_rx_bd_ring_addr(chnl);
+	printf("HIF_RX_BDP_RD_LOW_ADDR     : 0x%x\n", reg);
+	reg = pfe_hw_chnl_get_rx_wb_table_addr(chnl);
+	printf("HIF_RX_BDP_WR_LOW_ADDR     : 0x%x\n", reg);
+	reg = pfe_hw_chnl_get_tx_bd_ring_addr(chnl);
+	printf("HIF_TX_BDP_RD_LOW_ADDR     : 0x%x\n", reg);
+	reg = pfe_hw_chnl_get_tx_wb_table_addr(chnl);
+	printf("HIF_TX_BDP_WR_LOW_ADDR     : 0x%x\n", reg);
 }
 
 bool pfe_hw_chnl_cfg_ltc_get(struct pfe_hw_chnl *chnl)
