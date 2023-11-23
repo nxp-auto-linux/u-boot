@@ -7,7 +7,12 @@
 
 #define LOG_CATEGORY UCLASS_ETH
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <command.h>
 #include <dm.h>
 #include <nvmem.h>
@@ -221,6 +226,8 @@ static int pfeng_init_hardware(struct pfeng_priv *priv)
 		pfe_hw_remove(&priv->pfe_hw);
 		return ret;
 	}
+
+	pfe_hw_hif_chnl_rings_attach(&priv->pfe_hw);
 
 	return 0;
 }

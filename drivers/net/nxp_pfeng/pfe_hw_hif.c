@@ -104,7 +104,7 @@ static void pfe_hw_inval_d(void *dat, u32 len)
 				roundup((u64)dat + len, ARCH_DMA_MINALIGN));
 }
 
-static void pfe_hw_chnl_rings_attach(struct pfe_hw_chnl *chnl)
+void pfe_hw_chnl_rings_attach(struct pfe_hw_chnl *chnl)
 {
 	dma_addr_t txr = pfe_hw_dma_addr(chnl->tx_ring->bd);
 	dma_addr_t txr_wb = pfe_hw_dma_addr(chnl->tx_ring->wb_bd);
@@ -252,9 +252,6 @@ int pfe_hw_hif_chnl_create(struct pfe_hw_ext *ext)
 		ret = -ENODEV;
 		goto err;
 	}
-
-	/* register rings to pfe HW */
-	pfe_hw_chnl_rings_attach(chnl);
 
 	return 0;
 
