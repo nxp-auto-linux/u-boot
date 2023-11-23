@@ -54,4 +54,21 @@ struct pfe_ct_hif_tx_hdr {
 
 /* Structure has to be 16B in length for correct HW functionality */
 _ct_assert(sizeof(struct pfe_ct_hif_tx_hdr) == 16);
+
+/* Rx header flags */
+#define HIF_RX_IHC		BIT_32(8)
+
+struct pfe_ct_hif_rx_hdr {
+	u32 flags;
+	u8 i_phy_if;
+	u8 i_log_if;
+	u8 queue;
+	u8 reserved;
+	u32 rx_timestamp_ns;
+	u32 rx_timestamp_s;
+} __packed;
+
+/* Structure has to be 16B in length for correct HW functionality */
+_ct_assert(sizeof(struct pfe_ct_hif_rx_hdr) == 16);
+
 #endif /* PFE_CT_H_ */
