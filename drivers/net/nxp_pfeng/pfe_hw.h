@@ -70,6 +70,13 @@ enum pfe_hw_blocks {
 	PFENG_HIF3,
 };
 
+enum pfe_hif_channels {
+	PFE_HIF_CHANNEL_0 = 0,
+	PFE_HIF_CHANNEL_1,
+	PFE_HIF_CHANNEL_2,
+	PFE_HIF_CHANNEL_3,
+};
+
 enum pfe_hw_chnl_stage {
 	PFE_HW_CHNL_UNINITIALIZED = 0,
 	PFE_HW_CHNL_CREATED,
