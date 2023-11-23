@@ -7,6 +7,7 @@
 
 #include <common.h>
 #include <dm/device_compat.h>
+#include <linux/delay.h>
 
 #include "pfe_hw.h"
 #include "internal/pfe_hw_priv.h"
@@ -86,6 +87,201 @@ struct pfe_idex_resp {
 } __packed;
 
 _ct_assert(sizeof(struct pfe_idex_resp) == 35);
+
+static u32 idex_seqnum;
+
+static inline u32 get_idex_seqnum(void)
+{
+	return idex_seqnum;
+}
+
+static inline void advance_idex_seqnum(void)
+{
+	idex_seqnum++;
+}
+
+static int idex_rpc(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id, u8 length, int *rpc_ret)
+{
+	struct pfe_idex_rpc_req_hdr *rpc_req = (void *)ihc_frame;
+	struct pfe_idex_resp *rpc_resp;
+	uchar *rec_buf = NULL;
+	int retry = 1500;
+	int ret;
+	int rec_cnt;
+	bool valid_rpc_resp = false;
+	u32 frame_size;
+	u32 seqnum = get_idex_seqnum();
+	u8 master_hif_id = ext->hw->master_hif_id;
+	u8 ihc_hif_id = ext->hw->ihc_hif_id;
+
+	rpc_req->idex_hdr.dst_phy_if = master_hif_id;
+	rpc_req->idex_hdr.type = IDEX_FRAME_CTRL_REQUEST;
+
+	rpc_req->idex_req.seqnum = htonl(seqnum);
+	rpc_req->idex_req.type = IDEX_RPC;
+	rpc_req->idex_req.dst_phy_id = master_hif_id;
+
+	rpc_req->idex_msg.rpc_id = htonl(cmd_id);
+	rpc_req->idex_msg.rpc_ret = htonl(0);
+	rpc_req->idex_msg.plen = htons(length);
+
+	frame_size = length;
+	if (frame_size < MINIMAL_IHC_FRAME_SIZE)
+		frame_size = MINIMAL_IHC_FRAME_SIZE;
+
+	ret = pfe_hw_chnl_xmit(ext->hw_chnl, true, master_hif_id, ihc_frame, frame_size);
+	if (ret)
+		return ret;
+
+	/* Wait when submitted RPC command to the Master driver */
+	mdelay(500);
+
+	while (retry-- > 0) {
+		ret = pfe_hw_chnl_receive(ext->hw_chnl, 0, false, &rec_buf);
+		if (ret < 0 || !rec_buf)
+			continue;
+
+		rec_cnt = ret;
+		if (rec_cnt >= sizeof(struct pfe_idex_resp)) {
+			rpc_resp = (void *)rec_buf;
+
+			if (ntohl(rpc_resp->rx_hdr.flags) & HIF_RX_IHC &&
+			    rpc_resp->rx_hdr.i_phy_if == master_hif_id &&
+			    rpc_resp->idex_hdr.dst_phy_if == ihc_hif_id &&
+			    rpc_resp->idex_hdr.type == IDEX_FRAME_CTRL_RESPONSE &&
+			    ntohl(rpc_resp->idex_resp.seqnum) == seqnum &&
+			    rpc_resp->idex_resp.type == IDEX_RPC &&
+			    ntohs(rpc_resp->idex_resp.plen) == sizeof(struct pfe_idex_msg_rpc) &&
+			    ntohl(rpc_resp->idex_msg.rpc_id) == cmd_id) {
+				valid_rpc_resp = true;
+				*rpc_ret = ntohs(rpc_resp->idex_msg.rpc_ret);
+			}
+		}
+
+		ret = pfe_hw_chnl_free_pkt(ext->hw_chnl, rec_buf, rec_cnt);
+		if (ret)
+			return ret;
+
+		if (valid_rpc_resp)
+			return 0;
+	}
+
+	return -EAGAIN;
+}
+
+static int do_idex_rpc(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id, u8 length)
+{
+	int rpc_ret;
+	int ret;
+	int retry = IDEX_RPC_RETRIES;
+
+	advance_idex_seqnum();
+	while (retry-- > 0) {
+		ret = idex_rpc(ext, ihc_frame, cmd_id, length, &rpc_ret);
+		if (!ret) {
+			if (!rpc_ret)
+				return 0;
+
+			dev_warn(ext->hw->cfg->dev,
+				 "RPC command %u execution failed with error %d\n",
+				 cmd_id, rpc_ret);
+		}
+	}
+
+	return ret;
+}
+
+static int send_idex_if_db_lock(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id)
+{
+	u8 length = sizeof(struct pfe_idex_rpc_req_hdr);
+
+	memset(ihc_frame, 0, length);
+
+	return do_idex_rpc(ext, ihc_frame, cmd_id, length);
+}
+
+static int send_idex_if_disable(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id)
+{
+	u8 length = sizeof(struct pfe_idex_rpc_req_hdr_if_mode);
+
+	struct pfe_idex_rpc_req_hdr_if_mode *rpc_req_hdr_if_mode = ihc_frame;
+
+	memset(ihc_frame, 0, length);
+	rpc_req_hdr_if_mode->phy_if_id = htonl(ext->hw->ihc_hif_id);
+
+	return do_idex_rpc(ext, ihc_frame, cmd_id, length);
+}
+
+static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
+{
+	void *ihc_frame;
+	uchar *rec_buf;
+	u32 rx_bdp_fifo_len;
+	int flush_count = 0;
+	int ret;
+
+	ihc_frame = kzalloc(IHC_BUFFER_SIZE, GFP_KERNEL);
+
+	if (!ihc_frame)
+		return -ENOMEM;
+
+	pfe_hw_hif_chnl_enable(ext->hw_chnl);
+
+	ret = send_idex_if_db_lock(ext, ihc_frame, RPC_PFE_IF_LOCK);
+	if (ret) {
+		dev_err(ext->hw->cfg->dev,
+			"Failed to execute Lock RPC command: %d\n", ret);
+		goto exit;
+	}
+
+	ret = send_idex_if_disable(ext, ihc_frame, RPC_PFE_IF_DISABLE);
+	if (ret) {
+		dev_err(ext->hw->cfg->dev,
+			"Failed to execute Disable IF RPC command: %d\n", ret);
+		goto exit;
+	}
+
+	ret = send_idex_if_db_lock(ext, ihc_frame, RPC_PFE_IF_UNLOCK);
+	if (ret) {
+		dev_err(ext->hw->cfg->dev,
+			"Failed to execute Unlock RPC command: %d\n", ret);
+		goto exit;
+	}
+
+	do {
+		rx_bdp_fifo_len = pfe_hw_chnl_rx_bdp_fifo_len(ext->hw_chnl);
+		if (!rx_bdp_fifo_len)
+			break;
+
+		ret = pfe_hw_chnl_xmit_dummy(ext->hw_chnl);
+		if (ret) {
+			dev_err(ext->hw->cfg->dev,
+				"Failed to send dummy frame to IHC channel: %d\n", ret);
+			goto exit;
+		}
+
+		udelay(500);
+
+		rec_buf = NULL;
+		ret = pfe_hw_chnl_receive(ext->hw_chnl, 0, false, &rec_buf);
+		if (ret < 0 || !rec_buf)
+			break;
+	} while (flush_count < FLUSH_COUNT_LIMIT);
+
+	if (rx_bdp_fifo_len) {
+		dev_err(ext->hw->cfg->dev,
+			"Failed to flush IHC channel within %d ierations\n", FLUSH_COUNT_LIMIT);
+		ret = -EINVAL;
+	} else {
+		ret = 0;
+	}
+
+exit:
+	pfe_hw_hif_chnl_disable(ext->hw_chnl);
+	kfree(ihc_frame);
+
+	return ret;
+}
 
 static inline phys_addr_t pfe_hw_block_pa_of(phys_addr_t addr, u32 pa_off)
 {
@@ -176,6 +372,16 @@ int pfe_hw_grace_reset(struct pfe_hw_ext *ext)
 	int ret = 0;
 
 	printf("HIF graceful reset\n");
+
+	if (ext->hw_chnl) {
+		ret = hif_channel_grace_reset(ext);
+		if (!ret)
+			printf("Performed graceful PFE reset\n");
+		else
+			printf("Graceful PFE reset failed with error code %d\n", ret);
+	} else {
+		printf("No action taken, HIF channel is not created yet\n");
+	}
 
 	return ret;
 }
