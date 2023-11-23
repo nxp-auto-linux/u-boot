@@ -119,6 +119,11 @@ int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, u8 phyif, void *packet, int lengt
 int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, uchar **packetp);
 int pfe_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length);
 bool pfe_hw_chnl_cfg_ltc_get(struct pfe_hw_chnl *chnl);
+u32 pfe_hw_chnl_get_rx_bd_ring_addr(struct pfe_hw_chnl *chnl);
+u32 pfe_hw_chnl_get_rx_wb_table_addr(struct pfe_hw_chnl *chnl);
+u32 pfe_hw_chnl_get_tx_bd_ring_addr(struct pfe_hw_chnl *chnl);
+u32 pfe_hw_chnl_get_tx_wb_table_addr(struct pfe_hw_chnl *chnl);
+u32 pfe_hw_chnl_rx_bdp_fifo_len(struct pfe_hw_chnl *chnl);
 
 /* EMAC - MDIO functionality */
 void pfe_hw_emac_enable(struct pfe_hw_emac *emac);
