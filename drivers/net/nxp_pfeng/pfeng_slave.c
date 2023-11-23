@@ -267,6 +267,24 @@ U_BOOT_DRIVER(pfeng) = {
 	.flags		= DM_FLAG_OS_PREPARE,
 };
 
+static bool is_pfe_ip_ready(struct udevice *dev, int ip_check_err, bool ip_is_ready, u32 hif_id)
+{
+	if (ip_check_err) {
+		dev_err(dev, "Failed to get PFE IP ready state\n");
+		return false;
+	}
+
+	if (ip_is_ready) {
+		printf("PFE IP is ready\n");
+		printf("HIF channel: %d\n", hif_id);
+		return true;
+	}
+
+	printf("PFE IP is not ready\n");
+
+	return false;
+}
+
 static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 			char *const argv[])
 {
@@ -274,8 +292,13 @@ static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 	struct pfeng_priv *priv;
 	struct pfeng_cfg *cfg;
 	struct udevice *dev = NULL;
-	bool ip_is_ready;
+	bool ip_is_ready = false;
+	char cmd = 's';
+	int ip_check_err;
 	int ret;
+
+	if (argc > 1)
+		cmd = argv[1][0];
 
 	ret = uclass_get_device_by_name(UCLASS_MISC, "pfeng-base", &dev);
 	if (ret) {
@@ -285,27 +308,31 @@ static int do_pfeng_cmd(struct cmd_tbl *cmdtp, int flag, int argc,
 	cfg = dev_get_plat(dev);
 	priv = dev_get_priv(dev);
 
-	ret = pfeng_is_ip_ready_get_nvmem_cell(dev, &ip_is_ready);
-	if (ret) {
-		dev_err(dev, "Failed to get PFE IP ready state\n");
-		return ret;
+	ip_check_err = pfeng_is_ip_ready_get_nvmem_cell(dev, &ip_is_ready);
+
+	switch (cmd) {
+	case 's':
+		if (is_pfe_ip_ready(dev, ip_check_err, ip_is_ready, cfg->hif_id))
+			pfe_hw_print_stats(&priv->pfe_hw);
+		break;
+	case 'r':
+		if (is_pfe_ip_ready(dev, ip_check_err, ip_is_ready, cfg->hif_id))
+			ret = pfe_hw_grace_reset(&priv->pfe_hw);
+		break;
+	default:
+		ret = CMD_RET_USAGE;
+		break;
 	}
 
-	if (!ip_is_ready) {
-		printf("PFE IP is not ready\n");
-		printf("Statistics are not available\n");
-		return 0;
-	}
-
-	printf("PFE IP is ready\n");
-	printf("HIF channel: %d\n", cfg->hif_id);
-
-	pfe_hw_print_stats(&priv->pfe_hw);
-
-	return 0;
+	return ret;
 }
 
-U_BOOT_CMD(pfeng, 1, 0, do_pfeng_cmd,
-	   "NXP S32G Slave PFE accelerator status",
-	   "pfeng\n"
-	   "       - Print various H/W statistics");
+U_BOOT_CMD(pfeng, 2, 1, do_pfeng_cmd,
+	   "NXP S32G Slave PFE accelerator",
+	   "\n"
+	   "	- Print various H/W statistics\n"
+	   "pfeng stat\n"
+	   "	- Print various H/W statistics\n"
+	   "pfeng reset\n"
+	   "	- Force PFE HIF channel reset\n"
+	   "	  HIF channel will be relinquished in the current u-boot session");

@@ -94,3 +94,12 @@ void pfe_hw_print_stats(struct pfe_hw_ext *ext)
 	else
 		printf("Not available, HIF channel is not created yet\n");
 }
+
+int pfe_hw_grace_reset(struct pfe_hw_ext *ext)
+{
+	int ret = 0;
+
+	printf("HIF graceful reset\n");
+
+	return ret;
+}

@@ -116,6 +116,7 @@ struct pfe_hw_cfg {
 int pfe_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *cfg);
 void pfe_hw_remove(struct pfe_hw_ext *ext);
 void pfe_hw_print_stats(struct pfe_hw_ext *ext);
+int pfe_hw_grace_reset(struct pfe_hw_ext *ext);
 int pfe_hw_detect_version(phys_addr_t csr_base_addr, enum pfe_hw_ip_ver *pfe_ver);
 int pfe_hw_hif_chnl_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *cfg);
 void pfe_hw_hif_chnl_rings_attach(struct pfe_hw_ext *ext);
