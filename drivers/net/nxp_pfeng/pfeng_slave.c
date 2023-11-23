@@ -27,6 +27,54 @@ static int pfeng_eval_mem_limit(phys_addr_t base)
 	return 0;
 }
 
+static int reserved_bdr_pool_region_init(struct udevice *dev, struct resource *res)
+{
+	struct ofnode_phandle_args phandle;
+	int index;
+	int ret;
+
+	index = ofnode_stringlist_search(dev_ofnode(dev), "memory-region-names", "pfe-bdr-pool");
+	if (index < 0) {
+		dev_warn(dev, "Memory region 'pfe-bdr-pool' not found'\n");
+		goto out;
+	}
+
+	ret = ofnode_parse_phandle_with_args(dev_ofnode(dev), "memory-region",
+					     NULL, 0, index, &phandle);
+	if (ret) {
+		dev_warn(dev, "Memory region node with index %d not found'\n", index);
+		goto out;
+	}
+
+	if (!ofnode_device_is_compatible(phandle.node,
+					 "nxp,s32g-pfe-bdr-pool")) {
+		dev_warn(dev, "nxp,s32g-pfe-bdr-pool node missing\n");
+		goto out;
+	}
+
+	if (!ofnode_is_enabled(phandle.node)) {
+		dev_warn(dev, "Node %s is not enabled\n",
+			 ofnode_get_name(phandle.node));
+		goto out;
+	}
+
+	ret = ofnode_read_resource(phandle.node, 0, res);
+	if (ret) {
+		dev_warn(dev, "PFE: Failed to read region from node: %s\n",
+			 ofnode_get_name(phandle.node));
+		goto out;
+	}
+
+	dev_dbg(dev, "pfe-bdr-pool addr 0x%llx size 0x%llx\n", res->start, resource_size(res));
+
+	return ret;
+
+out:
+	dev_warn(dev, "Allocate BDRs in non-cacheable memory\n");
+
+	return -EINVAL;
+}
+
 static int pfeng_of_to_plat(struct udevice *dev)
 {
 	struct pfeng_cfg *cfg = dev_get_plat(dev);
@@ -55,6 +103,20 @@ static int pfeng_of_to_plat(struct udevice *dev)
 	}
 
 	log_debug("DEB: CSR base %llx\n", cfg->csr_phys_addr);
+
+	ret = reserved_bdr_pool_region_init(dev, &res);
+	if (!ret) {
+		cfg->bdrs_addr = res.start;
+		cfg->bdrs_size = resource_size(&res);
+	} else {
+		cfg->bdrs_addr = 0ULL;
+	}
+
+	ret = pfeng_eval_mem_limit(cfg->bdrs_addr);
+	if (ret) {
+		dev_err(dev, "Invalid value 'pfe-bdr-pool'\n");
+		return ret;
+	}
 
 	cfg->parsed = true;
 	/* Collect all used netifs */

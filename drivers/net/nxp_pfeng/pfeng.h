@@ -34,6 +34,8 @@ struct pfeng_cfg {
 	u32			hif_id;
 	phys_addr_t		bmu_addr;
 	phys_size_t		bmu_size;
+	phys_addr_t		bdrs_addr;
+	phys_size_t		bdrs_size;
 	struct udevice		*dev;
 	bool			parsed;
 	u8			emacs_mask;
