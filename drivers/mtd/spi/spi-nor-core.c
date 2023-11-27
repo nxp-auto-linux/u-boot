@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005, Intec Automation Inc.
  * Copyright (C) 2014, Freescale Semiconductor, Inc.
- * Copyright 2020-2021 NXP
+ * Copyright 2020-2021, 2023 NXP
  *
  * Synced from Linux v4.19
  */
@@ -3658,6 +3658,8 @@ static void mx25uw51245g_post_sfdp_fixup(struct spi_nor *nor,
 	/* erase size in case it is set to 4K from BFPT */
 	nor->erase_opcode = SPINOR_OP_SE_4B;
 	nor->mtd.erasesize = nor->info->sector_size;
+
+	nor->flags |= SNOR_F_SOFT_RESET;
 
 	params->hwcaps.mask |= SNOR_HWCAPS_PP_8_8_8_DTR;
 
