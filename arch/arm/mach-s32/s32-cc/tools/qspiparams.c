@@ -23,7 +23,7 @@ static const char * const mem_names[] = {
 	[MT35XU512ABA] = str(MT35XU512ABA),
 };
 
-static const unsigned int allowed_freqs[] = {133, 166, 200};
+static const unsigned int allowed_freqs[] = {100, 133, 166, 200};
 
 static void show_usage(char *arg)
 {
