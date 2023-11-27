@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
+ * Copyright 2023 NXP
  * Written by Simon Glass <sjg@chromium.org>
  */
 
@@ -19,6 +20,8 @@
 #include <dm/device-internal.h>
 #include <dm/lists.h>
 #include <dm/root.h>
+#include <dm/uclass.h>
+#include <dm/uclass-internal.h>
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <asm/global_data.h>
@@ -123,12 +126,29 @@ void reset_cpu(void)
 int do_reset(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	enum sysreset_t reset_type = SYSRESET_COLD;
+	struct uclass *uc_dev;
+	int ret;
 
 	if (argc > 2)
 		return CMD_RET_USAGE;
 
 	if (argc == 2 && argv[1][0] == '-' && argv[1][1] == 'w') {
 		reset_type = SYSRESET_WARM;
+	}
+
+	/* Remove QuadSPI Flash Memory
+	 * On S32R45EVB platform, the Macronix Flash memory
+	 * does not have the 'RESET_B' (functional or destructive reset)
+	 * signal wired, but only POR (power on reset).
+	 * Therefore, in order to prevent an improper state on the
+	 * Macronix Flash memory after any functional or destructive reset,
+	 * we remove the QuadSPI Flash memory.
+	 */
+	ret = uclass_get(UCLASS_SPI_FLASH, &uc_dev);
+	if (!ret && uc_dev) {
+		ret = uclass_destroy(uc_dev);
+		if (ret)
+			printf("Could not remove QuadSPI Flash memory device\n");
 	}
 
 	printf("resetting ...\n");
