@@ -16,6 +16,15 @@ SCMI_PINCTRL_NAME = "protocol@80"
 SCMI_GPIO_NAME = "protocol@81"
 SCMI_NVMEM_NAME = "protocol@82"
 GPR_CAN_MUX_CONTROLLER_NAME = "mux-controller@f0"
+I2C2_NAME = "i2c@401ec000"
+I2C4_NAME = "i2c@402dc000"
+
+"""Used for human readable log printing."""
+log_names = {
+    GPR_CAN_MUX_CONTROLLER_NAME : "MMIO MUX",
+    I2C2_NAME : "I2C2",
+    I2C4_NAME : "I2C4",
+}
 
 def log_step(msg):
     """Log an indented message (an execution step of the script)."""
@@ -101,19 +110,22 @@ def update_nvmem_consumers(dtb, scmi_node_name):
 
     scmi_node.set_property("status", "okay")
 
-def disable_gpr_mux_controller(dtb, mux_node_name):
-    """Disable the MMIO MUX node that enables writing to a GPR."""
+def disable_generic_node(dtb, node_name):
+    """ Disable a given device tree node.
+        Node description must be aded to log_names dictionary."""
 
-    nodes = dtb.search(mux_node_name, itype=fdt.ItemType.NODE)
+    print("Disabling " + log_names[node_name] + " node")
+
+    nodes = dtb.search(node_name, itype=fdt.ItemType.NODE)
     if len(nodes) != 1:
-        log_step("Can't find MMIO MUX node!")
+        log_step("Can't find " + log_names[node_name] + " node!")
         sys.exit(1)
 
-    mux_node = nodes[0]
-    log_step("Found MMIO MUX node: " + mux_node.path + "/" + mux_node.name)
+    node = nodes[0]
+    log_step("Found " + log_names[node_name] + " node: " + node.path + "/" + node.name)
 
-    mux_node.set_property("status", "disabled")
-    log_step("Disabled MMIO MUX node!")
+    node.set_property("status", "disabled")
+    log_step("Disabled " + log_names[node_name] + " node!")
 
 def main():
     """Main script function."""
@@ -161,8 +173,9 @@ def main():
         print("Enabling SCMI NVMEM")
         update_nvmem_consumers(dtb, SCMI_NVMEM_NAME)
 
-    print("Disabling MMIO MUX node")
-    disable_gpr_mux_controller(dtb, GPR_CAN_MUX_CONTROLLER_NAME)
+    disable_generic_node(dtb, GPR_CAN_MUX_CONTROLLER_NAME)
+    disable_generic_node(dtb, I2C2_NAME)
+    disable_generic_node(dtb, I2C4_NAME)
 
     with open(dtb_file, "wb") as file:
         file.write(dtb.to_dtb())
