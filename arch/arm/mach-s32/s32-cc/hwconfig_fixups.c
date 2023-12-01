@@ -1173,11 +1173,15 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 	for (id = 0; id <= 1; id++) {
 		if (!s32_serdes_is_hwconfig_instance_enabled(id)) {
 			disable_serdes_pcie_nodes(&root, id);
+			set_xpcs_config_sgmii(&root, id, 0, false);
+			set_xpcs_config_sgmii(&root, id, 1, false);
 			continue;
 		}
 
 		if (!s32_serdes_is_cfg_valid(id)) {
 			disable_serdes_pcie_nodes(&root, id);
+			set_xpcs_config_sgmii(&root, id, 0, false);
+			set_xpcs_config_sgmii(&root, id, 1, false);
 			pr_err("SerDes%u configuration will be ignored as it's invalid\n",
 			       id);
 			continue;

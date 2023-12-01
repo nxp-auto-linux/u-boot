@@ -124,7 +124,7 @@ char *s32_serdes_get_serdes_hwconfig_subarg(int id,
 								 subarg_len);
 #endif
 		if (!subarg_str || !*subarg_len) {
-			debug("'%s' option '%s' not found in hwconfigs",
+			debug("'%s' option '%s' not found in hwconfig\n",
 			      serdes_name, subarg);
 			return NULL;
 		}
@@ -164,7 +164,7 @@ char *s32_serdes_get_xpcs_hwconfig_subarg(int serdes_id, int xpcs_id,
 		}
 	}
 
-	debug("found '%s' argument '%s=%s\n'", xpcs_name,
+	debug("found '%s' argument '%s=%s'\n", xpcs_name,
 	      subarg, subarg_str);
 	return subarg_str;
 }
