@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2008, Freescale Semiconductor, Inc
- * Copyright 2020 NXP
+ * Copyright 2020, 2023 NXP
  * Andy Fleming
  *
  * Based vaguely on the Linux code
@@ -2074,6 +2074,53 @@ static const struct ext_csd_bus_width {
 	{MMC_MODE_1BIT, false, EXT_CSD_BUS_WIDTH_1},
 };
 
+#if CONFIG_IS_ENABLED(MMC_HS200_SUPPORT)
+static int mmc_select_hs200(struct mmc *mmc)
+{
+	int err;
+
+	/* Set timing to HS200 for tuning */
+	err = mmc_set_card_speed(mmc, MMC_HS_200, false);
+	if (err)
+		return err;
+
+	/* configure the bus mode (host) */
+	mmc_select_mode(mmc, MMC_HS_200);
+	err = mmc_set_clock(mmc, mmc->tran_speed, false);
+	if (err)
+		return err;
+
+	/* execute tuning if needed */
+	err = mmc_execute_tuning(mmc, MMC_CMD_SEND_TUNING_BLOCK_HS200);
+	if (err) {
+		debug("tuning failed\n");
+		return err;
+	}
+
+	/* Set back to HS */
+	err = mmc_set_card_speed(mmc, MMC_HS, true);
+	if (err)
+		return err;
+
+	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
+			 EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_8);
+	if (err)
+		return err;
+
+	err = mmc_set_card_speed(mmc, MMC_HS_200, false);
+	if (err)
+		return err;
+
+	mmc_select_mode(mmc, MMC_HS_200);
+	return mmc_set_clock(mmc, mmc->tran_speed, false);
+}
+#else
+static int mmc_select_hs200(struct mmc *mmc)
+{
+	return -EOPNOTSUPP;
+}
+#endif
+
 #if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
 static int mmc_select_hs400(struct mmc *mmc)
 {
@@ -2242,7 +2289,13 @@ static int mmc_select_mode_and_width(struct mmc *mmc, uint card_caps)
 				goto error;
 			mmc_set_bus_width(mmc, bus_width(ecbw->cap));
 
-			if (mwt->mode == MMC_HS_400) {
+			if (mwt->mode == MMC_HS_200) {
+				err = mmc_select_hs200(mmc);
+				if (err) {
+					printf("Select HS200 failed: %d\n", err);
+					goto error;
+				}
+			} else if (mwt->mode == MMC_HS_400) {
 				err = mmc_select_hs400(mmc);
 				if (err) {
 					printf("Select HS400 failed %d\n", err);
