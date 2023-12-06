@@ -69,6 +69,7 @@ config NXP_S32CC
 	select MACH_S32
 	select MMC_HS400_ES_SUPPORT
 	select MMC_HS400_SUPPORT
+	select MMC_IO_VOLTAGE
 	select MTD
 	select NVMEM
 	select OF_BOARD
