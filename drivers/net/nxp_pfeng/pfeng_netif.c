@@ -217,6 +217,9 @@ static void pfeng_netif_stop(struct udevice *dev)
 	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
 	u8 phyif = netif->cfg->phyif;
 
+	if (!netif->hw_chnl)
+		return;
+
 	pfe_hw_hif_chnl_disable(netif->hw_chnl);
 
 	if (!is_phyif_active_emac(netif, phyif))
