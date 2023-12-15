@@ -214,6 +214,24 @@ bool s32_serdes_get_skip_from_hwconfig(unsigned int id)
 	return skip;
 }
 
+bool s32_serdes_get_xpcs_an_from_hwconfig(int serdes_id,
+					  int xpcs_id)
+{
+	/* Set default autoneg to enabled */
+	bool an = true;
+	size_t subarg_len = 0;
+	char *option_str = s32_serdes_get_xpcs_hwconfig_subarg(serdes_id,
+							       xpcs_id,
+							       "an",
+							       &subarg_len);
+	if (option_str &&
+	    !strncmp(option_str, "0", subarg_len))
+		an = false;
+
+	debug("found xpcs%d_%d an=%d\n", serdes_id, xpcs_id, (int)an);
+	return an;
+}
+
 int s32_serdes_get_xpcs_speed_from_hwconfig(int serdes_id,
 					    int xpcs_id)
 {

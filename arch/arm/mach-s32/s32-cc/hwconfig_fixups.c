@@ -1047,7 +1047,7 @@ static int get_xpcs_node_from_alias(struct dts_node *root, struct dts_node *node
 }
 
 static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
-				 int xpcs_id, bool enable_xpcs)
+				 int xpcs_id, bool enable_xpcs, bool autoneg)
 {
 	int ret = 0, len = 0;
 	struct dts_node node;
@@ -1108,7 +1108,9 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 			ret = disable_node(&node);
 			goto exit;
 		}
-		/* Check 'fixed-link' node and update 'speed' property */
+		/* Check 'fixed-link' node and update the 'speed' property.
+		 * Ignore autoneg if we already have this node.
+		 */
 		ret = node_find_subnode(&node, &subnode, "fixed-link");
 		if (!ret) {
 			debug("Set fixed-link/speed for XPCS%d_%d to %d\n",
@@ -1135,28 +1137,31 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 		}
 	}
 
-	/*
-	 * Do this only for Linux. In U-Boot we don't need to remove phandle.
-	 * We may or may not have this property so no error checking.
-	 */
-	if (node.fdt)
-		fdt_delprop(&node.blob, node.off, "phy-handle");
+	/* Autoneg is only for Linux. In U-Boot, for now we always use fixed link. */
+	if (!autoneg || !node.fdt) {
+		/*
+		 * Do this only for Linux. In U-Boot we don't need to remove phandle.
+		 * We may or may not have this property so no error checking.
+		 */
+		if (node.fdt)
+			fdt_delprop(&node.blob, node.off, "phy-handle");
 
-	/* We need the fixed-link node */
-	ret = node_create_subnode(&node, &subnode, "fixed-link");
-	if (ret) {
-		debug("%s: Cannot create node 'fixed-link'\n", __func__);
-		goto exit;
-	}
-	ret = node_set_prop_u32(&subnode, "speed", speed);
-	if (ret) {
-		debug("%s: Cannot set property 'speed'\n", __func__);
-		goto exit;
-	}
-	ret = node_set_prop_u32(&subnode, "full-duplex", 1);
-	if (ret) {
-		debug("%s: Cannot set property 'full-duplex'\n", __func__);
-		goto exit;
+		/* We need the fixed-link node */
+		ret = node_create_subnode(&node, &subnode, "fixed-link");
+		if (ret) {
+			debug("%s: Cannot create node 'fixed-link'\n", __func__);
+			goto exit;
+		}
+		ret = node_set_prop_u32(&subnode, "speed", speed);
+		if (ret) {
+			debug("%s: Cannot set property 'speed'\n", __func__);
+			goto exit;
+		}
+		ret = node_set_prop_u32(&subnode, "full-duplex", 1);
+		if (ret) {
+			debug("%s: Cannot set property 'full-duplex'\n", __func__);
+			goto exit;
+		}
 	}
 
 exit:
@@ -1168,6 +1173,7 @@ exit:
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
 	bool skip = false;
+	bool an;
 	int ret;
 	unsigned int id;
 	enum serdes_mode mode;
@@ -1179,15 +1185,15 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 	for (id = 0; id <= 1; id++) {
 		if (!s32_serdes_is_hwconfig_instance_enabled(id)) {
 			disable_serdes_pcie_nodes(&root, id);
-			set_xpcs_config_sgmii(&root, id, 0, false);
-			set_xpcs_config_sgmii(&root, id, 1, false);
+			set_xpcs_config_sgmii(&root, id, 0, false, true);
+			set_xpcs_config_sgmii(&root, id, 1, false, true);
 			continue;
 		}
 
 		if (!s32_serdes_is_cfg_valid(id)) {
 			disable_serdes_pcie_nodes(&root, id);
-			set_xpcs_config_sgmii(&root, id, 0, false);
-			set_xpcs_config_sgmii(&root, id, 1, false);
+			set_xpcs_config_sgmii(&root, id, 0, false, true);
+			set_xpcs_config_sgmii(&root, id, 1, false, true);
 			pr_err("SerDes%u configuration will be ignored as it's invalid\n",
 			       id);
 			continue;
@@ -1219,24 +1225,28 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 		mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 
 		if (mode == SERDES_MODE_PCIE_XPCS0) {
-			ret = set_xpcs_config_sgmii(&root, id, 0, true);
+			an = s32_serdes_get_xpcs_an_from_hwconfig(id, 0);
+			ret = set_xpcs_config_sgmii(&root, id, 0, true, an);
 			if (ret)
 				pr_err("Failed to update XPCS0 for SerDes%d\n", id);
-			ret = set_xpcs_config_sgmii(&root, id, 1, false /* disable */);
+			ret = set_xpcs_config_sgmii(&root, id, 1, false /* disable */, true);
 			if (ret)
 				pr_err("Failed to disable XPCS1 for SerDes%d\n", id);
 		} else if (mode == SERDES_MODE_XPCS0_XPCS1) {
-			ret = set_xpcs_config_sgmii(&root, id, 0, true);
+			an = s32_serdes_get_xpcs_an_from_hwconfig(id, 0);
+			ret = set_xpcs_config_sgmii(&root, id, 0, true, an);
 			if (ret)
 				pr_err("Failed to update XPCS0 for SerDes%d\n", id);
-			ret = set_xpcs_config_sgmii(&root, id, 1, true);
+			an = s32_serdes_get_xpcs_an_from_hwconfig(id, 1);
+			ret = set_xpcs_config_sgmii(&root, id, 1, true, an);
 			if (ret)
 				pr_err("Failed to update XPCS1 for SerDes%d\n", id);
 		} else if (mode == SERDES_MODE_PCIE_XPCS1) {
-			ret = set_xpcs_config_sgmii(&root, id, 0, false /* disable */);
+			ret = set_xpcs_config_sgmii(&root, id, 0, false /* disable */, true);
 			if (ret)
 				pr_err("Failed to disable XPCS0 for SerDes%d\n", id);
-			ret = set_xpcs_config_sgmii(&root, id, 1, true);
+			an = s32_serdes_get_xpcs_an_from_hwconfig(id, 1);
+			ret = set_xpcs_config_sgmii(&root, id, 1, true, an);
 			if (ret)
 				pr_err("Failed to update XPCS1 for SerDes%d\n", id);
 		}
