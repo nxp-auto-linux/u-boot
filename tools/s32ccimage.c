@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
-/* Copyright 2019-2022 NXP */
+/* Copyright 2019-2022, 2024 NXP */
 #include <ctype.h>
 #include <image.h>
 #include <imagetool.h>
@@ -512,6 +512,12 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
 		app_code->code_length = iconfig.data_file.size;
 	else
 		app_code->code_length = sbuf->st_size;
+
+	/* First, make sure the end address is 64 bytes aligned.
+	 * Copying an incomplete SRAM line may result in ECC failure.
+	 */
+	app_code->code_length = ROUND(tool_params->addr + app_code->code_length, 64) -
+		tool_params->addr;
 
 	/* The 'code_length', like plenty of entries in the Program
 	 * Image structure, must be 512 bytes aligned.
