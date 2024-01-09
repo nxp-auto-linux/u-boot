@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  */
 #ifndef __S32CC_H__
 #define __S32CC_H__
@@ -238,7 +238,16 @@
 #    if defined(CONFIG_XEN_SUPPORT)
 #      define CONFIG_BOOTCOMMAND XEN_BOOTCMD
 #    else
+#     if defined(CONFIG_FIT_SIGNATURE)
+#       define PRECONFIG_BOOTCOMMAND \
+		"setenv image kernel.itb; " \
+		"setenv boot_mtd bootm; " \
+		"setenv mmcboot ${boot_mtd} ${loadaddr}; "
+#      else
+#        define PRECONFIG_BOOTCOMMAND
+#      endif
 #      define CONFIG_BOOTCOMMAND \
+	PRECONFIG_BOOTCOMMAND \
 	"mmc dev ${mmcdev}; " \
 	"if mmc rescan; " \
 	"then " \
