@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2021-2023 NXP */
+/* Copyright 2021-2024 NXP */
 
 #ifndef SERDES_HWCONFIG_H
 #define SERDES_HWCONFIG_H
@@ -96,7 +96,9 @@
  *
  */
 enum serdes_mode {
-	SERDES_MODE_INVAL = -1,
+	SERDES_MODE_INVAL = -2,
+	/*	Disabled. Disable PCIe and XPCS interfaces connected to the SerDes */
+	SERDES_MODE_DISABLED = -1,
 	/*	Lane0=PCIe, Lane1=PCIe */
 	SERDES_MODE_PCIE_PCIE = 0,
 	/*	Lane0=PCIe, Lane1=SGMII(XPCS0) (1G) */
@@ -155,10 +157,22 @@ bool s32_serdes_is_cfg_valid(unsigned int id);
 bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id);
 bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id);
 bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned int id);
+
+static inline bool s32_serdes_is_pcie_mode(enum serdes_mode mode)
+{
+	return (mode >= SERDES_MODE_PCIE_PCIE) &&
+		(mode < SERDES_MODE_XPCS0_XPCS1);
+}
+
+static inline bool s32_serdes_is_xpcs_mode(enum serdes_mode mode)
+{
+	return (mode > SERDES_MODE_PCIE_PCIE) &&
+		(mode <= SERDES_MODE_XPCS0_XPCS1);
+}
+
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
 int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump);
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane);
-bool s32_serdes_is_hwconfig_instance_enabled(int id);
 
 #endif

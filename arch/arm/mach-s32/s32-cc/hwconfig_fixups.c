@@ -675,17 +675,6 @@ static int prepare_pcie_node(struct dts_node *root, unsigned int id)
 		return ret;
 	}
 
-	if (!s32_serdes_is_pcie_enabled_in_hwconfig(id)) {
-		ret = disable_node(&node);
-		if (ret) {
-			pr_err("Failed to disable PCIe%u\n", id);
-			return ret;
-		}
-
-		/* Skip rest of the configuration if not enabled */
-		return 0;
-	}
-
 	ret = set_pcie_mode(&node, id);
 	if (ret)
 		return ret;
@@ -859,14 +848,12 @@ static int set_serdes_clk(struct dts_node *root, unsigned int id)
 	return 0;
 }
 
-static int set_serdes_mode(struct dts_node *root, unsigned int id)
+static int set_serdes_mode(enum serdes_mode mode, struct dts_node *root, unsigned int id)
 {
 	int ret;
-	enum serdes_mode mode;
 	u32 mode_num;
 	struct dts_node node;
 
-	mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
 	if (mode == SERDES_MODE_INVAL) {
 		pr_err("Invalid SerDes%u mode\n", id);
 		return -EINVAL;
@@ -1137,16 +1124,11 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 		}
 	}
 
-	/* Autoneg is only for Linux. In U-Boot, for now we always use fixed link. */
-	if (!autoneg || !node.fdt) {
-		/*
-		 * Do this only for Linux. In U-Boot we don't need to remove phandle.
-		 * We may or may not have this property so no error checking.
-		 */
-		if (node.fdt)
-			fdt_delprop(&node.blob, node.off, "phy-handle");
-
-		/* We need the fixed-link node */
+	/* If autonegociation is enforced from 'hwconfig', create and populate the
+	 * 'fixed-link' node
+	 */
+	if (!autoneg) {
+		/* Create the fixed-link node */
 		ret = node_create_subnode(&node, &subnode, "fixed-link");
 		if (ret) {
 			debug("%s: Cannot create node 'fixed-link'\n", __func__);
@@ -1188,10 +1170,12 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 		if (skip || ret)
 			continue;
 
+		mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
+
 		/* Disable PCIe and SGMII XPCS interfaces if a SerDes is missing
 		 * from hwconfig
 		 */
-		if (!s32_serdes_is_hwconfig_instance_enabled(id)) {
+		if (mode == SERDES_MODE_DISABLED) {
 			disable_serdes_pcie_nodes(&root, id);
 			set_xpcs_config_sgmii(&root, id, 0, false, true);
 			set_xpcs_config_sgmii(&root, id, 1, false, true);
@@ -1202,32 +1186,27 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 		 * is invalid
 		 */
 		if (!s32_serdes_is_cfg_valid(id)) {
-			disable_serdes_pcie_nodes(&root, id);
-			set_xpcs_config_sgmii(&root, id, 0, false, true);
-			set_xpcs_config_sgmii(&root, id, 1, false, true);
+			/* Do not configure SerDes, use default configuration from device tree */
 			pr_err("SerDes%u configuration will be ignored as it's invalid\n",
 			       id);
 			continue;
 		}
 
-		ret = prepare_pcie_node(&root, id);
-		if (ret)
-			pr_warn("Failed to prepare PCIe node%u\n", id);
+		if (s32_serdes_is_pcie_mode(mode)) {
+			ret = prepare_pcie_node(&root, id);
+			if (ret)
+				pr_warn("Failed to prepare PCIe node%u\n", id);
+		}
 
 		ret = set_serdes_clk(&root, id);
 		if (ret)
 			pr_err("Failed to set the clock for SerDes%u\n", id);
 
-		ret = set_serdes_mode(&root, id);
+		ret = set_serdes_mode(mode, &root, id);
 		if (ret)
 			pr_err("Failed to set mode for SerDes%d\n", id);
 
-		if (!IS_ENABLED(CONFIG_NXP_PFENG))
-			continue;
-
-		/* TODO: handle the case when there is no PFE, only GMAC */
-		mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
-
+		/* Configure device tree nodes for XPCS interfaces (PFE or GMAC) */
 		if (mode == SERDES_MODE_PCIE_XPCS0) {
 			an = s32_serdes_get_xpcs_an_from_hwconfig(id, 0);
 			ret = set_xpcs_config_sgmii(&root, id, 0, true, an);

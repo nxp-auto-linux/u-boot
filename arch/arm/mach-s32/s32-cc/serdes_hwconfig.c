@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  */
 #include <config.h>
 #include <errno.h>
@@ -16,13 +16,6 @@
 #include <linux/ethtool.h>
 #include <s32-cc/serdes_hwconfig.h>
 
-#define IS_SERDES_PCIE(mode) ({ typeof(mode) _mode = (mode); \
-			      (_mode >= SERDES_MODE_PCIE_PCIE) && \
-			      (_mode < SERDES_MODE_XPCS0_XPCS1); })
-#define IS_SERDES_XPCS(mode) ({ typeof(mode) _mode = (mode); \
-			      (_mode >= SERDES_MODE_PCIE_XPCS0) && \
-			      (_mode <= SERDES_MODE_MAX); })
-
 #define SERDES_NAME_SIZE 32
 
 bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id)
@@ -30,7 +23,7 @@ bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id)
 	enum serdes_mode ss_mode;
 
 	ss_mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
-	return IS_SERDES_PCIE(ss_mode);
+	return s32_serdes_is_pcie_mode(ss_mode);
 }
 
 bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id)
@@ -38,32 +31,8 @@ bool s32_serdes_is_combo_mode_enabled_in_hwconfig(unsigned int id)
 	enum serdes_mode ss_mode;
 
 	ss_mode = s32_serdes_get_serdes_mode_from_hwconfig(id);
-	return IS_SERDES_PCIE(ss_mode) && IS_SERDES_XPCS(ss_mode);
-}
-
-bool s32_serdes_is_hwconfig_instance_enabled(int id)
-{
-	char serdes_name[SERDES_NAME_SIZE];
-	const char *arg;
-	size_t len = 0;
-
-	/*
-	 * The SerDes mode is set by using option `serdesx`, where
-	 * `x` is the ID.
-	 */
-	snprintf(serdes_name, SERDES_NAME_SIZE, "serdes%d", id);
-	arg = hwconfig_arg(serdes_name, &len);
-	if (!arg || !len) {
-		/* Backwards compatibility:
-		 * Initially the SerDes mode was set by using option `pciex`.
-		 */
-		snprintf(serdes_name, SERDES_NAME_SIZE, "pcie%d", id);
-		arg = hwconfig_arg(serdes_name, &len);
-		if (!arg || !len)
-			return false;
-	}
-
-	return true;
+	return s32_serdes_is_pcie_mode(ss_mode) &&
+		s32_serdes_is_xpcs_mode(ss_mode);
 }
 
 static inline
@@ -359,17 +328,22 @@ enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(unsigned int id)
 		&subarg_len);
 
 	/* Get the 'mode' substring for 'serdesx'. Supported values are:
-	 * 'pcie', 'pcie&xpcsX' (X=0,1), 'xpcs0' or 'xpcs0&xpcs1' (no 'xpcs1').
+	 * 'disabled', 'pcie', 'pcie&xpcsX' (X=0,1), 'xpcs0' or 'xpcs0&xpcs1' (no 'xpcs1').
+	 * If 'disabled' is used, SerDes is disabled (PCIe and XPCS).
 	 * If legacy support is enabled, it will get 'mode' from 'pciex'.
-	 * Either way, this should not fail.
+	 * If a SerDes module is not specified in 'hwconfig' or the configuration is invalid,
+	 * return SERDES_MODE_INVAL and use default configuration from device tree.
 	 */
 	if (!option_str || !subarg_len)
 		return SERDES_MODE_INVAL;
 
+	if (!strncmp(option_str, "disabled", subarg_len))
+		return SERDES_MODE_DISABLED;
+
 	if (!strncmp(option_str, "pcie", subarg_len))
 		return SERDES_MODE_PCIE_PCIE;
 
-	/* SS mode based on XPCS: modes 1, 2 or 5 */
+	/* SerDes mode based on XPCS: modes 1, 2 or 5 */
 	if (!strncmp(option_str, "pcie&xpcs0", subarg_len))
 		return SERDES_MODE_PCIE_XPCS0;
 	if (!strncmp(option_str, "pcie&xpcs1", subarg_len))
@@ -432,7 +406,7 @@ bool s32_serdes_is_cfg_valid(unsigned int id)
 		return false;
 	}
 
-	if (IS_SERDES_PCIE(mode) && freq == MHZ_125) {
+	if (s32_serdes_is_pcie_mode(mode) && freq == MHZ_125) {
 		printf("%s In PCIe/XPCS combo mode", prefix);
 		printf(" reference clock has to be 100Mhz\n");
 		return false;
