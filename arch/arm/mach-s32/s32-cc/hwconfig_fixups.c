@@ -72,7 +72,7 @@ static int fdt_alias2node(void *blob, const char *alias_fmt,
 
 	alias_path = fdt_get_alias(blob, alias_name);
 	if (!alias_path) {
-		pr_err("Failed to get '%s' alias\n", alias_name);
+		pr_err("Failed to get alias '%s'\n", alias_name);
 		return -EINVAL;
 	}
 
@@ -89,8 +89,10 @@ static ofnode ofnode_by_alias(const char *alias_fmt, u32 alias_id)
 	int ret;
 
 	ret = sprintf(alias_name, alias_fmt, alias_id);
-	if (ret < 0)
+	if (ret < 0) {
+		pr_err("Failed to get alias '%s'\n", alias_name);
 		return ofnode_null();
+	}
 
 	return ofnode_path(alias_name);
 }
@@ -546,15 +548,12 @@ static int set_pcie_serdes_lines(struct dts_node *node, unsigned int id)
 	}
 
 	ret = node_by_alias(&root, &serdes, SERDES_ALIAS_FMT, id);
-	if (ret) {
-		pr_err("Failed to get 'serdes%u' alias\n", id);
+	if (ret)
 		return ret;
-	}
 
 	phandle = node_create_phandle(&serdes);
 	if (!phandle) {
-		pr_err("Failed to create phandle for %s%u\n",
-		       SERDES_ALIAS_FMT, id);
+		pr_err("Failed to create phandle for serdes%u\n", id);
 		return ret;
 	}
 
@@ -565,66 +564,25 @@ static int set_pcie_serdes_lines(struct dts_node *node, unsigned int id)
 	return 0;
 }
 
-static int skip_dts_node(struct dts_node *root, const char *alias_fmt,
-			 unsigned int id)
+static bool get_skip_serdes_config(struct dts_node *root, unsigned int id)
 {
-	int ret;
-	struct dts_node node;
+	enum serdes_skip_mode skip;
 
-	ret = node_by_alias(root, &node, alias_fmt, id);
-	if (ret) {
-		pr_err("Failed to get 'pcie%u' alias\n", id);
-		return ret;
-	}
+	if (!root)
+		return false;
 
+	skip = s32_serdes_get_skip_from_hwconfig(id);
 
-	ret = disable_node(&node);
-	if (ret) {
-		pr_err("Failed to disable %s%u\n", alias_fmt, id);
-		return ret;
-	}
-
-	return 0;
-}
-
-static int skip_dts_nodes_config(struct dts_node *root, unsigned int id,
-				 int *skip)
-{
-	int ret = -EINVAL;
-	struct dts_node serdes;
-
-	if (!skip || !root)
-		return ret;
-
-	ret = node_by_alias(root, &serdes, SERDES_ALIAS_FMT, id);
-	if (ret) {
-		pr_err("Failed to get 'serdes%u' alias\n", id);
-		return ret;
-	}
-
-	*skip = s32_serdes_get_skip_from_hwconfig(id);
-
-	if ((root->fdt && *skip == SERDES_SKIP_KERNEL) ||
-	    (!root->fdt && *skip == SERDES_SKIP_BOOT)) {
+	if ((root->fdt && skip == SERDES_SKIP_KERNEL) ||
+	    (!root->fdt && skip == SERDES_SKIP_BOOT)) {
 
 		pr_info("Skipping %s configuration for SerDes%u\n",
-			*skip == SERDES_SKIP_BOOT ? "boot" : "kernel",
+			skip == SERDES_SKIP_BOOT ? "boot" : "kernel",
 			id);
-
-		/* Disable nodes for PCIe and SerDes.
-		 * Do not disable XPCS nodes (for now) as
-		 * 'skip' is intended for PCIe.
-		 */
-		ret = skip_dts_node(root, PCIE_ALIAS_FMT, id);
-		if (ret)
-			return ret;
-
-		ret = skip_dts_node(root, SERDES_ALIAS_FMT, id);
-		if (ret)
-			return ret;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 static int set_pcie_width_and_speed(struct dts_node *root, unsigned int id)
@@ -1151,7 +1109,6 @@ exit:
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
-	int skip = SERDES_NO_SKIP;
 	bool an;
 	int ret;
 	unsigned int id;
@@ -1162,9 +1119,8 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 	};
 
 	for (id = 0; id <= 1; id++) {
-		ret = skip_dts_nodes_config(&root, id, &skip);
 		/* Go to next SerDes if 'skip' is true */
-		if (skip || ret)
+		if (get_skip_serdes_config(&root, id))
 			continue;
 
 		mode = s32_serdes_get_serdes_mode_from_hwconfig(id);

@@ -173,15 +173,15 @@ enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id)
 	return pcietype;
 }
 
-int s32_serdes_get_skip_from_hwconfig(unsigned int id)
+enum serdes_skip_mode s32_serdes_get_skip_from_hwconfig(unsigned int id)
 {
-	int skip = SERDES_NO_SKIP;
+	enum serdes_skip_mode skip = SERDES_NO_SKIP;
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_serdes_hwconfig_subarg(id, "skip",
 								 &subarg_len);
 	if (option_str &&
 	    !strncmp(option_str, SERDES_SKIP_ALL_STR, subarg_len))
-		skip = SERDES_SKIP_BOOT | SERDES_SKIP_KERNEL;
+		skip = SERDES_SKIP_ALL;
 	else if (option_str &&
 		 !strncmp(option_str, SERDES_SKIP_BOOT_STR, subarg_len))
 		skip = SERDES_SKIP_BOOT;

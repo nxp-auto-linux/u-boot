@@ -141,14 +141,17 @@ enum pcie_link_width {
 	X_MAX = X2
 };
 
-#define SERDES_NO_SKIP		0	/* don't skip, apply all fixups */
-#define SERDES_SKIP_BOOT	BIT(0)	/* skip 'hwconfig' fixups in U-Boot */
-#define SERDES_SKIP_KERNEL	BIT(1)	/* skip 'hwconfig' fixups in kernel (Linux) */
+enum serdes_skip_mode {
+	SERDES_NO_SKIP	= 0,		/* don't skip, apply all fixups */
+	SERDES_SKIP_BOOT = BIT(0),	/* skip 'hwconfig' fixups in U-Boot */
+	SERDES_SKIP_KERNEL = BIT(1),	/* skip 'hwconfig' fixups in kernel (Linux) */
+	SERDES_SKIP_ALL = SERDES_SKIP_BOOT | SERDES_SKIP_KERNEL
+};
 
 enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(unsigned int id);
 bool s32_serdes_is_external_clk_in_hwconfig(unsigned int id);
 unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(unsigned int id);
-int s32_serdes_get_skip_from_hwconfig(unsigned int id);
+enum serdes_skip_mode s32_serdes_get_skip_from_hwconfig(unsigned int id);
 enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id);
 bool s32_serdes_get_xpcs_an_from_hwconfig(int serdes_id,
 					  int xpcs_id);
