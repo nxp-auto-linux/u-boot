@@ -18,6 +18,10 @@
 
 #define SERDES_NAME_SIZE 32
 
+#define SERDES_SKIP_BOOT_STR	"boot"
+#define SERDES_SKIP_KERNEL_STR	"kernel"
+#define SERDES_SKIP_ALL_STR	"all"
+
 bool s32_serdes_is_pcie_enabled_in_hwconfig(unsigned int id)
 {
 	enum serdes_mode ss_mode;
@@ -169,15 +173,21 @@ enum pcie_type s32_serdes_get_pcie_type_from_hwconfig(unsigned int id)
 	return pcietype;
 }
 
-bool s32_serdes_get_skip_from_hwconfig(unsigned int id)
+int s32_serdes_get_skip_from_hwconfig(unsigned int id)
 {
-	bool skip = false;
+	int skip = SERDES_NO_SKIP;
 	size_t subarg_len = 0;
 	char *option_str = s32_serdes_get_serdes_hwconfig_subarg(id, "skip",
 								 &subarg_len);
 	if (option_str &&
-	    !strncmp(option_str, "1", subarg_len))
-		skip = true;
+	    !strncmp(option_str, SERDES_SKIP_ALL_STR, subarg_len))
+		skip = SERDES_SKIP_BOOT | SERDES_SKIP_KERNEL;
+	else if (option_str &&
+		 !strncmp(option_str, SERDES_SKIP_BOOT_STR, subarg_len))
+		skip = SERDES_SKIP_BOOT;
+	else if (option_str &&
+		 !strncmp(option_str, SERDES_SKIP_KERNEL_STR, subarg_len))
+		skip = SERDES_SKIP_KERNEL;
 
 	debug("found serdes%d skip %d\n", id, skip);
 	return skip;

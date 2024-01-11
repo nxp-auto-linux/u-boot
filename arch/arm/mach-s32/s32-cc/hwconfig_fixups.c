@@ -577,12 +577,6 @@ static int skip_dts_node(struct dts_node *root, const char *alias_fmt,
 		return ret;
 	}
 
-	/**
-	 * Nothing to be performed on Linux device tree as skip option has
-	 * effect on U-Boot drivers only
-	 */
-	if (root->fdt)
-		return 0;
 
 	ret = disable_node(&node);
 	if (ret) {
@@ -594,7 +588,7 @@ static int skip_dts_node(struct dts_node *root, const char *alias_fmt,
 }
 
 static int skip_dts_nodes_config(struct dts_node *root, unsigned int id,
-				 bool *skip)
+				 int *skip)
 {
 	int ret = -EINVAL;
 	struct dts_node serdes;
@@ -608,24 +602,27 @@ static int skip_dts_nodes_config(struct dts_node *root, unsigned int id,
 		return ret;
 	}
 
-	/* Do not skip SerDes & PCIe fixup for Linux device tree */
-	if (root->fdt)
-		return 0;
-
 	*skip = s32_serdes_get_skip_from_hwconfig(id);
 
-	if (!*skip)
-		return 0;
+	if ((root->fdt && *skip == SERDES_SKIP_KERNEL) ||
+	    (!root->fdt && *skip == SERDES_SKIP_BOOT)) {
 
-	printf("Skipping configuration for SerDes%u.\n", id);
+		pr_info("Skipping %s configuration for SerDes%u\n",
+			*skip == SERDES_SKIP_BOOT ? "boot" : "kernel",
+			id);
 
-	ret = skip_dts_node(root, PCIE_ALIAS_FMT, id);
-	if (ret)
-		return ret;
+		/* Disable nodes for PCIe and SerDes.
+		 * Do not disable XPCS nodes (for now) as
+		 * 'skip' is intended for PCIe.
+		 */
+		ret = skip_dts_node(root, PCIE_ALIAS_FMT, id);
+		if (ret)
+			return ret;
 
-	ret = skip_dts_node(root, SERDES_ALIAS_FMT, id);
-	if (ret)
-		return ret;
+		ret = skip_dts_node(root, SERDES_ALIAS_FMT, id);
+		if (ret)
+			return ret;
+	}
 
 	return 0;
 }
@@ -1154,7 +1151,7 @@ exit:
 
 static int apply_hwconfig_fixups(bool fdt, void *blob)
 {
-	bool skip = false;
+	int skip = SERDES_NO_SKIP;
 	bool an;
 	int ret;
 	unsigned int id;
