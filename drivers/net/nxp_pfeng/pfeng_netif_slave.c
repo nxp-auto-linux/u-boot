@@ -2,7 +2,7 @@
 /*
  * NXP S32G PFE Ethernet port (netif) driver
  *
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #define LOG_CATEGORY UCLASS_ETH
@@ -81,6 +81,16 @@ static int initialize_hw_chnl(struct udevice *dev)
 
 		if (!ip_is_ready)
 			return -EAGAIN;
+
+		/* Set PFE HIF coherency */
+		if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE_MANAGE_COHERENCY)) {
+			ret = pfeng_set_port_coherency_nvmem(dev->parent);
+			if (ret) {
+				hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
+				hw->hw_chnl_error = ret;
+				return ret;
+			}
+		}
 
 		ret = pfe_hw_hif_chnl_hw_init(hw, hw_cfg);
 		if (ret) {
