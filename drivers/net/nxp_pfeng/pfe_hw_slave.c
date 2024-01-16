@@ -2,7 +2,7 @@
 /*
  *  Copyright (c) 2019 Imagination Technologies Limited
  *  Copyright (c) 2020-2021 Imagination Technologies Limited
- *  Copyright 2018-2023 NXP
+ *  Copyright 2018-2024 NXP
  */
 
 #include <common.h>
@@ -218,7 +218,7 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 	uchar *rec_buf;
 	u32 rx_bdp_fifo_len;
 	int flush_count = 0;
-	int ret;
+	int ret, ret_if_disable;
 
 	ihc_frame = kzalloc(IHC_BUFFER_SIZE, GFP_KERNEL);
 
@@ -234,17 +234,23 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 		goto exit;
 	}
 
-	ret = send_idex_if_disable(ext, ihc_frame, RPC_PFE_IF_DISABLE);
-	if (ret) {
+	ret_if_disable = send_idex_if_disable(ext, ihc_frame, RPC_PFE_IF_DISABLE);
+	if (ret_if_disable)
 		dev_err(ext->hw->cfg->dev,
-			"Failed to execute Disable IF RPC command: %d\n", ret);
-		goto exit;
-	}
+			"Failed to execute Disable IF RPC command: %d\n", ret_if_disable);
+		/* Once RPC_PFE_IF_LOCK is executed successfully then
+		 * the RPC_PFE_IF_UNLOCK must be used, do not exit here.
+		 */
 
 	ret = send_idex_if_db_lock(ext, ihc_frame, RPC_PFE_IF_UNLOCK);
 	if (ret) {
 		dev_err(ext->hw->cfg->dev,
 			"Failed to execute Unlock RPC command: %d\n", ret);
+		goto exit;
+	}
+
+	if (ret_if_disable) {
+		ret = ret_if_disable;
 		goto exit;
 	}
 
