@@ -64,6 +64,24 @@
 
 #define CONFIG_HWCONFIG
 
+#if CONFIG_CONS_INDEX == 1
+#  define S32_LINFLEX_MODULE 0
+#elif CONFIG_CONS_INDEX == 2
+#  define S32_LINFLEX_MODULE 1
+#elif CONFIG_CONS_INDEX == 3
+#  define S32_LINFLEX_MODULE 2
+#elif CONFIG_CONS_INDEX == 4
+#  define S32_LINFLEX_MODULE 3
+#elif CONFIG_CONS_INDEX == 5
+#  define S32_LINFLEX_MODULE 4
+#elif CONFIG_CONS_INDEX == 6
+#  define S32_LINFLEX_MODULE 5
+#elif CONFIG_CONS_INDEX == 7
+#  define S32_LINFLEX_MODULE 6
+#else
+#  error "The CONFIG_CONS_INDEX can be in the range 1(serial0)-7(serial6)"
+#endif
+
 #if defined(CONFIG_S32CC_HWCONFIG)
 #  define SERDES_EXTRA_ENV_SETTINGS "hwconfig=" CONFIG_S32CC_HWCONFIG "\0"
 #else
@@ -93,7 +111,7 @@
 
 #define S32CC_ENV_SETTINGS \
 	S32_ENV_SETTINGS \
-	"console=ttyLF0\0" \
+	"console=ttyLF" __stringify(S32_LINFLEX_MODULE) "\0" \
 	"fdt_enable_hs400=" \
 		"fdt addr ${fdt_addr}; " \
 		"fdt rm /soc/mmc no-1-8-v; " \
