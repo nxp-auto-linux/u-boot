@@ -646,12 +646,6 @@ static int prepare_pcie_node(struct dts_node *root, unsigned int id)
 	if (ret)
 		return ret;
 
-	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
-	if (ret) {
-		pr_err("Failed to get 'pcie%u' alias\n", id);
-		return ret;
-	}
-
 	ret = enable_node(&node);
 	if (ret) {
 		pr_err("Failed to enable PCIe%u\n", id);
@@ -831,25 +825,42 @@ static int set_serdes_mode(enum serdes_mode mode, struct dts_node *root, unsigne
 	return ret;
 }
 
-static void disable_serdes_pcie_nodes(struct dts_node *root, unsigned int id)
+static void disable_serdes_node(struct dts_node *root, unsigned int id)
 {
-	size_t i;
 	int ret;
 	struct dts_node node;
-	static const char * const fmts[] = {SERDES_ALIAS_FMT, PCIE_ALIAS_FMT};
 
-	for (i = 0; i < ARRAY_SIZE(fmts); i++) {
-		ret = node_by_alias(root, &node, fmts[i], id);
-		if (ret) {
-			pr_err("Failed to get '%s%u' alias\n", fmts[i], id);
-			continue;
-		}
-
-		ret = disable_node(&node);
-		if (ret) {
-			pr_err("Failed to disable %s%u\n", fmts[i], id);
-		}
+	ret = node_by_alias(root, &node, SERDES_ALIAS_FMT, id);
+	if (ret) {
+		pr_err("Failed to get 'serdes%u' alias\n", id);
+		return;
 	}
+
+	ret = disable_node(&node);
+	if (ret)
+		pr_err("Failed to disable 'serdes%u'\n", id);
+}
+
+static void disable_pcie_node(struct dts_node *root, unsigned int id)
+{
+	int ret;
+	struct dts_node node;
+
+	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
+	if (ret) {
+		pr_err("Failed to get 'pci%u' alias\n", id);
+		return;
+	}
+
+	ret = disable_node(&node);
+	if (ret)
+		pr_err("Failed to disable 'pci%u'\n", id);
+}
+
+static void disable_serdes_pcie_nodes(struct dts_node *root, unsigned int id)
+{
+	disable_serdes_node(root, id);
+	disable_pcie_node(root, id);
 }
 
 static int node_get_path(struct dts_node *node, char *buf, int len)
@@ -1023,7 +1034,7 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 	 */
 
 	/* Our node must be compatible with "nxp,s32g-pfe-netif" or "nxp,s32cc-dwmac" */
-	if (node_is_compatible(&node, "nxp,s32g-pfe-netif")) {
+	if (IS_ENABLED(CONFIG_NXP_PFENG) && node_is_compatible(&node, "nxp,s32g-pfe-netif")) {
 		u32 val = 0;
 
 		ret = node_get_prop_u32(&node, "nxp,pfeng-linked-phyif", &val);
@@ -1079,7 +1090,7 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 		}
 	}
 
-	/* If autonegociation is enforced from 'hwconfig', create and populate the
+	/* If autonegociation is disabled from 'hwconfig', create and populate the
 	 * 'fixed-link' node
 	 */
 	if (!autoneg) {
@@ -1169,6 +1180,7 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 			if (ret)
 				pr_err("Failed to disable XPCS1 for SerDes%d\n", id);
 		} else if (mode == SERDES_MODE_XPCS0_XPCS1) {
+			disable_pcie_node(&root, id);
 			an = s32_serdes_get_xpcs_an_from_hwconfig(id, 0);
 			ret = set_xpcs_config_sgmii(&root, id, 0, true, an);
 			if (ret)
