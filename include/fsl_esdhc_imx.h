@@ -6,7 +6,7 @@
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
  * Copyright 2007-2008,2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019-2023 NXP
+ * Copyright 2019-2024 NXP
  */
 
 #ifndef __FSL_ESDHC_IMX_H__
@@ -244,6 +244,9 @@
 #define	ESDHC_FLAG_HS400		BIT(9)
 #define	ESDHC_FLAG_ERR010450		BIT(10)
 #define	ESDHC_FLAG_HS400_ES		BIT(11)
+
+/* Host controller does not support SDR104 mode */
+#define ESDHC_FLAG_BROKEN_SDR104	BIT(12)
 
 struct fsl_esdhc_cfg {
 	phys_addr_t esdhc_base;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019, 2021-2023 NXP
+ * Copyright 2019, 2021-2024 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
@@ -1355,6 +1355,12 @@ static int fsl_esdhc_init(struct fsl_esdhc_priv *priv,
 		if (CONFIG_IS_ENABLED(MMC_UHS_SUPPORT))
 			cfg->host_caps |= UHS_CAPS;
 
+		/* Do not advertise faster UHS SDR104 mode if the
+		 * controller does not support it.
+		 */
+		if (priv->flags & ESDHC_FLAG_BROKEN_SDR104)
+			cfg->host_caps &= ~MMC_CAP(UHS_SDR104);
+
 		if (CONFIG_IS_ENABLED(MMC_HS200_SUPPORT)) {
 			if (priv->flags & ESDHC_FLAG_HS200)
 				cfg->host_caps |= MMC_CAP(MMC_HS_200);
@@ -1756,7 +1762,8 @@ static struct esdhc_soc_data usdhc_imx8qm_data = {
 static struct esdhc_soc_data usdhc_s32cc_data = {
 	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_MAN_TUNING |
 		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
-		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
+		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES |
+		ESDHC_FLAG_BROKEN_SDR104,
 };
 
 static const struct udevice_id fsl_esdhc_ids[] = {
