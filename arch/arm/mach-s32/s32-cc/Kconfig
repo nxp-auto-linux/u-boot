@@ -155,7 +155,7 @@ config ENV_SIZE
 
 config ERR051257_WORKAROUND
 	bool "ERR051257 erratum workaround"
-	default y
+	default y if ARCH_S32G2 && !TARGET_S32G2XXAEVB && !TARGET_S32G2XXAEVB3
 	help
 	  Enable workaround for ERR051257 erratum.
 	  The QSPI boot flow will hang if the QSPI memory will rise any ECC
