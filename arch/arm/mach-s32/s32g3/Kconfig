@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 
 if ARCH_S32G3
 
@@ -15,6 +15,7 @@ config TARGET_S32G399ARDB3
 	  serial port, 18 CAN ports, I2C and DSPI.
 	imply CMD_EEPROM
 	imply I2C_EEPROM
+	imply MMC_UHS_SUPPORT
 	select NXP_S32GRDB_BOARD
 
 config TARGET_S32G3XXAEVB
