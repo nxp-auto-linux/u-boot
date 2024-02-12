@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #include <dm.h>
@@ -25,8 +25,8 @@ static int scmi_nvmem_read(struct udevice *dev, int offset,
 {
 	struct {
 		s32 status;
-		u32 value;
 		u32 bytes_read;
+		u32 value;
 	} response;
 	struct {
 		u32 offset;
