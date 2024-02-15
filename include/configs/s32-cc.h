@@ -238,7 +238,18 @@
 #else
 #  define BOOTENV
 #  if defined(CONFIG_QSPI_BOOT)
-#    define CONFIG_BOOTCOMMAND "run flashboot"
+#    if defined(CONFIG_FIT_SIGNATURE)
+#        define PRECONFIG_BOOTCOMMAND \
+		"mtd read Kernel ${loadaddr};" \
+		"mtd read Rootfs ${ramdisk_addr};" \
+		"setenv boot_mtd bootm;" \
+		"setenv flashboot ${boot_mtd} ${loadaddr} ${ramdisk_addr} ${loadaddr};"
+#    else
+#        define PRECONFIG_BOOTCOMMAND
+#    endif
+#    define CONFIG_BOOTCOMMAND \
+	PRECONFIG_BOOTCOMMAND \
+	"run flashboot;"
 #  elif defined(CONFIG_SD_BOOT)
 #    if defined(CONFIG_XEN_SUPPORT)
 #      define CONFIG_BOOTCOMMAND XEN_BOOTCMD
