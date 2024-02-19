@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 
 """This script does the required DT changes for switching to SCMI-based GPIO,
    Pinctrl and NVMEM drivers."""
@@ -15,16 +15,15 @@ SIUL2_GPIO_NAME = "siul2-gpio@4009d700"
 SCMI_PINCTRL_NAME = "protocol@80"
 SCMI_GPIO_NAME = "protocol@81"
 SCMI_NVMEM_NAME = "protocol@82"
-GPR_CAN_MUX_CONTROLLER_NAME = "mux-controller@f0"
-I2C2_NAME = "i2c@401ec000"
-I2C4_NAME = "i2c@402dc000"
 
-"""Used for human readable log printing."""
-log_names = {
-    GPR_CAN_MUX_CONTROLLER_NAME : "MMIO MUX",
-    I2C2_NAME : "I2C2",
-    I2C4_NAME : "I2C4",
-}
+""" Disable list containing readable and DT name node pairs"""
+disabled_dt_nodes = [
+    ("MMIO MUX", "mux-controller@f0"),
+    ("I2C2", "i2c@401ec000"),
+    ("I2C4", "i2c@402dc000"),
+    ("SPI1", "spi@401d8000"),
+    ("CAN0", "flexcan@401b4000"),
+]
 
 def log_step(msg):
     """Log an indented message (an execution step of the script)."""
@@ -110,22 +109,23 @@ def update_nvmem_consumers(dtb, scmi_node_name):
 
     scmi_node.set_property("status", "okay")
 
-def disable_generic_node(dtb, node_name):
+def disable_generic_node(dtb, in_node):
     """ Disable a given device tree node.
         Node description must be aded to log_names dictionary."""
 
-    print("Disabling " + log_names[node_name] + " node")
+    log_name, dt_name = in_node
+    print("Disabling " + log_name + " node")
 
-    nodes = dtb.search(node_name, itype=fdt.ItemType.NODE)
+    nodes = dtb.search(dt_name, itype=fdt.ItemType.NODE)
     if len(nodes) != 1:
-        log_step("Can't find " + log_names[node_name] + " node!")
-        sys.exit(1)
+        log_step("Error: can't find " + log_name + " node!")
+        return
 
     node = nodes[0]
-    log_step("Found " + log_names[node_name] + " node: " + node.path + "/" + node.name)
+    log_step("Found " + log_name + " node: " + node.path + "/" + node.name)
 
     node.set_property("status", "disabled")
-    log_step("Disabled " + log_names[node_name] + " node!")
+    log_step("Disabled " + log_name + " node!")
 
 def main():
     """Main script function."""
@@ -173,9 +173,8 @@ def main():
         print("Enabling SCMI NVMEM")
         update_nvmem_consumers(dtb, SCMI_NVMEM_NAME)
 
-    disable_generic_node(dtb, GPR_CAN_MUX_CONTROLLER_NAME)
-    disable_generic_node(dtb, I2C2_NAME)
-    disable_generic_node(dtb, I2C4_NAME)
+    for node in disabled_dt_nodes:
+        disable_generic_node(dtb, node)
 
     with open(dtb_file, "wb") as file:
         file.write(dtb.to_dtb())
