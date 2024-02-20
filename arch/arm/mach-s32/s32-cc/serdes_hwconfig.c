@@ -324,6 +324,8 @@ enum pcie_phy_mode s32_serdes_get_pcie_phy_mode_from_hwconfig(unsigned int id)
 
 	if (!strncmp(option_str, "crss", subarg_len))
 		phy_mode = CRSS;
+	else if (!strncmp(option_str, "srns", subarg_len))
+		phy_mode = SRNS;
 	else if (!strncmp(option_str, "sris", subarg_len))
 		phy_mode = SRIS;
 

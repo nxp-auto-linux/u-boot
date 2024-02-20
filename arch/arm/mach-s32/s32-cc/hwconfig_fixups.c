@@ -451,6 +451,9 @@ static int set_pcie_phy_mode(struct dts_node *node, unsigned int id)
 	case CRSS:
 		mode = "crss";
 		break;
+	case SRNS:
+		mode = "srns";
+		break;
 	case SRIS:
 		mode = "sris";
 		break;

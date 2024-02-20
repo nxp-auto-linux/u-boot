@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2023 NXP
+ * Copyright 2020-2024 NXP
  * S32CC PCIe Host driver
  */
 
@@ -557,11 +557,44 @@ void s32cc_pcie_set_device_id(struct s32cc_pcie *s32cc_pp)
 	dw_pcie_dbi_ro_wr_dis(pcie);
 }
 
-int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp)
+static void s32cc_pcie_set_phy_mode(struct s32cc_pcie *s32cc_pp)
 {
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
 	struct udevice *dev = pcie->dev;
 	const char *pcie_phy_mode;
+
+	pcie_phy_mode = dev_read_string(dev, "nxp,phy-mode");
+	if (!pcie_phy_mode) {
+		dev_info(dev, "Missing 'nxp,phy-mode' property, using default CRNS\n");
+		s32cc_pp->phy_mode = CRNS;
+	} else if (!strcmp(pcie_phy_mode, "crns")) {
+		s32cc_pp->phy_mode = CRNS;
+	} else if (!strcmp(pcie_phy_mode, "crss")) {
+		s32cc_pp->phy_mode = CRSS;
+	} else if (!strcmp(pcie_phy_mode, "srns")) {
+		s32cc_pp->phy_mode = SRNS;
+
+		/* When using internal clock, SRNS phy mode is only
+		 * supported @speed < GEN3
+		 */
+		if (!s32_serdes_is_external_clk_in_hwconfig(s32cc_pp->id)) {
+			if (s32cc_pp->linkspeed > GEN2) {
+				dev_info(dev, "SRNS phy mode with internal clock @maximum GEN2 speed\n");
+				s32cc_pp->linkspeed = GEN2;
+			}
+		}
+	} else if (!strcmp(pcie_phy_mode, "sris")) {
+		s32cc_pp->phy_mode = SRIS;
+	} else {
+		dev_warn(dev, "Unsupported 'nxp,phy-mode' specified, using default CRNS\n");
+		s32cc_pp->phy_mode = CRNS;
+	}
+}
+
+int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp)
+{
+	struct dw_pcie *pcie = &s32cc_pp->pcie;
+	struct udevice *dev = pcie->dev;
 	int ret = 0;
 
 	ret = dev_read_alias_seq(dev, &s32cc_pp->id);
@@ -583,21 +616,6 @@ int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp)
 	ret = generic_phy_get_by_name(dev, "serdes_lane1", &s32cc_pp->phy1);
 	if (ret)
 		dev_dbg(dev, "PHY 'serdes_lane1' not available\n");
-
-	pcie_phy_mode = dev_read_string(dev, "nxp,phy-mode");
-	if (!pcie_phy_mode) {
-		dev_info(dev, "Missing 'nxp,phy-mode' property, using default CRNS\n");
-		s32cc_pp->phy_mode = CRNS;
-	} else if (!strcmp(pcie_phy_mode, "crns")) {
-		s32cc_pp->phy_mode = CRNS;
-	} else if (!strcmp(pcie_phy_mode, "crss")) {
-		s32cc_pp->phy_mode = CRSS;
-	} else if (!strcmp(pcie_phy_mode, "sris")) {
-		s32cc_pp->phy_mode = SRIS;
-	} else {
-		dev_info(dev, "Unsupported 'nxp,phy-mode' specified, using default CRNS\n");
-		s32cc_pp->phy_mode = CRNS;
-	}
 
 	pcie->dbi_base = (void *)dev_read_addr_name(dev, "dbi");
 	if ((fdt_addr_t)pcie->dbi_base == FDT_ADDR_T_NONE) {
@@ -654,6 +672,8 @@ int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp)
 		dev_info(dev, "PCIe%d: Invalid speed\n", s32cc_pp->id);
 		s32cc_pp->linkspeed  = GEN1;
 	}
+
+	s32cc_pcie_set_phy_mode(s32cc_pp);
 
 	return 0;
 }
