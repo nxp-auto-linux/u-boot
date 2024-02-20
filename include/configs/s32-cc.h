@@ -19,6 +19,11 @@
 
 #define S32CC_SRAM_BASE			0x34000000
 
+#ifndef CFG_SYS_BAUDRATE_TABLE
+#define CFG_SYS_BAUDRATE_TABLE    { 9600, 19200, 38400, 57600, 115200, \
+				       921600, 1000000, 1500000, 2000000, 3000000 }
+#endif
+
 /**
  *
  * Before changing the device tree offset or size, please read
