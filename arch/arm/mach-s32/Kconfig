@@ -32,6 +32,7 @@ config NXP_S32CC
 	imply FSL_QSPI
 	imply FSL_QSPI_AHB_FULL_MAP
 	imply FS_FAT
+	imply LOG
 	imply MISC
 	imply MP
 	imply NET_RANDOM_ETHADDR
