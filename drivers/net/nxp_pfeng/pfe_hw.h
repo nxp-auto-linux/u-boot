@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
- *  Copyright 2023 NXP
+ *  Copyright 2023-2024 NXP
  */
 
 #ifndef PFE_HW_H_
@@ -59,12 +59,26 @@ enum pfe_hw_sch_blocks {
 	PFENG_SCHS_COUNT,
 };
 
-enum pfe_hw_blocks {
+enum pfe_hw_emac_block {
 	PFENG_EMAC0 = 0,
 	PFENG_EMAC1,
 	PFENG_EMAC2,
 	PFENG_EMACS_COUNT,
-	PFENG_HIF0 = 6U,
+};
+
+/* Device tree "nxp,s32g-pfe-netif" compatible node can contain either:
+ * - nxp,pfeng-linked-phyif = < >;
+ * - nxp,pfeng-netif-mode-aux;
+ * This determines operation of the network interface.
+ * The interface with specified linked physical interface injects (sends) and receives
+ * traffic only to / from the given physical IF.
+ * While the AUX mode interface sends packets to the PFE classifier with HIF cookie set
+ * and receives all incoming traffic.
+ */
+
+enum pfe_hw_hif_block {
+	PFENG_HIF_MULTI = 3U,	/* Container for all PFENG_HIF0..3, PFE AUX type */
+	PFENG_HIF0 = 6U,	/* Synthetic HIF interfaces, id range 6..9 */
 	PFENG_HIF1,
 	PFENG_HIF2,
 	PFENG_HIF3,
@@ -151,7 +165,7 @@ int pfe_hw_emac_mdio_read(void __iomem *base_va, u8 pa, s32 dev, u16 ra, u16 *va
 int pfe_hw_emac_mdio_write(void __iomem *base_va, u8 pa, s32 dev, u16 ra, u16 val);
 
 /* helpers */
-phys_addr_t pfe_hw_get_iobase(phys_addr_t pfe_iobase, enum pfe_hw_blocks block_id);
+phys_addr_t pfe_hw_emac_get_iobase(phys_addr_t pfe_iobase, enum pfe_hw_emac_block block_id);
 
 static inline bool is_emac_active(const struct pfe_hw_cfg *pfe_hw, u8 emac_id)
 {

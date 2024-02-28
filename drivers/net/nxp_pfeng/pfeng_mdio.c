@@ -2,7 +2,7 @@
 /*
  * NXP S32G PFE Ethernet MDIO driver
  *
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #define LOG_CATEGORY UCLASS_ETH
@@ -68,7 +68,7 @@ static int pfeng_mdio_of_to_plat(struct udevice *dev)
 	struct pfeng_cfg *cfg = dev_get_plat(dev->parent);
 	char name[16];
 	fdt_addr_t dev_addr;
-	enum pfe_hw_blocks emac_id;
+	enum pfe_hw_emac_block emac_id;
 	int ret;
 
 	if (!dev_read_enabled(dev))
@@ -105,7 +105,7 @@ static int pfeng_mdio_of_to_plat(struct udevice *dev)
 		return -EINVAL;
 
 	mdio_cfg->id = emac_id;
-	mdio_cfg->iobase = pfe_hw_get_iobase(cfg->csr_phys_addr, mdio_cfg->id);
+	mdio_cfg->iobase = pfe_hw_emac_get_iobase(cfg->csr_phys_addr, mdio_cfg->id);
 
 	if (!mdio_cfg->iobase)
 		return -EINVAL;

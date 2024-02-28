@@ -2,7 +2,7 @@
 /*
  *  Copyright (c) 2019 Imagination Technologies Limited
  *  Copyright (c) 2020-2021 Imagination Technologies Limited
- *  Copyright 2018-2023 NXP
+ *  Copyright 2018-2024 NXP
  */
 
 #include <dm/device_compat.h>
@@ -60,7 +60,7 @@ static inline phys_addr_t pfe_hw_block_pa(struct pfe_hw *pfe, u32 pa_off)
 	return pfe_hw_block_pa_of(pfe->cbus_baseaddr, pa_off);
 }
 
-phys_addr_t pfe_hw_get_iobase(phys_addr_t pfe_iobase, enum pfe_hw_blocks block_id)
+phys_addr_t pfe_hw_emac_get_iobase(phys_addr_t pfe_iobase, enum pfe_hw_emac_block block_id)
 {
 	phys_addr_t offset = 0;
 	phys_addr_t addr = pfe_iobase;
@@ -612,7 +612,7 @@ int pfe_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *hw_cfg)
 {
 	struct pfe_hw *pfe;
 	int ret = 0;
-	enum pfe_hw_blocks emac_id;
+	enum pfe_hw_emac_block emac_id;
 
 	pfe = kzalloc(sizeof(*pfe), GFP_KERNEL);
 	if (!pfe)
