@@ -235,19 +235,24 @@ static int pfeng_netif_of_to_plat(struct udevice *dev)
 	if (!dev_read_enabled(dev))
 		return 0;
 
-	/* Linked PhyIf port */
-	ret = dev_read_u32_default(dev, "nxp,pfeng-linked-phyif", PHYIF_ID_NOT_SET);
-	if (ret == PHYIF_ID_NOT_SET) {
-		dev_err(dev, "Failed to read PHYIF id\n");
-		return -EINVAL;
-	}
+	/* Is Aux interface */
+	if (dev_read_bool(dev, "nxp,pfeng-netif-mode-aux")) {
+		cfg->phyif = PFENG_HIF_MULTI;
+	} else {
+		/* Linked PhyIf port */
+		ret = dev_read_u32_default(dev, "nxp,pfeng-linked-phyif", PHYIF_ID_NOT_SET);
+		if (ret == PHYIF_ID_NOT_SET) {
+			dev_err(dev, "Failed to read PHYIF id\n");
+			return -EINVAL;
+		}
 
-	if (ret > PFENG_HIF3 || (ret > PFENG_EMAC2 && ret < PFENG_HIF0)) {
-		dev_err(dev, "PHYIF id ot of range: %d\n", ret);
-		return -EINVAL;
-	}
+		if (ret > PFENG_HIF3 || (ret > PFENG_EMAC2 && ret < PFENG_HIF0)) {
+			dev_err(dev, "PHYIF id ot of range: %d\n", ret);
+			return -EINVAL;
+		}
 
-	cfg->phyif = ret;
+		cfg->phyif = ret;
+	}
 
 	/* Netdev name */
 	cfg->name = dev_read_string(dev, "nxp,pfeng-if-name");
