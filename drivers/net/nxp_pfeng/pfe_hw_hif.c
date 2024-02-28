@@ -2,7 +2,7 @@
 /*
  *  Copyright (c) 2019 Imagination Technologies Limited
  *  Copyright (c) 2020-2021 Imagination Technologies Limited
- *  Copyright 2018-2023 NXP
+ *  Copyright 2018-2024 NXP
  */
 
 #include <common.h>
@@ -417,13 +417,20 @@ int pfe_hw_chnl_xmit(struct pfe_hw_chnl *chnl, bool is_ihc, u8 phyif, void *pack
 	/* Fill header */
 	memset(&tx_header, 0, HIF_HEADER_SIZE);
 
-	if (is_ihc)
+	if (is_ihc) {
 		tx_header.flags = HIF_TX_INJECT | HIF_TX_IHC;
-	else
-		tx_header.flags = HIF_TX_INJECT;
+		tx_header.e_phy_ifs = htonl(1U << phyif);
+	} else {
+		if (phyif != PFENG_HIF_MULTI) {
+			tx_header.flags = HIF_TX_INJECT;
+			tx_header.e_phy_ifs = htonl(1U << phyif);
+		} else {
+			/* Set HIF cookie only for AUX */
+			tx_header.cookie = htonl(phyif);
+		}
+	}
 
 	tx_header.chid = chnl->id;
-	tx_header.e_phy_ifs = htonl(1U << phyif);
 	pfe_hw_flush_d(&tx_header, HIF_HEADER_SIZE);
 
 	pfe_hif_set_bd_data(bd_hd, &tx_header);
