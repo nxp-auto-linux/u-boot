@@ -2,7 +2,7 @@
 /*
  * NXP S32G Ethernet accelerator driver
  *
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #ifndef PFENG_H_
@@ -104,7 +104,7 @@ struct pfeng_netif {
 
 struct pfeng_mdio_cfg {
 	phys_addr_t		iobase;
-	enum pfe_hw_blocks	id;
+	enum pfe_hw_emac_block	id;
 };
 
 int pfeng_hw_detect_version(struct pfeng_priv *priv);

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL 2.0 */
 /*
- *  Copyright 2023 NXP
+ *  Copyright 2023-2024 NXP
  */
 
 #ifndef PFE_HW_PRIV_H_
@@ -88,7 +88,7 @@ static inline void *pfe_hw_phys_addr(phys_addr_t paddr)
 }
 
 /* EMAC internal */
-int pfe_hw_emac_init(struct pfe_hw_emac *emac, enum pfe_hw_blocks emac_id,
+int pfe_hw_emac_init(struct pfe_hw_emac *emac, enum pfe_hw_emac_block emac_id,
 		     const struct pfe_hw_cfg *cfg);
 void pfe_hw_emac_deinit(struct pfe_hw_emac *emac);
 

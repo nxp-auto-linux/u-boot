@@ -2,7 +2,7 @@
 /*
  *  Copyright (c) 2019 Imagination Technologies Limited
  *  Copyright (c) 2020-2021 Imagination Technologies Limited
- *  Copyright 2018-2023 NXP
+ *  Copyright 2018-2024 NXP
  */
 
 #include <dm/device_compat.h>
@@ -255,10 +255,10 @@ int pfe_hw_emac_mdio_write(void __iomem *base_va, u8 pa, s32 dev, u16 ra, u16 va
 	return 0;
 }
 
-int pfe_hw_emac_init(struct pfe_hw_emac *emac, enum pfe_hw_blocks emac_id,
+int pfe_hw_emac_init(struct pfe_hw_emac *emac, enum pfe_hw_emac_block emac_id,
 		     const struct pfe_hw_cfg *cfg)
 {
-	emac->base = pfe_hw_phys_addr(pfe_hw_get_iobase(cfg->cbus_base, emac_id));
+	emac->base = pfe_hw_phys_addr(pfe_hw_emac_get_iobase(cfg->cbus_base, emac_id));
 	if (!emac->base)
 		return -ENODEV;
 
