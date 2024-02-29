@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2022,2024 NXP
  */
 
 #include <config.h>
@@ -92,8 +92,8 @@ static int s32cc_gpio_get_function(struct udevice *dev, unsigned int gpio)
 	return pinctrl_get_gpio_mux(priv->pinctrl, 0, gpio);
 }
 
-static int s32cc_gpio_set_value(struct udevice *dev, unsigned int gpio,
-				int value)
+static int s32cc_gpio_set_value_raw(struct udevice *dev, unsigned int gpio,
+				    int value)
 {
 	int reg_offset;
 	void __iomem *addr;
@@ -107,9 +107,6 @@ static int s32cc_gpio_set_value(struct udevice *dev, unsigned int gpio,
 	pad = siul2_pin2pad(gpio);
 	reg_offset = siul2_get_pad_offset(pad);
 
-	if (s32cc_gpio_get_function(dev, gpio) != GPIOF_OUTPUT)
-		return -EINVAL;
-
 	addr = siul2_get_pad_base_addr(dev, gpio, false);
 	if (!addr)
 		return -EINVAL;
@@ -122,6 +119,15 @@ static int s32cc_gpio_set_value(struct udevice *dev, unsigned int gpio,
 	writew(val, ((uintptr_t)addr) + reg_offset);
 
 	return 0;
+}
+
+static int s32cc_gpio_set_value(struct udevice *dev, unsigned int gpio,
+				int value)
+{
+	if (s32cc_gpio_get_function(dev, gpio) != GPIOF_OUTPUT)
+		return -EINVAL;
+
+	return s32cc_gpio_set_value_raw(dev, gpio, value);
 }
 
 static int s32cc_gpio_get_value(struct udevice *dev, unsigned int gpio)
@@ -150,7 +156,7 @@ static int s32cc_gpio_direction_input(struct udevice *dev, unsigned int gpio)
 {
 	int ret;
 
-	ret = pinctrl_gpio_request(dev, gpio);
+	ret = pinctrl_gpio_request(dev, gpio, NULL);
 	if (ret)
 		return ret;
 
@@ -164,8 +170,13 @@ static int s32cc_gpio_direction_input(struct udevice *dev, unsigned int gpio)
 static int s32cc_gpio_direction_output(struct udevice *dev, unsigned int gpio,
 				       int value)
 {
-	int ret = pinctrl_gpio_request(dev, gpio);
+	int ret = pinctrl_gpio_request(dev, gpio, NULL);
 
+	if (ret)
+		return ret;
+
+	/* We preconfigure the value to avoid a glitch on the output */
+	ret = s32cc_gpio_set_value_raw(dev, gpio, value);
 	if (ret)
 		return ret;
 
@@ -173,11 +184,7 @@ static int s32cc_gpio_direction_output(struct udevice *dev, unsigned int gpio,
 	if (ret)
 		return ret;
 
-	ret = pinctrl_gpio_set_config(dev, gpio, PIN_CONFIG_INPUT_ENABLE, 1);
-	if (ret)
-		return ret;
-
-	return s32cc_gpio_set_value(dev, gpio, value);
+	return pinctrl_gpio_set_config(dev, gpio, PIN_CONFIG_INPUT_ENABLE, 1);
 }
 
 static int s32cc_gpio_get_xlate(struct udevice *dev, struct gpio_desc *desc,
