@@ -191,7 +191,7 @@ static int do_idex_rpc(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id, u8 l
 	return ret;
 }
 
-static int send_idex_if_db_lock(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id)
+static int send_idex_rpc_req(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id)
 {
 	u8 length = sizeof(struct pfe_idex_rpc_req_hdr);
 
@@ -200,7 +200,7 @@ static int send_idex_if_db_lock(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd
 	return do_idex_rpc(ext, ihc_frame, cmd_id, length);
 }
 
-static int send_idex_if_disable(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id)
+static int send_idex_rpc_req_if_mode(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id)
 {
 	u8 length = sizeof(struct pfe_idex_rpc_req_hdr_if_mode);
 
@@ -212,47 +212,58 @@ static int send_idex_if_disable(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd
 	return do_idex_rpc(ext, ihc_frame, cmd_id, length);
 }
 
-static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
+static int send_idex_if_cmd(struct pfe_hw_ext *ext, u32 cmd_id)
 {
 	void *ihc_frame;
-	uchar *rec_buf;
-	u32 rx_bdp_fifo_len;
-	int flush_count = 0;
-	int ret, ret_if_disable;
+	int ret, ret_unlock;
 
 	ihc_frame = kzalloc(IHC_BUFFER_SIZE, GFP_KERNEL);
-
 	if (!ihc_frame)
 		return -ENOMEM;
 
-	pfe_hw_hif_chnl_enable(ext->hw_chnl);
-
-	ret = send_idex_if_db_lock(ext, ihc_frame, RPC_PFE_IF_LOCK);
+	/* Send interface database lock command */
+	ret = send_idex_rpc_req(ext, ihc_frame, RPC_PFE_IF_LOCK);
 	if (ret) {
 		dev_err(ext->hw->cfg->dev,
 			"Failed to execute Lock RPC command: %d\n", ret);
 		goto exit;
 	}
 
-	ret_if_disable = send_idex_if_disable(ext, ihc_frame, RPC_PFE_IF_DISABLE);
-	if (ret_if_disable)
+	/* Send command to the master */
+	ret = send_idex_rpc_req_if_mode(ext, ihc_frame, cmd_id);
+	if (ret)
 		dev_err(ext->hw->cfg->dev,
-			"Failed to execute Disable IF RPC command: %d\n", ret_if_disable);
+			"Failed to execute IF RPC command (%u): %d\n", cmd_id, ret);
 		/* Once RPC_PFE_IF_LOCK is executed successfully then
 		 * the RPC_PFE_IF_UNLOCK must be used, do not exit here.
 		 */
 
-	ret = send_idex_if_db_lock(ext, ihc_frame, RPC_PFE_IF_UNLOCK);
-	if (ret) {
+	/* Send interface database unlock command */
+	ret_unlock = send_idex_rpc_req(ext, ihc_frame, RPC_PFE_IF_UNLOCK);
+	if (ret_unlock)
 		dev_err(ext->hw->cfg->dev,
-			"Failed to execute Unlock RPC command: %d\n", ret);
-		goto exit;
-	}
+			"Failed to execute Unlock RPC command: %d\n", ret_unlock);
 
-	if (ret_if_disable) {
-		ret = ret_if_disable;
+	if (!ret && ret_unlock)
+		ret = ret_unlock;
+exit:
+	kfree(ihc_frame);
+
+	return ret;
+}
+
+static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
+{
+	uchar *rec_buf;
+	u32 rx_bdp_fifo_len;
+	int flush_count = 0;
+	int ret;
+
+	pfe_hw_hif_chnl_enable(ext->hw_chnl);
+
+	ret = send_idex_if_cmd(ext, RPC_PFE_IF_LOCK);
+	if (ret)
 		goto exit;
-	}
 
 	do {
 		rx_bdp_fifo_len = pfe_hw_chnl_rx_bdp_fifo_len(ext->hw_chnl);
@@ -285,7 +296,6 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 
 exit:
 	pfe_hw_hif_chnl_disable(ext->hw_chnl);
-	kfree(ihc_frame);
 
 	return ret;
 }
