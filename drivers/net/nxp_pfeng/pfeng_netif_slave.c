@@ -85,33 +85,22 @@ static int initialize_hw_chnl(struct udevice *dev)
 		/* Set PFE HIF coherency */
 		if (IS_ENABLED(CONFIG_NXP_PFENG_SLAVE_MANAGE_COHERENCY)) {
 			ret = pfeng_set_port_coherency_nvmem(dev->parent);
-			if (ret) {
-				hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
-				hw->hw_chnl_error = ret;
-				return ret;
-			}
+			if (ret)
+				goto exit;
 		}
 
 		ret = pfe_hw_hif_chnl_hw_init(hw, hw_cfg);
-		if (ret) {
-			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
-			hw->hw_chnl_error = ret;
-			return ret;
-		}
+		if (ret)
+			goto exit;
 
 		ret = pfe_hw_hif_chnl_create(hw);
-		if (ret) {
-			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
-			hw->hw_chnl_error = ret;
-			return ret;
-		}
+		if (ret)
+			goto exit;
 
 		ret = hif_chnl_inspect_hw_state(dev);
 		if (ret) {
 			dev_err(dev, "HIF channel is not in clean state\n");
-			hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
-			hw->hw_chnl_error = ret;
-			return ret;
+			goto exit;
 		}
 
 		pfe_hw_chnl_rings_attach(hw->hw_chnl);
@@ -124,6 +113,10 @@ static int initialize_hw_chnl(struct udevice *dev)
 	}
 
 	return -EAGAIN;
+exit:
+	hw->hw_chnl_state = PFE_HW_CHNL_IN_ERROR;
+	hw->hw_chnl_error = ret;
+	return ret;
 }
 
 static int pfeng_netif_start(struct udevice *dev)
