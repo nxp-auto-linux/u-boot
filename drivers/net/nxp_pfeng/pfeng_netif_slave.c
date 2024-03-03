@@ -134,7 +134,7 @@ static int pfeng_netif_start(struct udevice *dev)
 	netif->hw_chnl = hw->hw_chnl;
 	pfe_hw_hif_chnl_enable(netif->hw_chnl);
 
-	return 0;
+	return pfe_hw_hif_enable(hw);
 }
 
 static void pfeng_netif_stop(struct udevice *dev)

@@ -14,6 +14,7 @@
 
 #define RPC_PFE_IF_LOCK 0xBE
 #define RPC_PFE_IF_UNLOCK 0xBF
+#define RPC_PFE_IF_ENABLE 0x65
 #define RPC_PFE_IF_DISABLE 0x66
 
 #define IHC_BUFFER_SIZE 128
@@ -404,6 +405,22 @@ int pfe_hw_grace_reset(struct pfe_hw_ext *ext)
 	} else {
 		printf("No action taken, HIF channel is not created yet\n");
 	}
+
+	return ret;
+}
+
+int pfe_hw_hif_enable(struct pfe_hw_ext *ext)
+{
+	int ret;
+
+	if (ext->hw_chnl_enabled)
+		return 0;
+
+	ret = send_idex_if_cmd(ext, RPC_PFE_IF_ENABLE);
+	if (!ret)
+		ext->hw_chnl_enabled = true;
+	else
+		dev_err(ext->hw->cfg->dev, "Failed to enable HIF channel: %d\n", ret);
 
 	return ret;
 }
