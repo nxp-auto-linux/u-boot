@@ -106,6 +106,7 @@ struct pfe_hw_ext {
 	enum pfe_hw_chnl_stage hw_chnl_state;
 	int hw_chnl_error;
 	bool in_grace_reset;
+	bool hw_chnl_enabled;
 };
 
 struct pfe_hw_cfg {
@@ -135,6 +136,7 @@ int pfe_hw_grace_reset(struct pfe_hw_ext *ext);
 int pfe_hw_detect_version(phys_addr_t csr_base_addr, enum pfe_hw_ip_ver *pfe_ver);
 int pfe_hw_hif_chnl_hw_init(struct pfe_hw_ext *ext, const struct pfe_hw_cfg *cfg);
 void pfe_hw_hif_chnl_rings_attach(struct pfe_hw_ext *ext);
+int pfe_hw_hif_enable(struct pfe_hw_ext *ext);
 
 /* HIF - Rx/Tx */
 int pfe_hw_hif_chnl_create(struct pfe_hw_ext *ext);
