@@ -44,16 +44,7 @@ config TARGET_S32G274ABLUEBOX3
 	  where these two SoCs are connected together via PCIe.
 	  Also, this board has rich networking features, such as:
 	  PFE, DPAA2 and three sja1110 switches.
-	imply ADC
-	imply CMD_EEPROM
-	imply I2C_EEPROM
-	imply NXP_S32CC_BOARD_COMMON
-	imply PHY
-	imply PHYLIB
-	imply PHY_GIGE
-	imply RGMII
-	imply SARADC_S32CC
-	select SPI_FLASH_STMICRO
+	select NXP_S32G274ABLUEBOX3_BOARD
 
 config TARGET_S32G274AEMU
 	bool "Support S32G274A ZeBu"
