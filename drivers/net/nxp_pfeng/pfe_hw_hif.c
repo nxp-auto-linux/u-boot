@@ -560,7 +560,8 @@ int pfe_hw_chnl_xmit_dummy(struct pfe_hw_chnl *chnl)
 	return 0;
 }
 
-int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, uchar **packetp)
+int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, u8 phyif,
+			uchar **packetp)
 {
 	struct pfe_hif_bd *bd_pkt;
 	struct pfe_hif_wb_bd *wb_bd_pkt;
