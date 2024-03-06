@@ -566,6 +566,7 @@ int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, u8 
 	struct pfe_hif_bd *bd_pkt;
 	struct pfe_hif_wb_bd *wb_bd_pkt;
 	struct pfe_hif_ring *ring = chnl->rx_ring;
+	struct pfe_ct_hif_rx_hdr *rx_hdr;
 	u32 wb_ctrl = 0;
 	u32 rd_idx;
 	int plen = 0;
@@ -590,6 +591,7 @@ int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, u8 
 	pfe_hw_flush_d(bd_pkt, sizeof(*bd_pkt));
 	dmb();
 	if (strip_hdr) {
+		rx_hdr = (struct pfe_ct_hif_rx_hdr *)pfe_hif_get_bd_data(bd_pkt);
 		*packetp = pfe_hif_get_bd_data_strip_hdr(bd_pkt);
 		if (wb_bd_pkt->buflen >= HIF_HEADER_SIZE)
 			plen = wb_bd_pkt->buflen - HIF_HEADER_SIZE;
@@ -611,7 +613,22 @@ int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, u8 
 		return 0;
 	}
 
+	if (strip_hdr && plen > 0) {
+		/* Discard unexpected HIF communication frames */
+		if (ntohl(rx_hdr->flags) & HIF_RX_IHC)
+			goto rx_drop;
+		/* For AUX accept all */
+		if (phyif == PFENG_HIF_MULTI)
+			return plen;
+		/* Drop not targeting phyif */
+		if (phyif != rx_hdr->i_phy_if)
+			goto rx_drop;
+	}
+
 	return plen;
+
+rx_drop:
+	return 0;
 }
 
 int pfe_hw_chnl_free_pkt(struct pfe_hw_chnl *chnl, uchar *packet, int length)
