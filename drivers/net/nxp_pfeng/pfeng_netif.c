@@ -2,7 +2,7 @@
 /*
  * NXP S32G PFE Ethernet port (netif) driver
  *
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #define LOG_CATEGORY UCLASS_ETH
@@ -241,7 +241,7 @@ static int pfeng_netif_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct pfeng_netif *netif = dev_get_priv(dev);
 
-	return pfe_hw_chnl_receive(netif->hw_chnl, flags, true, packetp);
+	return pfe_hw_chnl_receive(netif->hw_chnl, flags, true, netif->cfg->phyif, packetp);
 }
 
 static int pfeng_free_pkt(struct udevice *dev, uchar *packet, int length)

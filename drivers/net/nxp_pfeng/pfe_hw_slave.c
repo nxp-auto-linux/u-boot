@@ -138,7 +138,8 @@ static int idex_rpc(struct pfe_hw_ext *ext, void *ihc_frame, u32 cmd_id, u8 leng
 	mdelay(500);
 
 	while (retry-- > 0) {
-		ret = pfe_hw_chnl_receive(ext->hw_chnl, 0, false, &rec_buf);
+		/* Unused parameters flags and phyif, call with zeroes */
+		ret = pfe_hw_chnl_receive(ext->hw_chnl, 0, false, 0, &rec_buf);
 		if (ret < 0 || !rec_buf)
 			continue;
 
@@ -281,7 +282,8 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 		udelay(500);
 
 		rec_buf = NULL;
-		ret = pfe_hw_chnl_receive(ext->hw_chnl, 0, false, &rec_buf);
+		/* Unused parameters flags and phyif, call with zeroes */
+		ret = pfe_hw_chnl_receive(ext->hw_chnl, 0, false, 0, &rec_buf);
 		if (ret < 0 || !rec_buf)
 			break;
 	} while (flush_count < FLUSH_COUNT_LIMIT);
