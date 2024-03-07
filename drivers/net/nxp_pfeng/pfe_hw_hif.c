@@ -5,7 +5,12 @@
  *  Copyright 2018-2024 NXP
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <net.h>
 #include <asm/system.h>
 #include <dm/device_compat.h>
@@ -53,8 +58,7 @@ void pfe_hw_chnl_print_stats(struct pfe_hw_chnl *chnl)
 	reg = pfe_hw_read(chnl, HIF_TX_WRBK_BD_CHN_BUFFER_SIZE(chnl->id));
 	printf("HIF_TX_WRBK_BD_BUFFER_SIZE : 0x%x\n", reg);
 
-	if (!IS_ENABLED(CONFIG_NXP_PFENG_SLAVE))
-		return;
+	printf("Foreign RX packets         : %u\n", chnl->stat.foreign_rx);
 
 	reg = pfe_hw_read(chnl, HIF_LTC_MAX_PKT_CHN_ADDR(chnl->id));
 	printf("HIF_LTC_MAX_PKT_ADDR       : 0x%x\n", reg);
@@ -628,6 +632,10 @@ int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, u8 
 	return plen;
 
 rx_drop:
+	/* Do not wrap, keep U32_MAX */
+	if (chnl->stat.foreign_rx < U32_MAX)
+		chnl->stat.foreign_rx += 1U;
+
 	return 0;
 }
 
@@ -698,9 +706,10 @@ int pfe_hw_hif_init(struct pfe_hw_hif *hif, void __iomem *base, u8 hif_chnl,
 		} else {
 			/* SOFT RESET */
 			pfe_hw_write(hif, HIF_SOFT_RESET, HIF_SOFT_RESET_CMD);
-			if (read_poll_timeout(readl, pfe_hw_addr(hif, HIF_SOFT_RESET), reg,
+			if (read_poll_timeout(readl, reg,
 					      !(reg & HIF_SOFT_RESET_CMD),
-					      1000, HIF_SOFT_RESET_TIMEOUT_US) < 0) {
+					      1000, HIF_SOFT_RESET_TIMEOUT_US,
+					      pfe_hw_addr(hif, HIF_SOFT_RESET)) < 0) {
 				dev_err(config->dev, "HIF reset timed out.\n");
 				return -ETIMEDOUT;
 			}

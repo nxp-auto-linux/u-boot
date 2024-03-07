@@ -22,11 +22,16 @@ struct pfe_hw_hif {
 	u8 hif_chnl;
 };
 
+struct pfe_hw_chnl_stat {
+	u32 foreign_rx;
+};
+
 struct pfe_hw_chnl {
 	void __iomem *base;
 	struct pfe_hif_ring *rx_ring;
 	struct pfe_hif_ring *tx_ring;
 	struct pfe_hw_hif *hif;
+	struct pfe_hw_chnl_stat stat;
 	u8 id;
 };
 
