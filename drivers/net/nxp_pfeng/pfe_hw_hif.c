@@ -53,8 +53,7 @@ void pfe_hw_chnl_print_stats(struct pfe_hw_chnl *chnl)
 	reg = pfe_hw_read(chnl, HIF_TX_WRBK_BD_CHN_BUFFER_SIZE(chnl->id));
 	printf("HIF_TX_WRBK_BD_BUFFER_SIZE : 0x%x\n", reg);
 
-	if (!IS_ENABLED(CONFIG_NXP_PFENG_SLAVE))
-		return;
+	printf("Foreign RX packets         : %u\n", chnl->stat.foreign_rx);
 
 	reg = pfe_hw_read(chnl, HIF_LTC_MAX_PKT_CHN_ADDR(chnl->id));
 	printf("HIF_LTC_MAX_PKT_ADDR       : 0x%x\n", reg);
@@ -628,6 +627,10 @@ int pfe_hw_chnl_receive(struct pfe_hw_chnl *chnl, int flags, bool strip_hdr, u8 
 	return plen;
 
 rx_drop:
+	/* Do not wrap, keep U32_MAX */
+	if (chnl->stat.foreign_rx < U32_MAX)
+		chnl->stat.foreign_rx += 1U;
+
 	return 0;
 }
 
