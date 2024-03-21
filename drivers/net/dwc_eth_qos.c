@@ -48,6 +48,8 @@
 #include <asm/cache.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
+#include <dm/device-internal.h>
+#include <dm/lists.h>
 #include <dm/pinctrl.h>
 #ifdef CONFIG_ARCH_IMX8M
 #include <asm/arch/clock.h>
@@ -151,10 +153,15 @@ static int eqos_mdio_wait_idle(struct eqos_priv *eqos)
 				 1000000, true);
 }
 
-static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
+static int _eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 			   int mdio_reg)
 {
+#if IS_ENABLED(CONFIG_DM_MDIO)
+	struct udevice *dev = bus->priv;
+	struct eqos_priv *eqos = dev_get_priv(dev);
+#else
 	struct eqos_priv *eqos = bus->priv;
+#endif
 	u32 val;
 	int ret;
 
@@ -212,10 +219,15 @@ static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 	return val;
 }
 
-static int eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
-			   int mdio_reg, u16 mdio_val)
+static int _eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
+			    int mdio_reg, u16 mdio_val)
 {
+#if IS_ENABLED(CONFIG_DM_MDIO)
+	struct udevice *dev = bus->priv;
+	struct eqos_priv *eqos = dev_get_priv(dev);
+#else
 	struct eqos_priv *eqos = bus->priv;
+#endif
 	u32 val;
 	int ret;
 
@@ -269,6 +281,49 @@ static int eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 
 	return 0;
 }
+
+#if IS_ENABLED(CONFIG_DM_MDIO)
+static int eqos_dm_mdio_init(struct udevice *dev)
+{
+	ofnode node;
+	const char *name;
+	int ret;
+
+	dev_for_each_subnode(node, dev) {
+		if (!ofnode_is_enabled(node))
+			continue;
+
+		name = ofnode_get_name(node);
+		if (!name)
+			return -EINVAL;
+
+		if (!strncmp(name, "mdio", 4)) {
+			ret = device_bind_driver_to_node(dev, "eth_eqos_mdio",
+							 name, node, NULL);
+			if (ret)
+				return ret;
+		}
+	}
+
+	return 0;
+}
+
+static int eqos_mdio_read(struct udevice *dev, int mdio_addr, int mdio_devad,
+			  int mdio_reg)
+{
+	struct mdio_perdev_priv *pdata = dev_get_uclass_priv(dev);
+
+	return _eqos_mdio_read(pdata->mii_bus, mdio_addr, mdio_devad, mdio_reg);
+}
+
+static int eqos_mdio_write(struct udevice *dev, int mdio_addr, int mdio_devad,
+			   int mdio_reg, u16 mdio_val)
+{
+	struct mdio_perdev_priv *pdata = dev_get_uclass_priv(dev);
+
+	return _eqos_mdio_write(pdata->mii_bus, mdio_addr, mdio_devad, mdio_reg, mdio_val);
+}
+#endif
 
 static int eqos_start_clks_tegra186(struct udevice *dev)
 {
@@ -1658,8 +1713,23 @@ static int eqos_probe(struct udevice *dev)
 		goto err_remove_resources_tegra;
 	}
 
+#if IS_ENABLED(CONFIG_DM_MDIO)
+	ret = eqos_dm_mdio_init(dev);
+	if (ret < 0) {
+		pr_err("mdio node was not configure: %d", ret);
+		goto err_remove_resources_tegra;
+	}
+
+	eqos->phy = dm_eth_phy_connect(dev);
+	if (!eqos->phy) {
+		pr_err("dm_eth_phy_connect() failed. no phy found");
+		goto err_remove_resources_tegra;
+	}
+#endif
+
 #ifdef CONFIG_DM_ETH_PHY
-	eqos->mii = eth_phy_get_mdio_bus(dev);
+	if (!eqos->mii)
+		eqos->mii = eth_phy_get_mdio_bus(dev);
 #endif
 	if (!eqos->mii) {
 		eqos->mii = mdio_alloc();
@@ -1668,8 +1738,8 @@ static int eqos_probe(struct udevice *dev)
 			ret = -ENOMEM;
 			goto err_stop_clks;
 		}
-		eqos->mii->read = eqos_mdio_read;
-		eqos->mii->write = eqos_mdio_write;
+		eqos->mii->read = _eqos_mdio_read;
+		eqos->mii->write = _eqos_mdio_write;
 		eqos->mii->priv = eqos;
 		strcpy(eqos->mii->name, dev->name);
 
@@ -1846,6 +1916,36 @@ static const struct udevice_id eqos_ids[] = {
 #endif
 	{ }
 };
+
+#if IS_ENABLED(CONFIG_DM_MDIO)
+static int eqos_mdio_probe(struct udevice *dev)
+{
+	dev_set_priv(dev, dev_get_priv(dev->parent));
+
+	return 0;
+};
+
+static const struct udevice_id eqos_mdio_ids[] = {
+	{
+		.compatible = "snps,dwmac-mdio"
+	},
+	{},
+};
+
+static const struct mdio_ops eqos_mdio_ops = {
+	.read = eqos_mdio_read,
+	.write = eqos_mdio_write,
+};
+
+U_BOOT_DRIVER(eth_eqos_mdio) = {
+	.name = "eth_eqos_mdio",
+	.id = UCLASS_MDIO,
+	.of_match = of_match_ptr(eqos_mdio_ids),
+	.probe = eqos_mdio_probe,
+	.ops = &eqos_mdio_ops,
+	.priv_auto	= sizeof(struct eqos_priv),
+};
+#endif
 
 U_BOOT_DRIVER(eth_eqos) = {
 	.name = "eth_eqos",
