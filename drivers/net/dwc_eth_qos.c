@@ -48,11 +48,14 @@
 #include <asm/cache.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
+#include <dm/device-internal.h>
 #include <linux/bitfield.h>
+#include <dm/lists.h>
 #include <linux/delay.h>
 #include <linux/printk.h>
 
 #include "dwc_eth_qos.h"
+
 /*
  * TX and RX descriptors are 16 bytes. This causes problems with the cache
  * maintenance on CPUs where the cache-line size exceeds the size of these
@@ -163,10 +166,15 @@ static u32 eqos_mdio_bitfield(struct eqos_priv *eqos, int addr, int devad, int r
 		       EQOS_MAC_MDIO_ADDRESS_C45E;
 }
 
-static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
-			  int mdio_reg)
+static int _eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
+			   int mdio_reg)
 {
+#if IS_ENABLED(CONFIG_DM_MDIO)
+	struct udevice *dev = bus->priv;
+	struct eqos_priv *eqos = dev_get_priv(dev);
+#else
 	struct eqos_priv *eqos = bus->priv;
+#endif
 	u32 val;
 	int ret;
 
@@ -209,10 +217,15 @@ static int eqos_mdio_read(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 	return val;
 }
 
-static int eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
-			   int mdio_reg, u16 mdio_val)
+static int _eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
+			    int mdio_reg, u16 mdio_val)
 {
+#if IS_ENABLED(CONFIG_DM_MDIO)
+	struct udevice *dev = bus->priv;
+	struct eqos_priv *eqos = dev_get_priv(dev);
+#else
 	struct eqos_priv *eqos = bus->priv;
+#endif
 	u32 v_addr;
 	u32 v_data;
 	int ret;
@@ -249,6 +262,54 @@ static int eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 
 	return 0;
 }
+
+static int eqos_dm_mdio_init(struct udevice *dev)
+{
+	bool found = false;
+	const char *name;
+	ofnode node;
+	int ret;
+
+	dev_for_each_subnode(node, dev) {
+		if (!ofnode_is_enabled(node))
+			continue;
+
+		name = ofnode_get_name(node);
+		if (!name)
+			return -EINVAL;
+
+		if (!strncmp(name, "mdio", 4)) {
+			ret = device_bind_driver_to_node(dev, "eth_eqos_mdio",
+							 name, node, NULL);
+			if (ret)
+				return ret;
+			found = true;
+		}
+	}
+
+	if (!found)
+		return -ENODEV;
+
+	return 0;
+}
+
+#if IS_ENABLED(CONFIG_DM_MDIO)
+static int eqos_mdio_read(struct udevice *dev, int mdio_addr, int mdio_devad,
+			  int mdio_reg)
+{
+	struct mdio_perdev_priv *pdata = dev_get_uclass_priv(dev);
+
+	return _eqos_mdio_read(pdata->mii_bus, mdio_addr, mdio_devad, mdio_reg);
+}
+
+static int eqos_mdio_write(struct udevice *dev, int mdio_addr, int mdio_devad,
+			   int mdio_reg, u16 mdio_val)
+{
+	struct mdio_perdev_priv *pdata = dev_get_uclass_priv(dev);
+
+	return _eqos_mdio_write(pdata->mii_bus, mdio_addr, mdio_devad, mdio_reg, mdio_val);
+}
+#endif
 
 static int eqos_start_clks_tegra186(struct udevice *dev)
 {
@@ -379,6 +440,7 @@ static int eqos_stop_resets_tegra186(struct udevice *dev)
 
 	return 0;
 }
+
 static int eqos_calibrate_pads_tegra186(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
@@ -441,6 +503,7 @@ static ulong eqos_get_tick_clk_rate_tegra186(struct udevice *dev)
 	return 0;
 #endif
 }
+
 static int eqos_set_full_duplex(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
@@ -745,15 +808,22 @@ static int eqos_start(struct udevice *dev)
 		}
 
 		if (!eqos->phy) {
-			addr = eqos_get_phy_addr(eqos, dev);
-			eqos->phy = phy_connect(eqos->mii, addr, dev,
-						eqos->config->interface(dev));
-		}
-
-		if (!eqos->phy) {
-			pr_err("phy_connect() failed\n");
-			ret = -ENODEV;
-			goto err_stop_resets;
+			if (IS_ENABLED(CONFIG_DM_MDIO)) {
+				eqos->phy = dm_eth_phy_connect(dev);
+				if (!eqos->phy) {
+					pr_err("dm_eth_phy_connect() failed. no phy found");
+					goto err_stop_resets;
+				}
+			} else {
+				addr = eqos_get_phy_addr(eqos, dev);
+				eqos->phy = phy_connect(eqos->mii, addr, dev,
+							eqos->config->interface(dev));
+				if (!eqos->phy) {
+					pr_err("phy_connect() failed\n");
+					ret = -ENODEV;
+					goto err_stop_resets;
+				}
+			}
 		}
 
 		if (eqos->max_speed) {
@@ -776,7 +846,6 @@ static int eqos_start(struct udevice *dev)
 			pr_err("eqos_restart_rx_clk() failed: %d", ret);
 			goto err_shutdown_phy;
 		}
-
 	}
 
 	ret = phy_startup(eqos->phy);
@@ -814,25 +883,31 @@ static int eqos_start(struct udevice *dev)
 		     EQOS_MTL_RXQ0_OPERATION_MODE_RSF);
 
 	/* Transmit/Receive queue fifo size; use all RAM for 1 queue */
-	val = readl(&eqos->mac_regs->hw_feature1);
-	tx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT) &
-		EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK;
-	rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
-		EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
+	/* Get the RX fifo size - use preconfigured value if defined */
+	if (eqos->config->rx_fifo_size) {
+		rx_fifo_sz = eqos->config->rx_fifo_size;
+	} else {
+		val = readl(&eqos->mac_regs->hw_feature1);
+		rx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_SHIFT) &
+			EQOS_MAC_HW_FEATURE1_RXFIFOSIZE_MASK;
+		/* r/tx_fifo_sz is encoded as log2(n / 128). */
+		rx_fifo_sz = (128 << rx_fifo_sz);
+	}
 
-	/* r/tx_fifo_sz is encoded as log2(n / 128). Undo that by shifting */
-	tx_fifo_sz = 128 << tx_fifo_sz;
-	rx_fifo_sz = 128 << rx_fifo_sz;
-
-	/* Allow platform to override TX/RX fifo size */
-	if (eqos->tx_fifo_sz)
-		tx_fifo_sz = eqos->tx_fifo_sz;
-	if (eqos->rx_fifo_sz)
-		rx_fifo_sz = eqos->rx_fifo_sz;
+	/* Get the TX fifo size - use preconfigured value if defined */
+	if (eqos->config->tx_fifo_size) {
+		tx_fifo_sz = eqos->config->tx_fifo_size;
+	} else {
+		val = readl(&eqos->mac_regs->hw_feature1);
+		tx_fifo_sz = (val >> EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_SHIFT) &
+			EQOS_MAC_HW_FEATURE1_TXFIFOSIZE_MASK;
+		/* r/tx_fifo_sz is encoded as log2(n / 128). */
+		tx_fifo_sz = (128 << tx_fifo_sz);
+	}
 
 	/* r/tqs is encoded as (n / 256) - 1 */
-	tqs = tx_fifo_sz / 256 - 1;
-	rqs = rx_fifo_sz / 256 - 1;
+	tqs = (tx_fifo_sz / 256) - 1;
+	rqs = (rx_fifo_sz / 256) - 1;
 
 	clrsetbits_le32(&eqos->mtl_regs->txq0_operation_mode,
 			EQOS_MTL_TXQ0_OPERATION_MODE_TQS_MASK <<
@@ -1503,34 +1578,43 @@ static int eqos_probe(struct udevice *dev)
 		goto err_remove_resources_tegra;
 	}
 
-#ifdef CONFIG_DM_ETH_PHY
-	eqos->mii = eth_phy_get_mdio_bus(dev);
-#endif
-	if (!eqos->mii) {
-		eqos->mii = mdio_alloc();
-		if (!eqos->mii) {
-			pr_err("mdio_alloc() failed\n");
-			ret = -ENOMEM;
-			goto err_stop_clks;
-		}
-		eqos->mii->read = eqos_mdio_read;
-		eqos->mii->write = eqos_mdio_write;
-		eqos->mii->priv = eqos;
-		strcpy(eqos->mii->name, dev->name);
-
-		ret = mdio_register(eqos->mii);
-		if (ret < 0) {
-			pr_err("mdio_register() failed: %d\n", ret);
-			goto err_free_mdio;
+	if (IS_ENABLED(CONFIG_DM_MDIO)) {
+		ret = eqos_dm_mdio_init(dev);
+		if (ret && ret != -ENODEV) {
+			pr_err("failed to configure mdio node: %d", ret);
+			goto err_remove_resources_tegra;
+		} else if (ret == -ENODEV) {
+			pr_err("mdio node not found.");
 		}
 	}
 
-#ifdef CONFIG_DM_ETH_PHY
-	eth_phy_set_mdio_bus(dev, eqos->mii);
-#endif
+	if (!IS_ENABLED(CONFIG_DM_MDIO)) {
+		if (IS_ENABLED(CONFIG_DM_ETH_PHY) && !eqos->mii)
+			eqos->mii = eth_phy_get_mdio_bus(dev);
 
-	debug("%s: OK\n", __func__);
-	return 0;
+		if (!eqos->mii) {
+			eqos->mii = mdio_alloc();
+			if (!eqos->mii) {
+				pr_err("mdio_alloc() failed\n");
+				ret = -ENOMEM;
+				goto err_stop_clks;
+			}
+			eqos->mii->read = _eqos_mdio_read;
+			eqos->mii->write = _eqos_mdio_write;
+			eqos->mii->priv = eqos;
+			strcpy(eqos->mii->name, dev->name);
+
+			ret = mdio_register(eqos->mii);
+			if (ret < 0) {
+				pr_err("mdio_register() failed: %d\n", ret);
+				goto err_free_mdio;
+			}
+		}
+		if (IS_ENABLED(CONFIG_DM_ETH_PHY))
+			eth_phy_set_mdio_bus(dev, eqos->mii);
+	}
+	debug("%s: ret: %d\n", __func__, ret);
+	return ret;
 
 err_free_mdio:
 	mdio_free(eqos->mii);
@@ -1591,8 +1675,8 @@ static struct eqos_ops eqos_tegra186_ops = {
 	.eqos_calibrate_pads = eqos_calibrate_pads_tegra186,
 	.eqos_disable_calibration = eqos_disable_calibration_tegra186,
 	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_tegra186,
-	.eqos_restart_rx_clk = eqos_null_ops,
 	.eqos_get_enetaddr = eqos_null_ops,
+	.eqos_restart_rx_clk = eqos_null_ops,
 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_tegra186
 };
 
@@ -1682,6 +1766,36 @@ static const struct udevice_id eqos_ids[] = {
 #endif
 	{ }
 };
+
+#if IS_ENABLED(CONFIG_DM_MDIO)
+static int eqos_mdio_probe(struct udevice *dev)
+{
+	dev_set_priv(dev, dev_get_priv(dev->parent));
+
+	return 0;
+};
+
+static const struct udevice_id eqos_mdio_ids[] = {
+	{
+		.compatible = "snps,dwmac-mdio"
+	},
+	{},
+};
+
+static const struct mdio_ops eqos_mdio_ops = {
+	.read = eqos_mdio_read,
+	.write = eqos_mdio_write,
+};
+
+U_BOOT_DRIVER(eth_eqos_mdio) = {
+	.name = "eth_eqos_mdio",
+	.id = UCLASS_MDIO,
+	.of_match = of_match_ptr(eqos_mdio_ids),
+	.probe = eqos_mdio_probe,
+	.ops = &eqos_mdio_ops,
+	.priv_auto	= sizeof(struct eqos_priv),
+};
+#endif
 
 U_BOOT_DRIVER(eth_eqos) = {
 	.name = "eth_eqos",
