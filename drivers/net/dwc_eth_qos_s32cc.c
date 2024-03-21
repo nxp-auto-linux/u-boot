@@ -205,6 +205,17 @@ static int eqos_restart_rx_clk_s32cc(struct udevice *dev)
 		return 0;
 	}
 
+	/*
+	 * M7 SRM clock driver requires a clk_set_rate call for each
+	 * clock that needs to be enabled by an agent.
+	 * Thus, set the rate for GMAC's RX clock before enabling it.
+	 */
+	ret = clk_set_rate(&eqos->clk_rx, 125 * 1000 * 1000);
+	if (ret < 0) {
+		pr_err("clk_set_rate(rx_clk, 125MHz) failed: %d\n", ret);
+		return ret;
+	}
+
 	ret = clk_enable(&eqos->clk_rx);
 	if (ret < 0) {
 		pr_err("clk_enable(rx_clk) failed: %d\n", ret);
@@ -280,7 +291,22 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 	}
 	debug("%s(dev=%p): %lu\n", __func__, dev, clk_get_rate(&eqos->clk_master_bus));
 
+	/*
+	 * M7 SRM clock driver requires a clk_set_rate call for each
+	 * clock that needs to be enabled by an agent.
+	 * Thus, set the rate for GMAC's RX clock before enabling it.
+	 */
+	ret = clk_set_rate(&eqos->clk_rx, 125 * 1000 * 1000);
+	if (ret < 0) {
+		pr_err("clk_set_rate(clk_rx, 125MHz) failed: %d\n", ret);
+		goto err_disable_clk_master_bus;
+	}
+
 	ret = clk_enable(&eqos->clk_rx);
+	if (ret < 0) {
+		pr_err("clk_enable(clk_rx) failed: %d\n", ret);
+		goto err_disable_clk_master_bus;
+	}
 
 	debug("%s(dev=%p): %lu\n", __func__, dev, clk_get_rate(&eqos->clk_rx));
 
@@ -301,6 +327,7 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 
 err_disable_clk_rx:
 	clk_disable(&eqos->clk_rx);
+err_disable_clk_master_bus:
 	clk_disable(&eqos->clk_master_bus);
 err:
 
