@@ -11,8 +11,9 @@
 #include <asm/io.h>
 #include <linux/compiler.h>
 
-#define LINCR1_INIT			BIT(0)
+#define LINCR1_INIT			BIT_32(0)
 #define LINCR1_MME			BIT(4)
+#define LINCR1_RESERVED7	BIT(7)
 #define LINSR_LINS_INITMODE		(0x00001000)
 #define LINSR_LINS_MASK			(0x0000F000)
 #define UARTCR_UART			BIT(0)
@@ -58,21 +59,22 @@ struct linflex_fsl {
 
 static void _linflex_enter_init(struct linflex_fsl *base)
 {
-	u32 ctrl;
+	u32 ctrl = LINCR1_INIT | LINCR1_RESERVED7;
 
 	/* wait the TX fifo to be empty */
 	while (__raw_readl(&base->uartcr) & UARTCR_TFC)
 		;
 
 	/* set the Linflex in init mode */
-	ctrl = __raw_readl(&base->lincr1);
-	ctrl |= LINCR1_INIT;
 	__raw_writel(ctrl, &base->lincr1);
 
 	/* waiting for init mode entry - TODO: add a timeout */
 	while ((__raw_readl(&base->linsr) & LINSR_LINS_MASK) !=
 	       LINSR_LINS_INITMODE)
 		;
+
+	ctrl |= LINCR1_MME;
+	__raw_writel(ctrl, &base->lincr1);
 }
 
 static void _linflex_exit_init(struct linflex_fsl *base)
