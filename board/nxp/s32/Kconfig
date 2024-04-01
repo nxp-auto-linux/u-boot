@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+# Copyright 2024 NXP
+
+if MACH_S32
+
+config SYS_VENDOR
+	string
+	default "nxp"
+
+if USE_BOOTARGS
+config BOOTARGS
+	default "root=/dev/ram rw earlycon loglevel=7"
+endif
+
+endif

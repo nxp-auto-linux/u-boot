@@ -1,11 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022,2023 NXP
+# Copyright 2022-2024 NXP
 
 if NXP_S32CC
-
-config SYS_VENDOR
-	string
-	default "nxp"
 
 config NXP_S32CC_BOARD_COMMON
 	bool
@@ -32,9 +28,6 @@ config NXP_S32CC_BOARD_COMMON
 	imply USE_BOOTARGS
 
 if NXP_S32CC_BOARD_COMMON
-
-config BOOTARGS
-	default "root=/dev/ram rw earlycon loglevel=7"
 
 if QSPI_BOOT
 config ENV_SECT_SIZE
