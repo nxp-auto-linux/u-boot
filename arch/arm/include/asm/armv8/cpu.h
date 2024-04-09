@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2018,2023 NXP
+ * Copyright 2018,2023-2024 NXP
  */
 
 #define MIDR_REVISION_SHIFT	0x0
@@ -9,6 +9,7 @@
 #define MIDR_PARTNUM_CORTEX_A35	0xD04
 #define MIDR_PARTNUM_CORTEX_A53	0xD03
 #define MIDR_PARTNUM_CORTEX_A72	0xD08
+#define MIDR_PARTNUM_CORTEX_A78AE	0xD42
 #define MIDR_PARTNUM_SHIFT	0x4
 #define MIDR_PARTNUM_MASK	(0xFFF << 0x4)
 
@@ -30,6 +31,8 @@ static inline unsigned int read_midr(void)
 			 MIDR_PARTNUM_SHIFT) == MIDR_PARTNUM_CORTEX_A53)
 #define is_cortex_a72() (((read_midr() & MIDR_PARTNUM_MASK) >>\
 			 MIDR_PARTNUM_SHIFT) == MIDR_PARTNUM_CORTEX_A72)
+#define is_cortex_a78ae() (((read_midr() & MIDR_PARTNUM_MASK) >>\
+			 MIDR_PARTNUM_SHIFT) == MIDR_PARTNUM_CORTEX_A78AE)
 
 #define read_core_midr_revision()	((read_midr() & MIDR_REVISION_MASK) >>\
 					 MIDR_REVISION_SHIFT)
