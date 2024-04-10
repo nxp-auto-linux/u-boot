@@ -94,6 +94,13 @@
 #  define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
+#if defined(CONFIG_LINUX_FDT_HS400_FIXUP)
+#  define FDT_FIXUP \
+	"run fdt_enable_hs400es;"
+#else
+#  define FDT_FIXUP ""
+#endif
+
 #define S32CC_ENV_SETTINGS \
 	BOOTENV \
 	"boot_mtd=booti\0" \
@@ -104,6 +111,7 @@
 		"fdt rm /soc/mmc no-1-8-v; " \
 		"fdt resize; \0" \
 	"fdt_file=" FDT_FILE "\0" \
+	"fdt_fixups=" FDT_FIXUP "\0" \
 	"fdt_high=" __stringify(S32CC_FDT_HIGH_ADDR) "\0" \
 	"fdt_override=;\0" \
 	"flashboot=echo Booting from flash...; " \
