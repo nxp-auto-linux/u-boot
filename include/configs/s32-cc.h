@@ -101,6 +101,13 @@
 #  define FDT_FIXUP ""
 #endif
 
+#if defined(CONFIG_LINUX_LOG_DISABLE)
+#  define LINUX_LOG_DISABLE \
+	"quiet"
+#else
+#  define LINUX_LOG_DISABLE ""
+#endif
+
 #define S32CC_ENV_SETTINGS \
 	BOOTENV \
 	"boot_mtd=booti\0" \
@@ -121,7 +128,7 @@
 		"mtd read Rootfs ${ramdisk_addr};"\
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0" \
 	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
-		" root=/dev/ram rw earlycon " EXTRA_BOOT_ARGS ";"\
+		" root=/dev/ram rw earlycon " LINUX_LOG_DISABLE EXTRA_BOOT_ARGS ";"\
 		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
 	"image=Image\0" \
 	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
@@ -132,7 +139,7 @@
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-		" root=${mmcroot} earlycon " EXTRA_BOOT_ARGS "\0" \
+		" root=${mmcroot} " LINUX_LOG_DISABLE EXTRA_BOOT_ARGS "\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
 		"if run loadfdt; then " \
