@@ -114,10 +114,18 @@ config LINUX_FDT_HS400_FIXUP
 	  boards which support eMMC HS400 mode, by enabling it for the uSDHC
 	  controller in the Linux OS's device tree node.
 
+config LINUX_LOG_DISABLE
+	bool "Disable Linux Kernel boot time logging"
+	default n
+	help
+	  This option can be used in order to speed up the boot process
+	  by disabling most of Linux Kernel boot time logging messages.
+
 config QUICK_STARTUP
 	bool "Enable several optimizations in U-Boot environment which speeds up the boot process."
 	default n
 	imply LINUX_FDT_HS400_FIXUP
+	imply LINUX_LOG_DISABLE
 
 endif
 
