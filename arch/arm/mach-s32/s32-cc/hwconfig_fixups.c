@@ -1,15 +1,16 @@
-// SPDX-License-Identifier: GPL-2.0+
+// SPDX-License-Identifier: GPL-2.0+ or BSD-3-Clause
 /*
  * Copyright 2022-2024 NXP
  */
+
 #include <common.h>
 #include <fdt_support.h>
 #include <malloc.h>
 #include <phy_interface.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
-#include <dm/ofnode.h>
 #include <linux/ctype.h>
+#include <s32-cc/dts_fixups_utils.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
 
@@ -77,7 +78,7 @@ static int fdt_alias2node(void *blob, const char *alias_fmt,
 	return nodeoff;
 }
 
-static ofnode ofnode_by_alias(const char *alias_fmt, u32 alias_id)
+ofnode ofnode_by_alias(const char *alias_fmt, u32 alias_id)
 {
 	char alias_name[MAX_PATH_SIZE];
 	int ret;

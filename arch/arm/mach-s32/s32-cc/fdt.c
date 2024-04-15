@@ -15,9 +15,9 @@
 #include <linux/ioport.h>
 #include <linux/kernel.h>
 #include <linux/libfdt.h>
+#include <s32-cc/dts_fixups_utils.h>
 #include <s32-cc/fdt_wrapper.h>
 #include <s32-cc/s32cc_soc.h>
-#include <s32-cc/serdes_hwconfig.h>
 #include <s32/fdt.h>
 
 #define S32_DDR_LIMIT_VAR	"ddr_limitX"
