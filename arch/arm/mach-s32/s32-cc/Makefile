@@ -1,5 +1,5 @@
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier:      GPL-2.0+
 #
@@ -7,6 +7,7 @@
 obj-y += hwconfig_fixups.o
 obj-y += scmi_reset_agent.o
 obj-y += serdes_hwconfig.o
+obj-y += quick_startup_fixups.o
 obj-y += soc.o
 obj-y += start_m7.o
 obj-$(CONFIG_MP)		+= mp.o

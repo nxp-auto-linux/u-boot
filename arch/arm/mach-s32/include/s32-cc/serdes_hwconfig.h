@@ -177,8 +177,6 @@ static inline bool s32_serdes_is_xpcs_mode(enum serdes_mode mode)
 		(mode <= SERDES_MODE_XPCS0_XPCS1);
 }
 
-int apply_dm_hwconfig_fixups(void);
-int apply_fdt_hwconfig_fixups(void *blob);
 int s32_serdes_get_alias_id(struct udevice *serdes_dev, unsigned int *devnump);
 int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane);
 

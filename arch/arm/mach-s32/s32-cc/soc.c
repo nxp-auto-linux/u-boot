@@ -6,8 +6,8 @@
 #include <init.h>
 #include <soc.h>
 #include <asm/armv8/mmu.h>
+#include <s32-cc/dts_fixups_utils.h>
 #include <s32-cc/s32cc_soc.h>
-#include <s32-cc/serdes_hwconfig.h>
 #include <s32/soc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
