@@ -106,6 +106,16 @@ config XEN_SUPPORT
 	  to directly load the Xen Image which will use a given Kernel Image as
 	  Dom0.
 
+config FDT_HS400_FIXUP
+	bool "Dynamically enable eMMC HS400 mode in U-Boot device-tree"
+	default n
+	help
+	  This option can be used in order to speed up the boot process for S32CC
+	  boards which support eMMC HS400 mode. This option modifies the U-Boot
+	  live tree at runtime, enabling higher speed modes for the uSDHC controller.
+	  Enable this option only if the S32CC board has support for
+	  eMMC HS*00 modes (has VCCQ 1.8 eMMC voltage support).
+
 config LINUX_FDT_HS400_FIXUP
 	bool "Dynamically enable eMMC HS400 mode in Linux device-tree"
 	default n
@@ -135,6 +145,7 @@ config QUICK_STARTUP
 	imply LINUX_FDT_HS400_FIXUP
 	imply LINUX_LOG_DISABLE
 	imply NO_LINUX_EARLY_CONSOLE
+	imply FDT_HS400_FIXUP
 
 endif
 

@@ -235,6 +235,22 @@ int arch_cpu_init_dm(void)
 	return 0;
 }
 
+int arch_early_init_r(void)
+{
+	int ret;
+
+	if (IS_ENABLED(CONFIG_OF_LIVE) &&
+	    IS_ENABLED(CONFIG_FDT_HS400_FIXUP)) {
+		ret = apply_dm_quick_startup_fixups();
+		if (ret) {
+			pr_err("Failed to apply Quick Startup fixups\n");
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
 int cpu_secondary_init_r(void)
 {
 	int ret;
