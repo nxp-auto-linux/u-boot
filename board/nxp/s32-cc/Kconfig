@@ -6,6 +6,7 @@ if NXP_S32CC
 config NXP_S32CC_BOARD_COMMON
 	bool
 	default n
+	imply ARCH_EARLY_INIT_R
 	imply CMD_ADC
 	imply CMD_CACHE
 	imply CMD_CLK
