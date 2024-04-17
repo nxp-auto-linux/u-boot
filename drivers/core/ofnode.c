@@ -206,7 +206,7 @@ ofnode ofnode_find_subnode(ofnode node, const char *subnode_name)
 	debug("%s: %s: ", __func__, subnode_name);
 
 	if (ofnode_is_np(node)) {
-		const struct device_node *np = ofnode_to_np(node);
+		struct device_node *np = ofnode_to_np(node);
 
 		for (np = np->child; np; np = np->sibling) {
 			if (!strcmp(subnode_name, np->name))
@@ -770,7 +770,7 @@ fdt_addr_t ofnode_get_addr_size(ofnode node, const char *property,
 	if (ofnode_is_np(node)) {
 		int na, ns;
 		int psize;
-		const struct device_node *np = ofnode_to_np(node);
+		struct device_node *np = ofnode_to_np(node);
 		const __be32 *prop = of_get_property(np, property, &psize);
 
 		if (!prop)
@@ -794,7 +794,7 @@ const uint8_t *ofnode_read_u8_array_ptr(ofnode node, const char *propname,
 					size_t sz)
 {
 	if (ofnode_is_np(node)) {
-		const struct device_node *np = ofnode_to_np(node);
+		struct device_node *np = ofnode_to_np(node);
 		int psize;
 		const __be32 *prop = of_get_property(np, propname, &psize);
 
@@ -1061,7 +1061,7 @@ ofnode ofnode_by_prop_value(ofnode from, const char *propname,
 int ofnode_write_prop(ofnode node, const char *propname, int len,
 		      const void *value)
 {
-	const struct device_node *np = ofnode_to_np(node);
+	struct device_node *np = ofnode_to_np(node);
 	struct property *pp;
 	struct property *pp_last = NULL;
 	struct property *new;
