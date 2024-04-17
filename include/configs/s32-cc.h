@@ -96,7 +96,7 @@
 
 #if defined(CONFIG_LINUX_FDT_HS400_FIXUP)
 #  define FDT_FIXUP \
-	"run fdt_enable_hs400es;"
+	"run fdt_enable_hs400;"
 #else
 #  define FDT_FIXUP ""
 #endif
@@ -106,7 +106,7 @@
 	"boot_mtd=booti\0" \
 	"console=ttyLF0\0" \
 	"fdt_addr=" __stringify(S32CC_FDT_ADDR) "\0" \
-	"fdt_enable_hs400es=" \
+	"fdt_enable_hs400=" \
 		"fdt addr ${fdt_addr}; " \
 		"fdt rm /soc/mmc no-1-8-v; " \
 		"fdt resize; \0" \
