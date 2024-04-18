@@ -1,6 +1,7 @@
 config NXP_S32GRDB_BOARD
 	bool
 	default n
+	imply BOARD_LATE_INIT
 	imply CMD_PMIC
 	imply DM_PMIC
 	imply DM_PMIC_FS5600
@@ -10,7 +11,6 @@ config NXP_S32GRDB_BOARD
 	imply PHY_MICREL
 	imply PHY_MICREL_KSZ90X1
 	select ADC
-	select BOARD_LATE_INIT
 	select DM_REGULATOR
 	select OF_BOARD_SETUP
 	select SARADC_S32CC
