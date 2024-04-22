@@ -69,9 +69,16 @@
 
 #define NFSRAMFS_ADDR			"-"
 #define NFSRAMFS_TFTP_CMD		""
+
+#if defined(CONFIG_CMD_NET)
 #define S32CC_IPADDR			"10.0.0.100"
 #define S32CC_NETMASK			"255.255.255.0"
 #define S32CC_SERVERIP			"10.0.0.1"
+#else
+#define S32CC_IPADDR			""
+#define S32CC_NETMASK			""
+#define S32CC_SERVERIP			""
+#endif
 
 #define CONFIG_HWCONFIG
 
