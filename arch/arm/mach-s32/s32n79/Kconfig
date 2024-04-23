@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+# Copyright 2024 NXP
+
+if ARCH_S32N79
+
+choice
+	prompt "S32N79 board select"
+	default TARGET_S32N79SIM
+
+config TARGET_S32N79SIM
+	bool "Support S32N79SIM simulator"
+	help
+	  This board is based on the S32N79 simulator.
+	select TARGET_TYPE_S32N79_SIMULATOR
+
+endchoice
+
+source "board/nxp/s32n79sim/Kconfig"
+
+endif

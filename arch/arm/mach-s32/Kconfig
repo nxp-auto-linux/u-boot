@@ -90,6 +90,27 @@ config NXP_S32CC
 	select SPECIFY_CONSOLE_INDEX
 	imply OF_STDOUT_VIA_ALIAS
 
+config NXP_S32N
+	bool
+	imply LOG
+	imply MISC
+	imply OF_HAS_PRIOR_STAGE
+	imply TIMER
+	select CLK
+	select CPU
+	select DM_DEVICE_REMOVE
+	select DM_SERIAL
+	select ENABLE_ARM_SOC_BOOT0_HOOK
+	select HUSH_PARSER
+	select MACH_S32
+	select OF_BOARD
+	select OF_CONTROL
+	select OF_LIVE
+	select OF_SYSTEM_SETUP
+	select SOC_DEVICE
+	select SYSRESET
+	select PL01X_SERIAL
+
 config DEFAULT_DEVICE_TREE
 	default "s32"
 
@@ -131,4 +152,5 @@ config ENV_OFFSET
 	default 0x280000 if !ENV_IS_IN_FAT
 
 source "arch/arm/mach-s32/s32-cc/Kconfig"
+source "arch/arm/mach-s32/s32n/Kconfig"
 source "board/nxp/s32/Kconfig"

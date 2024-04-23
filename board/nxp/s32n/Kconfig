@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+# Copyright 2024 NXP
+
+if NXP_S32N
+
+config NXP_S32N_BOARD_COMMON
+	bool
+	default n
+	imply CMD_CACHE
+	imply CMD_CPU
+	imply CMD_DM
+	imply CMD_MD5SUM
+	imply MD5SUM_VERIFY
+	imply USE_BOOTARGS
+
+config BOARD_DRAM_BASE
+	hex
+	default 0x80000000
+
+config BOARD_DRAM_SIZE
+	hex
+	default 0x80000000
+
+endif
