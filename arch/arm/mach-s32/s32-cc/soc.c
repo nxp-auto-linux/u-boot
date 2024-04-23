@@ -127,8 +127,9 @@ static struct mm_region s32cc_mem_map[] = {
 	},
 	{
 		CONFIG_SYS_FLASH_BASE, CONFIG_SYS_FLASH_BASE,
-		CONFIG_SYS_FLASH_SIZE,
-		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+		CONFIG_SYS_FLASH_SIZE, PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			PTE_BLOCK_AP_RO | PTE_BLOCK_AP_EL0_RO |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 	{
 		CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
@@ -161,23 +162,6 @@ struct mm_region *get_mm_region(u64 phys_base)
 	}
 
 	return NULL;
-}
-
-static void mmu_disable_qspi_entry(void)
-{
-	struct mm_region *region;
-	ofnode node;
-
-	node = ofnode_by_compatible(ofnode_null(), "nxp,s32cc-qspi");
-	if (ofnode_valid(node) && ofnode_is_available(node))
-		return;
-
-	/* Skip AHB mapping by setting its size to 0 */
-	region = get_mm_region(CONFIG_SYS_FLASH_BASE);
-	if (!region)
-		return;
-
-	region->size = 0U;
 }
 
 static int get_sram_size(u32 *sram_size)
@@ -215,10 +199,6 @@ static void mmu_set_sram_size(void)
 }
 
 #else /* CONFIG_SYS_DCACHE_OFF */
-static void mmu_disable_qspi_entry(void)
-{
-}
-
 static void mmu_set_sram_size(void)
 {
 }
@@ -229,7 +209,6 @@ int arch_cpu_init_dm(void)
 {
 	/* RO access for device tree */
 	set_dtb_wr_access(false);
-	mmu_disable_qspi_entry();
 	mmu_set_sram_size();
 
 	return 0;

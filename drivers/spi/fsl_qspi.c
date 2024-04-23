@@ -7,7 +7,7 @@
  * Copyright (C) 2018 Bootlin
  * Copyright (C) 2018 exceet electronics GmbH
  * Copyright (C) 2018 Kontron Electronics GmbH
- * Copyright 2019-2020,2022-2023 NXP
+ * Copyright 2019-2020,2022-2024 NXP
  *
  * This driver is a ported version of Linux Freescale QSPI driver taken from
  * v5.5-rc1 tag having following information.
@@ -31,15 +31,17 @@
 #include <log.h>
 #include <spi.h>
 #include <spi-mem.h>
+#include <asm/cache.h>
 #include <asm/global_data.h>
+#include <asm/io.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/libfdt.h>
 #include <linux/iopoll.h>
 #include <linux/sizes.h>
 #include <linux/err.h>
+#include <asm/armv8/mmu.h>
 #include <linux/mtd/spi-nor.h>
-#include <asm/io.h>
 
 /*
  * The driver only uses one single LUT entry, that is updated on
@@ -549,6 +551,26 @@ static int fsl_qspi_check_buswidth(struct fsl_qspi *q, u8 width)
 	return -ENOTSUPP;
 }
 
+static void enable_ahb_buf_cache(struct fsl_qspi *q)
+{
+	u64 mm_region_attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+		PTE_BLOCK_PXN | PTE_BLOCK_UXN |
+		PTE_TYPE_VALID;
+
+	mmu_change_region_attr(q->memmap_phy, q->memmap_size,
+			       mm_region_attrs);
+}
+
+static void disable_ahb_buf_cache(struct fsl_qspi *q)
+{
+	u64 mm_region_attrs = PTE_BLOCK_NON_SHARE |
+		PTE_BLOCK_PXN | PTE_BLOCK_UXN |
+		PTE_TYPE_FAULT;
+
+	mmu_change_region_attr(q->memmap_phy, q->memmap_size,
+			       mm_region_attrs);
+}
+
 static bool fsl_qspi_supports_op(struct spi_slave *slave,
 				 const struct spi_mem_op *op)
 {
@@ -792,12 +814,11 @@ static void fsl_qspi_read_ahb(struct fsl_qspi *q, const struct spi_mem_op *op)
 			ahb_read_addr += op->addr.val;
 	}
 
-	invalidate_dcache_range((unsigned long)ahb_read_addr,
-				(unsigned long)ahb_read_addr + op->data.nbytes);
-
+	enable_ahb_buf_cache(q);
 	memcpy_fromio(op->data.buf.in,
 		      ahb_read_addr + q->selected * fsl_qspi_memsize_per_cs(q),
 		      op->data.nbytes);
+	disable_ahb_buf_cache(q);
 }
 
 static int fsl_qspi_default_setup(struct fsl_qspi *q);
