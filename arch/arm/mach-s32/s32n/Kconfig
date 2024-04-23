@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+# Copyright 2024 NXP
+
+source "arch/arm/mach-s32/s32n79/Kconfig"
+source "board/nxp/s32n/Kconfig"

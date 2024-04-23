@@ -6,3 +6,4 @@
 
 obj-$(CONFIG_MACH_S32) += s32/
 obj-$(CONFIG_NXP_S32CC) += s32-cc/
+obj-$(CONFIG_NXP_S32N) += s32n/
