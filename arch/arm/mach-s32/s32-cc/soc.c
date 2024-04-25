@@ -131,6 +131,7 @@ static struct mm_region s32cc_mem_map[] = {
 			PTE_BLOCK_AP_RO | PTE_BLOCK_AP_EL0_RO |
 			PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
+#if defined(CONFIG_PCI)
 	{
 		CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
 		CONFIG_SYS_PCIE0_PHYS_SIZE_HI,
@@ -143,6 +144,7 @@ static struct mm_region s32cc_mem_map[] = {
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 		PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
+#endif
 	/* list terminator */
 	{},
 };
