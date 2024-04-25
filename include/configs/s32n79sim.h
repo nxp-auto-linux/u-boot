@@ -24,7 +24,7 @@
 	"image=Image\0" \
 	"initrd_high=" __stringify(S32N_INITRD_HIGH_ADDR) "\0" \
 	"ramdisk_addr=" __stringify(S32N_RAMDISK_ADDR) "\0" \
-	"bootargs=earlycon maxcpus=1\0" \
+	"bootargs=earlycon maxcpus=1 arm64.nopauth\0" \
 
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND
