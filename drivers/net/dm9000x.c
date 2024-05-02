@@ -49,7 +49,6 @@ v1.2   03/18/2003       Weilun Huang <weilun_huang@davicom.com.tw>:
 TODO: external MII is not functional, only internal at the moment.
 */
 
-#include <common.h>
 #include <command.h>
 #include <net.h>
 #include <asm/io.h>
