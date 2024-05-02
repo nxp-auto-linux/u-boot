@@ -5,7 +5,8 @@
  * Copyright (C) 2018 Texas Instruments Incorporated - http://www.ti.com/
  */
 
-#include <common.h>
+#include <clk.h>
+#include <dm/device_compat.h>
 #include <log.h>
 #include <malloc.h>
 #include <asm/io.h>

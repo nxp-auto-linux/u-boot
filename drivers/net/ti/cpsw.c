@@ -5,7 +5,6 @@
  * Copyright (C) 2010-2018 Texas Instruments Incorporated - http://www.ti.com/
  */
 
-#include <common.h>
 #include <command.h>
 #include <cpu_func.h>
 #include <log.h>

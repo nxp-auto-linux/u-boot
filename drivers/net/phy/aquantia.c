@@ -6,7 +6,6 @@
  * Copyright 2018, 2021, 2023 NXP
  */
 #include <config.h>
-#include <common.h>
 #include <dm.h>
 #include <log.h>
 #include <net.h>
