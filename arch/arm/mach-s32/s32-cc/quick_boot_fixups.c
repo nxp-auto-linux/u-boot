@@ -3,7 +3,12 @@
  * Copyright 2024 NXP
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <s32-cc/dts_fixups_utils.h>
@@ -31,7 +36,7 @@ static int enable_hs400_emmc(void)
 	return ret;
 }
 
-int apply_dm_quick_startup_fixups(void)
+int apply_dm_quick_boot_fixups(void)
 {
 	return enable_hs400_emmc();
 }
