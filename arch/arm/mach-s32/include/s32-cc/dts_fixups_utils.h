@@ -9,6 +9,6 @@
 ofnode ofnode_by_alias(const char *alias_fmt, u32 alias_id);
 int apply_dm_hwconfig_fixups(void);
 int apply_fdt_hwconfig_fixups(void *blob);
-int apply_dm_quick_startup_fixups(void);
+int apply_dm_quick_boot_fixups(void);
 
 #endif /* __DTS_FIXUPS_UTILS_H */

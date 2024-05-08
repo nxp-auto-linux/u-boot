@@ -222,9 +222,9 @@ int arch_early_init_r(void)
 
 	if (IS_ENABLED(CONFIG_OF_LIVE) &&
 	    IS_ENABLED(CONFIG_FDT_HS400_FIXUP)) {
-		ret = apply_dm_quick_startup_fixups();
+		ret = apply_dm_quick_boot_fixups();
 		if (ret) {
-			pr_err("Failed to apply Quick Startup fixups\n");
+			pr_err("Failed to apply Quick Boot fixups\n");
 			return ret;
 		}
 	}

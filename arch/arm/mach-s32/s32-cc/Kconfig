@@ -139,7 +139,7 @@ config NO_LINUX_EARLY_CONSOLE
 	  by disabling the Linux Kernel early console
 	  (earlycon Linux Kernel command line parameter).
 
-config QUICK_STARTUP
+config QUICK_BOOT
 	bool "Enable several optimizations in U-Boot environment which speeds up the boot process."
 	default n
 	imply LINUX_FDT_HS400_FIXUP
