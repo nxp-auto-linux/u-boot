@@ -21,4 +21,12 @@ config BOARD_DRAM_SIZE
 	hex
 	default 0x80000000
 
+config DTB_ADDR
+	hex "Default OS device tree blob address"
+	default 0x93000000
+
+config RAMDISK_ADDR
+	hex "Default ramdisk address to be used by the OS"
+	default 0xc0000000
+
 endif
