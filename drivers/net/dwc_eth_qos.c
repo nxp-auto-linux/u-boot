@@ -282,7 +282,6 @@ static int _eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_DM_MDIO)
 static int eqos_dm_mdio_init(struct udevice *dev)
 {
 	ofnode node;
@@ -308,6 +307,7 @@ static int eqos_dm_mdio_init(struct udevice *dev)
 	return 0;
 }
 
+#if IS_ENABLED(CONFIG_DM_MDIO)
 static int eqos_mdio_read(struct udevice *dev, int mdio_addr, int mdio_devad,
 			  int mdio_reg)
 {
@@ -860,6 +860,7 @@ static int eqos_start(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	int ret, i;
+	int addr = -1;
 	ulong rate;
 	u32 val, tx_fifo_sz, rx_fifo_sz, tqs, rqs, pbl;
 	ulong last_rx_desc;
@@ -903,18 +904,25 @@ static int eqos_start(struct udevice *dev)
 	 * don't need to reconnect/reconfigure again
 	 */
 	if (!eqos->phy) {
-		int addr = -1;
+		if (IS_ENABLED(CONFIG_DM_MDIO)) {
+			eqos->phy = dm_eth_phy_connect(dev);
+			if (!eqos->phy) {
+				pr_err("dm_eth_phy_connect() failed. no phy found");
+				goto err_stop_resets;
+			}
+		} else {
 #ifdef CONFIG_DM_ETH_PHY
-		addr = eth_phy_get_addr(dev);
+			addr = eth_phy_get_addr(dev);
 #endif
 #ifdef DWC_NET_PHYADDR
-		addr = DWC_NET_PHYADDR;
+			addr = DWC_NET_PHYADDR;
 #endif
-		eqos->phy = phy_connect(eqos->mii, addr, dev,
-					eqos->config->interface(dev));
-		if (!eqos->phy) {
-			pr_err("phy_connect() failed");
-			goto err_stop_resets;
+			eqos->phy = phy_connect(eqos->mii, addr, dev,
+						eqos->config->interface(dev));
+			if (!eqos->phy) {
+				pr_err("phy_connect() failed");
+				goto err_stop_resets;
+			}
 		}
 
 		if (eqos->max_speed) {
@@ -936,7 +944,6 @@ static int eqos_start(struct udevice *dev)
 			pr_err("eqos_restart_rx_clk() failed: %d", ret);
 			goto err_shutdown_phy;
 		}
-
 	}
 
 	ret = phy_startup(eqos->phy);
@@ -1713,19 +1720,13 @@ static int eqos_probe(struct udevice *dev)
 		goto err_remove_resources_tegra;
 	}
 
-#if IS_ENABLED(CONFIG_DM_MDIO)
-	ret = eqos_dm_mdio_init(dev);
-	if (ret < 0) {
-		pr_err("mdio node was not configure: %d", ret);
-		goto err_remove_resources_tegra;
+	if (IS_ENABLED(CONFIG_DM_MDIO)) {
+		ret = eqos_dm_mdio_init(dev);
+		if (ret < 0) {
+			pr_err("mdio node was not configure: %d", ret);
+			goto err_remove_resources_tegra;
+		}
 	}
-
-	eqos->phy = dm_eth_phy_connect(dev);
-	if (!eqos->phy) {
-		pr_err("dm_eth_phy_connect() failed. no phy found");
-		goto err_remove_resources_tegra;
-	}
-#endif
 
 #ifdef CONFIG_DM_ETH_PHY
 	if (!eqos->mii)
