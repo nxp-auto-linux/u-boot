@@ -22,13 +22,14 @@
 	"image=Image\0" \
 	"initrd_high=" __stringify(S32N_INITRD_HIGH_ADDR) "\0" \
 	"ramdisk_addr=" __stringify(CONFIG_RAMDISK_ADDR) "\0" \
-	"bootargs=earlycon maxcpus=1 arm64.nopauth\0" \
+	"bootargs=console=${console},${baudrate} root=/dev/ram rw " \
+	          "earlycon maxcpus=1 arm64.nopauth\0" \
 
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND
 #endif
 
-#define CONFIG_BOOTCOMMAND "${boot_mtd} ${loadaddr} - ${fdt_addr}"
+#define CONFIG_BOOTCOMMAND "${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr}"
 
 #define CONFIG_EXTRA_ENV_SETTINGS S32N_ENV_SETTINGS
 
