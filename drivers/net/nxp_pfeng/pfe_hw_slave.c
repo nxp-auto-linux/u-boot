@@ -263,7 +263,7 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 
 	pfe_hw_hif_chnl_enable(ext->hw_chnl);
 
-	ret = send_idex_if_cmd(ext, RPC_PFE_IF_LOCK);
+	ret = send_idex_if_cmd(ext, RPC_PFE_IF_DISABLE);
 	if (ret)
 		goto exit;
 
