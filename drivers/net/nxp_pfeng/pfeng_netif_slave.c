@@ -55,7 +55,7 @@ static bool is_hw_chnl_initialized(struct pfeng_netif *netif)
 {
 	struct pfe_hw_ext *hw = pfeng_priv_get_hw(netif->priv);
 
-	return hw->hw_chnl_state == PFE_HW_CHNL_READY;
+	return netif->hw_chnl && hw->hw_chnl_state == PFE_HW_CHNL_READY;
 }
 
 static int initialize_hw_chnl(struct udevice *dev)
