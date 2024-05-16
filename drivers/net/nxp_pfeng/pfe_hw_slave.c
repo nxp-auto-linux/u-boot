@@ -5,7 +5,12 @@
  *  Copyright 2018-2024 NXP
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <dm/device_compat.h>
 #include <linux/delay.h>
 
@@ -263,7 +268,7 @@ static int hif_channel_grace_reset(struct pfe_hw_ext *ext)
 
 	pfe_hw_hif_chnl_enable(ext->hw_chnl);
 
-	ret = send_idex_if_cmd(ext, RPC_PFE_IF_LOCK);
+	ret = send_idex_if_cmd(ext, RPC_PFE_IF_DISABLE);
 	if (ret)
 		goto exit;
 
