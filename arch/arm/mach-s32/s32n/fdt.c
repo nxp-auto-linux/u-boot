@@ -44,10 +44,5 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	if (ret)
 		return ret;
 
-	/* TODO take into account the return value, when the support
-	 * is added in TF-A.
-	 */
-	ft_fixup_atf(blob);
-
-	return ret;
+	return ft_fixup_atf(blob);
 }
