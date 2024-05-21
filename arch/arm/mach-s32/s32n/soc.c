@@ -12,7 +12,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 
-#define UART_BASE	0x40000000
+#define UART_BASE	0x4A030000
 #define UART_SIZE	0x10000
 
 static struct mm_region s32n_mem_map[] = {
