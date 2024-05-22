@@ -112,12 +112,12 @@
 #  define LINUX_EARLY_CONSOLE ""
 #else
 #  define LINUX_EARLY_CONSOLE \
-	"earlycon"
+	" earlycon"
 #endif
 
 #if defined(CONFIG_LINUX_LOG_DISABLE)
 #  define LINUX_LOG_DISABLE \
-	"quiet"
+	" quiet"
 #else
 #  define LINUX_LOG_DISABLE ""
 #endif
@@ -142,7 +142,7 @@
 		"mtd read Rootfs ${ramdisk_addr};"\
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0" \
 	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
-		" root=/dev/ram rw earlycon " LINUX_EARLY_CONSOLE \
+		" root=/dev/ram rw" LINUX_EARLY_CONSOLE \
 		LINUX_LOG_DISABLE EXTRA_BOOT_ARGS ";"\
 		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
 	"image=Image\0" \
@@ -154,7 +154,7 @@
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-		" root=${mmcroot} " LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
+		" root=${mmcroot}" LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
 		EXTRA_BOOT_ARGS "\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"run mmcargs; " \
