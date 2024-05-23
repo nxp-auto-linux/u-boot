@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #include <command.h>
@@ -132,57 +132,3 @@ int mac_read_from_eeprom(void)
 
 	return 0;
 }
-
-/**
- * Due to the hardware design of the reset circuit on S32R45,
- * the PHY does not properly reset after a software reboot.
- * PHY's control register is not correctly initialized afterwards
- * and GMAC clock settings fail to apply.
- */
-int last_stage_init(void)
-{
-	struct udevice *gmac0;
-	struct mii_dev *bus;
-	struct phy_device *phy;
-	phy_interface_t mode;
-	const char *phy_mode;
-	int ret;
-
-	if (!IS_ENABLED(CONFIG_DWC_ETH_QOS_S32CC))
-		return 0;
-
-	ret = uclass_get_device_by_seq(UCLASS_ETH, 0, &gmac0);
-	if (ret)
-		return ret;
-
-	bus = miiphy_get_dev_by_name(gmac0->name);
-	if (!bus)
-		return -ENODEV;
-
-	phy_mode = dev_read_prop(gmac0, "phy-mode", NULL);
-	if (!phy_mode) {
-		pr_err("%s: phy-mode not found\n", gmac0->name);
-		return -EINVAL;
-	}
-
-	mode = phy_get_interface_by_name(phy_mode);
-	/* phy_connect will reset the PHY */
-	phy = phy_connect(bus, S32R_PHY_ADDR_1, gmac0, mode);
-	if (IS_ERR_OR_NULL(phy))
-		pr_err("%s: %s: phy reset failed\n", __func__, gmac0->name);
-	/* Is not critical if the phy has not been found.
-	 * The error code is ignored on purpose.
-	 */
-
-	/* The board needs a delay of 2.0ns (Skew) in order to have
-	 * a functional PHY.
-	 */
-	ret = bus->write(bus, S32R_PHY_ADDR_1, MDIO_DEVAD_NONE,
-			RENAN_PHYCTRL_REG, RENAN_TXRX_SKEW);
-	if (ret)
-		pr_warn("%s: RGMII internal delays not applied. No traffic will pass through the PHY\n",
-			gmac0->name);
-
-	return 0;
-}
-
