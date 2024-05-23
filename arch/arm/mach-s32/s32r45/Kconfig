@@ -39,6 +39,7 @@ config TARGET_S32R45RENAN
 	imply SARADC_S32CC
 	imply RGMII
 	imply NVME
+	imply PHY_XWAY
 	select LAST_STAGE_INIT
 	select ID_EEPROM
 	select BOARD_EARLY_INIT_R
