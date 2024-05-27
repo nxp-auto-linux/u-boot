@@ -173,6 +173,10 @@ config SYS_BOOTM_LEN
 config SYS_CBSIZE
 	default 512 if MACH_S32
 
+config SYS_RX_ETH_BUFFER
+	default 256 if NXP_S32CC
+	default 8 if NXP_S32N
+
 config ENV_OFFSET
 	default 0x280000 if !ENV_IS_IN_FAT
 
