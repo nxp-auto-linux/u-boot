@@ -19,6 +19,8 @@
 #define BOOT_SCRIPT_FILE_SD	"/boot/boot.scr-sdcard"
 #define BOOT_SCRIPT_FILE_UFS	"/boot/boot.scr-ufs"
 
+#define CONFIG_SYS_RX_ETH_BUFFER	8
+
 #define MMC_PART_FAT			3
 #define MMC_PART_EXT			4
 #define MMC_ROOT			"/dev/mmcblk0p4"
