@@ -18,6 +18,7 @@ config NXP_S32CC_BOARD_COMMON
 	imply CMD_I2C
 	imply CMD_MD5SUM
 	imply CMD_MMC
+	imply CMD_MMC_REG
 	imply CMD_MP
 	imply CMD_PCI
 	imply CMD_SMC
