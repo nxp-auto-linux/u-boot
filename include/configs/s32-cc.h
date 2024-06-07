@@ -274,7 +274,8 @@
 		"mtd read Kernel ${loadaddr};" \
 		"mtd read Rootfs ${ramdisk_addr};" \
 		"setenv boot_mtd bootm;" \
-		"setenv flashboot ${boot_mtd} ${loadaddr} ${ramdisk_addr} ${loadaddr};"
+		"setenv flashboot ${boot_mtd} ${loadaddr} ${ramdisk_addr} ${loadaddr}; " \
+		"run flashbootargs; "
 #    else
 #        define PRECONFIG_BOOTCOMMAND
 #    endif
@@ -289,7 +290,8 @@
 #       define PRECONFIG_BOOTCOMMAND \
 		"setenv image kernel.itb; " \
 		"setenv boot_mtd bootm; " \
-		"setenv mmcboot ${boot_mtd} ${loadaddr}; "
+		"setenv mmcboot ${boot_mtd} ${loadaddr}; " \
+		"run mmcargs; "
 #      else
 #        define PRECONFIG_BOOTCOMMAND
 #      endif
