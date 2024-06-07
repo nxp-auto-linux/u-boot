@@ -101,7 +101,8 @@
 #  define XEN_EXTRA_ENV_SETTINGS  ""
 #endif
 
-#if defined(CONFIG_LINUX_FDT_HS400_FIXUP)
+#if defined(CONFIG_LINUX_FDT_HS400_FIXUP) && \
+	!defined(CONFIG_FIT_SIGNATURE)
 #  define FDT_FIXUP \
 	"run fdt_enable_hs400;"
 #else
