@@ -6,6 +6,8 @@
 #include <init.h>
 #include <asm/global_data.h>
 #include <asm/armv8/mmu.h>
+#include <dm/ofnode.h>
+#include <linux/ioport.h>
 #include <s32/soc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -58,4 +60,24 @@ int arch_cpu_init_dm(void)
 	set_dtb_wr_access(false);
 
 	return 0;
+}
+
+/* The top of the DRAM is reserved for the Secure Monitor. */
+ulong board_get_usable_ram_top(ulong total_size)
+{
+	struct resource reg;
+	ofnode node;
+	int ret;
+
+	node = ofnode_path("/reserved-memory/atf");
+	if (!ofnode_valid(node)) {
+		log_err("Couldn't find 'atf' reserved-memory node\n");
+		return gd->ram_top;
+	}
+
+	ret = ofnode_read_resource(node, 0, &reg);
+	if (ret)
+		return gd->ram_top;
+
+	return reg.start < CONFIG_SYS_DATA_BASE ? gd->ram_top : reg.start;
 }
