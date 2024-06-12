@@ -138,12 +138,19 @@ static int pci_generic_ecam_of_to_plat(struct udevice *dev)
 
 	err = ofnode_read_resource(node, 0, &reg_res);
 	if (err < 0) {
+	fdt_addr_t addr;
+	fdt_size_t size;
+
+	addr = dev_read_addr_size(dev, "reg", &size);
+	if (addr == FDT_ADDR_T_NONE) {
 		pr_err("\"reg\" resource not found\n");
-		return err;
+		return -EINVAL;
 	}
 
 	pcie->size = resource_size(&reg_res);
 	pcie->cfg_base = map_physmem(reg_res.start, pcie->size, MAP_NOCACHE);
+	pcie->size = size;
+	pcie->cfg_base = map_physmem(addr, size, MAP_NOCACHE);
 
 	return 0;
 }
