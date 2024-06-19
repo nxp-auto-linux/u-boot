@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /**
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  */
 #ifndef S32CC_XPCS_H
 #define S32CC_XPCS_H
@@ -38,7 +38,8 @@ struct s32cc_xpcs_ops {
 	int (*init_plls)(struct s32cc_xpcs *xpcs);
 	int (*reset_rx)(struct s32cc_xpcs *xpcs);
 	bool (*has_valid_rx)(struct s32cc_xpcs *xpcs);
-	int (*pre_pcie_2g5)(struct s32cc_xpcs *xpcs);
+	void (*pre_reset_pcie_2g5)(struct s32cc_xpcs *xpcs);
+	int (*post_reset_pcie_2g5)(struct s32cc_xpcs *xpcs);
 
 	/* These functions are planned to be used directly
 	 * by phylink in newer kernels (starting from 5.10).

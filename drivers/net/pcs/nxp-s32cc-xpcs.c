@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  *
  * Driver for XPCS side of the SerDes module present on S32CC platforms
  */
@@ -854,6 +854,8 @@ static int xpcs_init_plls(struct s32cc_xpcs *xpcs)
 
 	if (!xpcs->ext_clk) {
 		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, BYP_PWRUP, BYP_PWRUP);
+		if (xpcs->pcie_shared == PCIE_XPCS_2G5)
+			return 0;
 	} else if (xpcs->pcie_shared == NOT_SHARED) {
 		wait_power_good_state(xpcs);
 	} else if (xpcs->pcie_shared == PCIE_XPCS_2G5) {
@@ -1077,14 +1079,13 @@ static int xpcs_get_state(struct s32cc_xpcs *xpcs,
 	return 0;
 }
 
-static int xpcs_pre_pcie_2g5(struct s32cc_xpcs *xpcs)
+static void xpcs_pre_reset_pcie_2g5(struct s32cc_xpcs *xpcs)
 {
-	__maybe_unused struct udevice *dev = get_xpcs_device(xpcs);
-	int ret;
-
 	/* Enable voltage boost */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, VBOOST_EN_0,
 			VBOOST_EN_0);
+
+	xpcs_ref_clk_sel(xpcs, XPCS_PLLB);
 
 	/* TX rate baud  */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL, 0x7, 0x0U);
@@ -1095,6 +1096,15 @@ static int xpcs_pre_pcie_2g5(struct s32cc_xpcs *xpcs)
 	/* Set low-frequency operating band */
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL, CDR_SSC_EN_0,
 			VCO_LOW_FREQ_0);
+
+	if (!xpcs->ext_clk)
+		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, BYP_PWRUP, 0);
+}
+
+static int xpcs_post_reset_pcie_2g5(struct s32cc_xpcs *xpcs)
+{
+	struct udevice *dev = get_xpcs_device(xpcs);
+	int ret;
 
 	ret = serdes_bifurcation_pll_transit(xpcs, XPCS_PLLB);
 	if (ret)
@@ -1279,7 +1289,8 @@ static const struct s32cc_xpcs_ops s32cc_xpcs_ops = {
 	.init_plls = xpcs_init_plls,
 	.reset_rx = xpcs_reset_rx,
 	.has_valid_rx = xpcs_has_valid_rx,
-	.pre_pcie_2g5 = xpcs_pre_pcie_2g5,
+	.pre_reset_pcie_2g5 = xpcs_pre_reset_pcie_2g5,
+	.post_reset_pcie_2g5 = xpcs_post_reset_pcie_2g5,
 	.xpcs_config = xpcs_config,
 	.xpcs_get_state = xpcs_get_state,
 	.get_id = xpcs_get_id,

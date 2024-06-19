@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2023 NXP
+ * Copyright 2020-2024 NXP
  * SERDES driver for S32CC SoCs
  */
 
@@ -106,7 +106,7 @@
 #define  PHY_REG_EN		BIT_32(31)
 #define PHY_REG_DATA		(0x4)
 #define PHY_RST_CTRL		(0x8)
-#define  WARM_RST		BIT_32(1)
+#define  COLD_RST		BIT_32(0)
 
 #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
 #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
@@ -203,7 +203,7 @@ static void pcie_phy_cold_reset(struct serdes *serdes)
 	u32 val;
 
 	val = readl(UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
-	writel(val | WARM_RST, UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
+	writel(val | COLD_RST, UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
 	udelay(1000);
 	writel(val, UPTR(serdes->pcie.phy_base) + PHY_RST_CTRL);
 }
@@ -511,14 +511,14 @@ static int xpcs_init_clks(struct serdes *serdes)
 	if (ctrl->ss_mode == 5) {
 		prepare_pma_mode5(serdes);
 
-		ret = xpcs->ops->pre_pcie_2g5(xpcs->phys[1]);
+		xpcs->ops->pre_reset_pcie_2g5(xpcs->phys[1]);
+		pcie_phy_cold_reset(serdes);
+		ret = xpcs->ops->post_reset_pcie_2g5(xpcs->phys[1]);
 		if (ret) {
 			dev_err(serdes->dev,
-				"Failed to prepare SerDes for PCIE & XPCS @ 2G5 mode\n");
+				"Failed to configure SerDes for PCIE & XPCS @ 2G5 mode\n");
 			return ret;
 		}
-
-		pcie_phy_cold_reset(serdes);
 	} else {
 		for (i = 0; i < ARRAY_SIZE(order); i++) {
 			xpcs_id = order[i];
