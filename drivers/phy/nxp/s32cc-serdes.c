@@ -184,6 +184,24 @@ static int serdes_phy_reset(struct phy *p)
 	return 0;
 }
 
+static void phy_config_gen_ctrl(struct serdes_ctrl *sctrl,
+				bool is_sris_phy_mode)
+{
+	u32 ctrl;
+
+	ctrl = readl(UPTR(sctrl->ss_base) + PCIE_PHY_GEN_CTRL);
+
+	if (is_sris_phy_mode)
+		ctrl |= RX_SRIS_MODE_MASK;
+
+	if (sctrl->ext_clk)
+		ctrl |= REF_USE_PAD_MASK;
+	else
+		ctrl &= ~REF_USE_PAD_MASK;
+
+	writel(ctrl, UPTR(sctrl->ss_base) + PCIE_PHY_GEN_CTRL);
+}
+
 static void pcie_phy_write(struct serdes *serdes, u32 reg, u32 val)
 {
 	writel(PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
@@ -257,7 +275,7 @@ static int pci_phy_power_on_common(struct serdes *serdes)
 {
 	struct serdes_ctrl *sctrl = &serdes->ctrl;
 	struct pcie_ctrl *pcie = &serdes->pcie;
-	u32 ctrl, reg0, val, mask;
+	u32 reg0, val, mask;
 	int ret;
 
 	if (pcie->initialized_phy)
@@ -267,20 +285,12 @@ static int pci_phy_power_on_common(struct serdes *serdes)
 	if (ret)
 		return ret;
 
-	ctrl = readl(UPTR(sctrl->ss_base) + PCIE_PHY_GEN_CTRL);
-
-	/* if PCIE PHY is in SRIS mode */
 	if (sctrl->phy_mode == SRIS)
-		ctrl |= RX_SRIS_MODE_MASK;
-
-	if (sctrl->ext_clk)
-		ctrl |= REF_USE_PAD_MASK;
+		phy_config_gen_ctrl(sctrl, true);
 	else
-		ctrl &= ~REF_USE_PAD_MASK;
+		phy_config_gen_ctrl(sctrl, false);
 
 	/* Monitor Serdes MPLL state */
-	writel(ctrl, UPTR(sctrl->ss_base) + PCIE_PHY_GEN_CTRL);
-
 	mask = MPLL_STATE_MASK;
 	ret = readl_poll_timeout(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLA_CTRL,
 				 val, (val & mask) == mask,
@@ -504,6 +514,7 @@ static int xpcs_init_clks(struct serdes *serdes)
 	}
 
 	if (ctrl->ss_mode == 5) {
+		phy_config_gen_ctrl(ctrl, false);
 		prepare_pma_mode5(serdes);
 
 		xpcs->ops->pre_reset_pcie_2g5(xpcs->phys[1]);
