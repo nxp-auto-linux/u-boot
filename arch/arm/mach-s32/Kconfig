@@ -95,7 +95,6 @@ config NXP_S32N
 	imply LOG
 	imply MISC
 	imply OF_HAS_PRIOR_STAGE
-	imply TIMER
 	select CLK
 	select CPU
 	select DM_DEVICE_REMOVE
