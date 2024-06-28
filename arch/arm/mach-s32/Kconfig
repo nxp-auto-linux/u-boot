@@ -113,6 +113,7 @@ config NXP_S32N
 	select SOC_DEVICE
 	select SYSRESET
 	select PL01X_SERIAL
+	select S32N_UFS
 
 config DEFAULT_DEVICE_TREE
 	default "s32"
