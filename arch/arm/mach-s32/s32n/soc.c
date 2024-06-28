@@ -16,6 +16,8 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_BASE	0x4A030000
 #define UART_SIZE	0x10000
+#define UFS_BASE	0x4ac80000
+#define UFS_SIZE	0x1000
 
 static struct mm_region s32n_mem_map[] = {
 	{
@@ -28,6 +30,11 @@ static struct mm_region s32n_mem_map[] = {
 	},
 	{
 		UART_BASE, UART_BASE, UART_SIZE,
+		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+		    PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	},
+	{
+		UFS_BASE, UFS_BASE, UFS_SIZE,
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 		    PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
