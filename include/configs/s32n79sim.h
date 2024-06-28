@@ -13,7 +13,7 @@
 #define MMC_ROOT			"/dev/mmcblk0p2"
 
 #define EXTRA_BOOT_ARGS	\
-	" maxcpus=1 arm64.nopauth"
+	" maxcpus=2 arm64.nopauth"
 
 #define FDT_FIXUP \
 	"run fdt_init; run fixup_initrd_size;"
