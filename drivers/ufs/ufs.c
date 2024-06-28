@@ -664,6 +664,7 @@ static inline u32 ufshcd_get_intr_mask(struct ufs_hba *hba)
 		break;
 	case UFSHCI_VERSION_11:
 	case UFSHCI_VERSION_20:
+	case UFSHCI_VERSION_40:
 		intr_mask = INTERRUPT_MASK_ALL_VER_11;
 		break;
 	case UFSHCI_VERSION_21:
@@ -1897,7 +1898,8 @@ int ufshcd_probe(struct udevice *ufs_dev, struct ufs_hba_ops *hba_ops)
 	    hba->version != UFSHCI_VERSION_20 &&
 	    hba->version != UFSHCI_VERSION_21 &&
 	    hba->version != UFSHCI_VERSION_30 &&
-	    hba->version != UFSHCI_VERSION_31)
+	    hba->version != UFSHCI_VERSION_31 &&
+	    hba->version != UFSHCI_VERSION_40)
 		dev_err(hba->dev, "invalid UFS version 0x%x\n",
 			hba->version);
 
