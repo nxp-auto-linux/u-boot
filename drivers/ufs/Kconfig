@@ -20,4 +20,11 @@ config TI_J721E_UFS
 	  This selects the glue layer driver for Cadence controller
 	  present on TI's J721E devices.
 
+config S32N_UFS
+	bool "S32N platform driver for UFS"
+	depends on UFS
+        help
+	  This selects the platform driver for the SNPS UFS host
+	  controller present on S32N devices.
+
 endmenu
