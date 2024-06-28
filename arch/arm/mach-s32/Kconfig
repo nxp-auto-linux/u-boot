@@ -92,9 +92,13 @@ config NXP_S32CC
 
 config NXP_S32N
 	bool
+	imply CMD_UFS
+	imply DM_SCSI
 	imply LOG
 	imply MISC
 	imply OF_HAS_PRIOR_STAGE
+	imply SCSI
+	imply UFS
 	select CLK
 	select CPU
 	select DM_DEVICE_REMOVE
