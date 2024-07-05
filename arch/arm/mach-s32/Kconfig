@@ -92,11 +92,15 @@ config NXP_S32CC
 
 config NXP_S32N
 	bool
+	imply CMD_DM
+	imply CMD_PCI
 	imply CMD_UFS
 	imply DM_SCSI
 	imply LOG
 	imply MISC
 	imply OF_HAS_PRIOR_STAGE
+	imply PCI
+	imply PCIE_ECAM_GENERIC
 	imply SCSI
 	imply UFS
 	select CLK
