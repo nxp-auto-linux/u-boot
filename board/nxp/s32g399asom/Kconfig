@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+# Copyright 2024 NXP
+
+if TARGET_S32G399ASOM
+
+config SYS_CONFIG_NAME
+	default "s32g399asom"
+
+config SYS_BOARD
+	default "s32g399asom"
+
+config NR_DRAM_BANKS
+	default 2
+
+config ENV_SECT_SIZE
+	default 0x10000 if QSPI_BOOT
+
+config SYS_EEPROM_PAGE_WRITE_DELAY_MS
+	default 10
+
+config SYS_EEPROM_SIZE
+	default 128
+
+config S32CC_HWCONFIG
+	string "S32CC HWConfig definition"
+	depends on PHY_S32CC_SERDES
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=1G,an=0;xpcs1_1:speed=1G"
+	help
+	  The configuration for the SerDes modules, stored in
+	  the variable 'hwconfig'.
+	  It configures generic attributes for 'serdesX', such as 'mode' (see below),
+	  the clock type (internal or external),
+	  clock frequency 'fmhz' (100 or 125, SGMII only modes), 'pcieX' mode
+	  ('rc' or 'ep') and the 'xpcsX_Y' interfaces for any of the two lanes.
+	  In the atributes presented above and below, 'X' (0 or 1) is the index
+	  of the SerDes module and 'Y' (0 or 1) is the index of the XPCS interface.
+	  PCIe always works at 100MHz, therefore 'fmhz' is only for SGMII only mode.
+	  Config 'xpcsX_Y' is used to specifically configure each of the two SGMII
+	  PHYs, by setting the 'speed' (10M, 100M, 1G and 2G5).
+	  In case of S32G3-VC-SOM board, SerDes0 can operate in PCIE mode only,
+	  while SerDes1 can only be used in SGMII mode.
+	  Thus, default configuration 'mode' parameter should not be modified.
+
+endif

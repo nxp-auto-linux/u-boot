@@ -39,6 +39,29 @@ config TARGET_S32G3XXAEVB3
 	  I2C and DSPI.
 	select NXP_S32GEVB3_BOARD
 
+config TARGET_S32G399ASOM
+	bool "Support S32G3-VC-SOM board"
+	help
+	  This board is based on S32G3 family of SoCs. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, serial port.
+	  It is intended to be used in conjunction with other S32 based SoCs,
+	  through PCIe and Ethernet connections.
+	imply ADC
+	imply CMD_EEPROM
+	imply CMD_PMIC
+	imply DM_PMIC
+	imply DM_PMIC_VR5510
+	imply I2C_EEPROM
+	imply NXP_S32CC_BOARD_COMMON
+	imply PHY
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply SARADC_S32CC
+	select SPI_FLASH_MACRONIX
+	select SPI_FLASH_MX25UW51245G
+	select SPI_FLASH_SOFT_RESET
+	select SPI_FLASH_SOFT_RESET_ON_BOOT
+
 config TARGET_S32G399AEMU
 	bool "Support S32G399A ZeBu"
 	select TARGET_TYPE_S32CC_EMULATOR
@@ -52,6 +75,7 @@ source "board/nxp/s32-cc/s32g/Kconfig"
 source "board/nxp/s32g399ardb3/Kconfig"
 source "board/nxp/s32g3xxaevb/Kconfig"
 source "board/nxp/s32g3xxaevb3/Kconfig"
+source "board/nxp/s32g399asom/Kconfig"
 source "board/nxp/s32g399aemu/Kconfig"
 
 endif
