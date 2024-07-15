@@ -126,7 +126,7 @@ config SYS_MALLOC_F_LEN
 	default 0x40000
 
 config ENV_OFFSET
-	default 0x280000
+	default 0x280000 if !ENV_IS_IN_FAT
 
 source "arch/arm/mach-s32/s32-cc/Kconfig"
 source "board/nxp/s32/Kconfig"
