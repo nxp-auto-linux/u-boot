@@ -22,7 +22,6 @@ disabled_dt_nodes = [
     ("I2C2", "i2c@401ec000"),
     ("I2C4", "i2c@402dc000"),
     ("SPI1", "spi@401d8000"),
-    ("CAN0", "flexcan@401b4000"),
 ]
 
 def log_step(msg):
