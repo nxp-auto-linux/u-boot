@@ -100,7 +100,9 @@ config NXP_S32N
 	imply CMD_PART
 	imply CMD_PCI
 	imply CMD_UFS
+	imply CMD_GPT
 	imply DM_SCSI
+	imply FS_FAT
 	imply LOG
 	imply MISC
 	imply OF_HAS_PRIOR_STAGE
