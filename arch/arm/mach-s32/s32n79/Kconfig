@@ -15,6 +15,15 @@ config TARGET_S32N79SIM
 
 endchoice
 
+config ENV_IS_IN_FAT
+	default y
+
+config ENV_FAT_INTERFACE
+	default "scsi"
+
+config ENV_FAT_DEVICE_AND_PART
+	default "0:3"
+
 source "board/nxp/s32n79sim/Kconfig"
 
 endif
