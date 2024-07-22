@@ -356,8 +356,9 @@ enum serdes_mode s32_serdes_get_serdes_mode_from_hwconfig(unsigned int id)
 	if (!strncmp(option_str, "pcie&xpcs1", subarg_len))
 		return SERDES_MODE_PCIE_XPCS1;
 
-	/* Modes 3 or 4; we currently use only 3.
-	 * Mode 4 would go with "xpcs1" only, but it has not been validated.
+	/*
+	 * Modes 3 or 4; Mode 4 has at least one xpcs @2G5
+	 * and is selected during fixup.
 	 */
 	if (!strncmp(option_str, "xpcs0", subarg_len) ||
 	    !strncmp(option_str, "xpcs0&xpcs1", subarg_len))

@@ -816,6 +816,15 @@ static int set_serdes_mode(enum serdes_mode mode, struct dts_node *root, unsigne
 	if (s32_serdes_is_mode5_enabled_in_hwconfig(id))
 		mode_num = 5;
 
+	/*
+	 * Mode 4 is like Mode 3, but with at least one XPCS
+	 * running @2G5. Mode 3 is 1GbE SGMII only.
+	 */
+	if (mode_num == SERDES_MODE_XPCS0_XPCS1)
+		if ((s32_serdes_get_xpcs_cfg_from_hwconfig(id, 0) == SGMII_XPCS_2G5) ||
+		    (s32_serdes_get_xpcs_cfg_from_hwconfig(id, 1) == SGMII_XPCS_2G5))
+			mode_num = 4;
+
 	ret = node_set_prop_u32(&node, "nxp,sys-mode", mode_num);
 	if (ret)
 		pr_err("Failed to set 'nxp,sys-mode'\n");
