@@ -28,6 +28,8 @@
 #define NXID_VERSION	1
 #endif
 
+#if defined(CONFIG_SYS_I2C_EEPROM_CCID) || defined(CONFIG_SYS_I2C_EEPROM_NXID)
+
 /**
  * static eeprom: EEPROM layout for CCID or NXID formats
  *
@@ -646,3 +648,5 @@ U_BOOT_CMD(
 	mac, 3, 1,  do_mac,
 	"display and program the system ID and MAC addresses in EEPROM",
 	mac_help_text);
+
+#endif /* CONFIG_SYS_I2C_EEPROM_CCID || CONFIG_SYS_I2C_EEPROM_NXID */
