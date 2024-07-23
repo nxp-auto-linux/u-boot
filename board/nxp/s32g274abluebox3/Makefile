@@ -5,3 +5,4 @@
 #
 
 obj-y += ../s32-cc/
+obj-$(CONFIG_ID_EEPROM)	+= sys_eeprom.o
