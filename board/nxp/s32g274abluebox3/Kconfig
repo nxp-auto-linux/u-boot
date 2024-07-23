@@ -21,6 +21,15 @@ config SYS_EEPROM_PAGE_WRITE_DELAY_MS
 config SYS_EEPROM_SIZE
 	default 128
 
+config ID_EEPROM
+	default y
+
+config SYS_I2C_EEPROM_ADDR
+	default 0x57 if ID_EEPROM
+
+config SYS_I2C_EEPROM_ADDR_LEN
+	default 2 if ID_EEPROM
+
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
 	depends on PHY_S32CC_SERDES
