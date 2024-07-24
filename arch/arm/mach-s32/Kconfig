@@ -95,6 +95,8 @@ config NXP_S32N
 	imply CMD_DM
 	imply CMD_EXT4
 	imply CMD_FAT
+	imply CMD_MMC
+	imply CMD_MMC_REG
 	imply CMD_PART
 	imply CMD_PCI
 	imply CMD_UFS
@@ -111,6 +113,7 @@ config NXP_S32N
 	select DM_DEVICE_REMOVE
 	select DM_SERIAL
 	select ENABLE_ARM_SOC_BOOT0_HOOK
+	select FSL_USDHC
 	select HUSH_PARSER
 	select MACH_S32
 	select OF_BOARD

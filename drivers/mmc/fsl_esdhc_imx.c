@@ -904,6 +904,7 @@ static void esdhc_stop_tuning(struct mmc *mmc)
 }
 
 static struct esdhc_soc_data usdhc_s32cc_data;
+static struct esdhc_soc_data usdhc_s32n_data;
 
 static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 {
@@ -918,7 +919,7 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 	struct esdhc_soc_data *soc_data =
 		(struct esdhc_soc_data *)dev_get_driver_data(dev);
 
-	if (soc_data == &usdhc_s32cc_data)
+	if (soc_data == &usdhc_s32cc_data || soc_data == &usdhc_s32n_data)
 		if (soc_data->flags & ESDHC_FLAG_MAN_TUNING)
 			return fsl_s32cc_manual_tuning(dev, opcode);
 
@@ -1735,6 +1736,12 @@ static struct esdhc_soc_data usdhc_s32cc_data = {
 		ESDHC_FLAG_BROKEN_SDR104,
 };
 
+static struct esdhc_soc_data usdhc_s32n_data = {
+	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_MAN_TUNING |
+		ESDHC_FLAG_HAVE_CAP1 | ESDHC_FLAG_HS200 |
+		ESDHC_FLAG_HS400 | ESDHC_FLAG_HS400_ES,
+};
+
 static const struct udevice_id fsl_esdhc_ids[] = {
 	{ .compatible = "fsl,imx51-esdhc", },
 	{ .compatible = "fsl,imx53-esdhc", },
@@ -1749,6 +1756,7 @@ static const struct udevice_id fsl_esdhc_ids[] = {
 	{ .compatible = "fsl,imx8mn-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
 	{ .compatible = "fsl,imx8mq-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
 	{ .compatible = "nxp,s32cc-usdhc", .data = (ulong)&usdhc_s32cc_data,},
+	{ .compatible = "nxp,s32n-usdhc", .data = (ulong)&usdhc_s32n_data,},
 	{ .compatible = "fsl,imxrt-usdhc", },
 	{ .compatible = "fsl,esdhc", },
 	{ /* sentinel */ }
