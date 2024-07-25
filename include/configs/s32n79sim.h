@@ -7,7 +7,7 @@
 
 #include <configs/s32n79.h>
 
-#define FDT_FILE		"s32n79-simulator.dts"
+#define FDT_FILE		"s32n79-simulator.dtb"
 
 #define MMC_PART_FAT			1
 #define MMC_ROOT			"/dev/mmcblk0p2"
