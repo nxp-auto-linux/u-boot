@@ -9,8 +9,8 @@
 
 #define FDT_FILE		"s32n79-simulator.dtb"
 
-#define MMC_PART_FAT			1
-#define MMC_ROOT			"/dev/mmcblk0p2"
+#define MMC_PART_FAT			3
+#define MMC_ROOT			"/dev/mmcblk0p4"
 
 #define EXTRA_BOOT_ARGS	\
 	" maxcpus=2 arm64.nopauth"
@@ -64,6 +64,18 @@
 
 #  define CONFIG_BOOTCOMMAND \
 	"run fdt_fixups; ${boot_mtd} ${loadaddr} - ${fdt_addr}"
+
+#elif defined(CONFIG_SD_BOOT)
+#  define BOOTENV
+#  define CONFIG_BOOTCOMMAND \
+	"mmc dev ${mmcdev}; " \
+	"if mmc rescan; " \
+	"then " \
+		"if run loadimage; "\
+		"then " \
+			"run mmcboot; " \
+		"fi; " \
+	"fi"
 
 #else /* Boot from UFS. */
 #  define BOOTENV
