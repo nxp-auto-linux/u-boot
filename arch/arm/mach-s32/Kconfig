@@ -93,6 +93,9 @@ config NXP_S32CC
 config NXP_S32N
 	bool
 	imply CMD_DM
+	imply CMD_EXT4
+	imply CMD_FAT
+	imply CMD_PART
 	imply CMD_PCI
 	imply CMD_UFS
 	imply DM_SCSI
