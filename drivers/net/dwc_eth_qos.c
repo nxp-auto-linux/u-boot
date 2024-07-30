@@ -284,8 +284,9 @@ static int _eqos_mdio_write(struct mii_dev *bus, int mdio_addr, int mdio_devad,
 
 static int eqos_dm_mdio_init(struct udevice *dev)
 {
-	ofnode node;
+	bool found = false;
 	const char *name;
+	ofnode node;
 	int ret;
 
 	dev_for_each_subnode(node, dev) {
@@ -301,8 +302,12 @@ static int eqos_dm_mdio_init(struct udevice *dev)
 							 name, node, NULL);
 			if (ret)
 				return ret;
+			found = true;
 		}
 	}
+
+	if (!found)
+		return -ENODEV;
 
 	return 0;
 }
@@ -1722,41 +1727,41 @@ static int eqos_probe(struct udevice *dev)
 
 	if (IS_ENABLED(CONFIG_DM_MDIO)) {
 		ret = eqos_dm_mdio_init(dev);
-		if (ret < 0) {
-			pr_err("mdio node was not configure: %d", ret);
+		if (ret && ret != -ENODEV) {
+			pr_err("failed to configure mdio node: %d", ret);
 			goto err_remove_resources_tegra;
+		} else if (ret == -ENODEV) {
+			pr_err("mdio node not found.");
 		}
 	}
 
-#ifdef CONFIG_DM_ETH_PHY
-	if (!eqos->mii)
-		eqos->mii = eth_phy_get_mdio_bus(dev);
-#endif
-	if (!eqos->mii) {
-		eqos->mii = mdio_alloc();
+	if (!IS_ENABLED(CONFIG_DM_MDIO)) {
+		if (IS_ENABLED(CONFIG_DM_ETH_PHY) && !eqos->mii)
+			eqos->mii = eth_phy_get_mdio_bus(dev);
+
 		if (!eqos->mii) {
-			pr_err("mdio_alloc() failed");
-			ret = -ENOMEM;
-			goto err_stop_clks;
-		}
-		eqos->mii->read = _eqos_mdio_read;
-		eqos->mii->write = _eqos_mdio_write;
-		eqos->mii->priv = eqos;
-		strcpy(eqos->mii->name, dev->name);
+			eqos->mii = mdio_alloc();
+			if (!eqos->mii) {
+				pr_err("mdio_alloc() failed");
+				ret = -ENOMEM;
+				goto err_stop_clks;
+			}
+			eqos->mii->read = _eqos_mdio_read;
+			eqos->mii->write = _eqos_mdio_write;
+			eqos->mii->priv = eqos;
+			strcpy(eqos->mii->name, dev->name);
 
-		ret = mdio_register(eqos->mii);
-		if (ret < 0) {
-			pr_err("mdio_register() failed: %d", ret);
-			goto err_free_mdio;
+			ret = mdio_register(eqos->mii);
+			if (ret < 0) {
+				pr_err("mdio_register() failed: %d", ret);
+				goto err_free_mdio;
+			}
 		}
+		if (IS_ENABLED(CONFIG_DM_ETH_PHY))
+			eth_phy_set_mdio_bus(dev, eqos->mii);
 	}
-
-#ifdef CONFIG_DM_ETH_PHY
-	eth_phy_set_mdio_bus(dev, eqos->mii);
-#endif
-
-	debug("%s: OK\n", __func__);
-	return 0;
+	debug("%s: ret: %d\n", __func__, ret);
+	return ret;
 
 err_free_mdio:
 	mdio_free(eqos->mii);
