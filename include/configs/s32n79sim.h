@@ -7,37 +7,31 @@
 
 #include <configs/s32n79.h>
 
-#define S32N_FDT_HIGH_ADDR		0xffffffffffffffff
-#define S32N_INITRD_HIGH_ADDR		0xffffffffffffffff
-
 #define FDT_FILE		"s32n79-simulator.dts"
+
+#define MMC_PART_FAT			1
+#define MMC_ROOT			"/dev/mmcblk0p2"
+
+#define EXTRA_BOOT_ARGS	\
+	" maxcpus=1 arm64.nopauth"
 
 #define FDT_FIXUP \
 	"run fdt_init; run fixup_initrd_size;"
 
 #define S32N_ENV_SETTINGS \
-	"boot_mtd=booti\0" \
+	S32_ENV_SETTINGS \
 	"console=ttyAMA0\0" \
-	"fdt_addr=" __stringify(CONFIG_DTB_ADDR) "\0" \
-	"fdt_file=" FDT_FILE "\0" \
-	"fdt_fixups=" FDT_FIXUP "\0" \
-	"fdt_high=" __stringify(S32N_FDT_HIGH_ADDR) "\0" \
 	"fdt_init=fdt addr ${fdt_addr}; fdt resize;\0" \
-	"fdt_override=;\0" \
-	"image=Image\0" \
-	"initrd_high=" __stringify(S32N_INITRD_HIGH_ADDR) "\0" \
-	"ramdisk_addr=" __stringify(CONFIG_RAMDISK_ADDR) "\0" \
 	"bootargs=console=${console},${baudrate} root=/dev/ram rw " \
-	          "earlycon maxcpus=1 arm64.nopauth\0" \
+		LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
+		EXTRA_BOOT_ARGS "\0" \
 	"fixup_initrd_size=setexpr ramdisk_size_addr ${ramdisk_addr} - 0x4; " \
 		  "setexpr.l initrd-end ${ramdisk_addr} + " \
 		  "*${ramdisk_size_addr}; fdt set /chosen linux,initrd-start " \
 		  "<${ramdisk_addr}>; fdt set /chosen linux,initrd-end " \
 		  "<0x${initrd-end}>;\0" \
 
-#ifdef CONFIG_BOOTCOMMAND
-#undef CONFIG_BOOTCOMMAND
-#endif
+#define BOOTENV
 
 #define CONFIG_BOOTCOMMAND \
 	"run fdt_fixups; ${boot_mtd} ${loadaddr} - ${fdt_addr}"
