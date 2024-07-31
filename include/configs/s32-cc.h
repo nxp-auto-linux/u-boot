@@ -5,8 +5,7 @@
 #ifndef __S32CC_H__
 #define __S32CC_H__
 
-#include <linux/sizes.h>
-#include <generated/autoconf.h>
+#include <configs/s32.h>
 
 /* memory mapped external flash */
 #define CFG_SYS_FLASH_BASE		0x0UL
@@ -46,26 +45,9 @@
 #define S32CC_FDT_ADDR			0x83000000
 #define S32CC_RAMDISK_ADDR		0x90000000
 
-/* Disable Ramdisk & FDT relocation*/
-#define S32CC_INITRD_HIGH_ADDR		0xffffffffffffffff
-#define S32CC_FDT_HIGH_ADDR		0xffffffffffffffff
-
-#define CONFIG_SYS_INIT_SP_OFFSET	(SZ_16K)
-#define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_DATA_BASE + \
-					 CONFIG_SYS_MALLOC_F_LEN + \
-					 GENERATED_GBL_DATA_SIZE + \
-					 CONFIG_SYS_INIT_SP_OFFSET)
-
-#define CONFIG_SYS_MMC_ENV_DEV		0
 #define MMC_PART_FAT			1
 #define MMC_PART_EXT			2
-
-/* Increase max gunzip size */
-#define CONFIG_SYS_BOOTM_LEN	(SZ_64M)
-
-#ifndef CONFIG_XEN_SUPPORT
-#  define CONFIG_ARMV8_SWITCH_TO_EL1
-#endif
+#define MMC_ROOT			"/dev/mmcblk0p2"
 
 #define NFSRAMFS_ADDR			"-"
 #define NFSRAMFS_TFTP_CMD		""
@@ -106,36 +88,16 @@
 #  define FDT_FIXUP \
 	"run fdt_enable_hs400;"
 #else
-#  define FDT_FIXUP ""
-#endif
-
-#if defined(CONFIG_NO_LINUX_EARLY_CONSOLE)
-#  define LINUX_EARLY_CONSOLE ""
-#else
-#  define LINUX_EARLY_CONSOLE \
-	" earlycon"
-#endif
-
-#if defined(CONFIG_LINUX_LOG_DISABLE)
-#  define LINUX_LOG_DISABLE \
-	" quiet"
-#else
-#  define LINUX_LOG_DISABLE ""
+#  define FDT_FIXUP ";"
 #endif
 
 #define S32CC_ENV_SETTINGS \
-	BOOTENV \
-	"boot_mtd=booti\0" \
+	S32_ENV_SETTINGS \
 	"console=ttyLF0\0" \
-	"fdt_addr=" __stringify(S32CC_FDT_ADDR) "\0" \
 	"fdt_enable_hs400=" \
 		"fdt addr ${fdt_addr}; " \
 		"fdt rm /soc/mmc no-1-8-v; " \
 		"fdt resize; \0" \
-	"fdt_file=" FDT_FILE "\0" \
-	"fdt_fixups=" FDT_FIXUP "\0" \
-	"fdt_high=" __stringify(S32CC_FDT_HIGH_ADDR) "\0" \
-	"fdt_override=;\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs;"\
 		"mtd read Kernel ${loadaddr};"\
@@ -146,28 +108,9 @@
 		" root=/dev/ram rw" LINUX_EARLY_CONSOLE \
 		LINUX_LOG_DISABLE EXTRA_BOOT_ARGS ";"\
 		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
-	"image=Image\0" \
-	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
 	"ipaddr=" S32CC_IPADDR "\0"\
-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
-		 "run fdt_override;\0" \
-	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
 	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
-	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-		" root=${mmcroot}" LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
-		EXTRA_BOOT_ARGS "\0" \
-	"mmcboot=echo Booting from mmc ...; " \
-		"run mmcargs; " \
-		"if run loadfdt; then " \
-			"run fdt_fixups; " \
-			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
-		"else " \
-			"echo WARN: Cannot load the DT; " \
-		"fi;\0" \
-	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=" __stringify(MMC_PART_FAT) "\0" \
-	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
@@ -204,7 +147,6 @@
 			CONFIG_BOARD_NFS_BOOT_INTERFACE ":off " \
 		"nfsroot=${serverip}:/tftpboot/rfs,nolock,v3,tcp " \
 		"earlycon " EXTRA_BOOT_ARGS "\0" \
-	"ramdisk_addr=" __stringify(S32CC_RAMDISK_ADDR) "\0" \
 	"script=boot.scr\0" \
 	"serverip=" S32CC_SERVERIP "\0" \
 	SERDES_EXTRA_ENV_SETTINGS \
@@ -228,10 +170,6 @@
 	"else " \
 		"run netboot;" \
 	"fi"
-#endif
-
-#ifdef CONFIG_BOOTCOMMAND
-#undef CONFIG_BOOTCOMMAND
 #endif
 
 #if defined(CONFIG_DISTRO_DEFAULTS)
@@ -321,5 +259,4 @@
 #	define FSL_QSPI_FLASH_SIZE	SZ_64M
 #endif
 
-#define CONFIG_SYS_CBSIZE		(SZ_512)
 #endif
