@@ -45,4 +45,12 @@ config S32CC_SCMI_NVMEM_FIXUP
 	bool "Device tree fixup for SCMI NVMEM protocol"
 	default n
 
+config DTB_ADDR
+	hex "Default OS device tree blob address"
+	default 0x83000000
+
+config RAMDISK_ADDR
+	hex "Default ramdisk address to be used by the OS"
+	default 0x90000000
+
 endif
