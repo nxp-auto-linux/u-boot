@@ -23,10 +23,6 @@
 /* Increase max gunzip size */
 #define CONFIG_SYS_BOOTM_LEN	(SZ_64M)
 
-#ifndef CONFIG_XEN_SUPPORT
-#  define CONFIG_ARMV8_SWITCH_TO_EL1
-#endif
-
 #if defined(CONFIG_NO_LINUX_EARLY_CONSOLE)
 #  define LINUX_EARLY_CONSOLE ""
 #else
