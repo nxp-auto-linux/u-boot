@@ -29,4 +29,11 @@ config RAMDISK_ADDR
 	hex "Default ramdisk address to be used by the OS"
 	default 0xc0000000
 
+config MEM_BOOT
+	bool "Boot kernel images from DDR"
+	default n
+	help
+	  Enable this option if the kernel images are already loaded in memory
+	  (eg. DDR), which is a common scenario in Simulator/Emulator case.
+
 endif
