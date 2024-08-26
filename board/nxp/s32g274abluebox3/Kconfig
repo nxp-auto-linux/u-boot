@@ -30,6 +30,9 @@ config SYS_I2C_EEPROM_ADDR
 config SYS_I2C_EEPROM_ADDR_LEN
 	default 2 if ID_EEPROM
 
+config OF_BOARD_SETUP
+	default y
+
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
 	depends on PHY_S32CC_SERDES
