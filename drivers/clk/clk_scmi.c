@@ -483,38 +483,13 @@ static int gate_scmi_clk_id(struct udevice *dev, unsigned long clk_id,
 	return scmi_to_linux_errno(out.status);
 }
 
-static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
-			    char *const argv[])
+static int process_clocks_by_name(struct udevice *dev, const char *name_part, bool enable)
 {
 	size_t num_clocks, i;
-	struct udevice *dev;
-	unsigned long id;
-	int ret, enable;
-	char *name, *res;
-
-	if (argc < 4)
-		return CMD_RET_USAGE;
-
-	ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &dev);
-	if (ret) {
-		printf("Failed to get device '%s'\n", argv[1]);
-		return CMD_RET_FAILURE;
-	}
-
-	if (simple_strtoul(argv[3], NULL, 10))
-		enable = 1;
-	else
-		enable = 0;
-
-	/* Is it a number ?*/
-	if (!strict_strtoul(argv[2], 10, &id)) {
-		if (gate_scmi_clk_id(dev, id, enable)) {
-			printf("Failed to control the clock %lu\n", id);
-			return CMD_RET_FAILURE;
-		}
-
-		return CMD_RET_SUCCESS;
-	}
+	char name[SCMI_CLOCK_NAME_LENGTH_MAX];
+	char *res;
+	int ret;
+	u32 attr;
 
 	ret = scmi_clk_get_num_clock(dev, &num_clocks);
 	if (ret) {
@@ -524,14 +499,12 @@ static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	/* Look for clocks containing the given string */
 	for (i = 0; i < num_clocks; i++) {
-		if (scmi_clk_get_attibute(dev, i, &name))
+		if (scmi_clk_get_attribute(dev, i, name, &attr))
 			continue;
 
-		res = strstr(name, argv[2]);
+		res = strstr(name, name_part);
 		if (res)
 			printf("## Setting %s clock ...\n", name);
-
-		free(name);
 
 		if (!res)
 			continue;
@@ -540,10 +513,48 @@ static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
 			printf("Failed to control the clock %lu\n", i);
 			return CMD_RET_FAILURE;
 		}
-
 	}
 
 	return CMD_RET_SUCCESS;
+}
+
+static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
+			    char *const argv[])
+{
+	struct udevice *dev;
+	unsigned long id;
+	int ret, enable;
+
+	if (argc < 3 || argc > 4)
+		return CMD_RET_USAGE;
+
+	enable = simple_strtoul(argv[argc - 1], NULL, 10) ? 1 : 0;
+
+	if (argc == 4) {
+		ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &dev);
+		if (ret) {
+			printf("Failed to get device '%s'\n", argv[1]);
+			return CMD_RET_FAILURE;
+		}
+	} else {
+		ret = uclass_get_device_by_driver(UCLASS_CLK, DM_DRIVER_GET(scmi_clock), &dev);
+		if (ret) {
+			printf("Failed to get the SCMI clock device\n");
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	/* Is it a number ?*/
+	if (!strict_strtoul(argv[argc - 2], 10, &id)) {
+			if (gate_scmi_clk_id(dev, id, enable)) {
+				printf("Failed to control the clock %lu\n", id);
+				return CMD_RET_FAILURE;
+			}
+			printf("## Setting %lu clock ...\n", id);
+			return CMD_RET_SUCCESS;
+	}
+	
+	return process_clocks_by_name(dev, argv[argc - 2], enable);
 }
 
 static struct cmd_tbl cmd_clk_sub[] = {
@@ -572,7 +583,9 @@ static int do_scmi_clk(struct cmd_tbl *cmdtp, int flag, int argc,
 
 #ifdef CONFIG_SYS_LONGHELP
 static char scmi_clk_help_text[] =
-	"gate [device_name] [clk] [enable/disable]- Turn on/off a clock";
+	"gate [device_name] [clk] [1/0] - Turn on/off a clock\n"
+	"\tThe argument 'device_name' is optional\n"
+	"\tThe argument 'clk' specifies the name of the clock or SCMI clock ID\n";
 #endif
 
 U_BOOT_CMD(scmi_clk, 5, 1, do_scmi_clk, "SCMI CLK sub-system",
