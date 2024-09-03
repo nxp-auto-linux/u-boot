@@ -33,3 +33,7 @@ following configuration options can be used in this scope:
 *   `CONFIG_SYS_LOAD_ADDR`: Specifies the address of the OS image.
 *   `CONFIG_DTB_ADDR`: Specifies the address of the OS device tree blob.
 *   `CONFIG_RAMDISK_ADDR`: Specifies the address of the OS ramdisk.
+
+Other customizable options:
+*   `CONFIG_MEM_BOOT`: Enable this option if the kernel images are already
+  loaded in memory.
