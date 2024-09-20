@@ -62,6 +62,31 @@ config TARGET_S32G399ASOM
 	select SPI_FLASH_SOFT_RESET
 	select SPI_FLASH_SOFT_RESET_ON_BOOT
 
+config TARGET_S32G399ABASE
+	bool "Support S32G3-VC-BASE board"
+	help
+	  This board is based on S32G3 family of SoCs. It is equipped with
+	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports, 2 Generic PCIe slots,
+	  2 M.2 PCIe slots, 8 LLCE CAN ports, serial port, I2C and DSPI.
+	  It is intended to be used as a base board in conjunction with
+	  up to 4 S32 based SOM boards, connected through dedicated PCIe and Ethernet
+	  interfaces.
+	imply ADC
+	imply CMD_EEPROM
+	imply CMD_PMIC
+	imply DM_PMIC
+	imply DM_PMIC_VR5510
+	imply I2C_EEPROM
+	imply NXP_S32CC_BOARD_COMMON
+	imply PHY
+	imply PHY_MICREL
+	imply PHY_MICREL_KSZ90X1
+	imply SARADC_S32CC
+	select SPI_FLASH_MACRONIX
+	select SPI_FLASH_MX25UW51245G
+	select SPI_FLASH_SOFT_RESET
+	select SPI_FLASH_SOFT_RESET_ON_BOOT
+
 config TARGET_S32G399AEMU
 	bool "Support S32G399A ZeBu"
 	select TARGET_TYPE_S32CC_EMULATOR
@@ -76,6 +101,7 @@ source "board/nxp/s32g399ardb3/Kconfig"
 source "board/nxp/s32g3xxaevb/Kconfig"
 source "board/nxp/s32g3xxaevb3/Kconfig"
 source "board/nxp/s32g399asom/Kconfig"
+source "board/nxp/s32g399abase/Kconfig"
 source "board/nxp/s32g399aemu/Kconfig"
 
 endif
