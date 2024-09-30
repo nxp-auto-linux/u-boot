@@ -719,6 +719,12 @@ struct ufs_hba {
  */
 #define UFSHCD_QUIRK_BROKEN_LCC				0x1
 
+/*
+ * This quirk needs to be enabled if the host controller has
+ * 64-bit addressing supported capability but it doesn't work.
+ */
+#define UFSHCD_QUIRK_BROKEN_64BIT_ADDRESS		0x2
+
 	/* Virtual memory reference */
 	struct utp_transfer_cmd_desc *ucdl;
 	struct utp_transfer_req_desc *utrdl;
