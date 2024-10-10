@@ -45,9 +45,9 @@
 #define S32CC_FDT_ADDR			0x83000000
 #define S32CC_RAMDISK_ADDR		0x90000000
 
-#define MMC_PART_FAT			1
-#define MMC_PART_EXT			2
-#define MMC_ROOT			"/dev/mmcblk0p2"
+#define MMC_PART_FAT			2
+#define MMC_PART_EXT			3
+#define MMC_ROOT			"/dev/mmcblk0p3"
 
 #define NFSRAMFS_ADDR			"-"
 #define NFSRAMFS_TFTP_CMD		""
