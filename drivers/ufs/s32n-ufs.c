@@ -6,6 +6,7 @@
 #include <common.h>
 #include <dm.h>
 #include <ufs.h>
+#include <linux/io.h>
 #include <dm/device_compat.h>
 
 #include "ufs.h"
@@ -34,7 +35,16 @@ static struct ufs_hba_ops s32n_hba_ops = {
 
 static int s32n_ufs_pltfm_probe(struct udevice *dev)
 {
-	int err = ufshcd_probe(dev, &s32n_hba_ops);
+	fdt_addr_t addr;
+	fdt_size_t size;
+	int err;
+
+	addr = dev_read_addr_size(dev, "reg", &size);
+
+	if (!devm_ioremap(dev, addr, size))
+		return -ENOMEM;
+
+	err = ufshcd_probe(dev, &s32n_hba_ops);
 
 	if (err)
 		dev_err(dev, "ufshcd_probe() failed %d\n", err);
