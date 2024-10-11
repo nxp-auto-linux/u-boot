@@ -8,5 +8,5 @@
 #include <configs/s32g3.h>
 
 #define EXTRA_BOOT_ARGS			""
-#define FDT_FILE			"s32g399a-base.dtb"
+#define FDT_FILE			"s32g399a-vc-base.dtb"
 #endif
