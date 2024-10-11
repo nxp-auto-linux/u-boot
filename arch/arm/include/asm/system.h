@@ -311,6 +311,7 @@ void mmu_map_region(phys_addr_t start, u64 size, bool emerg);
  * @size:  Size of the region
  * @aatrs: New attributes
  */
+void mmu_map_region_attrs(phys_addr_t addr, u64 size, u64 attrs, bool emergency);
 void mmu_change_region_attr(phys_addr_t start, size_t size, u64 attrs);
 
 /**
