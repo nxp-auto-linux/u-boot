@@ -24,7 +24,7 @@ config SYS_EEPROM_SIZE
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
 	depends on PHY_S32CC_SERDES
-	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=1G,an=0;xpcs1_1:speed=1G"
+	default "serdes0:mode=pcie,clock=ext;pcie0:mode=rc;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5,an=0;xpcs1_1:speed=1G"
 	help
 	  The configuration for the SerDes modules, stored in
 	  the variable 'hwconfig'.
