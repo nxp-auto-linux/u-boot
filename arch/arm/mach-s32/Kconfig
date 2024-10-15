@@ -101,11 +101,14 @@ config NXP_S32N
 	imply CMD_PCI
 	imply CMD_UFS
 	imply CMD_GPT
+	imply DEBUG_UART
+	imply DEBUG_UART_SKIP_INIT
 	imply DM_SCSI
 	imply FS_FAT
 	imply LOG
 	imply MISC
 	imply OF_HAS_PRIOR_STAGE
+	imply PANIC_HANG
 	imply PCI
 	imply PCIE_ECAM_GENERIC
 	imply SCSI
@@ -139,9 +142,11 @@ config CUSTOM_SYS_TEXT_BASE
 
 config SYS_TEXT_BASE
 	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
+	default 0xff7a0000 if ARCH_S32N79
 	default 0xff8a0000
 
 config SYS_LOAD_ADDR
+	default 0x90000000 if ARCH_S32N79
 	default 0x80000000
 
 config CUSTOM_SYS_DATA_BASE
@@ -153,6 +158,7 @@ config CUSTOM_SYS_DATA_BASE
 
 config SYS_DATA_BASE
 	hex "Data Base" if CUSTOM_SYS_DATA_BASE
+	default 0xff700000 if ARCH_S32N79
 	default 0xff800000
 	help
 	  U-Boot data base address in DDR.

@@ -11,7 +11,6 @@ config TARGET_S32N79SIM
 	bool "Support S32N79SIM simulator"
 	help
 	  This board is based on the S32N79 simulator.
-	select TARGET_TYPE_S32N79_SIMULATOR
 
 endchoice
 
@@ -23,6 +22,14 @@ config ENV_FAT_INTERFACE
 
 config ENV_FAT_DEVICE_AND_PART
 	default "0:3"
+
+if DEBUG_UART
+
+# Use UART0 by default
+config DEBUG_UART_BASE
+	default 0x4A030000
+
+endif
 
 source "board/nxp/s32n79sim/Kconfig"
 
