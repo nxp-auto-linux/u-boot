@@ -12,4 +12,10 @@ config SYS_BOARD
 config NR_DRAM_BANKS
 	default 1
 
+if DEBUG_UART
+
+config DEBUG_UART_CLOCK
+	default 100000000
+endif
+
 endif
