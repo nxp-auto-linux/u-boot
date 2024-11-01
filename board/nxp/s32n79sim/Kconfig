@@ -12,6 +12,9 @@ config SYS_BOARD
 config NR_DRAM_BANKS
 	default 1
 
+config ENV_FAT_FILE
+	default "/FIRMWARE/NXP/s32n79sim/u-boot/env.txt"
+
 if DEBUG_UART
 
 config DEBUG_UART_CLOCK
