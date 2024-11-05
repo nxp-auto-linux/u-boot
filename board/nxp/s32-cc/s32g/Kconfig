@@ -65,3 +65,21 @@ config NXP_S32G274ABLUEBOX3_BOARD
 	select SPI_FLASH_STMICRO
 	select SPI_FLASH_SOFT_RESET
 	select SPI_FLASH_SOFT_RESET_ON_BOOT
+
+config NXP_S32G3VCBASE_BOARD
+	bool
+	default n
+	select NXP_S32G3VC_BOARD
+
+config NXP_S32G3VCSOM_BOARD
+	bool
+	default n
+	select NXP_S32G3VC_BOARD
+
+config NXP_S32G3VC_BOARD
+	bool
+	default n
+	imply BOARD_LATE_INIT
+	imply NXP_S32CC_BOARD_COMMON
+	select SYSINFO
+	select SYSINFO_GPIO
