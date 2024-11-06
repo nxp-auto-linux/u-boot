@@ -15,7 +15,7 @@ config TARGET_S32N79SIM
 endchoice
 
 config ENV_IS_IN_FAT
-	default y
+	default y if !MEM_BOOT
 
 config ENV_FAT_INTERFACE
 	default "scsi"
