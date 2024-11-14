@@ -70,11 +70,11 @@ config NXP_PFENG_FW_NAME
 config NXP_PFENG_FW_PART
 	string "PFE firmware partition"
 	depends on NXP_PFENG_STANDALONE
-	default "0:1" if NXP_PFENG_FW_LOC_SDCARD
-	default "0x030a0000" if NXP_PFENG_FW_LOC_QSPI
+	default "0:2" if NXP_PFENG_FW_LOC_SDCARD
+	default "0x32c0000" if NXP_PFENG_FW_LOC_QSPI
 	help
 	  Partition containing the firmware file.
-	  For "sdcard" it's usually the first device's boot partition, so "0:1".
+	  For "sdcard" currently it's the second partition: "0:2".
 	  For "qspi" it's the address of reserved memory partition.
 
 config NXP_PFENG_SLAVE_MANAGE_COHERENCY
