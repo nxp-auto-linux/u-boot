@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  */
 
 #include <common.h>
 #include <dm.h>
 #include <misc.h>
+#include <regmap.h>
+#include <syscon.h>
 #include <asm/io.h>
 #include <dm/device.h>
+#include <dm/device_compat.h>
+#include <linux/err.h>
 #include <dt-bindings/nvmem/s32cc-gpr-nvmem.h>
 #include <dt-bindings/nvmem/s32g-gpr-nvmem.h>
 #include <dt-bindings/nvmem/s32r45-gpr-nvmem.h>
@@ -53,7 +57,7 @@
 
 struct s32cc_gpr {
 	const struct s32cc_gpr_plat *plat;
-	void __iomem *base;
+	struct regmap *regmap;
 };
 
 struct s32cc_gpr_mapping {
@@ -202,10 +206,14 @@ static int s32cc_gpr_read(struct udevice *dev, int offset, void *buf, int size)
 	if (ret)
 		return -EINVAL;
 
-	val = readl(s32cc_gpr_data->base + mapping->gpr_off + mapping->reg_off);
-	val = (val & mapping->mask) >> mapping->shift;
+	ret = regmap_read(s32cc_gpr_data->regmap,
+			  mapping->gpr_off + mapping->reg_off, &val);
+	if (ret)
+		return ret;
 
+	val = (val & mapping->mask) >> mapping->shift;
 	*buf32 = val;
+
 	return size;
 }
 
@@ -215,8 +223,8 @@ static int s32cc_gpr_write(struct udevice *dev, int offset, const void *buf,
 	struct s32cc_gpr *s32cc_gpr_data = dev_get_plat(dev);
 	const struct s32cc_gpr_mapping *mapping = NULL;
 	const struct s32cc_gpr_plat *plat = s32cc_gpr_data->plat;
-	u32 val, max_val, reg;
 	const u32 *buf32 = buf;
+	u32 val, max_val;
 	int ret;
 
 	if (size != sizeof(*buf32))
@@ -232,10 +240,12 @@ static int s32cc_gpr_write(struct udevice *dev, int offset, const void *buf,
 	if (val > max_val)
 		return -EINVAL;
 
-	reg = readl(s32cc_gpr_data->base + mapping->gpr_off + mapping->reg_off);
-	reg = (reg & ~mapping->mask) |
-	      ((val << mapping->shift) & mapping->mask);
-	writel(reg, s32cc_gpr_data->base + mapping->gpr_off + mapping->reg_off);
+	ret = regmap_update_bits(s32cc_gpr_data->regmap,
+				 mapping->gpr_off + mapping->reg_off,
+				 mapping->mask,
+				 val << mapping->shift);
+	if (ret)
+		return ret;
 
 	return size;
 }
@@ -244,9 +254,12 @@ static int s32cc_gpr_set_plat(struct udevice *dev)
 {
 	struct s32cc_gpr *s32cc_gpr_data = dev_get_plat(dev);
 
-	s32cc_gpr_data->base = dev_read_addr_ptr(dev);
-	if (!s32cc_gpr_data->base)
-		return -EINVAL;
+	s32cc_gpr_data->regmap = syscon_node_to_regmap(dev_ofnode(dev->parent));
+	if (IS_ERR(s32cc_gpr_data->regmap)) {
+		dev_err(dev, "Failed to retrieve regmap: %ld!\n",
+			PTR_ERR(s32cc_gpr_data->regmap));
+		return PTR_ERR(s32cc_gpr_data->regmap);
+	}
 
 	s32cc_gpr_data->plat = (struct s32cc_gpr_plat *)
 		dev_get_driver_data(dev);
