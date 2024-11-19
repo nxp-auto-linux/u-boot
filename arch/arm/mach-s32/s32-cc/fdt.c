@@ -596,6 +596,27 @@ static void ft_fixup_enet_pfe(void *fdt)
 	}
 }
 
+static void ft_fixup_stdout_path(void *blob)
+{
+	const char *stdout_path_prop = "stdout-path";
+	const char *chosen_node = "/chosen";
+	int offset, ret;
+
+	offset = fdt_path_offset(blob, chosen_node);
+	if (offset == -FDT_ERR_NOTFOUND) {
+		pr_err("Failed to remove '%s' prop: '%s' node not found\n",
+		       stdout_path_prop, chosen_node);
+		return;
+	}
+
+	ret = fdt_delprop(blob, offset, stdout_path_prop);
+	if (ret) {
+		pr_err("Failed to remove '%s' prop: %s\n", stdout_path_prop,
+		       fdt_strerror(ret));
+		return;
+	}
+}
+
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
@@ -650,6 +671,11 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 		if (ret)
 			return ret;
 	}
+
+	if (CONFIG_IS_ENABLED(XEN_SUPPORT) &&
+	    CONFIG_IS_ENABLED(OF_STDOUT_VIA_ALIAS))
+		ft_fixup_stdout_path(blob);
+
 exit:
 	return ret;
 }
