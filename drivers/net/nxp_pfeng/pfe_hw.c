@@ -257,8 +257,13 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 {
 	struct pfe_gpi_cfg gpi_cfg;
 	void __iomem *gpi_base;
-	u32 reg, ii;
+	u32 reg, ii, lmem_hdr_size;
 	enum pfe_hw_gpi_blocks gpi_id;
+
+	if (pfe->on_g3)
+		lmem_hdr_size = PFE_CFG_LMEM_HDR_SIZE_G3;
+	else
+		lmem_hdr_size = PFE_CFG_LMEM_HDR_SIZE_G2;
 
 	for (gpi_id = PFENG_EGPI1; gpi_id < PFENG_GPIS_COUNT; gpi_id++) {
 		gpi_base = pfe_hw_get_gpi_cfg(pfe, gpi_id, &gpi_cfg);
@@ -268,10 +273,11 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 		/* Reset GPI */
 		setbits_32(pfe_hw_reg_addr(gpi_base, GPI_CTRL), 0x2U);
 
-		if (read_poll_timeout(readl, pfe_hw_reg_addr(gpi_base, GPI_CTRL), reg,
+		if (read_poll_timeout(readl, reg,
 				      !(reg & 0x2U),
 				      PFE_HW_BLOCK_SLEEP_MS,
-				      PFE_HW_BLOCK_RESET_TIMEOUT_MS) < 0) {
+				      PFE_HW_BLOCK_RESET_TIMEOUT_MS,
+				      pfe_hw_reg_addr(gpi_base, GPI_CTRL)) < 0) {
 			dev_err(pfe->cfg->dev, "Init failed GPI%d\n", gpi_id);
 			return -ETIMEDOUT;
 		}
@@ -309,7 +315,7 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 		reg = (gpi_cfg.alloc_retry_cycles << 16) | GPI_DDR_BUF_EN | GPI_LMEM_BUF_EN;
 		pfe_hw_write_reg(gpi_base, GPI_RX_CONFIG, reg);
 		/*	GPI_HDR_SIZE */
-		reg = (PFE_CFG_DDR_HDR_SIZE << 16) | PFE_CFG_LMEM_HDR_SIZE;
+		reg = (PFE_CFG_DDR_HDR_SIZE << 16) | lmem_hdr_size;
 		pfe_hw_write_reg(gpi_base, GPI_HDR_SIZE, reg);
 		/*	GPI_BUF_SIZE */
 		reg = (PFE_CFG_DDR_BUF_SIZE << 16) | PFE_CFG_LMEM_BUF_SIZE;
@@ -331,7 +337,7 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 		/*	GPI_DDR_DATA_OFFSET */
 		pfe_hw_write_reg(gpi_base, GPI_DDR_DATA_OFFSET, PFE_CFG_DDR_HDR_SIZE);
 		pfe_hw_write_reg(gpi_base, GPI_LMEM_DATA_OFFSET, 0x30U);
-		pfe_hw_write_reg(gpi_base, GPI_LMEM_SEC_BUF_DATA_OFFSET, PFE_CFG_LMEM_HDR_SIZE);
+		pfe_hw_write_reg(gpi_base, GPI_LMEM_SEC_BUF_DATA_OFFSET, lmem_hdr_size);
 		pfe_hw_write_reg(gpi_base, GPI_TMLF_TX, gpi_cfg.gpi_tmlf_txthres);
 		pfe_hw_write_reg(gpi_base, GPI_DTX_ASEQ, gpi_cfg.gpi_dtx_aseq_len);
 
@@ -378,10 +384,11 @@ static int pfe_hw_init_tmu(struct pfe_hw *pfe)
 
 	pfe_hw_write(pfe, TMU_CTRL, 0x1U);
 
-	if (read_poll_timeout(readl, pfe_hw_addr(pfe, TMU_CTRL), reg,
+	if (read_poll_timeout(readl, reg,
 			      !(reg & 0x1U),
 			      PFE_HW_BLOCK_SLEEP_MS,
-			      PFE_HW_BLOCK_RESET_TIMEOUT_MS) < 0)
+			      PFE_HW_BLOCK_RESET_TIMEOUT_MS,
+			      pfe_hw_addr(pfe, TMU_CTRL)) < 0)
 		dev_err(pfe->cfg->dev, "FATAL: TMU reset timed-out\n");
 
 	pfe_hw_write(pfe, TMU_PHY0_TDQ_CTRL, 0x0U); /* EMAC0 */
@@ -392,10 +399,11 @@ static int pfe_hw_init_tmu(struct pfe_hw *pfe)
 	/*	Reset */
 	pfe_hw_write(pfe, TMU_CTRL, 0x1U);
 
-	if (read_poll_timeout(readl, pfe_hw_addr(pfe, TMU_CTRL), reg,
+	if (read_poll_timeout(readl, reg,
 			      !(reg & 0x1U),
 			      PFE_HW_BLOCK_SLEEP_MS,
-			      PFE_HW_BLOCK_RESET_TIMEOUT_MS) < 0)
+			      PFE_HW_BLOCK_RESET_TIMEOUT_MS,
+			      pfe_hw_addr(pfe, TMU_CTRL)) < 0)
 		dev_err(pfe->cfg->dev, "FATAL: TMU reset timed-out\n");
 
 	/*	INQ */
@@ -476,10 +484,11 @@ static int pfe_hw_init_tmu(struct pfe_hw *pfe)
 				     (255U << 11) | (0U << 2) | (0x1U << 0));
 			pfe_hw_write(pfe, TMU_CNTX_CMD, 0x3U);
 			/*	Wait until command has been finished */
-			if (read_poll_timeout(readl, pfe_hw_addr(pfe, TMU_CNTX_CMD), reg,
+			if (read_poll_timeout(readl, reg,
 					      (reg & 0x4U),
 					      PFE_HW_BLOCK_SLEEP_MS,
-					      PFE_HW_BLOCK_RESET_TIMEOUT_MS) < 0) {
+					      PFE_HW_BLOCK_RESET_TIMEOUT_MS,
+					      pfe_hw_addr(pfe, TMU_CNTX_CMD)) < 0) {
 				dev_err(pfe->cfg->dev, "FATAL: Set TMU Queue mode timed-out\n");
 				return -ETIMEDOUT;
 			}
@@ -537,12 +546,13 @@ static int pfe_hw_soft_reset_g3(struct pfe_hw *pfe)
 
 	mdelay(10);
 
-	if (read_poll_timeout(readl, pfe_hw_reg_addr(wsp_base, WSP_DBUG_BUS1), reg,
+	if (read_poll_timeout(readl, reg,
 			      (reg & (SOFT_RESET_DONE |
 				      BMU1_SOFT_RESET_DONE |
 				      BMU2_SOFT_RESET_DONE)),
 			      PFE_HW_G3_SOFT_RESET_SLEEP_MS,
-			      PFE_HW_G3_SOFT_RESET_TIMEOUT_MS) < 0)
+			      PFE_HW_G3_SOFT_RESET_TIMEOUT_MS,
+			      pfe_hw_reg_addr(wsp_base, WSP_DBUG_BUS1)) < 0)
 		return -ETIME;
 
 	setbits_32(pfe_hw_reg_addr(wsp_base, WSP_GENERIC_CONTROL),

@@ -2,7 +2,7 @@
 /*
  *  Copyright (c) 2019 Imagination Technologies Limited
  *  Copyright (c) 2020-2021 Imagination Technologies Limited
- *  Copyright 2018-2023 NXP
+ *  Copyright 2018-2024 NXP
  */
 
 #include <elf.h>
@@ -339,6 +339,7 @@ int pfe_hw_pe_init_class(struct pfe_hw_pe *class, const struct pfe_hw_cfg *cfg)
 	Elf32_Ehdr *ehdr = NULL;
 	Elf32_Phdr *phdr = NULL;
 	int ret = 0;
+	u32 reg;
 	u8 i;
 
 	if (!cfg->fw_class_data || cfg->fw_class_size == 0U) {
@@ -388,7 +389,12 @@ int pfe_hw_pe_init_class(struct pfe_hw_pe *class, const struct pfe_hw_cfg *cfg)
 	pfe_hw_write(class, CLASS_L4_CHKSUM, 0U);
 
 	/* Configure the LMEM header size and RO  */
-	pfe_hw_write(class, CLASS_HDR_SIZE, (PFE_CFG_RO_HDR_SIZE << 16) | PFE_CFG_LMEM_HDR_SIZE);
+	if (cfg->on_g3)
+		reg = (PFE_CFG_RO_HDR_SIZE_G3 << 16) | PFE_CFG_LMEM_HDR_SIZE_G3;
+	else
+		reg = (PFE_CFG_RO_HDR_SIZE_G2 << 16) | PFE_CFG_LMEM_HDR_SIZE_G2;
+	pfe_hw_write(class, CLASS_HDR_SIZE, reg);
+
 	pfe_hw_write(class, CLASS_LMEM_BUF_SIZE, PFE_CFG_LMEM_BUF_SIZE);
 
 	if (cfg->on_g3)
