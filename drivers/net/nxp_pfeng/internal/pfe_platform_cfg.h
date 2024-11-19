@@ -2,7 +2,7 @@
 /*
  *  Copyright (c) 2019 Imagination Technologies Limited
  *  Copyright (c) 2020-2021 Imagination Technologies Limited
- *  Copyright 2018-2023 NXP
+ *  Copyright 2018-2024 NXP
  */
 
 #ifndef PFE_PLATFORM_CFG_H_
@@ -55,7 +55,8 @@
 	((1UL << PFE_CFG_BMU1_BUF_SIZE) * PFE_CFG_BMU1_BUF_COUNT)
 
 /* LMEM defines */
-#define PFE_CFG_LMEM_HDR_SIZE	  0x0070U
+#define PFE_CFG_LMEM_HDR_SIZE_G2  0x0070U
+#define PFE_CFG_LMEM_HDR_SIZE_G3  0x0030U
 #define PFE_CFG_LMEM_BUF_SIZE_LN2 0x8U /* 256 */
 #define PFE_CFG_LMEM_BUF_SIZE	  BIT_32(PFE_CFG_LMEM_BUF_SIZE_LN2)
 
@@ -65,6 +66,7 @@
 #define PFE_CFG_DDR_BUF_SIZE	 BIT_32(PFE_CFG_DDR_BUF_SIZE_LN2)
 
 /* RO defines */
-#define PFE_CFG_RO_HDR_SIZE 0x0010U
+#define PFE_CFG_RO_HDR_SIZE_G2	0x0100U
+#define PFE_CFG_RO_HDR_SIZE_G3	0x0200U
 
 #endif /* PFE_PLATFORM_CFG_H_ */

@@ -257,8 +257,13 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 {
 	struct pfe_gpi_cfg gpi_cfg;
 	void __iomem *gpi_base;
-	u32 reg, ii;
+	u32 reg, ii, lmem_hdr_size;
 	enum pfe_hw_gpi_blocks gpi_id;
+
+	if (pfe->on_g3)
+		lmem_hdr_size = PFE_CFG_LMEM_HDR_SIZE_G3;
+	else
+		lmem_hdr_size = PFE_CFG_LMEM_HDR_SIZE_G2;
 
 	for (gpi_id = PFENG_EGPI1; gpi_id < PFENG_GPIS_COUNT; gpi_id++) {
 		gpi_base = pfe_hw_get_gpi_cfg(pfe, gpi_id, &gpi_cfg);
@@ -309,7 +314,7 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 		reg = (gpi_cfg.alloc_retry_cycles << 16) | GPI_DDR_BUF_EN | GPI_LMEM_BUF_EN;
 		pfe_hw_write_reg(gpi_base, GPI_RX_CONFIG, reg);
 		/*	GPI_HDR_SIZE */
-		reg = (PFE_CFG_DDR_HDR_SIZE << 16) | PFE_CFG_LMEM_HDR_SIZE;
+		reg = (PFE_CFG_DDR_HDR_SIZE << 16) | lmem_hdr_size;
 		pfe_hw_write_reg(gpi_base, GPI_HDR_SIZE, reg);
 		/*	GPI_BUF_SIZE */
 		reg = (PFE_CFG_DDR_BUF_SIZE << 16) | PFE_CFG_LMEM_BUF_SIZE;
@@ -331,7 +336,7 @@ static int pfe_hw_init_gpi(struct pfe_hw *pfe)
 		/*	GPI_DDR_DATA_OFFSET */
 		pfe_hw_write_reg(gpi_base, GPI_DDR_DATA_OFFSET, PFE_CFG_DDR_HDR_SIZE);
 		pfe_hw_write_reg(gpi_base, GPI_LMEM_DATA_OFFSET, 0x30U);
-		pfe_hw_write_reg(gpi_base, GPI_LMEM_SEC_BUF_DATA_OFFSET, PFE_CFG_LMEM_HDR_SIZE);
+		pfe_hw_write_reg(gpi_base, GPI_LMEM_SEC_BUF_DATA_OFFSET, lmem_hdr_size);
 		pfe_hw_write_reg(gpi_base, GPI_TMLF_TX, gpi_cfg.gpi_tmlf_txthres);
 		pfe_hw_write_reg(gpi_base, GPI_DTX_ASEQ, gpi_cfg.gpi_dtx_aseq_len);
 
