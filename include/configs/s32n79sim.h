@@ -8,6 +8,7 @@
 #include <configs/s32n79.h>
 
 #define FDT_FILE		"/FIRMWARE/NXP/s32n79sim/linux/s32n79-simulator.dtb"
+#define IMAGE_FILE		"/BOOT/linux/Image"
 
 #define MMC_PART_FAT			3
 #define MMC_ROOT			"/dev/mmcblk0p4"
