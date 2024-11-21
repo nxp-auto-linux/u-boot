@@ -49,6 +49,8 @@
 #define MMC_PART_EXT			3
 #define MMC_ROOT			"/dev/mmcblk0p3"
 
+#define IMAGE_FILE			"Image"
+
 #define NFSRAMFS_ADDR			"-"
 #define NFSRAMFS_TFTP_CMD		""
 

@@ -46,7 +46,7 @@
 	"fdt_fixups=" FDT_FIXUP "\0" \
 	"fdt_high=" __stringify(S32_FDT_HIGH_ADDR) "\0" \
 	"fdt_override=;\0" \
-	"image=Image\0" \
+	"image=" IMAGE_FILE "\0" \
 	"initrd_high=" __stringify(S32_INITRD_HIGH_ADDR) "\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
 		 "run fdt_override;\0" \
