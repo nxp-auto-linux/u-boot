@@ -48,6 +48,7 @@ obj-$(CONFIG_MVEBU_A3700_SPI) += mvebu_a3700_spi.o
 obj-$(CONFIG_MXC_SPI) += mxc_spi.o
 obj-$(CONFIG_MXS_SPI) += mxs_spi.o
 obj-$(CONFIG_NXP_FSPI) += nxp_fspi.o
+obj-$(CONFIG_NXP_XSPI) += nxp_xspi.o
 obj-$(CONFIG_ATCSPI200_SPI) += atcspi200_spi.o
 obj-$(CONFIG_OCTEON_SPI) += octeon_spi.o
 obj-$(CONFIG_OMAP3_SPI) += omap3_spi.o
