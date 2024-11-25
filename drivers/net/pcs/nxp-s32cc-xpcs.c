@@ -517,16 +517,11 @@ static bool is_pgood_state(struct s32cc_xpcs *xpcs)
 
 static bool is_not_in_reset(struct s32cc_xpcs *xpcs)
 {
-	u32 val = XPCS_READ(xpcs, VR_MII_DIG_CTRL1);
+	u32 val;
 
-	return !(val & VR_RST);
-}
+	val = XPCS_READ(xpcs, SR_MII_CTRL);
 
-static bool is_rx_link_up(struct s32cc_xpcs *xpcs)
-{
-	u32 val = XPCS_READ(xpcs, SR_MII_STS);
-
-	return val & LINK_STS;
+	return !(val & SR_RST);
 }
 
 static int xpcs_wait(struct s32cc_xpcs *xpcs, xpcs_poll_func_t func)
@@ -631,11 +626,7 @@ static int xpcs_reset_rx(struct s32cc_xpcs *xpcs)
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1,
 			RX_RST_0, 0);
 
-	ret = xpcs_wait(xpcs, is_rx_link_up);
-	if (ret)
-		dev_err(dev, "RX link is not up\n");
-
-	return ret;
+	return 0;
 }
 
 static int xpcs_ref_clk_sel(struct s32cc_xpcs *xpcs,
