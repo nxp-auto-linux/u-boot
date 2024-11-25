@@ -10,17 +10,25 @@
 #include <dm/device_compat.h>
 
 #include "ufs.h"
+#include "ufshcd-dwc.h"
 
 static int s32n_ufs_link_startup_notify(struct ufs_hba *hba,
 					enum ufs_notify_change_status status)
 {
+	int ret = 0;
+
 	switch (status) {
 	case PRE_CHANGE:
+		break;
 	case POST_CHANGE:
-		;
+		ret = ufshcd_dwc_link_startup_notify(hba, status);
+		break;
+	default:
+		ret = -EINVAL;
+		break;
 	}
 
-	return 0;
+	return ret;
 }
 
 static int s32n_ufs_init(struct ufs_hba *hba)

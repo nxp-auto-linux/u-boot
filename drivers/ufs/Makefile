@@ -5,6 +5,6 @@
 
 obj-$(CONFIG_UFS) += ufs.o ufs-uclass.o
 obj-$(CONFIG_CADENCE_UFS) += cdns-platform.o
-obj-$(CONFIG_S32N_UFS) += s32n-ufs.o
+obj-$(CONFIG_S32N_UFS) += s32n-ufs.o ufshcd-dwc.o
 obj-$(CONFIG_TI_J721E_UFS) += ti-j721e-ufs.o
 obj-$(CONFIG_UFS_AMD_VERSAL2) += ufs-amd-versal2.o ufshcd-dwc.o
