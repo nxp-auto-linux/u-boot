@@ -27,7 +27,7 @@ config DTB_ADDR
 
 config RAMDISK_ADDR
 	hex "Default ramdisk address to be used by the OS"
-	default 0xc0000000
+	default 0x94000000
 
 config MEM_BOOT
 	bool "Boot kernel images from DDR"
