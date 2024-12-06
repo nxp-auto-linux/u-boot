@@ -716,8 +716,8 @@ static inline u8 ufshcd_get_upmcrs(struct ufs_hba *hba)
  */
 static void ufshcd_cache_flush(void *addr, unsigned long size)
 {
-	uintptr_t start_addr = (uintptr_t)addr & ~(ARCH_DMA_MINALIGN - 1);
-	uintptr_t end_addr = ALIGN((uintptr_t)addr + size, ARCH_DMA_MINALIGN);
+	uintptr_t start_addr = rounddown((uintptr_t)addr, ARCH_DMA_MINALIGN);
+	uintptr_t end_addr = roundup((uintptr_t)addr + size, ARCH_DMA_MINALIGN);
 
 	flush_dcache_range(start_addr, end_addr);
 }
@@ -729,8 +729,8 @@ static void ufshcd_cache_flush(void *addr, unsigned long size)
  */
 static void ufshcd_cache_invalidate(void *addr, unsigned long size)
 {
-	uintptr_t start_addr = (uintptr_t)addr & ~(ARCH_DMA_MINALIGN - 1);
-	uintptr_t end_addr = ALIGN((uintptr_t)addr + size, ARCH_DMA_MINALIGN);
+	uintptr_t start_addr = rounddown((uintptr_t)addr, ARCH_DMA_MINALIGN);
+	uintptr_t end_addr = roundup((uintptr_t)addr + size, ARCH_DMA_MINALIGN);
 
 	invalidate_dcache_range(start_addr, end_addr);
 }
