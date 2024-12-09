@@ -78,6 +78,7 @@ config NXP_S32CC
 	select PINCTRL
 	select PINCTRL_FULL
 	select PINCTRL_S32CC
+	select POSITION_INDEPENDENT
 	select REGMAP
 	select RESET_SCMI
 	select S32CC_GPIO
@@ -135,35 +136,9 @@ config NXP_S32N
 config DEFAULT_DEVICE_TREE
 	default "s32"
 
-config CUSTOM_SYS_TEXT_BASE
-	bool "Use a custom SYS_TEXT_BASE"
-	help
-	  Enable this if you need to use a custom SYS_TEXT_BASE address.
-	  When disabled, a suitable SYS_TEXT_BASE address will be calculated
-	  automatically.
-
-config SYS_TEXT_BASE
-	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
-	default 0xff7a0000 if ARCH_S32N79
-	default 0xff8a0000
-
 config SYS_LOAD_ADDR
 	default 0x90000000 if ARCH_S32N79
 	default 0x80000000
-
-config CUSTOM_SYS_DATA_BASE
-	bool "Use a custom SYS_DATA_BASE address"
-	help
-	  Enable this if you need to define a custom SYS_DATA_BASE address.
-	  When disabled, a suitable SYS_DATA_BASE address is calculated
-	  automatically.
-
-config SYS_DATA_BASE
-	hex "Data Base" if CUSTOM_SYS_DATA_BASE
-	default 0xff700000 if ARCH_S32N79
-	default 0xff800000
-	help
-	  U-Boot data base address in DDR.
 
 config S32_MAX_DTB_SIZE
 	hex "Max size reserved for device tree in image layout"
