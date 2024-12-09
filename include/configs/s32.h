@@ -12,12 +12,6 @@
 #define S32_INITRD_HIGH_ADDR		0xffffffffffffffff
 #define S32_FDT_HIGH_ADDR		0xffffffffffffffff
 
-#define CONFIG_SYS_INIT_SP_OFFSET	(SZ_16K)
-#define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_DATA_BASE + \
-					 CONFIG_SYS_MALLOC_F_LEN + \
-					 GENERATED_GBL_DATA_SIZE + \
-					 CONFIG_SYS_INIT_SP_OFFSET)
-
 #define CONFIG_SYS_MMC_ENV_DEV		0
 
 /* Increase max gunzip size */
