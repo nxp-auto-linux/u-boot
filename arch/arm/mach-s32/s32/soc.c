@@ -16,26 +16,15 @@
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 
-void set_dtb_wr_access(bool enable)
+static inline u64 get_dtb_addr(void)
 {
-	struct mm_region *region;
-
-	region = get_mm_region(DTB_ADDR);
-	if (!region)
-		return;
-
-	if (enable)
-		region->attrs &= ~PTE_BLOCK_AP_RO;
-	else
-		region->attrs |= PTE_BLOCK_AP_RO;
+	return (u64)_start - CONFIG_S32_MAX_DTB_SIZE;
 }
 
 static int early_mmu_init(void)
 {
 	u64 pgtable_size = PGTABLE_SIZE;
-
-	/* Allow device tree fixups */
-	set_dtb_wr_access(true);
+	ulong fdt_size;
 
 	gd->arch.tlb_addr = (uintptr_t)memalign(pgtable_size, pgtable_size);
 	if (!gd->arch.tlb_addr)
@@ -44,6 +33,13 @@ static int early_mmu_init(void)
 	gd->arch.tlb_size = pgtable_size;
 	icache_enable();
 	dcache_enable();
+
+	fdt_size = fdt_totalsize(get_dtb_addr());
+	fdt_size = ALIGN(fdt_size, PAGE_SIZE);
+	/* Map DTB RW to allow device tree fixups. */
+	mmu_map_region_attrs(get_dtb_addr(), fdt_size,
+			     DDR_ATTRS | PTE_BLOCK_PXN | PTE_BLOCK_UXN,
+			     false);
 
 	return 0;
 }
@@ -66,6 +62,21 @@ int clear_bss(void)
 	clear_early_mmu_settings();
 
 	return 0;
+}
+
+void enable_caches(void)
+{
+	ulong fdt_size;
+
+	icache_enable();
+	dcache_enable();
+
+	fdt_size = fdt_totalsize(get_dtb_addr());
+	fdt_size = ALIGN(fdt_size, PAGE_SIZE);
+	/* Map DTB read only. */
+	mmu_map_region_attrs(get_dtb_addr(), fdt_size,
+			     DDR_ATTRS | PTE_BLOCK_AP_RO | PTE_BLOCK_PXN |
+			     PTE_BLOCK_UXN, false);
 }
 
 #else /* CONFIG_SYS_DCACHE_OFF */
