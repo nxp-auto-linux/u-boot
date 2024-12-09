@@ -107,10 +107,6 @@ static struct mm_region s32cc_mem_map[] = {
 	{
 		PHYS_SDRAM_1, PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE, DDR_ATTRS
 	},
-	{
-		DTB_ADDR, DTB_ADDR, DTB_SIZE,
-		DDR_ATTRS | PTE_BLOCK_AP_RO | PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	},
 #ifdef PHYS_SDRAM_2
 	{
 		PHYS_SDRAM_2, PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE, DDR_ATTRS
@@ -209,8 +205,6 @@ static void mmu_set_sram_size(void)
 
 int arch_cpu_init_dm(void)
 {
-	/* RO access for device tree */
-	set_dtb_wr_access(false);
 	mmu_set_sram_size();
 
 	return 0;
