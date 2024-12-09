@@ -6,6 +6,8 @@
 #include <fdtdec.h>
 #include <image.h>
 
+#include <asm-generic/sections.h>
+
 int board_init(void)
 {
 	return 0;
@@ -25,7 +27,7 @@ void *board_fdt_blob_setup(int *err)
 {
 	void *dtb;
 
-	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32_MAX_DTB_SIZE);
+	dtb = (void *)((ulong)_start - CONFIG_S32_MAX_DTB_SIZE);
 
 	*err = 0;
 	if (fdt_magic(dtb) != FDT_MAGIC)
