@@ -7,7 +7,7 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
- * Copyright 2017, 2019-2022 NXP
+ * Copyright 2017, 2019-2022, 2025 NXP
  */
 
 #include <asm/global_data.h>
@@ -284,20 +284,11 @@ static u16 dspi_rx(struct fsl_dspi_priv *priv)
 static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 		const void *dout, void *din, unsigned long flags)
 {
-	u16 *spi_rd16 = NULL, *spi_wr16 = NULL;
-	u8 *spi_rd = NULL, *spi_wr = NULL;
+	uint charbytes = priv->charbit / 8;
+	uint len = (bitlen / 8) / charbytes;
 	static u32 ctrl;
-	uint len = bitlen >> 3;
-
-	if (priv->charbit == 16) {
-		/* half the number of transfers */
-		len /= 2;
-		spi_wr16 = (u16 *)dout;
-		spi_rd16 = (u16 *)din;
-	} else {
-		spi_wr = (u8 *)dout;
-		spi_rd = (u8 *)din;
-	}
+	u32 pos = 0;
+	u32 data;
 
 	if ((flags & SPI_XFER_BEGIN) == SPI_XFER_BEGIN)
 		ctrl |= DSPI_TFR_CONT;
@@ -305,71 +296,38 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 	ctrl = ctrl & DSPI_TFR_CONT;
 	ctrl = ctrl | DSPI_TFR_CTAS(0) | DSPI_TFR_PCS(cs);
 
-	if (len > 1) {
-		int tmp_len = len - 1;
-		while (tmp_len--) {
+	if (len) {
+		while (len--) {
+			data = 0;
 			if ((dout != NULL) && (din != NULL)) {
-				if (priv->charbit == 16) {
-					dspi_tx(priv, ctrl, *spi_wr16++);
-					*spi_rd16++ = dspi_rx(priv);
-				}
-				else {
-					dspi_tx(priv, ctrl, *spi_wr++);
-					*spi_rd++ = dspi_rx(priv);
-				}
+				memcpy(&data, dout + pos, charbytes);
+				dspi_tx(priv, ctrl, data);
+
+				data = dspi_rx(priv);
+				memcpy(din + pos, &data, charbytes);
 			}
 
 			else if (dout != NULL) {
-				if (priv->charbit == 16)
-					dspi_tx(priv, ctrl, *spi_wr16++);
-				else
-					dspi_tx(priv, ctrl, *spi_wr++);
+				memcpy(&data, dout + pos, charbytes);
+
+				dspi_tx(priv, ctrl, data);
 				dspi_rx(priv);
 			}
 
 			else if (din != NULL) {
 				dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
-				if (priv->charbit == 16)
-					*spi_rd16++ = dspi_rx(priv);
-				else
-					*spi_rd++ = dspi_rx(priv);
+				data = dspi_rx(priv);
+				memcpy(din + pos, &data, charbytes);
 			}
-		}
 
-		len = 1;	/* remaining byte */
-	}
+			pos += charbytes;
 
-	if ((flags & SPI_XFER_END) == SPI_XFER_END)
-		ctrl &= ~DSPI_TFR_CONT;
-
-	if (len) {
-		if ((dout != NULL) && (din != NULL)) {
-			if (priv->charbit == 16) {
-				dspi_tx(priv, ctrl, *spi_wr16++);
-				*spi_rd16++ = dspi_rx(priv);
-			}
-			else {
-				dspi_tx(priv, ctrl, *spi_wr++);
-				*spi_rd++ = dspi_rx(priv);
-			}
-		}
-
-		else if (dout != NULL) {
-			if (priv->charbit == 16)
-				dspi_tx(priv, ctrl, *spi_wr16);
-			else
-				dspi_tx(priv, ctrl, *spi_wr);
-			dspi_rx(priv);
-		}
-
-		else if (din != NULL) {
-			dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
-			if (priv->charbit == 16)
-				*spi_rd16 = dspi_rx(priv);
-			else
-				*spi_rd = dspi_rx(priv);
+			if (len == 1 && ((flags & SPI_XFER_END) == SPI_XFER_END))
+				ctrl &= ~DSPI_TFR_CONT;
 		}
 	} else {
+		if ((flags & SPI_XFER_END) == SPI_XFER_END)
+			ctrl &= ~DSPI_TFR_CONT;
 		/* dummy read */
 		dspi_tx(priv, ctrl, DSPI_IDLE_VAL);
 		dspi_rx(priv);
