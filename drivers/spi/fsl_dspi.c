@@ -45,34 +45,99 @@ DECLARE_GLOBAL_DATA_PTR;
 /* max chipselect signals number */
 #define FSL_DSPI_MAX_CHIPSELECT		6
 
-/* Platform specific tx/rx fifo size */
-#define VF610_FIFO_SIZE			4
-#define LS1021A_FIFO_SIZE		4
-#define S32CC_FIFO_SIZE			5
-
 /* default SCK frequency, unit: HZ */
 #define FSL_DSPI_DEFAULT_SCK_FREQ	10000000
 
 /* tx/rx data wait timeout value, unit: us */
 #define DSPI_TXRX_WAIT_TIMEOUT		1000000
 
+/* HW IP versions */
+enum dspi_hw_ver {
+	DSPI_V1,
+	DSPI_V2,
+};
+
+/* supported platform types */
+enum {
+	LS1021A,
+	VF610,
+	S32CC,
+};
+
+struct fsl_dspi_devtype_data {
+	uint			fifo_size;
+	enum dspi_hw_ver	hw_version;
+};
+
+static const struct fsl_dspi_devtype_data devtype_data[] = {
+	[VF610] = {
+		.fifo_size		= 4,
+		.hw_version		= DSPI_V1,
+	},
+	[LS1021A] = {
+		.fifo_size		= 4,
+		.hw_version		= DSPI_V1,
+	},
+	[S32CC] = {
+		.fifo_size		= 5,
+		.hw_version		= DSPI_V1,
+	},
+};
+
 /* CTAR register pre-configure value */
-#define DSPI_CTAR_DEFAULT_VALUE		(DSPI_CTAR_TRSZ(7) | \
-					DSPI_CTAR_PCSSCK_1CLK | \
-					DSPI_CTAR_PASC(0) | \
-					DSPI_CTAR_PDT(0) | \
-					DSPI_CTAR_CSSCK(0) | \
-					DSPI_CTAR_ASC(0) | \
-					DSPI_CTAR_DT(0))
+static inline u32 dspi_get_ctar_default(enum dspi_hw_ver ver)
+{
+	u32 val = DSPI_CTAR_PCSSCK_1CLK |
+		DSPI_CTAR_PASC(0) |
+		DSPI_CTAR_PDT(0) |
+		DSPI_CTAR_CSSCK(0) |
+		DSPI_CTAR_ASC(0) |
+		DSPI_CTAR_DT(0);
+	if (ver == DSPI_V1)
+		val |= DSPI_CTAR_TRSZ(7);
+
+	return val;
+}
 
 /* CTAR register pre-configure mask */
-#define DSPI_CTAR_SET_MODE_MASK		(DSPI_CTAR_TRSZ(15) | \
-					DSPI_CTAR_PCSSCK(3) | \
-					DSPI_CTAR_PASC(3) | \
-					DSPI_CTAR_PDT(3) | \
-					DSPI_CTAR_CSSCK(15) | \
-					DSPI_CTAR_ASC(15) | \
-					DSPI_CTAR_DT(15))
+static inline u32 dspi_ctar_mode_mask(enum dspi_hw_ver ver)
+{
+	u32 val = DSPI_CTAR_PCSSCK(3) |
+		DSPI_CTAR_PASC(3) |
+		DSPI_CTAR_PDT(3) |
+		DSPI_CTAR_CSSCK(15) |
+		DSPI_CTAR_ASC(15) |
+		DSPI_CTAR_DT(15);
+	if (ver == DSPI_V1)
+		val |= DSPI_CTAR_TRSZ(15);
+
+	return val;
+}
+
+static inline u32 dspi_get_mcr_pcsis_mask(enum dspi_hw_ver ver)
+{
+	return ver == DSPI_V1 ?  DSPI_MCR_PCSIS_MASK : DSPI_V2_MCR_PCSIS_MASK;
+}
+
+static inline u32 dspi_get_tfr_pcs(enum dspi_hw_ver ver, uint cs)
+{
+	return ver == DSPI_V1 ?  DSPI_TFR_PCS(cs) : DSPI_V2_TFR_PCS(cs);
+}
+
+static inline u32 dspi_get_sr_tx_ctr(enum dspi_hw_ver ver, uint ctr)
+{
+	return ver == DSPI_V1 ? DSPI_SR_TXCTR(ctr) : DSPI_V2_FIFO_SR_TXCTR(ctr);
+}
+
+static inline u32 dspi_get_sr_rx_ctr(enum dspi_hw_ver ver, uint ctr)
+{
+	return ver == DSPI_V1 ? DSPI_SR_RXCTR(ctr) : DSPI_V2_FIFO_SR_RXCTR(ctr);
+}
+
+static inline u32 dspi_get_rfr_rxdata(enum dspi_hw_ver ver, uint rfr)
+{
+	return ver == DSPI_V1 ? DSPI_RFR_RXDATA(rfr) : DSPI_V2_RFR_RXDATA(rfr);
+}
 
 /**
  * struct fsl_dspi_plat - platform data for Freescale DSPI
@@ -101,6 +166,7 @@ struct fsl_dspi_plat {
  * @num_chipselect: Number of DSPI chipselect signals
  * @ctar_val: CTAR register configure value of per chipselect slave device
  * @regs: Point to DSPI register structure for I/O access
+ * @fsl_dspi_devtype_data: Points to device specific data structure
  */
 struct fsl_dspi_priv {
 	uint flags;
@@ -113,7 +179,32 @@ struct fsl_dspi_priv {
 	uint fifo_size;
 	uint ctar_val[FSL_DSPI_MAX_CHIPSELECT];
 	struct dspi *regs;
+	const struct fsl_dspi_devtype_data	*devtype_data;
 };
+
+uint *dspi_get_ctar_reg(struct fsl_dspi_priv *priv)
+{
+	return priv->devtype_data->hw_version == DSPI_V1 ? &priv->regs->s1.v1.ctar[0] :
+		&priv->regs->s1.v2.ctar[0];
+}
+
+uint *dspi_get_pushr_reg(struct fsl_dspi_priv *priv)
+{
+	return priv->devtype_data->hw_version == DSPI_V1 ? &priv->regs->tfr :
+		&priv->regs->s1.v2.pushr_cmd;
+}
+
+uint *dspi_get_fifo_sr_reg(struct fsl_dspi_priv *priv)
+{
+	return priv->devtype_data->hw_version == DSPI_V1 ? &priv->regs->s1.v1.sr :
+		&priv->regs->s2.v2.fsr;
+}
+
+uint *dspi_get_sr_reg(struct fsl_dspi_priv *priv)
+{
+	return priv->devtype_data->hw_version == DSPI_V1 ? &priv->regs->s1.v1.sr :
+		&priv->regs->s2.v2.sr;
+}
 
 __weak void cpu_dspi_port_conf(void)
 {
@@ -217,11 +308,11 @@ static void fsl_dspi_cfg_cs_active_state(struct fsl_dspi_priv *priv,
 static int fsl_dspi_cfg_ctar_mode(struct fsl_dspi_priv *priv,
 		uint cs, uint mode, unsigned int wordlen)
 {
-	uint bus_setup;
+	enum dspi_hw_ver ver = priv->devtype_data->hw_version;
+	uint *ctar = dspi_get_ctar_reg(priv);
+	uint bus_setup = dspi_read32(priv->flags, ctar);
 
-	bus_setup = dspi_read32(priv->flags, &priv->regs->ctar[0]);
-
-	bus_setup &= ~DSPI_CTAR_SET_MODE_MASK;
+	bus_setup &= ~dspi_ctar_mode_mask(ver);
 	bus_setup |= priv->ctar_val[cs];
 	bus_setup &= ~(DSPI_CTAR_CPOL | DSPI_CTAR_CPHA | DSPI_CTAR_LSBFE);
 
@@ -231,14 +322,15 @@ static int fsl_dspi_cfg_ctar_mode(struct fsl_dspi_priv *priv,
 		bus_setup |= DSPI_CTAR_CPHA;
 	if (mode & SPI_LSB_FIRST)
 		bus_setup |= DSPI_CTAR_LSBFE;
-	if (wordlen == 16)
+	if (ver == DSPI_V1 && wordlen == 16)
 		bus_setup |= DSPI_CTAR_TRSZ(15);
 
-	dspi_write32(priv->flags, &priv->regs->ctar[0], bus_setup);
+	dspi_write32(priv->flags, ctar, bus_setup);
 
-	priv->charbit =
-		((dspi_read32(priv->flags, &priv->regs->ctar[0]) &
-		  DSPI_CTAR_TRSZ(15)) == DSPI_CTAR_TRSZ(15)) ? 16 : 8;
+	if (ver == DSPI_V1) {
+		priv->charbit = ((dspi_read32(priv->flags, ctar) &
+			DSPI_CTAR_TRSZ(15)) == DSPI_CTAR_TRSZ(15)) ? 16 : 8;
+	}
 
 	return 0;
 }
@@ -255,37 +347,50 @@ static void fsl_dspi_clr_fifo(struct fsl_dspi_priv *priv)
 	dspi_halt(priv, 0);
 }
 
-static void dspi_tx(struct fsl_dspi_priv *priv, u32 ctrl, u16 data)
+static void dspi_tx(struct fsl_dspi_priv *priv, u32 ctrl, u32 data)
 {
+	enum dspi_hw_ver hw_ver = priv->devtype_data->hw_version;
+	u32 max_entries = priv->devtype_data->fifo_size;
+	uint *sr = dspi_get_fifo_sr_reg(priv);
 	int timeout = DSPI_TXRX_WAIT_TIMEOUT;
 
 	/* wait for empty entries in TXFIFO or timeout */
-	while (DSPI_SR_TXCTR(dspi_read32(priv->flags, &priv->regs->sr)) >= priv->fifo_size &&
+	while (dspi_get_sr_tx_ctr(hw_ver, dspi_read32(priv->flags, sr)) >= max_entries &&
 	       timeout--)
 		udelay(1);
 
-	if (timeout >= 0)
-		dspi_write32(priv->flags, &priv->regs->tfr, (ctrl | data));
-	else
+	if (timeout >= 0) {
+		if (hw_ver == DSPI_V1) {
+			dspi_write32(priv->flags, &priv->regs->tfr, (ctrl | (u16)data));
+		} else {
+			uint *pushr_cmd = dspi_get_pushr_reg(priv);
+			/* push into the cmd fifo */
+			dspi_write32(priv->flags, pushr_cmd, ctrl |
+				     DSPI_V2_PUSHR_CMD_FMSZ(priv->charbit - 1));
+			/* push into tx fifo */
+			dspi_write32(priv->flags, &priv->regs->tfr, data);
+		}
+	} else {
 		debug("dspi_tx: waiting timeout!\n");
+	}
 }
 
-static u16 dspi_rx(struct fsl_dspi_priv *priv)
+static u32 dspi_rx(struct fsl_dspi_priv *priv)
 {
+	enum dspi_hw_ver hw_ver = priv->devtype_data->hw_version;
+	uint *sr = dspi_get_fifo_sr_reg(priv);
 	int timeout = DSPI_TXRX_WAIT_TIMEOUT;
 
 	/* wait for valid entries in RXFIFO or timeout */
-	while (DSPI_SR_RXCTR(dspi_read32(priv->flags, &priv->regs->sr)) == 0 &&
-			timeout--)
+	while (dspi_get_sr_rx_ctr(hw_ver, dspi_read32(priv->flags, sr)) == 0 && timeout--)
 		udelay(1);
 
 	if (timeout >= 0)
-		return (u16)DSPI_RFR_RXDATA(
-				dspi_read32(priv->flags, &priv->regs->rfr));
-	else {
-		debug("dspi_rx: waiting timeout!\n");
-		return (u16)(~0);
-	}
+		return (u32)dspi_get_rfr_rxdata(hw_ver,
+						dspi_read32(priv->flags, &priv->regs->rfr));
+
+	debug("dspi_rx: waiting timeout!\n");
+	return (u32)(~0);
 }
 
 static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
@@ -301,7 +406,12 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
 		ctrl |= DSPI_TFR_CONT;
 
 	ctrl = ctrl & DSPI_TFR_CONT;
-	ctrl = ctrl | DSPI_TFR_CTAS(0) | DSPI_TFR_PCS(cs);
+	ctrl = ctrl | DSPI_TFR_CTAS(0) | dspi_get_tfr_pcs(priv->devtype_data->hw_version, cs);
+
+	/* Clear TCNT here since writing the flag on fifo clear would increase the CMD counter */
+	if (priv->devtype_data->hw_version == DSPI_V2) {
+		ctrl |= DSPI_V2_PUSHR_CTCNT;
+	}
 
 	if (len) {
 		while (len--) {
@@ -428,16 +538,17 @@ static void ns_delay_scale(unsigned char *psc, unsigned char *sc, int delay_ns,
 
 static int fsl_dspi_cfg_speed(struct fsl_dspi_priv *priv, uint speed)
 {
-	int ret;
-	uint bus_setup;
+	uint *ctar = dspi_get_ctar_reg(priv);
 	int best_i, best_j, bus_clk;
+	uint bus_setup;
+	int ret;
 
 	bus_clk = priv->bus_clk;
 
 	debug("DSPI set_speed: expected SCK speed %u, bus_clk %u.\n",
 	      speed, bus_clk);
 
-	bus_setup = dspi_read32(priv->flags, &priv->regs->ctar[0]);
+	bus_setup = dspi_read32(priv->flags, ctar);
 	bus_setup &= ~(DSPI_CTAR_DBR | DSPI_CTAR_PBR(0x3) | DSPI_CTAR_BR(0xf));
 
 	ret = fsl_dspi_hz_to_spi_baud(&best_i, &best_j, speed, bus_clk);
@@ -448,7 +559,7 @@ static int fsl_dspi_cfg_speed(struct fsl_dspi_priv *priv, uint speed)
 	}
 
 	bus_setup |= (DSPI_CTAR_PBR(best_i) | DSPI_CTAR_BR(best_j));
-	dspi_write32(priv->flags, &priv->regs->ctar[0], bus_setup);
+	dspi_write32(priv->flags, ctar, bus_setup);
 
 	priv->speed_hz = speed;
 
@@ -480,7 +591,7 @@ static int fsl_dspi_child_pre_probe(struct udevice *dev)
 	/* Set After SCK delay scale values */
 	ns_delay_scale(&pasc, &asc, sck_cs_delay, priv->bus_clk);
 
-	priv->ctar_val[slave_plat->cs] = DSPI_CTAR_DEFAULT_VALUE |
+	priv->ctar_val[slave_plat->cs] = dspi_get_ctar_default(priv->devtype_data->hw_version) |
 					 DSPI_CTAR_PCSSCK(pcssck) |
 					 DSPI_CTAR_CSSCK(cssck) |
 					 DSPI_CTAR_PASC(pasc) |
@@ -504,8 +615,8 @@ static int fsl_dspi_probe(struct udevice *bus)
 	/* cpu speical pin muxing configure */
 	cpu_dspi_port_conf();
 
-	/* get fifo size */
-	priv->fifo_size = dev_get_driver_data(bus);
+	/* set hw version from device data */
+	priv->devtype_data = (struct fsl_dspi_devtype_data *)dev_get_driver_data(bus);
 
 	/* get input clk frequency */
 	priv->regs = (struct dspi *)plat->regs_addr;
@@ -533,7 +644,7 @@ static int fsl_dspi_probe(struct udevice *bus)
 	dm_spi_bus->max_hz = plat->speed_hz;
 
 	/* default: all CS signals inactive state is high */
-	mcr_cfg_val = DSPI_MCR_MSTR | DSPI_MCR_PCSIS_MASK |
+	mcr_cfg_val = DSPI_MCR_MSTR | dspi_get_mcr_pcsis_mask(priv->devtype_data->hw_version) |
 		DSPI_MCR_CRXF | DSPI_MCR_CTXF;
 	fsl_dspi_init_mcr(priv, mcr_cfg_val);
 
@@ -566,7 +677,7 @@ static int fsl_dspi_claim_bus(struct udevice *dev)
 	fsl_dspi_clr_fifo(priv);
 
 	/* check module TX and RX status */
-	sr_val = dspi_read32(priv->flags, &priv->regs->sr);
+	sr_val = dspi_read32(priv->flags, dspi_get_sr_reg(priv));
 	if ((sr_val & DSPI_SR_TXRXS) != DSPI_SR_TXRXS) {
 		debug("DSPI RX/TX not ready!\n");
 		return -EIO;
@@ -684,9 +795,9 @@ static const struct dm_spi_ops fsl_dspi_ops = {
 };
 
 static const struct udevice_id fsl_dspi_ids[] = {
-	{ .compatible = "fsl,vf610-dspi", .data = VF610_FIFO_SIZE },
-	{ .compatible = "fsl,ls1021a-v1.0-dspi", .data = LS1021A_FIFO_SIZE },
-	{ .compatible = "nxp,s32cc-dspi", .data = S32CC_FIFO_SIZE },
+	{ .compatible = "fsl,vf610-dspi", .data = (ulong)&devtype_data[VF610] },
+	{ .compatible = "fsl,ls1021a-v1.0-dspi", .data = (ulong)&devtype_data[LS1021A] },
+	{ .compatible = "nxp,s32cc-dspi", .data = (ulong)&devtype_data[S32CC] },
 	{ }
 };
 
