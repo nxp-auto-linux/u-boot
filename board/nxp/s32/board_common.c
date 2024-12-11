@@ -15,7 +15,7 @@ int board_init(void)
 
 int dram_init(void)
 {
-	return fdtdec_setup_mem_size_base();
+	return 0;
 }
 
 int dram_init_banksize(void)
