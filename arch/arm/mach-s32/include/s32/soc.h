@@ -10,6 +10,7 @@
 			 PTE_BLOCK_OUTER_SHARE | \
 			 PTE_BLOCK_NS)
 
-struct mm_region *get_mm_region(u64 phys_base);
+struct mm_region *get_mm_region(struct mm_region *mem_map_array,
+				u64 phys_base);
 
 #endif

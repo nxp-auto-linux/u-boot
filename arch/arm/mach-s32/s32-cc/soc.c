@@ -6,6 +6,8 @@
 #include <init.h>
 #include <soc.h>
 #include <asm/armv8/mmu.h>
+#include <asm/sections.h>
+#include <asm/system.h>
 #include <s32-cc/dts_fixups_utils.h>
 #include <s32-cc/s32cc_soc.h>
 #include <s32/soc.h>
@@ -20,6 +22,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #define CONFIG_SYS_PCIE1_PHYS_ADDR_HI       0x4800000000ULL
 #define CONFIG_SYS_PCIE0_PHYS_SIZE_HI       0x0800000000ULL
 #define CONFIG_SYS_PCIE1_PHYS_SIZE_HI       0x0800000000ULL
+
+#define HIGHEST_ADDR	(CONFIG_SYS_PCIE0_PHYS_ADDR_HI + \
+		CONFIG_SYS_PCIE0_PHYS_SIZE_HI - PAGE_SIZE)
 #endif
 
 #ifndef CONFIG_SYS_DCACHE_OFF
@@ -103,15 +108,24 @@ static const struct soc_attr s32cc_soc_sram_size_data[] = {
 	{ /* sentinel */ }
 };
 
-static struct mm_region s32cc_mem_map[] = {
+struct mm_region static_mem_map[] = {
 	{
-		PHYS_SDRAM_1, PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE, DDR_ATTRS
+		/* Will be updated before dcache_enable call. */
+		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
 	},
-#ifdef PHYS_SDRAM_2
 	{
-		PHYS_SDRAM_2, PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE, DDR_ATTRS
+		/*
+		 * This is necessary since get_tcr rely on the static memory
+		 * map when computing the largest possible address.
+		 */
+		HIGHEST_ADDR, HIGHEST_ADDR, PAGE_SIZE,
+		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
 	},
-#endif
+	{ /* sentinel */ }
+};
+
+struct mm_region dyn_mem_map[] = {
 	{
 		S32CC_SRAM_BASE, S32CC_SRAM_BASE, 0U,
 		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
@@ -145,21 +159,15 @@ static struct mm_region s32cc_mem_map[] = {
 	{},
 };
 
-struct mm_region *mem_map = s32cc_mem_map;
 
-struct mm_region *get_mm_region(u64 phys_base)
+u64 get_page_table_size(void)
 {
-	struct mm_region *region;
-	size_t i;
-
-	for (i = 0; i < ARRAY_SIZE(s32cc_mem_map); i++) {
-		region = &s32cc_mem_map[i];
-
-		if (region->phys == phys_base)
-			return region;
-	}
-
-	return NULL;
+	/*
+	 * The default implementation can't be used since the maximum
+	 * size is computed based on the mem_map array, which in this case,
+	 * doesn't contain the regions which will be dynamically added.
+	 */
+	return SZ_64K;
 }
 
 static int get_sram_size(u32 *sram_size)
@@ -189,7 +197,7 @@ static void mmu_set_sram_size(void)
 	if (ret)
 		panic("Failed to get SRAM size (err=%d)\n", ret);
 
-	region = get_mm_region(S32CC_SRAM_BASE);
+	region = get_mm_region(dyn_mem_map, S32CC_SRAM_BASE);
 	if (!region)
 		return;
 
@@ -205,8 +213,19 @@ static void mmu_set_sram_size(void)
 
 int arch_cpu_init_dm(void)
 {
+	int ret;
+
 	mmu_set_sram_size();
 
+	ret = fdtdec_setup_mem_size_base();
+	if (ret)
+		return ret;
+
+#ifndef CONFIG_SYS_DCACHE_OFF
+	/* Called after mmu is enabled. */
+	mmu_map_region_attrs(gd->ram_base, get_effective_memsize(),
+			     DDR_ATTRS, true);
+#endif
 	return 0;
 }
 
