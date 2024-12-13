@@ -28,8 +28,6 @@ following configuration options can be used in this scope:
   allocated to the current instance.
 *   `CONFIG_BOARD_DRAM_SIZE`: Specifies the size of the DRAM allocated to the
   current instance.
-*   `CONFIG_SYS_TEXT_BASE`: Specifies the base address of Text Section.
-*   `CONFIG_SYS_DATA_BASE`: Specifies the base address of Data Section.
 *   `CONFIG_SYS_LOAD_ADDR`: Specifies the address of the OS image.
 *   `CONFIG_DTB_ADDR`: Specifies the address of the OS device tree blob.
 *   `CONFIG_RAMDISK_ADDR`: Specifies the address of the OS ramdisk.

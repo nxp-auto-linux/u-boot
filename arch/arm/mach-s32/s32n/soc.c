@@ -4,6 +4,7 @@
  */
 #include <common.h>
 #include <init.h>
+#include <asm-generic/sections.h>
 #include <asm/global_data.h>
 #include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
@@ -91,5 +92,5 @@ ulong board_get_usable_ram_top(ulong total_size)
 	if (ret)
 		return gd->ram_top;
 
-	return reg.start < CONFIG_SYS_DATA_BASE ? gd->ram_top : reg.start;
+	return reg.start < (u64)_start ? gd->ram_top : reg.start;
 }
