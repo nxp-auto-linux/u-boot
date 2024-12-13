@@ -31,10 +31,6 @@ static struct mm_region s32n_mem_map[] = {
 		CONFIG_BOARD_DRAM_SIZE, DDR_ATTRS
 	},
 	{
-		DTB_ADDR, DTB_ADDR, DTB_SIZE,
-		DDR_ATTRS | PTE_BLOCK_AP_RO | PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	},
-	{
 		ENETC0_BASE, ENETC0_BASE, ENETC0_SIZE,
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 		    PTE_BLOCK_PXN | PTE_BLOCK_UXN
@@ -77,14 +73,6 @@ struct mm_region *get_mm_region(u64 phys_base)
 }
 
 #endif
-
-int arch_cpu_init_dm(void)
-{
-	/* RO access for device tree */
-	set_dtb_wr_access(false);
-
-	return 0;
-}
 
 /* The top of the DRAM is reserved for the Secure Monitor. */
 ulong board_get_usable_ram_top(ulong total_size)
