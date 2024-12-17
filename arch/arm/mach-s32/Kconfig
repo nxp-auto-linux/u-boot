@@ -104,9 +104,11 @@ config NXP_S32N
 	imply CMD_PCI
 	imply CMD_UFS
 	imply CMD_GPT
+	imply CMD_SPI
 	imply DEBUG_UART
 	imply DEBUG_UART_SKIP_INIT
 	imply DM_SCSI
+	imply DM_SPI
 	imply FS_FAT
 	imply LOG
 	imply MISC
@@ -115,6 +117,8 @@ config NXP_S32N
 	imply PCI
 	imply PCIE_ECAM_GENERIC
 	imply SCSI
+	imply SPI
+	imply FSL_DSPI
 	imply UFS
 	select CLK
 	select CPU
