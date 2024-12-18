@@ -8,6 +8,7 @@
 #include <env.h>
 #include <fdt_support.h>
 #include <misc.h>
+#include <net.h>
 #include <phy.h>
 #include <soc.h>
 #include <asm/global_data.h>
@@ -572,13 +573,26 @@ static bool apply_pfe_sgmii_phy_fixup(void *fdt, int nodeoff, u32 phy_addr)
 	return true;
 }
 
+static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
+				       void *fdt, int nodeoff)
+{
+	u8 ea[ARP_HLEN];
+
+	if (eth_env_get_enetaddr_by_index(name, idx, ea)) {
+		fdt_setprop(fdt, nodeoff, "local-mac-address", ea, ARP_HLEN);
+		printf("   fixup: %s%i set to %pM\n", name, idx, ea);
+	}
+}
+
 static void ft_fixup_enet_pfe(void *fdt)
 {
 	char phy_envname[32], *phy_addr_str;
+	char reqname[4] = "pfe";
 	const char *ifname;
 	int i, nlen = 0;
 	ulong phy_addr;
 	char *ep = NULL;
+	u8 idx = 0;
 	int ret;
 
 	fdt_for_each_node_by_compatible(i, fdt, -1, s32g_pfe_compatible) {
@@ -603,6 +617,11 @@ static void ft_fixup_enet_pfe(void *fdt)
 			pr_err("fixup: %s: invalid PHY fixup address 0x%lx\n",
 			       ifname, phy_addr);
 			continue;
+		}
+
+		if (strncmp(reqname, ifname, strlen(reqname)) == 0) {
+			idx = ifname[3] - '0';
+			ft_update_eth_addr_by_name(reqname, idx, fdt, i);
 		}
 
 		if (apply_pfe_sgmii_phy_fixup(fdt, i, phy_addr))
