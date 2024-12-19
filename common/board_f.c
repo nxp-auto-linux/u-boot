@@ -694,6 +694,10 @@ static int setup_reloc(void)
 		gd->reloc_off = gd->relocaddr - CONFIG_SYS_TEXT_BASE;
 #endif
 #endif
+	} else if (IS_ENABLED(CONFIG_POSITION_INDEPENDENT)) {
+		gd->relocaddr = (unsigned long)__image_copy_start;
+	} else {
+		gd->relocaddr = CONFIG_SYS_TEXT_BASE;
 	}
 
 	memcpy(gd->new_gd, (char *)gd, sizeof(gd_t));
