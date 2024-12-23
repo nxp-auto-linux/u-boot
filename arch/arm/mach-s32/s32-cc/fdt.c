@@ -668,8 +668,7 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	if (ret)
 		goto exit;
 
-	if (CONFIG_IS_ENABLED(NXP_PFENG))
-		ft_fixup_enet_pfe(blob);
+	ft_fixup_enet_pfe(blob);
 
 	ret = apply_fdt_hwconfig_fixups(blob);
 	if (ret)

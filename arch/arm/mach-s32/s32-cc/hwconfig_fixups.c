@@ -1041,7 +1041,7 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 	 */
 
 	/* Our node must be compatible with "nxp,s32g-pfe-netif" or "nxp,s32cc-dwmac" */
-	if (IS_ENABLED(CONFIG_NXP_PFENG) && node_is_compatible(&node, "nxp,s32g-pfe-netif")) {
+	if (node_is_compatible(&node, "nxp,s32g-pfe-netif")) {
 		u32 val = 0;
 
 		ret = node_get_prop_u32(&node, "nxp,pfeng-linked-phyif", &val);
