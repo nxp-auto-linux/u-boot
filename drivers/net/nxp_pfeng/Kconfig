@@ -7,6 +7,7 @@ config NXP_PFENG
 	imply PHY_S32CC_SERDES
 	select DM_RESET
 	select DM_MDIO
+	select LIB_ELF
 	help
 	  This driver supports the NXP PFE Ethernet controller found on
 	  the S32G2 and S32G3 NXP SoCs.
