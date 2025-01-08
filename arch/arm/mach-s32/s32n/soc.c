@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2025 NXP
  */
 #include <common.h>
 #include <init.h>
 #include <asm-generic/sections.h>
 #include <asm/global_data.h>
 #include <asm/armv8/mmu.h>
+#include <asm/sections.h>
+#include <asm/system.h>
 #include <dm/ofnode.h>
 #include <linux/ioport.h>
 #include <s32/soc.h>
@@ -26,11 +28,27 @@ DECLARE_GLOBAL_DATA_PTR;
 #define CONFIG_SYS_IEPRC_PHYS_ADDR 0x240000000ULL
 #define CONFIG_SYS_IEPRC_PHYS_SIZE 0x2000000ULL
 
-static struct mm_region s32n_mem_map[] = {
+#define HIGHEST_ADDR	(CONFIG_SYS_IEPRC_PHYS_ADDR + \
+		CONFIG_SYS_IEPRC_PHYS_SIZE - PAGE_SIZE)
+
+struct mm_region static_mem_map[] = {
 	{
-		CONFIG_BOARD_DRAM_BASE, CONFIG_BOARD_DRAM_BASE,
-		CONFIG_BOARD_DRAM_SIZE, DDR_ATTRS
+		/* Will be updated before dcache_enable call. */
+		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
 	},
+	{
+		/*
+		 * This is necessary since get_tcr rely on the static memory
+		 * map when computing the largest possible address.
+		 */
+		HIGHEST_ADDR, HIGHEST_ADDR, PAGE_SIZE,
+		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
+	},
+	{ /* sentinel */ }
+};
+
+struct mm_region dyn_mem_map[] = {
 	{
 		ENETC0_BASE, ENETC0_BASE, ENETC0_SIZE,
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
@@ -52,27 +70,18 @@ static struct mm_region s32n_mem_map[] = {
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 		PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
-	/* list terminator */
-	{},
+	{ /* sentinel */ }
 };
 
-struct mm_region *mem_map = s32n_mem_map;
-
-struct mm_region *get_mm_region(u64 phys_base)
+u64 get_page_table_size(void)
 {
-	struct mm_region *region;
-	size_t i;
-
-	for (i = 0; i < ARRAY_SIZE(s32n_mem_map); i++) {
-		region = &s32n_mem_map[i];
-
-		if (region->phys == phys_base)
-			return region;
-	}
-
-	return NULL;
+	/*
+	 * The default implementation can't be used since the maximum
+	 * size is computed based on the mem_map array, which in this case,
+	 * doesn't contain the regions which will be dynamically added.
+	 */
+	return SZ_64K;
 }
-
 #endif
 
 /* The top of the DRAM is reserved for the Secure Monitor. */
@@ -94,3 +103,20 @@ ulong board_get_usable_ram_top(ulong total_size)
 
 	return reg.start < (u64)_start ? gd->ram_top : reg.start;
 }
+
+int arch_cpu_init_dm(void)
+{
+	int ret = fdtdec_setup_mem_size_base();
+
+	if (ret)
+		return ret;
+
+#ifndef CONFIG_SYS_DCACHE_OFF
+	/* Called after mmu is enabled. */
+	mmu_map_region_attrs(gd->ram_base, get_effective_memsize(),
+			     DDR_ATTRS, true);
+#endif
+
+	return 0;
+}
+
