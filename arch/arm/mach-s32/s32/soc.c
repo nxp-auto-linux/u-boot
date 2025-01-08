@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 #include <common.h>
 #include <cpu_func.h>
@@ -94,22 +94,15 @@ static int early_mmu_init(void)
 	return 0;
 }
 
-static void clear_early_mmu_settings(void)
-{
-	/* Reset fillptr to allow reinit of page tables */
-	gd->new_gd->arch.tlb_fillptr = (uintptr_t)NULL;
-
-	icache_disable();
-	dcache_disable();
-}
-
 /*
  * Assumption: Called at the end of init_sequence_f to clean-up
  * before initr_caches().
  */
 int clear_bss(void)
 {
-	clear_early_mmu_settings();
+	/* Reset fillptr to allow reinit of page tables */
+	gd->new_gd->arch.tlb_fillptr = (uintptr_t)NULL;
+	dcache_disable();
 
 	return 0;
 }
@@ -135,7 +128,6 @@ void enable_caches(void)
 	region->phys = gd->ram_base;
 	region->size = get_effective_memsize();
 
-	icache_enable();
 	/* Enable data cache and MMU. */
 	dcache_enable();
 
