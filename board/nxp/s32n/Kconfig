@@ -13,14 +13,6 @@ config NXP_S32N_BOARD_COMMON
 	imply MD5SUM_VERIFY
 	imply USE_BOOTARGS
 
-config BOARD_DRAM_BASE
-	hex
-	default 0x80000000
-
-config BOARD_DRAM_SIZE
-	hex
-	default 0x80000000
-
 config DTB_ADDR
 	hex "Default OS device tree blob address"
 	default 0x93000000
