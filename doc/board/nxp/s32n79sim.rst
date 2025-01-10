@@ -24,10 +24,6 @@ Memory layout related build options
 
 The memory allocated to TF-A, U-Boot and to the running OS is configurable. The
 following configuration options can be used in this scope:
-*   `CONFIG_BOARD_DRAM_BASE`: Specifies the starting address of the DRAM
-  allocated to the current instance.
-*   `CONFIG_BOARD_DRAM_SIZE`: Specifies the size of the DRAM allocated to the
-  current instance.
 *   `CONFIG_SYS_LOAD_ADDR`: Specifies the address of the OS image.
 *   `CONFIG_DTB_ADDR`: Specifies the address of the OS device tree blob.
 *   `CONFIG_RAMDISK_ADDR`: Specifies the address of the OS ramdisk.
