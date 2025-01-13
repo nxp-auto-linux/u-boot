@@ -99,10 +99,6 @@ config DEFAULT_DEVICE_TREE
 config SYS_LOAD_ADDR
 	default 0x80000000
 
-config S32_MAX_DTB_SIZE
-	hex "Max size reserved for device tree in image layout"
-	default 0xf000
-
 config SYS_MALLOC_F_LEN
 	default 0x50000
 
