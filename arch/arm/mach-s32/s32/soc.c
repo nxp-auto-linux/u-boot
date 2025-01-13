@@ -16,15 +16,42 @@
 #include <s32/soc.h>
 
 #ifndef CONFIG_SYS_DCACHE_OFF
+/*
+ * Without forcing the ".data" section, this would get saved in ".bss". BSS
+ * will be cleared soon after, so it's not suitable.
+ */
+static u64 nt_fw_dtb __section(".data");
+
+/*
+ * Save the FDT address provided by TF-A in r0 at boot time. This function is
+ * called from start.S.
+ */
+void save_boot_params(u64 r0, u64 r1, u64 r2, u64 r3)
+{
+	nt_fw_dtb = r0;
+
+	save_boot_params_ret();
+}
 
 static inline u64 get_dtb_addr(void)
 {
-	return (u64)_start - CONFIG_S32_MAX_DTB_SIZE;
+	return nt_fw_dtb;
 }
 
 extern struct mm_region static_mem_map[];
 extern struct mm_region dyn_mem_map[];
 struct mm_region *mem_map = static_mem_map;
+
+void *board_fdt_blob_setup(int *err)
+{
+	void *dtb = (void *)get_dtb_addr();
+
+	*err = 0;
+	if (fdt_magic(dtb) != FDT_MAGIC)
+		*err = -EFAULT;
+
+	return dtb;
+}
 
 struct mm_region *get_mm_region(struct mm_region *mem_map_array, u64 phys_base)
 {
