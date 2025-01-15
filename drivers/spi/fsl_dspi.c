@@ -62,6 +62,7 @@ enum {
 	LS1021A,
 	VF610,
 	S32CC,
+	S32N,
 };
 
 struct fsl_dspi_devtype_data {
@@ -81,6 +82,10 @@ static const struct fsl_dspi_devtype_data devtype_data[] = {
 	[S32CC] = {
 		.fifo_size		= 5,
 		.hw_version		= DSPI_V1,
+	},
+	[S32N] = {
+		.fifo_size		= 16,
+		.hw_version		= DSPI_V2,
 	},
 };
 
@@ -798,6 +803,7 @@ static const struct udevice_id fsl_dspi_ids[] = {
 	{ .compatible = "fsl,vf610-dspi", .data = (ulong)&devtype_data[VF610] },
 	{ .compatible = "fsl,ls1021a-v1.0-dspi", .data = (ulong)&devtype_data[LS1021A] },
 	{ .compatible = "nxp,s32cc-dspi", .data = (ulong)&devtype_data[S32CC] },
+	{ .compatible = "nxp,s32n79-dspi", .data = (ulong)&devtype_data[S32N] },
 	{ }
 };
 
