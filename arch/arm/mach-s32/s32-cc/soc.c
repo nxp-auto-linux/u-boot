@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 #include <common.h>
 #include <init.h>
@@ -167,7 +167,7 @@ u64 get_page_table_size(void)
 	 * size is computed based on the mem_map array, which in this case,
 	 * doesn't contain the regions which will be dynamically added.
 	 */
-	return SZ_64K;
+	return SZ_128K;
 }
 
 static int get_sram_size(u32 *sram_size)
