@@ -3,6 +3,7 @@
  * Freescale DSPI Module Defines
  *
  * Copyright (C) 2004-2007, 2015 Freescale Semiconductor, Inc.
+ * Copyright 2025 NXP
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freesacle.com)
  * Haikun Wang (B53464@freescale.com)
@@ -26,119 +27,125 @@ struct dspi {
 };
 
 /* Module configuration */
-#define DSPI_MCR_MSTR			0x80000000
-#define DSPI_MCR_CSCK			0x40000000
-#define DSPI_MCR_DCONF(x)		(((x) & 0x03) << 28)
-#define DSPI_MCR_FRZ			0x08000000
-#define DSPI_MCR_MTFE			0x04000000
-#define DSPI_MCR_PCSSE			0x02000000
-#define DSPI_MCR_ROOE			0x01000000
+#define DSPI_MCR_MSTR			BIT(31)
+#define DSPI_MCR_CSCK			BIT(30)
+#define DSPI_MCR_DCONF(x)		(((x) & GENMASK(1, 0)) << 28)
+#define DSPI_MCR_FRZ			BIT(27)
+#define DSPI_MCR_MTFE			BIT(26)
+#define DSPI_MCR_PCSSE			BIT(25)
+#define DSPI_MCR_ROOE			BIT(24)
 #define DSPI_MCR_PCSIS(x)		(1 << (16 + (x)))
-#define DSPI_MCR_PCSIS_MASK		(0xff << 16)
-#define DSPI_MCR_CSIS7			0x00800000
-#define DSPI_MCR_CSIS6			0x00400000
-#define DSPI_MCR_CSIS5			0x00200000
-#define DSPI_MCR_CSIS4			0x00100000
-#define DSPI_MCR_CSIS3			0x00080000
-#define DSPI_MCR_CSIS2			0x00040000
-#define DSPI_MCR_CSIS1			0x00020000
-#define DSPI_MCR_CSIS0			0x00010000
-#define DSPI_MCR_DOZE			0x00008000
-#define DSPI_MCR_MDIS			0x00004000
-#define DSPI_MCR_DTXF			0x00002000
-#define DSPI_MCR_DRXF			0x00001000
-#define DSPI_MCR_CTXF			0x00000800
-#define DSPI_MCR_CRXF			0x00000400
-#define DSPI_MCR_SMPL_PT(x)		(((x) & 0x03) << 8)
-#define DSPI_MCR_FCPCS			0x00000001
-#define DSPI_MCR_PES			0x00000001
-#define DSPI_MCR_HALT			0x00000001
+#define DSPI_MCR_PCSIS_MASK		GENMASK(23, 16)
+#define DSPI_MCR_CSIS7			BIT(23)
+#define DSPI_MCR_CSIS6			BIT(22)
+#define DSPI_MCR_CSIS5			BIT(21)
+#define DSPI_MCR_CSIS4			BIT(20)
+#define DSPI_MCR_CSIS3			BIT(19)
+#define DSPI_MCR_CSIS2			BIT(18)
+#define DSPI_MCR_CSIS1			BIT(17)
+#define DSPI_MCR_CSIS0			BIT(16)
+#define DSPI_MCR_DOZE			BIT(15)
+#define DSPI_MCR_MDIS			BIT(14)
+#define DSPI_MCR_DTXF			BIT(13)
+#define DSPI_MCR_DRXF			BIT(12)
+#define DSPI_MCR_CTXF			BIT(11)
+#define DSPI_MCR_CRXF			BIT(10)
+#define DSPI_MCR_SMPL_PT(x)		(((x) & GENMASK(2, 0)) << 8)
+
+#define DSPI_MCR_FCPCS			BIT(2)
+#define DSPI_MCR_PES			BIT(1)
+#define DSPI_MCR_HALT			BIT(0)
 
 /* Transfer count */
-#define DSPI_TCR_SPI_TCNT(x)		(((x) & 0x0000FFFF) << 16)
+#define DSPI_TCR_SPI_TCNT(x)		(((x) & GENMASK(15, 0)) << 16)
 
 /* Clock and transfer attributes */
-#define DSPI_CTAR(x)			(0x0c + (x * 4))
-#define DSPI_CTAR_DBR			0x80000000
-#define DSPI_CTAR_TRSZ(x)		(((x) & 0x0F) << 27)
-#define DSPI_CTAR_CPOL			0x04000000
-#define DSPI_CTAR_CPHA			0x02000000
-#define DSPI_CTAR_LSBFE			0x01000000
-#define DSPI_CTAR_PCSSCK(x)		(((x) & 0x03) << 22)
+#define DSPI_CTAR(x)			(0x0c + (((x) & GENMASK(2, 0)) * 4))
+#define DSPI_CTAR_DBR			BIT(31)
+
+#define DSPI_PUSHR_CMD_FMSZ(x)	(((x) & GENMASK(15, 0)))
+#define DSPI_CTAR_TRSZ(x)		(((x) & GENMASK(3, 0)) << 27)
+
+#define DSPI_CTAR_CPOL			BIT(26)
+#define DSPI_CTAR_CPHA			BIT(25)
+#define DSPI_CTAR_LSBFE			BIT(24)
+#define DSPI_CTAR_PCSSCK(x)		(((x) << 22) & GENMASK(23, 22))
 #define DSPI_CTAR_PCSSCK_7CLK		0x00A00000
-#define DSPI_CTAR_PCSSCK_5CLK		0x00800000
-#define DSPI_CTAR_PCSSCK_3CLK		0x00400000
+#define DSPI_CTAR_PCSSCK_5CLK		BIT(23)
+#define DSPI_CTAR_PCSSCK_3CLK		BIT(22)
 #define DSPI_CTAR_PCSSCK_1CLK		0x00000000
-#define DSPI_CTAR_PASC(x)		(((x) & 0x03) << 20)
-#define DSPI_CTAR_PASC_7CLK		0x00300000
-#define DSPI_CTAR_PASC_5CLK		0x00200000
-#define DSPI_CTAR_PASC_3CLK		0x00100000
+#define DSPI_CTAR_PASC(x)		(((x) << 20) & GENMASK(21, 20))
+#define DSPI_CTAR_PASC_7CLK		GENMASK(21, 20)
+#define DSPI_CTAR_PASC_5CLK		BIT(21)
+#define DSPI_CTAR_PASC_3CLK		BIT(20)
 #define DSPI_CTAR_PASC_1CLK		0x00000000
-#define DSPI_CTAR_PDT(x)		(((x) & 0x03) << 18)
+#define DSPI_CTAR_PDT(x)		(((x) << 18) & GENMASK(19, 18))
 #define DSPI_CTAR_PDT_7CLK		0x000A0000
-#define DSPI_CTAR_PDT_5CLK		0x00080000
-#define DSPI_CTAR_PDT_3CLK		0x00040000
+#define DSPI_CTAR_PDT_5CLK		BIT(19)
+#define DSPI_CTAR_PDT_3CLK		BIT(18)
 #define DSPI_CTAR_PDT_1CLK		0x00000000
-#define DSPI_CTAR_PBR(x)		(((x) & 0x03) << 16)
-#define DSPI_CTAR_PBR_7CLK		0x00030000
-#define DSPI_CTAR_PBR_5CLK		0x00020000
-#define DSPI_CTAR_PBR_3CLK		0x00010000
+#define DSPI_CTAR_PBR(x)		(((x) << 16) & GENMASK(17, 16))
+#define DSPI_CTAR_PBR_7CLK		GENMASK(17, 16)
+#define DSPI_CTAR_PBR_5CLK		BIT(17)
+#define DSPI_CTAR_PBR_3CLK		BIT(16)
 #define DSPI_CTAR_PBR_1CLK		0x00000000
-#define DSPI_CTAR_CSSCK(x)		(((x) & 0x0F) << 12)
-#define DSPI_CTAR_ASC(x)		(((x) & 0x0F) << 8)
-#define DSPI_CTAR_DT(x)			(((x) & 0x0F) << 4)
-#define DSPI_CTAR_BR(x)			((x) & 0x0F)
-#define DSPI_CTAR_SCALE_BITS		0xf
+#define DSPI_CTAR_CSSCK(x)		(((x) << 12) & GENMASK(15, 12))
+#define DSPI_CTAR_ASC(x)		(((x) << 8) & GENMASK(11, 8))
+#define DSPI_CTAR_DT(x)			(((x) << 4) & GENMASK(7, 4))
+#define DSPI_CTAR_BR(x)			((x) & GENMASK(3, 0))
+#define DSPI_CTAR_SCALE_BITS		GENMASK(3, 0)
 
 /* Status */
-#define DSPI_SR_TCF			0x80000000
-#define DSPI_SR_TXRXS			0x40000000
-#define DSPI_SR_EOQF			0x10000000
-#define DSPI_SR_TFUF			0x08000000
-#define DSPI_SR_TFFF			0x02000000
-#define DSPI_SR_RFOF			0x00080000
-#define DSPI_SR_RFDF			0x00020000
-#define DSPI_SR_TXCTR(x)		(((x) & 0x0000F000) >> 12)
-#define DSPI_SR_TXPTR(x)		(((x) & 0x00000F00) >> 8)
-#define DSPI_SR_RXCTR(x)		(((x) & 0x000000F0) >> 4)
-#define DSPI_SR_RXPTR(x)		((x) & 0x0000000F)
+#define DSPI_SR_TCF			BIT(31)
+#define DSPI_SR_TXRXS			BIT(30)
+#define DSPI_SR_EOQF			BIT(28)
+#define DSPI_SR_TFUF			BIT(27)
+#define DSPI_SR_TFFF			BIT(25)
+#define DSPI_SR_RFOF			BIT(19)
+#define DSPI_SR_RFDF			BIT(17)
+
+#define DSPI_SR_TXPTR(x)		(((x) & GENMASK(11, 8)) >> 8)
+#define DSPI_SR_TXCTR(x)		(((x) & GENMASK(15, 12)) >> 12)
+#define DSPI_SR_RXCTR(x)		(((x) & GENMASK(7, 4)) >> 4)
+#define DSPI_SR_RXPTR(x)		((x) & GENMASK(3, 0))
 
 /* DMA/interrupt request selct and enable */
-#define DSPI_IRSR_TCFE			0x80000000
-#define DSPI_IRSR_EOQFE			0x10000000
-#define DSPI_IRSR_TFUFE			0x08000000
-#define DSPI_IRSR_TFFFE			0x02000000
-#define DSPI_IRSR_TFFFS			0x01000000
-#define DSPI_IRSR_RFOFE			0x00080000
-#define DSPI_IRSR_RFDFE			0x00020000
-#define DSPI_IRSR_RFDFS			0x00010000
+#define DSPI_IRSR_TCFE			BIT(31)
+#define DSPI_IRSR_EOQFE			BIT(28)
+#define DSPI_IRSR_TFUFE			BIT(27)
+#define DSPI_IRSR_TFFFE			BIT(25)
+#define DSPI_IRSR_TFFFS			BIT(24)
+#define DSPI_IRSR_RFOFE			BIT(19)
+#define DSPI_IRSR_RFDFE			BIT(17)
+#define DSPI_IRSR_RFDFS			BIT(16)
 
 /* Transfer control - 32-bit access */
-#define DSPI_TFR_PCS(x)			(((1 << x) & 0x0000003f) << 16)
-#define DSPI_TFR_CONT			0x80000000
-#define DSPI_TFR_CTAS(x)		(((x) & 0x07) << 28)
-#define DSPI_TFR_EOQ			0x08000000
-#define DSPI_TFR_CTCNT			0x04000000
-#define DSPI_TFR_CS7			0x00800000
-#define DSPI_TFR_CS6			0x00400000
-#define DSPI_TFR_CS5			0x00200000
-#define DSPI_TFR_CS4			0x00100000
-#define DSPI_TFR_CS3			0x00080000
-#define DSPI_TFR_CS2			0x00040000
-#define DSPI_TFR_CS1			0x00020000
-#define DSPI_TFR_CS0			0x00010000
+#define DSPI_TFR_PCS(x)			(((1 << (x)) & GENMASK(5, 0)) << 16)
+#define DSPI_TFR_CTCNT			BIT(26)
+
+#define DSPI_TFR_CONT			BIT(31)
+#define DSPI_TFR_CTAS(x)		(((x) & GENMASK(2, 0)) << 28)
+#define DSPI_TFR_EOQ			BIT(27)
+#define DSPI_TFR_CS7			BIT(23)
+#define DSPI_TFR_CS6			BIT(22)
+#define DSPI_TFR_CS5			BIT(21)
+#define DSPI_TFR_CS4			BIT(20)
+#define DSPI_TFR_CS3			BIT(19)
+#define DSPI_TFR_CS2			BIT(18)
+#define DSPI_TFR_CS1			BIT(17)
+#define DSPI_TFR_CS0			BIT(16)
 
 /* Transfer Fifo */
-#define DSPI_TFR_TXDATA(x)		((x) & 0x0000FFFF)
-
+#define DSPI_TFR_TXDATA(x)		((x) & GENMASK(15, 0))
 /* Bit definitions and macros for DRFR */
-#define DSPI_RFR_RXDATA(x)		((x) & 0x0000FFFF)
+#define DSPI_RFR_RXDATA(x)		((x) & GENMASK(15, 0))
 
 /* Bit definitions and macros for DTFDR group */
-#define DSPI_TFDR_TXDATA(x)		((x) & 0x0000FFFF)
-#define DSPI_TFDR_TXCMD(x)		(((x) & 0x0000FFFF) << 16)
+#define DSPI_TFDR_TXDATA(x)		((x) & GENMASK(15, 0))
+#define DSPI_TFDR_TXCMD(x)		(((x) & GENMASK(15, 0)) << 16)
 
 /* Bit definitions and macros for DRFDR group */
-#define DSPI_RFDR_RXDATA(x)		((x) & 0x0000FFFF)
+#define DSPI_RFDR_RXDATA(x)		((x) & GENMASK(15, 0))
+
 
 #endif				/* _FSL_DSPI_H_ */
