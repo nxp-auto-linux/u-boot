@@ -44,6 +44,11 @@ DECLARE_GLOBAL_DATA_PTR;
 /* max chipselect signals number */
 #define FSL_DSPI_MAX_CHIPSELECT		6
 
+/* Platform specific tx/rx fifo size */
+#define VF610_FIFO_SIZE			4
+#define LS1021A_FIFO_SIZE		4
+#define S32CC_FIFO_SIZE			5
+
 /* default SCK frequency, unit: HZ */
 #define FSL_DSPI_DEFAULT_SCK_FREQ	10000000
 
@@ -104,6 +109,7 @@ struct fsl_dspi_priv {
 	uint speed_hz;
 	uint charbit;
 	uint num_chipselect;
+	uint fifo_size;
 	uint ctar_val[FSL_DSPI_MAX_CHIPSELECT];
 	struct dspi *regs;
 };
@@ -253,8 +259,8 @@ static void dspi_tx(struct fsl_dspi_priv *priv, u32 ctrl, u16 data)
 	int timeout = DSPI_TXRX_WAIT_TIMEOUT;
 
 	/* wait for empty entries in TXFIFO or timeout */
-	while (DSPI_SR_TXCTR(dspi_read32(priv->flags, &priv->regs->sr)) >= 4 &&
-			timeout--)
+	while (DSPI_SR_TXCTR(dspi_read32(priv->flags, &priv->regs->sr)) >= priv->fifo_size &&
+	       timeout--)
 		udelay(1);
 
 	if (timeout >= 0)
@@ -497,6 +503,9 @@ static int fsl_dspi_probe(struct udevice *bus)
 	/* cpu speical pin muxing configure */
 	cpu_dspi_port_conf();
 
+	/* get fifo size */
+	priv->fifo_size = dev_get_driver_data(bus);
+
 	/* get input clk frequency */
 	priv->regs = (struct dspi *)plat->regs_addr;
 	priv->flags = plat->flags;
@@ -666,9 +675,9 @@ static const struct dm_spi_ops fsl_dspi_ops = {
 };
 
 static const struct udevice_id fsl_dspi_ids[] = {
-	{ .compatible = "fsl,vf610-dspi" },
-	{ .compatible = "fsl,ls1021a-v1.0-dspi" },
-	{ .compatible = "nxp,s32cc-dspi" },
+	{ .compatible = "fsl,vf610-dspi", .data = VF610_FIFO_SIZE },
+	{ .compatible = "fsl,ls1021a-v1.0-dspi", .data = LS1021A_FIFO_SIZE },
+	{ .compatible = "nxp,s32cc-dspi", .data = S32CC_FIFO_SIZE },
 	{ }
 };
 
