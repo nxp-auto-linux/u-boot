@@ -12,4 +12,6 @@
 #define EXTRA_BOOT_ARGS
 #define FDT_FILE		"s32r478a-evb.dtb"
 
+#define S32CC_SRAM_BASE		0x33C00000
+
 #endif

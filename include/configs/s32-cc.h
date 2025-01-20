@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 #ifndef __S32CC_H__
 #define __S32CC_H__
@@ -10,8 +10,6 @@
 /* memory mapped external flash */
 #define CONFIG_SYS_FLASH_BASE		0x0UL
 #define CONFIG_SYS_FLASH_SIZE		(SZ_512M)
-
-#define S32CC_SRAM_BASE			0x34000000
 
 #ifndef CONFIG_SYS_BAUDRATE_TABLE
 #define CONFIG_SYS_BAUDRATE_TABLE    { 9600, 19200, 38400, 57600, 115200, \
