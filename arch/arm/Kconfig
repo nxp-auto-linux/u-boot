@@ -1,6 +1,5 @@
 menu "ARM architecture"
 	depends on ARM
-	select HAVE_ARCH_IOREMAP
 
 config SYS_ARCH
 	default "arm"
@@ -1032,6 +1031,10 @@ config ARCH_S32G3
 
 config ARCH_S32R45
 	bool "NXP S32R45 platform"
+	select NXP_S32CC
+
+config ARCH_S32R47
+	bool "NXP S32R47 platform"
 	select NXP_S32CC
 
 config ARCH_S32N79

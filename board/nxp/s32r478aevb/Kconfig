@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2025 NXP
+
+if TARGET_S32R478AEVB
+
+config SYS_CONFIG_NAME
+	default "s32r478aevb"
+
+config SYS_BOARD
+	default "s32r478aevb"
+
+config NR_DRAM_BANKS
+	default 1
+
+config ENV_SECT_SIZE
+	default 0x10000 if QSPI_BOOT
+
+config SYS_EEPROM_PAGE_WRITE_DELAY_MS
+	default 10
+
+config SYS_EEPROM_SIZE
+	default 128
+
+config S32CC_HWCONFIG
+	string "S32CC HWConfig definition"
+	depends on PHY_S32CC_SERDES
+	default "serdes0:mode=pcie&xpcs0,clock=ext,fmhz=100;pcie0:mode=rc;xpcs0_0:speed=2G5,an=0;serdes1:mode=xpcs0&xpcs1,clock=ext,fmhz=125;xpcs1_0:speed=2G5,an=0;xpcs1_1:speed=2G5,an=0"
+	help
+	  The configuration for the SerDes modules, stored in
+	  the variable 'hwconfig'.
+	  It configures generic attributes for 'serdesX', such as 'mode' (see below),
+	  the clock type (internal or external),
+	  clock frequency 'fmhz' (100 or 125, SGMII only modes), 'pcieX' mode
+	  ('rc' or 'ep') and the 'xpcsX_Y' interfaces for any of the two lanes.
+	  In the atributes presented above and below, 'X' (0 or 1) is the index
+	  of the SerDes module and 'Y' (0 or 1) is the index of the XPCS interface.
+	  SerDes 'mode' attribute can be 'pcie' (PCIe only mode), 'pcie&xpcsY' (PCIe
+	  and SGMII combo mode), 'xpcs0&xpcs1' (SGMII only mode).
+	  For the combo modes 'pcie&xpcsY', lane0 is PCIe and lane1
+	  is connected to a GMAC or PFE MAC depending on 'Y' and 'fmhz' (which
+	  match a certain SerDes configuration from the SerDes manual).
+	  PCIe always works at 100MHz, therefore 'fmhz' is only for SGMII only mode.
+	  Config 'xpcsX_Y' is used to specifically configure each of the two SGMII
+	  PHYs, by setting the 'speed' (10M, 100M, 1G and 2G5).
+	  S32R45 has two GMACs, GMAC0 running at 1Gbps and GMAC1 running at 2.5Gbps.
+
+endif
