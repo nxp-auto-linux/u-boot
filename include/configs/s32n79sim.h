@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause */
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2025 NXP
  */
 #ifndef __S32N79SIM_H
 #define __S32N79SIM_H
@@ -58,10 +58,16 @@
 		LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
 		EXTRA_BOOT_ARGS "\0" \
 	"fixup_initrd_size=setexpr ramdisk_size_addr ${ramdisk_addr} - 0x4; " \
-		  "setexpr.l initrd-end ${ramdisk_addr} + " \
-		  "*${ramdisk_size_addr}; fdt set /chosen linux,initrd-start " \
-		  "<${ramdisk_addr}>; fdt set /chosen linux,initrd-end " \
-		  "<0x${initrd-end}>;\0" \
+		  "setexpr.q initrd-end ${ramdisk_addr} + " \
+		  "*${ramdisk_size_addr}; "\
+		  "setexpr.l initrd-end.h ${initrd-end} / 0x100000000; "\
+		  "setexpr.l initrd-end.l ${initrd-end} \% 0x100000000; "\
+		  "setexpr.l initrd-start.h ${ramdisk_addr} / 0x100000000; "\
+		  "setexpr.l initrd-start.l ${ramdisk_addr} \% 0x100000000; "\
+		  "fdt set /chosen linux,initrd-start " \
+		  "<0x${initrd-start.h} 0x${initrd-start.l}>; " \
+		  " fdt set /chosen linux,initrd-end " \
+		  "<0x${initrd-end.h} 0x${initrd-end.l}>;\0" \
 
 #  define CONFIG_BOOTCOMMAND \
 	"run fdt_fixups; ${boot_mtd} ${loadaddr} - ${fdt_addr}"
