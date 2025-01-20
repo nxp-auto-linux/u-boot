@@ -105,6 +105,18 @@ static const struct soc_attr s32cc_soc_sram_size_data[] = {
 			.sram_size = S32CC_SRAM_8M,
 		},
 	},
+	{
+		.machine = SOC_MACHINE_S32R438A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_8M,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R478A,
+		.data = &(struct s32cc_soc_sram_size) {
+			.sram_size = S32CC_SRAM_8M,
+		},
+	},
 	{ /* sentinel */ }
 };
 
