@@ -29,6 +29,7 @@
 #include <fsl_dspi.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
+#include <linux/io.h>
 
 /* linux/include/time.h */
 #define NSEC_PER_SEC	1000000000L
@@ -602,6 +603,8 @@ static int fsl_dspi_bind(struct udevice *bus)
 static int fsl_dspi_of_to_plat(struct udevice *bus)
 {
 	fdt_addr_t addr;
+	fdt_size_t size;
+
 	struct fsl_dspi_plat *plat = dev_get_plat(bus);
 
 	if (dev_read_bool(bus, "big-endian"))
@@ -611,11 +614,17 @@ static int fsl_dspi_of_to_plat(struct udevice *bus)
 						    "spi-num-chipselects",
 						    FSL_DSPI_MAX_CHIPSELECT);
 
-	addr = dev_read_addr(bus);
+	addr = dev_read_addr_size(bus, "reg", &size);
 	if (addr == FDT_ADDR_T_NONE) {
 		debug("DSPI: Can't get base address or size\n");
 		return -ENOMEM;
 	}
+
+	if (!devm_ioremap(bus, addr, size)) {
+		debug("DSPI: Failed to map base address\n");
+		return -ENOMEM;
+	}
+
 	plat->regs_addr = addr;
 
 	plat->speed_hz = dev_read_u32_default(bus, "spi-max-frequency",
