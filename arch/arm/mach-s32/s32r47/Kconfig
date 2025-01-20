@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: GPL-2.0+
+# Copyright 2025 NXP
+
+if ARCH_S32R47
+
+config TARGET_S32R478AEVB
+	bool "Support S32R478AEVB board"
+	default y
+	help
+	  This board is based on S32R47 SoC. Is is equipped with
+	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
+	  I2C and DSPI.
+	imply ADC
+	imply CMD_EEPROM
+	imply I2C_EEPROM
+	imply NXP_S32CC_BOARD_COMMON
+	imply PHY_NXP_C45_TJA11XX
+	imply PHY_FIXED
+	imply SARADC_S32CC
+	select SPI_FLASH_STMICRO
+	select SPI_FLASH_SOFT_RESET
+	select SPI_FLASH_SOFT_RESET_ON_BOOT
+
+source "board/nxp/s32r478aevb/Kconfig"
+
+endif
