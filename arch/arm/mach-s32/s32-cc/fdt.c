@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017,2019-2024 NXP
+ * Copyright 2017,2019-2025 NXP
  */
 
 #include <common.h>
@@ -31,7 +31,8 @@
 #define SOC_CPUMASK_S32R			GENMASK(3, 0)
 #define SOC_MAX_CORES_PER_CLUSTER_S32G2		2
 #define SOC_MAX_CORES_PER_CLUSTER_S32G3		4
-#define SOC_MAX_CORES_PER_CLUSTER_S32R		2
+#define SOC_MAX_CORES_PER_CLUSTER_S32R45	2
+#define SOC_MAX_CORES_PER_CLUSTER_S32R47	4
 
 #define S32CC_MAX_NVMEM_CELLS_PER_NODE		0x10
 
@@ -112,14 +113,28 @@ static const struct soc_attr s32cc_soc_cores_info_data[] = {
 	{
 		.machine = SOC_MACHINE_S32R455A,
 		.data = &(struct s32cc_soc_cores_info) {
-			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R,
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R45,
 			.cpu_mask = SOC_CPUMASK_S32R,
 		},
 	},
 	{
 		.machine = SOC_MACHINE_S32R458A,
 		.data = &(struct s32cc_soc_cores_info) {
-			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R,
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R45,
+			.cpu_mask = SOC_CPUMASK_S32R,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R438A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R47,
+			.cpu_mask = SOC_CPUMASK_S32R,
+		},
+	},
+	{
+		.machine = SOC_MACHINE_S32R478A,
+		.data = &(struct s32cc_soc_cores_info) {
+			.max_cores_per_cluster = SOC_MAX_CORES_PER_CLUSTER_S32R47,
 			.cpu_mask = SOC_CPUMASK_S32R,
 		},
 	},
