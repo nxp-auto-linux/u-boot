@@ -25,8 +25,8 @@
 #define CMU_FC_TCR_FREF_MAX		(0xFFFFFFU)
 #define CMU_FC_SR(BASE)			((BASE) + 0x10)
 #define CMU_FC_SR_FLL			BIT(0)
-#define CMU_FC_SR_HLL			BIT(1)
-#define CMU_FC_SR_FLAGS			(CMU_FC_SR_FLL | CMU_FC_SR_HLL)
+#define CMU_FC_SR_FHH			BIT(1)
+#define CMU_FC_SR_FLAGS			(CMU_FC_SR_FLL | CMU_FC_SR_FHH)
 #define CMU_FC_SR_STATE(SR)		(((SR) >> 2) & 0x3)
 #define CMU_FC_SR_RS			BIT(4)
 
@@ -345,8 +345,8 @@ static enum fc_result fc_check_frequency(uintptr_t addr,
 	/* Disable the module */
 	writel(0x0, CMU_FC_GCR(addr));
 
-	/* Clear FLL & HLL flags */
-	writel(CMU_FC_SR_FLL | CMU_FC_SR_HLL, CMU_FC_SR(addr));
+	/* Clear FLL & FHH flags */
+	writel(CMU_FC_SR_FLL | CMU_FC_SR_FHH, CMU_FC_SR(addr));
 
 	/* Write params */
 	writel(params->ref_cnt, CMU_FC_RCCR(addr));
