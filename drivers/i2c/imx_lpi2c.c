@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Freescale Semiconductors, Inc.
+ * Copyright 2025 NXP
  */
 
 #include <common.h>
 #include <errno.h>
 #include <log.h>
 #include <asm/io.h>
+#if !defined(CONFIG_MACH_S32)
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
-#include <imx_lpi2c.h>
 #include <asm/arch/sys_proto.h>
+#endif
+#include <imx_lpi2c.h>
 #include <dm.h>
 #include <fdtdec.h>
 #include <i2c.h>
