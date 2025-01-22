@@ -18,6 +18,7 @@
 #include <fdtdec.h>
 #include <i2c.h>
 #include <dm/device_compat.h>
+#include <linux/io.h>
 
 #define LPI2C_FIFO_SIZE 4
 #define LPI2C_NACK_TOUT_MS 1
@@ -446,13 +447,15 @@ static int imx_lpi2c_probe(struct udevice *bus)
 {
 	struct imx_lpi2c_bus *i2c_bus = dev_get_priv(bus);
 	fdt_addr_t addr;
+	fdt_size_t size;
 	int ret;
 
 	i2c_bus->driver_data = dev_get_driver_data(bus);
 
-	addr = dev_read_addr(bus);
-	if (addr == FDT_ADDR_T_NONE)
-		return -EINVAL;
+	addr = dev_read_addr_size(bus, "reg", &size);
+
+	if (!devm_ioremap(bus, addr, size))
+		return -ENOMEM;
 
 	i2c_bus->base = addr;
 	i2c_bus->index = dev_seq(bus);
