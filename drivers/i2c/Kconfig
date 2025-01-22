@@ -278,7 +278,7 @@ config SYS_I2C_INTEL
 
 config SYS_I2C_IMX_LPI2C
 	bool "NXP i.MX LPI2C driver"
-	depends on MACH_IMX
+	depends on MACH_IMX || MACH_S32
 	help
 	  Add support for the NXP i.MX LPI2C driver.
 
