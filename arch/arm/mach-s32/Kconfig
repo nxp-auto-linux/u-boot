@@ -104,9 +104,11 @@ config NXP_S32N
 	imply CMD_PCI
 	imply CMD_UFS
 	imply CMD_GPT
+	imply CMD_I2C
 	imply CMD_SPI
 	imply DEBUG_UART
 	imply DEBUG_UART_SKIP_INIT
+	imply DM_I2C
 	imply DM_SCSI
 	imply DM_SPI
 	imply FS_FAT
@@ -137,6 +139,7 @@ config NXP_S32N
 	select SYSRESET
 	select PL01X_SERIAL
 	select S32N_UFS
+	select SYS_I2C_IMX_LPI2C
 
 config DEFAULT_DEVICE_TREE
 	default "s32"
