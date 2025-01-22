@@ -517,6 +517,7 @@ static const struct dm_i2c_ops imx_lpi2c_ops = {
 static const struct udevice_id imx_lpi2c_ids[] = {
 	{ .compatible = "fsl,imx7ulp-lpi2c", },
 	{ .compatible = "fsl,imx8qm-lpi2c", },
+	{ .compatible = "nxp,s32n79-lpi2c", },
 	{}
 };
 
