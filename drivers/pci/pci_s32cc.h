@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2023 NXP
+ * Copyright 2019-2023, 2025 NXP
  * S32CC PCIe driver
  */
 
@@ -72,7 +72,7 @@ struct s32cc_pcie {
 	enum dw_pcie_device_mode mode;
 	int id;
 	enum pcie_phy_mode phy_mode;
-	enum pcie_link_speed linkspeed;
+	int linkspeed;
 
 	struct phy phy0, phy1;
 
