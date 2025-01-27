@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2024 NXP
+ * Copyright 2020-2025 NXP
  * S32CC PCIe Host driver
  */
 
@@ -110,6 +110,11 @@ u32 dw_pcie_readl_ctrl(struct s32cc_pcie *pci, u32 reg)
 		dev_err(pci->pcie.dev, "Read ctrl address failed\n");
 
 	return val;
+}
+
+static inline u32 pcie_read_ctrl_status_reg(struct dw_pcie *pcie)
+{
+	return dw_pcie_readl_dbi(pcie, PCIE_CTRL_LINK_STATUS_REG);
 }
 
 static void s32cc_pcie_cfg0_set_busdev(struct s32cc_pcie *s32cc_pp, u32 busdev)
@@ -427,13 +432,6 @@ static int wait_phy_data_link(struct s32cc_pcie *s32cc_pp)
 	return ret;
 }
 
-static bool speed_change_completed(struct dw_pcie *pcie)
-{
-	u32 ctrl = dw_pcie_readl_dbi(pcie, PCIE_LINK_WIDTH_SPEED_CONTROL);
-
-	return ctrl & PORT_LOGIC_SPEED_CHANGE;
-}
-
 static int s32cc_pcie_get_link_speed(struct dw_pcie *pcie)
 {
 	u32 cap_offset = dw_pcie_find_capability(pcie, PCI_CAP_ID_EXP);
@@ -454,72 +452,37 @@ static u32 s32cc_pcie_get_link_width(struct dw_pcie *pcie)
 static int s32cc_pcie_start_link(struct dw_pcie *pcie)
 {
 	struct s32cc_pcie *s32cc_pp = to_s32cc_from_dw_pcie(pcie);
-	u32 tmp, cap_offset;
-	bool speed_set;
-	int ret = 0;
+	u32 reg, tmp;
+	int ret;
 
 	/* Don't do anything if not Root Complex */
 	if (!is_s32cc_pcie_rc(s32cc_pp->mode))
 		return 0;
 
-	/* Try to (re)establish the link, starting with Gen1 */
-	s32cc_pcie_disable_ltssm(s32cc_pp);
+	if (s32cc_pp->linkspeed >= GEN1 && s32cc_pp->linkspeed < GEN3) {
+		/* Limit max link speed */
+		reg = (dw_pcie_readl_dbi(pcie, PCIE_CTRL2_LINK_STATUS2_REG) &
+				~(PCIE_CAP_TARGET_LINK_SPEED)) | s32cc_pp->linkspeed;
+		dw_pcie_writel_dbi(pcie, PCIE_CTRL2_LINK_STATUS2_REG, reg);
 
-	dw_pcie_dbi_ro_wr_en(pcie);
-	cap_offset = dw_pcie_find_capability(pcie, PCI_CAP_ID_EXP);
-	tmp = (dw_pcie_readl_dbi(pcie, cap_offset + PCI_EXP_LNKCAP) &
-			~(PCI_EXP_LNKCAP_SLS)) | PCI_EXP_LNKCAP_SLS_2_5GB;
-	dw_pcie_writel_dbi(pcie, cap_offset + PCI_EXP_LNKCAP, tmp);
-	dw_pcie_dbi_ro_wr_dis(pcie);
+		if (is_s32cc_pcie_ltssm_enabled(s32cc_pp)) {
+			ret = read_poll_timeout(pcie_read_ctrl_status_reg, pcie, tmp,
+						!(tmp & PCIE_CAP_LINK_TRAINING),
+						PCIE_LINK_WAIT_US, PCIE_LINK_TIMEOUT_US);
+			if (ret)
+				dev_warn(s32cc_pp->pcie.dev,
+					 "Failed to finalize link training\n");
+
+			reg = dw_pcie_readl_dbi(pcie, PCIE_CTRL_LINK_STATUS_REG) |
+				PCIE_CAP_RETRAIN_LINK;
+			dw_pcie_writel_dbi(pcie, PCIE_CTRL_LINK_STATUS_REG, reg);
+		}
+	}
 
 	/* Start LTSSM. */
 	s32cc_pcie_enable_ltssm(s32cc_pp);
 
-	dw_pcie_dbi_ro_wr_en(pcie);
-	/* Allow Gen2 or Gen3 mode after the link is up.
-	 * s32cc_pcie.linkspeed is one of the speeds defined in pci_regs.h:
-	 * PCI_EXP_LNKCAP_SLS_2_5GB for Gen1
-	 * PCI_EXP_LNKCAP_SLS_5_0GB for Gen2
-	 * PCI_EXP_LNKCAP_SLS_8_0GB for Gen3
-	 */
-	tmp = (dw_pcie_readl_dbi(pcie, cap_offset + PCI_EXP_LNKCAP) &
-			~(PCI_EXP_LNKCAP_SLS)) | s32cc_pp->linkspeed;
-	dw_pcie_writel_dbi(pcie, cap_offset + PCI_EXP_LNKCAP, tmp);
-
-	/*
-	 * Start Directed Speed Change so the best possible speed both link
-	 * partners support can be negotiated.
-	 * The manual says:
-	 * When you set the default of the Directed Speed Change field of the
-	 * Link Width and Speed Change Control register
-	 * (GEN2_CTRL_OFF.DIRECT_SPEED_CHANGE) using the
-	 * DEFAULT_GEN2_SPEED_CHANGE configuration parameter to 1, then
-	 * the speed change is initiated automatically after link up, and the
-	 * controller clears the contents of GEN2_CTRL_OFF.DIRECT_SPEED_CHANGE.
-	 */
-	tmp = dw_pcie_readl_dbi(pcie, PCIE_LINK_WIDTH_SPEED_CONTROL) |
-			PORT_LOGIC_SPEED_CHANGE;
-	dw_pcie_writel_dbi(pcie, PCIE_LINK_WIDTH_SPEED_CONTROL, tmp);
-	dw_pcie_dbi_ro_wr_dis(pcie);
-
-	ret = read_poll_timeout(speed_change_completed, pcie, speed_set,
-				speed_set, PCIE_LINK_WAIT_US,
-				PCIE_LINK_TIMEOUT_US);
-
-	/* Make sure link training is finished as well! */
-	if (!ret) {
-		ret = wait_phy_data_link(s32cc_pp);
-	} else {
-		dev_err(pcie->dev, "Speed change timeout\n");
-		ret = -EINVAL;
-	}
-
-	if (!ret)
-		dev_info(pcie->dev, "X%d, Gen%d\n",
-			 s32cc_pcie_get_link_width(pcie),
-			 s32cc_pcie_get_link_speed(pcie));
-
-	return ret;
+	return wait_phy_data_link(s32cc_pp);
 }
 
 void s32cc_pcie_set_device_id(struct s32cc_pcie *s32cc_pp)
@@ -658,12 +621,16 @@ int s32cc_pcie_dt_init_common(struct s32cc_pcie *s32cc_pp)
 	}
 	dev_dbg(dev, "Ctrl base: 0x%lx\n", (uintptr_t)s32cc_pp->ctrl_base);
 
-	/* get supported speed (Gen1/Gen2/Gen3) from device tree */
-	s32cc_pp->linkspeed = (enum pcie_link_speed)
-		dev_read_u32_default(dev, "max-link-speed", GEN1);
-	if (s32cc_pp->linkspeed  < GEN1 || s32cc_pp->linkspeed > GEN3) {
-		dev_info(dev, "PCIe%d: Invalid speed\n", s32cc_pp->id);
-		s32cc_pp->linkspeed  = GEN1;
+	/* Limit link speed */
+	s32cc_pp->linkspeed = dev_read_u32_default(dev, "max-link-speed",
+						   NOT_SPECIFIED);
+	if (s32cc_pp->linkspeed >= GEN1 && s32cc_pp->linkspeed < GEN3) {
+		dev_info(dev, "PCIe%d: PCIe speed limited to GEN%d in device tree\n",
+			 s32cc_pp->id, s32cc_pp->linkspeed);
+	} else if (s32cc_pp->linkspeed > GEN3) {
+		dev_warn(dev, "PCIe%d: Invalid PCIe speed limitation setting\n",
+			 s32cc_pp->id);
+		s32cc_pp->linkspeed = NOT_SPECIFIED;
 	}
 
 	s32cc_pcie_set_phy_mode(s32cc_pp);
@@ -729,12 +696,6 @@ static int init_pcie(struct s32cc_pcie *s32cc_pp)
 
 	/* Enable writing dbi registers */
 	dw_pcie_dbi_ro_wr_en(pcie);
-
-	/* Enable direct speed change */
-	val = dw_pcie_readl_dbi(pcie, PCIE_LINK_WIDTH_SPEED_CONTROL);
-	val |= PORT_LOGIC_SPEED_CHANGE;
-	dw_pcie_writel_dbi(pcie, PCIE_LINK_WIDTH_SPEED_CONTROL, val);
-	dw_pcie_dbi_ro_wr_dis(pcie);
 
 	/* Disable phase 2,3 equalization */
 	disable_equalization(pcie);
