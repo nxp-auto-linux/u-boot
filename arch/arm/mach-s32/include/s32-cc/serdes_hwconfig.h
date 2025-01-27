@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2021-2024 NXP */
+/* Copyright 2021-2025 NXP */
 
 #ifndef SERDES_HWCONFIG_H
 #define SERDES_HWCONFIG_H
@@ -131,6 +131,7 @@ enum pcie_type {
  * PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR of register LINK_CAPABILITIES2_REG
  */
 enum pcie_link_speed {
+	NOT_SPECIFIED = 0,
 	GEN1 = 0x1,
 	GEN2 = 0x2,
 	GEN3 = 0x3,
