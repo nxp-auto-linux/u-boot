@@ -506,11 +506,10 @@ void s32cc_pcie_set_device_id(struct s32cc_pcie *s32cc_pp)
 		(u32)(pcie_vendor_id & GENMASK(15, 0)));
 	dw_pcie_dbi_ro_wr_en(pcie);
 	dw_pcie_writel_dbi(pcie, PCI_VENDOR_ID, pcie_vendor_id);
+	dw_pcie_dbi_ro_wr_dis(pcie);
 
 	if (pcie_vendor_id != dw_pcie_readl_dbi(pcie, PCI_VENDOR_ID))
 		dev_info(dev, "PCI Device and Vendor IDs could not be set\n");
-
-	dw_pcie_dbi_ro_wr_dis(pcie);
 }
 
 static void s32cc_pcie_set_phy_mode(struct s32cc_pcie *s32cc_pp)
@@ -657,13 +656,12 @@ static void disable_equalization(struct dw_pcie *pcie)
 {
 	u32 val;
 
-	dw_pcie_dbi_ro_wr_en(pcie);
-
 	val = dw_pcie_readl_dbi(pcie, PORT_LOGIC_GEN3_EQ_CONTROL);
 	val &= ~(GET_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE) |
 		GET_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC));
 	val |= BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
 		BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84);
+	dw_pcie_dbi_ro_wr_en(pcie);
 	dw_pcie_writel_dbi(pcie, PORT_LOGIC_GEN3_EQ_CONTROL, val);
 
 	dw_pcie_dbi_ro_wr_dis(pcie);
@@ -694,9 +692,6 @@ static int init_pcie(struct s32cc_pcie *s32cc_pp)
 		dw_pcie_writel_ctrl(s32cc_pp, PE0_GEN_CTRL_1, val);
 	}
 
-	/* Enable writing dbi registers */
-	dw_pcie_dbi_ro_wr_en(pcie);
-
 	/* Disable phase 2,3 equalization */
 	disable_equalization(pcie);
 
@@ -705,11 +700,9 @@ static int init_pcie(struct s32cc_pcie *s32cc_pp)
 	 * change those defaults.
 	 */
 
-	/* Make sure DBI registers are R/W */
-	dw_pcie_dbi_ro_wr_en(pcie);
-
 	val = dw_pcie_readl_dbi(pcie, PORT_LOGIC_PORT_FORCE_OFF);
 	val |= BIT_32(PCIE_DO_DESKEW_FOR_SRIS_BIT);
+	dw_pcie_dbi_ro_wr_en(pcie);
 	dw_pcie_writel_dbi(pcie, PORT_LOGIC_PORT_FORCE_OFF, val);
 
 	if (is_s32cc_pcie_rc(s32cc_pp->mode)) {
