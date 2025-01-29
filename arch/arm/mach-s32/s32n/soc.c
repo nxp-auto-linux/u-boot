@@ -106,17 +106,6 @@ ulong board_get_usable_ram_top(ulong total_size)
 
 int arch_cpu_init_dm(void)
 {
-	int ret = fdtdec_setup_mem_size_base();
-
-	if (ret)
-		return ret;
-
-#ifndef CONFIG_SYS_DCACHE_OFF
-	/* Called after mmu is enabled. */
-	mmu_map_region_attrs(gd->ram_base, get_effective_memsize(),
-			     DDR_ATTRS, true);
-#endif
-
 	return 0;
 }
 
