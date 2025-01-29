@@ -213,19 +213,8 @@ static void mmu_set_sram_size(void)
 
 int arch_cpu_init_dm(void)
 {
-	int ret;
-
 	mmu_set_sram_size();
 
-	ret = fdtdec_setup_mem_size_base();
-	if (ret)
-		return ret;
-
-#ifndef CONFIG_SYS_DCACHE_OFF
-	/* Called after mmu is enabled. */
-	mmu_map_region_attrs(gd->ram_base, get_effective_memsize(),
-			     DDR_ATTRS, true);
-#endif
 	return 0;
 }
 
