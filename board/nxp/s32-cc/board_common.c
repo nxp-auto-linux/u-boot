@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 #include <common.h>
 #include <image.h>
@@ -9,6 +9,9 @@
 void board_cleanup_before_linux(void)
 {
 	int ret, skip;
+
+	if (!IS_ENABLED(CONFIG_SCMI_FIRMWARE))
+		return;
 
 	skip = env_get_yesno("skip_scmi_reset_agent");
 	if (skip == 1)
