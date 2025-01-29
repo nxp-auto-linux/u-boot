@@ -161,13 +161,26 @@ static int early_mmu_init(void)
 
 int arch_cpu_init(void)
 {
+	int ret;
+
 	gd->flags |= GD_FLG_SKIP_RELOC;
 
 	if (IS_ENABLED(CONFIG_DEBUG_UART))
 		debug_uart_init();
 
 	/* Enable MMU and caches early to speed-up boot process */
-	return early_mmu_init();
+	ret = early_mmu_init();
+	if (ret)
+		return ret;
+
+	ret = fdtdec_setup_mem_size_base();
+	if (ret)
+		return ret;
+
+	if (!IS_ENABLED(CONFIG_SYS_DCACHE_OFF))
+		mmu_map_region_attrs(gd->ram_base, get_effective_memsize(),
+				     DDR_ATTRS, true);
+	return 0;
 }
 
 int print_socinfo(void)
