@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2025 NXP
  */
 
 #include <common.h>
@@ -69,7 +69,7 @@ static int s32n_ufs_pltfm_bind(struct udevice *dev)
 
 static const struct udevice_id s32n_ufs_pltfm_ids[] = {
 	{
-		.compatible = "nxp,s32n-ufs",
+		.compatible = "nxp,s32n79-ufshc",
 	},
 	{},
 };
