@@ -1,8 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2025 NXP
  */
-
 #include <common.h>
 #include <env.h>
 #include <fdt_support.h>
@@ -15,6 +14,41 @@
 #include <linux/kernel.h>
 #include <linux/libfdt.h>
 #include <s32/fdt.h>
+
+void ft_fixup_ufs_nodes(void *new_blob)
+{
+	const char *ufs_compatible = "nxp,s32n79-ufshc";
+	int new_blob_offset, ret;
+	char *status;
+	fdt_addr_t addr;
+	ofnode node;
+
+	ofnode_for_each_compatible_node(node, ufs_compatible) {
+		status = ofnode_is_enabled(node) ? "okay" : "disabled";
+
+		addr = ofnode_get_addr(node);
+		if (addr == FDT_ADDR_T_NONE) {
+			pr_err("%s: cannot read reg\n",
+			       ofnode_get_name(node));
+			continue;
+		}
+
+		new_blob_offset =
+			fdt_node_offset_by_compat_reg(new_blob,
+						      ufs_compatible, addr);
+		if (new_blob_offset < 0) {
+			pr_err("%s: cannot be found in OS FDT\n",
+			       ofnode_get_name(node));
+			continue;
+		}
+
+		ret = fdt_setprop_string(new_blob, new_blob_offset, "status",
+					 status);
+		if (ret < 0)
+			pr_err("%s: status cannot be updated in OS FDT\n",
+			       ofnode_get_name(node));
+	}
+}
 
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
@@ -43,6 +77,8 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	ret = ft_fixup_memory(blob, bd);
 	if (ret)
 		return ret;
+
+	ft_fixup_ufs_nodes(blob);
 
 	return ft_fixup_atf(blob);
 }
