@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2023, 2025 NXP
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <clk.h>
 #include <cpu.h>
 #include <dm.h>
@@ -62,6 +67,11 @@ static int cpu_s32cc_get_info(const struct udevice *dev, struct cpu_info *info)
 		.id = S32CC_SCMI_CLK_A53,
 	};
 
+	if (!IS_ENABLED(CONFIG_SCMI_FIRMWARE)) {
+		info->cpu_freq = 0;
+		return 0;
+	}
+
 	clk_dev = get_clk_device();
 	if (!clk_dev) {
 		printf("%s: Failed to get clock device\n", __func__);
@@ -85,13 +95,6 @@ static int cpu_s32cc_get_info(const struct udevice *dev, struct cpu_info *info)
 	info->features = BIT(CPU_FEAT_L1_CACHE) | BIT(CPU_FEAT_MMU);
 
 exit:
-	ret = clk_free(&a53_clock);
-	if (ret) {
-		printf("%s: Failed to free clock for CPU (err = %d)\n",
-		       __func__, ret);
-		return ret;
-	}
-
 	return freq ? 0 : -EINVAL;
 }
 
