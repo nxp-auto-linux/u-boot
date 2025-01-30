@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2023, 2025 NXP
  */
 
 #include <common.h>
@@ -61,6 +61,11 @@ static int cpu_s32cc_get_info(const struct udevice *dev, struct cpu_info *info)
 	struct clk a53_clock = {
 		.id = S32CC_SCMI_CLK_A53,
 	};
+
+	if (!IS_ENABLED(CONFIG_SCMI_FIRMWARE)) {
+		info->cpu_freq = 0;
+		return 0;
+	}
 
 	clk_dev = get_clk_device();
 	if (!clk_dev) {
