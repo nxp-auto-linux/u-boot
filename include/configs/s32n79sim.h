@@ -58,7 +58,7 @@
 		LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
 		EXTRA_BOOT_ARGS "\0" \
 	"fixup_initrd_size=setexpr ramdisk_size_addr ${ramdisk_addr} - 0x4; " \
-		  "setexpr.q initrd-end ${ramdisk_addr} + " \
+		  "setexpr.l initrd-end ${ramdisk_addr} + " \
 		  "*${ramdisk_size_addr}; "\
 		  "setexpr.l initrd-end.h ${initrd-end} / 0x100000000; "\
 		  "setexpr.l initrd-end.l ${initrd-end} \% 0x100000000; "\
