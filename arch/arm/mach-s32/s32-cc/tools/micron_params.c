@@ -1,9 +1,68 @@
 // SPDX-License-Identifier: GPL-2.0+
-/* Copyright 2019-2022 NXP */
+/* Copyright 2019-2022, 2025 NXP */
 
 #include <s32cc_image_params.h>
 
-static struct qspi_params micron_qspi_conf = {
+/* TODO - Update MT25QU512ABB flash parameters once all of them are
+ * available.
+ * Current configuration is based on S32R47 DS for 4-4-4 Quad @ DDR 80
+ * MHz.
+ */
+static struct qspi_params micron_mt25qu512abb_qspi_conf = {
+	.header   = 0x5a5a5a5a,
+	.mcr      = 0x010310c0,
+	.flshcr   = 0x00010202,
+	.bufgencr = 0x00000000,
+	.dllcr    = 0x8280400d,
+	.paritycr = 0x00000000,
+	.sfacr    = 0x00000000,
+	.smpr     = 0x04000000,
+	.dlcr     = 0x00004000,
+	.sflash_1_size = 0x20000000,
+	.sflash_2_size = 0x00000000,
+	.dlpr = 0x00000000,
+	.sfar = 0x00000000,
+	.ipcr = 0x00000000,
+	.tbdr = 0x00000000,
+	.dll_bypass_en   = 0x00,
+	.dll_slv_upd_en  = 0x01,
+	.dll_auto_upd_en = 0x01,
+	.ipcr_trigger_en = 0x00,
+	.sflash_clk_freq = 80,
+	.reserved = {0x00, 0x00, 0x00},
+	/* Micron read - 4DTR - TBD */
+	.command_seq = { 0 },
+	.writes = {
+		{
+			/* Write enable */
+			.config = {
+				.valid_addr = 0,
+				.cdata_size = 0,
+				.addr_size = 0,
+				.pad = 0,
+				.reserved = 0,
+				.opcode = 6,
+			},
+			.addr = 0,
+			.data = 0,
+		},
+		{
+			/* Enable DTR Quad */
+			.config = {
+				.valid_addr = 1,
+				.cdata_size = 1,
+				.addr_size = 24,
+				.pad = 0,
+				.reserved = 0,
+				.opcode = 0xed,
+			},
+			.addr = 0x0,
+			.data = 0xeb,
+		},
+	},
+};
+
+static struct qspi_params micron_mt35xu512aba_qspi_conf = {
 	.header   = 0x5a5a5a5a,
 	.mcr      = 0x010f00cc,
 	.flshcr   = 0x00010303,
@@ -59,7 +118,12 @@ static struct qspi_params micron_qspi_conf = {
 	},
 };
 
-struct qspi_params *get_micron_qspi_conf(void)
+struct qspi_params *get_micron_mt25qu512abb_qspi_conf(void)
 {
-	return &micron_qspi_conf;
+	return &micron_mt25qu512abb_qspi_conf;
+}
+
+struct qspi_params *get_micron_mt35xu512aba_qspi_conf(void)
+{
+	return &micron_mt35xu512aba_qspi_conf;
 }

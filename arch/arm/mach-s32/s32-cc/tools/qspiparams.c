@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
-/* Copyright 2022-2023 NXP */
+/* Copyright 2022-2023, 2025 NXP */
 
 #include <errno.h>
 #include <s32cc_image_params.h>
@@ -14,12 +14,14 @@
 
 enum qspi_memory {
 	MX25UW51245G,
+	MT25QU512ABB,
 	MT35XU512ABA,
 	INVALID_QSPI_MEM,
 };
 
 static const char * const mem_names[] = {
 	[MX25UW51245G] = str(MX25UW51245G),
+	[MT25QU512ABB] = str(MT25QU512ABB),
 	[MT35XU512ABA] = str(MT35XU512ABA),
 };
 
@@ -34,7 +36,7 @@ static void show_usage(char *arg)
 	fprintf(stderr, "Usage: %s -m MEMORY -f FREQUENCY -o FILE\n\n", arg);
 	fprintf(stderr, "\t-m\t\tSelects the QSPI memory. ");
 	fprintf(stderr,
-		"Available memories:\n\t\t\tMX25UW51245G and MT35XU512ABA\n");
+		"Available memories:\n\t\t\tMX25UW51245G, MT25QU512ABB and MT35XU512ABA\n");
 	fprintf(stderr,
 		"\t-f\t\t(Optional) Selects the frequency for MX25UW51245G\n");
 }
@@ -73,13 +75,13 @@ static int check_freq(unsigned int freq)
 
 int main(int argc, char **argv)
 {
-	int opt;
+	struct qspi_params *params = NULL, *empty_params = NULL;
 	enum qspi_memory memory = INVALID_QSPI_MEM;
 	unsigned int freq = 0;
-	struct qspi_params *params;
 	char *output = NULL;
 	FILE *ofile;
 	errno = 0;
+	int opt;
 
 	while ((opt = getopt(argc, argv, "hm:o:f:")) > 0) {
 		switch (opt) {
@@ -115,8 +117,16 @@ int main(int argc, char **argv)
 		if (freq)
 			params->sflash_clk_freq = freq;
 		break;
+	case MT25QU512ABB:
+		/* By default, inherit and use the QuadSPI configurations and
+		 * clocking from BootROM.
+		 */
+		empty_params = calloc(1, sizeof(*empty_params));
+		if (!empty_params)
+			exit(EXIT_FAILURE);
+		break;
 	case MT35XU512ABA:
-		params = get_micron_qspi_conf();
+		params = get_micron_mt35xu512aba_qspi_conf();
 		break;
 	default:
 		fprintf(stderr,
@@ -135,7 +145,13 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	fwrite(params, sizeof(*params), 1, ofile);
+	if (empty_params) {
+		fwrite(empty_params, sizeof(*empty_params), 1, ofile);
+		free(empty_params);
+	} else if (params) {
+		fwrite(params, sizeof(*params), 1, ofile);
+	}
+
 	fclose(ofile);
 
 	return EXIT_SUCCESS;

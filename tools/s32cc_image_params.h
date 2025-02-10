@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-/* Copyright 2019-2022 NXP */
+/* Copyright 2019-2022, 2025 NXP */
 
 #ifndef S32CC_IMAGE_PARAMS_H
 #define S32CC_IMAGE_PARAMS_H
@@ -54,6 +54,7 @@ struct qspi_params {
 };
 
 struct qspi_params *get_macronix_qspi_conf(void);
-struct qspi_params *get_micron_qspi_conf(void);
+struct qspi_params *get_micron_mt25qu512abb_qspi_conf(void);
+struct qspi_params *get_micron_mt35xu512aba_qspi_conf(void);
 
 #endif /* IMAGE_QSPI_PARAMS_H */
