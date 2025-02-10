@@ -1,5 +1,5 @@
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier:      GPL-2.0+
 #
@@ -18,7 +18,11 @@ QSPI_MEMORY = MX25UW51245G
 endif
 
 ifdef CONFIG_SPI_FLASH_STMICRO
+ifdef CONFIG_SPI_FLASH_MT25QU512ABB
+QSPI_MEMORY = MT25QU512ABB
+else
 QSPI_MEMORY = MT35XU512ABA
+endif
 endif
 
 QSPI_PARAMS_FILE ?= qspi_params_$(QSPI_MEMORY).bin
