@@ -188,6 +188,14 @@ config SPI_FLASH_MX25UW51245G
 	 because the fixup hooks for this flash add extra size overhead. Boards
 	 that don't use the flash can disable this to save space.
 
+config SPI_FLASH_MT25QU512ABB
+	bool "Micron MT25QU512ABB chip support"
+	depends on SPI_FLASH_STMICRO
+	help
+	  Add support for the Macronix MT25QU512ABB chip. This is a separate
+	  config because QuadSPI parameters need to be stored separately from
+	  other STMICRO chips.
+
 config SPI_FLASH_SST
 	bool "SST SPI flash support"
 	help
