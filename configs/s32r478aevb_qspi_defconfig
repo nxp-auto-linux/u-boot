@@ -17,3 +17,4 @@ CONFIG_QSPI_BOOT=y
 # CONFIG_PINCTRL_SCMI is not set
 # CONFIG_RESET_SCMI is not set
 # CONFIG_FSL_DSPI is not set
+# CONFIG_FSL_QSPI is not set
