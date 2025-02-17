@@ -12,6 +12,7 @@
 #include <asm/sections.h>
 #include <asm/system.h>
 #include <asm/armv8/mmu.h>
+#include <dm/ofnode.h>
 #include <linux/kernel.h>
 #include <s32/soc.h>
 
@@ -66,6 +67,26 @@ struct mm_region *get_mm_region(struct mm_region *mem_map_array, u64 phys_base)
 	}
 
 	return NULL;
+}
+
+static int parse_tfa_mem(fdt_addr_t *addr, fdt_size_t *size)
+{
+	ofnode node;
+
+	/* Get atf reserved-memory node offset if not just exit. */
+	node = ofnode_path("/reserved-memory/atf");
+	if (!ofnode_valid(node)) {
+		log_err("Unable to find 'atf' node\n");
+		return -EINVAL;
+	}
+
+	*addr = ofnode_get_addr_size(node, "reg", size);
+	if (*addr == FDT_ADDR_T_NONE) {
+		log_err("Unable to get value of 'reg' prop of 'atf' node\n");
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 static int early_mmu_init(void)
@@ -139,21 +160,24 @@ int clear_bss(void)
  */
 void enable_caches(void)
 {
-	struct mm_region *region;
+	struct mm_region *region_ptr;
+	fdt_addr_t tfa_addr;
+	fdt_size_t tfa_size;
 	ulong fdt_size;
 	size_t i;
+	int ret;
 
 	/*
 	 * Since some data was relocated at the end of the ram, map the entire
 	 * first memory bank.
 	 */
-	region = get_mm_region(static_mem_map, (uintptr_t)_start);
-	if (!region)
+	region_ptr = get_mm_region(static_mem_map, (uintptr_t)_start);
+	if (!region_ptr)
 		panic("Text memory region not found in static_mem_map\n");
 
-	region->virt = gd->ram_base;
-	region->phys = gd->ram_base;
-	region->size = get_effective_memsize();
+	region_ptr->virt = gd->ram_base;
+	region_ptr->phys = gd->ram_base;
+	region_ptr->size = get_effective_memsize();
 
 	/* Enable data cache and MMU. */
 	dcache_enable();
@@ -177,6 +201,19 @@ void enable_caches(void)
 		mmu_map_region_attrs(gd->bd->bi_dram[i].start,
 				     gd->bd->bi_dram[i].size,
 				     DDR_ATTRS, false);
+
+	ret = parse_tfa_mem(&tfa_addr, &tfa_size);
+	if (ret)
+		return;
+
+	if (!IS_ALIGNED(tfa_addr, PAGE_SIZE) ||
+	    !IS_ALIGNED(tfa_size, PAGE_SIZE)) {
+		log_err("BL31 address/size not aligned to PAGE_SIZE!\n");
+		tfa_addr = ALIGN_DOWN(tfa_addr, PAGE_SIZE);
+		tfa_size = ALIGN(tfa_size, PAGE_SIZE);
+	}
+
+	mmu_change_region_attr(tfa_addr, tfa_size, PTE_TYPE_FAULT);
 }
 #else /* CONFIG_SYS_DCACHE_OFF */
 
