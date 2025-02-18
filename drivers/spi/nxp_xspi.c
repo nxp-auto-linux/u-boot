@@ -733,7 +733,7 @@ static int nxp_xspi_of_to_plat(struct udevice *bus)
 
 static int nxp_xspi_config_ahb_buffers(struct nxp_xspi *x)
 {
-	u32 reg;
+	u32 reg, adatsz;
 
 	reg = XSPI_BUF3CR_MSTRID(0xa);
 	xspi_writel_offset(x, 0, reg, BUF0CR);
@@ -743,7 +743,10 @@ static int nxp_xspi_config_ahb_buffers(struct nxp_xspi *x)
 	xspi_writel_offset(x, 0, reg, BUF2CR);
 
 	reg = XSPI_BUF3CR_MSTRID(0x6) | XSPI_BUF3CR_ALLMST_MASK;
-	reg |= XSPI_BUF3CR_ADATSZ((x->config.gmid ? 1024UL : DEFAULT_XMIT_SIZE) / 8U);
+
+	adatsz = (x->config.gmid ?
+		x->devtype_data->ahb_buf_size : DEFAULT_XMIT_SIZE) / 8U;
+	reg |= XSPI_BUF3CR_ADATSZ(adatsz);
 	xspi_writel_offset(x, 0, reg, BUF3CR);
 
 	/* Only the buffer3 is used */
