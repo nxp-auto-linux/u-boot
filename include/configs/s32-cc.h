@@ -104,6 +104,24 @@
 #  define FDT_FIXUP ";"
 #endif
 
+#if defined(CONFIG_TARGET_S32R478AEVB)
+#define S32CC_FLASH_COMMAND \
+	"flashboot=echo Booting from flash...; " \
+		"run flashbootargs; " \
+		"cp.b 0x1600000 ${loadaddr} 0x10D0000; " \
+		"cp.b 0x26d0000 ${fdt_addr} 0x30000; " \
+		"cp.b 0x2700000 ${ramdisk_addr} 0x1900000; " \
+		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
+#else
+#define S32CC_FLASH_COMMAND \
+	"flashboot=echo Booting from flash...; " \
+		"run flashbootargs;"\
+		"mtd read Kernel ${loadaddr};"\
+		"mtd read DTB ${fdt_addr};"\
+		"mtd read Rootfs ${ramdisk_addr};"\
+		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
+#endif
+
 #define S32CC_ENV_SETTINGS \
 	S32_ENV_SETTINGS \
 	"console=ttyLF" __stringify(S32_LINFLEX_MODULE) "\0" \
@@ -111,12 +129,7 @@
 		"fdt addr ${fdt_addr}; " \
 		"fdt rm /soc/mmc no-1-8-v; " \
 		"fdt resize; \0" \
-	"flashboot=echo Booting from flash...; " \
-		"run flashbootargs;"\
-		"mtd read Kernel ${loadaddr};"\
-		"mtd read DTB ${fdt_addr};"\
-		"mtd read Rootfs ${ramdisk_addr};"\
-		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0" \
+	S32CC_FLASH_COMMAND \
 	"flashbootargs=setenv bootargs console=${console},${baudrate}" \
 		" root=/dev/ram rw" LINUX_EARLY_CONSOLE \
 		LINUX_LOG_DISABLE EXTRA_BOOT_ARGS ";"\
