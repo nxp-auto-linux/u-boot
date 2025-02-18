@@ -754,7 +754,8 @@ static int nxp_xspi_config_ahb_buffers(struct nxp_xspi *x)
 	xspi_writel_offset(x, 0, 0, BUF2IND);
 
 	/* Program the Sequence ID for read/write operation. */
-	reg = XSPI_BFGENCR_SEQID_WR_EN_MASK | XSPI_BFGENCR_SEQID(CMD_LUT_FOR_AHB_CMD);
+	reg = XSPI_BFGENCR_WR_FLUSH_EN_MASK |
+		XSPI_BFGENCR_SEQID(CMD_LUT_FOR_AHB_CMD);
 	xspi_writel_offset(x, 0, reg, BFGENCR);
 
 	/* AHB access towards flash is broken if this AHB alignment boundary
