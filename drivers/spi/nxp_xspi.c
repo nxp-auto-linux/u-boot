@@ -406,8 +406,7 @@ static void nxp_xspi_prepare_lut(struct nxp_xspi *x,
 #endif
 	xspi_update_lut(x, CMD_LUT_FOR_IP_CMD, lutval, 1);
 
-	if (op->data.nbytes && (op->data.dir == SPI_MEM_DATA_IN ||
-				op->data.dir == SPI_MEM_DATA_OUT) &&
+	if (op->data.nbytes && op->data.dir == SPI_MEM_DATA_IN &&
 	    op->addr.nbytes)
 		xspi_update_lut(x, CMD_LUT_FOR_AHB_CMD, lutval, 1);
 }
