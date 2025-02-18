@@ -11,6 +11,8 @@ config TARGET_S32N79SIM
 	bool "Support S32N79SIM simulator"
 	help
 	  This board is based on the S32N79 simulator.
+	select SPI_FLASH_SPANSION
+	select SPI_FLASH_S28HX_T
 
 endchoice
 
