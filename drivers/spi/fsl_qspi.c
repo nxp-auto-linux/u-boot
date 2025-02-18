@@ -7,7 +7,7 @@
  * Copyright (C) 2018 Bootlin
  * Copyright (C) 2018 exceet electronics GmbH
  * Copyright (C) 2018 Kontron Electronics GmbH
- * Copyright 2019-2020,2022-2024 NXP
+ * Copyright 2019-2020,2022-2025 NXP
  *
  * This driver is a ported version of Linux Freescale QSPI driver taken from
  * v5.5-rc1 tag having following information.
@@ -800,7 +800,8 @@ static u32 fsl_qspi_memsize_per_cs(struct fsl_qspi *q)
 
 static void fsl_qspi_read_ahb(struct fsl_qspi *q, const struct spi_mem_op *op)
 {
-	void __iomem *ahb_read_addr = q->ahb_addr;
+	void __iomem *ahb_read_addr = q->ahb_addr +
+		q->selected * fsl_qspi_memsize_per_cs(q);
 
 	if (IS_ENABLED(CONFIG_FSL_QSPI_AHB_FULL_MAP)) {
 		if (op->addr.nbytes)
@@ -808,9 +809,9 @@ static void fsl_qspi_read_ahb(struct fsl_qspi *q, const struct spi_mem_op *op)
 	}
 
 	enable_ahb_buf_cache(q);
-	memcpy_fromio(op->data.buf.in,
-		      ahb_read_addr + q->selected * fsl_qspi_memsize_per_cs(q),
-		      op->data.nbytes);
+	invalidate_dcache_range((unsigned long)ahb_read_addr,
+				(unsigned long)ahb_read_addr + op->data.nbytes);
+	memcpy_fromio(op->data.buf.in, ahb_read_addr, op->data.nbytes);
 	disable_ahb_buf_cache(q);
 }
 
