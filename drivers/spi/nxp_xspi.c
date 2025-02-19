@@ -67,6 +67,7 @@ static struct nxp_xspi_devtype_data imx943_data = {
 	.ahb_buf_size = SZ_1K,
 	.quirks = 0,
 	.little_endian = true,
+	.cs_time = 3,
 };
 
 static struct nxp_xspi_devtype_data s32n79_data = {
@@ -76,6 +77,7 @@ static struct nxp_xspi_devtype_data s32n79_data = {
 	.ahb_buf_size = SZ_512,
 	.quirks = 0,
 	.little_endian = true,
+	.cs_time = 8,
 };
 
 static const struct udevice_id nxp_xspi_ids[] = {
@@ -878,7 +880,8 @@ static int nxp_xspi_default_setup(struct nxp_xspi *x)
 
 	nxp_xspi_config_ahb_buffers(x);
 
-	reg = XSPI_FLSHCR_TCSH(3) | XSPI_FLSHCR_TCSS(3);
+	reg = XSPI_FLSHCR_TCSH(x->devtype_data->cs_time) |
+		XSPI_FLSHCR_TCSS(x->devtype_data->cs_time);
 	xspi_writel_offset(x, 0, reg, FLSHCR);
 
 	xspi_writel_offset(x, 0, (uintptr_t)(x->ahb_addr + x->a1_size), SFA1AD);

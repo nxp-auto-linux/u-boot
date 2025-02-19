@@ -366,6 +366,7 @@ struct nxp_xspi_devtype_data {
 	unsigned int ahb_buf_size;
 	unsigned int quirks;
 	bool little_endian;
+	u8 cs_time;
 };
 
 struct nxp_xspi {
