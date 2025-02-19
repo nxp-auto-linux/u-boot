@@ -304,20 +304,20 @@
 
 #define xspi_writel_offset(x, env, val, offset)  do {    \
 	if ((x)->devtype_data->little_endian) \
-		out_le32((void __iomem *)(uintptr_t)(x)->iobase + \
+		out_le32((x)->iobase + \
 			 ((env) * ENV_ADDR_SIZE) + XSPI_##offset, (val));   \
 	else    \
-		out_be32((void __iomem *)(uintptr_t)(x)->iobase + \
+		out_be32((x)->iobase + \
 			 ((env) * ENV_ADDR_SIZE) + XSPI_##offset, (val));   \
 } while (0)
 
 #define xspi_readl_offset(x, env, offset)  ({    \
 	u32 reg;    \
 	if ((x)->devtype_data->little_endian) \
-		reg = in_le32((void __iomem *)(uintptr_t)(x)->iobase + \
+		reg = in_le32((x)->iobase + \
 			      ((env) * ENV_ADDR_SIZE) + XSPI_##offset); \
 	else    \
-		reg = in_be32((void __iomem *)(uintptr_t)(x)->iobase + \
+		reg = in_be32((x)->iobase + \
 			      ((env) * ENV_ADDR_SIZE) + XSPI_##offset);  \
 	reg;    \
 })
@@ -370,8 +370,8 @@ struct nxp_xspi_devtype_data {
 
 struct nxp_xspi {
 	struct udevice *dev;
-	u32 iobase;
-	u32 ahb_addr;
+	void __iomem *iobase;
+	void __iomem *ahb_addr;
 	u32 a1_size;
 	u32 a2_size;
 	struct {
