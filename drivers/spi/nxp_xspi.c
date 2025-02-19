@@ -69,8 +69,18 @@ static struct nxp_xspi_devtype_data imx943_data = {
 	.little_endian = true,
 };
 
+static struct nxp_xspi_devtype_data s32n79_data = {
+	.rxfifo = SZ_256,	/* RX fifo Size*/
+	.rx_buf_size = 64 * 4, /* RBDR buffer size */
+	.txfifo = SZ_1K,
+	.ahb_buf_size = SZ_512,
+	.quirks = 0,
+	.little_endian = true,
+};
+
 static const struct udevice_id nxp_xspi_ids[] = {
 	{ .compatible = "nxp,imx943-xspi", .data = (ulong)&imx943_data, },
+	{ .compatible = "nxp,s32n79-xspi", .data = (ulong)&s32n79_data, },
 	{ }
 };
 
