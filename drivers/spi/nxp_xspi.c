@@ -21,22 +21,20 @@
 
 #define MHZ(X)        ((X) * 1000000UL)
 
-static inline void xspi_writel(struct nxp_xspi *x, u32 val, u32 addr)
+static inline void xspi_writel(struct nxp_xspi *x, u32 val, void __iomem *addr)
 {
-	void __iomem *_addr = (void __iomem *)(uintptr_t)addr;
-
 	if (x->devtype_data->little_endian)
-		out_le32(_addr, val);
+		out_le32(addr, val);
 	else
-		out_be32(_addr, val);
+		out_be32(addr, val);
 };
 
-static inline u32 xspi_readl(struct nxp_xspi *x, u32 addr)
+static inline u32 xspi_readl(struct nxp_xspi *x, void __iomem *addr)
 {
 	if (x->devtype_data->little_endian)
-		return in_le32((uintptr_t)addr);
-	else
-		return in_be32((uintptr_t)addr);
+		return in_le32(addr);
+
+	return in_be32(addr);
 };
 
 #define xspi_config_sfp_tg(x, env, sfar, ipcr) do {\
@@ -48,8 +46,8 @@ static int xspi_readl_poll_tout(struct nxp_xspi *x, int env, u32 offset,
 				u32 mask, u32 delay_us,
 				u32 timeout_us, bool c)
 {
+	void __iomem *addr = x->iobase + (env * ENV_ADDR_SIZE) + offset;
 	u32 reg;
-	void __iomem *addr = (void __iomem *)(uintptr_t)x->iobase + (env * ENV_ADDR_SIZE) + offset;
 
 	if (!x->devtype_data->little_endian)
 		mask = (u32)cpu_to_be32(mask);
@@ -416,8 +414,7 @@ static void nxp_xspi_read_ahb(struct nxp_xspi *x, const struct spi_mem_op *op)
 	u32 len = op->data.nbytes;
 
 	/* Read out the data directly from the AHB buffer. */
-	memcpy_fromio(op->data.buf.in,
-		      (void *)(uintptr_t)(x->ahb_addr + op->addr.val), len);
+	memcpy_fromio(op->data.buf.in, x->ahb_addr + op->addr.val, len);
 }
 
 static void nxp_xspi_fill_txfifo(struct nxp_xspi *x,
@@ -439,7 +436,7 @@ static void nxp_xspi_fill_txfifo(struct nxp_xspi *x,
 			      ALIGN_DOWN(op->data.nbytes, 4)) / 4 + 1);
 	xspi_writel_offset(x, x->config.env, reg, TBCT);
 
-	reg = x->ahb_addr + op->addr.val;
+	reg = (uintptr_t)(x->ahb_addr + op->addr.val);
 	xspi_writel_offset(x, x->config.env, reg, SFP_TG_SFAR);
 
 	udelay(2);
@@ -501,7 +498,8 @@ static void nxp_xspi_read_rxfifo(struct nxp_xspi *x,
 				   XSPI_MCR_CLR_RXF_MASK, 1, POLL_TOUT, false);
 	WARN_ON(ret);
 
-	xspi_writel_offset(x, x->config.env, x->ahb_addr + op->addr.val,
+	xspi_writel_offset(x, x->config.env,
+			   (uintptr_t)(x->ahb_addr + op->addr.val),
 			   SFP_TG_SFAR);
 	reg = XSPI_SFP_TG_IPCR_SEQID(CMD_LUT_FOR_IP_CMD) | XSPI_SFP_TG_IPCR_IDATSZ(op->data.nbytes);
 	start = timer_get_us();
@@ -537,7 +535,8 @@ static int nxp_xspi_xfer_cmd(struct nxp_xspi *x, const struct spi_mem_op *op)
 	u32 reg;
 	int ret;
 
-	xspi_writel_offset(x, x->config.env, x->ahb_addr + op->addr.val,
+	xspi_writel_offset(x, x->config.env,
+			   (uintptr_t)(x->ahb_addr + op->addr.val),
 			   SFP_TG_SFAR);
 	reg = XSPI_SFP_TG_IPCR_SEQID(CMD_LUT_FOR_IP_CMD) | XSPI_SFP_TG_IPCR_IDATSZ(op->data.nbytes);
 	xspi_writel_offset(x, x->config.env, reg, SFP_TG_IPCR);
@@ -694,14 +693,21 @@ static int nxp_xspi_of_to_plat(struct udevice *bus)
 		dev_err(bus, "xspi_base regs missing\n");
 		return -ENODEV;
 	}
-	x->iobase = iobase;
+
+	x->iobase = devm_ioremap(bus, iobase, iobase_size);
+	if (!x->iobase)
+		return -ENOMEM;
 
 	ahb_addr = dev_read_addr_size_name(bus, "xspi_mmap", &ahb_size);
 	if (ahb_addr == FDT_ADDR_T_NONE) {
 		dev_err(bus, "xspi_mmap regs missing\n");
 		return -ENODEV;
 	}
-	x->ahb_addr = ahb_addr;
+
+	x->ahb_addr = devm_ioremap(bus, ahb_addr, ahb_size);
+	if (!x->ahb_addr)
+		return -ENOMEM;
+
 	x->a1_size = ahb_size;
 	x->a2_size = 0;
 
@@ -723,7 +729,7 @@ static int nxp_xspi_of_to_plat(struct udevice *bus)
 	}
 #endif
 
-	dev_dbg(bus, "iobase=<0x%x>, ahb_addr=<0x%x>, a1_size=<0x%x>, a2_size=<0x%x>, env=<0x%x>, gmid=<0x%x>\n",
+	dev_dbg(bus, "iobase=<0x%p>, ahb_addr=<0x%p>, a1_size=<0x%x>, a2_size=<0x%x>, env=<0x%x>, gmid=<0x%x>\n",
 		x->iobase, x->ahb_addr, x->a1_size, x->a2_size, x->config.env,
 		x->config.gmid);
 
@@ -865,8 +871,9 @@ static int nxp_xspi_default_setup(struct nxp_xspi *x)
 	reg = XSPI_FLSHCR_TCSH(3) | XSPI_FLSHCR_TCSS(3);
 	xspi_writel_offset(x, 0, reg, FLSHCR);
 
-	xspi_writel_offset(x, 0, x->ahb_addr + x->a1_size, SFA1AD);
-	xspi_writel_offset(x, 0, x->ahb_addr + x->a1_size + x->a2_size, SFA2AD);
+	xspi_writel_offset(x, 0, (uintptr_t)(x->ahb_addr + x->a1_size), SFA1AD);
+	xspi_writel_offset(x, 0, (uintptr_t)(x->ahb_addr + x->a1_size + x->a2_size),
+			   SFA2AD);
 
 	reg = XSPI_SMPR_DLLFSMPFA(7);
 	xspi_writel_offset(x, 0, reg, SMPR);
