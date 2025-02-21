@@ -15,6 +15,13 @@ config BOARD_NFS_BOOT_INTERFACE
 	default "br0" if TARGET_S32G274ABLUEBOX3
 	default "eth0"
 
+config S32CC_START_M7
+	bool
+	default n
+	select LIB_ELF
+	help
+	  Enable this is you want to be able to start the S32 M7 from u-boot
+
 config S32CC_HWCONFIG_LEGACY
 	bool "Legacy S32CC HWConfig definition"
 	default y
