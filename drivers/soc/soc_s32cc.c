@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2023 NXP
+ * Copyright 2023,2025 NXP
  */
 
 #include <common.h>
@@ -129,8 +129,12 @@ static int soc_s32cc_probe(struct udevice *dev)
 
 	for (i = 0u; i < ARRAY_SIZE(cells); i++) {
 		ret = read_soc_nvmem_cell(dev, &cells[i]);
-		if (ret)
-			return ret;
+		if (ret) {
+			if (!strcmp(cells[i].name, "lockstep_enabled"))
+				lockstep_enabled = false;
+			else
+				return ret;
+		}
 	}
 
 	plat->lockstep_enabled = !!lockstep_enabled;
