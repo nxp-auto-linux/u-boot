@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright 2018-2023 NXP
+ * Copyright 2018-2023,2025 NXP
  */
 #include <common.h>
 #include <adc.h>
@@ -13,9 +13,11 @@
 #define SARADC0_TOLERANCE	200
 
 #define SPI5_ALIAS "spi5"
+#define I2C4_ALIAS "i2c4"
 #define SJA1110_UC_COMPATIBLE "nxp,sja1110-uc"
 #define SJA1110_SWITCH_COMPATIBLE "nxp,sja1110-switch"
 #define SJA1110_DSA_COMPATIBLE "nxp,sja1110a"
+#define INA231_COMPATIBLE "ti,ina231"
 
 /**
  * enum board_type - RDB board type
@@ -35,6 +37,8 @@ struct rdb_revisions {
 	u32 lower;
 	u32 upper;
 };
+
+static bool check_rev;
 
 static const struct rdb_revisions rdb2_revisions[] = {
 	{ /* 0V */
@@ -218,6 +222,8 @@ int board_late_init(void)
 	case 'E':
 	case 'F':
 		env_set("pfe1_phy_addr", "8");
+		if (board == RDB2)
+			check_rev = true;
 		break;
 	default:
 		env_set("pfe1_phy_addr", NULL);
@@ -299,9 +305,46 @@ out_err:
 	pr_err("SJA1110 DSA driver not enabled.\n");
 }
 
+void ft_ina231_setup(void *blob)
+{
+	const char *i2c4_path;
+	int offset;
+	int ret;
+	int i2c4_offset;
+
+	i2c4_path = fdt_get_alias(blob, I2C4_ALIAS);
+	if (!i2c4_path) {
+		pr_err("Alias not found: %s\n", I2C4_ALIAS);
+		return;
+	}
+
+	i2c4_offset = fdt_path_offset(blob, i2c4_path);
+	if (i2c4_offset < 0) {
+		pr_err("Failed to get node offset by path %s. Error: %s\n",
+		       i2c4_path, fdt_strerror(i2c4_offset));
+		return;
+	}
+
+	offset = fdt_node_offset_by_compatible(blob, i2c4_offset, INA231_COMPATIBLE);
+	if (offset < 0) {
+		pr_err("Failed to get node offset by compatible %s. Error: %s\n",
+		       INA231_COMPATIBLE, fdt_strerror(offset));
+		return;
+	}
+
+	ret = fdt_status_okay(blob, offset);
+	if (ret < 0) {
+		pr_err("Failed to set status \"okay\". Error: %s\n",
+		       fdt_strerror(offset));
+		return;
+	}
+}
+
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	ft_sja1110_dsa_setup(blob);
+	if (check_rev)
+		ft_ina231_setup(blob);
 
 	return 0;
 }
