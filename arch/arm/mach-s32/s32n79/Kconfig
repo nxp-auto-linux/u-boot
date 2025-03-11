@@ -20,6 +20,7 @@ config ENV_IS_IN_FAT
 	default y if !MEM_BOOT
 
 config ENV_FAT_INTERFACE
+	default "mmc" if SD_BOOT
 	default "scsi"
 
 config ENV_FAT_DEVICE_AND_PART
