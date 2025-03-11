@@ -26,6 +26,9 @@ config ENV_FAT_INTERFACE
 config ENV_FAT_DEVICE_AND_PART
 	default "0:3"
 
+config ENV_SIZE
+	default 0x2000
+
 if DEBUG_UART
 
 # Use UART0 by default
