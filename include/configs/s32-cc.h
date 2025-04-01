@@ -106,11 +106,17 @@
 
 #if defined(CONFIG_TARGET_S32R478AEVB)
 #define S32CC_FLASH_COMMAND \
+	"kernel_flash_addr=0x1530000\0" \
+	"kernel_flash_size=0xF00000\0" \
+	"dtb_flash_addr=0x2430000\0" \
+	"dtb_flash_size=0x10000\0" \
+	"rootfs_flash_addr=0x2440000\0" \
+	"rootfs_flash_size=0x1600000\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs; " \
-		"cp.b 0x1600000 ${loadaddr} 0x10D0000; " \
-		"cp.b 0x26d0000 ${fdt_addr} 0x30000; " \
-		"cp.b 0x2700000 ${ramdisk_addr} 0x1900000; " \
+		"cp.b ${kernel_flash_addr} ${loadaddr} ${kernel_flash_size}; " \
+		"cp.b ${dtb_flash_addr} ${fdt_addr} ${dtb_flash_size}; " \
+		"cp.b ${rootfs_flash_addr} ${ramdisk_addr} ${rootfs_flash_size}; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
 #else
 #define S32CC_FLASH_COMMAND \
