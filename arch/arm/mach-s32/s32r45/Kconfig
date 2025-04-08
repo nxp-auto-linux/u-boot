@@ -40,7 +40,6 @@ config TARGET_S32R45RENAN
 	imply RGMII
 	imply NVME
 	imply PHY_XWAY
-	select ID_EEPROM
 	select BOARD_EARLY_INIT_R
 
 config TARGET_S32R45EMU

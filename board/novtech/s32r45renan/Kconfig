@@ -21,6 +21,9 @@ config ENV_SECT_SIZE
 	default 0x10000
 endif
 
+config ID_EEPROM
+	default y
+
 config SYS_EEPROM_PAGE_WRITE_DELAY_MS
 	default 10
 
