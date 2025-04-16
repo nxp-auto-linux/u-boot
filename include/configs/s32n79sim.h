@@ -9,6 +9,7 @@
 
 #define FDT_FILE		"/FIRMWARE/NXP/s32n79sim/linux/s32n79-simulator.dtb"
 #define IMAGE_FILE		"/BOOT/linux/Image"
+#define BOOT_SCRIPT_FILE	"/boot/boot.scr"
 
 #define MMC_PART_FAT			3
 #define MMC_ROOT			"/dev/mmcblk0p4"
@@ -18,6 +19,7 @@
 
 #define SCSI_PART_FDT			"0:3"
 #define SCSI_PART_IMAGE			"1:1"
+#define SCSI_PART_ROOTFS		"1:2"
 #define SCSI_ROOT			"/dev/sdb2"
 
 /* Boot from memory. Can be used in Simulator/Emulator case. */
@@ -26,6 +28,18 @@
 	"run fdt_init; run fixup_initrd_size;"
 #else
 #  define FDT_FIXUP ";"
+#endif
+
+#if defined(CONFIG_XEN_SUPPORT)
+#  define XEN_ENV_SETTINGS  \
+	"script=" __stringify(BOOT_SCRIPT_FILE) "\0" \
+	"script_addr=0x80000000\0" \
+
+#  define XEN_UFS_BOOTCMD  \
+	"ext4load scsi ${scsi_part_rootfs} ${script_addr} ${script}; " \
+		"source ${script_addr}; booti ${xen_addr} - ${fdt_addr};"
+#else
+#  define XEN_ENV_SETTINGS  ""
 #endif
 
 #define S32N_ENV_SETTINGS \
@@ -46,7 +60,9 @@
 		"fi;\0" \
 	"scsi_part_fdt=" SCSI_PART_FDT "\0" \
 	"scsi_part_image=" SCSI_PART_IMAGE "\0" \
+	"scsi_part_rootfs=" SCSI_PART_ROOTFS "\0" \
 	"scsiroot=" SCSI_ROOT " rootwait rw\0" \
+	XEN_ENV_SETTINGS \
 
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND
@@ -86,6 +102,9 @@
 
 #else /* Boot from UFS. */
 #  define BOOTENV
+#if defined(CONFIG_XEN_SUPPORT)
+#  define CONFIG_BOOTCOMMAND XEN_UFS_BOOTCMD
+#else
 #  define CONFIG_BOOTCOMMAND \
 	"if scsi scan; " \
 	"then " \
@@ -94,6 +113,7 @@
 			"run ufsboot; " \
 		"fi; " \
 	"fi"
+#endif /* XEN_SUPPORT */
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS S32N_ENV_SETTINGS
