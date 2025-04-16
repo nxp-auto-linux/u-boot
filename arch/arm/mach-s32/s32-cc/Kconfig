@@ -97,14 +97,6 @@ config ERR051257_WORKAROUND
 	  space of 1K between them.
 endif
 
-config XEN_SUPPORT
-	bool "Enable Xen Hypervisor support"
-	default n
-	help
-	  Set Xen Image, fdts load addresses and U-Boot environment variables in
-	  order for U-Boot to directly load the Xen Image which will use a given
-	  Kernel Image as Dom0.
-
 config FDT_HS400_FIXUP
 	bool "Dynamically enable eMMC HS400 mode in U-Boot device-tree"
 	default n
