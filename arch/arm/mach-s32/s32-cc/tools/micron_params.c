@@ -10,31 +10,42 @@
  */
 static struct qspi_params micron_mt25qu512abb_qspi_conf = {
 	.header   = 0x5a5a5a5a,
-	.mcr      = 0x010310c0,
-	.flshcr   = 0x00010202,
+	.mcr      = 0x010f00cc,
+	.flshcr   = 0x00010303,
 	.bufgencr = 0x00000000,
-	.dllcr    = 0x8280400d,
+	.dllcr    = 0xc280000d,
 	.paritycr = 0x00000000,
 	.sfacr    = 0x00000000,
 	.smpr     = 0x04000000,
-	.dlcr     = 0x00004000,
+	.dlcr     = 0x40ff40ff,
 	.sflash_1_size = 0x20000000,
-	.sflash_2_size = 0x00000000,
-	.dlpr = 0x00000000,
+	.sflash_2_size = 0x20000000,
+	.dlpr = 0xaa553443,
 	.sfar = 0x00000000,
 	.ipcr = 0x00000000,
 	.tbdr = 0x00000000,
 	.dll_bypass_en   = 0x00,
 	.dll_slv_upd_en  = 0x01,
-	.dll_auto_upd_en = 0x01,
+	.dll_auto_upd_en = 0x00,
 	.ipcr_trigger_en = 0x00,
 	.sflash_clk_freq = 80,
 	.reserved = {0x00, 0x00, 0x00},
 	/* Micron read - 4DTR - TBD */
-	.command_seq = { 0 },
+	.command_seq = { 0x0a2006eb, 0x0e040e06, 0x00001e08 },
 	.writes = {
 		{
-			/* Write enable */
+			.config = {
+				.valid_addr = 0,
+				.cdata_size = 0,
+				.addr_size = 0,
+				.pad = 0,
+				.reserved = 0,
+				.opcode = 0xb7,
+			},
+			.addr = 0,
+			.data = 0,
+		},
+		{
 			.config = {
 				.valid_addr = 0,
 				.cdata_size = 0,
@@ -43,21 +54,13 @@ static struct qspi_params micron_mt25qu512abb_qspi_conf = {
 				.reserved = 0,
 				.opcode = 6,
 			},
-			.addr = 0,
-			.data = 0,
+			.addr = 0x0,
+			.data = 0x0,
 		},
 		{
-			/* Enable DTR Quad */
-			.config = {
-				.valid_addr = 1,
-				.cdata_size = 1,
-				.addr_size = 24,
-				.pad = 0,
-				.reserved = 0,
-				.opcode = 0xed,
-			},
+			._config = 0x01000061,
 			.addr = 0x0,
-			.data = 0xeb,
+			.data = 0x7f,
 		},
 	},
 };

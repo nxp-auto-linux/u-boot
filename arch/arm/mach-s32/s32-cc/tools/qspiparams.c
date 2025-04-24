@@ -75,7 +75,7 @@ static int check_freq(unsigned int freq)
 
 int main(int argc, char **argv)
 {
-	struct qspi_params *params = NULL, *empty_params = NULL;
+	struct qspi_params *params = NULL;
 	enum qspi_memory memory = INVALID_QSPI_MEM;
 	unsigned int freq = 0;
 	char *output = NULL;
@@ -118,12 +118,7 @@ int main(int argc, char **argv)
 			params->sflash_clk_freq = freq;
 		break;
 	case MT25QU512ABB:
-		/* By default, inherit and use the QuadSPI configurations and
-		 * clocking from BootROM.
-		 */
-		empty_params = calloc(1, sizeof(*empty_params));
-		if (!empty_params)
-			exit(EXIT_FAILURE);
+		params = get_micron_mt25qu512abb_qspi_conf();
 		break;
 	case MT35XU512ABA:
 		params = get_micron_mt35xu512aba_qspi_conf();
@@ -145,12 +140,8 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (empty_params) {
-		fwrite(empty_params, sizeof(*empty_params), 1, ofile);
-		free(empty_params);
-	} else if (params) {
+	if (params)
 		fwrite(params, sizeof(*params), 1, ofile);
-	}
 
 	fclose(ofile);
 
