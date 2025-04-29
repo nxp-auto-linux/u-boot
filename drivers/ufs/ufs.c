@@ -178,6 +178,7 @@ static int ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	unsigned long start = 0;
 	u32 intr_status;
 	u32 enabled_intr_status;
+	int ret = 0;
 
 	if (!ufshcd_ready_for_uic_cmd(hba)) {
 		dev_err(hba->dev,
@@ -200,22 +201,31 @@ static int ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	do {
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
 		enabled_intr_status = intr_status & hba->intr_mask;
-		ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
-
-		if (get_timer(start) > UFS_UIC_CMD_TIMEOUT) {
-			dev_err(hba->dev,
-				"Timedout waiting for UIC response\n");
-
-			return -ETIMEDOUT;
-		}
 
 		if (enabled_intr_status & UFSHCD_ERROR_MASK) {
 			dev_err(hba->dev, "Error in status:%08x\n",
 				enabled_intr_status);
 
-			return -1;
+			ret = -1;
+			break;
 		}
-	} while (!(enabled_intr_status & UFSHCD_UIC_MASK));
+
+		if (enabled_intr_status & UFSHCD_UIC_MASK)
+			break;
+
+	} while (get_timer(start) <= UFS_UIC_CMD_TIMEOUT);
+
+	ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
+
+	if (ret)
+		return ret;
+
+	if (!(enabled_intr_status & UFSHCD_UIC_MASK)) {
+		dev_err(hba->dev,
+			"Timedout waiting for UIC response\n");
+
+		return -ETIMEDOUT;
+	}
 
 	uic_cmd->argument2 = ufshcd_get_uic_cmd_result(hba);
 	uic_cmd->argument3 = ufshcd_get_dme_attr_val(hba);
@@ -862,6 +872,7 @@ static int ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	unsigned long start;
 	u32 intr_status;
 	u32 enabled_intr_status;
+	int ret = 0;
 
 	ufshcd_writel(hba, 1 << task_tag, REG_UTP_TRANSFER_REQ_DOOR_BELL);
 
@@ -872,22 +883,31 @@ static int ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	do {
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
 		enabled_intr_status = intr_status & hba->intr_mask;
-		ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
-
-		if (get_timer(start) > QUERY_REQ_TIMEOUT) {
-			dev_err(hba->dev,
-				"Timedout waiting for UTP response\n");
-
-			return -ETIMEDOUT;
-		}
 
 		if (enabled_intr_status & UFSHCD_ERROR_MASK) {
 			dev_err(hba->dev, "Error in status:%08x\n",
 				enabled_intr_status);
 
-			return -1;
+			ret = -1;
+			break;
 		}
-	} while (!(enabled_intr_status & UTP_TRANSFER_REQ_COMPL));
+
+		if (enabled_intr_status & UTP_TRANSFER_REQ_COMPL)
+			break;
+
+	} while (get_timer(start) <= QUERY_REQ_TIMEOUT);
+
+	ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
+
+	if (ret)
+		return ret;
+
+	if (!(enabled_intr_status & UTP_TRANSFER_REQ_COMPL)) {
+		dev_err(hba->dev,
+			"Timedout waiting for UTP response\n");
+
+		return -ETIMEDOUT;
+	}
 
 	return 0;
 }
