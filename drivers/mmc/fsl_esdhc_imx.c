@@ -1461,15 +1461,22 @@ static int fsl_esdhc_of_to_plat(struct udevice *dev)
 	int ret;
 
 	fdt_addr_t addr;
+	fdt_size_t size;
 	unsigned int val;
 
 	if (!CONFIG_IS_ENABLED(OF_REAL))
 		return 0;
 
-	addr = dev_read_addr(dev);
+	addr = dev_read_addr_size_index(dev, 0, &size);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
-	priv->esdhc_regs = (struct fsl_esdhc *)addr;
+
+	priv->esdhc_regs = (struct fsl_esdhc *)devm_ioremap(dev, addr, size);
+	if (!priv->esdhc_regs) {
+		dev_err(dev, "failed to map base address\n");
+		return -ENOMEM;
+	}
+
 	priv->dev = dev;
 	priv->mode = -1;
 
