@@ -13,6 +13,8 @@
 #include <linux/printk.h>
 
 #include <asm/io.h>
+#include <dm/device_compat.h>
+#include <linux/io.h>
 
 #define TYPE_PCI 0x1
 
@@ -132,25 +134,21 @@ static int pci_generic_ecam_write_config(struct udevice *bus, pci_dev_t bdf,
 static int pci_generic_ecam_of_to_plat(struct udevice *dev)
 {
 	struct generic_ecam_pcie *pcie = dev_get_priv(dev);
-	ofnode node = dev_ofnode(dev);
-	struct resource reg_res;
-	int err;
-
-	err = ofnode_read_resource(node, 0, &reg_res);
-	if (err < 0) {
 	fdt_addr_t addr;
 	fdt_size_t size;
 
-	addr = dev_read_addr_size(dev, "reg", &size);
+	addr = dev_read_addr_size(dev, &size);
 	if (addr == FDT_ADDR_T_NONE) {
-		pr_err("\"reg\" resource not found\n");
+		dev_err(dev, "\"reg\" resource not found\n");
 		return -EINVAL;
 	}
 
-	pcie->size = resource_size(&reg_res);
-	pcie->cfg_base = map_physmem(reg_res.start, pcie->size, MAP_NOCACHE);
 	pcie->size = size;
-	pcie->cfg_base = map_physmem(addr, size, MAP_NOCACHE);
+	pcie->cfg_base = devm_ioremap(dev, addr, size);
+	if (!pcie->cfg_base) {
+		dev_err(dev, "failed to map base address\n");
+		return -ENOMEM;
+	}
 
 	return 0;
 }
