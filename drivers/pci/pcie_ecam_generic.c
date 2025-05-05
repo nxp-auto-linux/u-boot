@@ -13,6 +13,8 @@
 #include <asm/global_data.h>
 
 #include <asm/io.h>
+#include <dm/device_compat.h>
+#include <linux/io.h>
 
 #define TYPE_PCI 0x1
 
@@ -137,12 +139,16 @@ static int pci_generic_ecam_of_to_plat(struct udevice *dev)
 
 	addr = dev_read_addr_size(dev, "reg", &size);
 	if (addr == FDT_ADDR_T_NONE) {
-		pr_err("\"reg\" resource not found\n");
+		dev_err(dev, "\"reg\" resource not found\n");
 		return -EINVAL;
 	}
 
 	pcie->size = size;
-	pcie->cfg_base = map_physmem(addr, size, MAP_NOCACHE);
+	pcie->cfg_base = devm_ioremap(dev, addr, size);
+	if (!pcie->cfg_base) {
+		dev_err(dev, "failed to map base address\n");
+		return -ENOMEM;
+	}
 
 	return 0;
 }
