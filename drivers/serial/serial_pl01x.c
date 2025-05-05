@@ -23,6 +23,7 @@
 #include <dm/device_compat.h>
 #include <dm/platform_data/serial_pl01x.h>
 #include <linux/compiler.h>
+#include <linux/io.h>
 #include "serial_pl01x_internal.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -352,13 +353,19 @@ int pl01x_serial_of_to_plat(struct udevice *dev)
 	struct pl01x_serial_plat *plat = dev_get_plat(dev);
 	struct clk clk;
 	fdt_addr_t addr;
+	fdt_size_t size;
 	int ret;
 
-	addr = dev_read_addr(dev);
+	addr = dev_read_addr_size_index(dev, 0, &size);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
-	plat->base = addr;
+	plat->base = (unsigned long)devm_ioremap(dev, addr, size);
+	if (!plat->base) {
+		dev_err(dev, "failed to map base address\n");
+		return -ENOMEM;
+	}
+
 	plat->clock = dev_read_u32_default(dev, "clock", CONFIG_PL011_CLOCK);
 	ret = clk_get_by_index(dev, 0, &clk);
 	if (!ret) {
