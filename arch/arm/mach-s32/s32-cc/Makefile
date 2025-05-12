@@ -9,7 +9,7 @@ obj-y += scmi_reset_agent.o
 obj-y += serdes_hwconfig.o
 obj-y += quick_boot_fixups.o
 obj-y += soc.o
-obj-$(S32CC_START_M7) += start_m7.o
+obj-$(CONFIG_S32CC_START_M7) += start_m7.o
 obj-$(CONFIG_MP)		+= mp.o
 obj-$(CONFIG_OF_LIBFDT)	+= fdt.o
 
