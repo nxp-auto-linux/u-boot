@@ -16,11 +16,11 @@ config BOARD_NFS_BOOT_INTERFACE
 	default "eth0"
 
 config S32CC_START_M7
-	bool
-	default n
+	bool "Start the S32 M7 Application"
+	default y
 	select LIB_ELF
 	help
-	  Enable this is you want to be able to start the S32 M7 from u-boot
+	  Enable this if you want to be able to start the S32 M7 from U-boot
 
 config S32CC_HWCONFIG_LEGACY
 	bool "Legacy S32CC HWConfig definition"
