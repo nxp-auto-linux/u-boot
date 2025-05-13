@@ -288,3 +288,4 @@ void eqos_flush_buffer_generic(void *buf, size_t size);
 int eqos_null_ops(struct udevice *dev);
 
 extern const struct eqos_config eqos_s32cc_config;
+extern const struct eqos_config eqos_s32r47_config;
