@@ -1919,6 +1919,10 @@ static const struct udevice_id eqos_ids[] = {
 		.compatible = "nxp,s32cc-dwmac",
 		.data = (ulong)&eqos_s32cc_config
 	},
+	{
+		.compatible = "nxp,s32r47-dwmac",
+		.data = (ulong)&eqos_s32r47_config
+	},
 #endif
 	{ }
 };
