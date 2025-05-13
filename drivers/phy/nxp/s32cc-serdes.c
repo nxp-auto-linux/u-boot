@@ -1192,6 +1192,7 @@ disable_clks:
 
 static const struct udevice_id serdes_match[] = {
 	{ .compatible = "nxp,s32cc-serdes" },
+	{ .compatible = "nxp,s32r47-serdes" },
 	{ /* sentinel */ }
 };
 
