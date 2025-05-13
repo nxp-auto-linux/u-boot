@@ -31,6 +31,8 @@
 
 #define CLK_NAME_SZ		16
 
+#define S32CC_DWC_QUIRK_SKIP_PHY_INTF_SELECT	BIT(0)
+
 static u32 s32cc_get_speed_advertised(int speed)
 {
 	switch (speed) {
@@ -44,6 +46,11 @@ static u32 s32cc_get_speed_advertised(int speed)
 	default:
 		return ADVERTISED_1000baseT_Full;
 	}
+}
+
+static unsigned int needs_phy_intf_sel(const struct eqos_config *config)
+{
+	return !(config->quirks & S32CC_DWC_QUIRK_SKIP_PHY_INTF_SELECT);
 }
 
 static int eqos_pcs_config_s32cc(struct udevice *dev)
@@ -189,6 +196,11 @@ static int eqos_start_resets_s32cc(struct udevice *dev)
 		return -EINVAL;
 	}
 
+	if (needs_phy_intf_sel(eqos->config)) {
+		ret = eqos_set_interface_mode_s32cc(dev, mode);
+		if (ret)
+			return ret;
+	}
 
 	/* reset DMA to reread phyif config */
 	writel(EQOS_DMA_MODE_SWR, &eqos->dma_regs->mode);
@@ -507,6 +519,20 @@ static struct eqos_ops eqos_s32cc_ops = {
 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_s32cc
 };
 
+const struct eqos_config eqos_s32r47_config = {
+	.reg_access_always_ok = false,
+	.mdio_wait = 50,
+	.swr_wait = 50,
+	.tx_fifo_size = 20480,
+	.rx_fifo_size = 20480,
+	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
+	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
+	.axi_bus_width = EQOS_AXI_WIDTH_64,
+	.interface = eqos_get_interface_s32cc,
+	.ops = &eqos_s32cc_ops,
+	.quirks = S32CC_DWC_QUIRK_SKIP_PHY_INTF_SELECT,
+};
+
 const struct eqos_config eqos_s32cc_config = {
 	.reg_access_always_ok = false,
 	.mdio_wait = 50,
@@ -517,4 +543,6 @@ const struct eqos_config eqos_s32cc_config = {
 	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_500_800,
 	.axi_bus_width = EQOS_AXI_WIDTH_64,
 	.interface = eqos_get_interface_s32cc,
+	.ops = &eqos_s32cc_ops,
+	.quirks = 0,
 };
