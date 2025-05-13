@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ or BSD-3-Clause
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 
 #include <common.h>
@@ -1049,7 +1049,8 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 			pr_warn("Invalid linked PHY ID for XPCS%d_%d\n",
 				serdes_id, xpcs_id);
 		}
-	} else if (!node_is_compatible(&node, "nxp,s32cc-dwmac")) {
+	} else if (!node_is_compatible(&node, "nxp,s32cc-dwmac") &&
+		   !node_is_compatible(&node, "nxp,s32r47-dwmac")) {
 		/* No special check for GMAC */
 		pr_warn("Node for XPCS%d_%d is not PFE or GMAC compatible\n",
 			serdes_id, xpcs_id);
