@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2020-2024 NXP
+ * Copyright 2020-2025 NXP
  * SERDES driver for S32CC SoCs
  */
 
@@ -40,7 +40,7 @@
 #define SERDES_LINE(TYPE, INSTANCE)\
 	{ \
 		.type = (TYPE), \
-		.instance = (INSTANCE), \
+		.lane_id = (INSTANCE), \
 	}
 
 #define PCIE_LANE(N) SERDES_LINE(PHY_TYPE_PCIE, N)
@@ -118,7 +118,7 @@
 struct serdes_lane_conf {
 	/* Phy type from : include/dt-bindings/phy/phy.h */
 	u32 type;
-	u8 instance; /* Instance ID (e.g PCIE0, XPCS1) */
+	u8 lane_id; /* Lane ID (e.g PCIE0, XPCS1) */
 };
 
 struct serdes_conf {
@@ -785,7 +785,7 @@ static const struct serdes_conf serdes_mux_table[] = {
 static unsigned long lane_id_to_xpcs_id(unsigned int mode,
 					unsigned long lane_id)
 {
-	int xpcs_id = serdes_mux_table[mode].lanes[lane_id].instance;
+	int xpcs_id = serdes_mux_table[mode].lanes[lane_id].lane_id;
 
 	return xpcs_id;
 }
@@ -808,10 +808,10 @@ struct s32cc_xpcs *s32cc_phy2xpcs(struct phy *phy)
 	if (lane_conf->type != PHY_TYPE_XPCS)
 		return NULL;
 
-	return xpcs->phys[lane_conf->instance];
+	return xpcs->phys[lane_conf->lane_id];
 }
 
-static int mode_to_pcs_lane(u32 mode, u32 pcs_instance)
+static int mode_to_pcs_lane(u32 mode, u32 pcs_lane_id)
 {
 	const struct serdes_lane_conf *l0, *l1;
 
@@ -821,10 +821,10 @@ static int mode_to_pcs_lane(u32 mode, u32 pcs_instance)
 	l0 = &serdes_mux_table[mode].lanes[0];
 	l1 = &serdes_mux_table[mode].lanes[1];
 
-	if (l0->type == PHY_TYPE_XPCS && l0->instance == pcs_instance)
+	if (l0->type == PHY_TYPE_XPCS && l0->lane_id == pcs_lane_id)
 		return XPCS_LANE0;
 
-	if (l1->type == PHY_TYPE_XPCS && l1->instance == pcs_instance)
+	if (l1->type == PHY_TYPE_XPCS && l1->lane_id == pcs_lane_id)
 		return XPCS_LANE1;
 
 	return XPCS_DISABLED;
@@ -847,7 +847,7 @@ static int check_lane_selection(struct serdes *serdes,
 	}
 
 	if (phy_type == PHY_TYPE_XPCS) {
-		pcs_lane_id = mode_to_pcs_lane(ctrl->ss_mode, instance);
+		pcs_lane_id = mode_to_pcs_lane(ctrl->ss_mode, *lane_id);
 		if (pcs_lane_id >= 0) {
 			*lane_id = pcs_lane_id;
 		} else {
@@ -887,7 +887,7 @@ static int check_lane_selection(struct serdes *serdes,
 	}
 
 	if (lane_conf->type != PHY_TYPE_PCIE &&
-	    lane_conf->instance != instance) {
+	    lane_conf->lane_id != *lane_id) {
 		dev_err(dev, "PHY %s instance %u cannot be applied on lane %u using SerDes mode %u)\n",
 			phy_name, instance, *lane_id, serdes->ctrl.ss_mode);
 		return -EINVAL;
