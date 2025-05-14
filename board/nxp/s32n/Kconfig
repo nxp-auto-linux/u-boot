@@ -13,16 +13,20 @@ config NXP_S32N_BOARD_COMMON
 	imply MD5SUM_VERIFY
 	imply USE_BOOTARGS
 
-config DTB_ADDR
-	hex "Default OS device tree blob address"
-	default 0x93000000
+config SYS_LOAD_RAM_OFFSET
+	hex "Default OS image offset in RAM."
+	default 0x10000000
 
-config RAMDISK_ADDR
-	hex "Default ramdisk address to be used by the OS"
-	default 0x94000000
+config DTB_RAM_OFFSET
+	hex "Default OS device tree blob offset in RAM."
+	default 0x13000000
+
+config RAMDISK_RAM_OFFSET
+	hex "Default ramdisk offset in RAM to be used by the OS."
+	default 0x14000000
 
 config MEM_BOOT
-	bool "Boot kernel images from DDR"
+	bool "Boot kernel images from RAM."
 	default n
 	help
 	  Enable this option if the kernel images are already loaded in memory

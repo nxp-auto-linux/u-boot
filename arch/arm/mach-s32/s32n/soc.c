@@ -3,6 +3,7 @@
  * Copyright 2024-2025 NXP
  */
 #include <common.h>
+#include <env.h>
 #include <init.h>
 #include <asm-generic/sections.h>
 #include <asm/global_data.h>
@@ -86,6 +87,46 @@ ulong board_get_usable_ram_top(ulong total_size)
 
 int arch_cpu_init_dm(void)
 {
+	return 0;
+}
+
+/*
+ * Sets environment variable which refers to an OS image
+ * and which is computed based on an offset in memory.
+ */
+static void s32n_set_image_addr(const char *env, u64 offset)
+{
+	phys_addr_t addr;
+	int ret;
+
+	/* Check if the env variable is defined and not 0. */
+	if (env_get_hex(env, 0))
+		return;
+
+	if (check_uptr_overflow(gd->ram_base, offset)) {
+		pr_err("\"%s\" environment variable overflows\n", env);
+		return;
+	}
+
+	addr = gd->ram_base + offset;
+	if (addr >= gd->ram_top) {
+		pr_err("\"%s\" environment variable out of DRAM memory range\n",
+		       env);
+		return;
+	}
+
+	ret = env_set_hex(env, addr);
+	if (ret)
+		pr_warn("\"%s\" environment variable was not set correctly\n",
+			env);
+}
+
+int arch_misc_init(void)
+{
+	s32n_set_image_addr("loadaddr", CONFIG_SYS_LOAD_RAM_OFFSET);
+	s32n_set_image_addr("fdt_addr", CONFIG_DTB_RAM_OFFSET);
+	s32n_set_image_addr("ramdisk_addr", CONFIG_RAMDISK_RAM_OFFSET);
+
 	return 0;
 }
 
