@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause */
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2025 NXP
  */
 #ifndef __S32_H__
 #define __S32_H__
@@ -35,7 +35,6 @@
 	BOOTENV \
 	"boot_mtd=booti\0" \
 	"console=ttyLF0\0" \
-	"fdt_addr=" __stringify(CONFIG_DTB_ADDR) "\0" \
 	"fdt_file=" FDT_FILE "\0" \
 	"fdt_fixups=" FDT_FIXUP "\0" \
 	"fdt_high=" __stringify(S32_FDT_HIGH_ADDR) "\0" \
@@ -57,7 +56,6 @@
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
 	"mmcpart=" __stringify(MMC_PART_FAT) "\0" \
 	"mmcroot=" __stringify(MMC_ROOT) " rootwait rw\0" \
-	"ramdisk_addr=" __stringify(CONFIG_RAMDISK_ADDR) "\0" \
 
 #ifdef CONFIG_BOOTCOMMAND
 #undef CONFIG_BOOTCOMMAND

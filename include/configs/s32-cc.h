@@ -131,6 +131,7 @@
 #define S32CC_ENV_SETTINGS \
 	S32_ENV_SETTINGS \
 	"console=ttyLF" __stringify(S32_LINFLEX_MODULE) "\0" \
+	"fdt_addr=" __stringify(CONFIG_DTB_ADDR) "\0" \
 	"fdt_enable_hs400=" \
 		"fdt addr ${fdt_addr}; " \
 		"fdt rm /soc/mmc no-1-8-v; " \
@@ -181,6 +182,7 @@
 		"earlycon " EXTRA_BOOT_ARGS "\0" \
 	"script=boot.scr\0" \
 	"serverip=" S32CC_SERVERIP "\0" \
+	"ramdisk_addr=" __stringify(CONFIG_RAMDISK_ADDR) "\0" \
 	SERDES_EXTRA_ENV_SETTINGS \
 	XEN_EXTRA_ENV_SETTINGS \
 
