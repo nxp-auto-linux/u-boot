@@ -70,7 +70,7 @@
 
 #if defined(CONFIG_MEM_BOOT) /* Boot from DDR. */
 #  define BOOTENV \
-	"bootargs=console=${console},${baudrate} root=/dev/ram rw " \
+	"ddrargs=setenv bootargs console=${console},${baudrate} root=/dev/ram rw " \
 		LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
 		EXTRA_BOOT_ARGS "\0" \
 	"fixup_initrd_size=setexpr ramdisk_size_addr ${ramdisk_addr} - 0x4; " \
@@ -86,7 +86,7 @@
 		  "<0x${initrd-end.h} 0x${initrd-end.l}>;\0" \
 
 #  define CONFIG_BOOTCOMMAND \
-	"run fdt_fixups; ${boot_mtd} ${loadaddr} - ${fdt_addr}"
+	"run ddrargs; run fdt_fixups; ${boot_mtd} ${loadaddr} - ${fdt_addr}"
 
 #elif defined(CONFIG_SD_BOOT)
 #  define BOOTENV
