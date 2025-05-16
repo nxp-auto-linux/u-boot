@@ -120,6 +120,8 @@
 
 #define XPCS_RX_STABLE_TIMEOUT	25 /* µs */
 
+#define S32CC_SERDES_QUIRK_SKIP_RESET_LINES		BIT(0)
+
 struct serdes_lane_conf {
 	/* Phy type from : include/dt-bindings/phy/phy.h */
 	u32 type;
@@ -157,6 +159,10 @@ struct xpcs_ctrl {
 	bool initialized_clks;
 };
 
+struct serdes_config {
+	u32 quirks;
+};
+
 struct serdes {
 	struct pcie_ctrl pcie;
 	struct serdes_ctrl ctrl;
@@ -164,6 +170,7 @@ struct serdes {
 	struct udevice *dev;
 	u32 phys_type[SERDES_MAX_LANES];
 	u8 lanes_status;
+	const struct serdes_config *config;
 
 	unsigned int id;
 };
