@@ -397,11 +397,6 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 
 	interface = eqos->config->interface(dev);
 
-	if (interface == PHY_INTERFACE_MODE_NONE) {
-		pr_err("Invalid PHY interface\n");
-		return -EINVAL;
-	}
-
 	switch (interface) {
 	case PHY_INTERFACE_MODE_MII:
 		eqos_get_clock_name(tx_clk, rx_clk, "mii");
@@ -425,6 +420,7 @@ static int eqos_probe_resources_s32cc(struct udevice *dev)
 	default:
 		pr_err("%s: interface mode not supported %s\n", dev->name,
 		       phy_string_for_interface(interface));
+		return -EINVAL;
 	}
 
 	eqos->max_speed = dev_read_u32_default(dev, "max-speed", 0);
