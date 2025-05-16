@@ -170,6 +170,11 @@ struct serdes {
 	unsigned int id;
 };
 
+static unsigned int has_reset_lines_access(struct serdes *serdes)
+{
+	return !(serdes->config->quirks & S32CC_SERDES_QUIRK_SKIP_RESET_LINES);
+}
+
 static unsigned long lane_id_to_xpcs_id(unsigned int mode,
 					unsigned long lane_id);
 
@@ -986,31 +991,33 @@ static int init_serdes(struct serdes *serdes)
 	u32 reg0;
 	int ret;
 
-	ret = assert_reset(serdes);
-	if (ret)
-		return ret;
+	if (has_reset_lines_access(serdes)) {
+		ret = assert_reset(serdes);
+		if (ret)
+			return ret;
 
-	reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
-	reg0 &= ~SUBMODE_MASK;
-	if (ctrl->ss_mode == 5)
-		reg0 |= 2;
-	else
-		reg0 |= ctrl->ss_mode;
-	writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
+		reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
+		reg0 &= ~SUBMODE_MASK;
+		if (ctrl->ss_mode == 5)
+			reg0 |= 2;
+		else
+			reg0 |= ctrl->ss_mode;
+		writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
 
-	reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
-	if (ctrl->ext_clk)
-		reg0 &= ~CLKEN_MASK;
-	else
-		reg0 |= CLKEN_MASK;
+		reg0 = readl(UPTR(ctrl->ss_base) + SS_RW_REG_0);
+		if (ctrl->ext_clk)
+			reg0 &= ~CLKEN_MASK;
+		else
+			reg0 |= CLKEN_MASK;
 
-	writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
+		writel(reg0, UPTR(ctrl->ss_base) + SS_RW_REG_0);
 
-	udelay(100);
+		udelay(100);
 
-	ret = deassert_reset(serdes);
-	if (ret)
-		return ret;
+		ret = deassert_reset(serdes);
+		if (ret)
+			return ret;
+	}
 
 	dev_info(serdes->dev, "Using mode %d for SerDes subsystem\n",
 		 ctrl->ss_mode);
@@ -1053,10 +1060,12 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
 		return -ENOMEM;
 	}
 
-	serdes->ctrl.rst = devm_reset_control_get(dev, "serdes");
-	if (IS_ERR(serdes->ctrl.rst)) {
-		dev_err(dev, "Failed to get 'serdes' reset control\n");
-		return PTR_ERR(serdes->ctrl.rst);
+	if (has_reset_lines_access(serdes)) {
+		serdes->ctrl.rst = devm_reset_control_get(dev, "serdes");
+		if (IS_ERR(serdes->ctrl.rst)) {
+			dev_err(dev, "Failed to get 'serdes' reset control\n");
+			return PTR_ERR(serdes->ctrl.rst);
+		}
 	}
 
 	for (i = 0; i < ARRAY_SIZE(serdes_clk_names); i++) {
@@ -1100,10 +1109,12 @@ static int pcie_dt_init(struct udevice *dev, struct serdes *serdes)
 		return -ENOMEM;
 	}
 
-	pcie->rst = devm_reset_control_get(dev, "pcie");
-	if (IS_ERR(pcie->rst)) {
-		dev_err(dev, "Failed to get 'pcie' reset control\n");
-		return PTR_ERR(pcie->rst);
+	if (has_reset_lines_access(serdes)) {
+		pcie->rst = devm_reset_control_get(dev, "pcie");
+		if (IS_ERR(pcie->rst)) {
+			dev_err(dev, "Failed to get 'pcie' reset control\n");
+			return PTR_ERR(pcie->rst);
+		}
 	}
 
 	return 0;
@@ -1197,9 +1208,17 @@ disable_clks:
 	return ret;
 }
 
+const struct serdes_config s32cc_config_data = {
+	.quirks = 0,
+};
+
+const struct serdes_config s32r47_config_data = {
+	.quirks = S32CC_SERDES_QUIRK_SKIP_RESET_LINES
+};
+
 static const struct udevice_id serdes_match[] = {
-	{ .compatible = "nxp,s32cc-serdes" },
-	{ .compatible = "nxp,s32r47-serdes" },
+	{ .compatible = "nxp,s32cc-serdes", .data = (ulong)&s32cc_config_data },
+	{ .compatible = "nxp,s32r47-serdes", .data = (ulong)&s32r47_config_data },
 	{ /* sentinel */ }
 };
 
