@@ -229,6 +229,7 @@ struct eqos_config {
 	unsigned int axi_bus_width;
 	phy_interface_t (*interface)(struct udevice *dev);
 	struct eqos_ops *ops;
+	u32 quirks;
 };
 
 struct eqos_ops {
