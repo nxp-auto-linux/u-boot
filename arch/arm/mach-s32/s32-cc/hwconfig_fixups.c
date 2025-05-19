@@ -624,7 +624,8 @@ static int prepare_pcie_node(struct dts_node *root, unsigned int id)
 
 	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
 	if (ret) {
-		pr_err("Failed to get 'pcie%u' alias\n", id);
+		pr_err("Failed to get 'pcie%u' alias with pcie enabled in hwconfig\n",
+		       id);
 		return ret;
 	}
 
@@ -855,7 +856,14 @@ static void disable_pcie_node(struct dts_node *root, unsigned int id)
 
 	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
 	if (ret) {
-		pr_err("Failed to get 'pci%u' alias\n", id);
+		/*
+		 * Some platforms may only have one PCIe module.
+		 * Hence, error code should not be returned in that case.
+		 */
+		if (id > 0)
+			return;
+
+		pr_err("Failed to get 'pcie%u' alias\n", id);
 		return;
 	}
 
