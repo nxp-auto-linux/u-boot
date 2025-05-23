@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2023,2025 NXP
  */
 #include <dm.h>
 #include <log.h>
@@ -32,7 +32,11 @@
 #define CORE_FREQ_SHIFT	16
 #define CORE_FREQ_MASK	GENMASK(19, CORE_FREQ_SHIFT)
 
-/* SIUL2_1 MIDR1 */
+/* SIUL2_0, MIDR2 */
+#define S32R47_CORE_FREQ_SHIFT	7
+#define S32R47_CORE_FREQ_MASK	GENMASK(13, S32R47_CORE_FREQ_SHIFT)
+
+/* SIUL2_1 MIDR2 */
 #define SERDES_SHIFT	15
 #define SERDES_MASK	BIT(SERDES_SHIFT)
 
@@ -149,6 +153,21 @@ static u32 adjust_s32g3_freq(u32 value, struct siul2_nvram *nvram)
 
 	if (value < ARRAY_SIZE(freqs))
 		return freqs[value];
+
+	return 0;
+}
+
+static u32 adjust_s32r47_freq(u32 value, struct siul2_nvram *nvram)
+{
+	/* For S32R47 we are reading *performance letter* which translates
+	 * to a specific frequency.
+	 */
+	switch (value) {
+	case 'A':
+		return 1200;
+	case 'B':
+		return 800;
+	}
 
 	return 0;
 }
@@ -346,6 +365,34 @@ static const struct siul_mapping s32g_siul20_mappings[] = {
 	},
 };
 
+static const struct siul_mapping s32r47_siul2_mappings[] = {
+	{
+		.nvram_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_s32r_max_cores_per_cluster,
+	},
+	{
+		.nvram_off = S32CC_A53_CORES_MASK,
+		.siul2_off = MIDR1_OFF,
+		.mask = PART_NO_MASK,
+		.shift = PART_NO_SHIFT,
+		.adjust_value = adjust_s32r_derivative_cores,
+	},
+	/* We liniary search for this field. First in platform
+	 * mappings and then in general mappings. Make sure we find
+	 * platform mapping for S32R47.
+	 */
+	{
+		.nvram_off = S32CC_MAX_CORE_FREQ,
+		.siul2_off = MIDR2_OFF,
+		.mask = S32R47_CORE_FREQ_MASK,
+		.shift = S32R47_CORE_FREQ_SHIFT,
+		.adjust_value = adjust_s32r47_freq,
+	},
+};
+
 static const struct siul_mapping s32r_siul20_mappings[] = {
 	{
 		.nvram_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
@@ -412,6 +459,12 @@ static const struct siul_plat s32g_siul20_plat = {
 static const struct siul_plat s32r_siul20_plat = {
 	.mappings = &s32r_siul20_mappings[0],
 	.n_mappings = ARRAY_SIZE(s32r_siul20_mappings),
+	.next = &siul20_plat,
+};
+
+static const struct siul_plat s32r47_siul2_plat = {
+	.mappings = &s32r47_siul2_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32r47_siul2_mappings),
 	.next = &siul20_plat,
 };
 
@@ -489,6 +542,10 @@ static const struct udevice_id siul2_nvram_ids[] = {
 	{
 		.compatible = "nxp,s32r-siul2_0-nvram",
 		.data = (ulong)&s32r_siul20_plat,
+	},
+	{
+		.compatible = "nxp,s32r47-siul2_0-nvram",
+		.data = (ulong)&s32r47_siul2_plat,
 	},
 	{
 		.compatible = "nxp,s32g2-siul2_1-nvram",
