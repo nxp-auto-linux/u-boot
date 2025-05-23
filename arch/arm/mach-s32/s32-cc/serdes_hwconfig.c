@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 #include <common.h>
 #include <hwconfig.h>
@@ -394,7 +394,7 @@ bool s32_serdes_is_mode5_enabled_in_hwconfig(unsigned int id)
 
 bool s32_serdes_is_cfg_valid(unsigned int id)
 {
-	enum serdes_xpcs_mode xpcs0_mode, xpcs1_mode, xpcs0_1_mode;
+	enum serdes_xpcs_mode xpcs0_mode, xpcs1_mode;
 	enum serdes_mode mode;
 	enum pcie_phy_mode phy_mode;
 	unsigned long freq;
@@ -475,17 +475,6 @@ bool s32_serdes_is_cfg_valid(unsigned int id)
 		printf("%s No xpcs configured for", prefix);
 		printf("  XPCS only mode\n");
 		return false;
-	}
-
-	/* Combined SerDes validation. Performed for SerDes1 */
-	if (id > 0) {
-		/* XPCS0_1 (pfe2) and XPCS1_0 (pfe0) both configured as SGMII
-		 * cannot be tested on reference S32CC EVB/RDB boards, since both
-		 * are connected to the same PHY.
-		 */
-		xpcs0_1_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(0, 1);
-		if (xpcs0_mode != SGMII_INVALID && xpcs0_1_mode != SGMII_INVALID)
-			printf("xpcs0_1 and xpcs 1_0 can't be both SGMII on S32CC EVB/RDB\n");
 	}
 
 	return true;
