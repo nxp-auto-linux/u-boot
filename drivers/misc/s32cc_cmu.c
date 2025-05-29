@@ -10,6 +10,8 @@
 #include <inttypes.h>
 #include <misc.h>
 #include <asm/io.h>
+#include <dm/device-internal.h>
+#include <dm/uclass-internal.h>
 #include <linux/delay.h>
 #include <linux/iopoll.h>
 #include <linux/math64.h>
@@ -682,30 +684,41 @@ static int do_verifclk(struct cmd_tbl *cmdtp, int flag, int argc,
 		       char * const argv[])
 {
 	struct cmu_result result;
+	bool print_banner = true;
 	struct udevice *cmu;
 	int i = 0;
-	int ret;
 
-	ret = uclass_get_device_by_driver(UCLASS_MISC,
-					  DM_DRIVER_GET(s32_cmu), &cmu);
-	if (ret)
-		return ret;
+	for (uclass_find_first_device(UCLASS_MISC, &cmu);
+	     cmu;
+	     uclass_find_next_device(&cmu)) {
+		if (cmu->driver != DM_DRIVER_GET(s32_cmu))
+			continue;
 
-	puts(" CMU | Monitored    | Reference | Expected            |");
-	puts(" Verified\n");
-	puts(" ID  | clock        | clock     | range (MHz)         |");
-	puts(" range (MHz)\n");
-	puts("-----|--------------|-----------|---------------------|");
-	puts("--------------------\n");
+		if (print_banner) {
+			puts(" CMU | Monitored    | Reference | Expected            |");
+			puts(" Verified\n");
+			puts(" ID  | clock        | clock     | range (MHz)         |");
+			puts(" range (MHz)\n");
+			puts("-----|--------------|-----------|---------------------|");
+			puts("--------------------\n");
+			print_banner = false;
+		}
 
-	while (misc_read(cmu, i++, &result, sizeof(result)) > 0) {
-		printf("%5d|", result.id);
-		printf(" %12s | ", result.mon_clk_name);
-		printf("%9s | ", result.ref_clk_name);
-		print_freq_interval(&result.expected);
-		puts(" | ");
-		print_freq_interval(&result.measured);
-		putc('\n');
+		if (device_probe(cmu)) {
+			pr_err("Failed to probe device %s\n", cmu->name);
+			continue;
+		}
+
+		while (misc_read(cmu, i++, &result, sizeof(result)) > 0) {
+			printf("%5d|", result.id);
+			printf(" %12s | ", result.mon_clk_name);
+			printf("%9s | ", result.ref_clk_name);
+			print_freq_interval(&result.expected);
+			puts(" | ");
+			print_freq_interval(&result.measured);
+			putc('\n');
+		}
+		i = 0;
 	}
 
 	return 0;
