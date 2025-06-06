@@ -66,6 +66,7 @@ struct siul_mapping {
 	u32 mask;
 	u32 shift;
 	u32 (*adjust_value)(u32 value, struct siul2_nvram *nvram);
+	bool skip_siul2_read;
 };
 
 struct siul_plat {
@@ -170,6 +171,12 @@ static u32 adjust_s32r47_freq(u32 value, struct siul2_nvram *nvram)
 	}
 
 	return 0;
+}
+
+static u32 adjust_s32r47_serdes_presence(u32 value,
+					 struct siul2_nvram *nvram)
+{
+	return 1;
 }
 
 static u32 adjust_s32r_max_cores_per_cluster(u32 value,
@@ -365,7 +372,7 @@ static const struct siul_mapping s32g_siul20_mappings[] = {
 	},
 };
 
-static const struct siul_mapping s32r47_siul2_mappings[] = {
+static const struct siul_mapping s32r47_siul20_mappings[] = {
 	{
 		.nvram_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
 		.siul2_off = MIDR1_OFF,
@@ -390,6 +397,14 @@ static const struct siul_mapping s32r47_siul2_mappings[] = {
 		.mask = S32R47_CORE_FREQ_MASK,
 		.shift = S32R47_CORE_FREQ_SHIFT,
 		.adjust_value = adjust_s32r47_freq,
+	},
+};
+
+static const struct siul_mapping s32r47_siul21_mappings[] = {
+	{
+		.nvram_off = S32CC_SERDES_PRESENCE,
+		.adjust_value = adjust_s32r47_serdes_presence,
+		.skip_siul2_read = true,
 	},
 };
 
@@ -462,10 +477,15 @@ static const struct siul_plat s32r_siul20_plat = {
 	.next = &siul20_plat,
 };
 
-static const struct siul_plat s32r47_siul2_plat = {
-	.mappings = &s32r47_siul2_mappings[0],
-	.n_mappings = ARRAY_SIZE(s32r47_siul2_mappings),
+static const struct siul_plat s32r47_siul20_plat = {
+	.mappings = &s32r47_siul20_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32r47_siul20_mappings),
 	.next = &siul20_plat,
+};
+
+static const struct siul_plat s32r47_siul21_plat = {
+	.mappings = &s32r47_siul21_mappings[0],
+	.n_mappings = ARRAY_SIZE(s32r47_siul21_mappings),
 };
 
 static const struct siul_plat s32g2_siul20_plat = {
@@ -493,7 +513,7 @@ static int siul2_nvram_read(struct udevice *dev, int offset,
 	const struct siul_mapping *mapping = NULL;
 	const struct siul_plat *plat = nvram->plat;
 	size_t i;
-	u32 val;
+	u32 val = 0;
 
 	/* All values are 4 bytes wide */
 	if (size != sizeof(u32))
@@ -516,9 +536,11 @@ static int siul2_nvram_read(struct udevice *dev, int offset,
 	if (!mapping)
 		return 0;
 
-	val = readl(nvram->base + mapping->siul2_off);
+	if (!mapping->skip_siul2_read) {
+		val = readl(nvram->base + mapping->siul2_off);
+		val = (val & mapping->mask) >> mapping->shift;
+	}
 
-	val = (val & mapping->mask) >> mapping->shift;
 	if (mapping->adjust_value)
 		val = mapping->adjust_value(val, nvram);
 
@@ -545,7 +567,7 @@ static const struct udevice_id siul2_nvram_ids[] = {
 	},
 	{
 		.compatible = "nxp,s32r47-siul2_0-nvram",
-		.data = (ulong)&s32r47_siul2_plat,
+		.data = (ulong)&s32r47_siul20_plat,
 	},
 	{
 		.compatible = "nxp,s32g2-siul2_1-nvram",
@@ -558,6 +580,10 @@ static const struct udevice_id siul2_nvram_ids[] = {
 	{
 		.compatible = "nxp,s32r-siul2_1-nvram",
 		.data = (ulong)&siul21_plat,
+	},
+	{
+		.compatible = "nxp,s32r47-siul2_1-nvram",
+		.data = (ulong)&s32r47_siul21_plat,
 	},
 	{ /* sentinel */ }
 };
