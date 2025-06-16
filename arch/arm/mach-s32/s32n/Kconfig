@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 # Copyright 2024 NXP
 
+config DTB_FILE
+	string "Path to the DTB file used by the OS"
+	help
+	  Defines the path to the Device Tree Blob (DTB) file,
+	  which is used to populate the `fdt_file` environment variable.
+
 source "arch/arm/mach-s32/s32n79/Kconfig"
 source "board/nxp/s32n/Kconfig"
