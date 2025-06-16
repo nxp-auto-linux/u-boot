@@ -15,6 +15,9 @@ config NR_DRAM_BANKS
 config ENV_FAT_FILE
 	default "/FIRMWARE/NXP/s32n79sim/u-boot/env.txt"
 
+config DTB_FILE
+	default "/FIRMWARE/NXP/s32n79sim/linux/s32n79-simulator.dtb"
+
 if DEBUG_UART
 
 config DEBUG_UART_CLOCK
