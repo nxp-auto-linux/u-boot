@@ -7,7 +7,7 @@
 
 #include <configs/s32n79.h>
 
-#define FDT_FILE		"/FIRMWARE/NXP/s32n79sim/linux/s32n79-simulator.dtb"
+#define FDT_FILE		CONFIG_DTB_FILE
 #define IMAGE_FILE		"/BOOT/linux/Image"
 #define BOOT_SCRIPT_FILE	"/boot/boot.scr"
 
