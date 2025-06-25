@@ -572,4 +572,12 @@ config SCMI_NVMEM
 	  for U-Boot, as an SCMI Agent, to read/write NVMEM cells provided by
 	  an SCMI Platform.
 
+config NXP_MISC_SCMI
+	bool "Enable NXP SCMI MISC driver"
+	select SCMI_FIRMWARE
+	help
+	  Enable this option to allow U-Boot, as an SCMI Agent, to access
+	  miscellaneous data provided by the SCMI Platform via the NXP MISC
+	  Vendor Extension protocol.
+
 endmenu

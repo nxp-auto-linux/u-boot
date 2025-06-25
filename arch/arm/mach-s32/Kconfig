@@ -123,6 +123,7 @@ config NXP_S32N
 	imply PANIC_HANG
 	imply PCI
 	imply PCIE_ECAM_GENERIC
+	imply NXP_MISC_SCMI
 	imply SCSI
 	imply SPI
 	imply SPI_FLASH

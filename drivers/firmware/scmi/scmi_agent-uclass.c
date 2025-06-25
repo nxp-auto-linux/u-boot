@@ -103,6 +103,10 @@ static int scmi_bind_protocols(struct udevice *dev)
 			if (IS_ENABLED(CONFIG_SCMI_NVMEM))
 				drv = DM_DRIVER_GET(scmi_nvmem);
 			break;
+		case SCMI_PROTOCOL_ID_NXP_MISC:
+			if (IS_ENABLED(CONFIG_NXP_MISC_SCMI))
+				drv = DM_DRIVER_GET(scmi_misc);
+			break;
 		default:
 			break;
 		}
