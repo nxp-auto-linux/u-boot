@@ -13,3 +13,4 @@ obj-$(CONFIG_SOC_XILINX_ZYNQMP) += soc_xilinx_zynqmp.o
 obj-$(CONFIG_SOC_XILINX_VERSAL) += soc_xilinx_versal.o
 obj-$(CONFIG_SOC_XILINX_VERSAL_NET) += soc_xilinx_versal_net.o
 obj-$(CONFIG_NXP_S32CC) += soc_s32cc.o
+obj-$(CONFIG_NXP_S32N) += soc_s32n79.o
