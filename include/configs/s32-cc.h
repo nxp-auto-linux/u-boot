@@ -261,7 +261,7 @@
 #    else
 #     if defined(CONFIG_FIT_SIGNATURE)
 #       define PRECONFIG_BOOTCOMMAND \
-		"setenv image kernel.itb; " \
+		"setenv image Image-kernel-signed.itb; " \
 		"setenv boot_mtd bootm; " \
 		"setenv mmcboot ${boot_mtd} ${loadaddr}; " \
 		"run mmcargs; "
