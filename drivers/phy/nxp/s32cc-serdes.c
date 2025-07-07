@@ -1184,6 +1184,11 @@ static int serdes_probe(struct udevice *dev)
 	}
 
 	serdes->dev = dev;
+	serdes->config = (struct serdes_config *)dev_get_driver_data(dev);
+	if (!serdes->config) {
+		dev_err(dev, "Driver config not found\n");
+		return -EINVAL;
+	}
 
 	ret = ss_dt_init(dev, serdes);
 	if (ret)
