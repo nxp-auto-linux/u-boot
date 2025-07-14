@@ -100,7 +100,8 @@ static int scmi_bind_protocols(struct udevice *dev)
 				drv = DM_DRIVER_GET(scmi_gpio);
 			break;
 		case SCMI_PROTOCOL_ID_NVMEM:
-			drv = DM_DRIVER_GET(scmi_nvmem);
+			if (IS_ENABLED(CONFIG_SCMI_NVMEM))
+				drv = DM_DRIVER_GET(scmi_nvmem);
 			break;
 		default:
 			break;
