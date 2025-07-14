@@ -90,7 +90,8 @@ struct udevice *scmi_get_protocol(struct udevice *dev,
 			break;
 
 		case SCMI_PROTOCOL_ID_VENDOR_81:
-			drv = DM_DRIVER_GET(scmi_gpio);
+			if (IS_ENABLED(CONFIG_SCMI_GPIO))
+				drv = DM_DRIVER_GET(scmi_gpio);
 			break;
 		case SCMI_PROTOCOL_ID_VENDOR_82:
 			drv = DM_DRIVER_GET(scmi_nvmem);
