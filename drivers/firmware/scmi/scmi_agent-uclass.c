@@ -91,7 +91,8 @@ static int scmi_bind_protocols(struct udevice *dev)
 			}
 			break;
 		case SCMI_PROTOCOL_ID_PINCTRL:
-			drv = DM_DRIVER_GET(scmi_pinctrl);
+			if (IS_ENABLED(CONFIG_PINCTRL_SCMI))
+				drv = DM_DRIVER_GET(scmi_pinctrl);
 			break;
 
 		case SCMI_PROTOCOL_ID_GPIO:
