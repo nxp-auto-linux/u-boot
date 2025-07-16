@@ -914,13 +914,6 @@ static int check_lane_selection(struct serdes *serdes,
 		return -EINVAL;
 	}
 
-	if (lane_conf->type != PHY_TYPE_PCIE &&
-	    lane_conf->lane_id != *lane_id) {
-		dev_err(dev, "PHY %s instance %u cannot be applied on lane %u using SerDes mode %u)\n",
-			phy_name, instance, *lane_id, serdes->ctrl.ss_mode);
-		return -EINVAL;
-	}
-
 	mark_configured_lane(serdes, *lane_id);
 	return 0;
 }
