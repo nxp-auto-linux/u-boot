@@ -1080,8 +1080,7 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 		/* Check 'fixed-link' node and update the 'speed' property.
 		 * Ignore autoneg if we already have this node.
 		 */
-		ret = node_find_subnode(&node, &subnode, "fixed-link");
-		if (!ret) {
+		if (!node_find_subnode(&node, &subnode, "fixed-link")) {
 			debug("Set fixed-link/speed for XPCS%d_%d to %d\n",
 			      serdes_id, xpcs_id, speed);
 			ret = node_set_prop_u32(&subnode, "speed", speed);
