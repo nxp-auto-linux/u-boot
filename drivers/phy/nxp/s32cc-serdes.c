@@ -116,6 +116,7 @@
 #define XPCS_RX_STABLE_TIMEOUT	25 /* µs */
 
 #define S32CC_SERDES_QUIRK_SKIP_RESET_LINES		BIT(0)
+#define S32CC_SERDES_QUIRK_SKIP_VR_RST			BIT(1)
 
 struct serdes_lane_conf {
 	/* Phy type from : include/dt-bindings/phy/phy.h */
@@ -173,6 +174,11 @@ struct serdes {
 static unsigned int has_reset_lines_access(struct serdes *serdes)
 {
 	return !(serdes->config->quirks & S32CC_SERDES_QUIRK_SKIP_RESET_LINES);
+}
+
+static unsigned int skip_vr_rst(struct serdes *serdes)
+{
+	return serdes->config->quirks & S32CC_SERDES_QUIRK_SKIP_VR_RST;
 }
 
 static unsigned long lane_id_to_xpcs_id(unsigned int mode,
@@ -605,9 +611,11 @@ static int xpcs_init_clks(struct serdes *serdes)
 			if (xpcs_id < 0 || xpcs_id >= ARRAY_SIZE(xpcs->phys))
 				continue;
 
-			ret = xpcs->ops->vreset(xpcs->phys[xpcs_id]);
-			if (ret)
-				return ret;
+			if (!(skip_vr_rst(serdes) && serdes->id == 0 && ctrl->ss_mode == 2)) {
+				ret = xpcs->ops->vreset(xpcs->phys[xpcs_id]);
+				if (ret)
+					return ret;
+			}
 		}
 	}
 
@@ -620,11 +628,13 @@ static int xpcs_init_clks(struct serdes *serdes)
 		if (xpcs_id < 0 || xpcs_id >= ARRAY_SIZE(xpcs->phys))
 			continue;
 
-		ret = xpcs->ops->wait_vreset(xpcs->phys[xpcs_id]);
-		if (ret)
-			return ret;
+		if (!(skip_vr_rst(serdes) && serdes->id == 0 && ctrl->ss_mode == 2)) {
+			ret = xpcs->ops->wait_vreset(xpcs->phys[xpcs_id]);
+			if (ret)
+				return ret;
 
-		xpcs->ops->reset_rx(xpcs->phys[xpcs_id]);
+			xpcs->ops->reset_rx(xpcs->phys[xpcs_id]);
+		}
 	}
 
 	xpcs->initialized_clks = true;
@@ -1218,7 +1228,7 @@ const struct serdes_config s32cc_config_data = {
 };
 
 const struct serdes_config s32r47_config_data = {
-	.quirks = S32CC_SERDES_QUIRK_SKIP_RESET_LINES
+	.quirks = S32CC_SERDES_QUIRK_SKIP_RESET_LINES | S32CC_SERDES_QUIRK_SKIP_VR_RST
 };
 
 static const struct udevice_id serdes_match[] = {
