@@ -7,10 +7,12 @@
 #include <fdt_support.h>
 #include <malloc.h>
 #include <phy_interface.h>
+#include <soc.h>
 #include <dm/device.h>
 #include <dm/of_access.h>
 #include <linux/ctype.h>
 #include <s32-cc/dts_fixups_utils.h>
+#include <s32-cc/s32cc_soc.h>
 #include <s32-cc/serdes_hwconfig.h>
 #include <dt-bindings/phy/phy.h>
 
@@ -32,9 +34,6 @@
 #define SERDES_LINE_NAME_LEN		sizeof(SERDES_LINE_NAME_FMT)
 
 #define ETH_ALIAS_FMT			"ethernet%d"
-
-#define SERDES_COUNT			2
-#define XPCS_COUNT			2
 
 #define PFENG_EMACS_COUNT		3 /* S32G has 3 PFEs */
 
@@ -1000,18 +999,38 @@ static int node_create_subnode(struct dts_node *node, struct dts_node *subnode,
 static int get_xpcs_node_from_alias(struct dts_node *root, struct dts_node *node,
 				    int serdes_id, int xpcs_id)
 {
-	static const u32 xpcs_ids[SERDES_COUNT][XPCS_COUNT] = {
-		{0, 3}, {1, 2}
-		};
+	struct soc_s32cc_plat soc_data;
+	struct udevice *soc;
+	int *xpcs_config;
+	int ret;
+
+	ret = soc_get(&soc);
+	if (ret) {
+		printf(":%s: Failed to get SoC (err = %d)\n", __func__, ret);
+		return ret;
+	}
+
+	ret = soc_get_platform_data(soc, &soc_data, sizeof(soc_data));
+	if (ret) {
+		printf(":%s: Failed to get SoC platform data (err = %d)\n",
+		       __func__, ret);
+		return ret;
+	}
 
 	/* Validate arguments. */
-	if ((u32)serdes_id >= SERDES_COUNT || (u32)xpcs_id >= XPCS_COUNT) {
+	if ((u32)serdes_id >= MAX_SERDES_COUNT || (u32)xpcs_id >= MAX_SERDES_XPCS_COUNT ||
+	    serdes_id < 0 || xpcs_id < 0) {
 		debug("%s: Unsupported interface XPCS%u for SerDes%u\n",
 		      __func__, xpcs_id, serdes_id);
 		return -EINVAL;
 	}
 
-	return node_by_alias(root, node, ETH_ALIAS_FMT, xpcs_ids[serdes_id][xpcs_id]);
+	xpcs_config = soc_data.xpcs_config[serdes_id];
+
+	if (xpcs_config[xpcs_id] == NO_ETHERNET_CONTROLLER)
+		return -ENODEV;
+
+	return node_by_alias(root, node, ETH_ALIAS_FMT, xpcs_config[xpcs_id]);
 }
 
 static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
@@ -1036,6 +1055,10 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 	 */
 	ret = get_xpcs_node_from_alias(root, &node,
 				       serdes_id, xpcs_id);
+
+	if (ret == -ENODEV)
+		return 0;
+
 	if (ret) {
 		pr_warn("Failed to get the DT node for SerDes%d XPCS%d\n",
 			serdes_id, xpcs_id);

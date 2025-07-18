@@ -70,6 +70,7 @@ static int soc_s32cc_get_platform_data(struct udevice *dev, void *data,
 				       int size)
 {
 	struct soc_s32cc_plat *plat = dev_get_plat(dev);
+	plat->xpcs_config = (int (*)[MAX_SERDES_XPCS_COUNT])dev_get_driver_data(dev);
 
 	if (!data || size != sizeof(*plat))
 		return -EINVAL;
@@ -153,8 +154,31 @@ static int soc_s32cc_probe(struct udevice *dev)
 	return 0;
 }
 
+static int s32g_xpcs_config[MAX_SERDES_COUNT][MAX_SERDES_XPCS_COUNT] = {
+	/* SerDes0 XPCS0,		SerDes0 XPCS1	*/
+	{S32G_GMAC0_CONTROLLER_ID, S32G_PFE2_CONTROLLER_ID},
+	/* SerDes1 XPCS0,		SerDes1 XPCS1	*/
+	{S32G_PFE0_CONTROLLER_ID, S32G_PFE1_CONTROLLER_ID}
+};
+
+static int s32r47_xpcs_config[MAX_SERDES_COUNT][MAX_SERDES_XPCS_COUNT] = {
+	/* SerDes0 XPCS0,		SerDes0 XPCS1	*/
+	{NO_ETHERNET_CONTROLLER, S32R47_GMAC0_CONTROLLER_ID},
+	/* SerDes1 XPCS0,		SerDes1 XPCS1	*/
+	{S32R47_GMAC1_CONTROLLER_ID, S32R47_GMAC2_CONTROLLER_ID}
+};
+
+static int s32r45_xpcs_config[MAX_SERDES_COUNT][MAX_SERDES_XPCS_COUNT] = {
+	/* SerDes0 XPCS0,		SerDes0 XPCS1	*/
+	{S32R45_GMAC0_CONTROLLER_ID, NO_ETHERNET_CONTROLLER},
+	/* SerDes1 XPCS0,		SerDes1 XPCS1	*/
+	{S32R45_GMAC1_CONTROLLER_ID, NO_ETHERNET_CONTROLLER}
+};
+
 static const struct udevice_id soc_s32cc_ids[] = {
-	{ .compatible = "nxp,s32cc-soc" },
+	{ .compatible = "nxp,s32g-soc", .data = (ulong)&s32g_xpcs_config},
+	{ .compatible = "nxp,s32r45-soc", .data = (ulong)&s32r45_xpcs_config},
+	{ .compatible = "nxp,s32r47-soc", .data = (ulong)&s32r47_xpcs_config},
 	{}
 };
 

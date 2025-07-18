@@ -20,8 +20,31 @@
 #define SOC_MACHINE_S32R438A	"438A"
 #define SOC_MACHINE_S32R478A	"478A"
 
+#define MAX_SERDES_COUNT 2
+#define MAX_SERDES_XPCS_COUNT 2
+
+enum {
+	NO_ETHERNET_CONTROLLER = -1,
+
+	/* Ethernet controllers for R47 */
+	S32R47_GMAC0_CONTROLLER_ID = 0,
+	S32R47_GMAC1_CONTROLLER_ID = 1,
+	S32R47_GMAC2_CONTROLLER_ID = 2,
+
+	/* Ethernet controllers for G */
+	S32G_GMAC0_CONTROLLER_ID = 0,
+	S32G_PFE0_CONTROLLER_ID = 1,
+	S32G_PFE1_CONTROLLER_ID = 2,
+	S32G_PFE2_CONTROLLER_ID = 3,
+
+	/* Ethernet controllers for R45 */
+	S32R45_GMAC0_CONTROLLER_ID = 0,
+	S32R45_GMAC1_CONTROLLER_ID = 1,
+};
+
 struct soc_s32cc_plat {
 	bool lockstep_enabled;
+	int (*xpcs_config)[MAX_SERDES_XPCS_COUNT];
 };
 
 #endif
