@@ -55,6 +55,9 @@ struct s32cc_xpcs_ops {
  * modular and can permit future expansions.
  */
 
+extern const struct serdes_config s32cc_config_data;
+extern const struct serdes_config s32r47_config_data;
+
 enum {
 	S32CC_XPCS_OPS,
 	S32R47_XPCS_OPS

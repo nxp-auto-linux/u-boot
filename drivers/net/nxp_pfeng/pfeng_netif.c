@@ -2,7 +2,7 @@
 /*
  * NXP S32G PFE Ethernet port (netif) driver
  *
- * Copyright 2023-2024 NXP
+ * Copyright 2023-2025 NXP
  */
 
 #define LOG_CATEGORY UCLASS_ETH
@@ -44,7 +44,7 @@ static int pfeng_xpcs_start_link(struct udevice *dev, struct phy *xpcs, u8 phyif
 	unsigned long timeout;
 	int ret;
 
-	xpcs_ops = s32cc_xpcs_get_ops();
+	xpcs_ops = xpcs_get_ops(S32CC_XPCS_OPS);
 	if (!xpcs_ops) {
 		dev_err(dev, "Failed to get XPCS ops\n");
 		return -EIO;
@@ -374,7 +374,7 @@ static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int emac_id)
 	if (!xpcs)
 		return NULL;
 
-	xpcs_ops = s32cc_xpcs_get_ops();
+	xpcs_ops = xpcs_get_ops(S32CC_XPCS_OPS);
 	if (!xpcs_ops) {
 		dev_err(dev, "Failed to get XPCS ops\n");
 		goto err;

@@ -63,7 +63,11 @@ static int eqos_pcs_config_s32cc(struct udevice *dev)
 	if (eqos->phy->interface != PHY_INTERFACE_MODE_SGMII)
 		return 0;
 
-	xpcs_ops = s32cc_xpcs_get_ops();
+	if (eqos->config == &eqos_s32r47_config)
+		xpcs_ops = xpcs_get_ops(S32R47_XPCS_OPS);
+	else
+		xpcs_ops = xpcs_get_ops(S32CC_XPCS_OPS);
+
 	if (!xpcs_ops) {
 		dev_err(dev, "Failed to get XPCS ops\n");
 		return -EIO;
