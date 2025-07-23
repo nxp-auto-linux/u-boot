@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  *
  * Driver for XPCS side of the SerDes module present on S32CC platforms
  */
@@ -1101,6 +1101,15 @@ static void xpcs_pre_reset_pcie_2g5(struct s32cc_xpcs *xpcs)
 		XPCS_WRITE_BITS(xpcs, VR_MII_DIG_CTRL1, BYP_PWRUP, 0);
 }
 
+static int s32r47_xpcs_post_reset_pcie_2g5(struct s32cc_xpcs *xpcs)
+{
+	set_2g5_mode(xpcs, true);
+	xpcs_vco_cfg(xpcs, XPCS_PLLB);
+	xpcs_ref_clk_sel(xpcs, XPCS_PLLB);
+
+	return 0;
+}
+
 static int xpcs_post_reset_pcie_2g5(struct s32cc_xpcs *xpcs)
 {
 	struct udevice *dev = get_xpcs_device(xpcs);
@@ -1295,6 +1304,34 @@ static const struct s32cc_xpcs_ops s32cc_xpcs_ops = {
 	.xpcs_get_state = xpcs_get_state,
 	.get_id = xpcs_get_id,
 };
+
+static const struct s32cc_xpcs_ops s32r47_xpcs_ops = {
+	.init = xpcs_init,
+	.power_on = xpcs_power_on,
+	.config = xpcs_configure,
+	.vreset = xpcs_vreset,
+	.wait_vreset = xpcs_wait_vreset,
+	.init_plls = xpcs_init_plls,
+	.reset_rx = xpcs_reset_rx,
+	.has_valid_rx = xpcs_has_valid_rx,
+	.pre_reset_pcie_2g5 = xpcs_pre_reset_pcie_2g5,
+	.post_reset_pcie_2g5 = s32r47_xpcs_post_reset_pcie_2g5,
+	.xpcs_config = xpcs_config,
+	.xpcs_get_state = xpcs_get_state,
+	.get_id = xpcs_get_id,
+};
+
+const struct s32cc_xpcs_ops *xpcs_get_ops(int platform)
+{
+	switch (platform) {
+	case S32CC_XPCS_OPS:
+		return s32cc_xpcs_get_ops();
+	case S32R47_XPCS_OPS:
+		return &s32r47_xpcs_ops;
+	default:
+	return NULL;
+	}
+}
 
 const struct s32cc_xpcs_ops *s32cc_xpcs_get_ops(void)
 {

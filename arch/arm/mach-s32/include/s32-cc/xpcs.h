@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /**
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2025 NXP
  */
 #ifndef S32CC_XPCS_H
 #define S32CC_XPCS_H
@@ -51,7 +51,17 @@ struct s32cc_xpcs_ops {
 	int (*get_id)(struct s32cc_xpcs *xpcs);
 };
 
+/* xpcs_get_ops should be used to retrieve xpcs ops since it's
+ * modular and can permit future expansions.
+ */
+
+enum {
+	S32CC_XPCS_OPS,
+	S32R47_XPCS_OPS
+};
+
 const struct s32cc_xpcs_ops *s32cc_xpcs_get_ops(void);
+const struct s32cc_xpcs_ops *xpcs_get_ops(int platform);
 
 /**
  * s32cc_phy2xpcs() - Get XPCS instance associated with a PHY
