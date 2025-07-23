@@ -1165,7 +1165,10 @@ static int xpcs_dt_init(struct udevice *dev, struct serdes *serdes)
 		return -ENOMEM;
 	}
 
-	xpcs->ops = s32cc_xpcs_get_ops();
+	if (serdes->config == &s32r47_config_data)
+		xpcs->ops = xpcs_get_ops(S32R47_XPCS_OPS);
+	else
+		xpcs->ops = xpcs_get_ops(S32CC_XPCS_OPS);
 
 	return 0;
 }

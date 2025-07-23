@@ -2,12 +2,17 @@
 /*
  * NXP S32G PFE Ethernet port (netif) driver
  *
- * Copyright 2023-2024 NXP
+ * Copyright 2023-2025 NXP
  */
 
 #define LOG_CATEGORY UCLASS_ETH
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <dm.h>
 #include <miiphy.h>
 #include <net.h>
@@ -44,7 +49,7 @@ static int pfeng_xpcs_start_link(struct udevice *dev, struct phy *xpcs, u8 phyif
 	unsigned long timeout;
 	int ret;
 
-	xpcs_ops = s32cc_xpcs_get_ops();
+	xpcs_ops = xpcs_get_ops(S32CC_XPCS_OPS);
 	if (!xpcs_ops) {
 		dev_err(dev, "Failed to get XPCS ops\n");
 		return -EIO;
@@ -165,8 +170,6 @@ static void emac_clocks_stop(struct udevice *dev)
 
 	clk_disable(netif->tx_clk);
 	clk_disable(netif->rx_clk);
-	devm_clk_put(dev, netif->tx_clk);
-	devm_clk_put(dev, netif->rx_clk);
 }
 
 static int pfeng_netif_start(struct udevice *dev)
@@ -374,7 +377,7 @@ static struct phy *pfeng_xpcs_configure_phy(struct udevice *dev, int emac_id)
 	if (!xpcs)
 		return NULL;
 
-	xpcs_ops = s32cc_xpcs_get_ops();
+	xpcs_ops = xpcs_get_ops(S32CC_XPCS_OPS);
 	if (!xpcs_ops) {
 		dev_err(dev, "Failed to get XPCS ops\n");
 		goto err;
@@ -510,8 +513,14 @@ static int netif_dt_parse_phy(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	ret = phy_get_interface_by_name(cfg->phy_mode);
-	if ((ret == -1) || ret >= PHY_INTERFACE_MODE_COUNT) {
+	ret = PHY_INTERFACE_MODE_NA;
+	for (int i = 0; i < PHY_INTERFACE_MODE_MAX; i++) {
+		if (!strcmp(cfg->phy_mode, phy_interface_strings[i])) {
+			ret = i;
+			break;
+		}
+	}
+	if (ret == PHY_INTERFACE_MODE_NA) {
 		dev_err(dev, "Invalid PHY interface '%s'\n", cfg->phy_mode);
 		return -EINVAL;
 	}
