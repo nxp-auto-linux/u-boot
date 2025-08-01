@@ -33,6 +33,9 @@
 #define SERDES_LINE_NAME_FMT		"serdes_lane%u"
 #define SERDES_LINE_NAME_LEN		sizeof(SERDES_LINE_NAME_FMT)
 
+#define XPCS_AN_NAME_FMT		"xpcs%d_an"
+#define XPCS_AN_NAME_LEN		sizeof(XPCS_AN_NAME_FMT)
+
 #define ETH_ALIAS_FMT			"ethernet%d"
 
 #define PFENG_EMACS_COUNT		3 /* S32G has 3 PFEs */
@@ -1042,6 +1045,7 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 	const char *phy_mode;
 	const char *sgmii_mode = phy_string_for_interface(PHY_INTERFACE_MODE_SGMII);
 	int speed = s32_serdes_get_xpcs_speed_from_hwconfig(serdes_id, xpcs_id);
+	char xpcs_an[XPCS_AN_NAME_LEN];
 
 	/* Disable XPCS node if speed is invalid. This can only happen when
 	 * XPCS is missing from hwconfig or there is some config error.
@@ -1149,6 +1153,15 @@ static int set_xpcs_config_sgmii(struct dts_node *root, int serdes_id,
 			goto exit;
 		}
 	}
+
+	ret = node_by_alias(root, &node, SERDES_ALIAS_FMT, serdes_id);
+	if (ret) {
+		pr_warn("Could not find serdes%d node\n", serdes_id);
+		return ret;
+	}
+
+	sprintf(xpcs_an, XPCS_AN_NAME_FMT, xpcs_id);
+	node_set_prop_u32(&node, xpcs_an, autoneg);
 
 exit:
 	if (ret)
