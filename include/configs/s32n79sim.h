@@ -9,9 +9,11 @@
 
 #define FDT_FILE		CONFIG_DTB_FILE
 #define IMAGE_FILE		"/BOOT/linux/Image"
-#define BOOT_SCRIPT_FILE	"/boot/boot.scr"
+#define BOOT_SCRIPT_FILE_SD	"/boot/boot.scr-sdcard"
+#define BOOT_SCRIPT_FILE_UFS	"/boot/boot.scr-ufs"
 
 #define MMC_PART_FAT			3
+#define MMC_PART_EXT			4
 #define MMC_ROOT			"/dev/mmcblk0p4"
 
 #define EXTRA_BOOT_ARGS	\
@@ -31,15 +33,28 @@
 #endif
 
 #if defined(CONFIG_XEN_SUPPORT)
-#  define XEN_ENV_SETTINGS  \
-	"script=" __stringify(BOOT_SCRIPT_FILE) "\0" \
+#  define XEN_COMMON_ENV \
 	"script_addr=0x80000000\0" \
+	"mmcpart_ext=" __stringify(MMC_PART_EXT) "\0" \
 
-#  define XEN_UFS_BOOTCMD  \
+#  if defined(CONFIG_SD_BOOT)
+#    define XEN_SCRIPT_FILE	BOOT_SCRIPT_FILE_SD
+#    define XEN_BOOTCMD \
+	"ext4load mmc ${mmcdev}:${mmcpart_ext} ${script_addr} ${script}; " \
+	"source ${script_addr}; booti ${xen_addr} - ${fdt_addr};"
+#  else /* UFS */
+#    define XEN_SCRIPT_FILE	BOOT_SCRIPT_FILE_UFS
+#    define XEN_BOOTCMD \
 	"ext4load scsi ${scsi_part_rootfs} ${script_addr} ${script}; " \
-		"source ${script_addr}; booti ${xen_addr} - ${fdt_addr};"
+	"source ${script_addr}; booti ${xen_addr} - ${fdt_addr};"
+#  endif
+
+#  define XEN_ENV_SETTINGS \
+	XEN_COMMON_ENV \
+	"script=" __stringify(XEN_SCRIPT_FILE) "\0"
 #else
-#  define XEN_ENV_SETTINGS  ""
+#  define XEN_ENV_SETTINGS      ""
+#  define XEN_BOOTCMD           ""
 #endif
 
 #define S32N_ENV_SETTINGS \
@@ -102,9 +117,6 @@
 
 #else /* Boot from UFS. */
 #  define BOOTENV
-#if defined(CONFIG_XEN_SUPPORT)
-#  define CONFIG_BOOTCOMMAND XEN_UFS_BOOTCMD
-#else
 #  define CONFIG_BOOTCOMMAND \
 	"if scsi scan; " \
 	"then " \
@@ -113,7 +125,11 @@
 			"run ufsboot; " \
 		"fi; " \
 	"fi"
-#endif /* XEN_SUPPORT */
+#endif
+
+#if defined(CONFIG_XEN_SUPPORT)
+#  undef CONFIG_BOOTCOMMAND
+#  define CONFIG_BOOTCOMMAND XEN_BOOTCMD
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS S32N_ENV_SETTINGS
