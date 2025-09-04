@@ -15,7 +15,7 @@
 #define MMC_ROOT			"/dev/mmcblk0p4"
 
 #define EXTRA_BOOT_ARGS	\
-	" maxcpus=2 arm64.nopauth"
+	" arm64.nopauth"
 
 #define SCSI_PART_FDT			"0:3"
 #define SCSI_PART_IMAGE			"1:1"
