@@ -700,9 +700,9 @@ static int nxp_xspi_of_to_plat(struct udevice *bus)
 
 	x->dev = bus;
 
-	iobase = dev_read_addr_size_name(bus, "xspi_base", &iobase_size);
+	iobase = dev_read_addr_size_name(bus, "base", &iobase_size);
 	if (iobase == FDT_ADDR_T_NONE) {
-		dev_err(bus, "xspi_base regs missing\n");
+		dev_err(bus, "base regs missing\n");
 		return -ENODEV;
 	}
 
@@ -710,9 +710,9 @@ static int nxp_xspi_of_to_plat(struct udevice *bus)
 	if (!x->iobase)
 		return -ENOMEM;
 
-	ahb_addr = dev_read_addr_size_name(bus, "xspi_mmap", &ahb_size);
+	ahb_addr = dev_read_addr_size_name(bus, "mmap", &ahb_size);
 	if (ahb_addr == FDT_ADDR_T_NONE) {
-		dev_err(bus, "xspi_mmap regs missing\n");
+		dev_err(bus, "mmap regs missing\n");
 		return -ENODEV;
 	}
 
@@ -734,9 +734,9 @@ static int nxp_xspi_of_to_plat(struct udevice *bus)
 	}
 
 #if CONFIG_IS_ENABLED(CLK)
-	ret = clk_get_by_name(bus, "xspi", &x->clk);
+	ret = clk_get_by_name(bus, "per", &x->clk);
 	if (ret) {
-		dev_err(bus, "failed to get xspi clock\n");
+		dev_err(bus, "failed to get per clock\n");
 		return ret;
 	}
 #endif
