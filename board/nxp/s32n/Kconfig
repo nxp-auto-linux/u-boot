@@ -15,15 +15,15 @@ config NXP_S32N_BOARD_COMMON
 
 config SYS_LOAD_RAM_OFFSET
 	hex "Default OS image offset in RAM."
-	default 0x10000000
+	default 0x13200000
 
 config DTB_RAM_OFFSET
 	hex "Default OS device tree blob offset in RAM."
-	default 0x13000000
+	default 0x13002000
 
 config RAMDISK_RAM_OFFSET
 	hex "Default ramdisk offset in RAM to be used by the OS."
-	default 0x14000000
+	default 0x16000000
 
 config MEM_BOOT
 	bool "Boot kernel images from RAM."
