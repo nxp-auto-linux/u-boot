@@ -94,16 +94,20 @@ config CONS_INDEX_5
 config CONS_INDEX_6
 	bool
 
+config CONS_INDEX_7
+	bool
+
 config CONS_INDEX
 	int "UART used for console"
 	depends on SPECIFY_CONSOLE_INDEX
-	range 0 6
+	range 0 7
 	default 0 if CONS_INDEX_0
 	default 2 if CONS_INDEX_2
 	default 3 if CONS_INDEX_3
 	default 4 if CONS_INDEX_4
 	default 5 if CONS_INDEX_5
 	default 6 if CONS_INDEX_6
+	default 7 if CONS_INDEX_7
 	default 1
 	help
 	  Set this to match the UART number of the serial console.
