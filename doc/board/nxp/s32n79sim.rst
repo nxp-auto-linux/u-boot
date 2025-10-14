@@ -32,3 +32,5 @@ Other customizable options:
 *   `CONFIG_MEM_BOOT`: Enable this option if the kernel images are already
   loaded in memory.
 *   `CONFIG_DEBUG_UART_BASE`: UART registers base addressv (default: 0x4A03_0000).
+*   `CONFIG_CONS_INDEX`: PL011 UART console index (default: 0). Will be used to
+  populate `console` environment variable.
