@@ -59,7 +59,7 @@
 
 #define S32N_ENV_SETTINGS \
 	S32_ENV_SETTINGS \
-	"console=ttyAMA0\0" \
+	"console=ttyAMA" __stringify(CONFIG_CONS_INDEX) "\0" \
 	"fdt_init=fdt addr ${fdt_addr}; fdt resize;\0" \
 	"loadufsfdt=fatload scsi ${scsi_part_fdt} ${fdt_addr} " \
 		 " ${fdt_file}; run fdt_override;\0" \
