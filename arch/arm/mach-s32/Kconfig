@@ -151,10 +151,14 @@ config NXP_S32N
 	select SYSRESET
 	select PL01X_SERIAL
 	select S32N_UFS
+	select SPECIFY_CONSOLE_INDEX
 	select SYS_I2C_IMX_LPI2C
 
 config DEFAULT_DEVICE_TREE
 	default "s32"
+
+config CONS_INDEX
+	default 0 if NXP_S32N
 
 config SYS_LOAD_ADDR
 	default 0 if ARCH_S32N79
