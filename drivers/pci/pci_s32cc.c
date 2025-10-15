@@ -4,7 +4,12 @@
  * S32CC PCIe Host driver
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <cmd_pci.h>
 #include <dm.h>
 #include <errno.h>
@@ -466,9 +471,9 @@ static int s32cc_pcie_start_link(struct dw_pcie *pcie)
 		dw_pcie_writel_dbi(pcie, PCIE_CTRL2_LINK_STATUS2_REG, reg);
 
 		if (is_s32cc_pcie_ltssm_enabled(s32cc_pp)) {
-			ret = read_poll_timeout(pcie_read_ctrl_status_reg, pcie, tmp,
+			ret = read_poll_timeout(pcie_read_ctrl_status_reg, tmp,
 						!(tmp & PCIE_CAP_LINK_TRAINING),
-						PCIE_LINK_WAIT_US, PCIE_LINK_TIMEOUT_US);
+						PCIE_LINK_WAIT_US, PCIE_LINK_TIMEOUT_US, pcie);
 			if (ret)
 				dev_warn(s32cc_pp->pcie.dev,
 					 "Failed to finalize link training\n");
@@ -652,25 +657,6 @@ int s32cc_pcie_dt_init_host(struct udevice *dev)
 	return s32cc_pcie_dt_init_common(s32cc_pp);
 }
 
-static void disable_equalization(struct dw_pcie *pcie)
-{
-	u32 val;
-
-	val = dw_pcie_readl_dbi(pcie, PORT_LOGIC_GEN3_EQ_CONTROL);
-	val &= ~(GET_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE) |
-		GET_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC));
-	val |= BUILD_MASK_VALUE(PCIE_GEN3_EQ_FB_MODE, 1) |
-		BUILD_MASK_VALUE(PCIE_GEN3_EQ_PSET_REQ_VEC, 0x84);
-	dw_pcie_dbi_ro_wr_en(pcie);
-	dw_pcie_writel_dbi(pcie, PORT_LOGIC_GEN3_EQ_CONTROL, val);
-
-	dw_pcie_dbi_ro_wr_dis(pcie);
-
-	/* Test value */
-	dev_dbg(pcie->dev, "PCIE_PORT_LOGIC_GEN3_EQ_CONTROL: 0x%08x\n",
-		dw_pcie_readl_dbi(pcie, PORT_LOGIC_GEN3_EQ_CONTROL));
-}
-
 static int init_pcie(struct s32cc_pcie *s32cc_pp)
 {
 	struct dw_pcie *pcie = &s32cc_pp->pcie;
@@ -691,9 +677,6 @@ static int init_pcie(struct s32cc_pcie *s32cc_pp)
 				SRIS_MODE_MASK;
 		dw_pcie_writel_ctrl(s32cc_pp, PE0_GEN_CTRL_1, val);
 	}
-
-	/* Disable phase 2,3 equalization */
-	disable_equalization(pcie);
 
 	/* PCIE_COHERENCY_CONTROL_<n> registers provide defaults that configure
 	 * the transactions as Outer Shareable, Write-Back cacheable; we won't
