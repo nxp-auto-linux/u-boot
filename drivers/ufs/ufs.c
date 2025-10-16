@@ -24,6 +24,7 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
+#include <linux/io.h>
 
 #include "ufs.h"
 
@@ -1950,6 +1951,8 @@ int ufshcd_probe(struct udevice *ufs_dev, struct ufs_hba_ops *hba_ops)
 	struct ufs_hba *hba = dev_get_uclass_priv(ufs_dev);
 	struct scsi_plat *scsi_plat;
 	struct udevice *scsi_dev;
+	fdt_size_t size = 0;
+	fdt_addr_t addr;
 	int err;
 
 	device_find_first_child(ufs_dev, &scsi_dev);
@@ -1963,7 +1966,18 @@ int ufshcd_probe(struct udevice *ufs_dev, struct ufs_hba_ops *hba_ops)
 
 	hba->dev = ufs_dev;
 	hba->ops = hba_ops;
-	hba->mmio_base = (void *)dev_read_addr(ufs_dev);
+
+	addr = dev_read_addr_size_index(ufs_dev, 0, &size);
+	if (addr == FDT_ADDR_T_NONE) {
+		dev_err(hba->dev, "Can't get UFSHC base addresses(ret = %lld)!\n", addr);
+		return -EINVAL;
+	}
+
+	hba->mmio_base = devm_ioremap(hba->dev, addr, size);
+	if (!hba->mmio_base) {
+		dev_err(hba->dev, "ioremap failed for UFSHC region.\n");
+		return -ENOMEM;
+	}
 
 	/* Set descriptor lengths to specification defaults */
 	ufshcd_def_desc_sizes(hba);
