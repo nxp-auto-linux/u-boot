@@ -5,6 +5,8 @@
 /*
  * M-TX Configuration Attributes
  */
+#define TX_HS_UNTERMINATED_LINE_DRIVE_CAP	0x0007
+#define TX_LS_TERMINATED_LINE_DRIVE_CAP		0x0008
 #define TX_HIBERN8TIME_CAPABILITY		0x000F
 #define TX_MODE					0x0021
 #define TX_HSRATE_SERIES			0x0022
@@ -26,6 +28,7 @@
 #define TX_LCC_SEQUENCER			0x0032
 #define TX_MIN_ACTIVATETIME			0x0033
 #define TX_PWM_G6_G7_SYNC_LENGTH		0x0034
+#define TX_FSM_STATE				0x0041
 #define TX_REFCLKFREQ				0x00EB
 #define TX_CFGCLKFREQVAL			0x00EC
 #define	CFGEXTRATTR				0x00F0
@@ -34,6 +37,8 @@
 /*
  * M-RX Configuration Attributes
  */
+#define RX_HS_UNTERMINATED_CAP			0x0085
+#define RX_LS_TERMINATED_CAP			0x0086
 #define RX_HS_G1_SYNC_LENGTH_CAP		0x008B
 #define RX_HS_G1_PREP_LENGTH_CAP		0x008C
 #define RX_MIN_ACTIVATETIME_CAPABILITY		0x008F
@@ -46,6 +51,8 @@
 #define RX_HIBERN8TIME_CAP			0x0092
 #define RX_ADV_HIBERN8TIME_CAP			0x0099
 #define RX_ADV_MIN_ACTIVATETIME_CAP		0x009A
+#define RX_HS_ADAPT_REFRESH_CAP			0x009E
+#define RX_HS_ADAPT_INITIAL_CAP			0x009F
 #define RX_MODE					0x00A1
 #define RX_HSRATE_SERIES			0x00A2
 #define RX_HSGEAR				0x00A3
@@ -288,6 +295,21 @@ enum ufs_unipro_ver {
 #define T_CPORTMODE		0x402B
 #define T_TC0TXMAXSDUSIZE	0x4060
 #define T_TC1TXMAXSDUSIZE	0x4061
+
+/* CPort setting */
+#define E2EFC_ON	BIT(0)
+#define E2EFC_OFF	(0 << 0)
+#define CSD_N_ON	(0 << 1)
+#define CSD_N_OFF	BIT(1)
+#define CSV_N_ON	(0 << 2)
+#define CSV_N_OFF	BIT(2)
+#define CPORT_DEF_FLAGS	(CSV_N_OFF | CSD_N_OFF | E2EFC_OFF)
+
+/* CPort connection state */
+enum {
+	CPORT_IDLE = 0,
+	CPORT_CONNECTED,
+};
 
 #ifdef FALSE
 #undef FALSE
