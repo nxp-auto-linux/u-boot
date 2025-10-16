@@ -26,6 +26,7 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
+#include <linux/io.h>
 
 #include "ufs.h"
 
@@ -2197,7 +2198,20 @@ int ufshcd_probe(struct udevice *ufs_dev, struct ufs_hba_ops *hba_ops)
 		mmio_base = dm_pci_map_bar(ufs_dev, PCI_BASE_ADDRESS_0, 0, 0,
 					   PCI_REGION_TYPE, PCI_REGION_MEM);
 	} else {
-		mmio_base = dev_read_addr_ptr(ufs_dev);
+		fdt_size_t size = 0;
+		fdt_addr_t addr;
+
+		addr = dev_read_addr_size_index(ufs_dev, 0, &size);
+		if (addr == FDT_ADDR_T_NONE) {
+			dev_err(hba->dev, "Can't get UFSHC base addresses!\n");
+			return -EINVAL;
+		}
+
+		mmio_base = devm_ioremap(hba->dev, addr, size);
+		if (!mmio_base) {
+			dev_err(hba->dev, "ioremap failed for UFSHC region.\n");
+			return -ENOMEM;
+		}
 	}
 	hba->mmio_base = mmio_base;
 
