@@ -123,6 +123,7 @@ config NXP_S32N
 	imply PCI
 	imply PCIE_ECAM_GENERIC
 	imply NXP_MISC_SCMI
+	imply SCMI_FIRMWARE
 	imply SCSI
 	imply SPI
 	imply SPI_FLASH
@@ -131,6 +132,7 @@ config NXP_S32N
 	imply SPI_MEM
 	imply UFS
 	select CLK
+	select CLK_SCMI
 	select CPU
 	select DM_DEVICE_REMOVE
 	select DM_MTD
