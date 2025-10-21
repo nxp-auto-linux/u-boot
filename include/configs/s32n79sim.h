@@ -24,13 +24,7 @@
 #define SCSI_PART_ROOTFS		"1:2"
 #define SCSI_ROOT			"/dev/sdb2"
 
-/* Boot from memory. Can be used in Simulator/Emulator case. */
-#if defined(CONFIG_MEM_BOOT)
-#  define FDT_FIXUP \
-	"run fdt_init; run fixup_initrd_size;"
-#else
-#  define FDT_FIXUP ";"
-#endif
+#define FDT_FIXUP ";"
 
 #if defined(CONFIG_XEN_SUPPORT)
 #  define XEN_COMMON_ENV \
@@ -83,27 +77,7 @@
 #undef CONFIG_BOOTCOMMAND
 #endif
 
-#if defined(CONFIG_MEM_BOOT) /* Boot from DDR. */
-#  define BOOTENV \
-	"ddrargs=setenv bootargs console=${console},${baudrate} root=/dev/ram rw " \
-		LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
-		EXTRA_BOOT_ARGS "\0" \
-	"fixup_initrd_size=setexpr ramdisk_size_addr ${ramdisk_addr} - 0x4; " \
-		  "setexpr.l initrd-end ${ramdisk_addr} + " \
-		  "*${ramdisk_size_addr}; "\
-		  "setexpr.l initrd-end.h ${initrd-end} / 0x100000000; "\
-		  "setexpr.l initrd-end.l ${initrd-end} \% 0x100000000; "\
-		  "setexpr.l initrd-start.h ${ramdisk_addr} / 0x100000000; "\
-		  "setexpr.l initrd-start.l ${ramdisk_addr} \% 0x100000000; "\
-		  "fdt set /chosen linux,initrd-start " \
-		  "<0x${initrd-start.h} 0x${initrd-start.l}>; " \
-		  " fdt set /chosen linux,initrd-end " \
-		  "<0x${initrd-end.h} 0x${initrd-end.l}>;\0" \
-
-#  define CONFIG_BOOTCOMMAND \
-	"run ddrargs; run fdt_fixups; ${boot_mtd} ${loadaddr} - ${fdt_addr}"
-
-#elif defined(CONFIG_SD_BOOT)
+#if defined(CONFIG_SD_BOOT)
 #  define BOOTENV
 #  define CONFIG_BOOTCOMMAND \
 	"mmc dev ${mmcdev}; " \
