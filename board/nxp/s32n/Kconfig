@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 
 if NXP_S32N
 
@@ -24,12 +24,5 @@ config DTB_RAM_OFFSET
 config RAMDISK_RAM_OFFSET
 	hex "Default ramdisk offset in RAM to be used by the OS."
 	default 0x16000000
-
-config MEM_BOOT
-	bool "Boot kernel images from RAM."
-	default n
-	help
-	  Enable this option if the kernel images are already loaded in memory
-	  (eg. DDR), which is a common scenario in Simulator/Emulator case.
 
 endif
