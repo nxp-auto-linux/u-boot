@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 
 if ARCH_S32N79
 
@@ -17,7 +17,7 @@ config TARGET_S32N79SIM
 endchoice
 
 config ENV_IS_IN_FAT
-	default y if !MEM_BOOT
+	default y
 
 config ENV_FAT_INTERFACE
 	default "mmc" if SD_BOOT
