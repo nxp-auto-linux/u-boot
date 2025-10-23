@@ -29,6 +29,6 @@ following configuration options can be used in this scope:
 *   `CONFIG_RAMDISK_RAM_OFFSET`: Root filesystem offset in RAM (default: 0x1400_0000).
 
 Other customizable options:
-*   `CONFIG_DEBUG_UART_BASE`: UART registers base addressv (default: 0x4A03_0000).
+*   `CONFIG_DEBUG_UART_BASE`: UART registers base address (default: 0x4A03_0000).
 *   `CONFIG_CONS_INDEX`: PL011 UART console index (default: 0). Will be used to
   populate `console` environment variable.
