@@ -15,7 +15,7 @@
 #define CONFIG_SYS_MMC_ENV_DEV		0
 
 /* Increase max gunzip size */
-#define CONFIG_SYS_BOOTM_LEN	(SZ_64M)
+#define CONFIG_SYS_BOOTM_LEN    (SZ_256M)
 
 #if defined(CONFIG_NO_LINUX_EARLY_CONSOLE)
 #  define LINUX_EARLY_CONSOLE ""
