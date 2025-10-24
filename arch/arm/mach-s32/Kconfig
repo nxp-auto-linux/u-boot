@@ -167,6 +167,12 @@ config SYS_LOAD_ADDR
 config SYS_MALLOC_F_LEN
 	default 0x50000
 
+config SYS_BOOTM_LEN
+	default 0x10000000 if MACH_S32
+
+config SYS_CBSIZE
+	default 512 if MACH_S32
+
 config ENV_OFFSET
 	default 0x280000 if !ENV_IS_IN_FAT
 
