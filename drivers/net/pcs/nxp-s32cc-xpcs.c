@@ -858,6 +858,8 @@ static int xpcs_init_plls(struct s32cc_xpcs *xpcs)
 			return 0;
 	} else if (xpcs->pcie_shared == NOT_SHARED) {
 		wait_power_good_state(xpcs);
+	} else if (xpcs->pcie_shared == PCIE_XPCS_1G) {
+		wait_power_good_state(xpcs);
 	} else if (xpcs->pcie_shared == PCIE_XPCS_2G5) {
 		wait_power_good_state(xpcs);
 		/* Configure equalization */
