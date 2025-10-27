@@ -619,6 +619,9 @@ static int xpcs_init_clks(struct serdes *serdes)
 		}
 	}
 
+	if (ctrl->ss_mode == 1 || ctrl->ss_mode == 2)
+		pcie_phy_cold_reset(serdes);
+
 	for (i = 0; i < ARRAY_SIZE(order); i++) {
 		xpcs_id = order[i];
 
