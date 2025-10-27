@@ -1,9 +1,9 @@
 .. SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 
-s32n79sim
-==========
+s32n79
+======
 
-U-Boot for the NXP S32N79 simulator
+U-Boot for the NXP S32N79 SoC
 
 Quick Start
 -----------
@@ -16,8 +16,10 @@ Build U-Boot
 
 .. code-block:: bash
 
-   $ make s32n79sim_defconfig
+   $ make <board>_defconfig
    $ make
+
+   where <board> is one of the following: s32n79sim, s32n79rdb
 
 Memory layout related build options
 -----------------------------------
