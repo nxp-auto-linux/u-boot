@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+# Copyright 2025 NXP
+
+if TARGET_S32N79RDB
+
+config SYS_CONFIG_NAME
+	default "s32n79rdb"
+
+config SYS_BOARD
+	default "s32n79rdb"
+
+config NR_DRAM_BANKS
+	default 1
+
+config ENV_FAT_FILE
+	default "/FIRMWARE/NXP/s32n79rdb/u-boot/env.txt"
+
+config DTB_FILE
+	default "/FIRMWARE/NXP/s32n79rdb/linux/s32n79-rdb.dtb"
+
+if DEBUG_UART
+
+config DEBUG_UART_CLOCK
+	default 132000000
+endif
+
+endif
