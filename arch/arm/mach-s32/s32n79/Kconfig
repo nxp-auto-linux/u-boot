@@ -14,6 +14,11 @@ config TARGET_S32N79SIM
 	select SPI_FLASH_SPANSION
 	select SPI_FLASH_S28HX_T
 
+config TARGET_S32N79RDB
+	bool "Support S32N79 Reference Design Board"
+	help
+	  This board is based on S32N79 SoC.
+
 endchoice
 
 config ENV_IS_IN_FAT
@@ -38,5 +43,6 @@ config DEBUG_UART_BASE
 endif
 
 source "board/nxp/s32n79sim/Kconfig"
+source "board/nxp/s32n79rdb/Kconfig"
 
 endif
