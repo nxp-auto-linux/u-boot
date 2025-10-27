@@ -567,6 +567,10 @@ static int xpcs_init_clks(struct serdes *serdes)
 		return -EINVAL;
 	}
 
+	if (ctrl->ss_mode == 1 || ctrl->ss_mode == 2 ||
+	    ctrl->ss_mode == 5)
+		phy_config_gen_ctrl(ctrl, false);
+
 	for (i = 0; i < ARRAY_SIZE(order); i++) {
 		xpcs_id = order[i];
 
@@ -590,7 +594,6 @@ static int xpcs_init_clks(struct serdes *serdes)
 	}
 
 	if (ctrl->ss_mode == 5) {
-		phy_config_gen_ctrl(ctrl, false);
 		prepare_pma_mode5(serdes);
 
 		xpcs->ops->pre_reset_pcie_2g5(xpcs->phys[1]);
