@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022, 2024 NXP
+ * Copyright 2022, 2024-2025 NXP
  */
 
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <env.h>
 #include <fdt_support.h>
 #include <asm/global_data.h>
@@ -73,48 +78,47 @@ int ft_fixup_memory(void *blob, struct bd_info *bd)
 	return apply_memory_fixups(blob, bd);
 }
 
-static int add_atf_reserved_memory(void *new_blob)
+int ft_add_reserved_memory_node(void *new_blob, const char *name)
 {
-	int ret;
 	struct fdt_memory carveout;
 	struct resource reg = {0};
+	char path[32];
 	ofnode node;
+	int ret;
 
 	if (fdt_check_header(new_blob)) {
 		log_err("Invalid FDT Header for Linux DT Blob\n");
 		return -EINVAL;
 	}
 
-	/* Get atf reserved-memory node offset */
-	node = ofnode_path("/reserved-memory/atf");
+	/* Get reserved-memory node offset */
+	ret = snprintf(path, sizeof(path), "/reserved-memory/%s", name);
+	if (ret <= 0 || ret >= sizeof(path)) {
+		log_err("Failed to create path for reserved-memory/%s node\n", name);
+		return -ENOSPC;
+	}
+
+	node = ofnode_path(path);
 	if (!ofnode_valid(node)) {
-		log_err("Couldn't find 'atf' reserved-memory node\n");
+		log_err("Couldn't find '%s' reserved-memory node\n", name);
 		return -EINVAL;
 	}
 
 	ret = ofnode_read_resource(node, 0, &reg);
 	if (ret) {
-		log_err("Unable to get value of 'reg' prop of 'atf' node\n");
+		log_err("Unable to get value of 'reg' prop of '%s' node\n", name);
 		return ret;
 	}
 
 	carveout.start = reg.start;
 	carveout.end = reg.end;
 
-	/* Increase Linux DT size before adding new node */
-	ret = fdt_increase_size(new_blob, 512);
-	if (ret < 0) {
-		log_err("Could not increase size of Linux DT: %s\n",
-		       fdt_strerror(ret));
-		return ret;
-	}
-
-	/* Add 'atf' node to Linux DT */
-	ret = fdtdec_add_reserved_memory(new_blob, "atf", &carveout,
+	/* Add node to Linux DT */
+	ret = fdtdec_add_reserved_memory(new_blob, name, &carveout,
 					 NULL, 0, NULL,
 					 FDTDEC_RESERVED_MEMORY_NO_MAP);
 	if (ret < 0) {
-		log_err("Unable to add 'atf' node to Linux DT\n");
+		log_err("Unable to add '%s' node to Linux DT\n", name);
 		return ret;
 	}
 
@@ -123,7 +127,7 @@ static int add_atf_reserved_memory(void *new_blob)
 
 int ft_fixup_atf(void *new_blob)
 {
-	int ret = add_atf_reserved_memory(new_blob);
+	int ret = ft_add_reserved_memory_node(new_blob, "atf");
 
 	if (ret)
 		log_err("Copying 'atf' node from U-Boot DT to Linux DT failed!\n");
