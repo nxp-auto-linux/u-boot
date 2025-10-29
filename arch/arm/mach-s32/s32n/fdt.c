@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:     GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2025 NXP
  */
 
 #include <config.h>
@@ -20,6 +20,16 @@
 #include <linux/kernel.h>
 #include <linux/libfdt.h>
 #include <s32/fdt.h>
+
+static int ft_fixup_bl2(void *new_blob)
+{
+	int ret = ft_add_reserved_memory_node(new_blob, "bl2-resume");
+
+	if (ret)
+		log_err("Copying 'bl2-resume' node from U-Boot DT to Linux DT failed!\n");
+
+	return ret;
+}
 
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
@@ -49,5 +59,10 @@ int ft_system_setup(void *blob, struct bd_info *bd)
 	if (ret)
 		return ret;
 
-	return ft_fixup_atf(blob);
+	ret = ft_fixup_atf(blob);
+	if (ret)
+		return ret;
+
+	/* Reserve memory from BL2 space for resume */
+	return ft_fixup_bl2(blob);
 }
