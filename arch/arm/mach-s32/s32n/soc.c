@@ -2,14 +2,19 @@
 /*
  * Copyright 2024-2025 NXP
  */
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <env.h>
 #include <init.h>
 #include <asm-generic/sections.h>
 #include <asm/global_data.h>
-#include <asm/armv8/mmu.h>
 #include <asm/sections.h>
 #include <asm/system.h>
+#include <asm/armv8/mmu.h>
 #include <dm/ofnode.h>
 #include <linux/ioport.h>
 #include <s32/soc.h>
@@ -42,16 +47,21 @@ u64 get_page_table_size(void)
 }
 #endif
 
-/* The top of the DRAM is reserved for the Secure Monitor. */
-ulong board_get_usable_ram_top(ulong total_size)
+/*
+ * The top of the DRAM is reserved for the Secure Monitor and part
+ * of BL2. Use the base address of the reserved BL2 region needed
+ * on the resume path to determine the top of usable RAM,
+ * since it is deployed at lower addresses than the BL31 stage.
+ */
+phys_addr_t board_get_usable_ram_top(phys_size_t total_size)
 {
 	struct resource reg;
 	ofnode node;
 	int ret;
 
-	node = ofnode_path("/reserved-memory/atf");
+	node = ofnode_path("/reserved-memory/bl2-resume");
 	if (!ofnode_valid(node)) {
-		log_err("Couldn't find 'atf' reserved-memory node\n");
+		log_err("Couldn't find 'bl2-resume' reserved-memory node\n");
 		return gd->ram_top;
 	}
 
