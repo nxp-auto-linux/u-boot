@@ -5,7 +5,7 @@ if ARCH_S32N79
 
 choice
 	prompt "S32N79 board select"
-	default TARGET_S32N79SIM
+	default TARGET_S32N79RDB
 
 config TARGET_S32N79SIM
 	bool "Support S32N79SIM simulator"
