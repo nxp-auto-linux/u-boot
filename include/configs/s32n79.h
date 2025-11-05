@@ -7,6 +7,13 @@
 
 #include <configs/s32.h>
 
+#define S32N_IEPRC_PHYS_ADDR 0x240000000ULL
+#define S32N_IEPRC_PHYS_SIZE 0x2000000ULL
+
+/* Highest valid peripheral page address. */
+#define HIGHEST_PER_ADDR	(S32N_IEPRC_PHYS_ADDR + \
+				 S32N_IEPRC_PHYS_SIZE - PAGE_SIZE)
+
 #define FDT_FILE		CONFIG_DTB_FILE
 #define IMAGE_FILE		"/BOOT/linux/Image"
 #define BOOT_SCRIPT_FILE_SD	"/boot/boot.scr-sdcard"
