@@ -2,9 +2,15 @@
 /*
  * Copyright 2022-2025 NXP
  */
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <cpu_func.h>
 #include <debug_uart.h>
+#include <fdtdec.h>
 #include <init.h>
 #include <malloc.h>
 #include <relocate.h>
@@ -12,11 +18,42 @@
 #include <asm/sections.h>
 #include <asm/system.h>
 #include <asm/armv8/mmu.h>
-#include <dm/ofnode.h>
 #include <linux/kernel.h>
 #include <s32/soc.h>
 
 #ifndef CONFIG_SYS_DCACHE_OFF
+
+#define S32_MMU_HIGH_ADDR_PERIPH_INDEX	0
+#define S32_MMU_POST_RELOC_DDR_INDEX	1
+/* +1 for the sentinel entry and +1 for the highest peripheral addr region. */
+#define S32_STATIC_MEM_MAP_MAX (CONFIG_NR_DRAM_BANKS + 2)
+
+/*
+ * Reserve space for DRAM regions that will be added by mem_map_from_dram_banks().
+ * The `_start` entry is updated in two phases:
+ *  - Before relocation: early_mmu_init adjusts its size to cover U-Boot text and data.
+ *  - After relocation: mem_map_from_dram_banks replaces it with the first DRAM region,
+ *    then appends the remaining regions.
+ *
+ * Array size calculation:
+ *    CONFIG_NR_DRAM_BANKS + NUMBER_OF_STATIC_REGIONS + 1 (sentinel)
+ */
+struct mm_region static_mem_map[S32_STATIC_MEM_MAP_MAX] = {
+	[S32_MMU_HIGH_ADDR_PERIPH_INDEX] = {
+		/*
+		 * This is necessary since get_tcr rely on the static memory
+		 * map when computing the largest possible address.
+		 */
+		HIGHEST_PER_ADDR, HIGHEST_PER_ADDR, PAGE_SIZE,
+		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
+	},
+	[S32_MMU_POST_RELOC_DDR_INDEX] = {
+		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
+	},
+	{ /* sentinel */ }
+};
+
 /*
  * Without forcing the ".data" section, this would get saved in ".bss". BSS
  * will be cleared soon after, so it's not suitable.
@@ -39,19 +76,19 @@ static inline u64 get_dtb_addr(void)
 	return nt_fw_dtb;
 }
 
-extern struct mm_region static_mem_map[];
 extern struct mm_region dyn_mem_map[];
 struct mm_region *mem_map = static_mem_map;
 
-void *board_fdt_blob_setup(int *err)
+int board_fdt_blob_setup(void **fdtp)
 {
 	void *dtb = (void *)get_dtb_addr();
 
-	*err = 0;
 	if (fdt_magic(dtb) != FDT_MAGIC)
-		*err = -EFAULT;
+		return -EFAULT;
 
-	return dtb;
+	*fdtp = dtb;
+
+	return 0;
 }
 
 struct mm_region *get_mm_region(struct mm_region *mem_map_array, u64 phys_base)
@@ -71,16 +108,22 @@ struct mm_region *get_mm_region(struct mm_region *mem_map_array, u64 phys_base)
 
 static int parse_tfa_mem(fdt_addr_t *addr, fdt_size_t *size)
 {
-	ofnode node;
+	const void *fdt = (const void *)get_dtb_addr();
+	int node;
 
-	/* Get atf reserved-memory node offset if not just exit. */
-	node = ofnode_path("/reserved-memory/atf");
-	if (!ofnode_valid(node)) {
+	/*
+	 * Use raw FDT calls instead of ofnode API because this function is
+	 * called from enable_caches() via initr_caches(), which runs before
+	 * initr_dm() initializes the ofnode infrastructure (oftree_reset).
+	 * With OFNODE_MULTI_TREE, ofnode_to_fdt() returns NULL at this point.
+	 */
+	node = fdt_path_offset(fdt, "/reserved-memory/atf");
+	if (node < 0) {
 		log_err("Unable to find 'atf' node\n");
 		return -EINVAL;
 	}
 
-	*addr = ofnode_get_addr_size(node, "reg", size);
+	*addr = fdtdec_get_addr_size(fdt, node, "reg", size);
 	if (*addr == FDT_ADDR_T_NONE) {
 		log_err("Unable to get value of 'reg' prop of 'atf' node\n");
 		return -EINVAL;
@@ -111,7 +154,7 @@ static int early_mmu_init(void)
 	 * We need to map the region starting with the text and ending with
 	 * the stack address.
 	 */
-	stack_addr = ALIGN((u64)&__bss_start + CONFIG_SYS_INIT_SP_BSS_OFFSET,
+	stack_addr = ALIGN((u64)&__bss_end + CONFIG_SYS_INIT_SP_BSS_OFFSET,
 			   PAGE_SIZE);
 
 	region = get_mm_region(static_mem_map, (uintptr_t)_start);
@@ -160,24 +203,11 @@ int clear_bss(void)
  */
 void enable_caches(void)
 {
-	struct mm_region *region_ptr;
 	fdt_addr_t tfa_addr;
 	fdt_size_t tfa_size;
 	ulong fdt_size;
 	size_t i;
 	int ret;
-
-	/*
-	 * Since some data was relocated at the end of the ram, map the entire
-	 * first memory bank.
-	 */
-	region_ptr = get_mm_region(static_mem_map, (uintptr_t)_start);
-	if (!region_ptr)
-		panic("Text memory region not found in static_mem_map\n");
-
-	region_ptr->virt = gd->ram_base;
-	region_ptr->phys = gd->ram_base;
-	region_ptr->size = get_effective_memsize();
 
 	/* Enable data cache and MMU. */
 	dcache_enable();
@@ -195,12 +225,6 @@ void enable_caches(void)
 	mmu_map_region_attrs(get_dtb_addr(), fdt_size,
 			     DDR_ATTRS | PTE_BLOCK_AP_RO | PTE_BLOCK_PXN |
 			     PTE_BLOCK_UXN, false);
-
-	/* Map the rest of the memory banks. */
-	for (i = 1; i < CONFIG_NR_DRAM_BANKS; i++)
-		mmu_map_region_attrs(gd->bd->bi_dram[i].start,
-				     gd->bd->bi_dram[i].size,
-				     DDR_ATTRS, false);
 
 	ret = parse_tfa_mem(&tfa_addr, &tfa_size);
 	if (ret)
@@ -276,4 +300,28 @@ int print_socinfo(void)
 	printf("\n");
 
 	return 0;
+}
+
+int dram_init_banksize(void)
+{
+	int ret;
+
+	/* static_mem_map should have space for CONFIG_NR_DRAM_BANKS +
+	 * sentinel.
+	 */
+	assert(S32_MMU_POST_RELOC_DDR_INDEX + CONFIG_NR_DRAM_BANKS + 1 <=
+	       ARRAY_SIZE(static_mem_map));
+
+	ret = fdtdec_setup_memory_banksize();
+	if (ret) {
+		log_err("%s: Failed to setup dram banks\n", __func__);
+		return ret;
+	}
+
+	ret = mem_map_from_dram_banks(S32_MMU_POST_RELOC_DDR_INDEX,
+				      ARRAY_SIZE(static_mem_map), DDR_ATTRS);
+	if (ret)
+		log_err("%s: Failed to setup dram banks\n", __func__);
+
+	return ret;
 }
