@@ -18,13 +18,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define PERIPH_BASE      0x40000000
 #define PERIPH_SIZE      0x20000000
 
-#define CONFIG_SYS_PCIE0_PHYS_ADDR_HI       0x5800000000ULL
-#define CONFIG_SYS_PCIE1_PHYS_ADDR_HI       0x4800000000ULL
-#define CONFIG_SYS_PCIE0_PHYS_SIZE_HI       0x0800000000ULL
-#define CONFIG_SYS_PCIE1_PHYS_SIZE_HI       0x0800000000ULL
-
-#define HIGHEST_ADDR	(CONFIG_SYS_PCIE0_PHYS_ADDR_HI + \
-		CONFIG_SYS_PCIE0_PHYS_SIZE_HI - PAGE_SIZE)
 #endif
 
 #ifndef CONFIG_SYS_DCACHE_OFF
@@ -120,23 +113,6 @@ static const struct soc_attr s32cc_soc_sram_size_data[] = {
 	{ /* sentinel */ }
 };
 
-struct mm_region static_mem_map[] = {
-	{
-		/* Will be updated before dcache_enable call. */
-		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
-	},
-	{
-		/*
-		 * This is necessary since get_tcr rely on the static memory
-		 * map when computing the largest possible address.
-		 */
-		HIGHEST_ADDR, HIGHEST_ADDR, PAGE_SIZE,
-		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
-			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
-	},
-	{ /* sentinel */ }
-};
-
 struct mm_region dyn_mem_map[] = {
 	{
 		S32CC_SRAM_BASE, S32CC_SRAM_BASE, 0U,
@@ -155,14 +131,14 @@ struct mm_region dyn_mem_map[] = {
 	},
 #if defined(CONFIG_PCI)
 	{
-		CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
-		CONFIG_SYS_PCIE0_PHYS_SIZE_HI,
+		S32CC_PCIE0_PHYS_ADDR_HI, S32CC_PCIE0_PHYS_ADDR_HI,
+		S32CC_PCIE0_PHYS_SIZE_HI,
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 		PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
 	{
-		CONFIG_SYS_PCIE1_PHYS_ADDR_HI, CONFIG_SYS_PCIE1_PHYS_ADDR_HI,
-		CONFIG_SYS_PCIE1_PHYS_SIZE_HI,
+		S32CC_PCIE1_PHYS_ADDR_HI, S32CC_PCIE1_PHYS_ADDR_HI,
+		S32CC_PCIE1_PHYS_SIZE_HI,
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 		PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},

@@ -77,6 +77,15 @@
 #  error "The CONFIG_CONS_INDEX can be in the range 1(serial0)-7(serial6)"
 #endif
 
+#define S32CC_PCIE0_PHYS_ADDR_HI       0x5800000000ULL
+#define S32CC_PCIE1_PHYS_ADDR_HI       0x4800000000ULL
+#define S32CC_PCIE0_PHYS_SIZE_HI       0x0800000000ULL
+#define S32CC_PCIE1_PHYS_SIZE_HI       0x0800000000ULL
+
+/* Highest valid peripheral page address. */
+#define HIGHEST_PER_ADDR	(S32CC_PCIE0_PHYS_ADDR_HI + \
+				 S32CC_PCIE0_PHYS_SIZE_HI - PAGE_SIZE)
+
 #if defined(CONFIG_S32CC_HWCONFIG)
 #  define SERDES_EXTRA_ENV_SETTINGS "hwconfig=" CONFIG_S32CC_HWCONFIG "\0"
 #else

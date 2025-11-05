@@ -17,6 +17,38 @@
 #include <s32/soc.h>
 
 #ifndef CONFIG_SYS_DCACHE_OFF
+
+#define S32_MMU_HIGH_ADDR_PERIPH_INDEX	0
+#define S32_MMU_POST_RELOC_DDR_INDEX	1
+/* +1 for the sentinel entry and +1 for the highest peripheral addr region. */
+#define S32_STATIC_MEM_MAP_MAX (CONFIG_NR_DRAM_BANKS + 2)
+
+/*
+ * Reserve space for DRAM regions that will be added by mem_map_from_dram_banks().
+ * The `_start` entry is updated in two phases:
+ *  - Before relocation: early_mmu_init adjusts its size to cover U-Boot text and data.
+ *  - After relocation: mem_map_from_dram_banks replaces it with the first DRAM region,
+ *    then appends the remaining regions.
+ *
+ * Array size calculation:
+ *    CONFIG_NR_DRAM_BANKS + NUMBER_OF_STATIC_REGIONS + 1 (sentinel)
+ */
+struct mm_region static_mem_map[S32_STATIC_MEM_MAP_MAX] = {
+	[S32_MMU_HIGH_ADDR_PERIPH_INDEX] = {
+		/*
+		 * This is necessary since get_tcr rely on the static memory
+		 * map when computing the largest possible address.
+		 */
+		HIGHEST_PER_ADDR, HIGHEST_PER_ADDR, PAGE_SIZE,
+		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
+	},
+	[S32_MMU_POST_RELOC_DDR_INDEX] = {
+		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
+	},
+	{ /* sentinel */ }
+};
+
 /*
  * Without forcing the ".data" section, this would get saved in ".bss". BSS
  * will be cleared soon after, so it's not suitable.
@@ -39,7 +71,6 @@ static inline u64 get_dtb_addr(void)
 	return nt_fw_dtb;
 }
 
-extern struct mm_region static_mem_map[];
 extern struct mm_region dyn_mem_map[];
 struct mm_region *mem_map = static_mem_map;
 
@@ -160,24 +191,11 @@ int clear_bss(void)
  */
 void enable_caches(void)
 {
-	struct mm_region *region_ptr;
 	fdt_addr_t tfa_addr;
 	fdt_size_t tfa_size;
 	ulong fdt_size;
 	size_t i;
 	int ret;
-
-	/*
-	 * Since some data was relocated at the end of the ram, map the entire
-	 * first memory bank.
-	 */
-	region_ptr = get_mm_region(static_mem_map, (uintptr_t)_start);
-	if (!region_ptr)
-		panic("Text memory region not found in static_mem_map\n");
-
-	region_ptr->virt = gd->ram_base;
-	region_ptr->phys = gd->ram_base;
-	region_ptr->size = get_effective_memsize();
 
 	/* Enable data cache and MMU. */
 	dcache_enable();
@@ -195,12 +213,6 @@ void enable_caches(void)
 	mmu_map_region_attrs(get_dtb_addr(), fdt_size,
 			     DDR_ATTRS | PTE_BLOCK_AP_RO | PTE_BLOCK_PXN |
 			     PTE_BLOCK_UXN, false);
-
-	/* Map the rest of the memory banks. */
-	for (i = 1; i < CONFIG_NR_DRAM_BANKS; i++)
-		mmu_map_region_attrs(gd->bd->bi_dram[i].start,
-				     gd->bd->bi_dram[i].size,
-				     DDR_ATTRS, false);
 
 	ret = parse_tfa_mem(&tfa_addr, &tfa_size);
 	if (ret)
@@ -276,4 +288,22 @@ int print_socinfo(void)
 	printf("\n");
 
 	return 0;
+}
+
+int dram_init_banksize(void)
+{
+	int ret;
+
+	/* static_mem_map should have space for CONFIG_NR_DRAM_BANKS +
+	 * sentinel.
+	 */
+	assert(S32_MMU_POST_RELOC_DDR_INDEX + CONFIG_NR_DRAM_BANKS + 1 <=
+	       ARRAY_SIZE(static_mem_map));
+
+	ret = mem_map_from_dram_banks(S32_MMU_POST_RELOC_DDR_INDEX,
+				      ARRAY_SIZE(static_mem_map), DDR_ATTRS);
+	if (ret)
+		log_err("%s: Failed to setup dram banks\n", __func__);
+
+	return ret;
 }
