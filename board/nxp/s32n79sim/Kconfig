@@ -10,7 +10,7 @@ config SYS_BOARD
 	default "s32n79sim"
 
 config NR_DRAM_BANKS
-	default 1
+	default 3
 
 config ENV_FAT_FILE
 	default "/FIRMWARE/NXP/s32n79sim/u-boot/env.txt"
