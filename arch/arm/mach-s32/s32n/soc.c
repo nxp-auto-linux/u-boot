@@ -20,29 +20,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_SIZE	0x1000
 
-#define CONFIG_SYS_IEPRC_PHYS_ADDR 0x240000000ULL
-#define CONFIG_SYS_IEPRC_PHYS_SIZE 0x2000000ULL
-
-#define HIGHEST_ADDR	(CONFIG_SYS_IEPRC_PHYS_ADDR + \
-		CONFIG_SYS_IEPRC_PHYS_SIZE - PAGE_SIZE)
-
-struct mm_region static_mem_map[] = {
-	{
-		/* Will be updated before dcache_enable call. */
-		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
-	},
-	{
-		/*
-		 * This is necessary since get_tcr rely on the static memory
-		 * map when computing the largest possible address.
-		 */
-		HIGHEST_ADDR, HIGHEST_ADDR, PAGE_SIZE,
-		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
-			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
-	},
-	{ /* sentinel */ }
-};
-
 struct mm_region dyn_mem_map[] = {
 #ifdef CONFIG_DEBUG_UART
 	{
@@ -61,7 +38,7 @@ u64 get_page_table_size(void)
 	 * size is computed based on the mem_map array, which in this case,
 	 * doesn't contain the regions which will be dynamically added.
 	 */
-	return SZ_64K;
+	return SZ_128K;
 }
 #endif
 
