@@ -19,7 +19,7 @@ config SYS_LOAD_RAM_OFFSET
 
 config DTB_RAM_OFFSET
 	hex "Default OS device tree blob offset in RAM."
-	default 0x13002000
+	default 0x13100000
 
 config RAMDISK_RAM_OFFSET
 	hex "Default ramdisk offset in RAM to be used by the OS."
