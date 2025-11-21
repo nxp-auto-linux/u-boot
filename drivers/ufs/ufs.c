@@ -40,7 +40,7 @@
 /* Query request retries */
 #define QUERY_REQ_RETRIES 3
 /* Query request timeout */
-#define QUERY_REQ_TIMEOUT 1500 /* 1.5 seconds */
+#define QUERY_REQ_TIMEOUT 200000 /* 200 seconds */
 
 /* maximum timeout in ms for a general UIC command */
 #define UFS_UIC_CMD_TIMEOUT	1000
