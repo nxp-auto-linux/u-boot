@@ -26,6 +26,10 @@
 #define EXTRA_BOOT_ARGS	\
 	" arm64.nopauth clk_ignore_unused "
 
+#define SCSI_LUN0_ID			"0"
+#define SCSI_LUN1_ID			"1"
+#define LUN0_IMAGE_NAME			"lun0.ufs"
+#define LUN1_IMAGE_NAME			"lun1.ufs"
 #define SCSI_PART_FDT			"0:3"
 #define SCSI_PART_IMAGE			"1:1"
 #define SCSI_PART_ROOTFS		"1:2"
@@ -74,6 +78,12 @@
 			"run fdt_fixups; " \
 			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 		"fi;\0" \
+	"scsi_lun0_id=" SCSI_LUN0_ID "\0" \
+	"scsi_lun1_id=" SCSI_LUN1_ID "\0" \
+	"lun0_image_name=" LUN0_IMAGE_NAME "\0" \
+	"lun1_image_name=" LUN1_IMAGE_NAME "\0" \
+	"write_lun0= scsi scan ; setenv image ${lun0_image_name} ; run loadimage ; scsi device ${scsi_lun0_id} ; scsi write ${loadaddr} 0 500\0" \
+	"write_lun1= scsi scan ; setenv image ${lun1_image_name} ; run loadimage ; scsi device ${scsi_lun1_id} ; scsi write ${loadaddr} 0 4500\0" \
 	"scsi_part_fdt=" SCSI_PART_FDT "\0" \
 	"scsi_part_image=" SCSI_PART_IMAGE "\0" \
 	"scsi_part_rootfs=" SCSI_PART_ROOTFS "\0" \
