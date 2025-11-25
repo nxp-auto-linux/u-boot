@@ -160,45 +160,7 @@ static int ufs_s32n_phy_configure(struct ufs_hba *hba)
 {
 	int ret = 0;
 
-	/* RX squelch control. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXSQCONTROL, SELIND_LN0_RX), 0x1);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXSQCONTROL, SELIND_LN1_RX), 0x1);
-	/* RX Rhold control option. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXRHOLDCTRLOPT, SELIND_LN0_RX), 0x2);
-	/* CR parallel selection. */
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBCRCTRL, 0), 0x1);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
-	/* RX squelch control. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXSQCONTROL, 0), 0x2);
-	/* RX override control 1. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXOVRCTRL1, 0), 0x58);
-	/* RX squelch control. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXSQCONTROL, 1), 0x2);
-	/* RX override control 1. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXOVRCTRL1, 1), 0x58);
-	/* RX line reset configuration MSByte. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXLINERSTCFGMSB, SELIND_LN0_RX), 0x1);
-	/* RX line reset configuration LSByte. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXLINERSTCFGLSB, SELIND_LN0_RX), 0xf4);
-	/* RX line reset configuration MSByte. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXLINERSTCFGMSB, SELIND_LN1_RX), 0x1);
-	/* RX line reset configuration LSByte. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXLINERSTCFGLSB, SELIND_LN1_RX), 0xf4);
-	/* CB PHY override capability. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBENBLCPBATTRWR, 0), 0x1);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
-	/* Specifies support for the refresh adaptation used for RX. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RX_HS_ADAPT_REFRESH_CAP, SELIND_LN0_RX), 0x8f);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RX_HS_ADAPT_REFRESH_CAP, SELIND_LN1_RX), 0x8f);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RX_HS_ADAPT_INITIAL_CAP, SELIND_LN0_RX), 0x8f);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RX_HS_ADAPT_INITIAL_CAP, SELIND_LN1_RX), 0x8f);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
-	/* CB PHY override capability. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBENBLCPBATTRWR, 0), 0x0);
-	/* ULP control. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBUPLH8, 0), 0x1);
-	/* CB Override core_clk control 2. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBREFCLKCTRL2, 0), 0x90);
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
 
 	return ret;
@@ -250,6 +212,43 @@ out:
 	}
 
 	return err;
+}
+
+static int ufs_s32n_phy_initial_calib(struct ufs_hba *hba)
+{
+	int ret = 0;
+	u16 reg16;
+
+	ret |= ufs_s32n_phy_write_cr(hba, 0x401C, 0x6);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x411C, 0x6);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10AF, 0x8E);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11AF, 0x91);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B1, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B1, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B8, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B8, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x0);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x0);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10AF, 0x71);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11AF, 0x7F);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B1, 0x2);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B1, 0x2);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B8, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B8, 0x1);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x0);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x0);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x404D, 0x100);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x4140, 0x100);
+	ret |= ufs_s32n_phy_read_cr(hba, 0x4000, &reg16);
+	ret |= ufs_s32n_phy_read_cr(hba, 0x4100, &reg16);
+	ret |= ufs_s32n_phy_read_cr(hba, 0x4001, &reg16);
+	ret |= ufs_s32n_phy_read_cr(hba, 0x4101, &reg16);
+
+	return ret;
 }
 
 static int ufs_s32n_link_startup_pre_change(struct ufs_hba *hba)
@@ -333,9 +332,20 @@ static int ufs_s32n_link_startup_pre_change(struct ufs_hba *hba)
 		       ufs->reg_scm + SCM_STATUS);
 	}
 
+	/* Clock Control */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBREFCLKCTRL2, 0), 0x80);
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
-	/* Enable MPHY. */
+
+	ret = ufs_s32n_phy_initial_calib(hba);
+	if (ret) {
+		dev_err(dev, "UFS MPHY failed initial calibration!\n");
+		return ret;
+	}
+
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYDISABLE, 0), 0x0);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
+
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(N_DEVICEID, 0), 0x0);
 
 	if (ret)
 		return ret;
@@ -356,14 +366,10 @@ static int ufs_s32n_link_startup_post_change(struct ufs_hba *hba)
 	if (ufs->mphy_boot_mode == MPHY_BOOT_NONE)
 		return 0;
 
-	/* Set Local DeviceID. */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(N_DEVICEID, 0), 0x1);
-
 	/* Set Connection State to IDLE (it allows CPort Attributes to be set). */
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(T_CONNECTIONSTATE, CPORT_0), CPORT_IDLE);
 
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(T_CPORTFLAGS, CPORT_0),
-			     CPORT_FLAGS(CSV_N_ON, CSD_N_ON, E2EFC_OFF));
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(T_CPORTFLAGS, CPORT_0), CPORT_DEF_FLAGS);
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(T_CONNECTIONSTATE, CPORT_0), CPORT_CONNECTED);
 	if (ret)
 		return ret;
@@ -372,26 +378,17 @@ static int ufs_s32n_link_startup_post_change(struct ufs_hba *hba)
 	if (ret != 0 || data != CPORT_CONNECTED)
 		return ret;
 
-	/* SlowAuto_Mode for both Tx & Rx. */
-	ret |= ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(PA_PWRMODE, 0), &data);
-	if (ret != 0 || data != 0x55)
-		return ret;
-
-	ret |= ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(PA_HSSERIES, 0), &data);
-	if (ret != 0 || data != PA_HS_MODE_A)
-		return ret;
-
 	/* Performing MPHY configuration for rate change:
 	 * CB rate selection: 0 - rate A, 1 - rate B;
 	 */
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBRATESEL, 0), 0x1);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x01);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
 
 	ret |= ufs_s32n_phy_write_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_0, 0xc);
-	ret |= ufs_s32n_phy_read_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_0, &reg_val);
+	ret |= ufs_s32n_phy_read_cr(hba, RAWLANEN_DIG_PCS_XF_RX_PCS_OUT_0, &reg_val);
 
 	ret |= ufs_s32n_phy_write_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_1, 0xc);
-	ret |= ufs_s32n_phy_read_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_1, &reg_val);
+	ret |= ufs_s32n_phy_read_cr(hba, RAWLANEN_DIG_PCS_XF_RX_PCS_OUT, &reg_val);
 
 	ret |= ufs_s32n_phy_write_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_0, 0x8);
 	ret |= ufs_s32n_phy_read_cr(hba, RAWLANEN_DIG_PCS_XF_RX_PCS_OUT_0, &reg_val);
@@ -405,25 +402,6 @@ static int ufs_s32n_link_startup_post_change(struct ufs_hba *hba)
 
 	ret |= ufs_s32n_phy_write_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_0, 0x0);
 	ret |= ufs_s32n_phy_write_cr(hba, RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_1, 0x0);
-
-	/* Completed host PHY programming before rate change PMC
-	 * REQUESTING POWER MODE CHANGE, POWERMODE REQUEST 0x44.
-	 */
-	ret |= ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_HS_UNTERMINATED_LINE_DRIVE_CAP, 0), &data);
-	if (ret != 0 || data != 0)
-		return ret;
-
-	ret |= ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_LS_TERMINATED_LINE_DRIVE_CAP, 0), &data);
-	if (ret != 0 || data != 0)
-		return ret;
-
-	ret |= ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(RX_HS_UNTERMINATED_CAP, 0), &data);
-	if (ret != 0 || data != 0)
-		return ret;
-
-	ret |= ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(RX_LS_TERMINATED_CAP, 0), &data);
-	if (ret != 0 || data != 0)
-		return ret;
 
 	return 0;
 }
