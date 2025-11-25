@@ -27,19 +27,10 @@
 #define RXRHOLDCTRLOPT				0x8013
 #define CBENBLCPBATTRWR				0x8113
 #define CBRATESEL				0x8114
-#define CBCREGADDRLSB				0x8116
-#define CBCREGADDRMSB				0x8117
-#define CBCREGWRLSB				0x8118
-#define CBCREGWRMSB				0x8119
-#define CBCREGRDLSB				0x811A
 #define CBCREGRDMSB				0x811B
-#define CBCREGRDWRSEL				0x811C
 #define CBCRCTRL				0x811F
 #define CBUPLH8					0x8130
 #define CBREFCLKCTRL2				0x8132
-
-/* Vendor specific MPHY disable */
-#define VS_MPHYDISABLE				0xD0C1
 
 /* TX FSM states */
 #define TX_FSM_HIBERN8				1
