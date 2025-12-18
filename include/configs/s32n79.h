@@ -82,8 +82,10 @@
 	"scsi_lun1_id=" SCSI_LUN1_ID "\0" \
 	"lun0_image_name=" LUN0_IMAGE_NAME "\0" \
 	"lun1_image_name=" LUN1_IMAGE_NAME "\0" \
-	"write_lun0= scsi scan ; setenv image ${lun0_image_name} ; run loadimage ; scsi device ${scsi_lun0_id} ; scsi write ${loadaddr} 0 500\0" \
-	"write_lun1= scsi scan ; setenv image ${lun1_image_name} ; run loadimage ; scsi device ${scsi_lun1_id} ; scsi write ${loadaddr} 0 4500\0" \
+	"load_lun0_image=setenv image ${lun0_image_name}; run loadimage; setexpr n_blocks ${filesize} / 0x1000; setexpr n_blocks ${n_blocks} + 1\0" \
+	"load_lun1_image=setenv image ${lun1_image_name}; run loadimage; setexpr n_blocks ${filesize} / 0x1000; setexpr n_blocks ${n_blocks} + 1\0" \
+	"write_lun0=scsi scan; run load_lun0_image; scsi device ${scsi_lun0_id}; scsi write ${loadaddr} 0 ${n_blocks}\0" \
+	"write_lun1=scsi scan; run load_lun1_image; scsi device ${scsi_lun1_id}; scsi write ${loadaddr} 0 ${n_blocks}\0" \
 	"scsi_part_fdt=" SCSI_PART_FDT "\0" \
 	"scsi_part_image=" SCSI_PART_IMAGE "\0" \
 	"scsi_part_rootfs=" SCSI_PART_ROOTFS "\0" \
