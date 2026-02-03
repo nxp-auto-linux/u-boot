@@ -7,7 +7,7 @@
  * Copyright (C) 2018 Bootlin
  * Copyright (C) 2018 exceet electronics GmbH
  * Copyright (C) 2018 Kontron Electronics GmbH
- * Copyright 2019-2020,2022-2025 NXP
+ * Copyright 2019-2020,2022-2026 NXP
  *
  * This driver is a ported version of Linux Freescale QSPI driver taken from
  * v5.5-rc1 tag having following information.
@@ -384,6 +384,15 @@ static const struct fsl_qspi_devtype_data s32r45_data = {
 	.quirks = QUADSPI_QUIRK_USE_TDH_SETTING | QUADSPI_QUIRK_HAS_DLL |
 	    QUADSPI_QUIRK_OCTAL_SUPPORT | QUADSPI_QUIRK_READ_ENTIRE_AHB |
 	    QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN | QUADSPI_QUIRK_INT_LOOPBACK_SDR,
+	.little_endian = true,
+};
+
+static const struct fsl_qspi_devtype_data s32r47_data = {
+	.rxfifo = SZ_128,
+	.txfifo = SZ_128,
+	.ahb_buf_size = SZ_1K,
+	.quirks = QUADSPI_QUIRK_HAS_DLL | QUADSPI_QUIRK_READ_ENTIRE_AHB |
+		QUADSPI_QUIRK_LOW_FREQ_DELAY_CHAIN | QUADSPI_QUIRK_INT_LOOPBACK_SDR,
 	.little_endian = true,
 };
 
@@ -1480,6 +1489,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
 	{ .compatible = "nxp,s32g-qspi", .data = (ulong)&s32g_data },
 	{ .compatible = "nxp,s32g3-qspi", .data = (ulong)&s32g3_data },
 	{ .compatible = "nxp,s32r45-qspi", .data = (ulong)&s32r45_data },
+	{ .compatible = "nxp,s32r47-qspi", .data = (ulong)&s32r47_data },
 	{ }
 };
 
