@@ -18,7 +18,6 @@
  *     Frieder Schrempf <frieder.schrempf@kontron.de>
  *     Yogesh Gaur <yogeshnarayan.gaur@nxp.com>
  *     Suresh Gupta <suresh.gupta@nxp.com>
-#include <clk.h>
  *
  * Based on the original fsl-quadspi.c spi-nor driver.
  * Transition to spi-mem in spi-fsl-qspi.c
@@ -506,6 +505,11 @@ static inline int low_freq_chain(struct fsl_qspi *q)
 static inline int sdr_internal_loopback(struct fsl_qspi *q)
 {
 	return q->devtype_data->quirks & QUADSPI_QUIRK_INT_LOOPBACK_SDR;
+}
+
+static inline bool is_s32r47_qspi(struct fsl_qspi *q)
+{
+	return q->devtype_data == &s32r47_data;
 }
 
 static inline bool is_s32g3_qspi(struct fsl_qspi *q)
@@ -1336,10 +1340,12 @@ static int fsl_qspi_default_setup(struct fsl_qspi *q)
 	qspi_writel(q, memsize_cs * 2 + addr_offset,
 		    base + QUADSPI_SFA2AD);
 	if (!needs_single_bus(q)) {
-		qspi_writel(q, memsize_cs * 3 + addr_offset,
-			    base + QUADSPI_SFB1AD);
-		qspi_writel(q, memsize_cs * 4 + addr_offset,
-			    base + QUADSPI_SFB2AD);
+		if (!is_s32r47_qspi(q)) {
+			qspi_writel(q, memsize_cs * 3 + addr_offset,
+				    base + QUADSPI_SFB1AD);
+			qspi_writel(q, memsize_cs * 4 + addr_offset,
+				    base + QUADSPI_SFB2AD);
+		}
 	}
 
 	q->selected = -1;
