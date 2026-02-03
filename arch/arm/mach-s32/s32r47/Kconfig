@@ -17,10 +17,10 @@ config TARGET_S32R478AEVB
 	imply PHY_NXP_C45_TJA11XX
 	imply PHY_FIXED
 	imply SARADC_S32CC
+	select FSL_QSPI
+	select SPI_FLASH
 	select SPI_FLASH_STMICRO
 	select SPI_FLASH_MT25QU512ABB
-	select SPI_FLASH_SOFT_RESET
-	select SPI_FLASH_SOFT_RESET_ON_BOOT
 
 source "board/nxp/s32r478aevb/Kconfig"
 
