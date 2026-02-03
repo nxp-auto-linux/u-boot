@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2022-2025 NXP
+ * Copyright 2022-2026 NXP
  */
 #ifndef __S32CC_H__
 #define __S32CC_H__
@@ -123,9 +123,10 @@
 	"rootfs_flash_size=0x1A40000\0" \
 	"flashboot=echo Booting from flash...; " \
 		"run flashbootargs; " \
-		"cp.b ${kernel_flash_addr} ${loadaddr} ${kernel_flash_size}; " \
-		"cp.b ${dtb_flash_addr} ${fdt_addr} ${dtb_flash_size}; " \
-		"cp.b ${rootfs_flash_addr} ${ramdisk_addr} ${rootfs_flash_size}; " \
+		"sf probe 0:0; " \
+		"sf read ${loadaddr} ${kernel_flash_addr} ${kernel_flash_size}; " \
+		"sf read ${fdt_addr} ${dtb_flash_addr} ${dtb_flash_size}; " \
+		"sf read ${ramdisk_addr} ${rootfs_flash_addr} ${rootfs_flash_size}; " \
 		"${boot_mtd} ${loadaddr} ${ramdisk_addr} ${fdt_addr};\0"
 #else
 #define S32CC_FLASH_COMMAND \
