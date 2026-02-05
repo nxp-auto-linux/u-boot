@@ -51,8 +51,9 @@ static int enetc_is_v4(struct udevice *dev)
 {
 	struct pci_child_plat *pplat = dev_get_parent_plat(dev);
 
-	/* Test whether this is i.MX95 ENETCv4. This may be optimized out. */
-	return IS_ENABLED(CONFIG_ARCH_IMX9) &&
+	/* Test whether this is ENETCv4. This may be optimized out. */
+	return (IS_ENABLED(CONFIG_ARCH_IMX9) ||
+		IS_ENABLED(CONFIG_ARCH_S32N79)) &&
 	       pplat->vendor == PCI_VENDOR_ID_PHILIPS;
 }
 
@@ -351,7 +352,7 @@ static int enetc_init_sgmii(struct udevice *dev)
 	if (!enetc_has_imdio(dev))
 		return 0;
 
-	if (priv->uclass_id == PHY_INTERFACE_MODE_2500BASEX)
+	if (priv->if_type == PHY_INTERFACE_MODE_2500BASEX)
 		is2500 = true;
 
 	/*
@@ -430,7 +431,7 @@ static void enetc_setup_mac_iface(struct udevice *dev,
 	struct enetc_priv *priv = dev_get_priv(dev);
 	u32 if_mode;
 
-	switch (priv->uclass_id) {
+	switch (priv->if_type) {
 	case PHY_INTERFACE_MODE_RGMII:
 	case PHY_INTERFACE_MODE_RGMII_ID:
 	case PHY_INTERFACE_MODE_RGMII_RXID:
@@ -494,11 +495,11 @@ static void enetc_start_pcs(struct udevice *dev)
 		return;
 	}
 
-	priv->uclass_id = dev_read_phy_mode(dev);
-	if (priv->uclass_id == PHY_INTERFACE_MODE_NA)
+	priv->if_type = dev_read_phy_mode(dev);
+	if (priv->if_type == PHY_INTERFACE_MODE_NA)
 		enetc_dbg(dev, "phy-mode property not found\n");
 
-	switch (priv->uclass_id) {
+	switch (priv->if_type) {
 	case PHY_INTERFACE_MODE_SGMII:
 	case PHY_INTERFACE_MODE_2500BASEX:
 		enetc_init_sgmii(dev);
@@ -957,6 +958,46 @@ static int enetc_free_pkt(struct udevice *dev, uchar *packet, int length)
 
 	return 0;
 }
+
+#if IS_ENABLED(CONFIG_ARCH_S32N79)
+static const struct eth_ops enetc_ops_s32n7 = {
+	.start			= enetc_start,
+	.send			= enetc_send,
+	.recv			= enetc_recv,
+	.stop			= enetc_stop,
+	.free_pkt		= enetc_free_pkt,
+	.write_hwaddr		= enetc_write_hwaddr,
+};
+
+U_BOOT_DRIVER(eth_enetc_s32n7) = {
+	.name		= ENETC_DRIVER_NAME,
+	.id		= UCLASS_ETH,
+	.bind		= enetc_bind,
+	.probe		= enetc_probe,
+	.remove		= enetc_remove,
+	.ops		= &enetc_ops_s32n7,
+	.priv_auto	= sizeof(struct enetc_priv),
+	.plat_auto	= sizeof(struct eth_pdata),
+};
+
+static const struct enetc_data enetc_data_s32n7 = {
+	.reg_offset_pmr		= ENETC_PMR_OFFSET_IMX,
+	.reg_offset_psipmar	= ENETC_PSIPMARn_OFFSET_IMX,
+	.reg_offset_pcapr	= ENETC_PCAPR_OFFSET_IMX,
+	.reg_offset_psicfgr	= ENETC_PSICFGR_OFFSET_IMX,
+	.reg_offset_mac		= ENETC_PM_OFFSET_IMX,
+};
+
+static struct pci_device_id enetc_ids_s32n7[] = {
+	{
+		PCI_DEVICE(PCI_VENDOR_ID_PHILIPS, PCI_DEVICE_ID_ENETC4_ETH),
+		.driver_data = (ulong)&enetc_data_s32n7,
+	},
+	{}
+};
+
+U_BOOT_PCI_DEVICE(eth_enetc_s32n7, enetc_ids_s32n7);
+#endif
 
 #if IS_ENABLED(CONFIG_ARCH_IMX9)
 static int enetc_read_rom_hwaddr(struct udevice *dev)
