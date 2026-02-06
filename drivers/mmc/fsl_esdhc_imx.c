@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007, 2010-2011 Freescale Semiconductor, Inc
- * Copyright 2019, 2021-2024 NXP
+ * Copyright 2019, 2021-2024, 2026 NXP
  * Andy Fleming
  * Yangbo Lu <yangbo.lu@nxp.com>
  *
@@ -55,6 +55,12 @@ DECLARE_GLOBAL_DATA_PTR;
 				IRQSTATEN_CIE | IRQSTATEN_DTOE | IRQSTATEN_DCE | \
 				IRQSTATEN_DEBE | IRQSTATEN_BRR | IRQSTATEN_BWR | \
 				IRQSTATEN_DINT)
+
+/* Data transfer timeout: 10 seconds
+ * Long enough for slow eMMC/SD cards, but prevents infinite hangs.
+ */
+#define DATA_XFER_TIMEOUT_US	10000000
+
 #define MAX_TUNING_LOOP 40
 
 struct fsl_esdhc {
@@ -302,6 +308,79 @@ static void esdhc_setup_watermark_level(struct fsl_esdhc_priv *priv,
 	}
 }
 
+/* Sends CMD13 (SEND_STATUS) to read the card's status register.
+ * It is used to detect write protection violations and other
+ * card errors that may not trigger host controller interrupts.
+ */
+static int esdhc_read_card_status(struct fsl_esdhc_priv *priv,
+				  struct fsl_esdhc *regs, struct mmc *mmc, u32 *status)
+{
+	u32 irqstat = 0, prsstat = 0;
+	u32 xfertyp, mixctrl;
+	int ret;
+
+	/* Clear all interrupt status bits */
+	esdhc_write32(&regs->irqstat, U32_MAX);
+
+	/* Wait for command and data lines to be idle */
+	ret = readx_poll_timeout(esdhc_read32, &regs->prsstat, prsstat,
+				 !(prsstat & (PRSSTAT_CICHB | PRSSTAT_CIDHB)), 100000);
+	if (ret) {
+		debug("%s: timeout waiting for bus idle\n", __func__);
+		return -EBUSY;
+	}
+
+	/* Setup CMD13 (SEND_STATUS) - RCA in upper 16 bits */
+	esdhc_write32(&regs->cmdarg, mmc->rca << 16);
+
+	/* Configure transfer type: CMD13, R1 response, enable checks */
+	xfertyp = XFERTYP_CMD(MMC_CMD_SEND_STATUS) |
+		XFERTYP_RSPTYP_48 |
+		XFERTYP_CICEN |	/* Command index check */
+		XFERTYP_CCCEN;	/* CRC check */
+
+	/* Send the command */
+	if (IS_ENABLED(CONFIG_FSL_USDHC)) {
+		mixctrl = esdhc_read32(&regs->mixctrl);
+		esdhc_write32(&regs->mixctrl, mixctrl & 0xFFFFFF80);
+		esdhc_write32(&regs->xfertyp, xfertyp & 0xFFFF0000);
+	} else {
+		esdhc_write32(&regs->xfertyp, xfertyp);
+	}
+
+	/* Wait for command complete or timeout */
+	ret = readx_poll_timeout(esdhc_read32, &regs->irqstat, irqstat,
+				 irqstat & (IRQSTAT_CC | IRQSTAT_CTOE),
+				 1000000); /* 1 second timeout */
+	if (ret) {
+		debug("%s: CMD13 timeout\n", __func__);
+		ret = -ETIMEDOUT;
+		goto out;
+	}
+
+	/* Check for command errors */
+	if (irqstat & IRQSTAT_CTOE) {
+		debug("%s: CMD13 timeout error\n", __func__);
+		ret = -ETIMEDOUT;
+		goto out;
+	}
+
+	if (irqstat & CMD_ERR) {
+		debug("%s: CMD13 command error (irqstat=0x%08x)\n",
+		      __func__, irqstat);
+		ret = -EIO;
+		goto out;
+	}
+
+	/* Read R1 response (card status register) */
+	*status = esdhc_read32(&regs->cmdrsp0);
+
+out:
+	/* Clear interrupt status */
+	esdhc_write32(&regs->irqstat, U32_MAX);
+	return ret;
+}
+
 static void esdhc_setup_dma(struct fsl_esdhc_priv *priv, struct mmc_data *data)
 {
 	uint trans_bytes = data->blocksize * data->blocks;
@@ -421,18 +500,20 @@ static inline void sd_swap_dma_buff(struct mmc_data *data)
 static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 				 struct mmc_cmd *cmd, struct mmc_data *data)
 {
-	int	err = 0;
-	uint	xfertyp;
-	uint	irqstat;
-	u32	flags = IRQSTAT_CC | IRQSTAT_CTOE;
 	struct fsl_esdhc *regs = priv->esdhc_regs;
+	u32	flags = IRQSTAT_CC | IRQSTAT_CTOE;
+	bool is_write_xfer = false;
+	uint xfertyp, irqstat;
 	unsigned long start;
+	u32 card_status = 0;
+	int	ret, err = 0;
+	const char *op;
 
 	if (IS_ENABLED(CONFIG_SYS_FSL_ERRATUM_ESDHC111) &&
 	    cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION)
 		return 0;
 
-	esdhc_write32(&regs->irqstat, -1);
+	esdhc_write32(&regs->irqstat, U32_MAX);
 
 	sync();
 
@@ -446,8 +527,10 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 
 	/* Set up for a data transfer if we have one */
 	if (data) {
+		is_write_xfer = (data->flags & MMC_DATA_WRITE);
+
 		err = esdhc_setup_data(priv, mmc, data);
-		if(err)
+		if (err)
 			return err;
 	}
 
@@ -540,20 +623,90 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 			     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
 				flags = IRQSTAT_BRR;
 
-			do {
-				irqstat = esdhc_read32(&regs->irqstat);
+			/*
+			 * Poll for data transfer completion with timeout.
+			 *
+			 * Exit conditions:
+			 * 1. Transfer complete (flags set)
+			 * 2. Any data error (DTOE, DCE, DEBE)
+			 * 3. Timeout (no response from controller)
+			 *
+			 * This prevents infinite hang when:
+			 * - eMMC doesn't respond
+			 * - Write protection violations don't trigger interrupts
+			 * - Hardware enters unexpected state.
+			 */
+			ret = readx_poll_timeout(esdhc_read32, &regs->irqstat,
+						 irqstat,
+						 (irqstat & flags) || (irqstat & DATA_ERR),
+						 DATA_XFER_TIMEOUT_US);
+			if (ret) {
+				err = -ETIMEDOUT;
+				printf("Data transfer timeout (no controller response)\n");
+				goto check_error_status;
+			}
 
-				if (irqstat & IRQSTAT_DTOE) {
-					err = -ETIMEDOUT;
+			if (irqstat & IRQSTAT_DTOE) {
+				pr_err("Data timeout (DTOE)\n");
+				err = -ETIMEDOUT;
+				goto check_error_status;
+			}
+
+			if (irqstat & DATA_ERR) {
+				if (irqstat & IRQSTAT_DMAE) {
+					// DMA errors are host-side, don't check card status
+					pr_err("DMA error (irqstat=0x%08x)\n", irqstat);
+					err = -EIO;
 					goto out;
 				}
+				if (irqstat & IRQSTAT_DCE)
+					pr_err("Data CRC error\n");
+				else if (irqstat & IRQSTAT_DEBE)
+					pr_err("Data end-bit error\n");
+				else
+					pr_err("Data error (irqstat=0x%08x)\n", irqstat);
 
-				if (irqstat & DATA_ERR) {
-					err = -ECOMM;
-					goto out;
-				}
-			} while ((irqstat & flags) != flags);
+				goto check_error_status;
+			}
 
+			goto transfer_complete;
+
+check_error_status:
+			op = is_write_xfer ? "Write" : "Read";
+			ret = esdhc_read_card_status(priv, regs, mmc, &card_status);
+			if (ret) {
+				pr_err("%s failed - unable to read card status\n", op);
+				goto out;
+			}
+
+			debug("Card status after write error: 0x%08x\n", card_status);
+
+			/* Check for write protection violation */
+			if (is_write_xfer && (card_status & R1_WP_VIOLATION)) {
+				pr_err("Write failed: Block is write-protected\n");
+				pr_err("  Card status: 0x%08x\n", card_status);
+				err = -EROFS;
+				goto out;
+			} else if (card_status & R1_OUT_OF_RANGE) {
+				pr_err("Block address out of range\n");
+				err = -EINVAL;
+				goto out;
+			} else if (card_status & R1_CARD_IS_LOCKED) {
+				pr_err("Card is locked\n");
+				err = -EPERM;
+				goto out;
+			} else if (card_status & R1_CARD_ECC_FAILED) {
+				pr_err("Card ECC error\n");
+				err = -EILSEQ;
+				goto out;
+			} else if (card_status & R1_ERROR_MASK) {
+				pr_err("%s error (card status: 0x%08x)\n",
+				       op, card_status);
+				err = -EIO;
+				goto out;
+			}
+
+transfer_complete:
 			/*
 			 * Need invalidate the dcache here again to avoid any
 			 * cache-fill during the DMA operations such as the
@@ -589,7 +742,7 @@ out:
 			printf("CMD11 to switch to 1.8V mode failed, card requires power cycle.\n");
 	}
 
-	esdhc_write32(&regs->irqstat, -1);
+	esdhc_write32(&regs->irqstat, U32_MAX);
 
 	return err;
 }
