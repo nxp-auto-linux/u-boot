@@ -50,10 +50,12 @@ DECLARE_GLOBAL_DATA_PTR;
 				IRQSTATEN_DEBE | IRQSTATEN_BRR | IRQSTATEN_BWR | \
 				IRQSTATEN_DINT)
 
-/* Data transfer timeout: 10 seconds
+/* Data transfer timeout
  * Long enough for slow eMMC/SD cards, but prevents infinite hangs.
  */
-#define DATA_XFER_TIMEOUT_US	10000000
+#define LONG_DATA_XFER_TIMEOUT_US	100000000
+#define DATA_XFER_TIMEOUT_US		10000000
+#define BUS_IDLE_TIMEOUT_US			100000
 
 #define MAX_TUNING_LOOP 40
 
@@ -319,7 +321,8 @@ static int esdhc_read_card_status(struct fsl_esdhc_priv *priv,
 
 	/* Wait for command and data lines to be idle */
 	ret = readx_poll_timeout(esdhc_read32, &regs->prsstat, prsstat,
-				 !(prsstat & (PRSSTAT_CICHB | PRSSTAT_CIDHB)), 100000);
+				 !(prsstat & (PRSSTAT_CICHB | PRSSTAT_CIDHB)),
+				 DATA_XFER_TIMEOUT_US);
 	if (ret) {
 		debug("%s: timeout waiting for bus idle\n", __func__);
 		return -EBUSY;
@@ -346,7 +349,7 @@ static int esdhc_read_card_status(struct fsl_esdhc_priv *priv,
 	/* Wait for command complete or timeout */
 	ret = readx_poll_timeout(esdhc_read32, &regs->irqstat, irqstat,
 				 irqstat & (IRQSTAT_CC | IRQSTAT_CTOE),
-				 1000000); /* 1 second timeout */
+				 DATA_XFER_TIMEOUT_US); /* 1 second timeout */
 	if (ret) {
 		debug("%s: CMD13 timeout\n", __func__);
 		ret = -ETIMEDOUT;
@@ -489,48 +492,23 @@ static inline void sd_swap_dma_buff(struct mmc_data *data)
 #endif
 
 /*
- * Sends a command out on the bus.  Takes the mmc pointer,
- * a command pointer, and an optional data pointer.
+ * Sends the command to the controller and waits for command complete or
+ * timeout interrupt.
  */
-static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
-				 struct mmc_cmd *cmd, struct mmc_data *data)
+static int esdhc_send_command(struct fsl_esdhc *regs,
+			      struct fsl_esdhc_priv *priv, struct mmc *mmc,
+			      struct mmc_cmd *cmd, uint xfertyp)
 {
-	struct fsl_esdhc *regs = priv->esdhc_regs;
-	u32	flags = IRQSTAT_CC | IRQSTAT_CTOE;
-	bool is_write_xfer = false;
-	uint xfertyp, irqstat;
+	u32 flags = IRQSTAT_CC | IRQSTAT_CTOE;
+	int err = 0;
 	unsigned long start;
-	u32 card_status = 0;
-	int	ret, err = 0;
-	const char *op;
+	uint irqstat = 0;
 
-	if (IS_ENABLED(CONFIG_SYS_FSL_ERRATUM_ESDHC111) &&
-	    cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION)
-		return 0;
-
-	esdhc_write32(&regs->irqstat, U32_MAX);
-
-	sync();
-
-	/* Wait for the bus to be idle */
-	while ((esdhc_read32(&regs->prsstat) & PRSSTAT_CICHB) ||
-			(esdhc_read32(&regs->prsstat) & PRSSTAT_CIDHB))
-		;
-
-	while (esdhc_read32(&regs->prsstat) & PRSSTAT_DLA)
-		;
-
-	/* Set up for a data transfer if we have one */
-	if (data) {
-		is_write_xfer = (data->flags & MMC_DATA_WRITE);
-
-		err = esdhc_setup_data(priv, mmc, data);
-		if (err)
-			return err;
-	}
-
-	/* Figure out the transfer arguments */
-	xfertyp = esdhc_xfertyp(priv->flags, cmd, data);
+	/* Special handling for tuning commands */
+	if (priv->flags & ESDHC_FLAG_STD_TUNING &&
+	    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK ||
+	     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
+		flags = IRQSTAT_BRR;
 
 	/* Mask all irqs */
 	esdhc_write32(&regs->irqsigen, 0);
@@ -541,38 +519,210 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 		u32 mixctrl = esdhc_read32(&regs->mixctrl);
 
 		esdhc_write32(&regs->mixctrl,
-			      (mixctrl & 0xFFFFFF80) | (xfertyp & 0x7F)
-			      | (mmc->ddr_mode ? XFERTYP_DDREN : 0));
+			      (mixctrl & 0xFFFFFF80) | (xfertyp & 0x7F) |
+			      (mmc->ddr_mode ? XFERTYP_DDREN : 0));
 		esdhc_write32(&regs->xfertyp, xfertyp & 0xFFFF0000);
 	} else {
 		esdhc_write32(&regs->xfertyp, xfertyp);
 	}
-
-	if (priv->flags & ESDHC_FLAG_STD_TUNING &&
-	    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK ||
-	     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
-		flags = IRQSTAT_BRR;
 
 	/* Wait for the command to complete */
 	start = get_timer(0);
 	while (!(esdhc_read32(&regs->irqstat) & flags)) {
 		if (get_timer(start) > 1000) {
 			err = -ETIMEDOUT;
-			goto out;
+			return err;
 		}
 	}
 
 	irqstat = esdhc_read32(&regs->irqstat);
-
 	if (irqstat & CMD_ERR) {
 		err = -ECOMM;
-		goto out;
+		return err;
 	}
 
-	if (irqstat & IRQSTAT_CTOE) {
+	if (irqstat & IRQSTAT_CTOE)
 		err = -ETIMEDOUT;
-		goto out;
+
+	return err;
+}
+
+/*
+ * Reads the command response from the controller registers.
+ */
+static void esdhc_read_cmd_response(struct fsl_esdhc *regs,
+				    struct mmc_cmd *cmd)
+{
+	u32 cmdrsp3, cmdrsp2, cmdrsp1, cmdrsp0;
+
+	if (cmd->resp_type & MMC_RSP_136) {
+		cmdrsp3 = esdhc_read32(&regs->cmdrsp3);
+		cmdrsp2 = esdhc_read32(&regs->cmdrsp2);
+		cmdrsp1 = esdhc_read32(&regs->cmdrsp1);
+		cmdrsp0 = esdhc_read32(&regs->cmdrsp0);
+		cmd->response[0] = (cmdrsp3 << 8) | (cmdrsp2 >> 24);
+		cmd->response[1] = (cmdrsp2 << 8) | (cmdrsp1 >> 24);
+		cmd->response[2] = (cmdrsp1 << 8) | (cmdrsp0 >> 24);
+		cmd->response[3] = (cmdrsp0 << 8);
+	} else {
+		cmd->response[0] = esdhc_read32(&regs->cmdrsp0);
 	}
+}
+
+/*
+ * When a write operation fails, this function reads the card status
+ * via CMD13 to determine if the failure was due to write protection.
+ */
+static int esdhc_handle_data_error(struct fsl_esdhc_priv *priv,
+				   struct fsl_esdhc *regs, struct mmc *mmc,
+				   bool is_write)
+{
+	const char *op = is_write ? "Write" : "Read";
+	u32 card_status = 0;
+	int ret;
+
+	ret = esdhc_read_card_status(priv, regs, mmc, &card_status);
+	if (ret) {
+		pr_err("%s failed - unable to read card status\n", op);
+		return -ETIMEDOUT;
+	}
+
+	debug("Card status: 0x%08x\n", card_status);
+
+	if (is_write && (card_status & R1_WP_VIOLATION)) {
+		pr_err("Write failed: Block is write-protected\n");
+		pr_err("  Card status: 0x%08x\n", card_status);
+		return -EROFS;
+	} else if (card_status & R1_OUT_OF_RANGE) {
+		pr_err("Block address out of range\n");
+		return -EINVAL;
+	} else if (card_status & R1_CARD_IS_LOCKED) {
+		pr_err("Card is locked\n");
+		return -EPERM;
+	} else if (card_status & R1_CARD_ECC_FAILED) {
+		pr_err("Card ECC error\n");
+		return -EILSEQ;
+	} else if (card_status & R1_ERROR_MASK) {
+		pr_err("%s error (card status: 0x%08x)\n", op, card_status);
+		return -EIO;
+	}
+
+	return -ECOMM;
+}
+
+/*
+ * Polls for data transfer completion with timeout protection.
+ * Handles timeout, DTOE, and DATA_ERR conditions.
+ * Checks for write protection on errors.
+ */
+static int esdhc_wait_data_complete(struct fsl_esdhc_priv *priv,
+				    struct fsl_esdhc *regs, struct mmc *mmc,
+				    struct mmc_cmd *cmd, bool is_write_xfer)
+{
+	u32 flags = DATA_COMPLETE;
+	u32 irqstat = 0;
+	int ret;
+
+	/* Special handling for tuning commands */
+	if (priv->flags & ESDHC_FLAG_STD_TUNING &&
+	    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK ||
+	     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
+		flags = IRQSTAT_BRR;
+
+	/*
+	 * Poll for data transfer completion with timeout.
+	 *
+	 * Exit conditions:
+	 * 1. Transfer complete (flags set)
+	 * 2. Any data error (DTOE, DCE, DEBE)
+	 * 3. Timeout (no response from controller)
+	 */
+	ret = readx_poll_timeout(esdhc_read32, &regs->irqstat, irqstat,
+				 ((irqstat & flags) == flags) || (irqstat & DATA_ERR),
+				  LONG_DATA_XFER_TIMEOUT_US);
+	if (ret) {
+		printf("Data transfer timeout (no controller response)\n");
+		return esdhc_handle_data_error(priv, regs, mmc, is_write_xfer);
+	}
+
+	/* Check for Data Timeout Error */
+	if (irqstat & IRQSTAT_DTOE) {
+		pr_err("Data timeout (DTOE)\n");
+		return esdhc_handle_data_error(priv, regs, mmc, is_write_xfer);
+	}
+
+	/* Check for Data CRC/End-Bit Error */
+	if (irqstat & DATA_ERR) {
+		// DMA errors are host-side, don't check card status
+		if (irqstat & IRQSTAT_DMAE) {
+			pr_err("DMA error (irqstat=0x%08x)\n", irqstat);
+			return -EIO;
+		}
+
+		if (irqstat & IRQSTAT_DCE)
+			pr_err("Data CRC error\n");
+		else if (irqstat & IRQSTAT_DEBE)
+			pr_err("Data end-bit error\n");
+		else
+			pr_err("Data error (irqstat=0x%08x)\n", irqstat);
+
+		return esdhc_handle_data_error(priv, regs, mmc, is_write_xfer);
+	}
+
+	return 0;
+}
+
+/*
+ * Sends a command out on the bus.  Takes the mmc pointer,
+ * a command pointer, and an optional data pointer.
+ */
+static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
+				 struct mmc_cmd *cmd, struct mmc_data *data)
+{
+	struct fsl_esdhc *regs = priv->esdhc_regs;
+	bool is_write_xfer = false;
+	u32 sysctl, prsstat, xfertyp;
+	int	ret, err = 0;
+
+	if (IS_ENABLED(CONFIG_SYS_FSL_ERRATUM_ESDHC111) &&
+	    cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION)
+		return 0;
+
+	esdhc_write32(&regs->irqstat, U32_MAX);
+
+	sync();
+
+	/* Wait for command and data lines to be idle */
+	ret = readx_poll_timeout(esdhc_read32, &regs->prsstat, prsstat,
+				 !(prsstat & (PRSSTAT_CICHB | PRSSTAT_CIDHB)),
+				 DATA_XFER_TIMEOUT_US);
+	if (ret) {
+		debug("%s: timeout waiting for bus idle\n", __func__);
+		return -EBUSY;
+	}
+
+	ret = readx_poll_timeout(esdhc_read32, &regs->prsstat, prsstat,
+				 !(prsstat & PRSSTAT_DLA), DATA_XFER_TIMEOUT_US);
+	if (ret) {
+		debug("%s: timeout waiting for data line\n", __func__);
+		return -EBUSY;
+	}
+
+	/* Set up for a data transfer if we have one */
+	if (data) {
+		is_write_xfer = (data->flags & MMC_DATA_WRITE);
+
+		err = esdhc_setup_data(priv, mmc, data);
+		if (err)
+			return err;
+	}
+
+	xfertyp = esdhc_xfertyp(priv->flags, cmd, data);
+
+	/* Send command and wait for completion */
+	err = esdhc_send_command(regs, priv, mmc, cmd, xfertyp);
+	if (err)
+		goto out;
 
 	/* Workaround for ESDHC errata ENGcm03648 */
 	if (!data && (cmd->resp_type & MMC_RSP_BUSY)) {
@@ -593,115 +743,19 @@ static int esdhc_send_cmd_common(struct fsl_esdhc_priv *priv, struct mmc *mmc,
 	}
 
 	/* Copy the response to the response buffer */
-	if (cmd->resp_type & MMC_RSP_136) {
-		u32 cmdrsp3, cmdrsp2, cmdrsp1, cmdrsp0;
-
-		cmdrsp3 = esdhc_read32(&regs->cmdrsp3);
-		cmdrsp2 = esdhc_read32(&regs->cmdrsp2);
-		cmdrsp1 = esdhc_read32(&regs->cmdrsp1);
-		cmdrsp0 = esdhc_read32(&regs->cmdrsp0);
-		cmd->response[0] = (cmdrsp3 << 8) | (cmdrsp2 >> 24);
-		cmd->response[1] = (cmdrsp2 << 8) | (cmdrsp1 >> 24);
-		cmd->response[2] = (cmdrsp1 << 8) | (cmdrsp0 >> 24);
-		cmd->response[3] = (cmdrsp0 << 8);
-	} else
-		cmd->response[0] = esdhc_read32(&regs->cmdrsp0);
+	esdhc_read_cmd_response(regs, cmd);
 
 	/* Wait until all of the blocks are transferred */
 	if (data) {
 		if (IS_ENABLED(CONFIG_SYS_FSL_ESDHC_USE_PIO)) {
 			esdhc_pio_read_write(priv, data);
 		} else {
-			flags = DATA_COMPLETE;
-			if (priv->flags & ESDHC_FLAG_STD_TUNING &&
-			    (cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK ||
-			     cmd->cmdidx == MMC_CMD_SEND_TUNING_BLOCK_HS200))
-				flags = IRQSTAT_BRR;
-
-			/*
-			 * Poll for data transfer completion with timeout.
-			 *
-			 * Exit conditions:
-			 * 1. Transfer complete (flags set)
-			 * 2. Any data error (DTOE, DCE, DEBE)
-			 * 3. Timeout (no response from controller)
-			 *
-			 * This prevents infinite hang when:
-			 * - eMMC doesn't respond
-			 * - Write protection violations don't trigger interrupts
-			 * - Hardware enters unexpected state.
-			 */
-			ret = readx_poll_timeout(esdhc_read32, &regs->irqstat,
-						 irqstat,
-						 (irqstat & flags) || (irqstat & DATA_ERR),
-						 DATA_XFER_TIMEOUT_US);
-			if (ret) {
-				err = -ETIMEDOUT;
-				printf("Data transfer timeout (no controller response)\n");
-				goto check_error_status;
-			}
-
-			if (irqstat & IRQSTAT_DTOE) {
-				pr_err("Data timeout (DTOE)\n");
-				err = -ETIMEDOUT;
-				goto check_error_status;
-			}
-
-			if (irqstat & DATA_ERR) {
-				if (irqstat & IRQSTAT_DMAE) {
-					// DMA errors are host-side, don't check card status
-					pr_err("DMA error (irqstat=0x%08x)\n", irqstat);
-					err = -EIO;
-					goto out;
-				}
-				if (irqstat & IRQSTAT_DCE)
-					pr_err("Data CRC error\n");
-				else if (irqstat & IRQSTAT_DEBE)
-					pr_err("Data end-bit error\n");
-				else
-					pr_err("Data error (irqstat=0x%08x)\n", irqstat);
-
-				goto check_error_status;
-			}
-
-			goto transfer_complete;
-
-check_error_status:
-			op = is_write_xfer ? "Write" : "Read";
-			ret = esdhc_read_card_status(priv, regs, mmc, &card_status);
-			if (ret) {
-				pr_err("%s failed - unable to read card status\n", op);
+			/* Wait for data transfer with timeout protection */
+			err = esdhc_wait_data_complete(priv, regs, mmc, cmd,
+						       is_write_xfer);
+			if (err)
 				goto out;
-			}
 
-			debug("Card status after write error: 0x%08x\n", card_status);
-
-			/* Check for write protection violation */
-			if (is_write_xfer && (card_status & R1_WP_VIOLATION)) {
-				pr_err("Write failed: Block is write-protected\n");
-				pr_err("  Card status: 0x%08x\n", card_status);
-				err = -EROFS;
-				goto out;
-			} else if (card_status & R1_OUT_OF_RANGE) {
-				pr_err("Block address out of range\n");
-				err = -EINVAL;
-				goto out;
-			} else if (card_status & R1_CARD_IS_LOCKED) {
-				pr_err("Card is locked\n");
-				err = -EPERM;
-				goto out;
-			} else if (card_status & R1_CARD_ECC_FAILED) {
-				pr_err("Card ECC error\n");
-				err = -EILSEQ;
-				goto out;
-			} else if (card_status & R1_ERROR_MASK) {
-				pr_err("%s error (card status: 0x%08x)\n",
-				       op, card_status);
-				err = -EIO;
-				goto out;
-			}
-
-transfer_complete:
 			/*
 			 * Need invalidate the dcache here again to avoid any
 			 * cache-fill during the DMA operations such as the
@@ -710,8 +764,7 @@ transfer_complete:
 			dma_unmap_single(priv->dma_addr,
 					 data->blocks * data->blocksize,
 					 mmc_get_dma_dir(data));
-			if (IS_ENABLED(CONFIG_MCF5441x) &&
-			    (data->flags & MMC_DATA_READ))
+			if (IS_ENABLED(CONFIG_MCF5441x) && (data->flags & MMC_DATA_READ))
 				sd_swap_dma_buff(data);
 		}
 	}
@@ -721,15 +774,23 @@ out:
 	if (err) {
 		esdhc_write32(&regs->sysctl, esdhc_read32(&regs->sysctl) |
 			      SYSCTL_RSTC);
-		while (esdhc_read32(&regs->sysctl) & SYSCTL_RSTC)
-			;
+		ret = readx_poll_timeout(esdhc_read32, &regs->sysctl, sysctl,
+					 !(sysctl & SYSCTL_RSTC), BUS_IDLE_TIMEOUT_US);
+		if (ret) {
+			debug("%s: timeout waiting for CMD Reset\n", __func__);
+			return -ETIMEDOUT;
+		}
 
 		if (data) {
 			esdhc_write32(&regs->sysctl,
 				      esdhc_read32(&regs->sysctl) |
 				      SYSCTL_RSTD);
-			while ((esdhc_read32(&regs->sysctl) & SYSCTL_RSTD))
-				;
+			ret = readx_poll_timeout(esdhc_read32, &regs->sysctl, sysctl,
+						 !(sysctl & SYSCTL_RSTD), BUS_IDLE_TIMEOUT_US);
+			if (ret) {
+				debug("%s: timeout waiting for DATA Reset\n", __func__);
+				return -ETIMEDOUT;
+			}
 		}
 
 		/* If this was CMD11, then notify that power cycle is needed */
@@ -998,7 +1059,7 @@ static int fsl_s32cc_manual_tuning(struct udevice *dev, uint32_t opcode)
 	     value_start <= DLY_CELL_SET_PRE_MAX;
 	     value_start += MANUAL_TUNING_STEP) {
 		esdhc_cfg_delay_chain(regs, value_start);
-		if (!mmc_send_tuning(mmc, opcode, NULL)) {
+		if (!mmc_send_tuning(mmc, opcode)) {
 			if (tuning_failed_before)
 				break;
 		} else {
@@ -1013,7 +1074,7 @@ static int fsl_s32cc_manual_tuning(struct udevice *dev, uint32_t opcode)
 	     value_end + MANUAL_TUNING_STEP <= DLY_CELL_SET_PRE_MAX;
 	     value_end += MANUAL_TUNING_STEP) {
 		esdhc_cfg_delay_chain(regs, value_end + MANUAL_TUNING_STEP);
-		if (mmc_send_tuning(mmc, opcode, NULL))
+		if (mmc_send_tuning(mmc, opcode))
 			break;
 	}
 
