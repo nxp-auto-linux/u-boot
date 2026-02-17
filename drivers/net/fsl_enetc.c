@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * ENETC ethernet controller driver
- * Copyright 2017-2021 NXP
- * Copyright 2023-2025 NXP
+ * Copyright 2017-2021, 2023-2026 NXP
  */
 
 #include <clk.h>
@@ -48,7 +47,7 @@
 
 static int enetc_remove(struct udevice *dev);
 
-static int enetc_is_imx95(struct udevice *dev)
+static int enetc_is_v4(struct udevice *dev)
 {
 	struct pci_child_plat *pplat = dev_get_parent_plat(dev);
 
@@ -68,7 +67,7 @@ static int enetc_is_ls1028a(struct udevice *dev)
 
 static int enetc_dev_id(struct udevice *dev)
 {
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		return PCI_DEV(pci_get_devfn(dev)) >> 3;
 	if (enetc_is_ls1028a(dev))
 		return PCI_FUNC(pci_get_devfn(dev));
@@ -84,7 +83,7 @@ static void enetc_inval_rxbd(struct udevice *dev)
 	unsigned long end = roundup((unsigned long)desc + sizeof(*desc),
 				    ARCH_DMA_MINALIGN);
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		invalidate_dcache_range(start, end);
 }
 
@@ -98,7 +97,7 @@ static void enetc_flush_bd(struct udevice *dev, int pi, bool tx)
 	unsigned long start = rounddown(desc, ARCH_DMA_MINALIGN);
 	unsigned long end = roundup(desc + size, ARCH_DMA_MINALIGN);
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		flush_dcache_range(start, end);
 }
 
@@ -108,7 +107,7 @@ static void enetc_inval_buffer(struct udevice *dev, void *buf, size_t size)
 	unsigned long end = roundup((unsigned long)buf + size,
 				    ARCH_DMA_MINALIGN);
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		invalidate_dcache_range(start, end);
 }
 
@@ -118,7 +117,7 @@ static void enetc_flush_buffer(struct udevice *dev, void *buf, size_t size)
 	unsigned long end = roundup((unsigned long)buf + size,
 				    ARCH_DMA_MINALIGN);
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		flush_dcache_range(start, end);
 }
 
@@ -177,7 +176,7 @@ static u32 enetc_read_pcapr_mdio(struct udevice *dev)
 	const u32 off = ENETC_PCAPR0 + data->reg_offset_pcapr;
 	const u32 reg = enetc_read_reg(priv->port_regs + off);
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		return reg & ENETC_PCS_PROT;
 	else if (enetc_is_ls1028a(dev))
 		return reg & ENETC_PCAPRO_MDIO;
@@ -234,7 +233,7 @@ static void enetc_set_ierb_primary_mac(struct udevice *dev, void *blob)
 	int devfn, offset;
 	char path[256];
 
-	if (enetc_is_imx95(dev)) {
+	if (enetc_is_v4(dev)) {
 		/*
 		 * Configure the ENETC primary MAC addresses - Set register
 		 * PMAR0/1 for SI 0 and PSIaPMAR0/1 for SI 1, 2 .. a
@@ -408,7 +407,7 @@ static void enetc_init_rgmii(struct udevice *dev, struct phy_device *phydev)
 		val |= ENETC_PM_IFM_SSP_10;
 	}
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		dpx = ENETC_PM_IFM_FULL_DPX_IMX;
 	else if (enetc_is_ls1028a(dev))
 		dpx = ENETC_PM_IFM_FULL_DPX_LS;
@@ -442,7 +441,7 @@ static void enetc_setup_mac_iface(struct udevice *dev,
 	case PHY_INTERFACE_MODE_10GBASER:
 		/* set ifmode to (US)XGMII */
 		if_mode = enetc_read_mac_port(dev, ENETC_PM_IF_MODE);
-		if (enetc_is_imx95(dev))
+		if (enetc_is_v4(dev))
 			if_mode &= ~ENETC_PM_IF_IFMODE_MASK_IMX;
 		else if (enetc_is_ls1028a(dev))
 			if_mode &= ~ENETC_PM_IF_IFMODE_MASK_LS;
@@ -646,7 +645,7 @@ static int enetc_write_hwaddr(struct udevice *dev)
 	struct eth_pdata *plat = dev_get_plat(dev);
 	u8 *addr = plat->enetaddr;
 
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		return enetc_imx95_write_hwaddr(dev);
 	if (enetc_is_ls1028a(dev))
 		return enetc_ls1028a_write_hwaddr(dev);
@@ -676,12 +675,12 @@ static void enetc_enable_si_port(struct udevice *dev)
 		val |= ENETC_PM_CC_TXP_LS | ENETC_PM_CC_PROMIS;
 	enetc_write_mac_port(dev, ENETC_PM_CC, val);
 	/* enable port */
-	if (enetc_is_imx95(dev))
+	if (enetc_is_v4(dev))
 		enetc_write_port(priv, ENETC_POR, 0x0);
 	enetc_write_pmr(dev, ENETC_PMR_SI0_EN);
 	/* set SI cache policy */
 	enetc_write(priv, ENETC_SICAR0, ENETC_SICAR_WR_CFG |
-					(enetc_is_imx95(dev) ?
+					(enetc_is_v4(dev) ?
 					 ENETC_SICAR_RD_CFG_IMX :
 					 ENETC_SICAR_RD_CFG_LS));
 	/* enable SI */
@@ -923,7 +922,7 @@ static int enetc_recv(struct udevice *dev, int flags, uchar **packetp)
 
 static int enetc_free_pkt(struct udevice *dev, uchar *packet, int length)
 {
-	const int bd_num_in_cl = enetc_is_imx95(dev) ? ENETC_NUM_BD_IN_CL : 1;
+	const int bd_num_in_cl = enetc_is_v4(dev) ? ENETC_NUM_BD_IN_CL : 1;
 	struct enetc_priv *priv = dev_get_priv(dev);
 	struct bd_ring *rxr = &priv->rx_bdr;
 	int pi = rxr->next_prod_idx;
