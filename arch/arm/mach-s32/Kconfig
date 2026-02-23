@@ -103,6 +103,7 @@ config NXP_S32N
 	imply CMD_MMC_REG
 	imply CMD_MTD
 	imply CMD_PART
+	imply CMD_PING
 	imply CMD_PCI
 	imply CMD_UFS
 	imply CMD_GPT
@@ -111,7 +112,9 @@ config NXP_S32N
 	imply CONS_INDEX_0
 	imply DEBUG_UART
 	imply DEBUG_UART_SKIP_INIT
+	imply DM_ETH
 	imply DM_I2C
+	imply DM_MDIO
 	imply DM_SCSI
 	imply DM_SPI
 	imply DM_SPI_FLASH
@@ -119,11 +122,14 @@ config NXP_S32N
 	imply FSL_DSPI
 	imply LOG
 	imply MISC
+	imply NET_RANDOM_ETHADDR
 	imply NXP_XSPI
 	imply OF_HAS_PRIOR_STAGE
 	imply PANIC_HANG
 	imply PCI
+	imply PCI_INIT_R
 	imply PCIE_ECAM_GENERIC
+	imply PHYLIB
 	imply NXP_MISC_SCMI
 	imply SCMI_FIRMWARE
 	imply SCSI
@@ -141,6 +147,7 @@ config NXP_S32N
 	select DM_MTD
 	select DM_SERIAL
 	select ENABLE_ARM_SOC_BOOT0_HOOK
+	select FSL_ENETC
 	select FSL_USDHC
 	select HUSH_PARSER
 	select MACH_S32
@@ -165,7 +172,7 @@ config SYS_LOAD_ADDR
 	default 0x80000000
 
 config SYS_MALLOC_F_LEN
-	default 0x50000
+	default 0x60000
 
 config ENV_OFFSET
 	default 0x280000 if !ENV_IS_IN_FAT
