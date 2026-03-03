@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022-2024 NXP
+# Copyright 2022-2024, 2026 NXP
 
 if NXP_S32CC
 
@@ -47,7 +47,7 @@ config S32CC_SCMI_NVMEM_FIXUP
 
 config DTB_ADDR
 	hex "Default OS device tree blob address"
-	default 0x83000000
+	default 0x85000000
 
 config RAMDISK_ADDR
 	hex "Default ramdisk address to be used by the OS"
