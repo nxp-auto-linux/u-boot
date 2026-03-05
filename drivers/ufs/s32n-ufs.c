@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <vsprintf.h>
 #include <dm.h>
+#include <scsi.h>
 #include <ufs.h>
 #include <linux/bitfield.h>
 #include <linux/io.h>
@@ -489,17 +490,51 @@ static int ufs_s32n_init(struct ufs_hba *hba)
 	return 0;
 }
 
+struct s32n79_match_data {
+	struct ufs_hba_ops *ops;
+	unsigned long max_bytes_per_req;
+};
+
 static struct ufs_hba_ops s32n_hba_ops = {
 	.init = ufs_s32n_init,
 	.link_startup_notify = ufs_s32n_link_startup_notify,
 };
 
+static const struct s32n79_match_data ufs_s32n79_data = {
+	.ops = &s32n_hba_ops,
+	.max_bytes_per_req = UFS_MAX_BYTES,
+};
+
+static const struct s32n79_match_data ufs_s32n79_virt_data = {
+	.ops = &s32n_hba_ops,
+	.max_bytes_per_req = (120 * 256 * 1024),
+};
+
 static int s32n_ufs_pltfm_probe(struct udevice *dev)
 {
-	int err = ufshcd_probe(dev, &s32n_hba_ops);
+	struct s32n79_match_data *data;
+	struct scsi_plat *scsi_plat;
+	struct udevice *scsi_dev;
+	int err;
 
-	if (err)
+	data = (struct s32n79_match_data *)(uintptr_t)dev_get_driver_data(dev);
+	if (!data)
+		return -ENODATA;
+
+	err = ufshcd_probe(dev, data->ops);
+	if (err) {
 		dev_err(dev, "ufshcd_probe() failed %d\n", err);
+		return err;
+	}
+
+	if (data->max_bytes_per_req) {
+		device_find_first_child(dev, &scsi_dev);
+		if (!scsi_dev)
+			return -ENODEV;
+
+		scsi_plat = dev_get_uclass_plat(scsi_dev);
+		scsi_plat->max_bytes_per_req = data->max_bytes_per_req;
+	}
 
 	return 0;
 }
@@ -507,9 +542,11 @@ static int s32n_ufs_pltfm_probe(struct udevice *dev)
 static const struct udevice_id s32n_ufs_pltfm_ids[] = {
 	{
 		.compatible = "nxp,s32n79-ufshc",
+		.data = (ulong)&ufs_s32n79_data,
 	},
 	{
 		.compatible = "nxp,s32n79-ufshc-virt",
+		.data = (ulong)&ufs_s32n79_virt_data,
 	},
 	{},
 };
