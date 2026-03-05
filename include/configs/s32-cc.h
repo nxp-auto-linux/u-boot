@@ -29,14 +29,10 @@
  * Image			46M	CONFIG_SYS_LOAD_ADDR
  * PXE				1M	CONFIG_SYS_LOAD_ADDR + 46M
  * boot.scr			1M	CONFIG_SYS_LOAD_ADDR + 47M
- * Linux DTB			2M	CONFIG_SYS_LOAD_ADDR + 48M
  * Reserved memory regions	206	CONFIG_SYS_LOAD_ADDR + 50M
- * Ramdisk			-	CONFIG_SYS_LOAD_ADDR + 256M
  */
 #define S32CC_PXE_ADDR			0x82E00000
 #define S32CC_BOOT_SCR_ADDR		0x82F00000
-#define S32CC_FDT_ADDR			0x83000000
-#define S32CC_RAMDISK_ADDR		0x90000000
 
 #define MMC_PART_FAT			2
 #define MMC_PART_EXT			3
@@ -227,7 +223,7 @@
 	"fdt header get fdt_size totalsize;" \
 	"cp.b ${fdtcontroladdr} ${fdt_addr} ${fdt_size};" \
 	"setenv fdt_addr_r ${fdt_addr};" \
-	"setenv ramdisk_addr_r " __stringify(S32CC_RAMDISK_ADDR) ";" \
+	"setenv ramdisk_addr_r " __stringify(CONFIG_RAMDISK_ADDR) ";" \
 	"setenv kernel_addr_r ${loadaddr};" \
 	"setenv pxefile_addr_r " __stringify(S32CC_PXE_ADDR) ";" \
 	"setenv scriptaddr " __stringify(S32CC_BOOT_SCR_ADDR) ";"
