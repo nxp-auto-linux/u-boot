@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2024-2025 NXP
+ * Copyright 2024-2026 NXP
  */
 
 #include <clk.h>
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <dm.h>
 #include <ufs.h>
 #include <linux/bitfield.h>
@@ -503,6 +508,9 @@ static const struct udevice_id s32n_ufs_pltfm_ids[] = {
 	{
 		.compatible = "nxp,s32n79-ufshc",
 	},
+	{
+		.compatible = "nxp,s32n79-ufshc-virt",
+	},
 	{},
 };
 
@@ -510,7 +518,6 @@ U_BOOT_DRIVER(s32n_ufs_pltfm) = {
 	.name		= "ufs-s32n",
 	.id		= UCLASS_UFS,
 	.of_match	= s32n_ufs_pltfm_ids,
-	.bind		= s32n_ufs_pltfm_bind,
 	.priv_auto	= sizeof(struct s32n_ufs),
 	.probe		= s32n_ufs_pltfm_probe,
 };
