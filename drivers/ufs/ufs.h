@@ -13,6 +13,9 @@ struct udevice;
 #define RESPONSE_UPIU_SENSE_DATA_LENGTH	18
 #define UFS_MAX_LUNS		0x7F
 
+/* maximum bytes per request */
+#define UFS_MAX_BYTES	(128 * 256 * 1024)
+
 enum {
 	TASK_REQ_UPIU_SIZE_DWORDS	= 8,
 	TASK_RSP_UPIU_SIZE_DWORDS	= 8,
