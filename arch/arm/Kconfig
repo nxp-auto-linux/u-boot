@@ -920,18 +920,22 @@ config ARCH_MX5
 config ARCH_S32G2
 	bool "NXP S32G2 platform"
 	select NXP_S32CC
+	select S32CC_COMMON_HIGH_SPEED_PERIPHERALS
 
 config ARCH_S32G3
 	bool "NXP S32G3 platform"
 	select NXP_S32CC
+	select S32CC_COMMON_HIGH_SPEED_PERIPHERALS
 
 config ARCH_S32R45
 	bool "NXP S32R45 platform"
 	select NXP_S32CC
+	select S32CC_COMMON_HIGH_SPEED_PERIPHERALS
 
 config ARCH_S32R47
 	bool "NXP S32R47 platform"
 	select NXP_S32CC
+	select S32CC_COMMON_HIGH_SPEED_PERIPHERALS
 
 config ARCH_S32N79
 	bool "NXP S32N79 platform"

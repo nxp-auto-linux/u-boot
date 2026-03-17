@@ -24,9 +24,6 @@ config NXP_S32CC
 	imply DM_SPI_FLASH
 	imply DM_I2C
 	imply DOS_PARTITION
-	imply DWC_ETH_QOS
-	imply DWC_ETH_QOS_S32CC
-	imply E1000
 	imply EFI_LOADER
 	imply EFI_LOADER_BOUNCE_BUFFER
 	imply FSL_DSPI
@@ -41,13 +38,7 @@ config NXP_S32CC
 	imply MMC_IO_VOLTAGE
 	imply MP
 	imply NET_RANDOM_ETHADDR
-	imply NVME_PCI
 	imply NXP_S32CC_PIT_TIMER
-	imply PCI
-	imply PCI_ENDPOINT
-	imply PCI_INIT_R
-	imply PCI_S32CC
-	imply PHY_S32CC_SERDES
 	imply PINCTRL
 	imply PINCTRL_FULL
 	imply PINCTRL_S32CC
@@ -166,6 +157,18 @@ config NXP_S32N
 	select S32N_UFS
 	select SPECIFY_CONSOLE_INDEX
 	select SYS_I2C_IMX_LPI2C
+
+config S32CC_COMMON_HIGH_SPEED_PERIPHERALS
+	bool
+	imply E1000
+	imply NVME_PCI
+	imply PCI
+	imply PCI_ENDPOINT
+	imply PCI_INIT_R
+	imply PCI_S32CC
+	imply PHY_S32CC_SERDES
+	imply DWC_ETH_QOS
+	imply DWC_ETH_QOS_S32CC
 
 config DEFAULT_DEVICE_TREE
 	default "s32"
