@@ -58,14 +58,14 @@
 #define CPUMASK_S32G35X_DERIVATIVE		(BIT(4) | BIT(0))
 #define CPUMASK_S32R				GENMASK(3, 0)
 
-struct siul2_nvram;
+struct siul2_nvmem;
 
 struct siul_mapping {
-	u32 nvram_off;
+	u32 nvmem_off;
 	u32 siul2_off;
 	u32 mask;
 	u32 shift;
-	u32 (*adjust_value)(u32 value, struct siul2_nvram *nvram);
+	u32 (*adjust_value)(u32 value, struct siul2_nvmem *nvmem);
 	bool skip_siul2_read;
 };
 
@@ -75,7 +75,7 @@ struct siul_plat {
 	const struct siul_plat *next;
 };
 
-struct siul2_nvram {
+struct siul2_nvmem {
 	const struct siul_plat *plat;
 	void __iomem *base;
 };
@@ -90,17 +90,17 @@ static inline u32 get_third_digit(u32 val)
 	return (val / 100) % 10;
 }
 
-static u32 adjust_letter(u32 value, struct siul2_nvram *nvram)
+static u32 adjust_letter(u32 value, struct siul2_nvmem *nvmem)
 {
 	return ('A' - 1 + value);
 }
 
-static u32 adjust_major(u32 value, struct siul2_nvram *nvram)
+static u32 adjust_major(u32 value, struct siul2_nvmem *nvmem)
 {
 	return value + 1;
 }
 
-static u32 adjust_minor(u32 value, struct siul2_nvram *nvram)
+static u32 adjust_minor(u32 value, struct siul2_nvmem *nvmem)
 {
 	u32 minor = value & MINOR_MASK;
 
@@ -110,7 +110,7 @@ static u32 adjust_minor(u32 value, struct siul2_nvram *nvram)
 	return minor;
 }
 
-static u32 adjust_freq(u32 value, struct siul2_nvram *nvram)
+static u32 adjust_freq(u32 value, struct siul2_nvmem *nvmem)
 {
 	static const u32 freqs[] = {
 		[1] = 64,
@@ -133,7 +133,7 @@ static u32 adjust_freq(u32 value, struct siul2_nvram *nvram)
 	return 0;
 }
 
-static u32 adjust_s32g3_freq(u32 value, struct siul2_nvram *nvram)
+static u32 adjust_s32g3_freq(u32 value, struct siul2_nvmem *nvmem)
 {
 	static const u32 freqs[] = {
 		[1] = 64,
@@ -158,7 +158,7 @@ static u32 adjust_s32g3_freq(u32 value, struct siul2_nvram *nvram)
 	return 0;
 }
 
-static u32 adjust_s32r47_freq(u32 value, struct siul2_nvram *nvram)
+static u32 adjust_s32r47_freq(u32 value, struct siul2_nvmem *nvmem)
 {
 	/* For S32R47 we are reading *performance letter* which translates
 	 * to a specific frequency.
@@ -174,13 +174,13 @@ static u32 adjust_s32r47_freq(u32 value, struct siul2_nvram *nvram)
 }
 
 static u32 adjust_s32r47_serdes_presence(u32 value,
-					 struct siul2_nvram *nvram)
+					 struct siul2_nvmem *nvmem)
 {
 	return 1;
 }
 
 static u32 adjust_s32r_max_cores_per_cluster(u32 value,
-					     struct siul2_nvram *nvram)
+					     struct siul2_nvmem *nvmem)
 {
 	u32 vert_slot, plat_gen;
 
@@ -200,7 +200,7 @@ static u32 adjust_s32r_max_cores_per_cluster(u32 value,
 }
 
 static u32 adjust_s32g_max_cores_per_cluster(u32 value,
-					     struct siul2_nvram *nvram)
+					     struct siul2_nvmem *nvmem)
 {
 	u32 series;
 
@@ -217,7 +217,7 @@ static u32 adjust_s32g_max_cores_per_cluster(u32 value,
 }
 
 static u32 adjust_s32r_derivative_cores(u32 value,
-					struct siul2_nvram *nvram)
+					struct siul2_nvmem *nvmem)
 {
 	u32 vert_slot, plat_gen;
 
@@ -237,7 +237,7 @@ static u32 adjust_s32r_derivative_cores(u32 value,
 }
 
 static u32 adjust_s32g_derivative_cores(u32 value,
-					struct siul2_nvram *nvram)
+					struct siul2_nvmem *nvmem)
 {
 	u32 series;
 	u32 perf_id;
@@ -268,7 +268,7 @@ static u32 adjust_s32g_derivative_cores(u32 value,
 }
 
 static u32 adjust_pcie_dev_id(u32 value,
-			      struct siul2_nvram *nvram)
+			      struct siul2_nvmem *nvmem)
 {
 	/* Mapping between G3 variant ID and the PCIe Device ID,
 	 * as described in the "S32G3 Reference Manual rev1.0,
@@ -299,40 +299,40 @@ static u32 adjust_pcie_dev_id(u32 value,
 
 static const struct siul_mapping siul20_mappings[] = {
 	{
-		.nvram_off = S32CC_SOC_MAJOR,
+		.nvmem_off = S32CC_SOC_MAJOR,
 		.siul2_off = MIDR1_OFF,
 		.mask = MAJOR_MASK,
 		.shift = MAJOR_SHIFT,
 		.adjust_value = adjust_major,
 	},
 	{
-		.nvram_off = S32CC_SOC_MINOR,
+		.nvmem_off = S32CC_SOC_MINOR,
 		.siul2_off = MIDR1_OFF,
 		.mask = MINOR_MASK,
 		.shift = MINOR_SHIFT,
 	},
 	{
-		.nvram_off = S32CC_SOC_PART_NO,
+		.nvmem_off = S32CC_SOC_PART_NO,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
 	},
 	{
-		.nvram_off = S32CC_SOC_LETTER,
+		.nvmem_off = S32CC_SOC_LETTER,
 		.siul2_off = MIDR1_OFF,
 		.mask = LETTER_MASK,
 		.shift = LETTER_SHIFT,
 		.adjust_value = adjust_letter,
 	},
 	{
-		.nvram_off = S32CC_MAX_CORE_FREQ,
+		.nvmem_off = S32CC_MAX_CORE_FREQ,
 		.siul2_off = MIDR2_OFF,
 		.mask = CORE_FREQ_MASK,
 		.shift = CORE_FREQ_SHIFT,
 		.adjust_value = adjust_freq,
 	},
 	{
-		.nvram_off = S32CC_OVERWRITE_PCIE_DEV_ID,
+		.nvmem_off = S32CC_OVERWRITE_PCIE_DEV_ID,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
@@ -342,13 +342,13 @@ static const struct siul_mapping siul20_mappings[] = {
 
 static const struct siul_mapping siul21_mappings[] = {
 	{
-		.nvram_off = S32CC_SERDES_PRESENCE,
+		.nvmem_off = S32CC_SERDES_PRESENCE,
 		.siul2_off = MIDR2_OFF,
 		.mask = SERDES_MASK,
 		.shift = SERDES_SHIFT,
 	},
 	{
-		.nvram_off = S32CC_LAX_PRESENCE,
+		.nvmem_off = S32CC_LAX_PRESENCE,
 		.siul2_off = MIDR2_OFF,
 		.mask = LAX_MASK,
 		.shift = LAX_SHIFT,
@@ -357,14 +357,14 @@ static const struct siul_mapping siul21_mappings[] = {
 
 static const struct siul_mapping s32g_siul20_mappings[] = {
 	{
-		.nvram_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
+		.nvmem_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
 		.adjust_value = adjust_s32g_max_cores_per_cluster,
 	},
 	{
-		.nvram_off = S32CC_A53_CORES_MASK,
+		.nvmem_off = S32CC_A53_CORES_MASK,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
@@ -374,14 +374,14 @@ static const struct siul_mapping s32g_siul20_mappings[] = {
 
 static const struct siul_mapping s32r47_siul20_mappings[] = {
 	{
-		.nvram_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
+		.nvmem_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
 		.adjust_value = adjust_s32r_max_cores_per_cluster,
 	},
 	{
-		.nvram_off = S32CC_A53_CORES_MASK,
+		.nvmem_off = S32CC_A53_CORES_MASK,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
@@ -392,7 +392,7 @@ static const struct siul_mapping s32r47_siul20_mappings[] = {
 	 * platform mapping for S32R47.
 	 */
 	{
-		.nvram_off = S32CC_MAX_CORE_FREQ,
+		.nvmem_off = S32CC_MAX_CORE_FREQ,
 		.siul2_off = MIDR2_OFF,
 		.mask = S32R47_CORE_FREQ_MASK,
 		.shift = S32R47_CORE_FREQ_SHIFT,
@@ -402,7 +402,7 @@ static const struct siul_mapping s32r47_siul20_mappings[] = {
 
 static const struct siul_mapping s32r47_siul21_mappings[] = {
 	{
-		.nvram_off = S32CC_SERDES_PRESENCE,
+		.nvmem_off = S32CC_SERDES_PRESENCE,
 		.adjust_value = adjust_s32r47_serdes_presence,
 		.skip_siul2_read = true,
 	},
@@ -410,14 +410,14 @@ static const struct siul_mapping s32r47_siul21_mappings[] = {
 
 static const struct siul_mapping s32r_siul20_mappings[] = {
 	{
-		.nvram_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
+		.nvmem_off = S32CC_MAX_A53_CORES_PER_CLUSTER,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
 		.adjust_value = adjust_s32r_max_cores_per_cluster,
 	},
 	{
-		.nvram_off = S32CC_A53_CORES_MASK,
+		.nvmem_off = S32CC_A53_CORES_MASK,
 		.siul2_off = MIDR1_OFF,
 		.mask = PART_NO_MASK,
 		.shift = PART_NO_SHIFT,
@@ -427,7 +427,7 @@ static const struct siul_mapping s32r_siul20_mappings[] = {
 
 static const struct siul_mapping s32g2_siul20_mappings[] = {
 	{
-		.nvram_off = S32CC_SOC_MINOR,
+		.nvmem_off = S32CC_SOC_MINOR,
 		.siul2_off = MIDR1_OFF,
 		.mask = MAJOR_MASK | MINOR_MASK,
 		.shift = MINOR_SHIFT,
@@ -437,7 +437,7 @@ static const struct siul_mapping s32g2_siul20_mappings[] = {
 
 static const struct siul_mapping s32g2_siul21_mappings[] = {
 	{
-		.nvram_off = S32CC_SOC_SUBMINOR,
+		.nvmem_off = S32CC_SOC_SUBMINOR,
 		.siul2_off = MIDR2_OFF,
 		.mask = S32G2_SUBMINOR_MASK,
 		.shift = S32G2_SUBMINOR_SHIFT,
@@ -446,7 +446,7 @@ static const struct siul_mapping s32g2_siul21_mappings[] = {
 
 static const struct siul_mapping s32g3_siul20_mappings[] = {
 	{
-		.nvram_off = S32CC_MAX_CORE_FREQ,
+		.nvmem_off = S32CC_MAX_CORE_FREQ,
 		.siul2_off = MIDR2_OFF,
 		.mask = CORE_FREQ_MASK,
 		.shift = CORE_FREQ_SHIFT,
@@ -506,12 +506,12 @@ static const struct siul_plat s32g3_siul20_plat = {
 	.next = &s32g_siul20_plat,
 };
 
-static int siul2_nvram_read(struct udevice *dev, int offset,
+static int siul2_nvmem_read(struct udevice *dev, int offset,
 			    void *buf, int size)
 {
-	struct siul2_nvram *nvram = dev_get_plat(dev);
+	struct siul2_nvmem *nvmem = dev_get_plat(dev);
 	const struct siul_mapping *mapping = NULL;
-	const struct siul_plat *plat = nvram->plat;
+	const struct siul_plat *plat = nvmem->plat;
 	size_t i;
 	u32 val = 0;
 
@@ -521,7 +521,7 @@ static int siul2_nvram_read(struct udevice *dev, int offset,
 
 	while (plat) {
 		for (i = 0u; i < plat->n_mappings; i++) {
-			if (plat->mappings[i].nvram_off == offset) {
+			if (plat->mappings[i].nvmem_off == offset) {
 				mapping = &plat->mappings[i];
 				break;
 			}
@@ -537,75 +537,75 @@ static int siul2_nvram_read(struct udevice *dev, int offset,
 		return 0;
 
 	if (!mapping->skip_siul2_read) {
-		val = readl(nvram->base + mapping->siul2_off);
+		val = readl(nvmem->base + mapping->siul2_off);
 		val = (val & mapping->mask) >> mapping->shift;
 	}
 
 	if (mapping->adjust_value)
-		val = mapping->adjust_value(val, nvram);
+		val = mapping->adjust_value(val, nvmem);
 
 	*((u32 *)buf) = val;
 	return size;
 }
 
-static const struct misc_ops siul2_nvram_ops = {
-	.read = siul2_nvram_read,
+static const struct misc_ops siul2_nvmem_ops = {
+	.read = siul2_nvmem_read,
 };
 
-static const struct udevice_id siul2_nvram_ids[] = {
+static const struct udevice_id siul2_nvmem_ids[] = {
 	{
-		.compatible = "nxp,s32g2-siul2_0-nvram",
+		.compatible = "nxp,s32g2-siul2_0-nvmem",
 		.data = (ulong)&s32g2_siul20_plat,
 	},
 	{
-		.compatible = "nxp,s32g3-siul2_0-nvram",
+		.compatible = "nxp,s32g3-siul2_0-nvmem",
 		.data = (ulong)&s32g3_siul20_plat,
 	},
 	{
-		.compatible = "nxp,s32r-siul2_0-nvram",
+		.compatible = "nxp,s32r-siul2_0-nvmem",
 		.data = (ulong)&s32r_siul20_plat,
 	},
 	{
-		.compatible = "nxp,s32r47-siul2_0-nvram",
+		.compatible = "nxp,s32r47-siul2_0-nvmem",
 		.data = (ulong)&s32r47_siul20_plat,
 	},
 	{
-		.compatible = "nxp,s32g2-siul2_1-nvram",
+		.compatible = "nxp,s32g2-siul2_1-nvmem",
 		.data = (ulong)&s32g2_siul21_plat,
 	},
 	{
-		.compatible = "nxp,s32g3-siul2_1-nvram",
+		.compatible = "nxp,s32g3-siul2_1-nvmem",
 		.data = (ulong)&siul21_plat,
 	},
 	{
-		.compatible = "nxp,s32r-siul2_1-nvram",
+		.compatible = "nxp,s32r-siul2_1-nvmem",
 		.data = (ulong)&siul21_plat,
 	},
 	{
-		.compatible = "nxp,s32r47-siul2_1-nvram",
+		.compatible = "nxp,s32r47-siul2_1-nvmem",
 		.data = (ulong)&s32r47_siul21_plat,
 	},
 	{ /* sentinel */ }
 };
 
-static int siul2_nvram_set_plat(struct udevice *dev)
+static int siul2_nvmem_set_plat(struct udevice *dev)
 {
-	struct siul2_nvram *nvram = dev_get_plat(dev);
+	struct siul2_nvmem *nvmem = dev_get_plat(dev);
 
-	nvram->base = (void __iomem *)dev_read_addr_ptr(dev);
-	if (!nvram->base)
+	nvmem->base = (void __iomem *)dev_read_addr_ptr(dev);
+	if (!nvmem->base)
 		return -EINVAL;
 
-	nvram->plat = (struct siul_plat *)dev_get_driver_data(dev);
+	nvmem->plat = (struct siul_plat *)dev_get_driver_data(dev);
 	return 0;
 }
 
-U_BOOT_DRIVER(s32cc_siul2_nvram) = {
-	.name = "s32cc_siul2_nvram",
+U_BOOT_DRIVER(s32cc_siul2_nvmem) = {
+	.name = "s32cc_siul2_nvmem",
 	.id = UCLASS_MISC,
-	.ops = &siul2_nvram_ops,
-	.of_match = siul2_nvram_ids,
-	.plat_auto = sizeof(struct siul2_nvram),
-	.of_to_plat = siul2_nvram_set_plat,
+	.ops = &siul2_nvmem_ops,
+	.of_match = siul2_nvmem_ids,
+	.plat_auto = sizeof(struct siul2_nvmem),
+	.of_to_plat = siul2_nvmem_set_plat,
 };
 

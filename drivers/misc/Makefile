@@ -60,7 +60,7 @@ obj-$(CONFIG_NUVOTON_NCT6102D) += nuvoton_nct6102d.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_gpr.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_fuse.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_ocotp.o
-obj-$(CONFIG_NXP_S32CC) += s32cc_siul2_nvram.o
+obj-$(CONFIG_NXP_S32CC) += s32cc_siul2_nvmem.o
 obj-$(CONFIG_P2SB) += p2sb-uclass.o
 obj-$(CONFIG_$(PHASE_)PWRSEQ) += pwrseq-uclass.o
 ifdef CONFIG_QFW
