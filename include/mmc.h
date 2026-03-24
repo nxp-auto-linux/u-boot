@@ -314,8 +314,15 @@ static inline bool mmc_is_tuning_cmd(uint cmdidx)
 
 #define EXT_CSD_SEC_FEATURE_TRIM_EN	(1 << 4) /* Support secure & insecure trim */
 
-#define R1_ILLEGAL_COMMAND		(1 << 22)
-#define R1_APP_CMD			(1 << 5)
+/* Card Status (R1 response) */
+#define R1_OUT_OF_RANGE			BIT(31)
+#define R1_WP_VIOLATION			BIT(26)
+#define R1_CARD_IS_LOCKED		BIT(25)
+#define R1_ILLEGAL_COMMAND		BIT(22)
+#define R1_CARD_ECC_FAILED		BIT(21)
+#define R1_APP_CMD				BIT(5)
+#define R1_ERROR_MASK			(GENMASK(31, 19) | \
+		GENMASK(16, 15) | BIT(13))
 
 #define MMC_RSP_PRESENT (1 << 0)
 #define MMC_RSP_136	(1 << 1)		/* 136 bit response */
