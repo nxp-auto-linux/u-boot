@@ -91,6 +91,9 @@ struct udevice *scmi_get_protocol(struct udevice *dev,
 		case SCMI_PROTOCOL_ID_VENDOR_81:
 			drv = DM_DRIVER_GET(scmi_gpio);
 			break;
+		case SCMI_PROTOCOL_ID_VENDOR_82:
+			drv = DM_DRIVER_GET(scmi_nvmem);
+			break;
 		proto = priv->base_dev;
 		break;
 #if IS_ENABLED(CONFIG_SCMI_POWER_DOMAIN)
