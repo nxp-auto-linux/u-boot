@@ -448,6 +448,10 @@ struct global_data {
 	 */
 	struct upl *upl;
 #endif
+	/**
+	 * @malloc_r_base: base address of malloc() after relocation
+	 */
+	unsigned long malloc_r_base;
 };
 #ifndef DO_DEPS_ONLY
 static_assert(sizeof(struct global_data) == GD_SIZE);

@@ -224,20 +224,12 @@ static int initr_barrier(void)
 
 static int initr_malloc(void)
 {
-	ulong start;
-
 #if CONFIG_IS_ENABLED(SYS_MALLOC_F)
 	debug("Pre-reloc malloc() used %#x bytes (%d KB)\n", gd->malloc_ptr,
 	      gd->malloc_ptr / 1024);
 #endif
-	/* The malloc area is immediately below the monitor copy in DRAM */
-	/*
-	 * This value MUST match the value of gd->start_addr_sp in board_f.c:
-	 * reserve_noncached().
-	 */
-	start = gd->relocaddr - TOTAL_MALLOC_LEN;
-	gd_set_malloc_start(start);
-	mem_malloc_init(start, TOTAL_MALLOC_LEN);
+	gd_set_malloc_start(gd->malloc_r_base);
+	mem_malloc_init(gd->malloc_r_base, TOTAL_MALLOC_LEN);
 	return 0;
 }
 
