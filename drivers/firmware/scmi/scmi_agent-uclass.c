@@ -84,8 +84,9 @@ struct udevice *scmi_get_protocol(struct udevice *dev,
 
 	switch (id) {
 	case SCMI_PROTOCOL_ID_BASE:
-		case SCMI_PROTOCOL_ID_PINCTRL:
-			drv = DM_DRIVER_GET(scmi_pinctrl);
+		case SCMI_PROTOCOL_ID_VENDOR_80:
+			if (IS_ENABLED(CONFIG_PINCTRL_NXP_S32CC_SCMI))
+				drv = DM_DRIVER_GET(nxp_s32cc_scmi_pinctrl);
 			break;
 
 		case SCMI_PROTOCOL_ID_VENDOR_81:
