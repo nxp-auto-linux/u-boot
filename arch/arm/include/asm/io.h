@@ -372,6 +372,8 @@ extern void _memset_io(unsigned long, int, size_t);
 
 /* Optimized copy functions to read from/write to IO sapce */
 #ifdef CONFIG_ARM64
+#include <asm/armv8/mmu.h>
+#include <asm/system.h>
 #include <cpu_func.h>
 /*
  * Copy data from IO memory space to "real" memory space.
@@ -466,6 +468,25 @@ void __memset_io(volatile void __iomem *dst, int c, size_t count)
 		dst++;
 		count--;
 	}
+}
+
+static inline void __iomem *ioremap(resource_size_t phys_addr,
+				    resource_size_t size)
+{
+	resource_size_t offset = phys_addr & (~PAGE_MASK);
+
+	phys_addr -= offset;
+	size = round_up(size + offset, PAGE_SIZE);
+
+	mmu_map_region_attrs(phys_addr, size,
+			     PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			     PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN |
+			     PTE_BLOCK_UXN, false);
+	return (void __iomem *)(unsigned long)(phys_addr + offset);
+}
+
+static inline void iounmap(void __iomem *addr)
+{
 }
 #endif /* CONFIG_ARM64 */
 
