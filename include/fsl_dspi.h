@@ -17,13 +17,40 @@ struct dspi {
 	u32 mcr;	/* 0x00 */
 	u32 resv0;	/* 0x04 */
 	u32 tcr;	/* 0x08 */
-	u32 ctar[8];	/* 0x0C - 0x28 */
-	u32 sr;		/* 0x2C */
-	u32 irsr;	/* 0x30 */
+	union {
+		struct {
+			u32 ctar[8];	/* 0x0C - 0x28 */
+			u32 sr;		/* 0x2C */
+			u32 irsr;	/* 0x30 */
+		} v1;
+		struct {
+			u32 ctar[6];	/* 0x0C - 0x24 */
+			u32 resv1[2];	/* 0x24 - 0x2C */
+			u32 rser;	/* 0x2C - 0x30 */
+			u32 pushr_cmd;	/* 0x30 */
+		} v2;
+	} s1;
+
 	u32 tfr;	/* 0x34 - PUSHR */
 	u32 rfr;	/* 0x38 - POPR */
-	u32 tfdr[16];	/* 0x3C */
-	u32 rfdr[16];	/* 0x7C */
+
+	union {
+		struct {
+			u32 tfdr[16];	/* 0x3C */
+			u32 rfdr[16];	/* 0x7C */
+		} v1;
+		struct {
+			u32 fcr;	/* 0x3C - 0x40 FIFO Control (FCR) */
+			u32 resv2[4];   /* 0x40 - 0x50 */
+			u32 rtis;	/* 0x50 - 0x54 Reset to Initial State (RTIS) */
+			u32 resv3[11];  /* 0x54 - 0x80 */
+			u32 tfdr[16];	/* 0x80 - 0xC0 */
+			u32 rfdr[16];	/* 0xC0 - 0x100 */
+			u32 resv4[32];  /* 0x100 - 0x180 */
+			u32 sr;		/* 0x180 - 184 */
+			u32 fsr;	/* 0x184 - FIFO Status (FIFO_SR)*/
+		} v2;
+	} s2;
 };
 
 /* Module configuration */
@@ -36,6 +63,7 @@ struct dspi {
 #define DSPI_MCR_ROOE			BIT(24)
 #define DSPI_MCR_PCSIS(x)		(1 << (16 + (x)))
 #define DSPI_MCR_PCSIS_MASK		GENMASK(23, 16)
+#define DSPI_V2_MCR_PCSIS_MASK		GENMASK(20, 16)
 #define DSPI_MCR_CSIS7			BIT(23)
 #define DSPI_MCR_CSIS6			BIT(22)
 #define DSPI_MCR_CSIS5			BIT(21)
@@ -63,7 +91,7 @@ struct dspi {
 #define DSPI_CTAR(x)			(0x0c + (((x) & GENMASK(2, 0)) * 4))
 #define DSPI_CTAR_DBR			BIT(31)
 
-#define DSPI_PUSHR_CMD_FMSZ(x)	(((x) & GENMASK(15, 0)))
+#define DSPI_V2_PUSHR_CMD_FMSZ(x)	(((x) & GENMASK(15, 0)))
 #define DSPI_CTAR_TRSZ(x)		(((x) & GENMASK(3, 0)) << 27)
 
 #define DSPI_CTAR_CPOL			BIT(26)
@@ -105,8 +133,13 @@ struct dspi {
 #define DSPI_SR_RFDF			BIT(17)
 
 #define DSPI_SR_TXPTR(x)		(((x) & GENMASK(11, 8)) >> 8)
+
+#define DSPI_V2_FIFO_SR_TXCTR(x)	(((x) & GENMASK(17, 13)) >> 13)
+#define DSPI_V2_FIFO_SR_RXCTR(x)	(((x) & GENMASK(26, 22)) >> 22)
+
 #define DSPI_SR_TXCTR(x)		(((x) & GENMASK(15, 12)) >> 12)
 #define DSPI_SR_RXCTR(x)		(((x) & GENMASK(7, 4)) >> 4)
+
 #define DSPI_SR_RXPTR(x)		((x) & GENMASK(3, 0))
 
 /* DMA/interrupt request selct and enable */
@@ -122,6 +155,8 @@ struct dspi {
 /* Transfer control - 32-bit access */
 #define DSPI_TFR_PCS(x)			(((1 << (x)) & GENMASK(5, 0)) << 16)
 #define DSPI_TFR_CTCNT			BIT(26)
+#define DSPI_V2_TFR_PCS(x)		(((1 << (x)) & GENMASK(4, 0)) << 16)
+#define DSPI_V2_PUSHR_CTCNT		BIT(26)
 
 #define DSPI_TFR_CONT			BIT(31)
 #define DSPI_TFR_CTAS(x)		(((x) & GENMASK(2, 0)) << 28)
@@ -134,6 +169,11 @@ struct dspi {
 #define DSPI_TFR_CS2			BIT(18)
 #define DSPI_TFR_CS1			BIT(17)
 #define DSPI_TFR_CS0			BIT(16)
+
+#define DSPI_V2_TFR_TXDATA(x)		((x) & 0xFFFFFFFF)
+#define DSPI_V2_RFR_RXDATA(x)		((x) & 0xFFFFFFFF)
+#define DSPI_V2_TFDR_TXDATA(x)		((x) & 0xFFFFFFFF)
+#define DSPI_V2_RFDR_RXDATA(x)		((x) & 0xFFFFFFFF)
 
 /* Transfer Fifo */
 #define DSPI_TFR_TXDATA(x)		((x) & GENMASK(15, 0))
