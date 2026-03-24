@@ -175,6 +175,11 @@ static int initr_reloc_global_data(void)
 
 	if (!(gd->flags & GD_FLG_SKIP_RELOC))
 		efi_runtime_relocate(gd->relocaddr, NULL);
+#ifdef CONFIG_ARM
+	/* Fix efi_runtime relocations if CONFIG_POSITION_INDEPENDENT. */
+	else if ((ulong)_start != CONFIG_TEXT_BASE)
+		efi_runtime_relocate((ulong)_start, NULL);
+#endif
 
 #endif
 	/*
