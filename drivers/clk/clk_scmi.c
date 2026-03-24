@@ -364,10 +364,19 @@ static int scmi_clk_probe(struct udevice *dev)
 		return -ENOMEM;
 
 	for (i = 0; i < num_clocks; i++) {
+		u32 attributes;
+
 		clk_scmi = clk_scmi_bulk + i;
 		char *clock_name = clk_scmi->name;
 
-		snprintf(clock_name, SCMI_CLOCK_NAME_LENGTH_MAX, "scmi-%zu", i);
+		/*
+		 * Use the clock name reported by the SCMI firmware via
+		 * CLOCK_ATTRIBUTES so the clock can be looked up by name. Fall
+		 * back to a synthetic name if the firmware does not provide one.
+		 */
+		if (scmi_clk_get_attribute(dev, i, clock_name, &attributes))
+			snprintf(clock_name, SCMI_CLOCK_NAME_LENGTH_MAX,
+				 "scmi-%zu", i);
 
 		ret = clk_register(&clk_scmi->clk, dev->driver->name,
 				   clock_name, dev->name);
@@ -443,26 +452,69 @@ static struct scmi_proto_match match[] = {
 };
 
 U_BOOT_SCMI_PROTO_DRIVER(scmi_clock, match);
+
 static int gate_scmi_clk_id(struct udevice *dev, unsigned long clk_id,
 			    int enable)
 {
-	struct clk clk;
+	struct scmi_clock_priv *priv = dev_get_priv(dev);
+	struct scmi_clk_state_in_v1 in_v1 = {
+		.clock_id = clk_id,
+		.attributes = enable,
+	};
+	struct scmi_clk_state_in_v2 in_v2 = {
+		.clock_id = clk_id,
+		.attributes = enable,
+	};
+	struct scmi_clk_state_out out;
+	struct scmi_msg msg_v1 = SCMI_MSG_IN(SCMI_PROTOCOL_ID_CLOCK,
+					     SCMI_CLOCK_CONFIG_SET,
+					     in_v1, out);
+	struct scmi_msg msg_v2 = SCMI_MSG_IN(SCMI_PROTOCOL_ID_CLOCK,
+					     SCMI_CLOCK_CONFIG_SET,
+					     in_v2, out);
+	int ret;
 
-	memset(&clk, 0, sizeof(clk));
+	ret = devm_scmi_process_msg(dev,
+				    (priv->version < CLOCK_PROTOCOL_VERSION_2_1) ?
+				    &msg_v1 : &msg_v2);
+	if (ret)
+		return ret;
 
-	clk.dev = dev;
-	clk.id = clk_id;
-
-	return scmi_clk_gate(&clk, enable);
+	return scmi_to_linux_errno(out.status);
 }
 
-static int process_clocks_by_name(struct udevice *dev, const char *name_part, bool enable)
+static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
+			    char *const argv[])
 {
 	size_t num_clocks, i;
-	char name[SCMI_CLOCK_NAME_LENGTH_MAX];
-	char *res;
-	int ret;
-	u32 attr;
+	struct udevice *dev;
+	unsigned long id;
+	int ret, enable;
+	char *name, *res;
+
+	if (argc < 4)
+		return CMD_RET_USAGE;
+
+	ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &dev);
+	if (ret) {
+		printf("Failed to get device '%s'\n", argv[1]);
+		return CMD_RET_FAILURE;
+	}
+
+	if (simple_strtoul(argv[3], NULL, 10))
+		enable = 1;
+	else
+		enable = 0;
+
+	/* Is it a number ?*/
+	if (!strict_strtoul(argv[2], 10, &id)) {
+		if (gate_scmi_clk_id(dev, id, enable)) {
+			printf("Failed to control the clock %lu\n", id);
+			return CMD_RET_FAILURE;
+		}
+
+		return CMD_RET_SUCCESS;
+	}
 
 	ret = scmi_clk_get_num_clock(dev, &num_clocks);
 	if (ret) {
@@ -472,12 +524,14 @@ static int process_clocks_by_name(struct udevice *dev, const char *name_part, bo
 
 	/* Look for clocks containing the given string */
 	for (i = 0; i < num_clocks; i++) {
-		if (scmi_clk_get_attribute(dev, i, name, &attr))
+		if (scmi_clk_get_attibute(dev, i, &name))
 			continue;
 
-		res = strstr(name, name_part);
+		res = strstr(name, argv[2]);
 		if (res)
 			printf("## Setting %s clock ...\n", name);
+
+		free(name);
 
 		if (!res)
 			continue;
@@ -486,41 +540,7 @@ static int process_clocks_by_name(struct udevice *dev, const char *name_part, bo
 			printf("Failed to control the clock %lu\n", i);
 			return CMD_RET_FAILURE;
 		}
-	}
 
-	return CMD_RET_SUCCESS;
-}
-
-static int do_scmi_clk_gate(struct cmd_tbl *cmdtp, int flag, int argc,
-			    char *const argv[])
-{
-	struct clk clk;
-	int ret, enable;
-
-	if (argc < 4)
-		return CMD_RET_USAGE;
-
-	memset(&clk, 0, sizeof(clk));
-
-	ret = uclass_get_device_by_name(UCLASS_CLK, argv[1], &clk.dev);
-	if (ret) {
-		printf("Failed to get device '%s'\n", argv[1]);
-		return CMD_RET_FAILURE;
-	}
-
-	clk.id = simple_strtoul(argv[2], NULL, 10);
-	if (clk.id > INT_MAX)
-		return CMD_RET_FAILURE;
-
-	if (simple_strtoul(argv[3], NULL, 10))
-		enable = 1;
-	else
-		enable = 0;
-
-	ret = scmi_clk_gate(&clk, enable);
-	if (ret) {
-		printf("scmi_clk_enable failed: %d\n", ret);
-		return CMD_RET_FAILURE;
 	}
 
 	return CMD_RET_SUCCESS;
