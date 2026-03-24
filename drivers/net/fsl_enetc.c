@@ -476,6 +476,8 @@ static void enetc_start_pcs(struct udevice *dev)
 	struct enetc_data *data = (struct enetc_data *)dev_get_driver_data(dev);
 	struct enetc_priv *priv = dev_get_priv(dev);
 
+	priv->if_type = PHY_INTERFACE_MODE_NA;
+
 	/* register internal MDIO for debug purposes */
 	if (enetc_read_pcapr_mdio(dev)) {
 		priv->imdio.read = enetc_mdio_read;
@@ -493,11 +495,8 @@ static void enetc_start_pcs(struct udevice *dev)
 	}
 
 	priv->uclass_id = dev_read_phy_mode(dev);
-	if (priv->uclass_id == PHY_INTERFACE_MODE_NA) {
-		enetc_dbg(dev,
-			  "phy-mode property not found, defaulting to SGMII\n");
-		priv->uclass_id = PHY_INTERFACE_MODE_SGMII;
-	}
+	if (priv->uclass_id == PHY_INTERFACE_MODE_NA)
+		enetc_dbg(dev, "phy-mode property not found\n");
 
 	switch (priv->uclass_id) {
 	case PHY_INTERFACE_MODE_SGMII:
@@ -566,6 +565,8 @@ static int enetc_probe(struct udevice *dev)
 	dm_pci_clrset_config16(dev, PCI_COMMAND, 0, PCI_COMMAND_MEMORY);
 
 	enetc_start_pcs(dev);
+	if (priv->if_type == PHY_INTERFACE_MODE_NA)
+		return 0;
 
 	res = enetc_config_phy(dev);
 	if(res)
@@ -795,7 +796,6 @@ static void enetc_setup_rx_bdr(struct udevice *dev)
  */
 static int enetc_start(struct udevice *dev)
 {
-	int ret;
 	struct enetc_priv *priv = dev_get_priv(dev);
 
 	/* reset and enable the PCI device */
@@ -809,11 +809,10 @@ static int enetc_start(struct udevice *dev)
 	enetc_setup_tx_bdr(dev);
 	enetc_setup_rx_bdr(dev);
 
-	ret = phy_startup(priv->phy);
-	if (ret)
-		return ret;
-
-	enetc_setup_mac_iface(dev, priv->phy);
+	if (priv->phy) {
+		enetc_setup_mac_iface(dev, priv->phy);
+		return phy_startup(priv->phy);
+	}
 
 	return 0;
 }
