@@ -46,6 +46,11 @@ config NXP_S32CC
 	imply PCI_INIT_R
 	imply PCI_S32CC
 	imply PHY_S32CC_SERDES
+	imply PINCTRL
+	imply PINCTRL_FULL
+	imply PINCTRL_S32CC
+	imply PINCTRL_NXP_S32CC_SCMI
+	imply RESET_SCMI
 	imply S32CC_CMU
 	imply SPI
 	imply SPI_FLASH
@@ -81,6 +86,7 @@ config NXP_S32CC
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
 	select SCMI_GPIO
+	select PINCTRL_SCMI
 	select SYSRESET
 	select SYSRESET_PSCI
 

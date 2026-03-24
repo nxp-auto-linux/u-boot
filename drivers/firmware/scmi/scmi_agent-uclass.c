@@ -84,6 +84,13 @@ struct udevice *scmi_get_protocol(struct udevice *dev,
 
 	switch (id) {
 	case SCMI_PROTOCOL_ID_BASE:
+		case SCMI_PROTOCOL_ID_PINCTRL:
+			drv = DM_DRIVER_GET(scmi_pinctrl);
+			break;
+
+		case SCMI_PROTOCOL_ID_VENDOR_81:
+			drv = DM_DRIVER_GET(scmi_gpio);
+			break;
 		proto = priv->base_dev;
 		break;
 #if IS_ENABLED(CONFIG_SCMI_POWER_DOMAIN)

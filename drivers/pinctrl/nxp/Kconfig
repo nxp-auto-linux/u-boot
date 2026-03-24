@@ -173,3 +173,14 @@ config PINCTRL_VYBRID
 	  configuration. This driver is different from the linux one,
 	  this is a simple implementation, only parses the 'fsl,pins'
 	  property and configure related registers.
+
+config PINCTRL_NXP_S32CC_SCMI
+	bool "NXP S32CC SCMI Pinctrl vendor extension driver"
+	depends on NXP_S32CC
+	select SCMI_FIRMWARE
+	help
+	  Say Y here to enable the NXP vendor extension pinctrl over
+	  SCMI driver for S32 Common Chassis platforms (S32G2, S32G3,
+	  S32R45, S32R47). This uses the NXP SCMI vendor protocol
+	  (0x80) which is distinct from the standard SCMI pinctrl
+	  protocol (0x19) used by PINCTRL_IMX_SCMI.
