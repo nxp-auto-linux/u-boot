@@ -102,7 +102,7 @@ config VPL_SERIAL_PRESENT
 config CONS_INDEX
 	int "UART used for console"
 	depends on SPECIFY_CONSOLE_INDEX
-	range 0 6
+	range 0 7
 	default 1
 	help
 	  Set this to match the UART number of the serial console.
