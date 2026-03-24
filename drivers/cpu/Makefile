@@ -18,4 +18,5 @@ obj-$(CONFIG_CPU_RISCV) += riscv_cpu.o
 obj-$(CONFIG_CPU_MICROBLAZE) += microblaze_cpu.o
 obj-$(CONFIG_CPU_XTENSA) += xtensa_cpu.o
 obj-$(CONFIG_NXP_S32CC) += s32cc_cpu.o
+obj-$(CONFIG_NXP_S32N) += s32n_cpu.o
 obj-$(CONFIG_SANDBOX) += cpu_sandbox.o
