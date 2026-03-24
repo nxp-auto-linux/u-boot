@@ -754,4 +754,12 @@ config MPFS_GPIO
 	help
 		Enable to support the GPIO driver on Polarfire SoC
 
+config SCMI_GPIO
+	bool "Enable SCMI GPIO driver"
+	select SCMI_FIRMWARE
+	help
+	  Enable this option if you want to support GPIO devices exposed
+	  by a SCMI agent based on SCMI GPIO protocol communication
+	  with a SCMI server.
+
 endif

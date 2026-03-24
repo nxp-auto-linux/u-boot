@@ -67,6 +67,7 @@ config NXP_S32CC
 	select PINCTRL_S32CC
 	select S32CC_GPIO
 	select SCMI_FIRMWARE
+	select SCMI_GPIO
 	select SPI_FLASH
 	select SPI_FLASH_MTD
 	select SPI_FLASH_SFDP_SUPPORT

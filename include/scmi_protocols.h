@@ -9,6 +9,8 @@
 #include <linux/bitops.h>
 #include <asm/types.h>
 
+struct udevice;
+
 /*
  * Subset the SCMI protocols definition
  * based on SCMI specification v2.0 (DEN0056B)
@@ -26,6 +28,7 @@ enum scmi_std_protocol {
 	SCMI_PROTOCOL_ID_VOLTAGE_DOMAIN = 0x17,
 	SCMI_PROTOCOL_ID_PINCTRL = 0x19,
 	SCMI_PROTOCOL_ID_VENDOR_80 = 0x80,
+	SCMI_PROTOCOL_ID_VENDOR_81 = 0x81,
 	SCMI_PROTOCOL_ID_VENDOR_82 = 0x82,
 };
 
