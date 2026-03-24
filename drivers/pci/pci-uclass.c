@@ -17,6 +17,7 @@
 #include <asm/io.h>
 #include <dm/device-internal.h>
 #include <dm/lists.h>
+
 #include <dm/uclass-internal.h>
 #if defined(CONFIG_X86) && defined(CONFIG_HAVE_FSP)
 #include <asm/fsp/fsp_support.h>
@@ -1577,6 +1578,7 @@ static void *dm_pci_map_ea_bar(struct udevice *dev, int bar, size_t offset,
 	int bar_id = (bar - PCI_BASE_ADDRESS_0) >> 2;
 	u32 ea_entry;
 	phys_addr_t addr;
+	u64 sz;
 
 	if (IS_ENABLED(CONFIG_PCI_SRIOV)) {
 		/*
@@ -1594,6 +1596,8 @@ static void *dm_pci_map_ea_bar(struct udevice *dev, int bar, size_t offset,
 	ea_off += PCI_EA_FIRST_ENT;
 
 	for (i = 0; i < ea_cnt; i++, ea_off += entry_size) {
+		int base2dw;
+
 		/* Entry header */
 		dm_pci_read_config32(dev, ea_off, &ea_entry);
 		entry_size = ((ea_entry & PCI_EA_ES) + 1) << 2;
@@ -1604,11 +1608,28 @@ static void *dm_pci_map_ea_bar(struct udevice *dev, int bar, size_t offset,
 		/* Base address, 1st DW */
 		dm_pci_read_config32(dev, ea_off + 4, &ea_entry);
 		addr = ea_entry & PCI_EA_FIELD_MASK;
-		if (ea_entry & PCI_EA_IS_64) {
+		base2dw = ea_entry & PCI_EA_IS_64;
+		if (base2dw) {
 			/* Base address, 2nd DW, skip over 4B MaxOffset */
 			dm_pci_read_config32(dev, ea_off + 12, &ea_entry);
 			addr |= ((u64)ea_entry) << 32;
 		}
+
+		/* Size, 1st DW */
+		dm_pci_read_config32(dev, ea_off + 8, &ea_entry);
+		sz = (u64)ea_entry;
+		if (ea_entry & PCI_EA_IS_64) {
+			/* Size, 2nd DW */
+			dm_pci_read_config32(dev, ea_off + 16 +
+					     (base2dw ? 4 : 0), &ea_entry);
+			sz |= ((u64)ea_entry) << 32;
+		}
+		/* Fill up lower 2 bits */
+		sz |= ~PCI_EA_FIELD_MASK;
+		sz += 1;
+
+		if (!len && (!sz || sz <= offset))
+			return NULL;
 
 		if (IS_ENABLED(CONFIG_PCI_SRIOV))
 			addr += dm_pci_map_ea_virt(dev, ea_off, pdata);
@@ -1616,8 +1637,8 @@ static void *dm_pci_map_ea_bar(struct udevice *dev, int bar, size_t offset,
 		if (~((phys_addr_t)0) - addr < offset)
 			return NULL;
 
-		/* size ignored for now */
-		return map_physmem(addr + offset, len, MAP_NOCACHE);
+		/* Use 'len' if provided, otherwise (BAR size) - offset */
+		return ioremap(addr + offset, len ? : sz - offset);
 	}
 
 	return 0;
