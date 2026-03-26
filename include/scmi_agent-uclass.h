@@ -64,6 +64,9 @@ struct scmi_agent_priv {
 #if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_82)
 	struct udevice *vendor_dev_82;
 #endif
+#if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_86)
+	struct udevice *vendor_dev_86;
+#endif
 };
 
 static inline u32 scmi_version(struct udevice *dev)

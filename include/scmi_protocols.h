@@ -30,6 +30,7 @@ enum scmi_std_protocol {
 	SCMI_PROTOCOL_ID_VENDOR_80 = 0x80,
 	SCMI_PROTOCOL_ID_VENDOR_81 = 0x81,
 	SCMI_PROTOCOL_ID_VENDOR_82 = 0x82,
+	SCMI_PROTOCOL_ID_VENDOR_86 = 0x86,
 };
 
 enum scmi_status_code {
