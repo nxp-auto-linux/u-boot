@@ -7,6 +7,7 @@
 #include <log.h>
 #include <misc.h>
 #include <scmi_agent.h>
+#include <scmi_agent-uclass.h>
 #include <scmi_protocols.h>
 #include <dm/device.h>
 #include <linux/bitops.h>
@@ -148,6 +149,10 @@ static int scmi_nvmem_probe(struct udevice *dev)
 	u32 num_cells = 0;
 	int ret;
 
+	ret = devm_scmi_of_get_channel(dev);
+	if (ret)
+		return ret;
+
 	ret = scmi_nvmem_get_num_cells(dev, &num_cells);
 	if (ret)
 		return ret;
@@ -167,3 +172,10 @@ U_BOOT_DRIVER(scmi_nvmem) = {
 	.probe = scmi_nvmem_probe,
 	.flags = DM_FLAG_PRE_RELOC,
 };
+
+static struct scmi_proto_match scmi_nvmem_match[] = {
+	{ .proto_id = SCMI_PROTOCOL_ID_VENDOR_82 },
+	{ /* Sentinel */ }
+};
+
+U_BOOT_SCMI_PROTO_DRIVER(scmi_nvmem, scmi_nvmem_match);

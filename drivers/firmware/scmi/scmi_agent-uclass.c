@@ -84,19 +84,6 @@ struct udevice *scmi_get_protocol(struct udevice *dev,
 
 	switch (id) {
 	case SCMI_PROTOCOL_ID_BASE:
-		case SCMI_PROTOCOL_ID_VENDOR_80:
-			if (IS_ENABLED(CONFIG_PINCTRL_NXP_S32CC_SCMI))
-				drv = DM_DRIVER_GET(nxp_s32cc_scmi_pinctrl);
-			break;
-
-		case SCMI_PROTOCOL_ID_VENDOR_81:
-			if (IS_ENABLED(CONFIG_SCMI_GPIO))
-				drv = DM_DRIVER_GET(scmi_gpio);
-			break;
-		case SCMI_PROTOCOL_ID_VENDOR_82:
-			if (IS_ENABLED(CONFIG_SCMI_NVMEM))
-				drv = DM_DRIVER_GET(scmi_nvmem);
-			break;
 		proto = priv->base_dev;
 		break;
 #if IS_ENABLED(CONFIG_SCMI_POWER_DOMAIN)
@@ -127,6 +114,11 @@ struct udevice *scmi_get_protocol(struct udevice *dev,
 #if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_80)
 	case SCMI_PROTOCOL_ID_VENDOR_80:
 		proto = priv->vendor_dev_80;
+		break;
+#endif
+#if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_81)
+	case SCMI_PROTOCOL_ID_VENDOR_81:
+		proto = priv->vendor_dev_81;
 		break;
 #endif
 #if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_82)
@@ -200,6 +192,11 @@ static int scmi_add_protocol(struct udevice *dev,
 #if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_80)
 	case SCMI_PROTOCOL_ID_VENDOR_80:
 		priv->vendor_dev_80 = proto;
+		break;
+#endif
+#if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_81)
+	case SCMI_PROTOCOL_ID_VENDOR_81:
+		priv->vendor_dev_81 = proto;
 		break;
 #endif
 #if IS_ENABLED(CONFIG_SCMI_ID_VENDOR_82)

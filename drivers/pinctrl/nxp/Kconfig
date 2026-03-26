@@ -178,6 +178,7 @@ config PINCTRL_NXP_S32CC_SCMI
 	bool "NXP S32CC SCMI Pinctrl vendor extension driver"
 	depends on NXP_S32CC
 	select SCMI_FIRMWARE
+	select SCMI_ID_VENDOR_80
 	help
 	  Say Y here to enable the NXP vendor extension pinctrl over
 	  SCMI driver for S32 Common Chassis platforms (S32G2, S32G3,

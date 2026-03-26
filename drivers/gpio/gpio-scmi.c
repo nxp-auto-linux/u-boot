@@ -10,6 +10,7 @@
 #include <vsprintf.h>
 #include <dm.h>
 #include <scmi_agent.h>
+#include <scmi_agent-uclass.h>
 #include <scmi_protocols.h>
 #include <asm/gpio.h>
 #include <dm/devres.h>
@@ -455,6 +456,10 @@ static int scmi_gpio_probe(struct udevice *dev)
 	if (!gpio_dev || !uc_priv)
 		return -EINVAL;
 
+	ret = devm_scmi_of_get_channel(dev);
+	if (ret)
+		return ret;
+
 	prop_size = dev_read_size(dev, "gpio-ranges");
 	if (prop_size < 0)
 		return prop_size;
@@ -527,3 +532,10 @@ U_BOOT_DRIVER(scmi_gpio) = {
 	.probe = scmi_gpio_probe,
 	.priv_auto = sizeof(struct scmi_gpio),
 };
+
+static struct scmi_proto_match scmi_gpio_match[] = {
+	{ .proto_id = SCMI_PROTOCOL_ID_VENDOR_81 },
+	{ /* Sentinel */ }
+};
+
+U_BOOT_SCMI_PROTO_DRIVER(scmi_gpio, scmi_gpio_match);

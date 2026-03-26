@@ -757,6 +757,7 @@ config MPFS_GPIO
 config SCMI_GPIO
 	bool "Enable SCMI GPIO driver"
 	select SCMI_FIRMWARE
+	select SCMI_ID_VENDOR_81
 	help
 	  Enable this option if you want to support GPIO devices exposed
 	  by a SCMI agent based on SCMI GPIO protocol communication

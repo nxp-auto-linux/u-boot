@@ -11,6 +11,7 @@
 #include <vsprintf.h>
 #include <dm.h>
 #include <scmi_agent.h>
+#include <scmi_agent-uclass.h>
 #include <scmi_protocols.h>
 #include <asm/gpio.h>
 #include <dm/pinctrl.h>
@@ -1085,6 +1086,10 @@ static int scmi_pinctrl_probe(struct udevice *dev)
 	struct scmi_pinctrl_priv *priv = dev_get_priv(dev);
 	int ret;
 
+	ret = devm_scmi_of_get_channel(dev);
+	if (ret)
+		return ret;
+
 	ret = scmi_pinctrl_init(dev);
 	if (ret)
 		return ret;
@@ -1102,3 +1107,10 @@ U_BOOT_DRIVER(nxp_s32cc_scmi_pinctrl) = {
 	.ops = &scmi_pinctrl_ops,
 	.flags = DM_FLAG_PRE_RELOC,
 };
+
+static struct scmi_proto_match nxp_s32cc_scmi_pinctrl_match[] = {
+	{ .proto_id = SCMI_PROTOCOL_ID_VENDOR_80 },
+	{ /* Sentinel */ }
+};
+
+U_BOOT_SCMI_PROTO_DRIVER(nxp_s32cc_scmi_pinctrl, nxp_s32cc_scmi_pinctrl_match);

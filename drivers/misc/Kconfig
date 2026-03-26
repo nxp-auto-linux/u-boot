@@ -570,6 +570,7 @@ config QFW_SMBIOS
 config SCMI_NVMEM
 	bool "Enable SCMI NVMEM driver"
 	select SCMI_FIRMWARE
+	select SCMI_ID_VENDOR_82
 	help
 	  Enable this option if you want to support NVMEM over SCMI, in order
 	  for U-Boot, as an SCMI Agent, to read/write NVMEM cells provided by
