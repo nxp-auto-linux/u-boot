@@ -73,10 +73,10 @@ ENTRY(_main)
 	ldr	x0, =CONFIG_VAL(STACK)
 #elif defined(CONFIG_INIT_SP_RELATIVE)
 #if CONFIG_POSITION_INDEPENDENT
-	adrp	x0, __bss_start     /* x0 <- Runtime &__bss_start */
-	add	x0, x0, #:lo12:__bss_start
+	adrp	x0, __bss_end     /* x0 <- Runtime &__bss_start */
+	add	x0, x0, #:lo12:__bss_end
 #else
-	adr	x0, __bss_start
+	adr	x0, __bss_end
 #endif
 	add	x0, x0, #CONFIG_SYS_INIT_SP_BSS_OFFSET
 #else
