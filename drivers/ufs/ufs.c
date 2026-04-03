@@ -1214,8 +1214,8 @@ static int ufshcd_read_desc_length(struct ufs_hba *hba, enum desc_idn desc_id,
 				   int desc_index, int *desc_length)
 {
 	int ret;
-	u8 header[QUERY_DESC_HDR_SIZE];
-	int header_len = QUERY_DESC_HDR_SIZE;
+	u8 header[QUERY_DESC_MAX_SIZE];
+	int header_len = QUERY_DESC_MAX_SIZE;
 
 	if (desc_id >= QUERY_DESC_IDN_MAX)
 		return -EINVAL;
