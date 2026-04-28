@@ -879,8 +879,16 @@ static int esdhc_change_pinstate(struct udevice *dev)
 		break;
 	}
 
-	if (ret)
-		printf("%s %d error\n", __func__, priv->mode);
+	if (ret) {
+		/* Pinctrl states are optional. */
+		if (ret == -ENOSYS || ret == -ENOENT) {
+			dev_dbg(dev, "no pinctrl state for mode %d, skipping\n",
+				priv->mode);
+			return 0;
+		}
+		dev_err(dev, "failed to set pinctrl state for mode %d (%d)\n",
+			priv->mode, ret);
+	}
 
 	return ret;
 }
