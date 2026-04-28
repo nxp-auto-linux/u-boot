@@ -120,6 +120,8 @@ config NXP_S32N
 	imply FSL_DSPI
 	imply LOG
 	imply MISC
+	imply MMC_HS400_ES_SUPPORT
+	imply MMC_HS400_SUPPORT
 	imply NET_RANDOM_ETHADDR
 	imply NXP_XSPI
 	imply OF_HAS_PRIOR_STAGE
