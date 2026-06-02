@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * Copyright 2022-2024 NXP
+ * Copyright 2022-2024, 2026 NXP
  */
 
 #ifndef __S32G399ARDB3_H__
@@ -11,7 +11,7 @@
 #define EXTRA_BOOT_ARGS			""
 
 #ifndef CONFIG_NXP_PFENG_SLAVE
-#define FDT_FILE			"s32g399a-rdb3.dtb"
+#define FDT_FILE			CONFIG_DTB_FILE
 #else
 #define FDT_FILE			"s32g399a-rdb3-pfems.dtb"
 #endif

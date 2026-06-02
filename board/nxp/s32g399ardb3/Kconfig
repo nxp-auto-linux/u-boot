@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-# Copyright 2022 NXP
+# Copyright 2022, 2026 NXP
 
 if TARGET_S32G399ARDB3
 
@@ -20,6 +20,9 @@ config SYS_EEPROM_PAGE_WRITE_DELAY_MS
 
 config SYS_EEPROM_SIZE
 	default 128
+
+config DTB_FILE
+	default "s32g399a-rdb3.dtb"
 
 config S32CC_HWCONFIG
 	string "S32CC HWConfig definition"
