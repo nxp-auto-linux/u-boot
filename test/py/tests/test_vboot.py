@@ -441,3 +441,169 @@ def test_vboot(u_boot_console, name, sha_algo, padding, sign_options, required,
         # Go back to the original U-Boot with the correct dtb.
         cons.config.dtb = old_dtb
         cons.restart_uboot()
+
+
+@pytest.mark.boardspec('sandbox')
+@pytest.mark.buildconfigspec('fit_signature')
+@pytest.mark.requiredtool('dtc')
+@pytest.mark.requiredtool('fdtput')
+@pytest.mark.requiredtool('openssl')
+def test_vboot_ext_data_bounds(cons):
+    """Test that malformed external-data properties are rejected.
+
+    A signed FIT with external data exposes 'data-position', 'data-offset' and
+    'data-size' properties. U-Boot must validate these before hashing the image
+    components, otherwise a crafted FIT could trigger an out-of-bounds access
+    during signature verification.
+
+    These checks are independent of the hashing algorithm, so a single signing
+    configuration is enough.
+
+    This works using sandbox only as it needs to update the device tree used
+    by U-Boot to hold public keys from the signing process.
+    """
+    sha_algo = 'sha256'
+
+    def run_bootm(test_type, expect_string):
+        """Run a 'bootm' command in U-Boot and expect it to fail.
+
+        This always starts a fresh U-Boot instance since the device tree may
+        contain a new public key.
+
+        Args:
+            test_type: A string identifying the test type.
+            expect_string: A string which is expected in the output.
+        """
+        cons.restart_uboot()
+        with cons.log.section('Verified boot %s %s' % (sha_algo, test_type)):
+            output = cons.run_command_list(
+                ['host load hostfs - 100 %s' % fit,
+                 'fdt addr 100',
+                 'bootm 100'])
+        assert expect_string in ''.join(output)
+        assert 'sandbox: continuing, as we cannot run' not in ''.join(output)
+
+    def sign_fit(options):
+        """Sign the FIT
+
+        Signs the FIT and writes the signature into it. It also writes the
+        public key into the dtb.
+
+        Args:
+            options: Options to provide to mkimage.
+        """
+        args = [mkimage, '-F', '-k', tmpdir, '-K', dtb, '-r', fit]
+        if options:
+            args += options.split(' ')
+        cons.log.action('%s: Sign images' % sha_algo)
+        utils.run_and_log(cons, args)
+
+    def create_rsa_pair(name):
+        """Generate a new RSA key pair and certificate.
+
+        Args:
+            name: Name of the key (e.g. 'dev')
+        """
+        public_exponent = 65537
+        utils.run_and_log(cons, 'openssl genpkey -algorithm RSA -out %s%s.key '
+                     '-pkeyopt rsa_keygen_bits:2048 '
+                     '-pkeyopt rsa_keygen_pubexp:%d' %
+                     (tmpdir, name, public_exponent))
+
+        # Create a certificate containing the public key
+        utils.run_and_log(cons, 'openssl req -batch -new -x509 -key %s%s.key '
+                          '-out %s%s.crt' % (tmpdir, name, tmpdir, name))
+
+    def set_external_data(prop, value):
+        """Set an external-data property of the kernel image.
+
+        Args:
+            prop: Property name
+            value: The new value of the property
+        """
+        utils.run_and_log(
+            cons, 'fdtput -t x %s /images/kernel %s %#x' % (fit, prop, value)
+        )
+
+    def make_signed_fit():
+        """Build a fresh signed FIT with external data.
+
+        sign_fit() overwrites the FIT, so a new one is built before each test
+        case mutates its external-data properties.
+        """
+        make_fit('sign-configs-%s.its' % sha_algo, cons, mkimage, dtc_args,
+                 datadir, fit)
+        sign_fit('-E')
+
+    tmpdir = os.path.join(cons.config.result_dir, 'ext-data-bounds') + '/'
+    if not os.path.exists(tmpdir):
+        os.mkdir(tmpdir)
+    datadir = cons.config.source_dir + '/test/py/tests/vboot/'
+    fit = '%stest.fit' % tmpdir
+    mkimage = cons.config.build_dir + '/tools/mkimage'
+    dtc_args = '-I dts -O dtb -i %s' % tmpdir
+    dtb = '%ssandbox-u-boot.dtb' % tmpdir
+
+    bcfg = cons.config.buildconfig
+    max_size = int(bcfg.get('config_fit_signature_max_size', 0x10000000), 0)
+
+    create_rsa_pair('dev')
+
+    # Create a kernel image filled with zeroes
+    with open('%stest-kernel.bin' % tmpdir, 'wb') as fd:
+        fd.write(500 * b'\0')
+
+    testcases = [
+        ('negative data-position',
+         {'data-position': 0xffffffff}, 'Invalid external data position'),
+        ('negative data-offset',
+         {'data-offset': 0xffffffff}, 'Invalid external data offset'),
+        ('negative data-size',
+         {'data-size': 0xffffffff}, 'Invalid external data size'),
+        ('off-bounds data-position',
+         {'data-position': 0x7fffffff}, 'FIT external data is out of bounds'),
+        ('off-bounds data-offset',
+         {'data-offset': 0x10000000}, 'FIT external data is out of bounds'),
+        ('oversized data-size',
+         {'data-size': 0x7fffffff}, 'FIT external data is out of bounds'),
+        ('off-bounds data-position',
+         {'data-position': max_size + 1, 'data-size': 0},
+         'FIT external data is out of bounds'),
+        ('off-bounds data-offset',
+         {'data-offset': max_size + 1, 'data-size': 0},
+         'FIT external data is out of bounds'),
+        ('oversized data-size',
+         {'data-position': 0x0, 'data-size': max_size + 1},
+         'FIT external data is out of bounds'),
+        ('in-bounds data-position',
+         {'data-position': max_size, 'data-size': 0}, 'Bad Data Hash'),
+        ('in-bounds data-offset',
+         {'data-offset': max_size, 'data-size': 0}, 'Bad Data Hash'),
+        ('in-bounds data-size',
+         {'data-position': 0x0, 'data-size': max_size}, 'Bad Data Hash'),
+    ]
+
+    # We need to use our own device tree file. Remember to restore it
+    # afterwards.
+    old_dtb = cons.config.dtb
+    try:
+        cons.config.dtb = dtb
+
+        # Compile our device tree files for kernel and U-Boot. These are
+        # regenerated here since mkimage will modify them (by adding a
+        # public key) below.
+        dtc('sandbox-kernel.dts', cons, dtc_args, datadir, tmpdir, dtb)
+        dtc('sandbox-u-boot.dts', cons, dtc_args, datadir, tmpdir, dtb)
+
+        cons.log.action(
+            '%s: Test signed FIT with malformed external-data properties' % sha_algo)
+        for desc, props, expect_string in testcases:
+            make_signed_fit()
+            for prop, value in props.items():
+                set_external_data(prop, value)
+            run_bootm('Signed config with %s' % desc, expect_string)
+    finally:
+        # Go back to the original U-Boot with the correct dtb.
+        cons.config.dtb = old_dtb
+        cons.restart_uboot()
+
