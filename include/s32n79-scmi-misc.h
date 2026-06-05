@@ -7,15 +7,9 @@
 
 #include <linux/types.h>
 
-#define S32N79_SOC_INFO_OFFSET	(0x0)
-/*
- * Size should be kept in number of bytes, representing data obtained from
- * MISC SCMI SoC Info.
- */
-#define S32N79_SOC_INFO_SIZE	(52)
-
-/* misc_call() message ID for the NXP Misc SCMI driver. */
+/* misc_call() message IDs for the NXP Misc SCMI driver. */
 #define NXP_MISC_CMD_INIT_DDR_PARTIAL	0
+#define NXP_MISC_CMD_GET_SOC_INFO	1
 
 /*
  * Request payload for NXP_MISC_CMD_INIT_DDR_PARTIAL (passed as misc_call()

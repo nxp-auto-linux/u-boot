@@ -20,6 +20,22 @@ enum scmi_misc_message_id {
 	MISC_SCMI_INIT_DDR_PARTIAL = 0xA,
 };
 
+struct scmi_nxp_misc_get_soc_info_p2a {
+	s32 status;
+	u32 prod_status_and_brand;
+	u32 family;
+	u32 series;
+	u32 arm_cores_and_sram;
+	u32 device_variant;
+	u32 device_options;
+	u32 security;
+	u32 arm_core_speeds;
+	u32 fab_and_mask_rev;
+	u32 temp_range;
+	u32 package_code;
+	u32 shipping_method;
+} __packed;
+
 struct scmi_nxp_misc_init_ddr_partial_a2p {
 	u32 addr_low;
 	u32 addr_high;
@@ -39,30 +55,16 @@ struct scmi_nxp_misc_init_ddr_partial_p2a {
 	u32 reserved;
 } __packed;
 
-static int scmi_send_soc_info_msg(struct udevice *dev, void *buf)
+static int scmi_send_soc_info_msg(struct udevice *dev,
+				  struct scmi_nxp_misc_get_soc_info_p2a *response)
 {
-	struct {
-		s32 status;
-		u32 prod_status_and_brand;
-		u32 family;
-		u32 series;
-		u32 arm_cores_and_sram;
-		u32 device_variant;
-		u32 device_options;
-		u32 security;
-		u32 arm_core_speeds;
-		u32 fab_and_mask_rev;
-		u32 temp_range;
-		u32 package_code;
-		u32 shipping_method;
-	} __packed response;
 	struct scmi_msg msg = {
 		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_86,
 		.message_id	= MISC_SCMI_GET_SOC_INFO,
 		.in_msg		= NULL,
 		.in_msg_sz	= 0,
-		.out_msg	= (u8 *)&response,
-		.out_msg_sz	= sizeof(response),
+		.out_msg	= (u8 *)response,
+		.out_msg_sz	= sizeof(*response),
 	};
 	int ret;
 
@@ -74,13 +76,7 @@ static int scmi_send_soc_info_msg(struct udevice *dev, void *buf)
 	if (ret)
 		return ret;
 
-	ret = scmi_to_linux_errno(response.status);
-	if (ret)
-		return ret;
-
-	memcpy(buf, &response, sizeof(response));
-
-	return response.status;
+	return scmi_to_linux_errno(response->status);
 }
 
 static int scmi_send_init_ddr_partial_msg(struct udevice *dev,
@@ -111,16 +107,6 @@ static int scmi_send_init_ddr_partial_msg(struct udevice *dev,
 	return scmi_to_linux_errno(response.status);
 }
 
-static int scmi_misc_read(struct udevice *dev,
-			  int offset, void *buf, int size)
-{
-	if (offset == S32N79_SOC_INFO_OFFSET &&
-	    size == S32N79_SOC_INFO_SIZE)
-		return scmi_send_soc_info_msg(dev, buf);
-
-	return -EOPNOTSUPP;
-}
-
 static int scmi_misc_call(struct udevice *dev, int msgid,
 			  void *tx_msg, int tx_size,
 			  void *rx_msg, int rx_size)
@@ -130,13 +116,17 @@ static int scmi_misc_call(struct udevice *dev, int msgid,
 		if (!tx_msg || tx_size != sizeof(struct nxp_misc_ddr_init_req))
 			return -EINVAL;
 		return scmi_send_init_ddr_partial_msg(dev, tx_msg);
+	case NXP_MISC_CMD_GET_SOC_INFO:
+		if (!rx_msg ||
+		    rx_size != sizeof(struct scmi_nxp_misc_get_soc_info_p2a))
+			return -EINVAL;
+		return scmi_send_soc_info_msg(dev, rx_msg);
 	default:
 		return -EOPNOTSUPP;
 	}
 }
 
 static const struct misc_ops scmi_misc_ops = {
-	.read = scmi_misc_read,
 	.call = scmi_misc_call,
 };
 
