@@ -97,8 +97,8 @@ static int soc_s32n_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = misc_read(misc_dev, S32N79_SOC_INFO_OFFSET,
-			priv, S32N79_SOC_INFO_SIZE);
+	ret = misc_call(misc_dev, NXP_MISC_CMD_GET_SOC_INFO,
+			NULL, 0, priv, sizeof(*priv));
 	if (ret < 0) {
 		dev_err(dev, "Failed to read SoC Misc, err: %d", ret);
 		return ret;
