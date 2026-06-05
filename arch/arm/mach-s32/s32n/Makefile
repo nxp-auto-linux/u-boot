@@ -3,3 +3,4 @@
 
 obj-y += soc.o
 obj-$(CONFIG_OF_LIBFDT)	+= fdt.o
+obj-$(CONFIG_S32N_CMD_DDR_INIT) += cmd_ddr_init.o
