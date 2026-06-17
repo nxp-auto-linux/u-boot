@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:     GPL-2.0+
 /*
  * Copyright 2014-2016 Freescale Semiconductor, Inc.
- * Copyright 2017,2019-2025 NXP
+ * Copyright 2017,2019-2026 NXP
  */
 
 #include <common.h>
@@ -348,7 +348,7 @@ static int enable_scmi_gpio(void *blob)
 	}
 
 	/* SCMI GPIO isn't enabled for U-Boot */
-	if (!ofnode_is_available(node))
+	if (!ofnode_is_enabled(node))
 		return 0;
 
 	node = ofnode_by_compatible(ofnode_null(), s32cc_gpio_compatible);
@@ -359,7 +359,7 @@ static int enable_scmi_gpio(void *blob)
 	}
 
 	/* Skip if default GPIO node is used */
-	if (ofnode_is_available(node))
+	if (ofnode_is_enabled(node))
 		return 0;
 
 	ret = disable_siul2_gpio_node(blob, &phandle);
