@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2023-2024 NXP
+ * Copyright 2023-2024, 2026 NXP
  */
 
 #include <generic-phy.h>
@@ -227,7 +227,7 @@ struct eqos_config {
 	int tx_fifo_size;
 	int rx_fifo_size;
 	unsigned int axi_bus_width;
-	phy_interface_t (*interface)(struct udevice *dev);
+	phy_interface_t (*interface)(const struct udevice *dev);
 	struct eqos_ops *ops;
 	u32 quirks;
 };
