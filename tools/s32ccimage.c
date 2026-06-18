@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
-/* Copyright 2019-2022, 2024 NXP */
+/* Copyright 2019-2022, 2024, 2026 NXP */
 #include <ctype.h>
 #include <image.h>
 #include <imagetool.h>
@@ -1030,24 +1030,23 @@ static int push_to_dcd_array(uint32_t data)
 {
 	size_t elem;
 	size_t elem_size = sizeof(iconfig.dcd.data[0]);
-	void *backup;
+	size_t new_size;
+	void *tmp;
 
 	if (iconfig.dcd.allocated_size <= iconfig.dcd.size + elem_size) {
-		if (!iconfig.dcd.allocated_size)
-			iconfig.dcd.allocated_size = 2 * elem_size;
-		else
-			iconfig.dcd.allocated_size *= 2;
+		new_size = iconfig.dcd.allocated_size ?
+			   iconfig.dcd.allocated_size * 2 : 2 * elem_size;
+		tmp = realloc(iconfig.dcd.data, new_size);
 
-		backup = iconfig.dcd.data;
-		iconfig.dcd.data = realloc(backup, iconfig.dcd.allocated_size);
-		if (!iconfig.dcd.data) {
-			free(backup);
+		if (!tmp) {
 			fprintf(stderr,
 				"Failed to allocate %zu bytes for DCD array\n",
-				iconfig.dcd.allocated_size);
-			iconfig.dcd.allocated_size = 0;
+				new_size);
 			return -ENOMEM;
 		}
+
+		iconfig.dcd.data = tmp;
+		iconfig.dcd.allocated_size = new_size;
 	}
 
 	elem = iconfig.dcd.size / elem_size;
