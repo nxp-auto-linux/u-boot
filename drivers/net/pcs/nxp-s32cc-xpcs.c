@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
- * Copyright 2022-2025 NXP
+ * Copyright 2022-2026 NXP
  *
  * Driver for XPCS side of the SerDes module present on S32CC platforms
  */
@@ -740,7 +740,7 @@ static int xpcs_init_mplla(struct s32cc_xpcs *xpcs)
 		val |= REF_CLK_DIV2;
 		val |= (RANGE_52_78_MHZ << REF_RANGE_OFF);
 	} else {
-		val |= (RANGE_26_53_MHZ << REF_RANGE_OFF);
+		val |= (RANGE_78_104_MHZ << REF_RANGE_OFF);
 	}
 
 	XPCS_WRITE_BITS(xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
