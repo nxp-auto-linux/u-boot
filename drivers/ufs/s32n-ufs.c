@@ -17,7 +17,23 @@
 #include "ufs.h"
 #include "ufshci-dwc.h"
 #include "ufshcd-dwc.h"
-#include "s32n-ufs.h"
+
+/* MPHY register definitions */
+#define MPHY_REG_LSB_MASK			0x00FF
+#define MPHY_REG_MSB_MASK			0xFF00
+
+/* MPHY specific register addresses */
+#define RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_0	0x3006
+#define RAWLANEN_DIG_PCS_XF_RX_OVRD_IN_1	0x3106
+
+/* Vendor specific attributes */
+#define CBRATESEL				0x8114
+
+/* TX FSM states */
+#define TX_FSM_HIBERN8				1
+
+/* CPort definitions */
+#define CPORT_0					0
 
 /* SCM Register Offsets. */
 #define SCM_ONE_US_TICK			0x2CU
