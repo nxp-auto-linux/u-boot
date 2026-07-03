@@ -170,6 +170,12 @@ config NXP_S32N
 config DEFAULT_DEVICE_TREE
 	default "s32"
 
+config DTB_FILE
+	string "Path to the DTB file used by the OS"
+	help
+	  Defines the path to the Device Tree Blob (DTB) file,
+	  which is used to populate the `fdt_file` environment variable.
+
 config SYS_LOAD_ADDR
 	default 0 if ARCH_S32N79
 	default 0x80000000
