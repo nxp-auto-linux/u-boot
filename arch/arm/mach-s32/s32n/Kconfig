@@ -1,13 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-# Copyright 2024 NXP
+# Copyright 2024,2026 NXP
 
 if NXP_S32N
-
-config DTB_FILE
-	string "Path to the DTB file used by the OS"
-	help
-	  Defines the path to the Device Tree Blob (DTB) file,
-	  which is used to populate the `fdt_file` environment variable.
 
 config S32N_CMD_DDR_INIT
 	bool "ddr_init - initialize a DDR region via NXP Misc SCMI"
