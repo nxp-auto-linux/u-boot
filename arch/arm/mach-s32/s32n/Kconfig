@@ -3,12 +3,6 @@
 
 if NXP_S32N
 
-config DTB_FILE
-	string "Path to the DTB file used by the OS"
-	help
-	  Defines the path to the Device Tree Blob (DTB) file,
-	  which is used to populate the `fdt_file` environment variable.
-
 config LMB_MAX_REGIONS
 	default 16
 
