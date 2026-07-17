@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-# Copyright 2023-2024 NXP
+# Copyright 2023-2024, 2026 NXP
 
 """This script does the required DT changes for switching to SCMI-based GPIO,
    Pinctrl and NVMEM drivers."""
@@ -11,7 +11,7 @@ import pathlib
 import fdt
 
 SIUL2_PINCTRL_NAME = "siul2-pinctrl@4009c240"
-SIUL2_GPIO_NAME = "siul2-gpio@4009d700"
+SIUL2_GPIO_NAME = "siul2-gpio@4009d300"
 SCMI_PINCTRL_NAME = "protocol@80"
 SCMI_GPIO_NAME = "protocol@81"
 SCMI_NVMEM_NAME = "protocol@82"
