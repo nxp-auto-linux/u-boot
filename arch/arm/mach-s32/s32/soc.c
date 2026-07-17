@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2022-2025 NXP
+ * Copyright 2022-2026 NXP
  */
 #include <common.h>
 #include <cpu_func.h>
@@ -50,21 +50,13 @@ struct mm_region static_mem_map[S32_STATIC_MEM_MAP_MAX] = {
 };
 
 /*
- * Without forcing the ".data" section, this would get saved in ".bss". BSS
- * will be cleared soon after, so it's not suitable.
+ * FDT (NT_FW_CONFIG) address that TF-A passes in x0 at reset. It is written by
+ * the assembly save_boot_params() (save_boot_params.S) before the stack exists,
+ * and read back via get_dtb_addr() once U-Boot is running. Forced into ".data"
+ * (not ".bss"): .bss is cleared soon after save_boot_params runs. Non-static so
+ * the assembly routine can reach it.
  */
-static u64 nt_fw_dtb __section(".data");
-
-/*
- * Save the FDT address provided by TF-A in r0 at boot time. This function is
- * called from start.S.
- */
-void save_boot_params(u64 r0, u64 r1, u64 r2, u64 r3)
-{
-	nt_fw_dtb = r0;
-
-	save_boot_params_ret();
-}
+u64 nt_fw_dtb __section(".data");
 
 static inline u64 get_dtb_addr(void)
 {
