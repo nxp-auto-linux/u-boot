@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2021-2022,2024 NXP
+ * Copyright 2021-2022,2024, 2026 NXP
  */
 
 #include <config.h>
@@ -23,9 +23,12 @@
 
 #define SIUL2_NUM		2
 #define SIUL2_PAD_NAME_LEN	7
-#define SIUL2_GPIO_16_PAD_SIZE	16
 
-#define SIUL2_PGPDO(N)		(((N) ^ 1) * 2)
+/*
+ * GPDO and GPDI are arrays of 8-bit registers, one register per pad,
+ * holding the output (PDO) and input (PDI) value in bit 0.
+ */
+#define SIUL2_GPDO(N)		((N) ^ 3)
 
 struct gpio_range {
 	u16 start_gpio;
@@ -43,23 +46,9 @@ struct s32cc_gpio {
 	struct udevice *pinctrl;
 };
 
-static u16 siul2_pin2mask(int pin)
+static inline u32 siul2_get_pad_offset(unsigned int pin)
 {
-	/**
-	 * From Reference manual :
-	 * PGPDOx[PPDOy] = GPDO(x × 16) + (15 - y)[PDO_(x × 16) + (15 - y)]
-	 */
-	return BIT(15 - pin % SIUL2_GPIO_16_PAD_SIZE);
-}
-
-static unsigned int siul2_pin2pad(int pin)
-{
-	return pin / SIUL2_GPIO_16_PAD_SIZE;
-}
-
-static inline u32 siul2_get_pad_offset(unsigned int pad)
-{
-	return SIUL2_PGPDO(pad);
+	return SIUL2_GPDO(pin);
 }
 
 static void __iomem *siul2_get_pad_base_addr(struct udevice *dev,
@@ -97,26 +86,17 @@ static int s32cc_gpio_set_value_raw(struct udevice *dev, unsigned int gpio,
 {
 	int reg_offset;
 	void __iomem *addr;
-	u32 pad;
-	u16 mask, val;
 
 	if (value != 0 && value != 1)
 		return -EINVAL;
 
-	mask = siul2_pin2mask(gpio);
-	pad = siul2_pin2pad(gpio);
-	reg_offset = siul2_get_pad_offset(pad);
+	reg_offset = siul2_get_pad_offset(gpio);
 
 	addr = siul2_get_pad_base_addr(dev, gpio, false);
 	if (!addr)
 		return -EINVAL;
 
-	val = readw(((uintptr_t)addr) + reg_offset);
-	if (value)
-		val |= mask;
-	else
-		val &= ~mask;
-	writew(val, ((uintptr_t)addr) + reg_offset);
+	writeb(value ? 1 : 0, ((uintptr_t)addr) + reg_offset);
 
 	return 0;
 }
@@ -134,13 +114,9 @@ static int s32cc_gpio_get_value(struct udevice *dev, unsigned int gpio)
 {
 	int reg_offset;
 	void __iomem *addr;
-	u32 pad;
-	u16 mask;
 	bool input = true;
 
-	mask = siul2_pin2mask(gpio);
-	pad = siul2_pin2pad(gpio);
-	reg_offset = siul2_get_pad_offset(pad);
+	reg_offset = siul2_get_pad_offset(gpio);
 
 	if (s32cc_gpio_get_function(dev, gpio) == GPIOF_OUTPUT)
 		input = false;
@@ -149,7 +125,7 @@ static int s32cc_gpio_get_value(struct udevice *dev, unsigned int gpio)
 	if (!addr)
 		return -EINVAL;
 
-	return !!(readw(((uintptr_t)addr) + reg_offset) & mask);
+	return !!(readb(((uintptr_t)addr) + reg_offset) & 1);
 }
 
 static int s32cc_gpio_direction_input(struct udevice *dev, unsigned int gpio)
