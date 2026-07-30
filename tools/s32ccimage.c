@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <linux/compiler_attributes.h>
 #include <linux/sizes.h>
+#include <linux/stringify.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -22,9 +23,12 @@
 #define MBR_SIZE			0x200
 
 #define QSPI_IVT_OFFSET			0x0
-#define SD_IVT_OFFSET			0x1000
+/* Fallback SD/eMMC IVT offset when no SOC directive is given. */
+#define SD_IVT_OFFSET_DEFAULT		0x1000
 #define IVT_VERSION			(0x60)
 #define IVT_TAG				(0xd1)
+
+#define SOC_NAME_MAX_LEN		31
 
 #define QSPI_PARAMS_SIZE		(0x200U)
 #define QSPI_PARAMS_OFFSET		(0x200U)
@@ -154,6 +158,7 @@ struct image_config {
 	bool flash_boot;
 	bool a53_boot;
 	bool err051257;
+	uint32_t sd_ivt_offset;
 };
 
 struct line_parser {
@@ -217,6 +222,7 @@ static const char * const data_file_cmds[] = {
 
 static struct image_config iconfig = {
 	.a53_boot = true,
+	.sd_ivt_offset = SD_IVT_OFFSET_DEFAULT,
 };
 
 static struct program_image image_layout = {
@@ -693,15 +699,32 @@ static bool is_ivt_header(const void *ptr)
 	return true;
 }
 
+struct soc_ivt_offset {
+	const char *soc;
+	uint32_t sd_ivt_offset;
+};
+
+static const struct soc_ivt_offset soc_ivt_offsets[] = {
+	{ "s32g2",  0x1000 },
+	{ "s32g3",  0x1000 },
+	{ "s32r45", 0x1000 },
+	{ "s32r47", 0x1000 },
+};
+
+static uint32_t ivt_min_size(uint32_t offset)
+{
+	return offset + (uint32_t)sizeof(struct ivt);
+}
+
 static struct ivt *get_ivt_from_raw_blob(const unsigned char *ptr, int size,
 					 bool *qspi_ivt)
 {
-	uint32_t offset, min_size;
+	uint32_t offset;
+	size_t i;
 
 	offset = QSPI_IVT_OFFSET;
-	min_size = offset + sizeof(struct ivt);
 
-	if (size < min_size)
+	if (size < ivt_min_size(offset))
 		return NULL;
 
 	if (is_ivt_header(ptr)) {
@@ -710,20 +733,35 @@ static struct ivt *get_ivt_from_raw_blob(const unsigned char *ptr, int size,
 		return (struct ivt *)ptr;
 	}
 
-	offset = SD_IVT_OFFSET;
-	min_size = offset + sizeof(struct ivt);
+	for (i = 0; i < ARRAY_SIZE(soc_ivt_offsets); i++) {
+		offset = soc_ivt_offsets[i].sd_ivt_offset;
 
-	if (size < min_size)
-		return NULL;
+		if (size < ivt_min_size(offset))
+			continue;
 
-	ptr += offset;
-	if (is_ivt_header(ptr)) {
-		if (qspi_ivt)
-			*qspi_ivt = false;
-		return (struct ivt *)ptr;
+		if (is_ivt_header(ptr + offset)) {
+			if (qspi_ivt)
+				*qspi_ivt = false;
+			return (struct ivt *)(ptr + offset);
+		}
 	}
 
 	return NULL;
+}
+
+static int max_ivt_min_size(void)
+{
+	int max_size = (int)ivt_min_size(QSPI_IVT_OFFSET);
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(soc_ivt_offsets); i++) {
+		int cand = (int)ivt_min_size(soc_ivt_offsets[i].sd_ivt_offset);
+
+		if (cand > max_size)
+			max_size = cand;
+	}
+
+	return max_size;
 }
 
 struct layout_comp {
@@ -770,7 +808,6 @@ static void s32cc_print_header(const void *data)
 	const struct application_boot_code *app;
 	bool qspi_boot;
 	size_t i;
-	int min_size = SD_IVT_OFFSET + sizeof(struct ivt);
 	struct layout_comp ivt_comp, qspi, dcd, hse_fw,
 			   hse_img, app_hdr, app_comp;
 	struct layout_comp *comps[] = { &ivt_comp, &qspi, &dcd, &hse_fw,
@@ -779,7 +816,8 @@ static void s32cc_print_header(const void *data)
 	for (i = 0; i < ARRAY_SIZE(comps); i++)
 		memset(comps[i], 0, sizeof(*comps[i]));
 
-	ivt = get_ivt_from_raw_blob(data, min_size, &qspi_boot);
+	ivt = get_ivt_from_raw_blob(data, max_ivt_min_size(), &qspi_boot);
+
 	if (!ivt)
 		return;
 
@@ -916,7 +954,7 @@ static int parse_boot_cmd(char *line)
 		iconfig.flash_boot = true;
 		image_layout.ivt.offset = QSPI_IVT_OFFSET;
 	} else {
-		image_layout.ivt.offset = SD_IVT_OFFSET;
+		image_layout.ivt.offset = iconfig.sd_ivt_offset;
 	}
 
 	return 0;
@@ -1233,6 +1271,34 @@ static int parse_rsrvd_sram(char *line)
 	return 0;
 }
 
+static int parse_soc(char *line)
+{
+	char soc[SOC_NAME_MAX_LEN + 1];
+	size_t i;
+	int ret;
+
+	ret = sscanf(line, "%" __stringify(SOC_NAME_MAX_LEN) "s", soc);
+
+	if (ret != 1) {
+		fprintf(stderr, "Failed to interpret SOC line: %s\n", line);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(soc_ivt_offsets); i++) {
+		if (strcmp(soc, soc_ivt_offsets[i].soc))
+			continue;
+
+		iconfig.sd_ivt_offset = soc_ivt_offsets[i].sd_ivt_offset;
+		if (!iconfig.flash_boot)
+			image_layout.ivt.offset = iconfig.sd_ivt_offset;
+
+		return 0;
+	}
+
+	fprintf(stderr, "Unknown SOC: %s\n", soc);
+	return -EINVAL;
+}
+
 static const struct line_parser parsers[] = {
 	{
 		.tag = "BOOT_CORE",
@@ -1265,6 +1331,10 @@ static const struct line_parser parsers[] = {
 	{
 		.tag = "RSRVD_SRAM",
 		.parse = parse_rsrvd_sram,
+	},
+	{
+		.tag = "SOC",
+		.parse = parse_soc,
 	},
 };
 
