@@ -52,6 +52,15 @@ Available commands
 	Usage:
 		BOOT_FROM qspi
 
+2a. SOC
+	Selects the target SoC. This is used to derive the SD/eMMC IVT offset
+	expected by the BootROM.
+	It can accept the following arguments:
+		s32g2, s32g3, s32r45, s32r47
+
+	Usage:
+		SOC s32g2
+
 3. DCD
 	This will add device configuration data commands.
 
