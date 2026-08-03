@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
- * Copyright 2024-2025 NXP
+ * Copyright 2024-2026 NXP
  */
 #include <common.h>
 #include <env.h>
@@ -18,16 +18,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 
-#define UART_SIZE	0x1000
-
 struct mm_region dyn_mem_map[] = {
-#ifdef CONFIG_DEBUG_UART
-	{
-		CONFIG_DEBUG_UART_BASE, CONFIG_DEBUG_UART_BASE, UART_SIZE,
-		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
-		    PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	},
-#endif
 	{ /* sentinel */ }
 };
 

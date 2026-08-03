@@ -18,10 +18,27 @@
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 
-#define S32_MMU_HIGH_ADDR_PERIPH_INDEX	0
-#define S32_MMU_POST_RELOC_DDR_INDEX	1
-/* +1 for the sentinel entry and +1 for the highest peripheral addr region. */
-#define S32_STATIC_MEM_MAP_MAX (CONFIG_NR_DRAM_BANKS + 2)
+enum {
+	S32_MMU_HIGH_ADDR_PERIPH_INDEX,
+#ifdef CONFIG_DEBUG_UART
+	/*
+	 * Map the debug UART in the static map, which is live at MMU enable.
+	 * dyn_mem_map is applied too late (after the MMU is on), so early
+	 * console access would otherwise fault. Placed before the DDR region
+	 * so the post-relocation DRAM-bank fill never overwrites it.
+	 */
+	S32_MMU_DEBUG_UART_INDEX,
+#endif
+	S32_MMU_POST_RELOC_DDR_INDEX,
+	/*
+	 * Number of fixed regions: the highest peripheral addr region, the
+	 * DDR/_start region and, when enabled, the debug UART region.
+	 */
+	S32_STATIC_NR_FIXED_REGIONS,
+};
+
+/* +1 for the sentinel entry. */
+#define S32_STATIC_MEM_MAP_MAX (CONFIG_NR_DRAM_BANKS + S32_STATIC_NR_FIXED_REGIONS + 1)
 
 /*
  * Reserve space for DRAM regions that will be added by mem_map_from_dram_banks().
@@ -43,6 +60,13 @@ struct mm_region static_mem_map[S32_STATIC_MEM_MAP_MAX] = {
 		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
 			PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_BLOCK_AP_RO
 	},
+#ifdef CONFIG_DEBUG_UART
+	[S32_MMU_DEBUG_UART_INDEX] = {
+		CONFIG_DEBUG_UART_BASE, CONFIG_DEBUG_UART_BASE, PAGE_SIZE,
+		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	},
+#endif
 	[S32_MMU_POST_RELOC_DDR_INDEX] = {
 		(uintptr_t)_start, (uintptr_t)_start, PAGE_SIZE, DDR_ATTRS
 	},
