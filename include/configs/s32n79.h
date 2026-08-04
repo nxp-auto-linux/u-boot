@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause */
 /*
- * Copyright 2024-2025 NXP
+ * Copyright 2024-2026 NXP
  */
 #ifndef __S32N79_H
 #define __S32N79_H
@@ -41,7 +41,7 @@
 
 #if defined(CONFIG_XEN_SUPPORT)
 #  define XEN_COMMON_ENV \
-	"script_addr=0x80000000\0" \
+	"script_addr=" __stringify(CONFIG_SCRIPT_ADDR) "\0" \
 	"mmcpart_ext=" __stringify(MMC_PART_EXT) "\0" \
 
 #  if defined(CONFIG_SD_BOOT)

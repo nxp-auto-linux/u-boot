@@ -90,7 +90,7 @@
 
 #ifdef CONFIG_XEN_SUPPORT
 #  define XEN_EXTRA_ENV_SETTINGS \
-	"script_addr=0x80200000\0" \
+	"script_addr=" __stringify(CONFIG_SCRIPT_ADDR) "\0" \
 	"mmcpart_ext=" __stringify(MMC_PART_EXT) "\0" \
 
 #  define XEN_BOOTCMD \
