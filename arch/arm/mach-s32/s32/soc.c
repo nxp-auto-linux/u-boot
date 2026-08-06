@@ -251,6 +251,14 @@ int arch_cpu_init(void)
 {
 	int ret;
 
+	/*
+	 * In the 2026.04 linker script, .rela.dyn overlaps .bss (OVERLAY),
+	 * so BSS contains relocation data after pie_fixup runs. Clear it
+	 * here before any code relies on zero-initialized globals.
+	 * The crt0_64.S BSS clear only runs after board_init_f() returns.
+	 */
+	memset(__bss_start, 0, __bss_end - __bss_start);
+
 	gd->flags |= GD_FLG_SKIP_RELOC;
 
 	if (IS_ENABLED(CONFIG_DEBUG_UART))
