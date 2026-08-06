@@ -3,7 +3,12 @@
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
  * Copyright 2017, 2019, 2021-2022 NXP
  */
-#include <common.h>
+#include <config.h>
+#include <errno.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <stdio.h>
+#include <vsprintf.h>
 #include <clk.h>
 #include <dm.h>
 #include <errno.h>
