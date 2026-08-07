@@ -144,7 +144,6 @@ config NXP_S32N
 	select DM_DEVICE_REMOVE
 	select DM_MTD
 	select DM_SERIAL
-	select ENABLE_ARM_SOC_BOOT0_HOOK
 	select FSL_ENETC
 	select FSL_USDHC
 	select HUSH_PARSER
