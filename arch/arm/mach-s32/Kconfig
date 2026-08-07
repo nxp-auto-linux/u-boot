@@ -125,6 +125,7 @@ config NXP_S32N
 	imply OF_HAS_PRIOR_STAGE
 	imply PANIC_HANG
 	imply PCI
+	imply PCI_INIT_R
 	imply PCIE_ECAM_GENERIC
 	imply PHYLIB
 	imply NXP_MISC_SCMI
