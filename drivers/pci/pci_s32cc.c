@@ -890,6 +890,16 @@ void show_pcie_devices_aligned(struct udevice *bus, struct udevice *dev,
 	struct udevice *child;
 	struct pci_child_plat *pplat;
 
+	/*
+	 * Only devices bound on a PCI bus own a 'struct pci_child_plat'. A PCI
+	 * endpoint driver may bind further DM children of its own, which are
+	 * not PCI devices and therefore have no parent platdata. Skip those,
+	 * along with their subtree, instead of dereferencing NULL.
+	 */
+	pplat = dev_get_parent_plat(dev);
+	if (!pplat)
+		return;
+
 	for (i = depth; i >= 0; i--) {
 		is_last = (last_flag >> i) & 1;
 		if (i) {
@@ -905,7 +915,6 @@ void show_pcie_devices_aligned(struct udevice *bus, struct udevice *dev,
 		}
 	}
 
-	pplat = dev_get_parent_plat(dev);
 	printf("%02x:%02x.%02x", dev_seq(bus),
 	       PCI_DEV(pplat->devfn), PCI_FUNC(pplat->devfn));
 	if (dev_seq(bus) < PCI_MAX_BUS_NUM)
