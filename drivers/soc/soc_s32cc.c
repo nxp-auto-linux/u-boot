@@ -26,6 +26,7 @@ struct soc_s32cc_priv {
 struct soc_nvmem_cell {
 	const char *name;
 	u32 *data;
+	bool optional;
 };
 
 static int soc_s32cc_get_machine(struct udevice *dev, char *buf, int size)
@@ -99,7 +100,8 @@ static int read_soc_nvmem_cell(struct udevice *dev, struct soc_nvmem_cell *cell)
 
 	ret = nvmem_cell_get_by_name(dev, cell->name, &c);
 	if (ret) {
-		printf("Failed to get '%s' cell\n", cell->name);
+		if (!cell->optional)
+			printf("Failed to get '%s' cell\n", cell->name);
 		return ret;
 	}
 
@@ -124,7 +126,8 @@ static int soc_s32cc_probe(struct udevice *dev)
 		{ .name = "part_no", .data = &priv->part_number },
 		{ .name = "soc_major", .data = &priv->major },
 		{ .name = "soc_minor", .data = &priv->minor },
-		{ .name = "lockstep_enabled", .data = &lockstep_enabled},
+		{ .name = "lockstep_enabled", .data = &lockstep_enabled,
+		  .optional = true },
 	};
 	const char *subminor = "soc_subminor";
 	int ret;
