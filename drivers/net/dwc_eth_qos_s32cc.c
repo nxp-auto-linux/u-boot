@@ -33,6 +33,23 @@
 
 #define S32CC_DWC_QUIRK_SKIP_PHY_INTF_SELECT	BIT(0)
 
+/*
+ * The clk_set_rate() calls below only exist so that the M7 SRM clock driver
+ * enables the clock for this agent; the rate itself is already fixed by the
+ * SerDes/XPCS configuration. Providers that cannot set a rate used to report
+ * success, but clk_set_rate() now returns -ENOSYS when neither the clock nor
+ * any of its parents implements .set_rate. Such clocks are not an error here.
+ */
+static int s32cc_set_clk_rate(struct clk *clk, ulong rate)
+{
+	int ret = clk_set_rate(clk, rate);
+
+	if (ret == -ENOSYS)
+		return 0;
+
+	return ret;
+}
+
 static u32 s32cc_get_speed_advertised(int speed)
 {
 	switch (speed) {
@@ -230,7 +247,7 @@ static int eqos_restart_rx_clk_s32cc(struct udevice *dev)
 	 * clock that needs to be enabled by an agent.
 	 * Thus, set the rate for GMAC's RX clock before enabling it.
 	 */
-	ret = clk_set_rate(&eqos->clk_rx, 125 * 1000 * 1000);
+	ret = s32cc_set_clk_rate(&eqos->clk_rx, 125 * 1000 * 1000);
 	if (ret < 0) {
 		pr_err("clk_set_rate(rx_clk, 125MHz) failed: %d\n", ret);
 		return ret;
@@ -275,7 +292,7 @@ static int eqos_set_tx_clk_speed_s32cc(struct udevice *dev)
 		return ret;
 	}
 
-	ret = clk_set_rate(&eqos->clk_tx, rate);
+	ret = s32cc_set_clk_rate(&eqos->clk_tx, rate);
 	if (ret < 0) {
 		pr_err("clk_set_rate(tx_clk, %lu) failed: %d\n", rate, ret);
 		return ret;
@@ -316,7 +333,7 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 	 * clock that needs to be enabled by an agent.
 	 * Thus, set the rate for GMAC's RX clock before enabling it.
 	 */
-	ret = clk_set_rate(&eqos->clk_rx, 125 * 1000 * 1000);
+	ret = s32cc_set_clk_rate(&eqos->clk_rx, 125 * 1000 * 1000);
 	if (ret < 0) {
 		pr_err("clk_set_rate(clk_rx, 125MHz) failed: %d\n", ret);
 		goto err_disable_clk_master_bus;
@@ -330,7 +347,7 @@ static int eqos_start_clks_s32cc(struct udevice *dev)
 
 	debug("%s(dev=%p): %lu\n", __func__, dev, clk_get_rate(&eqos->clk_rx));
 
-	ret = clk_set_rate(&eqos->clk_tx, 125 * 1000 * 1000);
+	ret = s32cc_set_clk_rate(&eqos->clk_tx, 125 * 1000 * 1000);
 	if (ret < 0) {
 		pr_err("clk_set_rate(clk_tx, 125MHz) failed: %d\n", ret);
 		goto err_disable_clk_rx;
