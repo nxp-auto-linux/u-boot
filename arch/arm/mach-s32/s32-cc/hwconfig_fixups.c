@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ or BSD-3-Clause
 /*
- * Copyright 2022-2025 NXP
+ * Copyright 2022-2026 NXP
  */
 
 #include <common.h>
@@ -562,6 +562,16 @@ static int set_pcie_serdes_lines(struct dts_node *node, unsigned int id)
 		return ret;
 
 	return 0;
+}
+
+static bool serdes_node_missing(struct dts_node *root, unsigned int id)
+{
+	struct dts_node node;
+
+	if (!root)
+		return false;
+
+	return node_by_alias(root, &node, SERDES_ALIAS_FMT, id) != 0;
 }
 
 static bool get_skip_serdes_config(struct dts_node *root, unsigned int id)
@@ -1181,6 +1191,9 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
 	};
 
 	for (id = 0; id <= 1; id++) {
+		if (serdes_node_missing(&root, id))
+			continue;
+
 		/* Go to next SerDes if 'skip' is true */
 		if (get_skip_serdes_config(&root, id))
 			continue;
