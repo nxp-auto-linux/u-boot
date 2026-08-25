@@ -33,6 +33,12 @@
 #define SCSI_PART_FDT			"0:3"
 #define SCSI_PART_IMAGE			"1:1"
 #define SCSI_PART_ROOTFS		"1:2"
+/*
+ * Fallback only. The UFS device exposes many LUNs which Linux probes
+ * asynchronously, so the sdX letter assigned to a given LUN is not stable
+ * across boots. 'ufs_finduuid' below reads the rootfs PARTUUID from the GPT and
+ * overrides 'scsiroot' with it; this value is used only if that lookup fails.
+ */
 #define SCSI_ROOT			"/dev/sdb2"
 
 #define FDT_FIXUP ";"
@@ -69,10 +75,13 @@
 	"loadufsfdt=fatload scsi ${scsi_part_fdt} ${fdt_addr} " \
 		 " ${fdt_file}; run fdt_override;\0" \
 	"loadufsimage=fatload scsi ${scsi_part_image} ${loadaddr} ${image}\0" \
+	"ufs_finduuid=part uuid scsi ${scsi_part_rootfs} uuid && " \
+		"setenv scsiroot PARTUUID=${uuid} rootwait rw\0" \
 	"ufsargs=setenv bootargs console=${console},${baudrate}" \
 		" root=${scsiroot} " LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
 		EXTRA_BOOT_ARGS "\0" \
 	"ufsboot=echo Booting from ufs ...; " \
+		"run ufs_finduuid; " \
 		"run ufsargs; " \
 		"if run loadufsfdt; then " \
 			"run fdt_fixups; " \
