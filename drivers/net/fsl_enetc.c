@@ -7,6 +7,7 @@
 #include <clk.h>
 #include <cpu_func.h>
 #include <dm.h>
+#include <dm/device_compat.h>
 #include <errno.h>
 #include <fdt_support.h>
 #include <malloc.h>
@@ -528,6 +529,20 @@ static int enetc_config_phy(struct udevice *dev)
 	return phy_config(priv->phy);
 }
 
+static int enetc_pci_check_mem_enabled(struct udevice *dev)
+{
+	u16 cmd;
+	int ret = dm_pci_read_config16(dev, PCI_COMMAND, &cmd);
+
+	if (ret)
+		return ret;
+
+	if (!(cmd & PCI_COMMAND_MEMORY))
+		return -EBUSY;
+
+	return 0;
+}
+
 /*
  * Probe ENETC driver:
  * - initialize port and station interface BARs
@@ -564,6 +579,16 @@ static int enetc_probe(struct udevice *dev)
 	priv->port_regs = priv->regs_base + ENETC_PORT_REGS_OFF;
 
 	dm_pci_clrset_config16(dev, PCI_COMMAND, 0, PCI_COMMAND_MEMORY);
+
+	res = enetc_pci_check_mem_enabled(dev);
+	if (res) {
+		/* Memory space decoding is disabled */
+		dev_err(dev, "Failed to enable I/O memory (%d)\n", res);
+
+		free(priv->enetc_txbd);
+		free(priv->enetc_rxbd);
+		return res;
+	}
 
 	enetc_start_pcs(dev);
 	if (priv->if_type == PHY_INTERFACE_MODE_NA)
