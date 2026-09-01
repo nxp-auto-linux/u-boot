@@ -33,8 +33,22 @@
 
 /* Vendor specific attributes */
 #define RXSQCONTROL				0x8009
+#define RXC10DIRECTCONF7			0x8010
 #define RXRHOLDCTRLOPT				0x8013
 #define CBRATESEL				0x8114
+#define MPLLBFRACNDENLSB			0x8141
+#define V2IDIV5DIV2MPLLB			0x8160
+
+/* TX Equalization Main/Post values for various de-emphasis and amplitudes. */
+#define TX_EQ_MAIN_DE00_LA			0x8014
+#define TX_EQ_MAIN_DE03_LA			0x801A
+#define TX_EQ_MAIN_DE06_SA			0x801D
+#define TX_EQ_POST_DE06_SA			0x801E
+#define TX_EQ_MAIN_DE06_LA			0x8020
+#define TX_EQ_POST_DE06_LA			0x8021
+
+/* TX PHY direct iboost/rboost configuration. */
+#define TXC10_IBOOST_RBOOST_CONF		0x8024
 
 /* TX FSM states */
 #define TX_FSM_HIBERN8				1
@@ -184,6 +198,9 @@ static int ufs_s32n_phy_configure(struct ufs_hba *hba)
 {
 	int ret = 0;
 
+	/* Clock control. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBREFCLKCTRL2, 0), 0x80);
+
 	/* RX squelch control. */
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXSQCONTROL,
 			      UIC_ARG_MPHY_RX_GEN_SEL_INDEX(0)), 0x1);
@@ -195,7 +212,56 @@ static int ufs_s32n_phy_configure(struct ufs_hba *hba)
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXRHOLDCTRLOPT,
 			      UIC_ARG_MPHY_RX_GEN_SEL_INDEX(1)), 0x2);
 
+	/* CR parallel selection. */
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBCRCTRL, 0), 0x1);
+
+	/* TX Equalization Main de-emphasis 0db, large amplitude. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE00_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x27);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE00_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x27);
+	/* TX Equalization Main de-emphasis 3.5db, large amplitude. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE03_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x21);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE03_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x21);
+	/* TX Equalization Main de-emphasis 6db, small amplitude. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE06_SA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x1D);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE06_SA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x1D);
+	/* TX Equalization Main de-emphasis 6db, large amplitude. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE06_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x1D);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_MAIN_DE06_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x1D);
+	/* TX Equalization Post de-emphasis 6db, small amplitude. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_POST_DE06_SA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x0A);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_POST_DE06_SA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x0A);
+	/* TX Equalization Post de-emphasis 6db, large amplitude. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_POST_DE06_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x0A);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TX_EQ_POST_DE06_LA,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x0A);
+
+	/* TX PHY direct iboost/rboost configuration. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TXC10_IBOOST_RBOOST_CONF,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(0)), 0x0);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(TXC10_IBOOST_RBOOST_CONF,
+			      UIC_ARG_MPHY_TX_GEN_SEL_INDEX(1)), 0x0);
+
+	/* RX PHY direct configuration 7. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXC10DIRECTCONF7,
+			      UIC_ARG_MPHY_RX_GEN_SEL_INDEX(0)), 0x3);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(RXC10DIRECTCONF7,
+			      UIC_ARG_MPHY_RX_GEN_SEL_INDEX(1)), 0x3);
+
+	/* CB PHY direct MPLLB configuration. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(MPLLBFRACNDENLSB, 0), 0x1);
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(V2IDIV5DIV2MPLLB, 0), 0x1);
+
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
 
 	return ret;
@@ -253,12 +319,15 @@ static int ufs_s32n_phy_initial_calib(struct ufs_hba *hba)
 {
 	int ret = 0;
 
-	/* Clock Control */
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(CBREFCLKCTRL2, 0), 0x80);
+	/* Bypass RX-AFE calibrations. */
+	ret |= ufs_s32n_phy_write_cr(hba, 0x401C, 0x4);
+	ret |= ufs_s32n_phy_write_cr(hba, 0x411C, 0x4);
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
 
-	ret |= ufs_s32n_phy_write_cr(hba, 0x401C, 0x6);
-	ret |= ufs_s32n_phy_write_cr(hba, 0x411C, 0x6);
+	/* Enable MPHY. */
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYDISABLE, 0), 0x0);
+
+	/* Write ATT offset compensation code to internal DAC. */
 	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x1);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x1);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x10AF, 0x8E);
@@ -269,6 +338,8 @@ static int ufs_s32n_phy_initial_calib(struct ufs_hba *hba)
 	ret |= ufs_s32n_phy_write_cr(hba, 0x11B8, 0x1);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x0);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x0);
+
+	/* Write CTLE offset compensation code to internal DAC. */
 	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x1);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x1);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x10AF, 0x71);
@@ -279,8 +350,12 @@ static int ufs_s32n_phy_initial_calib(struct ufs_hba *hba)
 	ret |= ufs_s32n_phy_write_cr(hba, 0x11B8, 0x1);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x10B0, 0x0);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x11B0, 0x0);
+
+	/* Generic FW calibration configurations. */
 	ret |= ufs_s32n_phy_write_cr(hba, 0x404D, 0x100);
 	ret |= ufs_s32n_phy_write_cr(hba, 0x414D, 0x100);
+
+	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
 
 	return ret;
 }
@@ -361,9 +436,6 @@ static int ufs_s32n_link_startup_pre_change(struct ufs_hba *hba)
 		dev_err(dev, "UFS MPHY failed initial calibration!\n");
 		return ret;
 	}
-
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYDISABLE, 0), 0x0);
-	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VS_MPHYCFGUPDT, 0), 0x1);
 
 	ret |= ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(N_DEVICEID, 0), 0x0);
 
