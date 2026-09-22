@@ -123,6 +123,7 @@ config NXP_S32N
 	imply PCI_INIT_R
 	imply PCIE_ECAM_GENERIC
 	imply PHYLIB
+	imply NXP_DDR_SCMI
 	imply NXP_MISC_SCMI
 	imply S32N_CMD_DDR_INIT
 	imply SCMI_FIRMWARE
