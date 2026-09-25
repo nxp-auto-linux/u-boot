@@ -7,8 +7,8 @@ config LMB_MAX_REGIONS
 	default 16
 
 config S32N_CMD_DDR_INIT
-	bool "ddr_init - initialize a DDR region via NXP Misc SCMI"
-	depends on NXP_MISC_SCMI
+	bool "ddr_init - initialize a DDR region via the NXP DDR SCMI protocol"
+	depends on NXP_DDR_SCMI
 	help
 	  Adds the 'ddr_init' command, which brings up a high DDR region
 	  on NXP S32N SoCs by asking the FSS firmware to initialize it. This
