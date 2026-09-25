@@ -73,6 +73,7 @@ obj-$(CONFIG_S32CC_CMU) += s32cc_cmu.o
 obj-$(CONFIG_SANDBOX) += syscon_sandbox.o misc_sandbox.o
 obj-$(CONFIG_SCMI_NVMEM) += nvmem-scmi.o
 obj-$(CONFIG_NXP_MISC_SCMI) += nxp-misc-scmi.o
+obj-$(CONFIG_NXP_DDR_SCMI) += nxp-ddr-scmi.o
 obj-$(CONFIG_SIFIVE_OTP) += sifive-otp.o
 obj-$(CONFIG_SMSC_LPC47M) += smsc_lpc47m.o
 obj-$(CONFIG_SMSC_SIO1007) += smsc_sio1007.o

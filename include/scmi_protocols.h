@@ -28,6 +28,7 @@ enum scmi_std_protocol {
 	SCMI_PROTOCOL_ID_GPIO = 0x81,
 	SCMI_PROTOCOL_ID_NVMEM = 0x82,
 	SCMI_PROTOCOL_ID_NXP_MISC = 0x86,
+	SCMI_PROTOCOL_ID_NXP_DDR = 0x8b,
 };
 
 enum scmi_status_code {
