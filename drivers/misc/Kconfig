@@ -585,6 +585,16 @@ config NXP_MISC_SCMI
 	  miscellaneous data provided by the SCMI Platform via the NXP MISC
 	  Vendor Extension protocol.
 
+config NXP_DDR_SCMI
+	bool "Enable NXP SCMI DDR driver"
+	depends on MISC
+	select SCMI_FIRMWARE
+	select SCMI_ID_VENDOR_8B
+	help
+	  Enable this option to allow U-Boot, as an SCMI Agent, to discover
+	  and initialize DDR regions provided by the SCMI Platform via the
+	  NXP DDR Vendor Extension protocol (0x8B).
+
 config I2C_EEPROM
 	bool "Enable driver for generic I2C-attached EEPROMs"
 	depends on MISC
