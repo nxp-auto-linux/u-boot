@@ -3,7 +3,8 @@
  * Copyright 2026 NXP
  *
  * Ask the FSS firmware to initialize high DDR regions on S32N7 via the
- * NXP DDR SCMI vendor protocol.
+ * NXP DDR SCMI vendor protocol, and record the DRAM banks in the /memory node
+ * of the OS's DT.
  *
  * Only the synchronous DDR_PARTIAL_DRAM_INIT is used. Its reply should mean
  * the work is done, but FSS sends it as soon as the request is queued. As a
@@ -20,6 +21,7 @@
 #include <s32n79-scmi-ddr.h>
 #include <time.h>
 #include <vsprintf.h>
+#include <asm/global_data.h>
 #include <dm/uclass.h>
 #include <linux/delay.h>
 #include <linux/iopoll.h>
@@ -27,6 +29,8 @@
 #include <linux/sizes.h>
 #include <linux/time.h>
 #include <linux/types.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #define S32N_DDR_REQ_ALIGN		SZ_128M
 #define S32N_DDR_BUSY_TIMEOUT_MS	5000
@@ -267,9 +271,9 @@ static int ddr_init_parse_range(char *const argv[], u64 *addr, u64 *size)
 }
 
 /*
- * Queue the jobs to run and return how many, or a negative error. 'all' skips
- * the regions with ECC off, which need no init; an explicit range is always
- * initialized.
+ * Queue the jobs to run and return how many, or a negative error. 'all' queues
+ * no job for the regions with ECC off, but they are still published; an
+ * explicitly requested range is always initialized.
  */
 static int ddr_init_collect(const struct nxp_ddr_discovery *disc, bool all,
 			    u64 addr, u64 size, struct ddr_init_queue *queues)
@@ -296,7 +300,7 @@ static int ddr_init_collect(const struct nxp_ddr_discovery *disc, bool all,
 	for (i = 0; i < disc->count; i++) {
 		r = &disc->regions[i];
 		if (!r->ecc_enabled) {
-			printf("ddr_init: @0x%llx size=0x%llx inst=%u skipped (ECC off)\n",
+			printf("ddr_init: @0x%llx size=0x%llx inst=%u no init needed (ECC off)\n",
 			       r->start, r->size, r->instance);
 			continue;
 		}
@@ -305,6 +309,102 @@ static int ddr_init_collect(const struct nxp_ddr_discovery *disc, bool all,
 	}
 
 	return n;
+}
+
+static bool ddr_init_bank_is_free(int bank)
+{
+	return !gd->bd->bi_dram[bank].start && !gd->bd->bi_dram[bank].size;
+}
+
+/*
+ * Merge into [*addr, *end) one bank that overlaps or is adjacent to it, and
+ * free that bank. Return false if there is none.
+ */
+static bool ddr_init_merge_bank(u64 *addr, u64 *end)
+{
+	struct bd_info *bd = gd->bd;
+	u64 b_start, b_end;
+	int bank;
+
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (ddr_init_bank_is_free(bank))
+			continue;
+
+		b_start = bd->bi_dram[bank].start;
+		b_end = b_start + bd->bi_dram[bank].size;
+		if (*addr <= b_end && b_start <= *end) {
+			*addr = min(*addr, b_start);
+			*end = max(*end, b_end);
+			bd->bi_dram[bank].start = 0;
+			bd->bi_dram[bank].size = 0;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+ * Store an initialized region as a DRAM bank in the OS DT's /memory node.
+ * The region gains no MMU mapping: U-Boot must not touch it.
+ */
+static int ddr_init_publish_bank(u64 addr, u64 size)
+{
+	struct bd_info *bd = gd->bd;
+	u64 end = addr + size;
+	int bank, free_bank = -1;
+
+	/* A merged range can reach banks that did not touch the old one. */
+	while (ddr_init_merge_bank(&addr, &end))
+		;
+
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (ddr_init_bank_is_free(bank)) {
+			free_bank = bank;
+			break;
+		}
+	}
+
+	if (free_bank < 0) {
+		printf("ddr_init: no free DRAM bank for 0x%llx + 0x%llx (CONFIG_NR_DRAM_BANKS=%d)\n",
+		       addr, end - addr, CONFIG_NR_DRAM_BANKS);
+		return -ENOSPC;
+	}
+
+	bd->bi_dram[free_bank].start = addr;
+	bd->bi_dram[free_bank].size = end - addr;
+
+	return 0;
+}
+
+/* Publish every queued job and, for 'all', the regions with ECC off. */
+static int ddr_init_publish(const struct ddr_init_queue *queues,
+			    const struct nxp_ddr_discovery *disc, bool all)
+{
+	const struct nxp_ddr_region *r;
+	unsigned int i;
+	u32 inst;
+	int ret;
+
+	for (inst = 0; inst < NXP_DDR_MAX_INSTANCES; inst++) {
+		for (i = 0; i < queues[inst].count; i++) {
+			ret = ddr_init_publish_bank(queues[inst].jobs[i].addr,
+						    queues[inst].jobs[i].size);
+			if (ret)
+				return ret;
+		}
+	}
+
+	for (i = 0; all && i < disc->count; i++) {
+		r = &disc->regions[i];
+		if (r->ecc_enabled)
+			continue;
+		ret = ddr_init_publish_bank(r->start, r->size);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
 }
 
 static int do_ddr_init(struct cmd_tbl *cmdtp, int flag, int argc,
@@ -339,19 +439,24 @@ static int do_ddr_init(struct cmd_tbl *cmdtp, int flag, int argc,
 	n = ddr_init_collect(&disc, all, addr, size, queues);
 	if (n < 0)
 		return CMD_RET_FAILURE;
-	if (!n) {
-		printf("ddr_init: nothing to initialize\n");
-		return CMD_RET_SUCCESS;
-	}
 
 	start = get_timer(0);
-	ret = ddr_init_run_jobs(dev, queues);
-	if (ret) {
-		printf("ddr_init: stopped (%d)\n", ret);
-		return CMD_RET_FAILURE;
+	if (n) {
+		ret = ddr_init_run_jobs(dev, queues);
+		if (ret) {
+			printf("ddr_init: stopped (%d)\n", ret);
+			return CMD_RET_FAILURE;
+		}
 	}
 
-	printf("ddr_init: %d request(s) done in %lu ms\n", n, get_timer(start));
+	if (ddr_init_publish(queues, &disc, all))
+		return CMD_RET_FAILURE;
+
+	if (n)
+		printf("ddr_init: %d request(s) done in %lu ms\n", n,
+		       get_timer(start));
+	else
+		printf("ddr_init: nothing to initialize\n");
 
 	return CMD_RET_SUCCESS;
 }
@@ -359,10 +464,10 @@ static int do_ddr_init(struct cmd_tbl *cmdtp, int flag, int argc,
 U_BOOT_CMD(ddr_init, 3, 0, do_ddr_init,
 	   "initialize high DDR via the NXP DDR SCMI protocol",
 	   "all\n"
-	   "    - initialize every region FSS reports as uninitialized, skipping\n"
-	   "      those with ECC off; works on the DDR instances in parallel\n"
+	   "    - initialize every region FSS reports as available, in parallel\n"
+	   "      on the SMMS DDR controllers (those with ECC off need no init),\n"
+	   "      and add them all to the /memory node passed to the OS\n"
 	   "ddr_init <addr> <size>\n"
 	   "    - initialize <size> bytes at <addr>, both 128 MiB-aligned and\n"
 	   "      inside one reported region (a range outside prints them).\n"
-	   "      <addr> is hex; <size> is hex, decimal or has a K/M/G suffix.\n"
-	   "      Example: ddr_init 0x8800000000 1G");
+	   "      <addr> is hex; <size> is hex, decimal or has a K/M/G suffix.");
