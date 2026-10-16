@@ -58,6 +58,10 @@ struct ddr_init_call {
 	struct nxp_ddr_init_req req;
 };
 
+/* The last discovery reply, listed again by 'ddr_init discover'. */
+static struct nxp_ddr_discovery ddr_init_disc;
+static bool ddr_init_disc_valid;
+
 static const struct nxp_ddr_region *
 ddr_init_find_region(const struct nxp_ddr_discovery *disc, u64 addr, u64 size)
 {
@@ -78,7 +82,9 @@ static void ddr_init_print_regions(const struct nxp_ddr_discovery *disc)
 	const struct nxp_ddr_region *r;
 	unsigned int i;
 
-	printf("ddr_init: uninitialized regions:\n");
+	printf("ddr_init: available regions:\n");
+	if (!disc->count)
+		printf("    none\n");
 	for (i = 0; i < disc->count; i++) {
 		r = &disc->regions[i];
 		printf("    0x%llx + 0x%llx (instance %u, ECC %s)\n",
@@ -285,7 +291,7 @@ static int ddr_init_collect(const struct nxp_ddr_discovery *disc, bool all,
 	if (!all) {
 		r = ddr_init_find_region(disc, addr, size);
 		if (!r) {
-			printf("ddr_init: 0x%llx + 0x%llx is not inside one uninitialized region\n",
+			printf("ddr_init: 0x%llx + 0x%llx is not inside one available region\n",
 			       addr, size);
 			ddr_init_print_regions(disc);
 			return -EINVAL;
@@ -415,11 +421,18 @@ static int do_ddr_init(struct cmd_tbl *cmdtp, int flag, int argc,
 	u64 addr = 0, size = 0;
 	struct udevice *dev;
 	ulong start;
+	bool all, discover;
 	int n, ret;
-	bool all;
 
 	all = argc == 2 && !strcmp(argv[1], "all");
-	if (!all && (argc != 3 || ddr_init_parse_range(argv, &addr, &size)))
+	discover = argc == 2 && !strcmp(argv[1], "discover");
+	if (discover && ddr_init_disc_valid) {
+		ddr_init_print_regions(&ddr_init_disc);
+		return CMD_RET_SUCCESS;
+	}
+
+	if (!all && !discover &&
+	    (argc != 3 || ddr_init_parse_range(argv, &addr, &size)))
 		return CMD_RET_USAGE;
 
 	ret = uclass_get_device_by_driver(UCLASS_MISC,
@@ -434,6 +447,14 @@ static int do_ddr_init(struct cmd_tbl *cmdtp, int flag, int argc,
 	if (ret) {
 		printf("ddr_init: DDR region discovery failed (%d)\n", ret);
 		return CMD_RET_FAILURE;
+	}
+
+	ddr_init_disc = disc;
+	ddr_init_disc_valid = true;
+
+	if (discover) {
+		ddr_init_print_regions(&disc);
+		return CMD_RET_SUCCESS;
 	}
 
 	n = ddr_init_collect(&disc, all, addr, size, queues);
@@ -463,7 +484,9 @@ static int do_ddr_init(struct cmd_tbl *cmdtp, int flag, int argc,
 
 U_BOOT_CMD(ddr_init, 3, 0, do_ddr_init,
 	   "initialize high DDR via the NXP DDR SCMI protocol",
-	   "all\n"
+	   "discover\n"
+	   "    - list the DDR regions FSS reports as available\n"
+	   "ddr_init all\n"
 	   "    - initialize every region FSS reports as available, in parallel\n"
 	   "      on the SMMS DDR controllers (those with ECC off need no init),\n"
 	   "      and add them all to the /memory node passed to the OS\n"
