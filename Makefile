@@ -1531,7 +1531,7 @@ endif
 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
 
 ifeq ($(CONFIG_NXP_S32CC),y)
-%.cfgout: FORCE
+%.cfgout: prepare FORCE
 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
 endif
 
