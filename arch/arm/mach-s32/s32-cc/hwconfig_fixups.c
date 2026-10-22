@@ -569,14 +569,32 @@ static int set_pcie_serdes_lines(struct dts_node *node, unsigned int id)
 	return 0;
 }
 
+/*
+ * Each SerDes instance is checked on its own, so the device tree may
+ * describe both of them, none of them, or only one of them (for example
+ * only serdes1). A missing instance is expected and is skipped silently,
+ * so node_by_alias() is not used here: it reports a missing alias as an
+ * error.
+ *
+ * Both lookups below resolve the alias and also fail when the alias points
+ * to a node that does not exist.
+ */
 static bool serdes_node_missing(struct dts_node *root, unsigned int id)
 {
-	struct dts_node node;
+	char alias_name[MAX_PATH_SIZE];
+	int ret;
 
 	if (!root)
 		return false;
 
-	return node_by_alias(root, &node, SERDES_ALIAS_FMT, id) != 0;
+	ret = snprintf(alias_name, sizeof(alias_name), SERDES_ALIAS_FMT, id);
+	if (ret < 0 || (size_t)ret >= sizeof(alias_name))
+		return true;
+
+	if (root->fdt)
+		return fdt_path_offset(root->blob, alias_name) < 0;
+
+	return !ofnode_valid(ofnode_path(alias_name));
 }
 
 static bool get_skip_serdes_config(struct dts_node *root, unsigned int id)
