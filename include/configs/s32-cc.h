@@ -53,8 +53,6 @@
 #define S32CC_SERVERIP			""
 #endif
 
-#define CONFIG_HWCONFIG
-
 #if CONFIG_CONS_INDEX == 1
 #  define S32_LINFLEX_MODULE 0
 #elif CONFIG_CONS_INDEX == 2
