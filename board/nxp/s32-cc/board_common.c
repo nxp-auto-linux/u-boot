@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2022-2025 NXP
+ * Copyright 2022-2026 NXP
  */
 #include <config.h>
 #include <env.h>
@@ -25,5 +25,5 @@ void board_cleanup_before_linux(void)
 
 	ret = scmi_reset_agent();
 	if (ret)
-		pr_err("Failed to reset SCMI agent's settings\n");
+		pr_err("Failed to reset SCMI agent's settings (%d)\n", ret);
 }
