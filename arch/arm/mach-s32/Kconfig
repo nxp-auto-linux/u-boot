@@ -109,6 +109,7 @@ config NXP_S32N
 	imply DM_SPI_FLASH
 	imply FS_FAT
 	imply FSL_DSPI
+	imply FSL_ENETC
 	imply LOG
 	imply MISC
 	imply MMC_HS400_ES_SUPPORT
@@ -124,6 +125,7 @@ config NXP_S32N
 	imply NXP_DDR_SCMI
 	imply NXP_MISC_SCMI
 	imply S32N_CMD_DDR_INIT
+	imply S32N_UFS
 	imply SCMI_FIRMWARE
 	imply SCSI
 	imply SPI
@@ -131,6 +133,7 @@ config NXP_S32N
 	imply SPI_FLASH_MTD
 	imply SPI_FLASH_SFDP_SUPPORT
 	imply SPI_MEM
+	imply SYS_I2C_IMX_LPI2C
 	imply UFS
 	select CLK
 	select CLK_CCF
@@ -139,7 +142,6 @@ config NXP_S32N
 	select DM_DEVICE_REMOVE
 	select DM_MTD
 	select DM_SERIAL
-	select FSL_ENETC
 	select FSL_USDHC
 	select HUSH_PARSER
 	select MACH_S32
@@ -152,9 +154,7 @@ config NXP_S32N
 	select SOC_DEVICE
 	select SYSRESET
 	select PL01X_SERIAL
-	select S32N_UFS
 	select SPECIFY_CONSOLE_INDEX
-	select SYS_I2C_IMX_LPI2C
 
 config S32CC_HIGH_SPEED_PERIPHERALS
 	bool
