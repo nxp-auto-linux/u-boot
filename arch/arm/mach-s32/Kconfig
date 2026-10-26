@@ -86,6 +86,7 @@ config NXP_S32CC
 config NXP_S32N
 	bool
 	imply ARCH_MISC_INIT
+	imply CLK_CCF
 	imply CMD_DM
 	imply CMD_EXT4
 	imply CMD_FAT
@@ -136,7 +137,6 @@ config NXP_S32N
 	imply SYS_I2C_IMX_LPI2C
 	imply UFS
 	select CLK
-	select CLK_CCF
 	select CLK_SCMI
 	select CPU
 	select DM_DEVICE_REMOVE
