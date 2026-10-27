@@ -216,6 +216,21 @@ config SCRIPT_ADDR
 	  being sourced. The default 0x80000000 is not suitable on all
 	  platforms, so this value can be overridden.
 
+config LINUX_LOG_DISABLE
+	bool "Disable Linux Kernel boot time logging"
+	default n
+	help
+	  This option can be used in order to speed up the boot process
+	  by disabling most of Linux Kernel boot time logging messages.
+
+config NO_LINUX_EARLY_CONSOLE
+	bool "Disable Linux Kernel early console"
+	default n
+	help
+	  This option can be used in order to speed up the boot process
+	  by disabling the Linux Kernel early console
+	  (earlycon Linux Kernel command line parameter).
+
 source "arch/arm/mach-s32/s32-cc/Kconfig"
 source "arch/arm/mach-s32/s32n/Kconfig"
 source "board/nxp/s32/Kconfig"
