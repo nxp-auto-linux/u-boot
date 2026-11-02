@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 
 if NXP_S32N
 
@@ -16,10 +16,18 @@ config NXP_S32N_BOARD_COMMON
 config SYS_LOAD_RAM_OFFSET
 	hex "Default OS image offset in RAM."
 	default 0x13200000
+	help
+	  Offset from the start of DRAM where the OS image is loaded. It
+	  sets the default value of the "loadaddr" environment variable.
 
 config DTB_RAM_OFFSET
 	hex "Default OS device tree blob offset in RAM."
 	default 0x13100000
+	help
+	  Offset from the start of DRAM where the OS device tree blob is
+	  loaded. It sets the default value of the "fdt_addr" environment
+	  variable. The space between this offset and SYS_LOAD_RAM_OFFSET
+	  holds the device tree.
 
 config RAMDISK_RAM_OFFSET
 	hex "Default ramdisk offset in RAM to be used by the OS."
