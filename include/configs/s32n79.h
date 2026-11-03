@@ -68,10 +68,24 @@
 #  define XEN_BOOTCMD           ""
 #endif
 
+#if defined(CONFIG_LZ4)
+#  define S32N_LOADKERNEL \
+	"loadkernel=setenv kernel_comp_size; " \
+		"if fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}.lz4; " \
+		"then setenv kernel_comp_size ${filesize}; " \
+		"else run loadimage; fi\0" \
+
+#else
+#  define S32N_LOADKERNEL \
+	"loadkernel=run loadimage\0" \
+
+#endif
+
 #define S32N_ENV_SETTINGS \
 	S32_ENV_SETTINGS \
 	"console=ttyAMA" __stringify(CONFIG_CONS_INDEX) "\0" \
 	"fdt_init=fdt addr ${fdt_addr}; fdt resize;\0" \
+	S32N_LOADKERNEL \
 	"loadufsfdt=fatload scsi ${scsi_part_fdt} ${fdt_addr} " \
 		 " ${fdt_file}; run fdt_override;\0" \
 	"loadufsimage=fatload scsi ${scsi_part_image} ${loadaddr} ${image}\0" \
@@ -111,7 +125,7 @@
 	"mmc dev ${mmcdev}; " \
 	"if mmc rescan; " \
 	"then " \
-		"if run loadimage; "\
+		"if run loadkernel; "\
 		"then " \
 			"run mmcboot; " \
 		"fi; " \

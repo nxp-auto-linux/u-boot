@@ -105,6 +105,10 @@ int arch_misc_init(void)
 	s32n_set_image_addr("fdt_addr", CONFIG_DTB_RAM_OFFSET);
 	s32n_set_image_addr("ramdisk_addr", CONFIG_RAMDISK_RAM_OFFSET);
 
+	if (IS_ENABLED(CONFIG_LZ4))
+		s32n_set_image_addr("kernel_comp_addr_r",
+				    CONFIG_KERNEL_COMP_RAM_OFFSET);
+
 	return 0;
 }
 
