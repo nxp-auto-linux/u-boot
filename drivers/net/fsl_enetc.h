@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * ENETC ethernet controller driver
- * Copyright 2017-2021 NXP
+ * Copyright 2017-2021, 2026 NXP
  */
 
 #ifndef _ENETC_H
@@ -111,6 +111,9 @@ enum enetc_bdr_type {TX, RX};
 #define IMX95_ENETC_SIPMAR1		0x84
 
 /* Port registers */
+#define ENETC_OSR			0x1010
+#define  ENETC_OSR_STATE		BIT(0)
+#define  ENETC_OSR_TIMEOUT_US		100000
 #define IMX95_ENETC_PMAR0		0x4020
 #define IMX95_ENETC_PMAR1		0x4024
 #define ENETC_POR			0x4100

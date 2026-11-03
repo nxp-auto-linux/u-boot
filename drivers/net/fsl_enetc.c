@@ -20,6 +20,7 @@
 #include <linux/bug.h>
 #include <linux/delay.h>
 #include <linux/build_bug.h>
+#include <linux/iopoll.h>
 
 #ifdef CONFIG_ARCH_IMX9
 #include <asm/mach-imx/sys_proto.h>
@@ -544,6 +545,36 @@ static int enetc_pci_check_mem_enabled(struct udevice *dev)
 }
 
 /*
+ * Wait until the registers can be accessed after PCI_COMMAND_MEMORY was set.
+ * Reading the command register back (non-posted) makes sure the write has
+ * reached the function. An ENETCv4 function then loads the IERB values and
+ * initializes its memories, with OSR[STATE] = 1 until it is done. No other
+ * register may be accessed before that; a read in this window ends in an
+ * SError.
+ */
+static int enetc_wait_ready(struct udevice *dev)
+{
+	struct enetc_priv *priv = dev_get_priv(dev);
+	u32 val;
+	int ret;
+
+	ret = enetc_pci_check_mem_enabled(dev);
+	if (ret)
+		return ret;
+
+	if (!enetc_is_v4(dev))
+		return 0;
+
+	ret = readl_poll_timeout(priv->port_regs + ENETC_OSR, val,
+				 !(val & ENETC_OSR_STATE),
+				 ENETC_OSR_TIMEOUT_US);
+	if (ret)
+		dev_err(dev, "function not ready, OSR 0x%x\n", val);
+
+	return ret;
+}
+
+/*
  * Probe ENETC driver:
  * - initialize port and station interface BARs
  */
@@ -580,9 +611,9 @@ static int enetc_probe(struct udevice *dev)
 
 	dm_pci_clrset_config16(dev, PCI_COMMAND, 0, PCI_COMMAND_MEMORY);
 
-	res = enetc_pci_check_mem_enabled(dev);
+	res = enetc_wait_ready(dev);
 	if (res) {
-		/* Memory space decoding is disabled */
+		/* Memory space decoding is disabled, or the function is busy */
 		dev_err(dev, "Failed to enable I/O memory (%d)\n", res);
 
 		free(priv->enetc_txbd);
@@ -823,11 +854,16 @@ static void enetc_setup_rx_bdr(struct udevice *dev)
 static int enetc_start(struct udevice *dev)
 {
 	struct enetc_priv *priv = dev_get_priv(dev);
+	int ret;
 
 	/* reset and enable the PCI device */
 	dm_pci_flr(dev);
 	dm_pci_clrset_config16(dev, PCI_COMMAND, 0,
 			       PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
+
+	ret = enetc_wait_ready(dev);
+	if (ret)
+		return ret;
 
 	enetc_enable_si_port(dev);
 
