@@ -114,6 +114,10 @@ enum enetc_bdr_type {TX, RX};
 #define ENETC_OSR			0x1010
 #define  ENETC_OSR_STATE		BIT(0)
 #define  ENETC_OSR_TIMEOUT_US		100000
+#define ENETC_MPCR			0x1030
+#define ENETC_DOPCR			0x1034
+#define ENETC_PCR			0x4010
+#define  ENETC_PCR_NS_TAG_PORT		BIT(3)
 #define IMX95_ENETC_PMAR0		0x4020
 #define IMX95_ENETC_PMAR1		0x4024
 #define ENETC_POR			0x4100
@@ -195,6 +199,8 @@ struct enetc_priv {
 	int if_type;
 	struct mii_dev imdio;
 	struct phy_device *phy;
+
+	bool dsa_conduit;
 };
 
 struct enetc_data {

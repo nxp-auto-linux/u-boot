@@ -530,6 +530,55 @@ static int enetc_config_phy(struct udevice *dev)
 	return phy_config(priv->phy);
 }
 
+static bool enetc_is_dsa_conduit(struct udevice *dev)
+{
+	ofnode port, ports;
+	fdt32_t phandle;
+
+	if (!ofnode_valid(dev_ofnode(dev)))
+		return false;
+
+	phandle = cpu_to_fdt32(dev_read_phandle(dev));
+	if (!phandle)
+		return false;
+
+	port = ofnode_null();
+	while (true) {
+		port = ofnode_by_prop_value(port, "ethernet", &phandle,
+					    sizeof(phandle));
+		if (!ofnode_valid(port))
+			return false;
+
+		ports = ofnode_get_parent(port);
+		if (!ofnode_name_eq(ports, "ports") &&
+		    !ofnode_name_eq(ports, "ethernet-ports"))
+			continue;
+
+		if (ofnode_is_enabled(port) &&
+		    ofnode_is_enabled(ofnode_get_parent(ports)))
+			return true;
+	}
+}
+
+static void enetc_config_ns_tag(struct udevice *dev)
+{
+	struct enetc_priv *priv = dev_get_priv(dev);
+	u32 pcr;
+
+	if (!enetc_is_v4(dev))
+		return;
+
+	pcr = enetc_read_reg(priv->port_regs + ENETC_PCR);
+	if (priv->dsa_conduit) {
+		enetc_write_port(priv, ENETC_PCR, pcr | ENETC_PCR_NS_TAG_PORT);
+		return;
+	}
+
+	enetc_write_port(priv, ENETC_PCR, pcr & ~ENETC_PCR_NS_TAG_PORT);
+	enetc_write_port(priv, ENETC_MPCR, 0);
+	enetc_write_port(priv, ENETC_DOPCR, 0);
+}
+
 static int enetc_pci_check_mem_enabled(struct udevice *dev)
 {
 	u16 cmd;
@@ -620,6 +669,10 @@ static int enetc_probe(struct udevice *dev)
 		free(priv->enetc_rxbd);
 		return res;
 	}
+
+	priv->dsa_conduit = enetc_is_v4(dev) && enetc_is_dsa_conduit(dev);
+	if (priv->dsa_conduit)
+		enetc_dbg(dev, "DSA conduit, NS_TAG_PORT set\n");
 
 	enetc_start_pcs(dev);
 	if (priv->if_type == PHY_INTERFACE_MODE_NA)
@@ -865,6 +918,8 @@ static int enetc_start(struct udevice *dev)
 	if (ret)
 		return ret;
 
+	/* not before MEMORY is set, that copies the IERB values in */
+	enetc_config_ns_tag(dev);
 	enetc_enable_si_port(dev);
 
 	/* setup Tx/Rx buffer descriptors */
