@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2023 NXP
+ * Copyright 2023, 2026 NXP
  */
 
 #include <config.h>
@@ -245,7 +245,7 @@ static int scmi_pinctrl_set_configs_chunk(struct udevice *dev,
 		s32 status;
 	} response;
 	struct scmi_msg msg = {
-		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
+		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_80,
 		.message_id	= SCMI_PINCTRL_PINCONF_SET_APP,
 		.in_msg		= buffer,
 		.in_msg_sz	= sizeof(*r_pins),
@@ -395,7 +395,7 @@ static int scmi_pinctrl_set_mux_chunk(struct udevice *dev, u16 no_pins,
 		s32 status;
 	} response;
 	struct scmi_msg msg = {
-		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
+		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_80,
 		.message_id	= SCMI_PINCTRL_PINMUX_SET,
 		.in_msg		= buffer,
 		.in_msg_sz	= sizeof(*request),
@@ -493,7 +493,7 @@ static int scmi_pinctrl_get_config(struct udevice *dev, u16 pin,
 {
 	u8 response_buffer[SCMI_MAX_BUFFER_SIZE];
 	struct scmi_msg msg = {
-		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
+		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_80,
 		.message_id	= SCMI_PINCTRL_PINCONF_GET,
 		.in_msg		= (u8 *)&pin,
 		.in_msg_sz	= sizeof(pin),
@@ -545,7 +545,7 @@ static int scmi_pinctrl_get_mux(struct udevice *dev, u16 pin, u16 *func)
 		u16 function;
 	} response;
 	struct scmi_msg msg = {
-		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
+		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_80,
 		.message_id	= SCMI_PINCTRL_PINMUX_GET,
 		.in_msg		= (u8 *)&request,
 		.in_msg_sz	= sizeof(request),
@@ -982,7 +982,7 @@ static int scmi_pinctrl_get_proto_attr(struct udevice *dev)
 		u32 attributes;
 	} response;
 	struct scmi_msg msg = {
-		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
+		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_80,
 		.message_id	= SCMI_PINCTRL_PROTOCOL_ATTRIBUTES,
 		.in_msg		= NULL,
 		.in_msg_sz	= 0,
@@ -1025,7 +1025,7 @@ static int scmi_pinctrl_get_pin_ranges(struct udevice *dev)
 		} pin_ranges[];
 	} *response = (void *)buffer;
 	struct scmi_msg msg = {
-		.protocol_id	= SCMI_PROTOCOL_ID_PINCTRL,
+		.protocol_id	= SCMI_PROTOCOL_ID_VENDOR_80,
 		.message_id	= SCMI_PINCTRL_DESCRIBE,
 		.in_msg		= (u8 *)&request,
 		.in_msg_sz	= sizeof(request),
